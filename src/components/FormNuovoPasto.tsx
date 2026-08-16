@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { aggiungiPastoManuale, modificaPasto } from "@/lib/actions/pasti";
 import { leggiEtichettaFoto } from "@/lib/ocr/leggiEtichetta";
 import { ValoriNutrizionali } from "@/lib/ocr/parseEtichetta";
+import { cercaProdottoPerBarcode } from "@/lib/barcode/cercaProdotto";
+import ScannerBarcode from "@/components/ScannerBarcode";
 
 type Props = {
   pastoEsistente?: {
@@ -18,13 +20,15 @@ type Props = {
   };
 };
 
+type Modo = "manuale" | "foto" | "barcode";
+
 export default function FormNuovoPasto({ pastoEsistente }: Props) {
   const router = useRouter();
   const [caricamento, setCaricamento] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
 
-  // "manuale" oppure "foto" — se stiamo modificando un pasto esistente, partiamo sempre da manuale
-  const [modo, setModo] = useState<"manuale" | "foto">("manuale");
+  const [modo, setModo] = useState<Modo>("manuale");
+  const [metodoSalvataggio, setMetodoSalvataggio] = useState<"manuale" | "etichetta" | "barcode">("manuale");
 
   const [nome, setNome] = useState(pastoEsistente?.nome_visualizzato ?? "");
   const [grammi, setGrammi] = useState(pastoEsistente?.grammi?.toString() ?? "");
@@ -33,12 +37,17 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
   const [carboidrati, setCarboidrati] = useState(pastoEsistente?.carboidrati?.toString() ?? "");
   const [grassi, setGrassi] = useState(pastoEsistente?.grassi?.toString() ?? "");
 
-  // Valori "per 100g" letti dall'etichetta, usati per ricalcolare in base ai grammi
   const [valoriPer100, setValoriPer100] = useState<ValoriNutrizionali | null>(null);
+
+  // --- Stato per modalità Foto ---
   const [immaginePreview, setImmaginePreview] = useState<string | null>(null);
   const [ocrInCorso, setOcrInCorso] = useState(false);
 
-  // Ogni volta che cambiano i grammi (e abbiamo i valori per 100g), ricalcola i macro
+  // --- Stato per modalità Barcode ---
+  const [codiceBarcode, setCodiceBarcode] = useState("");
+  const [ricercaInCorso, setRicercaInCorso] = useState(false);
+  const [prodottoTrovato, setProdottoTrovato] = useState(false);
+
   useEffect(() => {
     if (!valoriPer100) return;
     const g = parseFloat(grammi);
@@ -62,16 +71,47 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
     try {
       const { valori } = await leggiEtichettaFoto(file);
       setValoriPer100(valori);
-
-      // Se i grammi non sono ancora impostati, mettiamo 100 come default
-      // (visto che i valori dell'etichetta sono già "per 100g")
+      setMetodoSalvataggio("etichetta");
       if (!grammi) setGrammi("100");
-    } catch (err) {
+    } catch {
       setErrore("Non sono riuscito a leggere l'etichetta. Prova con una foto più nitida.");
     } finally {
       setOcrInCorso(false);
     }
   }
+
+  async function cercaBarcode(codice: string) {
+    if (!codice) return;
+    setRicercaInCorso(true);
+    setErrore(null);
+    setProdottoTrovato(false);
+
+    const prodotto = await cercaProdottoPerBarcode(codice);
+
+    if (!prodotto || prodotto.kcal_100g === null) {
+      setErrore("Prodotto non trovato o dati nutrizionali mancanti. Prova l'inserimento manuale.");
+      setRicercaInCorso(false);
+      return;
+    }
+
+    setNome(prodotto.nome);
+    setValoriPer100({
+      kcal: prodotto.kcal_100g,
+      proteine: prodotto.proteine_100g,
+      carboidrati: prodotto.carboidrati_100g,
+      grassi: prodotto.grassi_100g,
+    });
+    setMetodoSalvataggio("barcode");
+    if (!grammi) setGrammi("100");
+    setProdottoTrovato(true);
+    setRicercaInCorso(false);
+  }
+
+  // useCallback: evita che ScannerBarcode riavvii la fotocamera ad ogni render del form
+  const handleCodiceTrovato = useCallback((codice: string) => {
+    setCodiceBarcode(codice);
+    cercaBarcode(codice);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,7 +129,7 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
     const risultato = pastoEsistente
       ? await modificaPasto(pastoEsistente.id, dati)
-      : await aggiungiPastoManuale(dati);
+      : await aggiungiPastoManuale(dati, metodoSalvataggio);
 
     setCaricamento(false);
 
@@ -103,26 +143,28 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
   return (
     <div className="flex flex-col gap-4 max-w-md">
-      {/* Selettore modalità — nascosto se stiamo modificando un pasto esistente */}
       {!pastoEsistente && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setModo("manuale")}
-            className={`px-4 py-2 rounded text-sm ${
-              modo === "manuale" ? "bg-black text-white" : "border"
-            }`}
+            className={`px-4 py-2 rounded text-sm ${modo === "manuale" ? "bg-black text-white" : "border"}`}
           >
-            Inserimento manuale
+            Manuale
           </button>
           <button
             type="button"
             onClick={() => setModo("foto")}
-            className={`px-4 py-2 rounded text-sm ${
-              modo === "foto" ? "bg-black text-white" : "border"
-            }`}
+            className={`px-4 py-2 rounded text-sm ${modo === "foto" ? "bg-black text-white" : "border"}`}
           >
             Foto etichetta
+          </button>
+          <button
+            type="button"
+            onClick={() => setModo("barcode")}
+            className={`px-4 py-2 rounded text-sm ${modo === "barcode" ? "bg-black text-white" : "border"}`}
+          >
+            Barcode
           </button>
         </div>
       )}
@@ -138,9 +180,41 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
           {ocrInCorso && <p className="text-sm text-gray-500">Lettura etichetta in corso...</p>}
 
-          {valoriPer100 && !ocrInCorso && (
+          {valoriPer100 && !ocrInCorso && metodoSalvataggio === "etichetta" && (
             <p className="text-sm text-green-700">
-              Valori letti! Controlla e correggi i campi qui sotto se necessario, poi imposta i grammi consumati.
+              Valori letti! Controlla e correggi i campi qui sotto se necessario.
+            </p>
+          )}
+        </div>
+      )}
+
+      {modo === "barcode" && !pastoEsistente && (
+        <div className="flex flex-col gap-2 border rounded p-3">
+          <label className="block text-sm font-medium">Inquadra il codice a barre</label>
+          <ScannerBarcode onCodiceTrovato={handleCodiceTrovato} />
+
+          <div className="flex gap-2 mt-2">
+            <input
+              type="text"
+              value={codiceBarcode}
+              onChange={(e) => setCodiceBarcode(e.target.value)}
+              placeholder="oppure inserisci il codice a mano"
+              className="border rounded px-3 py-2 flex-1 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => cercaBarcode(codiceBarcode)}
+              className="bg-black text-white rounded px-4 py-2 text-sm"
+            >
+              Cerca
+            </button>
+          </div>
+
+          {ricercaInCorso && <p className="text-sm text-gray-500">Ricerca prodotto...</p>}
+
+          {prodottoTrovato && !ricercaInCorso && (
+            <p className="text-sm text-green-700">
+              Prodotto trovato! Controlla e correggi i campi qui sotto se necessario.
             </p>
           )}
         </div>
@@ -193,7 +267,7 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
         <button
           type="submit"
-          disabled={caricamento || ocrInCorso}
+          disabled={caricamento || ocrInCorso || ricercaInCorso}
           className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
         >
           {caricamento ? "Salvataggio..." : pastoEsistente ? "Aggiorna pasto" : "Salva pasto"}

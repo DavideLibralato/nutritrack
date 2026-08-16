@@ -3,14 +3,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function aggiungiPastoManuale(datiForm: {
-  nome: string;
-  grammi: number;
-  kcal: number;
-  proteine: number;
-  carboidrati: number;
-  grassi: number;
-}) {
+export async function aggiungiPastoManuale(
+  datiForm: {
+    nome: string;
+    grammi: number;
+    kcal: number;
+    proteine: number;
+    carboidrati: number;
+    grassi: number;
+  },
+  metodo: "manuale" | "etichetta" | "barcode" = "manuale"
+) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -27,7 +30,7 @@ export async function aggiungiPastoManuale(datiForm: {
     proteine: datiForm.proteine,
     carboidrati: datiForm.carboidrati,
     grassi: datiForm.grassi,
-    metodo: "manuale",
+    metodo: metodo,
   });
 
   if (error) {
