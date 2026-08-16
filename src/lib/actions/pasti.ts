@@ -12,7 +12,7 @@ export async function aggiungiPastoManuale(
     carboidrati: number;
     grassi: number;
   },
-  metodo: "manuale" | "etichetta" | "barcode" = "manuale"
+  metodo: "manuale" | "etichetta" | "barcode" | "foto_ai" | "testo_ai" = "manuale"
 ) {
   const supabase = await createClient();
 

@@ -6,6 +6,7 @@ import { aggiungiPastoManuale, modificaPasto } from "@/lib/actions/pasti";
 import { leggiEtichettaFoto } from "@/lib/ocr/leggiEtichetta";
 import { ValoriNutrizionali } from "@/lib/ocr/parseEtichetta";
 import { cercaProdottoPerBarcode } from "@/lib/barcode/cercaProdotto";
+import { stimaDaFoto, stimaDaTesto } from "@/lib/ai/stimaPasto";
 import ScannerBarcode from "@/components/ScannerBarcode";
 
 type Props = {
@@ -20,7 +21,34 @@ type Props = {
   };
 };
 
-type Modo = "manuale" | "foto" | "barcode";
+type Modo = "manuale" | "foto" | "barcode" | "foto_ai" | "testo_ai";
+type Metodo = "manuale" | "etichetta" | "barcode" | "foto_ai" | "testo_ai";
+
+// Ridimensiona l'immagine (se troppo grande) e la converte in base64
+function fileInBase64Ridimensionato(file: File, latoMassimo = 1024): Promise<string> {
+  return new Promise((resolve, reject) => {
+    createImageBitmap(file).then((bitmap) => {
+      let { width, height } = bitmap;
+
+      // Riduce solo se l'immagine supera il lato massimo consentito
+      if (width > latoMassimo || height > latoMassimo) {
+        const scala = latoMassimo / Math.max(width, height);
+        width = Math.round(width * scala);
+        height = Math.round(height * scala);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(bitmap, 0, 0, width, height);
+
+      // Qualità 0.8 = buon compromesso tra peso e nitidezza per una foto di cibo
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      resolve(dataUrl.split(",")[1]);
+    }).catch(reject);
+  });
+}
 
 export default function FormNuovoPasto({ pastoEsistente }: Props) {
   const router = useRouter();
@@ -28,7 +56,7 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
   const [errore, setErrore] = useState<string | null>(null);
 
   const [modo, setModo] = useState<Modo>("manuale");
-  const [metodoSalvataggio, setMetodoSalvataggio] = useState<"manuale" | "etichetta" | "barcode">("manuale");
+  const [metodoSalvataggio, setMetodoSalvataggio] = useState<Metodo>("manuale");
 
   const [nome, setNome] = useState(pastoEsistente?.nome_visualizzato ?? "");
   const [grammi, setGrammi] = useState(pastoEsistente?.grammi?.toString() ?? "");
@@ -39,7 +67,7 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
   const [valoriPer100, setValoriPer100] = useState<ValoriNutrizionali | null>(null);
 
-  // --- Stato per modalità Foto ---
+  // --- Stato per modalità Foto etichetta (OCR) ---
   const [immaginePreview, setImmaginePreview] = useState<string | null>(null);
   const [ocrInCorso, setOcrInCorso] = useState(false);
 
@@ -48,8 +76,19 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
   const [ricercaInCorso, setRicercaInCorso] = useState(false);
   const [prodottoTrovato, setProdottoTrovato] = useState(false);
 
+  // --- Stato per modalità Foto AI ---
+  const [immagineAiPreview, setImmagineAiPreview] = useState<string | null>(null);
+  const [stimaAiInCorso, setStimaAiInCorso] = useState(false);
+
+  // --- Stato per modalità Testo AI ---
+  const [descrizioneLibera, setDescrizioneLibera] = useState("");
+
+  // Ricalcola i macro in base ai grammi SOLO per etichetta/barcode
+  // (per la stima AI i valori sono già totali per la porzione, niente da ricalcolare)
   useEffect(() => {
     if (!valoriPer100) return;
+    if (metodoSalvataggio !== "etichetta" && metodoSalvataggio !== "barcode") return;
+
     const g = parseFloat(grammi);
     if (isNaN(g)) return;
 
@@ -58,7 +97,7 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
     if (valoriPer100.proteine !== null) setProteine((valoriPer100.proteine * fattore).toFixed(1));
     if (valoriPer100.carboidrati !== null) setCarboidrati((valoriPer100.carboidrati * fattore).toFixed(1));
     if (valoriPer100.grassi !== null) setGrassi((valoriPer100.grassi * fattore).toFixed(1));
-  }, [grammi, valoriPer100]);
+  }, [grammi, valoriPer100, metodoSalvataggio]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -107,11 +146,58 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
     setRicercaInCorso(false);
   }
 
-  // useCallback: evita che ScannerBarcode riavvii la fotocamera ad ogni render del form
   const handleCodiceTrovato = useCallback((codice: string) => {
     setCodiceBarcode(codice);
     cercaBarcode(codice);
   }, []);
+
+  async function handleFotoAiChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImmagineAiPreview(URL.createObjectURL(file));
+    setStimaAiInCorso(true);
+    setErrore(null);
+
+    try {
+      const base64 = await fileInBase64Ridimensionato(file);
+      const stima = await stimaDaFoto(base64, "image/jpeg");
+
+      setNome(stima.nome);
+      setGrammi(stima.grammi.toString());
+      setKcal(stima.kcal.toString());
+      setProteine(stima.proteine.toString());
+      setCarboidrati(stima.carboidrati.toString());
+      setGrassi(stima.grassi.toString());
+      setMetodoSalvataggio("foto_ai");
+    } catch {
+      setErrore("Non sono riuscito a stimare i valori dalla foto. Riprova o usa un altro metodo.");
+    } finally {
+      setStimaAiInCorso(false);
+    }
+  }
+
+  async function handleStimaTesto() {
+    if (!descrizioneLibera.trim()) return;
+    setStimaAiInCorso(true);
+    setErrore(null);
+
+    try {
+      const stima = await stimaDaTesto(descrizioneLibera);
+
+      setNome(stima.nome);
+      setGrammi(stima.grammi.toString());
+      setKcal(stima.kcal.toString());
+      setProteine(stima.proteine.toString());
+      setCarboidrati(stima.carboidrati.toString());
+      setGrassi(stima.grassi.toString());
+      setMetodoSalvataggio("foto_ai");
+    } catch {
+      setErrore("Non sono riuscito a stimare i valori dalla foto. Riprova o usa un altro metodo.");
+    } finally {
+      setStimaAiInCorso(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -141,30 +227,27 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
     router.push("/dashboard");
   }
 
+  const inCorso = ocrInCorso || ricercaInCorso || stimaAiInCorso;
+  const usaGrammiPerRicalcolo = metodoSalvataggio === "etichetta" || metodoSalvataggio === "barcode";
+
   return (
     <div className="flex flex-col gap-4 max-w-md">
       {!pastoEsistente && (
         <div className="flex gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setModo("manuale")}
-            className={`px-4 py-2 rounded text-sm ${modo === "manuale" ? "bg-black text-white" : "border"}`}
-          >
+          <button type="button" onClick={() => setModo("manuale")} className={`px-3 py-2 rounded text-sm ${modo === "manuale" ? "bg-black text-white" : "border"}`}>
             Manuale
           </button>
-          <button
-            type="button"
-            onClick={() => setModo("foto")}
-            className={`px-4 py-2 rounded text-sm ${modo === "foto" ? "bg-black text-white" : "border"}`}
-          >
+          <button type="button" onClick={() => setModo("foto")} className={`px-3 py-2 rounded text-sm ${modo === "foto" ? "bg-black text-white" : "border"}`}>
             Foto etichetta
           </button>
-          <button
-            type="button"
-            onClick={() => setModo("barcode")}
-            className={`px-4 py-2 rounded text-sm ${modo === "barcode" ? "bg-black text-white" : "border"}`}
-          >
+          <button type="button" onClick={() => setModo("barcode")} className={`px-3 py-2 rounded text-sm ${modo === "barcode" ? "bg-black text-white" : "border"}`}>
             Barcode
+          </button>
+          <button type="button" onClick={() => setModo("foto_ai")} className={`px-3 py-2 rounded text-sm ${modo === "foto_ai" ? "bg-black text-white" : "border"}`}>
+            Foto cibo (AI)
+          </button>
+          <button type="button" onClick={() => setModo("testo_ai")} className={`px-3 py-2 rounded text-sm ${modo === "testo_ai" ? "bg-black text-white" : "border"}`}>
+            Descrivi (AI)
           </button>
         </div>
       )}
@@ -173,17 +256,10 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
         <div className="flex flex-col gap-2 border rounded p-3">
           <label className="block text-sm font-medium">Foto etichetta nutrizionale</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
-
-          {immaginePreview && (
-            <img src={immaginePreview} alt="Anteprima" className="max-w-full rounded border mt-2" />
-          )}
-
+          {immaginePreview && <img src={immaginePreview} alt="Anteprima" className="max-w-full rounded border mt-2" />}
           {ocrInCorso && <p className="text-sm text-gray-500">Lettura etichetta in corso...</p>}
-
           {valoriPer100 && !ocrInCorso && metodoSalvataggio === "etichetta" && (
-            <p className="text-sm text-green-700">
-              Valori letti! Controlla e correggi i campi qui sotto se necessario.
-            </p>
+            <p className="text-sm text-green-700">Valori letti! Controlla e correggi i campi qui sotto se necessario.</p>
           )}
         </div>
       )}
@@ -192,7 +268,6 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
         <div className="flex flex-col gap-2 border rounded p-3">
           <label className="block text-sm font-medium">Inquadra il codice a barre</label>
           <ScannerBarcode onCodiceTrovato={handleCodiceTrovato} />
-
           <div className="flex gap-2 mt-2">
             <input
               type="text"
@@ -201,21 +276,49 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
               placeholder="oppure inserisci il codice a mano"
               className="border rounded px-3 py-2 flex-1 text-sm"
             />
-            <button
-              type="button"
-              onClick={() => cercaBarcode(codiceBarcode)}
-              className="bg-black text-white rounded px-4 py-2 text-sm"
-            >
+            <button type="button" onClick={() => cercaBarcode(codiceBarcode)} className="bg-black text-white rounded px-4 py-2 text-sm">
               Cerca
             </button>
           </div>
-
           {ricercaInCorso && <p className="text-sm text-gray-500">Ricerca prodotto...</p>}
-
           {prodottoTrovato && !ricercaInCorso && (
-            <p className="text-sm text-green-700">
-              Prodotto trovato! Controlla e correggi i campi qui sotto se necessario.
-            </p>
+            <p className="text-sm text-green-700">Prodotto trovato! Controlla e correggi i campi qui sotto se necessario.</p>
+          )}
+        </div>
+      )}
+
+      {modo === "foto_ai" && !pastoEsistente && (
+        <div className="flex flex-col gap-2 border rounded p-3">
+          <label className="block text-sm font-medium">Foto del piatto (es. al ristorante)</label>
+          <input type="file" accept="image/*" onChange={handleFotoAiChange} />
+          {immagineAiPreview && <img src={immagineAiPreview} alt="Anteprima" className="max-w-full rounded border mt-2" />}
+          {stimaAiInCorso && <p className="text-sm text-gray-500">Stima AI in corso...</p>}
+          {metodoSalvataggio === "foto_ai" && !stimaAiInCorso && (
+            <p className="text-sm text-green-700">Stima ricevuta! È una stima approssimativa: controlla e correggi i valori.</p>
+          )}
+        </div>
+      )}
+
+      {modo === "testo_ai" && !pastoEsistente && (
+        <div className="flex flex-col gap-2 border rounded p-3">
+          <label className="block text-sm font-medium">Descrivi cosa hai mangiato</label>
+          <textarea
+            value={descrizioneLibera}
+            onChange={(e) => setDescrizioneLibera(e.target.value)}
+            placeholder="es. 150g di pasta al pomodoro con un cucchiaio di parmigiano"
+            className="border rounded px-3 py-2 text-sm"
+            rows={3}
+          />
+          <button
+            type="button"
+            onClick={handleStimaTesto}
+            disabled={stimaAiInCorso}
+            className="bg-black text-white rounded px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {stimaAiInCorso ? "Stima in corso..." : "Stima valori"}
+          </button>
+          {metodoSalvataggio === "testo_ai" && !stimaAiInCorso && (
+            <p className="text-sm text-green-700">Stima ricevuta! È una stima approssimativa: controlla e correggi i valori.</p>
           )}
         </div>
       )}
@@ -234,7 +337,7 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Grammi consumati</label>
+          <label className="block text-sm font-medium mb-1">Grammi</label>
           <input
             type="number"
             value={grammi}
@@ -267,7 +370,7 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
         <button
           type="submit"
-          disabled={caricamento || ocrInCorso || ricercaInCorso}
+          disabled={caricamento || inCorso}
           className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
         >
           {caricamento ? "Salvataggio..." : pastoEsistente ? "Aggiorna pasto" : "Salva pasto"}
