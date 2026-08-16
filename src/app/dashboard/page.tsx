@@ -41,6 +41,9 @@ export default async function DashboardPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold">Oggi</h1>
         <div className="flex gap-2">
+          <Link href="/dashboard/statistiche" className="border rounded px-4 py-2 text-sm">
+            Statistiche
+          </Link>
           <Link href="/dashboard/storico" className="border rounded px-4 py-2 text-sm">
             Storico
           </Link>
