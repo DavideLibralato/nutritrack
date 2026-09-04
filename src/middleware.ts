@@ -25,11 +25,56 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  // IMPORTANTE: non aggiungere logica tra createServerClient e getUser().
+  // getUser() rinfresca il token di sessione se serve; se lo si chiama
+  // troppo tardi si rischia di perdere sessioni valide in modo casuale.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
+  const percorso = request.nextUrl.pathname
+  const rottaProtetta = percorso.startsWith('/dashboard')
+  const rottaSoloOspiti = percorso === '/login' || percorso === '/register'
+
+  // Non loggato che prova ad aprire una pagina protetta (es. /dashboard
+  // digitato a mano nell'URL): lo rimandiamo al login.
+  if (!user && rottaProtetta) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('redirectTo', percorso)
+    return copiaCookieSessione(NextResponse.redirect(url), supabaseResponse)
+  }
+
+  // Già loggato che apre /login o /register: non ha senso, lo mandiamo
+  // direttamente alla dashboard.
+  if (user && rottaSoloOspiti) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return copiaCookieSessione(NextResponse.redirect(url), supabaseResponse)
+  }
+
+  // IMPORTANTE: va restituito supabaseResponse (o una copia con gli
+  // stessi cookie) e non un NextResponse.next() creato da zero, altrimenti
+  // il rinfresco della sessione fatto sopra andrebbe perso.
   return supabaseResponse
 }
 
+// I redirect qui sopra creano una risposta nuova (NextResponse.redirect),
+// quindi dobbiamo ricopiarci sopra a mano gli eventuali cookie di sessione
+// aggiornati da supabase.auth.getUser(), altrimenti l'utente rischia di
+// perdere la sessione rinfrescata proprio nel momento del redirect.
+function copiaCookieSessione(
+  risposta: NextResponse,
+  origineCookie: NextResponse
+) {
+  origineCookie.cookies.getAll().forEach((cookie) => {
+    risposta.cookies.set(cookie)
+  })
+  return risposta
+}
+
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|apple-touch-icon.png|icons/).*)',
+  ],
 }

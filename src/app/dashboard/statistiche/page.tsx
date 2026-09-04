@@ -3,6 +3,9 @@ import Link from "next/link";
 import GraficoAndamentoKcal from "@/components/GraficoAndamentoKcal";
 import GraficoMacro from "@/components/GraficoMacro";
 
+const CLASSE_FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground";
+
 type RangeKey = "7" | "sempre";
 
 type DatoGiorno = {
@@ -124,8 +127,8 @@ export default async function StatistichePage({
   return (
     <main className="p-6 flex flex-col gap-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Statistiche</h1>
-        <Link href="/dashboard" className="text-sm underline">
+        <h1 className="text-xl font-display font-semibold">Statistiche</h1>
+        <Link href="/dashboard" className={`text-sm underline rounded ${CLASSE_FOCUS}`}>
           ← Torna a oggi
         </Link>
       </div>
@@ -133,17 +136,17 @@ export default async function StatistichePage({
       <div className="flex gap-2">
         <Link
           href="/dashboard/statistiche?range=7"
-          className={`rounded px-4 py-2 text-sm ${
-            range === "7" ? "bg-black text-white" : "border"
-          }`}
+          className={`rounded-lg px-4 py-2 text-sm ${
+            range === "7" ? "bg-foreground text-background" : "border border-border"
+          } ${CLASSE_FOCUS}`}
         >
           Ultimi 7 giorni
         </Link>
         <Link
           href="/dashboard/statistiche?range=sempre"
-          className={`rounded px-4 py-2 text-sm ${
-            range === "sempre" ? "bg-black text-white" : "border"
-          }`}
+          className={`rounded-lg px-4 py-2 text-sm ${
+            range === "sempre" ? "bg-foreground text-background" : "border border-border"
+          } ${CLASSE_FOCUS}`}
         >
           Sempre
         </Link>
@@ -169,13 +172,13 @@ export default async function StatistichePage({
       </section>
 
       {giorniConDati.length === 0 ? (
-        <p className="text-gray-500 text-sm">
+        <p className="text-muted text-sm">
           Nessun dato disponibile per questo periodo.
         </p>
       ) : (
         <>
           <section>
-            <h2 className="font-medium mb-2">Andamento kcal</h2>
+            <h2 className="font-display font-medium mb-2">Andamento kcal</h2>
             <GraficoAndamentoKcal
               dati={datiGiornalieri}
               obiettivoKcal={profilo?.obiettivo_kcal ?? 2000}
@@ -183,7 +186,7 @@ export default async function StatistichePage({
           </section>
 
           <section>
-            <h2 className="font-medium mb-2">Composizione macro per giorno</h2>
+            <h2 className="font-display font-medium mb-2">Composizione macro per giorno</h2>
             <GraficoMacro dati={datiGiornalieri} />
           </section>
         </>
@@ -202,9 +205,9 @@ function CardMedia({
   unita?: string;
 }) {
   return (
-    <div className="border rounded p-3">
-      <p className="text-sm text-gray-500">{etichetta}</p>
-      <p className="text-lg font-semibold">
+    <div className="border border-border rounded-xl p-3">
+      <p className="text-sm text-muted">{etichetta}</p>
+      <p className="font-display tabular-nums text-lg font-semibold mt-1">
         {Math.round(valore)}
         {unita}
       </p>

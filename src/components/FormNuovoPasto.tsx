@@ -24,6 +24,9 @@ type Props = {
 type Modo = "manuale" | "foto" | "barcode" | "foto_ai" | "testo_ai";
 type Metodo = "manuale" | "etichetta" | "barcode" | "foto_ai" | "testo_ai";
 
+const CLASSE_FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground";
+
 // Ridimensiona l'immagine (se troppo grande) e la converte in base64
 function fileInBase64Ridimensionato(file: File, latoMassimo = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -50,6 +53,21 @@ function fileInBase64Ridimensionato(file: File, latoMassimo = 1024): Promise<str
   });
 }
 
+// Piccolo link "via di fuga": permette di saltare subito ai campi manuali
+// invece di aspettare/fidarsi di OCR, barcode o AI. Utile sia se il
+// riconoscimento fallisce, sia per chi preferisce inserire i valori a mano.
+function LinkInserisciManualmente({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-xs underline text-left text-muted w-fit rounded ${CLASSE_FOCUS}`}
+    >
+      Inserisci i valori manualmente
+    </button>
+  );
+}
+
 export default function FormNuovoPasto({ pastoEsistente }: Props) {
   const router = useRouter();
   const [caricamento, setCaricamento] = useState(false);
@@ -57,6 +75,10 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
   const [modo, setModo] = useState<Modo>("manuale");
   const [metodoSalvataggio, setMetodoSalvataggio] = useState<Metodo>("manuale");
+
+  // Permette di saltare subito ai campi manuali anche prima che
+  // OCR/barcode/AI abbiano prodotto un risultato (vedi LinkInserisciManualmente).
+  const [mostraManualeForzato, setMostraManualeForzato] = useState(false);
 
   const [nome, setNome] = useState(pastoEsistente?.nome_visualizzato ?? "");
   const [grammi, setGrammi] = useState(pastoEsistente?.grammi?.toString() ?? "");
@@ -82,6 +104,14 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
 
   // --- Stato per modalità Testo AI ---
   const [descrizioneLibera, setDescrizioneLibera] = useState("");
+
+  // Cambia modalità e azzera lo "sblocco manuale forzato": ogni metodo
+  // riparte dal proprio stato di attesa invece di trascinarsi la scelta
+  // fatta nella modalità precedente.
+  function selezionaModo(nuovoModo: Modo) {
+    setModo(nuovoModo);
+    setMostraManualeForzato(false);
+  }
 
   // Ricalcola i macro in base ai grammi SOLO per etichetta/barcode
   // (per la stima AI i valori sono già totali per la porzione, niente da ricalcolare)
@@ -191,9 +221,11 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
       setProteine(stima.proteine.toString());
       setCarboidrati(stima.carboidrati.toString());
       setGrassi(stima.grassi.toString());
-      setMetodoSalvataggio("foto_ai");
+      // Prima veniva salvato come "foto_ai" per errore: cosi il metodo
+      // registrato riflette davvero che il testo, non una foto, ha generato la stima.
+      setMetodoSalvataggio("testo_ai");
     } catch {
-      setErrore("Non sono riuscito a stimare i valori dalla foto. Riprova o usa un altro metodo.");
+      setErrore("Non sono riuscito a stimare i valori dal testo. Riprova o usa un altro metodo.");
     } finally {
       setStimaAiInCorso(false);
     }
@@ -230,152 +262,191 @@ export default function FormNuovoPasto({ pastoEsistente }: Props) {
   const inCorso = ocrInCorso || ricercaInCorso || stimaAiInCorso;
   const usaGrammiPerRicalcolo = metodoSalvataggio === "etichetta" || metodoSalvataggio === "barcode";
 
+  // Il metodo scelto ha gia' prodotto un risultato utilizzabile?
+  const risultatoPronto =
+    (modo === "foto" && metodoSalvataggio === "etichetta" && valoriPer100 !== null && !ocrInCorso) ||
+    (modo === "barcode" && prodottoTrovato && !ricercaInCorso) ||
+    (modo === "foto_ai" && metodoSalvataggio === "foto_ai" && !stimaAiInCorso) ||
+    (modo === "testo_ai" && metodoSalvataggio === "testo_ai" && !stimaAiInCorso);
+
+  // I campi manuali si vedono solo se: si sta modificando un pasto esistente,
+  // si e' scelto "Manuale" da subito, il metodo scelto ha gia' dato un risultato,
+  // oppure l'utente ha chiesto esplicitamente di saltare al modulo manuale.
+  const mostraCampiManuali =
+    !!pastoEsistente || modo === "manuale" || mostraManualeForzato || risultatoPronto;
+
   return (
     <div className="flex flex-col gap-4 max-w-md">
       {!pastoEsistente && (
         <div className="flex gap-2 flex-wrap">
-          <button type="button" onClick={() => setModo("manuale")} className={`px-3 py-2 rounded text-sm ${modo === "manuale" ? "bg-black text-white" : "border"}`}>
+          <button type="button" onClick={() => selezionaModo("manuale")} className={`px-3 py-2 rounded-lg text-sm ${modo === "manuale" ? "bg-foreground text-background" : "border border-border"} ${CLASSE_FOCUS}`}>
             Manuale
           </button>
-          <button type="button" onClick={() => setModo("foto")} className={`px-3 py-2 rounded text-sm ${modo === "foto" ? "bg-black text-white" : "border"}`}>
+          <button type="button" onClick={() => selezionaModo("foto")} className={`px-3 py-2 rounded-lg text-sm ${modo === "foto" ? "bg-foreground text-background" : "border border-border"} ${CLASSE_FOCUS}`}>
             Foto etichetta
           </button>
-          <button type="button" onClick={() => setModo("barcode")} className={`px-3 py-2 rounded text-sm ${modo === "barcode" ? "bg-black text-white" : "border"}`}>
+          <button type="button" onClick={() => selezionaModo("barcode")} className={`px-3 py-2 rounded-lg text-sm ${modo === "barcode" ? "bg-foreground text-background" : "border border-border"} ${CLASSE_FOCUS}`}>
             Barcode
           </button>
-          <button type="button" onClick={() => setModo("foto_ai")} className={`px-3 py-2 rounded text-sm ${modo === "foto_ai" ? "bg-black text-white" : "border"}`}>
+          <button type="button" onClick={() => selezionaModo("foto_ai")} className={`px-3 py-2 rounded-lg text-sm ${modo === "foto_ai" ? "bg-foreground text-background" : "border border-border"} ${CLASSE_FOCUS}`}>
             Foto cibo (AI)
           </button>
-          <button type="button" onClick={() => setModo("testo_ai")} className={`px-3 py-2 rounded text-sm ${modo === "testo_ai" ? "bg-black text-white" : "border"}`}>
+          <button type="button" onClick={() => selezionaModo("testo_ai")} className={`px-3 py-2 rounded-lg text-sm ${modo === "testo_ai" ? "bg-foreground text-background" : "border border-border"} ${CLASSE_FOCUS}`}>
             Descrivi (AI)
           </button>
         </div>
       )}
 
       {modo === "foto" && !pastoEsistente && (
-        <div className="flex flex-col gap-2 border rounded p-3">
-          <label className="block text-sm font-medium">Foto etichetta nutrizionale</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-          {immaginePreview && <img src={immaginePreview} alt="Anteprima" className="max-w-full rounded border mt-2" />}
-          {ocrInCorso && <p className="text-sm text-gray-500">Lettura etichetta in corso...</p>}
+        <div className="flex flex-col gap-2 border border-border rounded-xl p-3">
+          <label htmlFor="ocr-file" className="block text-sm font-medium">Foto etichetta nutrizionale</label>
+          <input id="ocr-file" type="file" accept="image/*" onChange={handleFileChange} className={`rounded ${CLASSE_FOCUS}`} />
+          {immaginePreview && <img src={immaginePreview} alt="Anteprima etichetta caricata" className="max-w-full rounded-lg border border-border mt-2" />}
+          {ocrInCorso && <p className="text-sm text-muted">Lettura etichetta in corso...</p>}
           {valoriPer100 && !ocrInCorso && metodoSalvataggio === "etichetta" && (
             <p className="text-sm text-green-700">Valori letti! Controlla e correggi i campi qui sotto se necessario.</p>
+          )}
+          {!mostraCampiManuali && !ocrInCorso && (
+            <LinkInserisciManualmente onClick={() => setMostraManualeForzato(true)} />
           )}
         </div>
       )}
 
       {modo === "barcode" && !pastoEsistente && (
-        <div className="flex flex-col gap-2 border rounded p-3">
+        <div className="flex flex-col gap-2 border border-border rounded-xl p-3">
           <label className="block text-sm font-medium">Inquadra il codice a barre</label>
           <ScannerBarcode onCodiceTrovato={handleCodiceTrovato} />
           <div className="flex gap-2 mt-2">
+            <label htmlFor="barcode-manuale" className="sr-only">
+              Codice a barre
+            </label>
             <input
+              id="barcode-manuale"
               type="text"
               value={codiceBarcode}
               onChange={(e) => setCodiceBarcode(e.target.value)}
               placeholder="oppure inserisci il codice a mano"
-              className="border rounded px-3 py-2 flex-1 text-sm"
+              className={`border border-border rounded-lg px-3 py-2 flex-1 text-sm ${CLASSE_FOCUS}`}
             />
-            <button type="button" onClick={() => cercaBarcode(codiceBarcode)} className="bg-black text-white rounded px-4 py-2 text-sm">
+            <button type="button" onClick={() => cercaBarcode(codiceBarcode)} className={`bg-foreground text-background rounded-lg px-4 py-2 text-sm ${CLASSE_FOCUS}`}>
               Cerca
             </button>
           </div>
-          {ricercaInCorso && <p className="text-sm text-gray-500">Ricerca prodotto...</p>}
+          {ricercaInCorso && <p className="text-sm text-muted">Ricerca prodotto...</p>}
           {prodottoTrovato && !ricercaInCorso && (
             <p className="text-sm text-green-700">Prodotto trovato! Controlla e correggi i campi qui sotto se necessario.</p>
+          )}
+          {!mostraCampiManuali && !ricercaInCorso && (
+            <LinkInserisciManualmente onClick={() => setMostraManualeForzato(true)} />
           )}
         </div>
       )}
 
       {modo === "foto_ai" && !pastoEsistente && (
-        <div className="flex flex-col gap-2 border rounded p-3">
-          <label className="block text-sm font-medium">Foto del piatto (es. al ristorante)</label>
-          <input type="file" accept="image/*" onChange={handleFotoAiChange} />
-          {immagineAiPreview && <img src={immagineAiPreview} alt="Anteprima" className="max-w-full rounded border mt-2" />}
-          {stimaAiInCorso && <p className="text-sm text-gray-500">Stima AI in corso...</p>}
+        <div className="flex flex-col gap-2 border border-border rounded-xl p-3">
+          <label htmlFor="ai-foto-file" className="block text-sm font-medium">Foto del piatto (es. al ristorante)</label>
+          <input id="ai-foto-file" type="file" accept="image/*" onChange={handleFotoAiChange} className={`rounded ${CLASSE_FOCUS}`} />
+          {immagineAiPreview && <img src={immagineAiPreview} alt="Anteprima piatto fotografato" className="max-w-full rounded-lg border border-border mt-2" />}
+          {stimaAiInCorso && <p className="text-sm text-muted">Stima AI in corso...</p>}
           {metodoSalvataggio === "foto_ai" && !stimaAiInCorso && (
             <p className="text-sm text-green-700">Stima ricevuta! È una stima approssimativa: controlla e correggi i valori.</p>
+          )}
+          {!mostraCampiManuali && !stimaAiInCorso && (
+            <LinkInserisciManualmente onClick={() => setMostraManualeForzato(true)} />
           )}
         </div>
       )}
 
       {modo === "testo_ai" && !pastoEsistente && (
-        <div className="flex flex-col gap-2 border rounded p-3">
-          <label className="block text-sm font-medium">Descrivi cosa hai mangiato</label>
+        <div className="flex flex-col gap-2 border border-border rounded-xl p-3">
+          <label htmlFor="ai-testo" className="block text-sm font-medium">Descrivi cosa hai mangiato</label>
           <textarea
+            id="ai-testo"
             value={descrizioneLibera}
             onChange={(e) => setDescrizioneLibera(e.target.value)}
             placeholder="es. 150g di pasta al pomodoro con un cucchiaio di parmigiano"
-            className="border rounded px-3 py-2 text-sm"
+            className={`border border-border rounded-lg px-3 py-2 text-sm ${CLASSE_FOCUS}`}
             rows={3}
           />
           <button
             type="button"
             onClick={handleStimaTesto}
             disabled={stimaAiInCorso}
-            className="bg-black text-white rounded px-4 py-2 text-sm disabled:opacity-50"
+            className={`bg-foreground text-background rounded-lg px-4 py-2 text-sm disabled:opacity-50 ${CLASSE_FOCUS}`}
           >
             {stimaAiInCorso ? "Stima in corso..." : "Stima valori"}
           </button>
           {metodoSalvataggio === "testo_ai" && !stimaAiInCorso && (
             <p className="text-sm text-green-700">Stima ricevuta! È una stima approssimativa: controlla e correggi i valori.</p>
           )}
+          {!mostraCampiManuali && !stimaAiInCorso && (
+            <LinkInserisciManualmente onClick={() => setMostraManualeForzato(true)} />
+          )}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Nome pasto</label>
-          <input
-            type="text"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            required
-            className="w-full border rounded px-3 py-2"
-            placeholder="es. Pasta al pomodoro"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Grammi</label>
-          <input
-            type="number"
-            value={grammi}
-            onChange={(e) => setGrammi(e.target.value)}
-            required
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
+      {mostraCampiManuali && (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Kcal</label>
-            <input type="number" value={kcal} onChange={(e) => setKcal(e.target.value)} required className="w-full border rounded px-3 py-2" />
+            <label htmlFor="pasto-nome" className="block text-sm font-medium mb-1">Nome pasto</label>
+            <input
+              id="pasto-nome"
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+              className={`w-full border border-border rounded-lg px-3 py-2 ${CLASSE_FOCUS}`}
+              placeholder="es. Pasta al pomodoro"
+            />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Proteine (g)</label>
-            <input type="number" value={proteine} onChange={(e) => setProteine(e.target.value)} required className="w-full border rounded px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Carboidrati (g)</label>
-            <input type="number" value={carboidrati} onChange={(e) => setCarboidrati(e.target.value)} required className="w-full border rounded px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Grassi (g)</label>
-            <input type="number" value={grassi} onChange={(e) => setGrassi(e.target.value)} required className="w-full border rounded px-3 py-2" />
-          </div>
-        </div>
 
-        {errore && <p className="text-red-600 text-sm">{errore}</p>}
+          <div>
+            <label htmlFor="pasto-grammi" className="block text-sm font-medium mb-1">Grammi</label>
+            <input
+              id="pasto-grammi"
+              type="number"
+              value={grammi}
+              onChange={(e) => setGrammi(e.target.value)}
+              required
+              min={0}
+              className={`w-full border border-border rounded-lg px-3 py-2 ${CLASSE_FOCUS}`}
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={caricamento || inCorso}
-          className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
-        >
-          {caricamento ? "Salvataggio..." : pastoEsistente ? "Aggiorna pasto" : "Salva pasto"}
-        </button>
-      </form>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="pasto-kcal" className="block text-sm font-medium mb-1">Kcal</label>
+              <input id="pasto-kcal" type="number" value={kcal} onChange={(e) => setKcal(e.target.value)} required min={0} className={`w-full border border-border rounded-lg px-3 py-2 ${CLASSE_FOCUS}`} />
+            </div>
+            <div>
+              <label htmlFor="pasto-proteine" className="block text-sm font-medium mb-1">Proteine (g)</label>
+              <input id="pasto-proteine" type="number" value={proteine} onChange={(e) => setProteine(e.target.value)} required min={0} className={`w-full border border-border rounded-lg px-3 py-2 ${CLASSE_FOCUS}`} />
+            </div>
+            <div>
+              <label htmlFor="pasto-carboidrati" className="block text-sm font-medium mb-1">Carboidrati (g)</label>
+              <input id="pasto-carboidrati" type="number" value={carboidrati} onChange={(e) => setCarboidrati(e.target.value)} required min={0} className={`w-full border border-border rounded-lg px-3 py-2 ${CLASSE_FOCUS}`} />
+            </div>
+            <div>
+              <label htmlFor="pasto-grassi" className="block text-sm font-medium mb-1">Grassi (g)</label>
+              <input id="pasto-grassi" type="number" value={grassi} onChange={(e) => setGrassi(e.target.value)} required min={0} className={`w-full border border-border rounded-lg px-3 py-2 ${CLASSE_FOCUS}`} />
+            </div>
+          </div>
+
+          {errore && <p className="text-red-600 text-sm">{errore}</p>}
+
+          <button
+            type="submit"
+            disabled={caricamento || inCorso}
+            className={`bg-foreground text-background rounded-lg px-4 py-2 disabled:opacity-50 ${CLASSE_FOCUS}`}
+          >
+            {caricamento ? "Salvataggio..." : pastoEsistente ? "Aggiorna pasto" : "Salva pasto"}
+          </button>
+        </form>
+      )}
+
+      {/* Errori di ricerca/stima (es. barcode non trovato) vanno mostrati anche
+          se i campi manuali sono ancora nascosti, altrimenti l'utente non li vede */}
+      {!mostraCampiManuali && errore && <p className="text-red-600 text-sm">{errore}</p>}
     </div>
   );
 }

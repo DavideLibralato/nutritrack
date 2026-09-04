@@ -18,22 +18,32 @@ type Punto = {
   grassi: number;
 };
 
+// Terna calda ispirata al cibo invece del blu/verde/arancio generico:
+// verde bosco, senape, terracotta (quest'ultima la stessa usata per
+// segnalare quando si sfora un obiettivo, coerente in tutta l'app).
 const COLORI = {
-  proteine: "#2563eb",
-  carboidrati: "#16a34a",
-  grassi: "#ea580c",
+  proteine: "#4A7856",
+  carboidrati: "#C99A3B",
+  grassi: "#B5533C",
 };
+
+const LINEA = "#E7E0D2";
+const TENUE = "#8A8271";
+const FONT_TESTO = "var(--font-body), system-ui, sans-serif";
 
 export default function GraficoMacro({ dati }: { dati: Punto[] }) {
   return (
-    <div className="border rounded p-3 h-64">
+    <div className="border border-border rounded-xl p-3 h-64">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={dati} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-          <XAxis dataKey="etichetta" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} width={40} unit="g" />
-          <Tooltip formatter={(value: number) => `${Math.round(value)}g`} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={LINEA} />
+          <XAxis dataKey="etichetta" tick={{ fontSize: 12, fontFamily: FONT_TESTO, fill: TENUE }} />
+          <YAxis tick={{ fontSize: 12, fontFamily: FONT_TESTO, fill: TENUE }} width={40} unit="g" />
+          <Tooltip
+            contentStyle={{ fontFamily: FONT_TESTO, borderRadius: 10, borderColor: LINEA }}
+            formatter={(value: number) => `${Math.round(value)}g`}
+          />
+          <Legend wrapperStyle={{ fontSize: 12, fontFamily: FONT_TESTO }} />
           <Bar dataKey="proteine" name="Proteine" stackId="macro" fill={COLORI.proteine} />
           <Bar dataKey="carboidrati" name="Carboidrati" stackId="macro" fill={COLORI.carboidrati} />
           <Bar
