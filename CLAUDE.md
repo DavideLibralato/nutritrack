@@ -47,6 +47,14 @@ non dice il contrario.
 - Nomi di file e variabili in inglese, testi visibili all'utente in italiano
 - Nessun colore scritto a mano nei componenti: tutti da variabili CSS, per il
   tema chiaro/scuro (sezione 7)
+- **Nomi di file descrittivi ovunque, tranne dove Next.js impone un nome
+  fisso** (`page.tsx`, `layout.tsx`, `middleware.ts`, `route.ts`...). Per
+  quei file il significato sta nel percorso/cartella, non nel nome del
+  file: `src/app/login/page.tsx` è la pagina di login perché sta nella
+  cartella `login`, non perché si chiama `page.tsx` — è così che il
+  router "App Router" di Next.js trova le pagine, rinominare il file
+  romperebbe la rotta. Per tutto il resto (componenti, funzioni, moduli in
+  `/lib`) il nome del file deve dire cosa fa
 - Commit piccoli e frequenti, messaggi in italiano
 
 ## Regole non negoziabili

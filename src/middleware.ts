@@ -33,11 +33,14 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const percorso = request.nextUrl.pathname
-  const rottaProtetta = percorso.startsWith('/dashboard')
   const rottaSoloOspiti = percorso === '/login' || percorso === '/register'
+  // Non c'è più un prefisso "/dashboard": tutta l'app richiede login dal
+  // primo giorno (sezione 9.1), quindi è protetto tutto tranne login e
+  // registrazione. Gli asset statici sono già esclusi dal matcher sotto.
+  const rottaProtetta = !rottaSoloOspiti
 
-  // Non loggato che prova ad aprire una pagina protetta (es. /dashboard
-  // digitato a mano nell'URL): lo rimandiamo al login.
+  // Non loggato che prova ad aprire una pagina protetta (es. l'URL digitato
+  // a mano): lo rimandiamo al login.
   if (!user && rottaProtetta) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -46,10 +49,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Già loggato che apre /login o /register: non ha senso, lo mandiamo
-  // direttamente alla dashboard.
+  // direttamente alla home.
   if (user && rottaSoloOspiti) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/'
     return copiaCookieSessione(NextResponse.redirect(url), supabaseResponse)
   }
 

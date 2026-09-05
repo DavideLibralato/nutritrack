@@ -2,7 +2,7 @@
   "name": "NutriTrack",
   "short_name": "NutriTrack",
   "description": "Traccia calorie e macronutrienti in modo semplice e veloce",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

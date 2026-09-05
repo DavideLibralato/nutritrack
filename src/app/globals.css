@@ -2,13 +2,16 @@
 
 :root {
   /* Palette "Opzione A — minimal caratteristico": bianco/nero caldo invece
-     del bianco/nero puro, con un accento terracotta usato con parsimonia
-     (es. quando si sfora l'obiettivo giornaliero). */
+     del bianco/nero puro. Un solo colore d'accento, il verde (sezione 7 di
+     PUNTO_DI_PARTENZA.md): azione principale, stato attivo, anello calorie.
+     Il terracotta resta, ma con un significato diverso e solo suo: segnala
+     quando un obiettivo viene superato, mai come colore decorativo. */
   --background: #faf7f2;
   --foreground: #1f1b16;
   --linea: #e7e0d2;
   --tenue: #8a8271;
-  --enfasi: #b5533c;
+  --accento: #3f7d4c;
+  --avviso: #b5533c;
 }
 
 @theme inline {
@@ -16,7 +19,8 @@
   --color-foreground: var(--foreground);
   --color-border: var(--linea);
   --color-muted: var(--tenue);
-  --color-accent: var(--enfasi);
+  --color-accent: var(--accento);
+  --color-warning: var(--avviso);
   /* --font-sans e' il font di testo di default di Tailwind (font-sans),
      --font-display e' il nuovo font per titoli e numeri (classe font-display). */
   --font-sans: var(--font-body);
