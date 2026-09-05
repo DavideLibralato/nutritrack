@@ -796,9 +796,14 @@ Tre scelte prese durante la migration, non presenti nel documento prima:
   sola lettura per costruzione (punto 10.8). La policy di `insert` impedisce
   anche di crearsi alimenti già `verificato = true`
 
-Resta un solo avviso, ed è un interruttore nella dashboard, non codice:
-**Leaked Password Protection** disattivata (Authentication → Policies). È
-gratuita e va accesa.
+Resta un solo avviso del linter, non risolvibile gratuitamente:
+**Leaked Password Protection** disattivata (Authentication → Sign In / Providers
+→ Email → "Prevent use of leaked passwords"). Verificato in dashboard: la
+funzione è **disponibile solo dal piano Pro in su** (25$/mese), non è
+gratuita come pensavo inizialmente. Resta disattivata: per un'app con pochi
+utenti il rischio è basso, e la regola "niente servizi a pagamento senza
+avvisare prima" vale anche qui. Da riconsiderare solo se l'app si aprisse
+al pubblico.
 
 ### Repo — da ripulire
 
