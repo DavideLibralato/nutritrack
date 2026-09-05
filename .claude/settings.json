@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git tag *)",
+      "Bash(rm -rf src/app/dashboard src/components src/lib/actions src/lib/ai src/lib/barcode src/lib/ocr src/app/page.tsx src/app/login/page.tsx src/app/register/page.tsx public/file.svg public/globe.svg public/next.svg public/vercel.svg public/window.svg *)",
+      "Bash(npm uninstall *)",
+      "Bash(npm install *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\david\\Progetti\\nutritrack\\src\\app\\dashboard"
     ]
   }
 }
