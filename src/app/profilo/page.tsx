@@ -75,6 +75,7 @@ export default function ProfiloPage() {
   const [dataNascita, setDataNascita] = useState("");
   const [altezzaCm, setAltezzaCm] = useState("");
   const [livelloAttivita, setLivelloAttivita] = useState<LivelloAttivita | "">("");
+  const [erroreAnagrafica, setErroreAnagrafica] = useState<string | null>(null);
   const [salvataggio, setSalvataggio] = useState<"inattivo" | "in-corso" | "salvato" | "errore">(
     "inattivo"
   );
@@ -120,9 +121,9 @@ export default function ProfiloPage() {
     if (obiettivoCorrente) {
       setTipoObiettivo(obiettivoCorrente.tipo);
       setKcal(String(obiettivoCorrente.kcal));
-      setProteine(String(obiettivoCorrente.proteine));
-      setCarboidrati(String(obiettivoCorrente.carboidrati));
-      setGrassi(String(obiettivoCorrente.grassi));
+      setProteine(String(obiettivoCorrente.proteine_g));
+      setCarboidrati(String(obiettivoCorrente.carboidrati_g));
+      setGrassi(String(obiettivoCorrente.grassi_g));
       setPesoObiettivo(
         obiettivoCorrente.peso_obiettivo != null ? String(obiettivoCorrente.peso_obiettivo) : ""
       );
@@ -183,10 +184,13 @@ export default function ProfiloPage() {
     e.preventDefault();
     if (!userId) return;
 
-    const kcalNum = Number(kcal);
-    const proteineNum = Number(proteine);
-    const carboidratiNum = Number(carboidrati);
-    const grassiNum = Number(grassi);
+    // Math.round: le colonne su Supabase sono "integer" (kcal, proteine_g,
+    // carboidrati_g, grassi_g) — un valore con decimali farebbe fallire
+    // l'insert con un errore di tipo, non solo di validazione nostra.
+    const kcalNum = Math.round(Number(kcal));
+    const proteineNum = Math.round(Number(proteine));
+    const carboidratiNum = Math.round(Number(carboidrati));
+    const grassiNum = Math.round(Number(grassi));
 
     if (
       !kcal ||
@@ -216,9 +220,9 @@ export default function ProfiloPage() {
         valido_dal: new Date().toISOString().slice(0, 10),
         tipo: tipoObiettivo,
         kcal: kcalNum,
-        proteine: proteineNum,
-        carboidrati: carboidratiNum,
-        grassi: grassiNum,
+        proteine_g: proteineNum,
+        carboidrati_g: carboidratiNum,
+        grassi_g: grassiNum,
         peso_obiettivo: pesoObiettivo ? Number(pesoObiettivo) : null,
       });
 
@@ -232,20 +236,30 @@ export default function ProfiloPage() {
     e.preventDefault();
     if (!userId) return;
 
+    setErroreAnagrafica(null);
+
+    // livello_attivita è NOT NULL sul database (a differenza di sesso, data
+    // di nascita e altezza): senza questo controllo il salvataggio locale
+    // "riuscirebbe" e la sync verso Supabase fallirebbe in silenzio dopo.
+    if (!livelloAttivita) {
+      setErroreAnagrafica("Seleziona il livello di attività prima di salvare.");
+      return;
+    }
+
     setSalvataggio("in-corso");
 
     const campi = {
       sesso,
       data_nascita: dataNascita || null,
       altezza_cm: altezzaCm ? Number(altezzaCm) : null,
-      livello_attivita: livelloAttivita || null,
+      livello_attivita: livelloAttivita,
     };
 
     try {
       if (profilo) {
         await repositoryProfili.aggiorna(profilo.id, campi);
       } else {
-        await repositoryProfili.crea({ user_id: userId, ...campi });
+        await repositoryProfili.crea({ user_id: userId, nome: null, ...campi });
       }
       setSalvataggio("salvato");
     } catch {
@@ -335,6 +349,8 @@ export default function ProfiloPage() {
             ))}
           </select>
         </div>
+
+        {erroreAnagrafica && <p className="text-sm text-warning">{erroreAnagrafica}</p>}
 
         <button
           type="submit"

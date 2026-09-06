@@ -3,11 +3,14 @@
 // Nota sui nomi dei campi: sono scritti come le colonne su Supabase
 // (snake_case, in italiano) e non nello stile camelCase più comune in
 // TypeScript. Non è una svista: l'outbox (src/lib/sync) manda questi oggetti
-// a Supabase così come sono, senza tradurre i nomi. Se in futuro un nome qui
-// non corrisponde esattamente alla colonna reale sul database, il sync di
-// quella tabella fallisce con un errore chiaro finché non si allinea il nome
-// — è un controllo da fare quando l'outbox verrà collegato per davvero
-// (serve un utente loggato, quindi dopo l'auth).
+// a Supabase così come sono, senza tradurre i nomi.
+//
+// Allineati il 6 settembre 2026 allo schema reale (query su
+// information_schema.columns), dopo che un nome sbagliato su "obiettivi"
+// (proteine/carboidrati/grassi invece di *_g) ha fatto fallire la sync in
+// silenzio finché non abbiamo controllato la coda outbox. Se in futuro serve
+// aggiungere una colonna, il controllo da fare è lo stesso: confrontare il
+// tipo qui con lo schema reale, non fidarsi solo del documento.
 
 // Campi tecnici presenti su ogni tabella (sezione 4, "Campi tecnici obbligatori").
 export interface RigaBase {
@@ -38,10 +41,15 @@ export type LivelloAttivita =
   | "molto_attivo";
 
 export interface Profilo extends RigaBase {
+  nome: string | null; // non ancora scritto da nessuna schermata
   sesso: Sesso;
   data_nascita: string | null; // "YYYY-MM-DD"
   altezza_cm: number | null;
-  livello_attivita: LivelloAttivita | null;
+  // NOT NULL sul database, a differenza degli altri tre campi anagrafici:
+  // la pagina Profilo deve garantire un valore prima di salvare, non può
+  // mandare null qui (sezione 3: "senza di loro il fabbisogno non è
+  // calcolabile" — sul livello di attività il vincolo è già nello schema).
+  livello_attivita: LivelloAttivita;
 }
 
 export type TipoObiettivo = "dimagrire" | "mantenere" | "massa";
@@ -50,9 +58,9 @@ export interface Obiettivo extends RigaBase {
   valido_dal: string; // "YYYY-MM-DD": cambiare obiettivo inserisce una riga nuova, non modifica questa
   tipo: TipoObiettivo;
   kcal: number;
-  proteine: number;
-  carboidrati: number;
-  grassi: number;
+  proteine_g: number;
+  carboidrati_g: number;
+  grassi_g: number;
   peso_obiettivo: number | null;
 }
 
@@ -83,14 +91,14 @@ export interface Alimento extends RigaBase {
   fibre_100g: number | null;
   saturi_100g: number | null;
   sale_100g: number | null;
-  porzione_default_g: number | null;
+  porzione_default_g: number; // NOT NULL sul database
   fonte: FonteAlimento;
   verificato: boolean;
 }
 
 export interface VoceDiario extends RigaBase {
-  alimento_id: string;
-  pasto_id: string;
+  alimento_id: string | null;
+  pasto_id: string | null;
   gruppo_id: string | null; // righe inserite insieme da un pasto salvato/ricetta
   quantita_g: number;
   data: string; // "YYYY-MM-DD": il giorno logico (vedi PUNTO_DI_PARTENZA.md)
@@ -99,7 +107,7 @@ export interface VoceDiario extends RigaBase {
 
   // Copia dei valori nutrizionali dell'alimento al momento dell'inserimento:
   // se l'alimento viene corretto nel catalogo dopo, la storia non cambia.
-  alimento_nome: string;
+  nome_alimento: string;
   kcal_100g: number;
   proteine_100g: number;
   carboidrati_100g: number;
@@ -111,12 +119,16 @@ export type TipoComposizione = "pasto_salvato" | "ricetta";
 export interface Composizione extends RigaBase {
   nome: string;
   tipo: TipoComposizione;
+  // Valorizzato solo per tipo "ricetta": punta alla riga in alimenti con i
+  // valori nutrizionali calcolati dagli ingredienti (sezione 4).
+  alimento_id: string | null;
 }
 
 export interface ComposizioneVoce extends RigaBase {
   composizione_id: string;
   alimento_id: string;
   quantita_g: number;
+  ordine: number;
 }
 
 export interface Misurazione extends RigaBase {
