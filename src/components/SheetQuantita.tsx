@@ -1,16 +1,23 @@
 "use client";
 
 // Lo sheet quantità (PUNTO_DI_PARTENZA.md, sezione 5): UI di conferma
-// quantità **unica**, identica per ogni sorgente di alimento. Oggi la usano
-// la ricerca manuale e la creazione a mano; domani, senza modifiche qui,
-// anche Open Food Facts e la scansione etichetta.
+// quantità **unica**, identica per ogni sorgente di alimento. La usano la
+// ricerca manuale e la creazione a mano da /aggiungi; domani, senza
+// modifiche qui, anche Open Food Facts e la scansione etichetta.
 //
-// Sezione 9.3: i grammi sono precompilati con la porzione di default e già
-// selezionati (basta confermare, o digitare subito il numero giusto senza
-// cancellare). Tastierino numerico, nessun menu a tendina.
+// La stessa UI serve anche a **modificare una voce già inserita** (sezione
+// 5: "una voce già inserita si tocca e riapre lo stesso sheet, con pasto e
+// quantità modificabili, più un'azione di eliminazione"). In quel caso il
+// chiamante passa `modifica`, la lista `pasti` con il selettore, e
+// `onElimina`.
+//
+// Sezione 9.3: i grammi sono precompilati e già selezionati (basta
+// confermare, o digitare subito il numero giusto senza cancellare).
+// Tastierino numerico, nessun menu a tendina per la quantità.
 
 import { useEffect, useRef, useState } from "react";
 import type { AlimentoPerSheet } from "@/lib/inserimento/alimentoPerSheet";
+import type { Pasto } from "@/lib/db/tipi";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -18,22 +25,51 @@ const CLASSE_FOCUS =
 interface Props {
   alimento: AlimentoPerSheet;
   nomePasto: string;
+  // Grammi già nel campo all'apertura. In creazione si usa la porzione di
+  // default dell'alimento; in modifica la quantità reale della voce.
+  grammiIniziali?: number;
   inCorso?: boolean;
   errore?: string | null;
   onAnnulla: () => void;
   onConferma: (grammi: number) => void;
+  // --- Solo in modifica di una voce esistente ---
+  modifica?: boolean;
+  // Se presenti tutti e tre, lo sheet mostra un selettore di pasto (spostare
+  // la voce). In creazione non si passano: il pasto lo sceglie il titolo
+  // della pagina /aggiungi, e lo sheet resta identico a com'era.
+  pasti?: Pasto[];
+  pastoSelezionatoId?: string;
+  onCambiaPasto?: (pastoId: string) => void;
+  onElimina?: () => void;
 }
 
 export default function SheetQuantita({
   alimento,
   nomePasto,
+  grammiIniziali,
   inCorso = false,
   errore = null,
   onAnnulla,
   onConferma,
+  modifica = false,
+  pasti,
+  pastoSelezionatoId,
+  onCambiaPasto,
+  onElimina,
 }: Props) {
-  const [grammi, setGrammi] = useState(String(alimento.porzione_default_g));
+  const [grammi, setGrammi] = useState(
+    String(grammiIniziali ?? alimento.porzione_default_g)
+  );
+  const [confermaElim, setConfermaElim] = useState(false);
   const rifInput = useRef<HTMLInputElement>(null);
+
+  const mostraSelettorePasto =
+    !!pasti && pasti.length > 0 && pastoSelezionatoId != null && !!onCambiaPasto;
+
+  // In modifica il pulsante di sinistra diventa "Elimina" (che poi chiede
+  // conferma nella stessa riga). In creazione la voce non esiste ancora,
+  // quindi resta "Annulla".
+  const modificaConElimina = modifica && !!onElimina;
 
   // All'apertura: fuoco sul campo e testo selezionato, così un valore
   // diverso si digita senza prima cancellare.
@@ -79,8 +115,30 @@ export default function SheetQuantita({
         className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-xs uppercase tracking-wide text-muted">{nomePasto}</p>
+        {!mostraSelettorePasto && (
+          <p className="text-xs uppercase tracking-wide text-muted">{nomePasto}</p>
+        )}
         <h2 className="mt-1 font-display text-xl font-bold">{alimento.nome}</h2>
+
+        {mostraSelettorePasto && (
+          <>
+            <label htmlFor="sheet-pasto" className="mt-4 block text-sm font-medium">
+              Pasto
+            </label>
+            <select
+              id="sheet-pasto"
+              value={pastoSelezionatoId}
+              onChange={(e) => onCambiaPasto!(e.target.value)}
+              className={`mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
+            >
+              {pasti!.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         <label htmlFor="sheet-grammi" className="mt-4 block text-sm font-medium">
           Quantità (g)
@@ -106,22 +164,67 @@ export default function SheetQuantita({
 
         {errore && <p className="mt-2 text-sm text-warning">{errore}</p>}
 
+        {/* Una sola riga di pulsanti, [sinistra] [destra], sempre stessa
+            forma e posizione:
+            - creazione:            [Annulla]      [Aggiungi]
+            - modifica:             [Elimina]      [Salva]
+            - modifica, conferma:   [No]           [Sì, elimina]
+            In modifica "Annulla" è ridondante — per annullare si tocca fuori
+            dallo sheet. */}
         <div className="mt-5 flex gap-3">
-          <button
-            type="button"
-            onClick={onAnnulla}
-            className={`flex-1 rounded-lg border border-border p-3 ${CLASSE_FOCUS}`}
-          >
-            Annulla
-          </button>
-          <button
-            type="button"
-            onClick={conferma}
-            disabled={!valido || inCorso}
-            className={`flex-1 rounded-lg bg-accent p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
-          >
-            {inCorso ? "Aggiungo..." : "Aggiungi"}
-          </button>
+          {!modificaConElimina ? (
+            <button
+              type="button"
+              onClick={onAnnulla}
+              className={`flex-1 rounded-lg border border-border p-3 ${CLASSE_FOCUS}`}
+            >
+              Annulla
+            </button>
+          ) : confermaElim ? (
+            <button
+              type="button"
+              onClick={() => setConfermaElim(false)}
+              disabled={inCorso}
+              className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              No
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfermaElim(true)}
+              disabled={inCorso}
+              className={`flex-1 rounded-lg border border-warning p-3 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              Elimina
+            </button>
+          )}
+
+          {modificaConElimina && confermaElim ? (
+            <button
+              type="button"
+              onClick={() => onElimina?.()}
+              disabled={inCorso}
+              className={`flex-1 rounded-lg bg-warning p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              {inCorso ? "Elimino..." : "Sì, elimina"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={conferma}
+              disabled={!valido || inCorso}
+              className={`flex-1 rounded-lg bg-accent p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              {modifica
+                ? inCorso
+                  ? "Salvo..."
+                  : "Salva"
+                : inCorso
+                  ? "Aggiungo..."
+                  : "Aggiungi"}
+            </button>
+          )}
         </div>
       </div>
     </div>

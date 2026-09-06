@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-06 — Modifica ed elimina una voce dalla pagina Oggi (fase 2)
+
+- Nella pagina Oggi ogni voce di un pasto è ora una riga tappabile (nome +
+  `g` + kcal), al posto della vecchia riga grigia con i nomi uniti da `·`
+- Il tap riapre lo stesso `SheetQuantita` in modalità modifica:
+  precompilato con grammi e pasto reali della voce (non la porzione di
+  default), con un `<select>` per spostare la voce di pasto (sezione 5)
+- Conferma → `repositoryVociDiario.aggiorna(id, …)` sulla stessa riga, non
+  una nuova. "Elimina" → `elimina(id)` (cancellazione logica)
+- Riga pulsanti dello sheet: in creazione `[Annulla] [Aggiungi]`
+  invariata; in modifica `[Elimina] [Salva]`, e il tap su Elimina
+  trasforma la stessa riga in `[No] [Sì, elimina]` (conferma inline, stessa
+  posizione) per evitare i tap accidentali
+- `SheetQuantita` esteso solo con prop opzionali (`modifica`,
+  `grammiIniziali`, `pasti`/`pastoSelezionatoId`/`onCambiaPasto`,
+  `onElimina`): il flusso di creazione da `/aggiungi` non è stato toccato e
+  rende identico a prima. Nuovo helper `daVoce()` in `alimentoPerSheet.ts`
+  che usa i valori nutrizionali copiati sulla voce, non quelli attuali del
+  catalogo
+
 ## 2026-09-06 — Inserimento manuale (fase 2): dalla ricerca al diario
 
 - Nuova pagina `/aggiungi`, a tutto schermo e fuori dal route group `(app)`

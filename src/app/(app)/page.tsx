@@ -29,7 +29,12 @@ import {
   repositoryObiettivi,
 } from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
-import { sommaTotali, vociDelGiorno, obiettivoValidoPer } from "@/lib/totaliDiario";
+import {
+  sommaTotali,
+  totaleVoce,
+  vociDelGiorno,
+  obiettivoValidoPer,
+} from "@/lib/totaliDiario";
 import {
   oggiLocale,
   giornoPrecedente,
@@ -40,6 +45,9 @@ import {
 } from "@/lib/dataGiorno";
 import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
+import SheetQuantita from "@/components/SheetQuantita";
+import { daVoce } from "@/lib/inserimento/alimentoPerSheet";
+import type { VoceDiario } from "@/lib/db/tipi";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -123,6 +131,15 @@ function OggiContenuto() {
     }
   }, [userId, pasti]);
 
+  // Modifica di una voce già a diario: tap sulla voce → riapre lo stesso
+  // SheetQuantita, precompilato con i valori reali (grammi e pasto), con
+  // un'azione di eliminazione (sezione 5).
+  const [voceInModifica, setVoceInModifica] = useState<VoceDiario | null>(null);
+  const [pastoModificaId, setPastoModificaId] = useState<string>("");
+  const [salvataggioVoce, setSalvataggioVoce] = useState<
+    "inattivo" | "in-corso" | "errore"
+  >("inattivo");
+
   // Derivati: con React Compiler attivo non serve useMemo, il ricalcolo a
   // ogni render è già memoizzato dal compilatore.
   const vociGiorno = vociTutte ? vociDelGiorno(vociTutte, giorno) : [];
@@ -163,6 +180,49 @@ function OggiContenuto() {
       </main>
     );
   }
+
+  function apriModifica(voce: VoceDiario) {
+    setVoceInModifica(voce);
+    setPastoModificaId(voce.pasto_id ?? pasti?.[0]?.id ?? "");
+    setSalvataggioVoce("inattivo");
+  }
+
+  function chiudiModifica() {
+    setVoceInModifica(null);
+    setSalvataggioVoce("inattivo");
+  }
+
+  async function confermaModifica(grammi: number) {
+    if (!voceInModifica) return;
+    setSalvataggioVoce("in-corso");
+    try {
+      // Stessa riga (stesso id): aggiorna(), non crea(). Il pasto può essere
+      // cambiato (spostare la voce di pasto, sezione 5).
+      await repositoryVociDiario.aggiorna(voceInModifica.id, {
+        quantita_g: grammi,
+        pasto_id: pastoModificaId || voceInModifica.pasto_id,
+      });
+      chiudiModifica();
+    } catch {
+      setSalvataggioVoce("errore");
+    }
+  }
+
+  async function eliminaVoce() {
+    if (!voceInModifica) return;
+    setSalvataggioVoce("in-corso");
+    try {
+      // Cancellazione logica (scrive deleted_at): la useLiveQuery toglie
+      // subito la voce dalla lista.
+      await repositoryVociDiario.elimina(voceInModifica.id);
+      chiudiModifica();
+    } catch {
+      setSalvataggioVoce("errore");
+    }
+  }
+
+  const nomePastoInModifica =
+    pasti.find((p) => p.id === (voceInModifica?.pasto_id ?? ""))?.nome ?? "";
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -257,7 +317,6 @@ function OggiContenuto() {
           pasti.map((pasto) => {
             const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
             const kcalPasto = Math.round(sommaTotali(vociPasto).kcal);
-            const nomi = vociPasto.map((v) => v.nome_alimento).join(" · ");
             return (
               <li key={pasto.id} className="border-b border-border py-4">
                 <div className="flex items-baseline justify-between gap-3">
@@ -266,8 +325,26 @@ function OggiContenuto() {
                     {vociPasto.length > 0 ? `${kcalPasto} kcal` : "—"}
                   </span>
                 </div>
+
+                {/* Ogni voce è tappabile: apre lo SheetQuantita in modifica
+                    (sezione 5). */}
                 {vociPasto.length > 0 && (
-                  <p className="mt-1 text-sm text-muted">{nomi}</p>
+                  <ul className="mt-1.5">
+                    {vociPasto.map((voce) => (
+                      <li key={voce.id}>
+                        <button
+                          type="button"
+                          onClick={() => apriModifica(voce)}
+                          className={`flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
+                        >
+                          <span className="min-w-0 truncate">{voce.nome_alimento}</span>
+                          <span className="shrink-0">
+                            {voce.quantita_g} g · {Math.round(totaleVoce(voce).kcal)} kcal
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </li>
             );
@@ -287,6 +364,27 @@ function OggiContenuto() {
           + Aggiungi
         </button>
       </div>
+
+      {voceInModifica && (
+        <SheetQuantita
+          alimento={daVoce(voceInModifica)}
+          nomePasto={nomePastoInModifica}
+          grammiIniziali={voceInModifica.quantita_g}
+          modifica
+          pasti={pasti}
+          pastoSelezionatoId={pastoModificaId}
+          onCambiaPasto={setPastoModificaId}
+          inCorso={salvataggioVoce === "in-corso"}
+          errore={
+            salvataggioVoce === "errore"
+              ? "Operazione non riuscita. Riprova."
+              : null
+          }
+          onAnnulla={chiudiModifica}
+          onConferma={confermaModifica}
+          onElimina={eliminaVoce}
+        />
+      )}
     </div>
   );
 }
