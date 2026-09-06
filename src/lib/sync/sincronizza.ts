@@ -1,15 +1,15 @@
 // Svuota la coda outbox verso Supabase.
 //
-// Non è ancora collegata a nulla nell'app: serve un utente autenticato
-// perché le policy RLS accettino le scritture, e l'auth è il prossimo passo
-// (punto 1). Per ora questo modulo è pronto e testabile da solo; lo si
-// aggancia (es. all'avvio dell'app e a `window.addEventListener("online")`)
-// quando il login esiste davvero.
+// Chiamata da tre punti (src/lib/repository/repository.ts e
+// src/components/SincronizzaOutbox.tsx): subito dopo ogni scrittura locale,
+// all'avvio dell'app, e quando il browser torna online. Deve quindi
+// funzionare bene anche se chiamata spesso e mentre non c'è rete — non è
+// un'operazione rara innescata a mano.
 //
-// Nota per quando la si collega: se un nome di campo su un tipo in
-// src/lib/db/tipi.ts non corrisponde esattamente al nome della colonna su
-// Supabase, upsert() risponde con un errore leggibile (colonna sconosciuta) —
-// non un fallimento silenzioso — quindi il fix è puntuale, campo per campo.
+// Nota: se un nome di campo su un tipo in src/lib/db/tipi.ts non
+// corrisponde esattamente al nome della colonna su Supabase, upsert()
+// risponde con un errore leggibile (colonna sconosciuta) — non un
+// fallimento silenzioso — quindi il fix è puntuale, campo per campo.
 
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
@@ -30,13 +30,23 @@ export async function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
   // (es. un pasto e le sue voci di diario), mandarle nell'ordine in cui sono
   // state create evita di invertire l'ordine delle scritture sul server.
   for (const voce of voci) {
-    const { error } = await supabase.from(voce.tabella).upsert(voce.dati);
+    // Senza rete, o con la rete che cade a metà, upsert() può rifiutare la
+    // promise invece di restituire un { error } (fetch fallito). Lo
+    // trattiamo come un fallimento normale della voce, non come un errore
+    // che deve fermare tutte le altre.
+    let messaggioErrore: string | null = null;
+    try {
+      const { error } = await supabase.from(voce.tabella).upsert(voce.dati);
+      messaggioErrore = error?.message ?? null;
+    } catch (eccezione) {
+      messaggioErrore = eccezione instanceof Error ? eccezione.message : "Errore di rete.";
+    }
 
-    if (error) {
+    if (messaggioErrore) {
       fallite += 1;
       await db.outbox.update(voce.id, {
         tentativi: voce.tentativi + 1,
-        ultimo_errore: error.message,
+        ultimo_errore: messaggioErrore,
       });
       continue;
     }

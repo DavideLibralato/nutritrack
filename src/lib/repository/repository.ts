@@ -9,14 +9,19 @@
 // fabbrica servirebbero le stesse cinque funzioni copiate e incollate 9
 // volte, una per tabella.
 //
-// Ogni scrittura fa due cose insieme: salva nella tabella locale (quello che
-// la UI legge subito, anche offline) e accoda la stessa riga nell'outbox
-// (quello che poi raggiunge Supabase). La UI non deve mai pensare alla
-// sincronizzazione: la ottiene gratis usando queste funzioni.
+// Ogni scrittura fa tre cose: salva nella tabella locale (quello che la UI
+// legge subito, anche offline), accoda la stessa riga nell'outbox, e prova
+// subito a svuotare la coda verso Supabase. Il tentativo di sync non viene
+// mai atteso (niente `await`): se c'è rete la scrittura raggiunge Supabase
+// in pochi istanti, se non c'è rete fallisce in silenzio e resta in coda —
+// in entrambi i casi la UI ha già la sua risposta, dal passo locale.
+// SincronizzaOutbox (mount + evento "online") resta la rete di sicurezza
+// per quando questo tentativo immediato non basta.
 
 import type { Table } from "dexie";
 import type { NomeTabella, RigaBase } from "../db/tipi";
 import { accodaMutazione } from "../sync/outbox";
+import { sincronizzaOutbox } from "../sync/sincronizza";
 
 export function creaRepository<T extends RigaBase>(
   tabella: Table<T, string>,
@@ -44,6 +49,7 @@ export function creaRepository<T extends RigaBase>(
 
     await tabella.put(riga);
     await accodaMutazione(nomeTabella, riga);
+    sincronizzaOutbox().catch(() => {});
 
     return riga;
   }
@@ -62,6 +68,7 @@ export function creaRepository<T extends RigaBase>(
 
     await tabella.put(riga);
     await accodaMutazione(nomeTabella, riga);
+    sincronizzaOutbox().catch(() => {});
 
     return riga;
   }
