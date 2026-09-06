@@ -5,6 +5,46 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-06 — Pagina Oggi (fase 2, sola lettura da Dexie)
+
+- Pagina Oggi a tre fasce come da `mockup1oggi.png`: in alto (fisso) data
+  navigabile + "Rimangono X kcal" + anello calorie e barre macro affiancati;
+  al centro (scorrevole) la lista di tutti i pasti con kcal e alimenti; in
+  basso (fisso) il pulsante "+ Aggiungi". Nessun inserimento ancora: i dati
+  si leggono da Dexie e basta. Il pulsante "+ Aggiungi" è per ora inerte
+- **Route group `(app)`**: `/` e `/profilo` spostati sotto un layout comune
+  con la tab bar (Oggi / Statistiche / Profilo), URL invariati. Prima `/`
+  non esisteva (nessun `page.tsx` alla radice) ed era una rotta rotta. Stub
+  `/statistiche` ("Prossimamente") solo per non lasciare il link morto
+- **Set predefinito dei 5 pasti**: non era implementato da nessuna parte
+  (la tabella `pasti` restava vuota per ogni utente). Aggiunto
+  `garantisciPastiPredefiniti()` in `src/lib/repository/pasti.ts`, chiamato
+  al primo caricamento di Oggi se l'utente non ha pasti — scrive in Dexie +
+  outbox come ogni altra scrittura, idempotente
+- **Obiettivo storico sui giorni passati**: `obiettivoValidoPer()` usa la
+  riga di `obiettivi` in vigore *a quella data*, non quella corrente — un
+  giorno passato prima del primo obiettivo non mostra un target inventato
+- **Colore secondo la sezione 7**: anello verde entro l'obiettivo, arancio
+  se superato; barre macro neutre sotto il target, verde a target raggiunto,
+  arancio se superato. Scritto nel codice con commento che cita la regola
+- **Test permanenti** (Vitest, sezione 10.5): `totaliDiario.test.ts`
+  (ricalcolo dei totali dalle voci, giorni vuoti, voci cancellate, scelta
+  dell'obiettivo storico) e `dataGiorno.test.ts` (navigazione fra giorni a
+  cavallo di mese/anno, 29 febbraio, ora legale). 20 test totali verdi
+- **Bug trovato in corso d'opera:** il primo tentativo apriva il calendario
+  con un `<input type="date">` invisibile sovrapposto al testo della data.
+  Ma di un input date nativo solo una porzione della superficie apre il
+  picker (il resto mette a fuoco i segmenti giorno/mese/anno), quindi la
+  data era cliccabile solo in parte. Corretto: il titolo-data è un
+  `<button>` che chiama `showPicker()` sull'input (tenuto `sr-only`), con
+  fallback su `focus()`. Ora funziona da tutta la scritta, anche da tastiera
+
+## 2026-09-06 — Aggiornato lo stato attuale in PUNTO_DI_PARTENZA.md
+
+- Sezione "Stato attuale" riscritta: ripulitura del repo, punto 0
+  (local-first) e punto 1 (auth/profilo/fabbisogno) segnati come fatti.
+  Prossimi passi aggiornati alla fase 2 (pagina Oggi + inserimento manuale)
+
 ## 2026-09-06 — Profilo, fabbisogno e obiettivo: sync collegata, bug di schema corretti
 
 - Aggiunta la sezione Obiettivo alla pagina Profilo: calcolo del fabbisogno

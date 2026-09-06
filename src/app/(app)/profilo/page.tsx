@@ -281,14 +281,14 @@ export default function ProfiloPage() {
 
   if (userId === undefined || profilo === undefined) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-4">
+      <main className="flex min-h-full items-center justify-center p-4">
         <p className="text-sm text-muted">Caricamento...</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-10 p-4">
+    <main className="flex min-h-full flex-col items-center gap-10 p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6 pt-8">
         <h1 className="text-2xl font-display font-bold">Profilo</h1>
 
