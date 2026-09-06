@@ -765,6 +765,20 @@ negati a tutti: altrimenti "condiviso" significa che chiunque può riscrivere i
 valori nutrizionali di chiunque. La sezione 9.6 dice "per costruzione, non per
 attenzione" — vale anche qui.
 
+### 10.9 Le email di autenticazione sono in inglese
+
+Sul piano gratuito, Supabase manda le email di auth (reset password, conferma
+registrazione) con un servizio interno "usa e getta", pensato solo per basso
+volume — e per questo **non permette di personalizzarne testo e oggetto**. Per
+tradurle in italiano serve collegare un proprio server SMTP.
+
+Non è un costo: **Resend** (3.000 email/mese gratis) o **Brevo** (300/giorno
+gratis) bastano ampiamente per i volumi di questa app. È però una cosa in più
+da configurare (un account esterno, una chiave in Supabase → Authentication →
+Emails → SMTP Settings), quindi rimandata: **le email restano in inglese per
+ora**, il reset password funziona comunque (link e flusso sono indipendenti
+dalla lingua). Da rivedere quando l'app si apre agli amici.
+
 ---
 
 ## 11. Stato attuale

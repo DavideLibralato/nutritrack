@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
+import { emailValida } from "@/lib/validazione";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -31,6 +32,23 @@ function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrore(null);
+
+    // Validazione in italiano: senza noValidate sul form, il browser
+    // mostrerebbe qui i suoi messaggi nativi, che sono nella lingua del
+    // browser (spesso inglese) e non in quella dell'app.
+    if (!email.trim()) {
+      setErrore("Inserisci la tua email.");
+      return;
+    }
+    if (!emailValida(email)) {
+      setErrore("Inserisci un indirizzo email valido.");
+      return;
+    }
+    if (!password) {
+      setErrore("Inserisci la tua password.");
+      return;
+    }
+
     setCaricamento(true);
 
     const supabase = createClient();
@@ -57,7 +75,7 @@ function LoginForm() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+      <form noValidate onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <h1 className="text-2xl font-display font-bold">Accedi</h1>
 
         <div>
@@ -71,7 +89,6 @@ function LoginForm() {
             placeholder="tuonome@esempio.it"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
             className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
           />
         </div>
@@ -87,7 +104,6 @@ function LoginForm() {
             placeholder="La tua password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
             className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
           />
         </div>
@@ -102,10 +118,15 @@ function LoginForm() {
           {caricamento ? "Attendere..." : "Accedi"}
         </button>
 
-        <p className="text-sm text-muted">
-          Non hai un account?{" "}
-          <a href="/register" className={`underline rounded text-foreground ${CLASSE_FOCUS}`}>
-            Registrati
+        <p className="text-sm text-muted flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <span>
+            Non hai un account?{" "}
+            <a href="/register" className={`underline rounded text-foreground ${CLASSE_FOCUS}`}>
+              Registrati
+            </a>
+          </span>
+          <a href="/password-dimenticata" className={`underline rounded ${CLASSE_FOCUS}`}>
+            Password dimenticata?
           </a>
         </p>
       </form>

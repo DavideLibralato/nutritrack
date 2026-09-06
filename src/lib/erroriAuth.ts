@@ -13,6 +13,8 @@ const MAPPA_ERRORI: Record<string, string> = {
   "for security purposes": "Per sicurezza, riprova tra qualche istante.",
   "network": "Errore di connessione. Controlla la tua connessione e riprova.",
   "failed to fetch": "Errore di connessione. Controlla la tua connessione e riprova.",
+  "flow state": "Apri il link direttamente dall'email, con lo stesso browser con cui hai richiesto il reset della password.",
+  "code verifier": "Apri il link direttamente dall'email, con lo stesso browser con cui hai richiesto il reset della password.",
 };
 
 export function traduciErroreAuth(messaggio: string | undefined | null): string {

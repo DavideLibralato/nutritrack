@@ -4,20 +4,33 @@
 // Action: niente onSubmit/fetch manuale, il form chiama registrati() da
 // solo. `stato` è quello che l'ultima chiamata ha restituito, `inCorso`
 // diventa true mentre la Server Action sta girando sul server.
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { registrati, type StatoRegistrazione } from "@/lib/actions/auth";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
-const STATO_INIZIALE: StatoRegistrazione = { errore: null, messaggio: null };
+const STATO_INIZIALE: StatoRegistrazione = {
+  errore: null,
+  messaggio: null,
+  valori: { nome: "", email: "" },
+};
 
 export default function RegisterPage() {
   const [stato, azioneForm, inCorso] = useActionState(registrati, STATO_INIZIALE);
 
+  // Contatore di tentativi: cambia ogni volta che la Server Action
+  // risponde. Usato come key sul campo codice invito per farlo rimontare
+  // vuoto a ogni tentativo, indipendentemente da come React/Next
+  // ridisegnano il resto della pagina dopo l'azione.
+  const [tentativo, setTentativo] = useState(0);
+  useEffect(() => {
+    setTentativo((n) => n + 1);
+  }, [stato]);
+
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
-      <form action={azioneForm} className="w-full max-w-sm space-y-4">
+      <form noValidate action={azioneForm} className="w-full max-w-sm space-y-4">
         <h1 className="text-2xl font-display font-bold">Registrati</h1>
         <p className="text-sm text-muted">
           Beta chiusa: serve il codice di invito che ti hanno dato.
@@ -33,7 +46,11 @@ export default function RegisterPage() {
             type="text"
             autoComplete="name"
             placeholder="Come ti chiami"
-            required
+            // defaultValue, non value: il campo resta scrivibile liberamente,
+            // e dopo un errore si ripopola con quello che avevi già scritto
+            // (torna dalla Server Action in stato.valori) invece di
+            // svuotarsi.
+            defaultValue={stato.valori.nome}
             className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
           />
         </div>
@@ -48,7 +65,7 @@ export default function RegisterPage() {
             type="email"
             autoComplete="email"
             placeholder="tuonome@esempio.it"
-            required
+            defaultValue={stato.valori.email}
             className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
           />
         </div>
@@ -63,8 +80,6 @@ export default function RegisterPage() {
             type="password"
             autoComplete="new-password"
             placeholder="Almeno 6 caratteri"
-            required
-            minLength={6}
             className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
           />
         </div>
@@ -74,12 +89,14 @@ export default function RegisterPage() {
             Codice di invito
           </label>
           <input
+            key={tentativo}
             id="register-codice-invito"
             name="codiceInvito"
             type="text"
             autoComplete="off"
             placeholder="Il codice che ti hanno dato"
-            required
+            // key={tentativo}: questo campo si svuota sempre dopo un
+            // tentativo, riuscito o no — è l'unico che va digitato di nuovo.
             className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
           />
         </div>
