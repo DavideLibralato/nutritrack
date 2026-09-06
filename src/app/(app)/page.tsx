@@ -14,11 +14,13 @@
 //   - al centro, scorrevole: la lista dei pasti
 //   - in basso, fisso: il pulsante "+ Aggiungi"
 //
-// Nessun inserimento vero qui: i dati si leggono da Dexie e basta. Il
-// pulsante "+ Aggiungi" aprirà la pagina di inserimento (mockup 2) in un
-// pezzo successivo.
+// Il pulsante "+ Aggiungi" apre /aggiungi passando il giorno mostrato, così
+// dopo il salvataggio si torna all'Oggi del giorno giusto (anche un giorno
+// passato). Per leggere ?giorno= serve useSearchParams, che va avvolto in
+// <Suspense> (come nella pagina di login).
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import {
@@ -34,6 +36,7 @@ import {
   giornoSuccessivo,
   formattaData,
   eOggi,
+  eFuturo,
 } from "@/lib/dataGiorno";
 import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
@@ -42,11 +45,31 @@ const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export default function OggiPage() {
-  const userId = useUtenteId();
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-full items-center justify-center p-4">
+          <p className="text-sm text-muted">Caricamento...</p>
+        </main>
+      }
+    >
+      <OggiContenuto />
+    </Suspense>
+  );
+}
 
-  // Il giorno visualizzato, "YYYY-MM-DD". Parte da oggi (ora locale) ed è
-  // navigabile con le frecce e il calendario. Il futuro non è raggiungibile.
-  const [giorno, setGiorno] = useState(() => oggiLocale());
+function OggiContenuto() {
+  const userId = useUtenteId();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Il giorno visualizzato, "YYYY-MM-DD". Parte da oggi, oppure dal ?giorno=
+  // con cui /aggiungi ci ha rimandato qui dopo un salvataggio. Un giorno
+  // futuro viene ignorato: la navigazione si ferma a oggi.
+  const [giorno, setGiorno] = useState(() => {
+    const param = searchParams.get("giorno");
+    return param && !eFuturo(param) ? param : oggiLocale();
+  });
 
   // Il calendario si apre da codice con showPicker() sull'input date, non
   // sovrapponendo un input invisibile al testo: quel trucco lasciava
@@ -253,11 +276,12 @@ export default function OggiPage() {
       </ul>
 
       {/* FASCIA BASSA — fissa. Il pulsante non deve mai finire sotto la
-          piega: è l'azione per cui esiste l'app (sezione 3). L'apertura
-          della pagina di inserimento (mockup 2) è il pezzo successivo. */}
+          piega: è l'azione per cui esiste l'app (sezione 3). Apre /aggiungi
+          per il giorno mostrato. */}
       <div className="shrink-0 border-t border-border px-4 py-3">
         <button
           type="button"
+          onClick={() => router.push(`/aggiungi?giorno=${giorno}`)}
           className={`mx-auto block rounded-full bg-accent px-10 py-3 font-medium text-background ${CLASSE_FOCUS}`}
         >
           + Aggiungi

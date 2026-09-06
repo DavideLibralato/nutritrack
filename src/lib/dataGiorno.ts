@@ -57,3 +57,11 @@ export function eOggi(iso: string, adesso: Date = new Date()): boolean {
 export function eFuturo(iso: string, adesso: Date = new Date()): boolean {
   return iso > oggiLocale(adesso);
 }
+
+// "HH:mm" dell'orologio locale. Serve alla proposta del pasto in base
+// all'ora quando si inserisce nel giorno corrente (sezione "I pasti").
+export function oraCorrente(d: Date = new Date()): string {
+  const ore = String(d.getHours()).padStart(2, "0");
+  const minuti = String(d.getMinutes()).padStart(2, "0");
+  return `${ore}:${minuti}`;
+}

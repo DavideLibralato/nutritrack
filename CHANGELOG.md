@@ -5,6 +5,41 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-06 — Inserimento manuale (fase 2): dalla ricerca al diario
+
+- Nuova pagina `/aggiungi`, a tutto schermo e fuori dal route group `(app)`
+  (niente tab bar): si apre dal pulsante "+ Aggiungi" di Oggi passando
+  `?giorno=`, e salvare fa `router.replace('/?giorno=…')` — si torna
+  all'Oggi del giorno giusto, anche un giorno passato
+- Titolo = pasto proposto, come `<select>` (è già "l'elenco dei pasti della
+  giornata"): sull'oggi in base all'ora (`pastoPerOrario`, con la Cena che
+  copre la fascia dopo mezzanotte), sui giorni passati il primo pasto ancora
+  vuoto (`primoPastoVuoto`)
+- Ricerca nel catalogo locale (alimenti in Dexie: privati dell'utente +
+  condivisi con `user_id` null), per sottostringa e indifferente ad
+  accenti/maiuscole. I livelli 2 (Supabase) e 3 (Open Food Facts) sono
+  fase 4
+- Creazione a mano quando la ricerca non basta (`CreaAlimentoForm`): nome +
+  kcal/proteine/carboidrati/grassi per 100 g + porzione predefinita,
+  salvata con `fonte "manuale"` e `verificato false`
+- Sheet quantità unico e riusabile (`SheetQuantita`, sezione 5): grammi
+  precompilati con la porzione di default e già selezionati, tastierino
+  numerico, anteprima kcal/macro. Conferma → riga in `voci_diario` con i
+  valori nutrizionali **copiati** (mai un riferimento che possa cambiare)
+- Oggi ora legge `?giorno=` all'avvio: è servito avvolgere il contenuto in
+  `<Suspense>` per `useSearchParams` (come nel login), il che rende il
+  contenuto solo lato client ed elimina i disallineamenti di data
+  server/browser
+- Test permanenti (sezione 10.5): `propostaPasto.test.ts` (proposta del
+  pasto in base all'ora, incluso lo scavalco della mezzanotte — punto 4) e
+  `alimenti.test.ts` (ricerca senza accenti, per sottostringa, ordinata).
+  33 test totali
+- **Rimandato:** lo spostamento automatico della *data* per la regola del
+  giorno logico (inserimento dopo mezzanotte → giorno prima): tocca anche il
+  giorno di default di Oggi, si fa insieme. `consumato_alle` è precompilato
+  con l'ora attuale solo se si registra oggi, altrimenti `null` (l'editor
+  nello sheet è un pezzo successivo)
+
 ## 2026-09-06 — Pagina Oggi (fase 2, sola lettura da Dexie)
 
 - Pagina Oggi a tre fasce come da `mockup1oggi.png`: in alto (fisso) data
