@@ -722,6 +722,18 @@ Sono quattro funzioni, si testano con una manciata di casi. È il punto in cui u
 non fa rumore: non crasha niente, i numeri sono solo un po' sbagliati — e te ne
 accorgi mesi dopo.
 
+**Aggiornamento (6 settembre 2026):** Vitest + Testing Library + jsdom sono
+configurati nel progetto — non solo per queste quattro funzioni, ma per ogni
+bug di questa famiglia. Il primo caso reale non era nella lista sopra ma
+identico nello spirito: una race condition tra `useUtenteId()` e
+`useLiveQuery` nella pagina Profilo faceva sparire i dati precaricati al
+refresh, perché una risposta "non so ancora" (`undefined`) veniva confusa con
+"ho controllato, non c'è nulla" (`null`/`[]`). Corretto, e tenuto come test
+permanente. Regola pratica: un bug di logica sottile (calcoli, race
+condition, regole come il giorno logico) diventa un test che resta nel
+progetto; uno script di verifica manuale contro Supabase reale resta
+temporaneo come prima.
+
 ### 10.6 Tre trappole del local-first
 
 Conseguenze della sezione 9.2 che non erano state tirate fino in fondo.
@@ -819,38 +831,59 @@ utenti il rischio è basso, e la regola "niente servizi a pagamento senza
 avvisare prima" vale anche qui. Da riconsiderare solo se l'app si aprisse
 al pubblico.
 
-### Repo — da ripulire
+### Repo — ripulito
 
-In `~/Progetti/nutritrack` c'è ancora il codice della v0 (dashboard, AI,
-barcode, chiamate dirette a Supabase). Deciso di **ripulire il repo esistente**,
-mantenendo cartella, history git e configurazione Vercel, invece di crearne uno
-nuovo.
+Il repo esistente (`~/Progetti/nutritrack`) è stato ripulito invece di crearne
+uno nuovo: history git e configurazione Vercel mantenute. Il vecchio codice
+della v0 resta consultabile sul tag `v0-vecchia-app`. AI e barcode tolti dalle
+dipendenze (`@google/genai`, `html5-qrcode`); aggiunte `dexie` e
+`dexie-react-hooks`.
 
-Da fare, nell'ordine:
+### Punto 0 — livello dati local-first: fatto e verificato end-to-end
 
-1. commit di salvataggio dello stato attuale + tag `v0-vecchia-app`, così il
-   vecchio codice resta consultabile senza stare in mezzo ai piedi
-2. rimozione di `src/app/dashboard`, `src/components`, `src/lib/actions`,
-   `src/lib/ai`, `src/lib/barcode`, `src/lib/ocr`, `src/app/page.tsx`,
-   `src/app/login/page.tsx`, `src/app/register/page.tsx` e gli SVG di esempio
-   in `public/`
-3. `npm uninstall @google/genai html5-qrcode` (AI e barcode sono backlog),
-   `npm install dexie dexie-react-hooks`
+Schema Dexie (le 9 tabelle, `src/lib/db/tipi.ts` + `database.ts`), livello
+repository (`src/lib/repository/`) e coda outbox (`src/lib/sync/`) scritti e
+poi collegati alla sincronizzazione reale verso Supabase.
 
-Si tiene: `src/middleware.ts`, `src/lib/supabase/`, `src/lib/erroriAuth.ts` (i
-messaggi di errore auth in italiano), `src/app/layout.tsx`,
-`public/manifest.json`, `sw.js` e le icone. `next.config.ts` ha già l'header
-anti-cache sul service worker del punto 10.7.
+Due bug reali trovati testando contro il database vero (non solo a
+compilazione), entrambi corretti:
 
-Nessun pacchetto per gli uuid: `crypto.randomUUID()` è nativo nel browser.
+- **La sync partiva solo all'avvio dell'app e sull'evento `online`**, mai dopo
+  una scrittura fatta a connessione già presente — quindi salvare un dato non
+  lo mandava mai su Supabase finché non si ricaricava la pagina. Corretto in
+  `repository.ts`: `crea` e `aggiorna` (ed `elimina`, che richiama `aggiorna`)
+  ora chiamano `sincronizzaOutbox()` subito dopo, senza `await` (la UI ha già
+  risposto dal passo locale, il tentativo di rete va in background). Un
+  fallimento di rete durante la sync è ora gestito con `try/catch`: la voce
+  resta in coda con `tentativi`/`ultimo_errore`, non blocca le altre
+- **I tipi TypeScript di `src/lib/db/tipi.ts` non corrispondevano esattamente
+  alle colonne reali su Supabase** su più tabelle: `obiettivi.proteine/
+  carboidrati/grassi` dovevano essere `proteine_g/carboidrati_g/grassi_g`
+  (causa di un salvataggio che falliva in silenzio: "Salvato." a schermo ma
+  niente su Supabase), `profili.livello_attivita` era NOT NULL sul database ma
+  nullable nel tipo, `voci_diario.alimento_nome` doveva essere `nome_alimento`,
+  mancavano `composizioni.alimento_id` e `composizioni_voci.ordine`. Tutto
+  allineato
 
-Nota: subito dopo il punto 2 il progetto non compila, perché `layout.tsx`
-importa `RegistraServiceWorker` che sta in `src/components`. È previsto, si
-risolve ricreandolo con la struttura nuova.
+**Lezione da questo:** un fallimento di sync oggi non arriva mai all'utente —
+la UI conferma dal passo locale, che riesce sempre. Va bene per l'MVP (i dati
+non si perdono, restano in coda), ma prima o poi serve un indicatore
+"sincronizzazione in corso/fallita" visibile, altrimenti un problema come
+questo si scopre solo controllando il database a mano. Non blocca lo sviluppo
+attuale, da tenere presente.
+
+### Punto 1 — auth, profilo, fabbisogno: fatto
+
+Login/registrazione con Supabase Auth (beta a inviti, `CODICE_INVITO` in
+`.env.local`), pagina Profilo con i dati anagrafici e la sezione Obiettivo
+(Mifflin-St Jeor, storico in `obiettivi`, peso in `misurazioni` senza
+duplicati per lo stesso giorno). Corrette tre piccolezze di UX su
+login/registrazione: recupero password aggiunto, il form di registrazione non
+si svuota più su codice di invito sbagliato, messaggi di validazione in
+italiano. Email di Supabase (reset password) restano in inglese per ora
+(punto 10.9).
 
 ### Prossimi passi
 
-1. Ripulitura del repo (sopra)
-2. Livello dati local-first: Dexie + repository + outbox (punto 0 della
-   sezione 6)
-3. Auth, profilo e calcolo del fabbisogno (punto 1 della sezione 6)
+Fase 2 (sezione 6): pagina Oggi + inserimento manuale — la prima schermata da
+usare sul serio per una settimana.
