@@ -56,6 +56,9 @@ non dice il contrario.
   romperebbe la rotta. Per tutto il resto (componenti, funzioni, moduli in
   `/lib`) il nome del file deve dire cosa fa
 - Commit piccoli e frequenti, messaggi in italiano
+- **Non committare mai di tua iniziativa.** Finisci il pezzo di lavoro
+  richiesto, riepiloga cosa hai fatto e come l'hai verificato, poi fermati
+  e aspetta. Committa solo quando scrivo esplicitamente "committa"
 
 ## Regole non negoziabili
 

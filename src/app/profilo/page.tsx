@@ -10,8 +10,10 @@
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
-import { repositoryProfili } from "@/lib/repository";
-import type { LivelloAttivita, Sesso } from "@/lib/db/tipi";
+import { repositoryProfili, repositoryObiettivi, repositoryMisurazioni } from "@/lib/repository";
+import { ultimaMisurazione, registraPesoSenzaDuplicati } from "@/lib/repository/misurazioni";
+import type { LivelloAttivita, Sesso, TipoObiettivo } from "@/lib/db/tipi";
+import { calcolaEta, calcolaFabbisogno } from "@/lib/fabbisogno";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -30,6 +32,12 @@ const OPZIONI_ATTIVITA: { valore: LivelloAttivita; etichetta: string }[] = [
   { valore: "molto_attivo", etichetta: "Molto attivo (lavoro fisico o due allenamenti al giorno)" },
 ];
 
+const OPZIONI_OBIETTIVO: { valore: TipoObiettivo; etichetta: string }[] = [
+  { valore: "dimagrire", etichetta: "Dimagrire" },
+  { valore: "mantenere", etichetta: "Mantenere" },
+  { valore: "massa", etichetta: "Massa" },
+];
+
 export default function ProfiloPage() {
   const userId = useUtenteId();
 
@@ -38,6 +46,29 @@ export default function ProfiloPage() {
     const righe = await repositoryProfili.ottieniTutti(userId);
     return righe[0] ?? null;
   }, [userId]);
+
+  // obiettivi è uno storico (sezione 4): ogni riga è un obiettivo diverso nel
+  // tempo, non c'è una riga sola da aggiornare. "Quello attuale" è il più
+  // recente per updated_at, non per valido_dal — due righe create lo stesso
+  // giorno avrebbero lo stesso valido_dal, ma updated_at le distingue sempre.
+  const obiettivi = useLiveQuery(async () => {
+    if (!userId) return [];
+    return repositoryObiettivi.ottieniTutti(userId);
+  }, [userId]);
+
+  const obiettivoCorrente =
+    obiettivi === undefined
+      ? undefined
+      : [...obiettivi].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null;
+
+  const misurazioniPeso = useLiveQuery(async () => {
+    if (!userId) return [];
+    const righe = await repositoryMisurazioni.ottieniTutti(userId);
+    return righe.filter((riga) => riga.tipo === "peso");
+  }, [userId]);
+
+  const ultimaMisurazionePeso =
+    misurazioniPeso === undefined ? undefined : ultimaMisurazione(misurazioniPeso);
 
   const [inizializzato, setInizializzato] = useState(false);
   const [sesso, setSesso] = useState<Sesso>("non_indicato");
@@ -63,6 +94,139 @@ export default function ProfiloPage() {
 
     setInizializzato(true);
   }, [profilo, inizializzato]);
+
+  const [inizializzatoObiettivo, setInizializzatoObiettivo] = useState(false);
+  const [tipoObiettivo, setTipoObiettivo] = useState<TipoObiettivo>("mantenere");
+  const [pesoAttuale, setPesoAttuale] = useState("");
+  const [pesoObiettivo, setPesoObiettivo] = useState("");
+  const [kcal, setKcal] = useState("");
+  const [proteine, setProteine] = useState("");
+  const [carboidrati, setCarboidrati] = useState("");
+  const [grassi, setGrassi] = useState("");
+  const [erroreCalcolo, setErroreCalcolo] = useState<string | null>(null);
+  const [salvataggioObiettivo, setSalvataggioObiettivo] = useState<
+    "inattivo" | "in-corso" | "salvato" | "errore"
+  >("inattivo");
+
+  // Stesso principio della sezione anagrafica: popola una sola volta con
+  // l'obiettivo/peso esistenti, poi lascia fare all'utente. Il calcolo del
+  // fabbisogno non deve mai sovrascrivere questi campi da solo — solo il
+  // pulsante "Calcola proposta" lo fa, ed è un'azione esplicita.
+  useEffect(() => {
+    if (obiettivoCorrente === undefined || ultimaMisurazionePeso === undefined || inizializzatoObiettivo) {
+      return;
+    }
+
+    if (obiettivoCorrente) {
+      setTipoObiettivo(obiettivoCorrente.tipo);
+      setKcal(String(obiettivoCorrente.kcal));
+      setProteine(String(obiettivoCorrente.proteine));
+      setCarboidrati(String(obiettivoCorrente.carboidrati));
+      setGrassi(String(obiettivoCorrente.grassi));
+      setPesoObiettivo(
+        obiettivoCorrente.peso_obiettivo != null ? String(obiettivoCorrente.peso_obiettivo) : ""
+      );
+    }
+
+    if (ultimaMisurazionePeso) {
+      setPesoAttuale(String(ultimaMisurazionePeso.valore));
+    }
+
+    setInizializzatoObiettivo(true);
+  }, [obiettivoCorrente, ultimaMisurazionePeso, inizializzatoObiettivo]);
+
+  // Riempie i quattro campi con una proposta calcolata: non salva niente.
+  // "Sempre e solo una proposta" (sezione 3) — chi la vuole diversa la
+  // corregge prima di premere "Salva obiettivo".
+  function calcolaProposta() {
+    setErroreCalcolo(null);
+
+    if (!profilo) {
+      setErroreCalcolo("Completa prima i dati anagrafici qui sopra.");
+      return;
+    }
+    if (profilo.sesso === "non_indicato") {
+      setErroreCalcolo(
+        "Il calcolo automatico richiede di indicare il sesso, nella sezione qui sopra."
+      );
+      return;
+    }
+    if (!profilo.data_nascita || !profilo.altezza_cm || !profilo.livello_attivita) {
+      setErroreCalcolo(
+        "Completa data di nascita, altezza e livello di attività qui sopra per calcolare una proposta."
+      );
+      return;
+    }
+
+    const peso = Number(pesoAttuale);
+    if (!pesoAttuale || Number.isNaN(peso) || peso <= 0) {
+      setErroreCalcolo("Inserisci il tuo peso attuale per calcolare una proposta.");
+      return;
+    }
+
+    const proposta = calcolaFabbisogno({
+      sesso: profilo.sesso,
+      eta: calcolaEta(profilo.data_nascita),
+      altezzaCm: profilo.altezza_cm,
+      pesoKg: peso,
+      livelloAttivita: profilo.livello_attivita,
+      tipoObiettivo,
+    });
+
+    setKcal(String(proposta.kcal));
+    setProteine(String(proposta.proteine));
+    setCarboidrati(String(proposta.carboidrati));
+    setGrassi(String(proposta.grassi));
+  }
+
+  async function handleSubmitObiettivo(e: React.FormEvent) {
+    e.preventDefault();
+    if (!userId) return;
+
+    const kcalNum = Number(kcal);
+    const proteineNum = Number(proteine);
+    const carboidratiNum = Number(carboidrati);
+    const grassiNum = Number(grassi);
+
+    if (
+      !kcal ||
+      !proteine ||
+      !carboidrati ||
+      !grassi ||
+      [kcalNum, proteineNum, carboidratiNum, grassiNum].some((n) => Number.isNaN(n) || n < 0)
+    ) {
+      setSalvataggioObiettivo("errore");
+      return;
+    }
+
+    setSalvataggioObiettivo("in-corso");
+
+    try {
+      // Il peso entra nello storico misurazioni, ma senza duplicare (vedi
+      // src/lib/repository/misurazioni.ts).
+      const pesoNum = Number(pesoAttuale);
+      if (pesoAttuale && !Number.isNaN(pesoNum) && pesoNum > 0) {
+        await registraPesoSenzaDuplicati(userId, pesoNum, misurazioniPeso ?? []);
+      }
+
+      // obiettivi è uno storico (sezione 4): si inserisce sempre una riga
+      // nuova, non si sovrascrive mai quella corrente.
+      await repositoryObiettivi.crea({
+        user_id: userId,
+        valido_dal: new Date().toISOString().slice(0, 10),
+        tipo: tipoObiettivo,
+        kcal: kcalNum,
+        proteine: proteineNum,
+        carboidrati: carboidratiNum,
+        grassi: grassiNum,
+        peso_obiettivo: pesoObiettivo ? Number(pesoObiettivo) : null,
+      });
+
+      setSalvataggioObiettivo("salvato");
+    } catch {
+      setSalvataggioObiettivo("errore");
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,8 +262,8 @@ export default function ProfiloPage() {
   }
 
   return (
-    <main className="flex min-h-screen justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6 py-8">
+    <main className="flex min-h-screen flex-col items-center gap-10 p-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6 pt-8">
         <h1 className="text-2xl font-display font-bold">Profilo</h1>
 
         <div>
@@ -187,6 +351,141 @@ export default function ProfiloPage() {
           <p className="text-sm text-warning">Salvataggio non riuscito. Riprova.</p>
         )}
       </form>
+
+      <form
+        onSubmit={handleSubmitObiettivo}
+        className="w-full max-w-sm space-y-6 border-t border-border pt-8 pb-8"
+      >
+        <h2 className="text-2xl font-display font-bold">Obiettivo</h2>
+
+        <div>
+          <span className="block text-sm font-medium mb-1">Obiettivo</span>
+          <div className="flex gap-2">
+            {OPZIONI_OBIETTIVO.map((opzione) => (
+              <button
+                key={opzione.valore}
+                type="button"
+                onClick={() => setTipoObiettivo(opzione.valore)}
+                aria-pressed={tipoObiettivo === opzione.valore}
+                className={`flex-1 rounded-lg border p-2 text-sm ${CLASSE_FOCUS} ${
+                  tipoObiettivo === opzione.valore
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border text-foreground"
+                }`}
+              >
+                {opzione.etichetta}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="profilo-peso-attuale" className="block text-sm font-medium mb-1">
+            Peso attuale (kg)
+          </label>
+          <input
+            id="profilo-peso-attuale"
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min={0}
+            value={pesoAttuale}
+            onChange={(e) => setPesoAttuale(e.target.value)}
+            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+          />
+          <p className="text-xs text-muted mt-1">
+            Usato solo per calcolare la proposta qui sotto; se lo cambi, alla
+            prossima registrazione aggiorna il tuo storico peso.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={calcolaProposta}
+          className={`w-full rounded-lg border border-accent p-2 text-accent ${CLASSE_FOCUS}`}
+        >
+          Calcola proposta
+        </button>
+
+        {erroreCalcolo && <p className="text-sm text-warning">{erroreCalcolo}</p>}
+
+        <div>
+          <label htmlFor="profilo-peso-obiettivo" className="block text-sm font-medium mb-1">
+            Peso obiettivo (kg, facoltativo)
+          </label>
+          <input
+            id="profilo-peso-obiettivo"
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min={0}
+            value={pesoObiettivo}
+            onChange={(e) => setPesoObiettivo(e.target.value)}
+            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+          />
+        </div>
+
+        <div>
+          <span className="block text-sm font-medium mb-2 uppercase tracking-wide text-muted text-xs">
+            Target giornalieri
+          </span>
+          <div className="space-y-3">
+            <CampoTarget id="profilo-kcal" etichetta="Calorie" valore={kcal} onChange={setKcal} />
+            <CampoTarget
+              id="profilo-proteine"
+              etichetta="Proteine (g)"
+              valore={proteine}
+              onChange={setProteine}
+            />
+            <CampoTarget
+              id="profilo-carboidrati"
+              etichetta="Carboidrati (g)"
+              valore={carboidrati}
+              onChange={setCarboidrati}
+            />
+            <CampoTarget id="profilo-grassi" etichetta="Grassi (g)" valore={grassi} onChange={setGrassi} />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={salvataggioObiettivo === "in-corso"}
+          className={`w-full rounded-lg bg-accent p-2 text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+        >
+          {salvataggioObiettivo === "in-corso" ? "Salvataggio..." : "Salva obiettivo"}
+        </button>
+
+        {salvataggioObiettivo === "salvato" && <p className="text-sm text-accent">Salvato.</p>}
+        {salvataggioObiettivo === "errore" && (
+          <p className="text-sm text-warning">
+            Salvataggio non riuscito: controlla che calorie e macro siano numeri validi.
+          </p>
+        )}
+      </form>
     </main>
+  );
+}
+
+function CampoTarget(props: {
+  id: string;
+  etichetta: string;
+  valore: string;
+  onChange: (valore: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <label htmlFor={props.id} className="text-sm">
+        {props.etichetta}
+      </label>
+      <input
+        id={props.id}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={props.valore}
+        onChange={(e) => props.onChange(e.target.value)}
+        className={`w-28 rounded-lg border border-border p-2 text-right ${CLASSE_FOCUS}`}
+      />
+    </div>
   );
 }
