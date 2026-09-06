@@ -7,7 +7,7 @@
 // useEffect che rilegge a mano dopo ogni salvataggio, come si farebbe con
 // una fetch normale.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import { repositoryProfili, repositoryObiettivi, repositoryMisurazioni } from "@/lib/repository";
@@ -41,8 +41,15 @@ const OPZIONI_OBIETTIVO: { valore: TipoObiettivo; etichetta: string }[] = [
 export default function ProfiloPage() {
   const userId = useUtenteId();
 
+  // Attenzione al valore restituito quando userId non c'è ancora: deve
+  // essere `undefined` (= "non so ancora"), mai `null`/`[]` (= "so che non
+  // c'è niente"). Al primo render, subito dopo un F5, userId è sempre
+  // undefined per un istante (useUtenteId legge la sessione in modo
+  // asincrono) — se qui rispondessimo "niente", gli effetti qui sotto
+  // segnerebbero il form come già inizializzato prima ancora di aver letto
+  // i dati veri da Dexie, e i campi resterebbero vuoti per sempre.
   const profilo = useLiveQuery(async () => {
-    if (!userId) return null;
+    if (!userId) return undefined;
     const righe = await repositoryProfili.ottieniTutti(userId);
     return righe[0] ?? null;
   }, [userId]);
@@ -52,7 +59,7 @@ export default function ProfiloPage() {
   // recente per updated_at, non per valido_dal — due righe create lo stesso
   // giorno avrebbero lo stesso valido_dal, ma updated_at le distingue sempre.
   const obiettivi = useLiveQuery(async () => {
-    if (!userId) return [];
+    if (!userId) return undefined;
     return repositoryObiettivi.ottieniTutti(userId);
   }, [userId]);
 
@@ -62,7 +69,7 @@ export default function ProfiloPage() {
       : [...obiettivi].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null;
 
   const misurazioniPeso = useLiveQuery(async () => {
-    if (!userId) return [];
+    if (!userId) return undefined;
     const righe = await repositoryMisurazioni.ottieniTutti(userId);
     return righe.filter((riga) => riga.tipo === "peso");
   }, [userId]);
@@ -83,8 +90,14 @@ export default function ProfiloPage() {
   // Popola il form una sola volta, quando il profilo esistente (se c'è)
   // arriva da Dexie. Dopo, i campi seguono solo quello che digita l'utente:
   // non vogliamo che un futuro ri-render sovrascriva a metà digitazione.
-  useEffect(() => {
-    if (profilo === undefined || inizializzato) return;
+  //
+  // Aggiornato durante il render, non in un useEffect: è il pattern che
+  // React consiglia per "sincronizzare stato in risposta a un cambiamento"
+  // (react.dev, "You Might Not Need an Effect") — un giro di render in meno
+  // rispetto a un effetto equivalente, e nessun problema se `profilo` non
+  // cambia più dopo la prima volta (il flag `inizializzato` blocca tutto).
+  if (!inizializzato && profilo !== undefined) {
+    setInizializzato(true);
 
     if (profilo) {
       setSesso(profilo.sesso);
@@ -92,9 +105,7 @@ export default function ProfiloPage() {
       setAltezzaCm(profilo.altezza_cm != null ? String(profilo.altezza_cm) : "");
       setLivelloAttivita(profilo.livello_attivita ?? "");
     }
-
-    setInizializzato(true);
-  }, [profilo, inizializzato]);
+  }
 
   const [inizializzatoObiettivo, setInizializzatoObiettivo] = useState(false);
   const [tipoObiettivo, setTipoObiettivo] = useState<TipoObiettivo>("mantenere");
@@ -109,14 +120,17 @@ export default function ProfiloPage() {
     "inattivo" | "in-corso" | "salvato" | "errore"
   >("inattivo");
 
-  // Stesso principio della sezione anagrafica: popola una sola volta con
-  // l'obiettivo/peso esistenti, poi lascia fare all'utente. Il calcolo del
-  // fabbisogno non deve mai sovrascrivere questi campi da solo — solo il
-  // pulsante "Calcola proposta" lo fa, ed è un'azione esplicita.
-  useEffect(() => {
-    if (obiettivoCorrente === undefined || ultimaMisurazionePeso === undefined || inizializzatoObiettivo) {
-      return;
-    }
+  // Stesso principio della sezione anagrafica (aggiornato durante il
+  // render, non in un useEffect): popola una sola volta con l'obiettivo/
+  // peso esistenti, poi lascia fare all'utente. Il calcolo del fabbisogno
+  // non deve mai sovrascrivere questi campi da solo — solo il pulsante
+  // "Calcola proposta" lo fa, ed è un'azione esplicita.
+  if (
+    !inizializzatoObiettivo &&
+    obiettivoCorrente !== undefined &&
+    ultimaMisurazionePeso !== undefined
+  ) {
+    setInizializzatoObiettivo(true);
 
     if (obiettivoCorrente) {
       setTipoObiettivo(obiettivoCorrente.tipo);
@@ -132,9 +146,7 @@ export default function ProfiloPage() {
     if (ultimaMisurazionePeso) {
       setPesoAttuale(String(ultimaMisurazionePeso.valore));
     }
-
-    setInizializzatoObiettivo(true);
-  }, [obiettivoCorrente, ultimaMisurazionePeso, inizializzatoObiettivo]);
+  }
 
   // Riempie i quattro campi con una proposta calcolata: non salva niente.
   // "Sempre e solo una proposta" (sezione 3) — chi la vuole diversa la

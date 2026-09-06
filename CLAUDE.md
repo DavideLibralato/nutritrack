@@ -10,6 +10,16 @@ conversazione emergono riferimenti a quello schema o a quelle fasi, sono vecchi.
 Se una decisione cambia, si aggiorna quel documento nello stesso momento. Non
 devono esistere due versioni della stessa scelta.
 
+## Changelog
+
+**`CHANGELOG.md`** è il registro cronologico di cosa è stato fatto, commit per
+commit — diverso da `PUNTO_DI_PARTENZA.md`, che descrive lo stato e le
+decisioni, non la storia. **Dopo ogni commit che faccio su tua richiesta
+esplicita, aggiungo una voce in cima a `CHANGELOG.md`** (ordine
+cronologico inverso, più recente in alto) con: data, una riga su cosa è
+cambiato e perché, ed eventuali bug trovati/corretti o lasciati aperti. Poche
+righe, non un altro riepilogo completo — quello resta nella chat.
+
 ## Chi sono e come aiutarmi
 
 Sono uno sviluppatore RPGLE/AS400, non conosco ancora Next.js/React/TypeScript
@@ -56,6 +66,12 @@ non dice il contrario.
   romperebbe la rotta. Per tutto il resto (componenti, funzioni, moduli in
   `/lib`) il nome del file deve dire cosa fa
 - Commit piccoli e frequenti, messaggi in italiano
+- **Test permanenti solo per bug di logica sottile** (race condition, calcoli,
+  regole come il giorno logico) — quelli che non fanno rumore e si scoprono
+  mesi dopo (sezione 10.5). Scrivi il test, tienilo nel progetto (Vitest +
+  Testing Library, già configurati). Gli script usati per verificare a mano
+  contro Supabase reale (creare un utente, controllare una riga) restano
+  temporanei come sempre: si cancellano dopo l'uso
 - **Non committare mai di tua iniziativa.** Finisci il pezzo di lavoro
   richiesto, riepiloga cosa hai fatto e come l'hai verificato, poi fermati
   e aspetta. Committa solo quando scrivo esplicitamente "committa"

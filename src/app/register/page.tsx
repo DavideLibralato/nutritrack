@@ -4,7 +4,7 @@
 // Action: niente onSubmit/fetch manuale, il form chiama registrati() da
 // solo. `stato` è quello che l'ultima chiamata ha restituito, `inCorso`
 // diventa true mentre la Server Action sta girando sul server.
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { registrati, type StatoRegistrazione } from "@/lib/actions/auth";
 
 const CLASSE_FOCUS =
@@ -23,10 +23,18 @@ export default function RegisterPage() {
   // risponde. Usato come key sul campo codice invito per farlo rimontare
   // vuoto a ogni tentativo, indipendentemente da come React/Next
   // ridisegnano il resto della pagina dopo l'azione.
+  //
+  // Aggiornato durante il render, non in un useEffect: è il pattern che
+  // React stesso consiglia per "un valore che cambia quando cambia
+  // un altro" (react.dev, "You Might Not Need an Effect"). Confrontare
+  // stato con l'ultimo visto e aggiornare subito evita un giro di render
+  // in più rispetto a un useEffect equivalente.
+  const [statoVisto, setStatoVisto] = useState(stato);
   const [tentativo, setTentativo] = useState(0);
-  useEffect(() => {
+  if (stato !== statoVisto) {
+    setStatoVisto(stato);
     setTentativo((n) => n + 1);
-  }, [stato]);
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
