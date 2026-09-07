@@ -32,3 +32,13 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* Il pulsante "×" nativo di <input type="search"> (WebKit/Chromium) si
+   colora da solo con l'accento di sistema (spesso blu) e non è
+   ricolorabile via `color`. Lo nascondiamo: dove serve, la "×" per
+   svuotare il campo la disegniamo noi come le altre icone (text-muted). */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}

@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-06 — Stati della pagina "Aggiungi alimento" (stile, fase 2)
+
+- La vista di ricerca di `/aggiungi` non è più spoglia: tre stati distinti
+  (mockup preparato su claude.ai). Vuoto → icona posate + "Cerca il tuo
+  alimento" + sottotitolo, centrati. Risultati → lista con nome e
+  `grammi · kcal` (come in Oggi) + link discreto "Crea «query»". Nessun
+  risultato → messaggio centrato + pulsante pieno "Crea alimento
+  manualmente" a tutta larghezza, stesso stile del "+ Aggiungi" di Oggi
+- Tutti i colori dalle variabili CSS esistenti (`text-muted`, `text-accent`,
+  `border-border`, `bg-accent`, `text-background`), nessun colore a mano.
+  Icone SVG inline stroke, coerenti col resto
+- Logica di ricerca/creazione/inserimento non toccata: solo composizione
+  del ramo non-modifica di `/aggiungi`
+- **Fix:** la "×" per svuotare il campo di ricerca era il pulsante nativo di
+  `<input type="search">`, che WebKit colora con l'accento di sistema (blu).
+  Nascosto quello nativo in `globals.css`, disegnata la "×" come le altre
+  icone (`text-muted`), visibile solo quando c'è testo
+
 ## 2026-09-06 — Modifica ed elimina una voce dalla pagina Oggi (fase 2)
 
 - Nella pagina Oggi ogni voce di un pasto è ora una riga tappabile (nome +

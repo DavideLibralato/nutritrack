@@ -198,73 +198,110 @@ function AggiungiContenuto() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex min-h-0 flex-1 flex-col px-4 pt-4 pb-5">
         {creando ? (
-          <CreaAlimentoForm
-            userId={userId}
-            nomeIniziale={query.trim()}
-            onAnnulla={() => setCreando(false)}
-            onCreato={(a) => {
-              setCreando(false);
-              scegli(a);
-            }}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <CreaAlimentoForm
+              userId={userId}
+              nomeIniziale={query.trim()}
+              onAnnulla={() => setCreando(false)}
+              onCreato={(a) => {
+                setCreando(false);
+                scegli(a);
+              }}
+            />
+          </div>
         ) : (
           <>
-            <div className="relative">
-              <Lente className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <div className="relative shrink-0">
+              <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Cerca un alimento"
-                className={`w-full rounded-full border border-border py-2.5 pl-10 pr-4 ${CLASSE_FOCUS}`}
+                className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 ${CLASSE_FOCUS}`}
               />
+              {query !== "" && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="Svuota la ricerca"
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
+                >
+                  <Croce />
+                </button>
+              )}
             </div>
 
-            <ul className="mt-4">
-              {risultati.map((a) => (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    onClick={() => scegli(a)}
-                    className={`flex w-full items-center justify-between gap-3 border-b border-border py-3 text-left ${CLASSE_FOCUS}`}
-                  >
-                    <span>
-                      <span className="block">{a.nome}</span>
-                      <span className="block text-sm text-muted">
-                        {a.porzione_default_g} g ·{" "}
-                        {Math.round((a.kcal_100g * a.porzione_default_g) / 100)} kcal
-                      </span>
-                    </span>
-                    <Piu className="shrink-0 text-accent" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-
             {query.trim() === "" ? (
-              <p className="mt-8 text-center text-sm text-muted">
-                Cerca un alimento nel catalogo, o creane uno nuovo.
-              </p>
-            ) : (
-              <>
-                {risultati.length === 0 && (
-                  <p className="mt-6 text-sm text-muted">
-                    Nessun alimento trovato nel catalogo locale.
-                  </p>
-                )}
+              /* Stato vuoto: icona + titolo + sottotitolo, centrati nello
+                 spazio sotto la ricerca. */
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+                <Posate className="text-muted" />
+                <p className="font-medium">Cerca il tuo alimento</p>
+                <p className="text-sm leading-relaxed text-muted">
+                  Scrivi il nome per cercarlo nel catalogo, oppure creane uno
+                  nuovo se non lo trovi.
+                </p>
+              </div>
+            ) : risultati.length > 0 ? (
+              /* Risultati: lista scorrevole con nome e «grammi · kcal». */
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <ul className="mt-4">
+                  {risultati.map((a) => (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        onClick={() => scegli(a)}
+                        className={`flex w-full items-center justify-between gap-3 border-b border-border py-3.5 text-left ${CLASSE_FOCUS}`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate">{a.nome}</span>
+                          <span className="mt-0.5 block text-sm text-muted">
+                            {a.porzione_default_g} g ·{" "}
+                            {Math.round((a.kcal_100g * a.porzione_default_g) / 100)} kcal
+                          </span>
+                        </span>
+                        <Piu className="shrink-0 text-accent" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Anche con dei risultati si può creare l'alimento cercato:
+                    qui è un link discreto; diventa il pulsante pieno quando
+                    non c'è nessun risultato. */}
                 <button
                   type="button"
                   onClick={() => setCreando(true)}
-                  className={`mt-3 flex w-full items-center gap-2 rounded py-3 text-left text-accent ${CLASSE_FOCUS}`}
+                  className={`mt-4 rounded text-sm text-muted ${CLASSE_FOCUS}`}
                 >
-                  <Piu />
-                  <span>
-                    Crea <span className="font-medium">«{query.trim()}»</span> a mano
-                  </span>
+                  Non lo trovi?{" "}
+                  <span className="font-medium text-accent">Crea «{query.trim()}»</span>
                 </button>
-              </>
+              </div>
+            ) : (
+              /* Nessun risultato: messaggio centrato + pulsante pieno in
+                 basso, stesso stile del "+ Aggiungi" di Oggi. */
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+                  <Lente className="text-muted" size={40} />
+                  <p className="font-medium">Nessun risultato per «{query.trim()}»</p>
+                  <p className="text-sm leading-relaxed text-muted">
+                    Non è ancora nel catalogo. Puoi crearlo tu: resterà
+                    disponibile anche le prossime volte.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreando(true)}
+                  className={`flex w-full shrink-0 items-center justify-center gap-2 rounded-full bg-accent py-3.5 font-medium text-background ${CLASSE_FOCUS}`}
+                >
+                  <Piu size={18} />
+                  Crea alimento manualmente
+                </button>
+              </div>
             )}
           </>
         )}
@@ -324,7 +361,48 @@ function ChevronGiu({ className }: { className?: string }) {
   );
 }
 
-function Lente({ className }: { className?: string }) {
+function Lente({ className, size = 18 }: { className?: string; size?: number }) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={size >= 32 ? 1.6 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" />
+    </svg>
+  );
+}
+
+function Piu({ className, size = 22 }: { className?: string; size?: number }) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+// "×" per svuotare il campo di ricerca — stessa famiglia delle altre icone
+// (stroke currentColor, così eredita text-muted).
+function Croce({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -338,27 +416,27 @@ function Lente({ className }: { className?: string }) {
       strokeLinejoin="round"
       aria-hidden
     >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
+      <path d="M18 6 6 18M6 6l12 12" />
     </svg>
   );
 }
 
-function Piu({ className }: { className?: string }) {
+// Icona posate (forchetta + cucchiaio) per lo stato vuoto della ricerca.
+function Posate({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="22"
-      height="22"
+      width="40"
+      height="40"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M12 5v14M5 12h14" />
+      <path d="M6 3v7a3 3 0 0 0 6 0V3M9 10v11M17 3c-1.5 1.7-2 3.4-2 5.5S15.5 12.5 17 14v7" />
     </svg>
   );
 }
