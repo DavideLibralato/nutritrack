@@ -21,7 +21,7 @@ import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
 import { catalogoLocale, cercaPerNome } from "@/lib/repository/alimenti";
 import { pastoPerOrario, primoPastoVuoto } from "@/lib/inserimento/propostaPasto";
-import { daAlimento, type AlimentoPerSheet } from "@/lib/inserimento/alimentoPerSheet";
+import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { oggiLocale, eOggi, eFuturo, oraCorrente } from "@/lib/dataGiorno";
 import SheetQuantita from "@/components/SheetQuantita";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
@@ -108,7 +108,18 @@ function AggiungiContenuto() {
 
   const [query, setQuery] = useState("");
   const [creando, setCreando] = useState(false);
-  const [alimentoScelto, setAlimentoScelto] = useState<AlimentoPerSheet | null>(null);
+  // L'alimento del catalogo che si sta modificando (solo i propri e non
+  // verificati — vedi il gate nella lista risultati). Diverso da
+  // `alimentoScelto`, che è la voce da aggiungere al diario.
+  const [alimentoInModifica, setAlimentoInModifica] = useState<Alimento | null>(null);
+
+  // L'alimento scelto per lo sheet quantità. Si tiene solo l'oggetto
+  // catturato al tap, ma si legge sempre la versione VIVA dal `catalogo`
+  // (che è reattivo): così, se l'alimento è stato appena modificato con la
+  // matita, lo sheet e la copia in `voci_diario` usano i valori nuovi, non
+  // quelli del momento del tap. Il fallback all'oggetto catturato copre
+  // l'istante in cui un alimento appena creato non è ancora nel catalogo.
+  const [alimentoSceltoRaw, setAlimentoSceltoRaw] = useState<Alimento | null>(null);
   const [salvataggio, setSalvataggio] = useState<"inattivo" | "in-corso" | "errore">(
     "inattivo"
   );
@@ -131,13 +142,19 @@ function AggiungiContenuto() {
   const nomePastoSelezionato =
     pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
 
+  // Versione viva dell'alimento scelto: se è nel catalogo (quasi sempre),
+  // quella; altrimenti l'oggetto catturato al tap (alimento appena creato).
+  const alimentoScelto = alimentoSceltoRaw
+    ? catalogo.find((x) => x.id === alimentoSceltoRaw.id) ?? alimentoSceltoRaw
+    : null;
+
   async function confermaQuantita(grammi: number) {
     if (!userId || !alimentoScelto || !pastoSelezionatoId) return;
     setSalvataggio("in-corso");
     try {
       await repositoryVociDiario.crea({
         user_id: userId,
-        alimento_id: alimentoScelto.alimento_id,
+        alimento_id: alimentoScelto.id,
         pasto_id: pastoSelezionatoId,
         gruppo_id: null,
         quantita_g: grammi,
@@ -162,7 +179,7 @@ function AggiungiContenuto() {
   }
 
   function scegli(a: Alimento) {
-    setAlimentoScelto(daAlimento(a));
+    setAlimentoSceltoRaw(a);
     setSalvataggio("inattivo");
   }
 
@@ -199,16 +216,23 @@ function AggiungiContenuto() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col px-4 pt-4 pb-5">
-        {creando ? (
+        {creando || alimentoInModifica ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <CreaAlimentoForm
+              key={alimentoInModifica?.id ?? "nuovo"}
               userId={userId}
               nomeIniziale={query.trim()}
-              onAnnulla={() => setCreando(false)}
+              alimentoDaModificare={alimentoInModifica ?? undefined}
+              onAnnulla={() => {
+                setCreando(false);
+                setAlimentoInModifica(null);
+              }}
               onCreato={(a) => {
                 setCreando(false);
                 scegli(a);
               }}
+              onModificato={() => setAlimentoInModifica(null)}
+              onEliminato={() => setAlimentoInModifica(null)}
             />
           </div>
         ) : (
@@ -249,24 +273,51 @@ function AggiungiContenuto() {
               /* Risultati: lista scorrevole con nome e «grammi · kcal». */
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <ul className="mt-4">
-                  {risultati.map((a) => (
-                    <li key={a.id}>
-                      <button
-                        type="button"
-                        onClick={() => scegli(a)}
-                        className={`flex w-full items-center justify-between gap-3 border-b border-border py-3.5 text-left ${CLASSE_FOCUS}`}
+                  {risultati.map((a) => {
+                    // Modificabile solo se è tuo e non ancora verificato
+                    // (sezione 10.8). Sugli alimenti condivisi (user_id null)
+                    // o verificati la matita non compare — come la RLS che
+                    // nega comunque update/delete.
+                    const modificabile = a.user_id === userId && !a.verificato;
+                    return (
+                      <li
+                        key={a.id}
+                        className="flex items-center gap-2 border-b border-border py-3.5"
                       >
-                        <span className="min-w-0">
-                          <span className="block truncate">{a.nome}</span>
-                          <span className="mt-0.5 block text-sm text-muted">
+                        <button
+                          type="button"
+                          onClick={() => scegli(a)}
+                          className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
+                        >
+                          <span className="truncate">{a.nome}</span>
+                          <span className="mt-0.5 text-sm text-muted">
                             {a.porzione_default_g} g ·{" "}
                             {Math.round((a.kcal_100g * a.porzione_default_g) / 100)} kcal
                           </span>
-                        </span>
-                        <Piu className="shrink-0 text-accent" />
-                      </button>
-                    </li>
-                  ))}
+                        </button>
+
+                        {modificabile && (
+                          <button
+                            type="button"
+                            onClick={() => setAlimentoInModifica(a)}
+                            aria-label={`Modifica ${a.nome}`}
+                            className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
+                          >
+                            <Matita />
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => scegli(a)}
+                          aria-label={`Aggiungi ${a.nome}`}
+                          className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
+                        >
+                          <Piu className="text-accent" />
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 {/* Anche con dei risultati si può creare l'alimento cercato:
@@ -309,12 +360,12 @@ function AggiungiContenuto() {
 
       {alimentoScelto && pastoSelezionatoId && (
         <SheetQuantita
-          alimento={alimentoScelto}
+          alimento={daAlimento(alimentoScelto)}
           nomePasto={nomePastoSelezionato}
           inCorso={salvataggio === "in-corso"}
           errore={salvataggio === "errore" ? "Non è stato possibile aggiungere. Riprova." : null}
           onAnnulla={() => {
-            setAlimentoScelto(null);
+            setAlimentoSceltoRaw(null);
             setSalvataggio("inattivo");
           }}
           onConferma={confermaQuantita}
@@ -417,6 +468,27 @@ function Croce({ className }: { className?: string }) {
       aria-hidden
     >
       <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+// Matita: modifica un alimento del catalogo (solo i propri, non verificati).
+function Matita({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }

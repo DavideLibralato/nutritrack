@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-06 — Modifica ed elimina un alimento dal catalogo (fase 2)
+
+- Nella lista risultati di `/aggiungi`, sugli alimenti creati dall'utente e
+  non ancora `verificato` compare una matita accanto al `+` (stessa riga,
+  non sposta il layout). Sugli alimenti condivisi (`user_id` null) o
+  verificati non compare — stesso criterio della RLS (sezione 10.8/11)
+- Tap sulla matita → `CreaAlimentoForm` in modalità modifica: campi
+  precompilati coi valori reali, `aggiorna()` sulla stessa riga (non una
+  nuova), `verificato`/`fonte`/`marca`/`barcode` invariati
+- Eliminazione con la stessa interazione delle voci di diario: in modifica
+  la riga pulsanti è `[Elimina] [Salva]`, il tap su Elimina la trasforma in
+  `[No] [Sì, elimina]` (conferma inline). Cancellazione logica (`deleted_at`)
+- Flusso di creazione, `+` di aggiunta rapida e ricerca non toccati
+- **Bug trovato provando:** modificando un alimento e aggiungendolo subito a
+  un pasto, lo sheet quantità (e la copia in `voci_diario`) usava i valori
+  di prima. Causa: la pagina catturava una fotografia dell'alimento al tap
+  del `+`, e per un istante dopo la modifica la lista non è ancora
+  ri-emessa dalla liveQuery. Corretto: `alimentoScelto` ora è derivato
+  sempre dalla versione viva nel `catalogo` (fallback all'oggetto catturato
+  solo per un alimento appena creato). Aggiunto un test permanente
+  (`alimenti.reattivita.test.ts`) che verifica la ri-emissione della
+  liveQuery dopo `aggiorna`/`elimina`
+
 ## 2026-09-06 — Fix deploy: conflitto @types/node / vitest
 
 - Il build su Vercel falliva in `npm install`: `vitest@5` richiede

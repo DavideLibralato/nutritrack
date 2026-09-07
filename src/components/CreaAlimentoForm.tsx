@@ -5,10 +5,13 @@
 // I valori sono per 100 g (sezione 9.3), più la porzione predefinita in
 // grammi che poi lo sheet quantità userà come default.
 //
-// L'alimento creato entra nel catalogo con fonte "manuale" e
-// verificato = false (sezione 4 / 10.8: un alimento verificato non si
-// modifica, se ne crea uno nuovo). Da qui si passa subito allo sheet
-// quantità per aggiungerlo al diario.
+// Lo stesso form serve anche a **modificare** un alimento del catalogo, ma
+// solo se creato dall'utente e non ancora verificato (sezione 10.8: un
+// alimento verificato non si modifica, se ne crea uno nuovo; quelli
+// condivisi non si toccano — vale anche a livello RLS). In quel caso il
+// chiamante passa `alimentoDaModificare`: i campi partono dai valori reali,
+// il salvataggio fa aggiorna() sulla stessa riga, e compare l'eliminazione
+// (logica, deleted_at) con la stessa conferma inline usata per le voci.
 
 import { useState } from "react";
 import { repositoryAlimenti } from "@/lib/repository";
@@ -22,6 +25,10 @@ interface Props {
   nomeIniziale: string;
   onAnnulla: () => void;
   onCreato: (alimento: Alimento) => void;
+  // --- Solo in modifica di un alimento esistente ---
+  alimentoDaModificare?: Alimento;
+  onModificato?: () => void;
+  onEliminato?: () => void;
 }
 
 export default function CreaAlimentoForm({
@@ -29,15 +36,22 @@ export default function CreaAlimentoForm({
   nomeIniziale,
   onAnnulla,
   onCreato,
+  alimentoDaModificare,
+  onModificato,
+  onEliminato,
 }: Props) {
-  const [nome, setNome] = useState(nomeIniziale);
-  const [kcal, setKcal] = useState("");
-  const [proteine, setProteine] = useState("");
-  const [carboidrati, setCarboidrati] = useState("");
-  const [grassi, setGrassi] = useState("");
-  const [porzione, setPorzione] = useState("100");
+  const modifica = !!alimentoDaModificare;
+  const a = alimentoDaModificare;
+
+  const [nome, setNome] = useState(a ? a.nome : nomeIniziale);
+  const [kcal, setKcal] = useState(a ? String(a.kcal_100g) : "");
+  const [proteine, setProteine] = useState(a ? String(a.proteine_100g) : "");
+  const [carboidrati, setCarboidrati] = useState(a ? String(a.carboidrati_100g) : "");
+  const [grassi, setGrassi] = useState(a ? String(a.grassi_100g) : "");
+  const [porzione, setPorzione] = useState(a ? String(a.porzione_default_g) : "100");
   const [errore, setErrore] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
+  const [confermaElim, setConfermaElim] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,36 +82,67 @@ export default function CreaAlimentoForm({
       return;
     }
 
+    const campi = {
+      nome: nome.trim(),
+      kcal_100g: kcalN,
+      proteine_100g: proteineN,
+      carboidrati_100g: carboidratiN,
+      grassi_100g: grassiN,
+      porzione_default_g: porzioneN,
+    };
+
     setInCorso(true);
     try {
-      const alimento = await repositoryAlimenti.crea({
-        user_id: userId,
-        nome: nome.trim(),
-        marca: null,
-        barcode: null,
-        kcal_100g: kcalN,
-        proteine_100g: proteineN,
-        carboidrati_100g: carboidratiN,
-        grassi_100g: grassiN,
-        zuccheri_100g: null,
-        fibre_100g: null,
-        saturi_100g: null,
-        sale_100g: null,
-        porzione_default_g: porzioneN,
-        fonte: "manuale",
-        verificato: false,
-      });
-      onCreato(alimento);
+      if (alimentoDaModificare) {
+        // Stessa riga (stesso id): aggiorna(), non crea(). `verificato`,
+        // `fonte`, `marca`, `barcode` restano quelli che erano.
+        await repositoryAlimenti.aggiorna(alimentoDaModificare.id, campi);
+        onModificato?.();
+      } else {
+        const alimento = await repositoryAlimenti.crea({
+          user_id: userId,
+          marca: null,
+          barcode: null,
+          ...campi,
+          zuccheri_100g: null,
+          fibre_100g: null,
+          saturi_100g: null,
+          sale_100g: null,
+          fonte: "manuale",
+          verificato: false,
+        });
+        onCreato(alimento);
+      }
     } catch {
       setInCorso(false);
-      setErrore("Non è stato possibile salvare l'alimento. Riprova.");
+      setErrore(
+        alimentoDaModificare
+          ? "Non è stato possibile salvare le modifiche. Riprova."
+          : "Non è stato possibile salvare l'alimento. Riprova."
+      );
+    }
+  }
+
+  async function handleElimina() {
+    if (!alimentoDaModificare) return;
+    setErrore(null);
+    setInCorso(true);
+    try {
+      // Cancellazione logica (deleted_at), come per tutte le tabelle.
+      await repositoryAlimenti.elimina(alimentoDaModificare.id);
+      onEliminato?.();
+    } catch {
+      setInCorso(false);
+      setErrore("Non è stato possibile eliminare l'alimento. Riprova.");
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold">Nuovo alimento</h2>
+        <h2 className="font-display text-lg font-bold">
+          {modifica ? "Modifica alimento" : "Nuovo alimento"}
+        </h2>
         <button
           type="button"
           onClick={onAnnulla}
@@ -157,13 +202,60 @@ export default function CreaAlimentoForm({
 
       {errore && <p className="text-sm text-warning">{errore}</p>}
 
-      <button
-        type="submit"
-        disabled={inCorso}
-        className={`w-full rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
-      >
-        {inCorso ? "Salvataggio..." : "Crea e scegli la quantità"}
-      </button>
+      {modifica ? (
+        /* Riga pulsanti in modifica: [Elimina] [Salva]; il tap su Elimina
+           la trasforma in [No] [Sì, elimina] (conferma inline, stessa
+           posizione). Per annullare la modifica si usa "Torna alla ricerca"
+           qui sopra. */
+        <div className="flex gap-3">
+          {confermaElim ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setConfermaElim(false)}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg border border-border p-2 disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={handleElimina}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg bg-warning p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                {inCorso ? "Elimino..." : "Sì, elimina"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setConfermaElim(true)}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg border border-warning p-2 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                Elimina
+              </button>
+              <button
+                type="submit"
+                disabled={inCorso}
+                className={`flex-1 rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                {inCorso ? "Salvataggio..." : "Salva"}
+              </button>
+            </>
+          )}
+        </div>
+      ) : (
+        <button
+          type="submit"
+          disabled={inCorso}
+          className={`w-full rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+        >
+          {inCorso ? "Salvataggio..." : "Crea e scegli la quantità"}
+        </button>
+      )}
     </form>
   );
 }
