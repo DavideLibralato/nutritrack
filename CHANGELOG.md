@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-06 — Fix deploy: conflitto @types/node / vitest
+
+- Il build su Vercel falliva in `npm install`: `vitest@5` richiede
+  `@types/node` `^22 || >=24`, ma `package.json` aveva `^20`. In locale non
+  si vedeva perché `node_modules` non era mai stato reinstallato da zero
+- `@types/node` portato a `^22` (risolto a 22.20.1). `node_modules` e
+  `package-lock.json` cancellati e rigenerati da zero per verificare che il
+  conflitto sia davvero risolto, non nascosto dalla cache locale
+- Riverificato tutto da ambiente pulito: `npm install` (0 vulnerabilità,
+  nessun ERESOLVE), `npm test` (33/33), `npm run build` (11 rotte),
+  `npm run dev` + login renderizzato in browser. Solo allineamento di
+  versioni, nessun'altra modifica
+
 ## 2026-09-06 — Stati della pagina "Aggiungi alimento" (stile, fase 2)
 
 - La vista di ricerca di `/aggiungi` non è più spoglia: tre stati distinti
