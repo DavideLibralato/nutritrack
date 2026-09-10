@@ -90,3 +90,86 @@ non dice il contrario.
 - **Niente servizi a pagamento senza avvisarmi prima**: obiettivo costo zero
 - Prima di aggiungere una feature, la domanda della sezione 1: riduce o aumenta
   l'attrito dell'inserimento?
+
+## Deploy che toccano lo schema dati — procedura anti-perdita
+
+Vale per ogni push che cambia la struttura dei dati su uno qualsiasi dei due
+lati: Postgres su Supabase, oppure IndexedDB via Dexie sul dispositivo. I dati
+già creati dagli utenti non si perdono mai. Prima di un deploy di questo tipo
+entrambe le checklist vanno verdi; un deploy può toccarne anche una sola.
+
+### A. Migration Supabase — solo additive
+
+1. **Mai `DROP COLUMN`, `DROP TABLE`, `ALTER … RENAME` su oggetti con dati
+   dentro.** Si aggiunge, non si toglie né si rinomina.
+2. Se un valore deve cambiare forma (colonna nuova che rimpiazza una vecchia),
+   in quattro passi separati nel tempo:
+   a. migration che aggiunge la colonna nuova, `NULL` ammesso;
+   b. backfill: `UPDATE` che riempie la nuova dai valori vecchi, verificato con
+      un `SELECT count(*)` che non lasci righe scoperte;
+   c. il client scrive e legge la colonna nuova per almeno un rilascio intero;
+   d. la rimozione della vecchia è lavoro separato, mesi dopo, quando nessun
+      client la usa più — mai nello stesso deploy che introduce la nuova.
+3. Se una tabella si **divide in più tabelle**, stessa logica ma il backfill
+   **copia, non sposta**: le tabelle nuove si popolano dai dati della vecchia,
+   che resta intatta e leggibile finché il client non legge e scrive solo le
+   nuove. La vecchia si droppa come lavoro separato, mesi dopo, a client
+   migrato.
+4. Colonna nuova `NOT NULL` solo con `DEFAULT`. Mai `NOT NULL` secco su una
+   tabella non vuota.
+5. Ogni modifica di struttura passa da `apply_migration` (una migration =
+   un file versionato), mai da `execute_sql` a mano.
+6. **Una tabella nuova nasce già con RLS attiva e le sue policy nella stessa
+   migration di creazione** (`enable row level security` + i `create policy`
+   nello stesso file), non in un secondo momento. `get_advisors` dopo è la
+   verifica, non il punto in cui si scopre che manca.
+7. Dopo la migration: `get_advisors` (security + performance). Nessuna tabella
+   senza RLS, nessun avviso nuovo.
+8. La stessa modifica va riflessa in `src/lib/db/tipi.ts`, confrontata con lo
+   schema reale (`information_schema.columns`), non solo col documento — è già
+   la regola in testa a quel file.
+
+### B. Versione schema Dexie — upgrade esplicito
+
+Il numero in `this.version(N)` in `src/lib/db/database.ts` si alza di 1 ogni
+volta che cambia `.stores(...)` **oppure** la forma delle righe già salvate sul
+dispositivo.
+
+1. **La `version(N)` esistente non si modifica mai.** Si aggiunge una
+   `this.version(N+1)` nuova, in coda, con lo schema aggiornato.
+2. Se cambiano **solo gli indici** (la stringa dopo i due punti) e non la forma
+   dei dati, basta `this.version(N+1).stores({ … })`: Dexie ricostruisce gli
+   indici da solo, le righe restano.
+3. Se cambia la **forma delle righe** (campo nuovo con valore da calcolare,
+   campo rinominato, valore da trasformare), la nuova versione porta una
+   `.upgrade()` che riscrive le righe esistenti sul dispositivo:
+
+   ```ts
+   this.version(2)
+     .stores({ /* schema completo */ })
+     .upgrade(async (tx) => {
+       await tx.table("alimenti").toCollection().modify((a) => {
+         a.marca ??= null;
+       });
+     });
+   ```
+
+4. Un campo nuovo **facoltativo**, che il codice tratta già come opzionale
+   (`T | null` con fallback ovunque venga letto), può non avere `.upgrade`: le
+   righe vecchie senza quel campo restano valide. In quel caso si scrive nel
+   commento della versione perché l'upgrade non serve.
+5. Mai `db.delete()` o "cancella e ricrea" come scorciatoia: butta via i dati
+   locali non ancora sincronizzati.
+6. Il bump di versione va nello stesso deploy del codice che dipende dalla
+   forma nuova — mai un codice che legge un campo che la `version` in
+   esecuzione sul telefono non ha ancora popolato.
+7. Verifica prima del deploy: partire da un IndexedDB popolato con lo schema
+   vecchio, applicare la build nuova, controllare che le righe di prima ci
+   siano ancora e con la forma nuova. Se è una trasformazione di valori,
+   diventa anche un test permanente (sezione test).
+
+### Nota
+
+I due lati sono indipendenti e la sync non fa da rete di sicurezza: se
+l'upgrade Dexie perde una riga non ancora sincronizzata, quella riga non
+esiste più da nessuna parte.

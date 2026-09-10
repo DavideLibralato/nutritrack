@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-10 — Procedura anti-perdita dati per i deploy di schema
+
+- Nuova sezione in `CLAUDE.md` ("Deploy che toccano lo schema dati"): due
+  checklist da verificare prima di ogni deploy che cambia la struttura dei
+  dati. Lato Supabase: migration solo additive (niente drop/rename su oggetti
+  con dati, colonna che cambia forma in 4 passi separati nel tempo, split di
+  una tabella che copia e non sposta, RLS + policy nella stessa migration di
+  creazione). Lato Dexie: `version(N)` mai modificata, `.upgrade()` esplicito
+  quando cambia la forma delle righe salvate, bump nello stesso deploy del
+  codice che dipende dalla forma nuova.
+- Nessuna modifica di codice: le voci di `NOTE_MODIFICHE.md` non toccano lo
+  schema (`alimenti.marca` esisteva già).
+
 ## 2026-09-06 — Modifica ed elimina un alimento dal catalogo (fase 2)
 
 - Nella lista risultati di `/aggiungi`, sugli alimenti creati dall'utente e
