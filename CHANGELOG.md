@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-10 — Giorno logico su Oggi/Aggiungi + note voci 1, 2, 3, 5
+
+- **Giorno logico** (rimandato dal 2026-09-06): un inserimento fatto prima
+  dell'ora di inizio del primo pasto appartiene al giorno precedente. Nuove
+  funzioni pure `giornoLogico` (`dataGiorno.ts`) e `oraInizioPrimoPasto`
+  (`propostaPasto.ts` — il pasto più mattiniero per `ora_inizio`, non per
+  `ordine`). Oggi parte dal giorno logico quando non arriva da `?giorno=`
+  (il `giorno` è `null` finché i pasti non arrivano da Dexie, poi impostato
+  durante il render); /aggiungi scrive `data` e sceglie proposta pasto /
+  `consumato_alle` sullo stesso criterio. "Oggi", freccia avanti e calendario
+  si fermano al giorno logico. Test permanenti aggiunti (47 test totali).
+- **Voce 1** — ordine dei valori come sulle etichette reali dei prodotti
+  (Kcal → Grassi → Carboidrati → Proteine): form crea/modifica alimento,
+  anteprima dello sheet quantità, barre macro di Oggi, target del Profilo.
+- **Voce 5** — campo "Marca" (facoltativo) nel form crea/modifica; in modifica
+  ora è aggiornabile (prima restava invariato). Nella lista risultati della
+  ricerca compare "Nome · Marca" quando valorizzata (`etichettaAlimento` in
+  `repository/alimenti.ts`). Nessuna migration: `alimenti.marca` esisteva già.
+- **Voce 2** — risultati e stati vuoto/nessun-risultato ancorati sotto la
+  barra di ricerca invece che centrati; "Crea alimento manualmente" è una
+  riga fissa in fondo, presente in ogni stato; il tasto Invio/"Vai" della
+  tastiera crea l'alimento quando la ricerca non trova nulla.
+- **Voce 3** — in Oggi, tap sulla riga di un pasto con alimenti ne
+  nasconde/mostra la lista. Stato in memoria, per id di pasto (una fascia
+  chiusa resta chiusa cambiando giorno; al riavvio torna tutto aperto).
+
 ## 2026-09-10 — Procedura anti-perdita dati per i deploy di schema
 
 - Nuova sezione in `CLAUDE.md` ("Deploy che toccano lo schema dati"): due

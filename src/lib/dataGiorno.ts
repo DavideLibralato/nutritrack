@@ -65,3 +65,30 @@ export function oraCorrente(d: Date = new Date()): string {
   const minuti = String(d.getMinutes()).padStart(2, "0");
   return `${ore}:${minuti}`;
 }
+
+// Il "giorno logico" a cui appartiene un inserimento fatto adesso
+// (PUNTO_DI_PARTENZA.md, sezione "Il giorno logico"). L'ultimo pasto scavalca
+// la mezzanotte (la Cena dura fino alla mattina dopo), quindi:
+//
+//   un inserimento fatto PRIMA dell'ora di inizio del primo pasto appartiene
+//   al giorno precedente.
+//
+// Registri qualcosa all'una di notte → finisce nella giornata di "ieri", non
+// nell'oggi del calendario. È la stessa logica con cui l'app propone il pasto,
+// applicata alla data.
+//
+// `oraInizioPrimoPasto` è "HH:mm" (l'ora del pasto più mattiniero, non del
+// primo per `ordine`: le fasce sono riordinabili dall'utente). Se è null
+// — nessun pasto ancora, nessuna regola da applicare — vale il giorno del
+// calendario. Il confronto fra stringhe "HH:mm" funziona perché sono a
+// lunghezza fissa e zero-padded, come già in pastoPerOrario.
+export function giornoLogico(
+  oraInizioPrimoPasto: string | null,
+  adesso: Date = new Date()
+): string {
+  const oggi = oggiLocale(adesso);
+  if (oraInizioPrimoPasto && oraCorrente(adesso) < oraInizioPrimoPasto) {
+    return giornoPrecedente(oggi);
+  }
+  return oggi;
+}

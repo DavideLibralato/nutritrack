@@ -457,21 +457,23 @@ export default function ProfiloPage() {
           <span className="block text-sm font-medium mb-2 uppercase tracking-wide text-muted text-xs">
             Target giornalieri
           </span>
+          {/* Ordine come sulle etichette dei prodotti: Calorie, Grassi,
+              Carboidrati, Proteine (NOTE_MODIFICHE voce 1). */}
           <div className="space-y-3">
             <CampoTarget id="profilo-kcal" etichetta="Calorie" valore={kcal} onChange={setKcal} />
-            <CampoTarget
-              id="profilo-proteine"
-              etichetta="Proteine (g)"
-              valore={proteine}
-              onChange={setProteine}
-            />
+            <CampoTarget id="profilo-grassi" etichetta="Grassi (g)" valore={grassi} onChange={setGrassi} />
             <CampoTarget
               id="profilo-carboidrati"
               etichetta="Carboidrati (g)"
               valore={carboidrati}
               onChange={setCarboidrati}
             />
-            <CampoTarget id="profilo-grassi" etichetta="Grassi (g)" valore={grassi} onChange={setGrassi} />
+            <CampoTarget
+              id="profilo-proteine"
+              etichetta="Proteine (g)"
+              valore={proteine}
+              onChange={setProteine}
+            />
           </div>
         </div>
 

@@ -36,13 +36,13 @@ import {
   obiettivoValidoPer,
 } from "@/lib/totaliDiario";
 import {
-  oggiLocale,
   giornoPrecedente,
   giornoSuccessivo,
   formattaData,
-  eOggi,
   eFuturo,
+  giornoLogico,
 } from "@/lib/dataGiorno";
+import { oraInizioPrimoPasto } from "@/lib/inserimento/propostaPasto";
 import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
 import SheetQuantita from "@/components/SheetQuantita";
@@ -71,12 +71,17 @@ function OggiContenuto() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Il giorno visualizzato, "YYYY-MM-DD". Parte da oggi, oppure dal ?giorno=
-  // con cui /aggiungi ci ha rimandato qui dopo un salvataggio. Un giorno
-  // futuro viene ignorato: la navigazione si ferma a oggi.
-  const [giorno, setGiorno] = useState(() => {
+  // Il giorno visualizzato, "YYYY-MM-DD". Se /aggiungi ci ha rimandato qui con
+  // un ?giorno= (e non è futuro) si parte da quello. Altrimenti il giorno di
+  // partenza è il GIORNO LOGICO, che non è sempre l'oggi del calendario:
+  // all'una di notte è ancora "ieri" perché la Cena scavalca la mezzanotte
+  // (PUNTO_DI_PARTENZA.md, sezione "Il giorno logico"). Il giorno logico
+  // dipende dall'ora del primo pasto, che arriva da Dexie in modo asincrono:
+  // finché non la conosciamo `giorno` resta null e la pagina mostra
+  // "Caricamento" (come già fa per userId/pasti/voci).
+  const [giorno, setGiorno] = useState<string | null>(() => {
     const param = searchParams.get("giorno");
-    return param && !eFuturo(param) ? param : oggiLocale();
+    return param && !eFuturo(param) ? param : null;
   });
 
   // Il calendario si apre da codice con showPicker() sull'input date, non
@@ -140,35 +145,34 @@ function OggiContenuto() {
     "inattivo" | "in-corso" | "errore"
   >("inattivo");
 
-  // Derivati: con React Compiler attivo non serve useMemo, il ricalcolo a
-  // ogni render è già memoizzato dal compilatore.
-  const vociGiorno = vociTutte ? vociDelGiorno(vociTutte, giorno) : [];
-  const totali = sommaTotali(vociGiorno);
-  const obiettivo = obiettivi ? obiettivoValidoPer(obiettivi, giorno) : null;
+  // Voce 3: i pasti (fasce) di cui l'utente ha nascosto la lista di alimenti.
+  // In memoria, non su disco: al riavvio dell'app tornano tutti aperti.
+  const [pastiCollassati, setPastiCollassati] = useState<Set<string>>(
+    () => new Set()
+  );
 
-  const targetKcal = obiettivo?.kcal ?? null;
-  const consumateKcal = Math.round(totali.kcal);
+  function toggleCollasso(pastoId: string) {
+    setPastiCollassati((prec) => {
+      const succ = new Set(prec);
+      if (succ.has(pastoId)) succ.delete(pastoId);
+      else succ.add(pastoId);
+      return succ;
+    });
+  }
 
-  // La seconda riga sotto la data cambia significato a seconda del giorno
-  // (sezione 3): "Rimangono X kcal" su oggi, "consumate di target" sui
-  // giorni passati (dove "rimangono" non vuol dire niente).
-  let rigaCalorie: string;
-  let classeRigaCalorie = "text-muted";
-  if (targetKcal == null) {
-    rigaCalorie = "Nessun obiettivo impostato";
-  } else if (eOggi(giorno)) {
-    const rimaste = targetKcal - consumateKcal;
-    if (rimaste >= 0) {
-      rigaCalorie = `Rimangono ${rimaste} kcal`;
-    } else {
-      rigaCalorie = `${-rimaste} kcal oltre l'obiettivo`;
-      classeRigaCalorie = "text-warning";
-    }
-  } else {
-    rigaCalorie = `${consumateKcal} di ${targetKcal} kcal`;
+  // Nessun ?giorno= in arrivo: il giorno di partenza è quello logico (vedi il
+  // commento sullo useState sopra). Serve l'ora del primo pasto, quindi si
+  // aspettano i `pasti` da Dexie. Impostato durante il render e guardato da
+  // `=== null` — come nella pagina Profilo — non in un useEffect (che React
+  // segnala come set-state-in-effect). Se per un attimo `pasti` è [] (default
+  // non ancora creati) vale l'oggi del calendario: si corregge da sé al
+  // prossimo avvio, il caso è il primo utilizzo in assoluto fra le 00 e le 06.
+  if (giorno === null && pasti !== undefined) {
+    setGiorno(giornoLogico(oraInizioPrimoPasto(pasti)));
   }
 
   if (
+    giorno === null ||
     userId === undefined ||
     pasti === undefined ||
     vociTutte === undefined ||
@@ -179,6 +183,44 @@ function OggiContenuto() {
         <p className="text-sm text-muted">Caricamento...</p>
       </main>
     );
+  }
+
+  // Da qui in giù `giorno`, `pasti`, `vociTutte` e `obiettivi` ci sono di sicuro.
+
+  // Il giorno logico "adesso": di norma l'oggi del calendario, ma fra la
+  // mezzanotte e l'ora del primo pasto è ieri (sezione "Il giorno logico").
+  // È il giorno a cui riporta il pulsante "Oggi" e oltre il quale non si
+  // naviga in avanti.
+  const giornoCorrente = giornoLogico(oraInizioPrimoPasto(pasti));
+  const eGiornoCorrente = giorno === giornoCorrente;
+
+  // Derivati: con React Compiler attivo non serve useMemo, il ricalcolo a
+  // ogni render è già memoizzato dal compilatore.
+  const vociGiorno = vociDelGiorno(vociTutte, giorno);
+  const totali = sommaTotali(vociGiorno);
+  const obiettivo = obiettivoValidoPer(obiettivi, giorno);
+
+  const targetKcal = obiettivo?.kcal ?? null;
+  const consumateKcal = Math.round(totali.kcal);
+
+  // La seconda riga sotto la data cambia significato a seconda del giorno
+  // (sezione 3): "Rimangono X kcal" sul giorno che stai riempiendo adesso,
+  // "consumate di target" sui giorni passati (dove "rimangono" non vuol dire
+  // niente).
+  let rigaCalorie: string;
+  let classeRigaCalorie = "text-muted";
+  if (targetKcal == null) {
+    rigaCalorie = "Nessun obiettivo impostato";
+  } else if (eGiornoCorrente) {
+    const rimaste = targetKcal - consumateKcal;
+    if (rimaste >= 0) {
+      rigaCalorie = `Rimangono ${rimaste} kcal`;
+    } else {
+      rigaCalorie = `${-rimaste} kcal oltre l'obiettivo`;
+      classeRigaCalorie = "text-warning";
+    }
+  } else {
+    rigaCalorie = `${consumateKcal} di ${targetKcal} kcal`;
   }
 
   function apriModifica(voce: VoceDiario) {
@@ -240,7 +282,8 @@ function OggiContenuto() {
 
           {/* Il titolo-data è un pulsante: aprirlo mostra il calendario
               nativo (sezione "Inserimento retroattivo"). `max` impedisce di
-              scegliere un giorno futuro. L'input date resta fuori schermo
+              scegliere un giorno oltre quello logico corrente (fra mezzanotte
+              e l'ora del primo pasto è ieri). L'input date resta fuori schermo
               (sr-only) e serve solo come bersaglio di showPicker(). */}
           <h1 className="font-display text-2xl font-bold">
             <button
@@ -256,7 +299,7 @@ function OggiContenuto() {
             ref={rifData}
             type="date"
             value={giorno}
-            max={oggiLocale()}
+            max={giornoCorrente}
             onChange={(e) => e.target.value && setGiorno(e.target.value)}
             tabIndex={-1}
             aria-hidden
@@ -266,17 +309,17 @@ function OggiContenuto() {
           <button
             type="button"
             onClick={() => setGiorno(giornoSuccessivo(giorno))}
-            disabled={eOggi(giorno)}
+            disabled={eGiornoCorrente}
             aria-label="Giorno successivo"
             className={`rounded p-1 text-muted disabled:opacity-30 ${CLASSE_FOCUS}`}
           >
             <Chevron verso="destra" />
           </button>
 
-          {!eOggi(giorno) && (
+          {!eGiornoCorrente && (
             <button
               type="button"
-              onClick={() => setGiorno(oggiLocale())}
+              onClick={() => setGiorno(giornoCorrente)}
               className={`ml-auto rounded-full border border-border px-3 py-1 text-xs ${CLASSE_FOCUS}`}
             >
               Oggi
@@ -286,14 +329,16 @@ function OggiContenuto() {
 
         <p className={`mt-1 text-sm ${classeRigaCalorie}`}>{rigaCalorie}</p>
 
-        {/* Anello + macro affiancati, non impilati (sezione 3). */}
+        {/* Anello + macro affiancati, non impilati (sezione 3). Ordine dei
+            macro come sulle etichette dei prodotti: Grassi, Carboidrati,
+            Proteine (NOTE_MODIFICHE voce 1; le kcal sono l'anello). */}
         <div className="mt-5 flex items-center gap-4">
           <AnelloCalorie consumate={totali.kcal} obiettivo={targetKcal} />
           <div className="flex-1 space-y-3">
             <BarraMacro
-              nome="Proteine"
-              valore={totali.proteine}
-              obiettivo={obiettivo?.proteine_g ?? null}
+              nome="Grassi"
+              valore={totali.grassi}
+              obiettivo={obiettivo?.grassi_g ?? null}
             />
             <BarraMacro
               nome="Carboidrati"
@@ -301,9 +346,9 @@ function OggiContenuto() {
               obiettivo={obiettivo?.carboidrati_g ?? null}
             />
             <BarraMacro
-              nome="Grassi"
-              valore={totali.grassi}
-              obiettivo={obiettivo?.grassi_g ?? null}
+              nome="Proteine"
+              valore={totali.proteine}
+              obiettivo={obiettivo?.proteine_g ?? null}
             />
           </div>
         </div>
@@ -317,18 +362,39 @@ function OggiContenuto() {
           pasti.map((pasto) => {
             const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
             const kcalPasto = Math.round(sommaTotali(vociPasto).kcal);
+            const haVoci = vociPasto.length > 0;
+            const collassato = pastiCollassati.has(pasto.id);
             return (
               <li key={pasto.id} className="border-b border-border py-4">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-lg">{pasto.nome}</span>
-                  <span className="shrink-0 text-lg">
-                    {vociPasto.length > 0 ? `${kcalPasto} kcal` : "—"}
-                  </span>
-                </div>
+                {/* Voce 3: se il pasto ha degli alimenti, la riga del titolo è
+                    un pulsante che ne nasconde/mostra la lista. Il pasto vuoto
+                    resta una riga non interattiva (non c'è niente da
+                    collassare). Lo stato è tenuto per id di pasto e non per
+                    giorno, così una fascia chiusa resta chiusa anche
+                    cambiando data. */}
+                {haVoci ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleCollasso(pasto.id)}
+                    aria-expanded={!collassato}
+                    className={`flex w-full items-baseline justify-between gap-3 text-left ${CLASSE_FOCUS}`}
+                  >
+                    <span className="flex items-baseline gap-1.5 text-lg">
+                      <CaretPasto aperto={!collassato} />
+                      {pasto.nome}
+                    </span>
+                    <span className="shrink-0 text-lg">{kcalPasto} kcal</span>
+                  </button>
+                ) : (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-lg">{pasto.nome}</span>
+                    <span className="shrink-0 text-lg">—</span>
+                  </div>
+                )}
 
                 {/* Ogni voce è tappabile: apre lo SheetQuantita in modifica
                     (sezione 5). */}
-                {vociPasto.length > 0 && (
+                {haVoci && !collassato && (
                   <ul className="mt-1.5">
                     {vociPasto.map((voce) => (
                       <li key={voce.id}>
@@ -403,6 +469,29 @@ function Chevron({ verso }: { verso: "sinistra" | "destra" }) {
       aria-hidden
     >
       <path d={verso === "sinistra" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} />
+    </svg>
+  );
+}
+
+// Freccetta accanto al nome del pasto (voce 3): punta in giù quando la lista
+// è aperta, ruota a destra quando è collassata.
+function CaretPasto({ aperto }: { aperto: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={`shrink-0 self-center text-muted transition-transform ${
+        aperto ? "" : "-rotate-90"
+      }`}
+    >
+      <path d="M6 9l6 6 6-6" />
     </svg>
   );
 }

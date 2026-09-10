@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { pastoPerOrario, primoPastoVuoto } from "./propostaPasto";
+import {
+  pastoPerOrario,
+  primoPastoVuoto,
+  oraInizioPrimoPasto,
+} from "./propostaPasto";
 import type { Pasto } from "../db/tipi";
 
 function pasto(nome: string, ora_inizio: string, ordine: number): Pasto {
@@ -71,5 +75,28 @@ describe("primoPastoVuoto", () => {
 
   it("lista vuota → null", () => {
     expect(primoPastoVuoto([], new Set())).toBeNull();
+  });
+});
+
+describe("oraInizioPrimoPasto", () => {
+  it("restituisce l'ora del pasto più mattiniero", () => {
+    expect(oraInizioPrimoPasto(SET)).toBe("06:00");
+  });
+
+  it("guarda l'ora, non l'ordine: un pasto riordinato in cima ma serale non conta", () => {
+    // La Cena (19:30) messa come primo per `ordine`, la Colazione (06:00) per
+    // ultima: il primo pasto della giornata resta quello delle 06:00.
+    const riordinati = [
+      { ...SET[4], ordine: 0 },
+      { ...SET[1], ordine: 1 },
+      { ...SET[2], ordine: 2 },
+      { ...SET[3], ordine: 3 },
+      { ...SET[0], ordine: 4 },
+    ];
+    expect(oraInizioPrimoPasto(riordinati)).toBe("06:00");
+  });
+
+  it("lista vuota → null", () => {
+    expect(oraInizioPrimoPasto([])).toBeNull();
   });
 });

@@ -156,9 +156,11 @@ export default function SheetQuantita({
           className={`mt-1 w-full rounded-lg border border-border p-3 text-lg ${CLASSE_FOCUS}`}
         />
 
+        {/* Ordine come sulle etichette dei prodotti: kcal, Grassi, Carboidrati,
+            Proteine (NOTE_MODIFICHE voce 1). */}
         <p className="mt-3 text-sm text-muted">
           {valido
-            ? `${kcal} kcal · P ${proteine} g · C ${carboidrati} g · G ${grassi} g`
+            ? `${kcal} kcal · G ${grassi} g · C ${carboidrati} g · P ${proteine} g`
             : "Inserisci una quantità in grammi"}
         </p>
 

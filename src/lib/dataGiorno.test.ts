@@ -5,6 +5,7 @@ import {
   giornoSuccessivo,
   eOggi,
   eFuturo,
+  giornoLogico,
 } from "./dataGiorno";
 
 describe("oggiLocale", () => {
@@ -56,5 +57,59 @@ describe("eOggi / eFuturo", () => {
     expect(eFuturo("2026-09-05", adesso)).toBe(true);
     expect(eFuturo("2026-09-04", adesso)).toBe(false);
     expect(eFuturo("2026-09-03", adesso)).toBe(false);
+  });
+});
+
+describe("giornoLogico", () => {
+  // Primo pasto = Colazione alle 06:00 (set predefinito).
+  const PRIMO = "06:00";
+
+  it("in pieno giorno il giorno logico è l'oggi del calendario", () => {
+    const pomeriggio = new Date(2026, 8, 10, 15, 30, 0);
+    expect(giornoLogico(PRIMO, pomeriggio)).toBe("2026-09-10");
+  });
+
+  it("un inserimento prima dell'ora del primo pasto appartiene a ieri", () => {
+    // L'una di notte del 10 settembre: la Cena di ieri, non la Colazione di
+    // oggi (sezione "Il giorno logico").
+    const unaDiNotte = new Date(2026, 8, 10, 1, 0, 0);
+    expect(giornoLogico(PRIMO, unaDiNotte)).toBe("2026-09-09");
+  });
+
+  it("appena prima dell'ora del primo pasto è ancora ieri", () => {
+    const alle0559 = new Date(2026, 8, 10, 5, 59, 0);
+    expect(giornoLogico(PRIMO, alle0559)).toBe("2026-09-09");
+  });
+
+  it("all'ora esatta di inizio del primo pasto è già oggi", () => {
+    const alle0600 = new Date(2026, 8, 10, 6, 0, 0);
+    expect(giornoLogico(PRIMO, alle0600)).toBe("2026-09-10");
+  });
+
+  it("attraversa il cambio di mese (1° del mese all'una di notte → ultimo del mese prima)", () => {
+    const primoMarzoNotte = new Date(2026, 2, 1, 0, 30, 0);
+    expect(giornoLogico(PRIMO, primoMarzoNotte)).toBe("2026-02-28");
+  });
+
+  it("rispetta un primo pasto spostato prima (Colazione alle 05:00)", () => {
+    const alle0530 = new Date(2026, 8, 10, 5, 30, 0);
+    expect(giornoLogico("05:00", alle0530)).toBe("2026-09-10");
+    expect(giornoLogico("05:00", new Date(2026, 8, 10, 4, 30, 0))).toBe(
+      "2026-09-09"
+    );
+  });
+
+  it("senza pasti (null) vale sempre l'oggi del calendario, anche all'una di notte", () => {
+    const unaDiNotte = new Date(2026, 8, 10, 1, 0, 0);
+    expect(giornoLogico(null, unaDiNotte)).toBe("2026-09-10");
+  });
+
+  it("accetta anche 'HH:mm:ss' (come arriva da Postgres) senza cambiare esito", () => {
+    expect(giornoLogico("06:00:00", new Date(2026, 8, 10, 1, 0, 0))).toBe(
+      "2026-09-09"
+    );
+    expect(giornoLogico("06:00:00", new Date(2026, 8, 10, 9, 0, 0))).toBe(
+      "2026-09-10"
+    );
   });
 });

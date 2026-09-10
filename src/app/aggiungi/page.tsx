@@ -19,10 +19,18 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
-import { catalogoLocale, cercaPerNome } from "@/lib/repository/alimenti";
-import { pastoPerOrario, primoPastoVuoto } from "@/lib/inserimento/propostaPasto";
+import {
+  catalogoLocale,
+  cercaPerNome,
+  etichettaAlimento,
+} from "@/lib/repository/alimenti";
+import {
+  pastoPerOrario,
+  primoPastoVuoto,
+  oraInizioPrimoPasto,
+} from "@/lib/inserimento/propostaPasto";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
-import { oggiLocale, eOggi, eFuturo, oraCorrente } from "@/lib/dataGiorno";
+import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
 import SheetQuantita from "@/components/SheetQuantita";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import type { Alimento } from "@/lib/db/tipi";
@@ -51,17 +59,30 @@ function AggiungiContenuto() {
   const searchParams = useSearchParams();
   const userId = useUtenteId();
 
-  // Il giorno a cui appartiene la voce arriva da Oggi. Un ?giorno futuro (non
-  // dovrebbe succedere) viene ignorato: si ripiega su oggi.
-  const giornoParam = searchParams.get("giorno");
-  const giorno = giornoParam && !eFuturo(giornoParam) ? giornoParam : oggiLocale();
-  const oggiSelezionato = eOggi(giorno);
-
   const pasti = useLiveQuery(async () => {
     if (!userId) return undefined;
     const righe = await repositoryPasti.ottieniTutti(userId);
     return [...righe].sort((a, b) => a.ordine - b.ordine);
   }, [userId]);
+
+  // Il giorno logico "adesso": di norma l'oggi del calendario, ma fra la
+  // mezzanotte e l'ora del primo pasto è ieri, perché la Cena scavalca la
+  // mezzanotte (PUNTO_DI_PARTENZA.md, sezione "Il giorno logico"). Serve l'ora
+  // del primo pasto, che arriva da Dexie: finché `pasti` è undefined vale
+  // l'oggi del calendario, ma la pagina mostra comunque "Caricamento".
+  const giornoLogicoOggi = giornoLogico(oraInizioPrimoPasto(pasti ?? []));
+
+  // Il giorno a cui appartiene la voce arriva da Oggi come ?giorno=. Se manca,
+  // o è oltre il giorno logico corrente, si ripiega su quest'ultimo.
+  const giornoParam = searchParams.get("giorno");
+  const giorno =
+    giornoParam && !eFuturo(giornoParam) ? giornoParam : giornoLogicoOggi;
+
+  // "Sto registrando adesso?" — vero quando il giorno mostrato è il giorno
+  // logico corrente. Ne dipendono la proposta del pasto (per orario, non
+  // "primo pasto ancora vuoto") e se precompilare `consumato_alle` con l'ora
+  // attuale invece di lasciarlo null.
+  const registroAdesso = giorno === giornoLogicoOggi;
 
   // Serve solo per la proposta del pasto sui giorni passati (primo pasto
   // ancora vuoto).
@@ -85,11 +106,12 @@ function AggiungiContenuto() {
     }
   }, [userId, pasti]);
 
-  // Proposta del pasto: sull'oggi in base all'ora, sui giorni passati il
-  // primo pasto ancora vuoto (sezione "I pasti" / "Inserimento retroattivo").
+  // Proposta del pasto: se stai registrando adesso, in base all'ora (con la
+  // Cena che copre la fascia dopo mezzanotte); sui giorni passati il primo
+  // pasto ancora vuoto (sezione "I pasti" / "Inserimento retroattivo").
   let pastoPropostoId: string | null = null;
   if (pasti && pasti.length > 0) {
-    if (oggiSelezionato) {
+    if (registroAdesso) {
       pastoPropostoId = pastoPerOrario(pasti, oraCorrente())?.id ?? null;
     } else if (vociGiorno !== undefined) {
       const conVoci = new Set(
@@ -160,10 +182,10 @@ function AggiungiContenuto() {
         quantita_g: grammi,
         data: giorno,
         creato_il: new Date().toISOString(),
-        // Precompilata con l'ora attuale solo se stai registrando oggi; su un
+        // Precompilata con l'ora attuale solo se stai registrando adesso; su un
         // giorno passato meglio null che un orario inventato — l'editor di
         // consumato_alle nello sheet arriva in un pezzo successivo.
-        consumato_alle: oggiSelezionato ? new Date().toISOString() : null,
+        consumato_alle: registroAdesso ? new Date().toISOString() : null,
         // Copia dei valori nutrizionali (mai un riferimento che possa
         // cambiare dopo): sezione 4.
         nome_alimento: alimentoScelto.nome,
@@ -237,6 +259,10 @@ function AggiungiContenuto() {
           </div>
         ) : (
           <>
+            {/* Voce 2 punto 3: quando la ricerca non trova nulla, il tasto
+                Invio / "Vai" della tastiera fa la stessa cosa del pulsante
+                "Crea alimento manualmente" — un tap in meno, senza chiudere la
+                tastiera. `enterKeyHint` cambia l'etichetta di quel tasto. */}
             <div className="relative shrink-0">
               <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
               <input
@@ -244,6 +270,19 @@ function AggiungiContenuto() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Cerca un alimento"
+                enterKeyHint={
+                  query.trim() !== "" && risultati.length === 0 ? "go" : "search"
+                }
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    query.trim() !== "" &&
+                    risultati.length === 0
+                  ) {
+                    e.preventDefault();
+                    setCreando(true);
+                  }
+                }}
                 className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 ${CLASSE_FOCUS}`}
               />
               {query !== "" && (
@@ -258,21 +297,22 @@ function AggiungiContenuto() {
               )}
             </div>
 
-            {query.trim() === "" ? (
-              /* Stato vuoto: icona + titolo + sottotitolo, centrati nello
-                 spazio sotto la ricerca. */
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-                <Posate className="text-muted" />
-                <p className="font-medium">Cerca il tuo alimento</p>
-                <p className="text-sm leading-relaxed text-muted">
-                  Scrivi il nome per cercarlo nel catalogo, oppure creane uno
-                  nuovo se non lo trovi.
-                </p>
-              </div>
-            ) : risultati.length > 0 ? (
-              /* Risultati: lista scorrevole con nome e «grammi · kcal». */
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <ul className="mt-4">
+            {/* Area scorrevole ancorata SUBITO SOTTO la barra di ricerca, non
+                centrata sullo schermo: così lo stato corrente (vuoto /
+                risultati / nessun risultato) resta visibile sopra la tastiera
+                in ogni caso (voce 2 punto 1). */}
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {query.trim() === "" ? (
+                <div className="flex flex-col items-center gap-3 px-6 pt-10 text-center">
+                  <Posate className="text-muted" />
+                  <p className="font-medium">Cerca il tuo alimento</p>
+                  <p className="text-sm leading-relaxed text-muted">
+                    Scrivi il nome per cercarlo nel catalogo, oppure creane uno
+                    nuovo se non lo trovi.
+                  </p>
+                </div>
+              ) : risultati.length > 0 ? (
+                <ul className="mt-2">
                   {risultati.map((a) => {
                     // Modificabile solo se è tuo e non ancora verificato
                     // (sezione 10.8). Sugli alimenti condivisi (user_id null)
@@ -289,7 +329,9 @@ function AggiungiContenuto() {
                           onClick={() => scegli(a)}
                           className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
                         >
-                          <span className="truncate">{a.nome}</span>
+                          {/* Con la marca valorizzata: "Nome · Marca", per
+                              distinguere prodotti omonimi (voce 5). */}
+                          <span className="truncate">{etichettaAlimento(a)}</span>
                           <span className="mt-0.5 text-sm text-muted">
                             {a.porzione_default_g} g ·{" "}
                             {Math.round((a.kcal_100g * a.porzione_default_g) / 100)} kcal
@@ -300,7 +342,7 @@ function AggiungiContenuto() {
                           <button
                             type="button"
                             onClick={() => setAlimentoInModifica(a)}
-                            aria-label={`Modifica ${a.nome}`}
+                            aria-label={`Modifica ${etichettaAlimento(a)}`}
                             className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
                           >
                             <Matita />
@@ -310,7 +352,7 @@ function AggiungiContenuto() {
                         <button
                           type="button"
                           onClick={() => scegli(a)}
-                          aria-label={`Aggiungi ${a.nome}`}
+                          aria-label={`Aggiungi ${etichettaAlimento(a)}`}
                           className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
                         >
                           <Piu className="text-accent" />
@@ -319,24 +361,8 @@ function AggiungiContenuto() {
                     );
                   })}
                 </ul>
-
-                {/* Anche con dei risultati si può creare l'alimento cercato:
-                    qui è un link discreto; diventa il pulsante pieno quando
-                    non c'è nessun risultato. */}
-                <button
-                  type="button"
-                  onClick={() => setCreando(true)}
-                  className={`mt-4 rounded text-sm text-muted ${CLASSE_FOCUS}`}
-                >
-                  Non lo trovi?{" "}
-                  <span className="font-medium text-accent">Crea «{query.trim()}»</span>
-                </button>
-              </div>
-            ) : (
-              /* Nessun risultato: messaggio centrato + pulsante pieno in
-                 basso, stesso stile del "+ Aggiungi" di Oggi. */
-              <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+              ) : (
+                <div className="flex flex-col items-center gap-3 px-4 pt-10 text-center">
                   <Lente className="text-muted" size={40} />
                   <p className="font-medium">Nessun risultato per «{query.trim()}»</p>
                   <p className="text-sm leading-relaxed text-muted">
@@ -344,16 +370,25 @@ function AggiungiContenuto() {
                     disponibile anche le prossime volte.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCreando(true)}
-                  className={`flex w-full shrink-0 items-center justify-center gap-2 rounded-full bg-accent py-3.5 font-medium text-background ${CLASSE_FOCUS}`}
-                >
-                  <Piu size={18} />
-                  Crea alimento manualmente
-                </button>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Riga fissa, presente in ogni stato (voce 2 punto 2): creare a
+                mano è sempre raggiungibile — anche con dei risultati che però
+                non vanno bene — e resta sopra la tastiera perché è shrink-0 in
+                fondo alla colonna, fuori dall'area scorrevole. */}
+            <div className="shrink-0 pt-3">
+              <button
+                type="button"
+                onClick={() => setCreando(true)}
+                className={`flex w-full items-center justify-center gap-2 rounded-full border border-accent py-3 font-medium text-accent ${CLASSE_FOCUS}`}
+              >
+                <Piu size={18} />
+                {query.trim() === ""
+                  ? "Crea alimento manualmente"
+                  : `Crea «${query.trim()}»`}
+              </button>
+            </div>
           </>
         )}
       </div>

@@ -33,6 +33,19 @@ export function cercaPerNome(alimenti: Alimento[], query: string): Alimento[] {
     .sort((a, b) => a.nome.localeCompare(b.nome, "it"));
 }
 
+// Etichetta di un alimento in una lista (ricerca, in futuro recenti e
+// preferiti): il nome, e — se la marca è valorizzata — "Nome · Marca", per
+// distinguere due prodotti omonimi di marche diverse con valori nutrizionali
+// differenti (NOTE_MODIFICHE voce 5). Nel diario non si usa: `voci_diario`
+// copia solo il nome, non la marca.
+export function etichettaAlimento(a: {
+  nome: string;
+  marca: string | null;
+}): string {
+  const marca = a.marca?.trim();
+  return marca ? `${a.nome} · ${marca}` : a.nome;
+}
+
 function senzaAccenti(s: string): string {
   return s
     .trim()

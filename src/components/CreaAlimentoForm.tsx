@@ -44,6 +44,9 @@ export default function CreaAlimentoForm({
   const a = alimentoDaModificare;
 
   const [nome, setNome] = useState(a ? a.nome : nomeIniziale);
+  // Marca facoltativa: due prodotti omonimi di marche diverse hanno valori
+  // diversi (NOTE_MODIFICHE voce 5). La colonna `alimenti.marca` esiste già.
+  const [marca, setMarca] = useState(a?.marca ?? "");
   const [kcal, setKcal] = useState(a ? String(a.kcal_100g) : "");
   const [proteine, setProteine] = useState(a ? String(a.proteine_100g) : "");
   const [carboidrati, setCarboidrati] = useState(a ? String(a.carboidrati_100g) : "");
@@ -82,12 +85,15 @@ export default function CreaAlimentoForm({
       return;
     }
 
+    // Ordine dei macro come sulle etichette reali dei prodotti: Kcal, Grassi,
+    // Carboidrati, Proteine (NOTE_MODIFICHE voce 1).
     const campi = {
       nome: nome.trim(),
+      marca: marca.trim() || null,
       kcal_100g: kcalN,
-      proteine_100g: proteineN,
-      carboidrati_100g: carboidratiN,
       grassi_100g: grassiN,
+      carboidrati_100g: carboidratiN,
+      proteine_100g: proteineN,
       porzione_default_g: porzioneN,
     };
 
@@ -95,13 +101,13 @@ export default function CreaAlimentoForm({
     try {
       if (alimentoDaModificare) {
         // Stessa riga (stesso id): aggiorna(), non crea(). `verificato`,
-        // `fonte`, `marca`, `barcode` restano quelli che erano.
+        // `fonte`, `barcode` restano quelli che erano; `marca` ora è
+        // modificabile qui (voce 5).
         await repositoryAlimenti.aggiorna(alimentoDaModificare.id, campi);
         onModificato?.();
       } else {
         const alimento = await repositoryAlimenti.crea({
           user_id: userId,
-          marca: null,
           barcode: null,
           ...campi,
           zuccheri_100g: null,
@@ -165,22 +171,40 @@ export default function CreaAlimentoForm({
         />
       </div>
 
+      <div>
+        <label htmlFor="crea-marca" className="block text-sm font-medium mb-1">
+          Marca <span className="font-normal text-muted">(facoltativa)</span>
+        </label>
+        <input
+          id="crea-marca"
+          type="text"
+          value={marca}
+          onChange={(e) => setMarca(e.target.value)}
+          className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+        />
+        <p className="text-xs text-muted mt-1">
+          Per distinguere due prodotti con lo stesso nome ma marca diversa.
+        </p>
+      </div>
+
+      {/* Ordine come sulle etichette dei prodotti: Kcal, Grassi, Carboidrati,
+          Proteine (NOTE_MODIFICHE voce 1). */}
       <p className="text-xs uppercase tracking-wide text-muted">Valori per 100 g</p>
       <div className="space-y-3">
         <CampoNumero id="crea-kcal" etichetta="Calorie (kcal)" valore={kcal} onChange={setKcal} />
-        <CampoNumero
-          id="crea-proteine"
-          etichetta="Proteine (g)"
-          valore={proteine}
-          onChange={setProteine}
-        />
+        <CampoNumero id="crea-grassi" etichetta="Grassi (g)" valore={grassi} onChange={setGrassi} />
         <CampoNumero
           id="crea-carboidrati"
           etichetta="Carboidrati (g)"
           valore={carboidrati}
           onChange={setCarboidrati}
         />
-        <CampoNumero id="crea-grassi" etichetta="Grassi (g)" valore={grassi} onChange={setGrassi} />
+        <CampoNumero
+          id="crea-proteine"
+          etichetta="Proteine (g)"
+          valore={proteine}
+          onChange={setProteine}
+        />
       </div>
 
       <div>

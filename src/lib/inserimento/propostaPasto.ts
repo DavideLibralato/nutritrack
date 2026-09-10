@@ -28,6 +28,17 @@ export function pastoPerOrario(pasti: Pasto[], oraHHmm: string): Pasto | null {
   return scelto;
 }
 
+// L'ora di inizio ("HH:mm") del primo pasto della giornata: il più mattiniero
+// per `ora_inizio`, non il primo per `ordine` (le fasce sono riordinabili).
+// Serve alla regola del giorno logico (dataGiorno.ts `giornoLogico`). Lista
+// vuota → null: nessuna regola da applicare.
+export function oraInizioPrimoPasto(pasti: Pasto[]): string | null {
+  if (pasti.length === 0) return null;
+  return pasti.reduce((min, p) =>
+    p.ora_inizio.localeCompare(min.ora_inizio) < 0 ? p : min
+  ).ora_inizio;
+}
+
 // Sui giorni passati l'ora non aiuta ("sarebbe sempre sbagliato"): si
 // propone il primo pasto ancora senza voci, perché stai completando la
 // giornata; se sono tutti pieni, l'ultimo della lista.
