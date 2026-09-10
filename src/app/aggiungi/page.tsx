@@ -54,38 +54,51 @@ function SchermataCaricamento() {
   );
 }
 
-// Altezza della parte VISIBILE della finestra, in px. Serve perché su mobile,
-// quando si apre la tastiera, `100dvh` NON si accorcia: la tastiera copre il
-// contenuto senza ridurre il layout, così la riga "Crea alimento
-// manualmente" ancorata in fondo finisce dietro la tastiera. `visualViewport`
-// riporta invece l'area davvero visibile e cambia quando la tastiera entra o
-// esce. Fallback a `100dvh` dove l'API non c'è (render sul server, browser
-// vecchi).
-function useAltezzaVisibile(): string {
-  const [altezza, setAltezza] = useState("100dvh");
+// Posizione e altezza della parte VISIBILE della finestra. Su mobile —
+// iOS Safari in particolare — quando si apre la tastiera `100dvh` NON si
+// accorcia: la tastiera copre il contenuto senza ridurre il layout, così la
+// riga "Crea alimento manualmente" ancorata in fondo finisce dietro la
+// tastiera. `visualViewport` riporta l'area davvero visibile: `.height` è
+// quanto resta sopra la tastiera, `.offsetTop` di quanto iOS ha fatto
+// scorrere il contenuto per tenere a fuoco il campo. Usati per inchiodare il
+// <main> a quell'area con `position: fixed`. Fallback a tutta la finestra
+// dove l'API non c'è (render sul server, browser vecchi).
+interface AreaVisibile {
+  top: number;
+  height: string;
+}
+
+function useAreaVisibile(): AreaVisibile {
+  const [area, setArea] = useState<AreaVisibile>({ top: 0, height: "100dvh" });
 
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
 
-    const aggiorna = () => setAltezza(`${Math.round(vv.height)}px`);
+    const aggiorna = () =>
+      setArea({
+        top: Math.round(vv.offsetTop),
+        height: `${Math.round(vv.height)}px`,
+      });
     aggiorna();
     vv.addEventListener("resize", aggiorna);
     vv.addEventListener("scroll", aggiorna);
+    window.addEventListener("orientationchange", aggiorna);
     return () => {
       vv.removeEventListener("resize", aggiorna);
       vv.removeEventListener("scroll", aggiorna);
+      window.removeEventListener("orientationchange", aggiorna);
     };
   }, []);
 
-  return altezza;
+  return area;
 }
 
 function AggiungiContenuto() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userId = useUtenteId();
-  const altezzaVisibile = useAltezzaVisibile();
+  const areaVisibile = useAreaVisibile();
 
   const pasti = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -235,8 +248,8 @@ function AggiungiContenuto() {
 
   return (
     <main
-      style={{ height: altezzaVisibile }}
-      className="mx-auto flex w-full max-w-md flex-col overflow-hidden"
+      style={{ top: areaVisibile.top, height: areaVisibile.height }}
+      className="fixed inset-x-0 mx-auto flex w-full max-w-md flex-col overflow-hidden bg-background"
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
         <button

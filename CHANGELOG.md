@@ -13,9 +13,12 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 - `src/app/layout.tsx`: `interactiveWidget: "resizes-content"` nel viewport —
   Chrome/Android rimpicciolisce davvero l'area di layout con la tastiera
   aperta (giova anche allo sheet quantità e ai campi del Profilo).
-- `src/app/aggiungi/page.tsx`: hook `useAltezzaVisibile()` che usa
-  `visualViewport.height` come altezza del `<main>`, con fallback a `100dvh`.
-  Copre iOS Safari, dove `interactiveWidget` è ignorato.
+- `src/app/aggiungi/page.tsx`: primo tentativo con solo l'altezza da
+  `visualViewport` non bastava su iOS Safari (il documento veniva comunque
+  scrollato). Ora il `<main>` è `position: fixed` inchiodato all'area
+  visibile con `visualViewport.height` **e** `.offsetTop`, così resta sopra
+  la tastiera anche quando iOS fa scorrere il contenuto. Fallback a tutta la
+  finestra dove l'API non c'è.
 
 ## 2026-09-10 — Giorno logico su Oggi/Aggiungi + note voci 1, 2, 3, 5
 
