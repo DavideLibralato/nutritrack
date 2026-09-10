@@ -34,6 +34,11 @@ export const viewport: Viewport = {
   themeColor: "#1F1B16",
   width: "device-width",
   initialScale: 1,
+  // Quando si apre la tastiera software, l'area di layout si rimpicciolisce
+  // davvero (invece di farsi coprire): cosi `100dvh` e le righe ancorate in
+  // fondo restano sopra la tastiera. Supportato da Chrome/Android; su iOS e
+  // ignorato e ci pensa il fallback con visualViewport in /aggiungi.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

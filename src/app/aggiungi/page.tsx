@@ -54,10 +54,38 @@ function SchermataCaricamento() {
   );
 }
 
+// Altezza della parte VISIBILE della finestra, in px. Serve perché su mobile,
+// quando si apre la tastiera, `100dvh` NON si accorcia: la tastiera copre il
+// contenuto senza ridurre il layout, così la riga "Crea alimento
+// manualmente" ancorata in fondo finisce dietro la tastiera. `visualViewport`
+// riporta invece l'area davvero visibile e cambia quando la tastiera entra o
+// esce. Fallback a `100dvh` dove l'API non c'è (render sul server, browser
+// vecchi).
+function useAltezzaVisibile(): string {
+  const [altezza, setAltezza] = useState("100dvh");
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const aggiorna = () => setAltezza(`${Math.round(vv.height)}px`);
+    aggiorna();
+    vv.addEventListener("resize", aggiorna);
+    vv.addEventListener("scroll", aggiorna);
+    return () => {
+      vv.removeEventListener("resize", aggiorna);
+      vv.removeEventListener("scroll", aggiorna);
+    };
+  }, []);
+
+  return altezza;
+}
+
 function AggiungiContenuto() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userId = useUtenteId();
+  const altezzaVisibile = useAltezzaVisibile();
 
   const pasti = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -206,7 +234,10 @@ function AggiungiContenuto() {
   }
 
   return (
-    <main className="mx-auto flex h-[100dvh] w-full max-w-md flex-col overflow-hidden">
+    <main
+      style={{ height: altezzaVisibile }}
+      className="mx-auto flex w-full max-w-md flex-col overflow-hidden"
+    >
       <header className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
         <button
           type="button"

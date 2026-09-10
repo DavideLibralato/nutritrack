@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-10 — Fix voce 2: il pulsante "Crea alimento" finiva dietro la tastiera
+
+- La causa non era l'impaginazione del pulsante (già ancorato in fondo) ma
+  `100dvh`, che su mobile non si accorcia quando entra la tastiera: la
+  tastiera copre il contenuto senza ridurre il layout.
+- `src/app/layout.tsx`: `interactiveWidget: "resizes-content"` nel viewport —
+  Chrome/Android rimpicciolisce davvero l'area di layout con la tastiera
+  aperta (giova anche allo sheet quantità e ai campi del Profilo).
+- `src/app/aggiungi/page.tsx`: hook `useAltezzaVisibile()` che usa
+  `visualViewport.height` come altezza del `<main>`, con fallback a `100dvh`.
+  Copre iOS Safari, dove `interactiveWidget` è ignorato.
+
 ## 2026-09-10 — Giorno logico su Oggi/Aggiungi + note voci 1, 2, 3, 5
 
 - **Giorno logico** (rimandato dal 2026-09-06): un inserimento fatto prima
