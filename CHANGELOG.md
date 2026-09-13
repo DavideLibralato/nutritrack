@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-13 — Preferiti in Aggiungi alimento (roadmap punto 3, solo alimenti singoli)
+
+- Trigger scelto per aggiungere/togliere un preferito: una stella dentro
+  `SheetQuantita`, non sulle righe di ricerca/Recenti — è un'azione di
+  setup, rara, e non doveva aggiungere un terzo bersaglio tappabile su
+  liste già strette su mobile (sezione 1). Scrive subito nel repository,
+  indipendente da Annulla/Conferma dello sheet.
+- Nuovi `repository/preferiti.ts` (`ePreferito`, `togglePreferito`) e
+  `inserimento/preferiti.ts` (`alimentiPreferiti()`, ordine alfabetico —
+  è un elenco curato, non uno storico — quantità dell'ultima voce o
+  `porzione_default_g` se l'alimento preferito non è mai stato registrato).
+- In `aggiungi/page.tsx`, sezione "Preferiti" sotto "Recenti"; estratto
+  `RigaRapida`, componente condiviso da entrambe le liste per non
+  duplicare nome+quantità+kcal+"+".
+- Pasti salvati (composizioni) restano fuori, pezzo successivo.
+- Nessun bug aperto.
+
 ## 2026-09-13 — Recenti in Aggiungi alimento (roadmap punto 3, solo Recenti)
 
 - Nuova `alimentiRecenti()` in `src/lib/inserimento/recenti.ts`: funzione
