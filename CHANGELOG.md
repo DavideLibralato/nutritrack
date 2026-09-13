@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-13 — Pasti salvati (chiude il punto 3 della roadmap)
+
+- "Salva come preferito" su un pasto in Oggi (icona segnalibro, solo se il
+  pasto ha alimenti) promuove le voci di oggi a una composizione riutilizzabile
+  (`repository/composizioni.ts`, `salvaPastoComeComposizione`) — copia
+  `alimento_id`/`quantita_g` al momento del salvataggio, non un riferimento.
+- Nome chiesto con un nuovo `SheetNome`, non `window.prompt()`: risultava
+  "not supported" in alcuni ambienti (es. il Simple Browser di VSCode) invece
+  di limitarsi a non fare nulla.
+- Blocco duplicati: stesso nome (dopo trim) fra i pasti salvati non crea una
+  seconda composizione, lo sheet segnala che esiste già.
+- In Aggiungi alimento, "Preferiti" mostra anche i pasti salvati, in un
+  sottogruppo separato ("Pasti salvati", alfabetico) sotto "Alimenti" — il
+  "+" inserisce tutte le righe con lo stesso `gruppo_id`, nessuno sheet
+  quantità (le quantità sono già tutte decise).
+- Icona segnalibro coerente con lo stato: `pastoGiaSalvato()` (confronto per
+  multiset su alimento_id+quantita_g, uguaglianza esatta — 10 test permanenti
+  in `pastiSalvati.test.ts`) tiene la stella piena finché il pasto di oggi
+  corrisponde a una composizione salvata; ripremerla la toglie dai preferiti
+  (cancellazione logica di composizione e voci insieme, non solo della
+  composizione).
+- Fuori da questo pezzo: modificare/eliminare un pasto salvato dalla lista
+  Preferiti stessa (tracciato in `NOTE_MODIFICHE.md`, 🟡) e le ricette (stessa
+  tabella `composizioni`, tipo diverso).
+- Nessun bug aperto.
+
 ## 2026-09-13 — Preferiti in Aggiungi alimento (roadmap punto 3, solo alimenti singoli)
 
 - Trigger scelto per aggiungere/togliere un preferito: una stella dentro
