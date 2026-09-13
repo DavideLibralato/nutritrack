@@ -5,10 +5,11 @@
 // quindi sta fuori dal route group "(app)" e non ha la tab bar.
 //
 // Per ora: titolo = pasto proposto (toccabile per cambiarlo), ricerca nel
-// catalogo locale (Dexie) con "Recenti" nello stato vuoto della ricerca,
-// creazione a mano se non si trova, e lo sheet quantità unico (sezione 5).
-// Fuori da questo pezzo: "Scansiona etichetta" (fase 5), Preferiti e pasti
-// salvati (fase 3, pezzo separato).
+// catalogo locale (Dexie) con "Recenti" e "Preferiti" (solo alimenti
+// singoli) nello stato vuoto della ricerca, creazione a mano se non si
+// trova, e lo sheet quantità unico (sezione 5) — con la stella per
+// aggiungere/togliere un preferito. Fuori da questo pezzo: "Scansiona
+// etichetta" (fase 5), pasti salvati (fase 3, pezzo separato).
 //
 // useSearchParams() legge ?giorno=YYYY-MM-DD passato da Oggi, così salvare
 // riporta all'Oggi del giorno giusto (anche un giorno passato). Va avvolto
@@ -18,13 +19,18 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
-import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
+import {
+  repositoryPasti,
+  repositoryVociDiario,
+  repositoryPreferiti,
+} from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
 import {
   catalogoLocale,
   cercaPerNome,
   etichettaAlimento,
 } from "@/lib/repository/alimenti";
+import { ePreferito, togglePreferito } from "@/lib/repository/preferiti";
 import {
   pastoPerOrario,
   primoPastoVuoto,
@@ -32,6 +38,7 @@ import {
 } from "@/lib/inserimento/propostaPasto";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { alimentiRecenti } from "@/lib/inserimento/recenti";
+import { alimentiPreferiti } from "@/lib/inserimento/preferiti";
 import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
 import SheetQuantita from "@/components/SheetQuantita";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
@@ -146,6 +153,11 @@ function AggiungiContenuto() {
     return catalogoLocale(userId);
   }, [userId]);
 
+  const preferiti = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryPreferiti.ottieniTutti(userId);
+  }, [userId]);
+
   // Rete di sicurezza: se per qualsiasi motivo l'utente non ha pasti, li crea
   // (idempotente, stessa funzione usata da Oggi).
   useEffect(() => {
@@ -194,9 +206,9 @@ function AggiungiContenuto() {
   const [salvataggio, setSalvataggio] = useState<"inattivo" | "in-corso" | "errore">(
     "inattivo"
   );
-  // Errore del "+" sui Recenti: quello scrive subito, senza sheet, quindi non
-  // ha il messaggio d'errore di SheetQuantita a disposizione.
-  const [erroreRecenti, setErroreRecenti] = useState<string | null>(null);
+  // Errore del "+" su Recenti/Preferiti: quello scrive subito, senza sheet,
+  // quindi non ha il messaggio d'errore di SheetQuantita a disposizione.
+  const [erroreRapido, setErroreRapido] = useState<string | null>(null);
 
   // `!userId` copre sia "non so ancora" (undefined) sia "nessuna sessione"
   // (null): su questa rotta il middleware garantisce comunque un utente
@@ -207,13 +219,15 @@ function AggiungiContenuto() {
     !userId ||
     pasti === undefined ||
     catalogo === undefined ||
-    vociGiorno === undefined
+    vociGiorno === undefined ||
+    preferiti === undefined
   ) {
     return <SchermataCaricamento />;
   }
 
   const risultati = cercaPerNome(catalogo, query);
   const recenti = alimentiRecenti(catalogo, vociTutte ?? [], NUMERO_RECENTI);
+  const preferitiAlimenti = alimentiPreferiti(catalogo, preferiti, vociTutte ?? []);
   const nomePastoSelezionato =
     pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
 
@@ -260,22 +274,29 @@ function AggiungiContenuto() {
     }
   }
 
-  // "+" sui Recenti (PUNTO_DI_PARTENZA.md, sezione 3: "aggiunge subito con la
-  // quantità dell'ultima volta, senza aprire nulla. Un tap."): stessa
-  // scrittura dello sheet, ma con la quantità dell'ultimo utilizzo invece di
-  // quella confermata dall'utente.
+  // "+" su Recenti/Preferiti (PUNTO_DI_PARTENZA.md, sezione 3: "aggiunge
+  // subito con la quantità dell'ultima volta, senza aprire nulla. Un tap."):
+  // stessa scrittura dello sheet, ma con la quantità passata dalla riga
+  // invece di quella confermata dall'utente.
   async function aggiungiRapido(alimento: Alimento, grammi: number) {
-    setErroreRecenti(null);
+    setErroreRapido(null);
     try {
       await creaVoce(alimento, grammi);
     } catch {
-      setErroreRecenti("Non è stato possibile aggiungere. Riprova.");
+      setErroreRapido("Non è stato possibile aggiungere. Riprova.");
     }
   }
 
   function scegli(a: Alimento) {
     setAlimentoSceltoRaw(a);
     setSalvataggio("inattivo");
+  }
+
+  // Stella nello sheet: scrive subito nel repository (sezione 3), non solo
+  // stato locale — indipendente da Annulla/Conferma.
+  function toggleStellaAlimentoScelto() {
+    if (!userId || !alimentoScelto || !preferiti) return;
+    togglePreferito(userId, preferiti, alimentoScelto.id).catch(() => {});
   }
 
   return (
@@ -379,49 +400,50 @@ function AggiungiContenuto() {
                 in ogni caso (voce 2 punto 1). */}
             <div className="min-h-0 flex-1 overflow-y-auto">
               {query.trim() === "" ? (
-                recenti.length > 0 ? (
+                recenti.length > 0 || preferitiAlimenti.length > 0 ? (
                   <div className="pt-3">
-                    {erroreRecenti && (
-                      <p className="px-1 pb-2 text-sm text-warning">{erroreRecenti}</p>
+                    {erroreRapido && (
+                      <p className="px-1 pb-2 text-sm text-warning">{erroreRapido}</p>
                     )}
-                    <p className="px-1 pb-1 text-xs uppercase tracking-wide text-muted">
-                      Recenti
-                    </p>
-                    <ul>
-                      {recenti.map(({ alimento, quantitaG }) => (
-                        <li
-                          key={alimento.id}
-                          className="flex items-center gap-2 border-b border-border py-3.5"
-                        >
-                          {/* Tap sul nome: stesso percorso della ricerca, sheet
-                              precompilato con porzione_default_g (sezione 3:
-                              "come già succede oggi per i risultati di
-                              ricerca"). */}
-                          <button
-                            type="button"
-                            onClick={() => scegli(alimento)}
-                            className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
-                          >
-                            <span className="truncate">{etichettaAlimento(alimento)}</span>
-                            <span className="mt-0.5 text-sm text-muted">
-                              {quantitaG} g ·{" "}
-                              {Math.round((alimento.kcal_100g * quantitaG) / 100)} kcal
-                            </span>
-                          </button>
+                    {recenti.length > 0 && (
+                      <>
+                        <p className="px-1 pb-1 text-xs uppercase tracking-wide text-muted">
+                          Recenti
+                        </p>
+                        <ul>
+                          {recenti.map(({ alimento, quantitaG }) => (
+                            <RigaRapida
+                              key={alimento.id}
+                              alimento={alimento}
+                              quantitaG={quantitaG}
+                              onScegli={scegli}
+                              onAggiungiRapido={aggiungiRapido}
+                            />
+                          ))}
+                        </ul>
+                      </>
+                    )}
 
-                          {/* "+": aggiunge subito con l'ultima quantità usata,
-                              un tap, senza aprire lo sheet (sezione 3). */}
-                          <button
-                            type="button"
-                            onClick={() => aggiungiRapido(alimento, quantitaG)}
-                            aria-label={`Aggiungi ${etichettaAlimento(alimento)}, ${quantitaG} g`}
-                            className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
-                          >
-                            <Piu className="text-accent" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                    {preferitiAlimenti.length > 0 && (
+                      <>
+                        <p
+                          className={`px-1 pb-1 text-xs uppercase tracking-wide text-muted ${recenti.length > 0 ? "mt-4" : ""}`}
+                        >
+                          Preferiti
+                        </p>
+                        <ul>
+                          {preferitiAlimenti.map(({ alimento, quantitaG }) => (
+                            <RigaRapida
+                              key={alimento.id}
+                              alimento={alimento}
+                              quantitaG={quantitaG}
+                              onScegli={scegli}
+                              onAggiungiRapido={aggiungiRapido}
+                            />
+                          ))}
+                        </ul>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 px-6 pt-10 text-center">
@@ -521,6 +543,8 @@ function AggiungiContenuto() {
           nomePasto={nomePastoSelezionato}
           inCorso={salvataggio === "in-corso"}
           errore={salvataggio === "errore" ? "Non è stato possibile aggiungere. Riprova." : null}
+          preferito={ePreferito(preferiti, alimentoScelto.id)}
+          onTogglePreferito={toggleStellaAlimentoScelto}
           onAnnulla={() => {
             setAlimentoSceltoRaw(null);
             setSalvataggio("inattivo");
@@ -529,6 +553,51 @@ function AggiungiContenuto() {
         />
       )}
     </main>
+  );
+}
+
+// Riga condivisa fra Recenti e Preferiti (sezione 3): stessa struttura e
+// stessa interazione in entrambe le liste, nome+quantità+kcal e un "+" che
+// aggiunge subito. Nella ricerca la riga resta separata perché ha in più la
+// matita di modifica, solo condizionale.
+function RigaRapida({
+  alimento,
+  quantitaG,
+  onScegli,
+  onAggiungiRapido,
+}: {
+  alimento: Alimento;
+  quantitaG: number;
+  onScegli: (a: Alimento) => void;
+  onAggiungiRapido: (a: Alimento, grammi: number) => void;
+}) {
+  return (
+    <li className="flex items-center gap-2 border-b border-border py-3.5">
+      {/* Tap sul nome: stesso percorso della ricerca, sheet precompilato con
+          porzione_default_g (sezione 3: "come già succede oggi per i
+          risultati di ricerca"). */}
+      <button
+        type="button"
+        onClick={() => onScegli(alimento)}
+        className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
+      >
+        <span className="truncate">{etichettaAlimento(alimento)}</span>
+        <span className="mt-0.5 text-sm text-muted">
+          {quantitaG} g · {Math.round((alimento.kcal_100g * quantitaG) / 100)} kcal
+        </span>
+      </button>
+
+      {/* "+": aggiunge subito con la quantità passata, un tap, senza aprire
+          lo sheet (sezione 3). */}
+      <button
+        type="button"
+        onClick={() => onAggiungiRapido(alimento, quantitaG)}
+        aria-label={`Aggiungi ${etichettaAlimento(alimento)}, ${quantitaG} g`}
+        className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
+      >
+        <Piu className="text-accent" />
+      </button>
+    </li>
   );
 }
 

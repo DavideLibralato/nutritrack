@@ -32,6 +32,12 @@ interface Props {
   errore?: string | null;
   onAnnulla: () => void;
   onConferma: (grammi: number) => void;
+  // --- Preferito (facoltativo: solo se il chiamante gestisce i preferiti) ---
+  // Stato e azione separati dal resto dello sheet: la stella scrive subito
+  // nel repository, indipendentemente da Annulla/Conferma — se apri lo
+  // sheet, la tocchi e poi annulli, il preferito resta comunque salvato.
+  preferito?: boolean;
+  onTogglePreferito?: () => void;
   // --- Solo in modifica di una voce esistente ---
   modifica?: boolean;
   // Se presenti tutti e tre, lo sheet mostra un selettore di pasto (spostare
@@ -51,6 +57,8 @@ export default function SheetQuantita({
   errore = null,
   onAnnulla,
   onConferma,
+  preferito = false,
+  onTogglePreferito,
   modifica = false,
   pasti,
   pastoSelezionatoId,
@@ -118,7 +126,24 @@ export default function SheetQuantita({
         {!mostraSelettorePasto && (
           <p className="text-xs uppercase tracking-wide text-muted">{nomePasto}</p>
         )}
-        <h2 className="mt-1 font-display text-xl font-bold">{alimento.nome}</h2>
+        <div className="mt-1 flex items-start justify-between gap-2">
+          <h2 className="font-display text-xl font-bold">{alimento.nome}</h2>
+          {onTogglePreferito && (
+            <button
+              type="button"
+              onClick={onTogglePreferito}
+              aria-pressed={preferito}
+              aria-label={
+                preferito
+                  ? `Togli ${alimento.nome} dai preferiti`
+                  : `Aggiungi ${alimento.nome} ai preferiti`
+              }
+              className={`shrink-0 rounded p-1 ${preferito ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
+            >
+              <Stella piena={preferito} />
+            </button>
+          )}
+        </div>
 
         {mostraSelettorePasto && (
           <>
@@ -230,5 +255,25 @@ export default function SheetQuantita({
         </div>
       </div>
     </div>
+  );
+}
+
+// Stella dei preferiti: piena e colorata se l'alimento è già un preferito,
+// solo contorno altrimenti.
+function Stella({ piena }: { piena: boolean }) {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill={piena ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 3.5l2.3 4.9 5.3.7-3.9 3.8 1 5.3-4.7-2.5-4.7 2.5 1-5.3-3.9-3.8 5.3-.7Z" />
+    </svg>
   );
 }
