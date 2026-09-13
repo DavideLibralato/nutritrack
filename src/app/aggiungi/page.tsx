@@ -5,9 +5,10 @@
 // quindi sta fuori dal route group "(app)" e non ha la tab bar.
 //
 // Per ora: titolo = pasto proposto (toccabile per cambiarlo), ricerca nel
-// catalogo locale (Dexie), creazione a mano se non si trova, e lo sheet
-// quantità unico (sezione 5). Fuori da questo pezzo: "Scansiona etichetta"
-// (fase 5), Recenti e Preferiti (fase 3).
+// catalogo locale (Dexie) con "Recenti" nello stato vuoto della ricerca,
+// creazione a mano se non si trova, e lo sheet quantità unico (sezione 5).
+// Fuori da questo pezzo: "Scansiona etichetta" (fase 5), Preferiti e pasti
+// salvati (fase 3, pezzo separato).
 //
 // useSearchParams() legge ?giorno=YYYY-MM-DD passato da Oggi, così salvare
 // riporta all'Oggi del giorno giusto (anche un giorno passato). Va avvolto
@@ -30,6 +31,7 @@ import {
   oraInizioPrimoPasto,
 } from "@/lib/inserimento/propostaPasto";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
+import { alimentiRecenti } from "@/lib/inserimento/recenti";
 import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
 import SheetQuantita from "@/components/SheetQuantita";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
@@ -37,6 +39,11 @@ import type { Alimento } from "@/lib/db/tipi";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+// Quanti alimenti mostrare in "Recenti": abbastanza da coprire la rotazione
+// tipica di pasti abituali, senza uno scroll lungo nell'area sotto la
+// ricerca (la stessa, stretta, dei risultati di ricerca).
+const NUMERO_RECENTI = 10;
 
 export default function AggiungiPage() {
   return (
@@ -125,13 +132,14 @@ function AggiungiContenuto() {
   // attuale invece di lasciarlo null.
   const registroAdesso = giorno === giornoLogicoOggi;
 
-  // Serve solo per la proposta del pasto sui giorni passati (primo pasto
-  // ancora vuoto).
-  const vociGiorno = useLiveQuery(async () => {
+  // Tutto lo storico delle voci diario dell'utente: serve sia alla proposta
+  // del pasto sui giorni passati (primo pasto ancora vuoto, filtrato sul solo
+  // giorno più sotto) sia ai Recenti, che guardano l'intera storia.
+  const vociTutte = useLiveQuery(async () => {
     if (!userId) return undefined;
-    const tutte = await repositoryVociDiario.ottieniTutti(userId);
-    return tutte.filter((v) => v.data === giorno);
-  }, [userId, giorno]);
+    return repositoryVociDiario.ottieniTutti(userId);
+  }, [userId]);
+  const vociGiorno = vociTutte?.filter((v) => v.data === giorno);
 
   const catalogo = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -186,6 +194,9 @@ function AggiungiContenuto() {
   const [salvataggio, setSalvataggio] = useState<"inattivo" | "in-corso" | "errore">(
     "inattivo"
   );
+  // Errore del "+" sui Recenti: quello scrive subito, senza sheet, quindi non
+  // ha il messaggio d'errore di SheetQuantita a disposizione.
+  const [erroreRecenti, setErroreRecenti] = useState<string | null>(null);
 
   // `!userId` copre sia "non so ancora" (undefined) sia "nessuna sessione"
   // (null): su questa rotta il middleware garantisce comunque un utente
@@ -202,6 +213,7 @@ function AggiungiContenuto() {
   }
 
   const risultati = cercaPerNome(catalogo, query);
+  const recenti = alimentiRecenti(catalogo, vociTutte ?? [], NUMERO_RECENTI);
   const nomePastoSelezionato =
     pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
 
@@ -211,33 +223,53 @@ function AggiungiContenuto() {
     ? catalogo.find((x) => x.id === alimentoSceltoRaw.id) ?? alimentoSceltoRaw
     : null;
 
+  // Scrittura condivisa fra lo sheet quantità (confermaQuantita) e il "+" dei
+  // Recenti (aggiungiRapido, che scrive subito senza aprire lo sheet).
+  async function creaVoce(alimento: Alimento, grammi: number) {
+    if (!userId || !pastoSelezionatoId) return;
+    await repositoryVociDiario.crea({
+      user_id: userId,
+      alimento_id: alimento.id,
+      pasto_id: pastoSelezionatoId,
+      gruppo_id: null,
+      quantita_g: grammi,
+      data: giorno,
+      creato_il: new Date().toISOString(),
+      // Precompilata con l'ora attuale solo se stai registrando adesso; su un
+      // giorno passato meglio null che un orario inventato — l'editor di
+      // consumato_alle nello sheet arriva in un pezzo successivo.
+      consumato_alle: registroAdesso ? new Date().toISOString() : null,
+      // Copia dei valori nutrizionali (mai un riferimento che possa
+      // cambiare dopo): sezione 4.
+      nome_alimento: alimento.nome,
+      kcal_100g: alimento.kcal_100g,
+      proteine_100g: alimento.proteine_100g,
+      carboidrati_100g: alimento.carboidrati_100g,
+      grassi_100g: alimento.grassi_100g,
+    });
+    router.replace(`/?giorno=${giorno}`);
+  }
+
   async function confermaQuantita(grammi: number) {
-    if (!userId || !alimentoScelto || !pastoSelezionatoId) return;
+    if (!alimentoScelto) return;
     setSalvataggio("in-corso");
     try {
-      await repositoryVociDiario.crea({
-        user_id: userId,
-        alimento_id: alimentoScelto.id,
-        pasto_id: pastoSelezionatoId,
-        gruppo_id: null,
-        quantita_g: grammi,
-        data: giorno,
-        creato_il: new Date().toISOString(),
-        // Precompilata con l'ora attuale solo se stai registrando adesso; su un
-        // giorno passato meglio null che un orario inventato — l'editor di
-        // consumato_alle nello sheet arriva in un pezzo successivo.
-        consumato_alle: registroAdesso ? new Date().toISOString() : null,
-        // Copia dei valori nutrizionali (mai un riferimento che possa
-        // cambiare dopo): sezione 4.
-        nome_alimento: alimentoScelto.nome,
-        kcal_100g: alimentoScelto.kcal_100g,
-        proteine_100g: alimentoScelto.proteine_100g,
-        carboidrati_100g: alimentoScelto.carboidrati_100g,
-        grassi_100g: alimentoScelto.grassi_100g,
-      });
-      router.replace(`/?giorno=${giorno}`);
+      await creaVoce(alimentoScelto, grammi);
     } catch {
       setSalvataggio("errore");
+    }
+  }
+
+  // "+" sui Recenti (PUNTO_DI_PARTENZA.md, sezione 3: "aggiunge subito con la
+  // quantità dell'ultima volta, senza aprire nulla. Un tap."): stessa
+  // scrittura dello sheet, ma con la quantità dell'ultimo utilizzo invece di
+  // quella confermata dall'utente.
+  async function aggiungiRapido(alimento: Alimento, grammi: number) {
+    setErroreRecenti(null);
+    try {
+      await creaVoce(alimento, grammi);
+    } catch {
+      setErroreRecenti("Non è stato possibile aggiungere. Riprova.");
     }
   }
 
@@ -347,14 +379,60 @@ function AggiungiContenuto() {
                 in ogni caso (voce 2 punto 1). */}
             <div className="min-h-0 flex-1 overflow-y-auto">
               {query.trim() === "" ? (
-                <div className="flex flex-col items-center gap-3 px-6 pt-10 text-center">
-                  <Posate className="text-muted" />
-                  <p className="font-medium">Cerca il tuo alimento</p>
-                  <p className="text-sm leading-relaxed text-muted">
-                    Scrivi il nome per cercarlo nel catalogo, oppure creane uno
-                    nuovo se non lo trovi.
-                  </p>
-                </div>
+                recenti.length > 0 ? (
+                  <div className="pt-3">
+                    {erroreRecenti && (
+                      <p className="px-1 pb-2 text-sm text-warning">{erroreRecenti}</p>
+                    )}
+                    <p className="px-1 pb-1 text-xs uppercase tracking-wide text-muted">
+                      Recenti
+                    </p>
+                    <ul>
+                      {recenti.map(({ alimento, quantitaG }) => (
+                        <li
+                          key={alimento.id}
+                          className="flex items-center gap-2 border-b border-border py-3.5"
+                        >
+                          {/* Tap sul nome: stesso percorso della ricerca, sheet
+                              precompilato con porzione_default_g (sezione 3:
+                              "come già succede oggi per i risultati di
+                              ricerca"). */}
+                          <button
+                            type="button"
+                            onClick={() => scegli(alimento)}
+                            className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
+                          >
+                            <span className="truncate">{etichettaAlimento(alimento)}</span>
+                            <span className="mt-0.5 text-sm text-muted">
+                              {quantitaG} g ·{" "}
+                              {Math.round((alimento.kcal_100g * quantitaG) / 100)} kcal
+                            </span>
+                          </button>
+
+                          {/* "+": aggiunge subito con l'ultima quantità usata,
+                              un tap, senza aprire lo sheet (sezione 3). */}
+                          <button
+                            type="button"
+                            onClick={() => aggiungiRapido(alimento, quantitaG)}
+                            aria-label={`Aggiungi ${etichettaAlimento(alimento)}, ${quantitaG} g`}
+                            className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
+                          >
+                            <Piu className="text-accent" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 px-6 pt-10 text-center">
+                    <Posate className="text-muted" />
+                    <p className="font-medium">Cerca il tuo alimento</p>
+                    <p className="text-sm leading-relaxed text-muted">
+                      Scrivi il nome per cercarlo nel catalogo, oppure creane uno
+                      nuovo se non lo trovi.
+                    </p>
+                  </div>
+                )
               ) : risultati.length > 0 ? (
                 <ul className="mt-2">
                   {risultati.map((a) => {
