@@ -5,11 +5,11 @@
 // quindi sta fuori dal route group "(app)" e non ha la tab bar.
 //
 // Per ora: titolo = pasto proposto (toccabile per cambiarlo), ricerca nel
-// catalogo locale (Dexie) con "Recenti" e "Preferiti" (solo alimenti
-// singoli) nello stato vuoto della ricerca, creazione a mano se non si
-// trova, e lo sheet quantità unico (sezione 5) — con la stella per
-// aggiungere/togliere un preferito. Fuori da questo pezzo: "Scansiona
-// etichetta" (fase 5), pasti salvati (fase 3, pezzo separato).
+// catalogo locale (Dexie) con "Recenti" e "Preferiti" nello stato vuoto
+// della ricerca (alimenti singoli e pasti salvati mescolati — sono dati
+// diversi ma la sezione UI è una sola), creazione a mano se non si trova, e
+// lo sheet quantità unico (sezione 5) — con la stella per aggiungere/togliere
+// un preferito. Fuori da questo pezzo: "Scansiona etichetta" (fase 5).
 //
 // useSearchParams() legge ?giorno=YYYY-MM-DD passato da Oggi, così salvare
 // riporta all'Oggi del giorno giusto (anche un giorno passato). Va avvolto
@@ -23,6 +23,8 @@ import {
   repositoryPasti,
   repositoryVociDiario,
   repositoryPreferiti,
+  repositoryComposizioni,
+  repositoryComposizioniVoci,
 } from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
 import {
@@ -39,6 +41,7 @@ import {
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { alimentiRecenti } from "@/lib/inserimento/recenti";
 import { alimentiPreferiti } from "@/lib/inserimento/preferiti";
+import { pastiSalvati, type PastoSalvato } from "@/lib/inserimento/pastiSalvati";
 import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
 import SheetQuantita from "@/components/SheetQuantita";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
@@ -158,6 +161,19 @@ function AggiungiContenuto() {
     return repositoryPreferiti.ottieniTutti(userId);
   }, [userId]);
 
+  // Pasti salvati: composizioni (solo tipo "pasto_salvato", le ricette sono
+  // un perimetro diverso) + le loro righe. Compaiono mescolati agli alimenti
+  // singoli nella sezione Preferiti (sezione 4: "sono dati diversi" ma la
+  // sezione UI è una sola).
+  const composizioni = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryComposizioni.ottieniTutti(userId);
+  }, [userId]);
+  const composizioniVoci = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryComposizioniVoci.ottieniTutti(userId);
+  }, [userId]);
+
   // Rete di sicurezza: se per qualsiasi motivo l'utente non ha pasti, li crea
   // (idempotente, stessa funzione usata da Oggi).
   useEffect(() => {
@@ -220,7 +236,9 @@ function AggiungiContenuto() {
     pasti === undefined ||
     catalogo === undefined ||
     vociGiorno === undefined ||
-    preferiti === undefined
+    preferiti === undefined ||
+    composizioni === undefined ||
+    composizioniVoci === undefined
   ) {
     return <SchermataCaricamento />;
   }
@@ -228,6 +246,7 @@ function AggiungiContenuto() {
   const risultati = cercaPerNome(catalogo, query);
   const recenti = alimentiRecenti(catalogo, vociTutte ?? [], NUMERO_RECENTI);
   const preferitiAlimenti = alimentiPreferiti(catalogo, preferiti, vociTutte ?? []);
+  const preferitiPastiSalvati = pastiSalvati(catalogo, composizioni, composizioniVoci);
   const nomePastoSelezionato =
     pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
 
@@ -237,15 +256,22 @@ function AggiungiContenuto() {
     ? catalogo.find((x) => x.id === alimentoSceltoRaw.id) ?? alimentoSceltoRaw
     : null;
 
-  // Scrittura condivisa fra lo sheet quantità (confermaQuantita) e il "+" dei
-  // Recenti (aggiungiRapido, che scrive subito senza aprire lo sheet).
-  async function creaVoce(alimento: Alimento, grammi: number) {
+  // Scrittura condivisa fra lo sheet quantità (confermaQuantita), il "+" di
+  // Recenti/Preferiti (aggiungiRapido) e l'inserimento di un pasto salvato
+  // (aggiungiPastoSalvatoRapido, una chiamata per alimento con lo stesso
+  // gruppoId). Non naviga da sola: i chiamanti che inseriscono più righe in
+  // una volta sola devono farlo solo dopo che tutte sono scritte.
+  async function creaVoce(
+    alimento: Alimento,
+    grammi: number,
+    gruppoId: string | null = null
+  ) {
     if (!userId || !pastoSelezionatoId) return;
     await repositoryVociDiario.crea({
       user_id: userId,
       alimento_id: alimento.id,
       pasto_id: pastoSelezionatoId,
-      gruppo_id: null,
+      gruppo_id: gruppoId,
       quantita_g: grammi,
       data: giorno,
       creato_il: new Date().toISOString(),
@@ -261,7 +287,6 @@ function AggiungiContenuto() {
       carboidrati_100g: alimento.carboidrati_100g,
       grassi_100g: alimento.grassi_100g,
     });
-    router.replace(`/?giorno=${giorno}`);
   }
 
   async function confermaQuantita(grammi: number) {
@@ -269,6 +294,7 @@ function AggiungiContenuto() {
     setSalvataggio("in-corso");
     try {
       await creaVoce(alimentoScelto, grammi);
+      router.replace(`/?giorno=${giorno}`);
     } catch {
       setSalvataggio("errore");
     }
@@ -282,6 +308,23 @@ function AggiungiContenuto() {
     setErroreRapido(null);
     try {
       await creaVoce(alimento, grammi);
+      router.replace(`/?giorno=${giorno}`);
+    } catch {
+      setErroreRapido("Non è stato possibile aggiungere. Riprova.");
+    }
+  }
+
+  // "+" su un pasto salvato (sezione 3, punto 5): tutte le sue righe insieme,
+  // stesso gruppo_id, nessuno sheet — la quantità di ciascun alimento è già
+  // quella salvata nella composizione, non c'è niente da confermare.
+  async function aggiungiPastoSalvatoRapido(pasto: PastoSalvato) {
+    setErroreRapido(null);
+    const gruppoId = crypto.randomUUID();
+    try {
+      await Promise.all(
+        pasto.voci.map(({ alimento, quantitaG }) => creaVoce(alimento, quantitaG, gruppoId))
+      );
+      router.replace(`/?giorno=${giorno}`);
     } catch {
       setErroreRapido("Non è stato possibile aggiungere. Riprova.");
     }
@@ -400,7 +443,9 @@ function AggiungiContenuto() {
                 in ogni caso (voce 2 punto 1). */}
             <div className="min-h-0 flex-1 overflow-y-auto">
               {query.trim() === "" ? (
-                recenti.length > 0 || preferitiAlimenti.length > 0 ? (
+                recenti.length > 0 ||
+                preferitiAlimenti.length > 0 ||
+                preferitiPastiSalvati.length > 0 ? (
                   <div className="pt-3">
                     {erroreRapido && (
                       <p className="px-1 pb-2 text-sm text-warning">{erroreRapido}</p>
@@ -424,24 +469,54 @@ function AggiungiContenuto() {
                       </>
                     )}
 
-                    {preferitiAlimenti.length > 0 && (
+                    {/* Preferiti: un'unica sezione, ma due sottogruppi
+                        ordinati alfabeticamente ciascuno per conto suo —
+                        alimenti singoli e pasti salvati sono dati diversi
+                        (sezione 4), una lista sola li mescolerebbe senza
+                        criterio. */}
+                    {(preferitiAlimenti.length > 0 || preferitiPastiSalvati.length > 0) && (
                       <>
                         <p
                           className={`px-1 pb-1 text-xs uppercase tracking-wide text-muted ${recenti.length > 0 ? "mt-4" : ""}`}
                         >
                           Preferiti
                         </p>
-                        <ul>
-                          {preferitiAlimenti.map(({ alimento, quantitaG }) => (
-                            <RigaRapida
-                              key={alimento.id}
-                              alimento={alimento}
-                              quantitaG={quantitaG}
-                              onScegli={scegli}
-                              onAggiungiRapido={aggiungiRapido}
-                            />
-                          ))}
-                        </ul>
+
+                        {preferitiAlimenti.length > 0 && (
+                          <>
+                            <p className="px-1 pb-1 text-xs text-muted">Alimenti</p>
+                            <ul>
+                              {preferitiAlimenti.map(({ alimento, quantitaG }) => (
+                                <RigaRapida
+                                  key={alimento.id}
+                                  alimento={alimento}
+                                  quantitaG={quantitaG}
+                                  onScegli={scegli}
+                                  onAggiungiRapido={aggiungiRapido}
+                                />
+                              ))}
+                            </ul>
+                          </>
+                        )}
+
+                        {preferitiPastiSalvati.length > 0 && (
+                          <>
+                            <p
+                              className={`px-1 pb-1 text-xs text-muted ${preferitiAlimenti.length > 0 ? "mt-3" : ""}`}
+                            >
+                              Pasti salvati
+                            </p>
+                            <ul>
+                              {preferitiPastiSalvati.map((pasto) => (
+                                <RigaPastoSalvato
+                                  key={pasto.composizioneId}
+                                  pasto={pasto}
+                                  onAggiungi={aggiungiPastoSalvatoRapido}
+                                />
+                              ))}
+                            </ul>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
@@ -596,6 +671,44 @@ function RigaRapida({
         className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
       >
         <Piu className="text-accent" />
+      </button>
+    </li>
+  );
+}
+
+// Pasto salvato nella sezione Preferiti (sezione 3, punto 5): a differenza di
+// RigaRapida non c'è uno sheet da aprire — le quantità sono già tutte
+// decise — quindi tutta la riga è un unico bersaglio che inserisce subito
+// ogni alimento. Il "+" resta solo decorativo (aria-hidden): un secondo
+// bottone che facesse la stessa identica azione del primo confonderebbe più
+// che aiutare.
+function RigaPastoSalvato({
+  pasto,
+  onAggiungi,
+}: {
+  pasto: PastoSalvato;
+  onAggiungi: (p: PastoSalvato) => void;
+}) {
+  const kcalTotali = Math.round(
+    pasto.voci.reduce((somma, { alimento, quantitaG }) => somma + (alimento.kcal_100g * quantitaG) / 100, 0)
+  );
+  const numeroAlimenti = pasto.voci.length;
+
+  return (
+    <li className="border-b border-border">
+      <button
+        type="button"
+        onClick={() => onAggiungi(pasto)}
+        aria-label={`Aggiungi ${pasto.nome}, ${numeroAlimenti} alimenti, ${kcalTotali} kcal`}
+        className={`flex w-full items-center gap-2 py-3.5 text-left ${CLASSE_FOCUS}`}
+      >
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate">{pasto.nome}</span>
+          <span className="mt-0.5 text-sm text-muted">
+            {numeroAlimenti} {numeroAlimenti === 1 ? "alimento" : "alimenti"} · {kcalTotali} kcal
+          </span>
+        </span>
+        <Piu className="shrink-0 text-accent" />
       </button>
     </li>
   );

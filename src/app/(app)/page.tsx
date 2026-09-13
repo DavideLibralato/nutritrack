@@ -27,6 +27,8 @@ import {
   repositoryPasti,
   repositoryVociDiario,
   repositoryObiettivi,
+  repositoryComposizioni,
+  repositoryComposizioniVoci,
 } from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
 import {
@@ -46,8 +48,15 @@ import { oraInizioPrimoPasto } from "@/lib/inserimento/propostaPasto";
 import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
 import SheetQuantita from "@/components/SheetQuantita";
+import SheetNome from "@/components/SheetNome";
 import { daVoce } from "@/lib/inserimento/alimentoPerSheet";
-import type { VoceDiario } from "@/lib/db/tipi";
+import { pastoGiaSalvato, composizioniCorrispondenti } from "@/lib/inserimento/pastiSalvati";
+import {
+  salvaPastoComeComposizione,
+  esisteComposizioneConNome,
+  eliminaComposizione,
+} from "@/lib/repository/composizioni";
+import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -124,6 +133,18 @@ function OggiContenuto() {
     return repositoryObiettivi.ottieniTutti(userId);
   }, [userId]);
 
+  // Pasti salvati (solo per sapere se un pasto di oggi corrisponde già a uno
+  // di essi — la stella del segnalibro, sezione 3): servono composizioni e le
+  // loro righe.
+  const composizioni = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryComposizioni.ottieniTutti(userId);
+  }, [userId]);
+  const composizioniVoci = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryComposizioniVoci.ottieniTutti(userId);
+  }, [userId]);
+
   // Se l'utente non ha ancora nessun pasto (registrazione fatta prima che
   // esistesse questa logica, o primo avvio), crea il set predefinito dei 5
   // pasti. garantisciPastiPredefiniti è idempotente e ha una guardia contro
@@ -143,6 +164,13 @@ function OggiContenuto() {
   const [pastoModificaId, setPastoModificaId] = useState<string>("");
   const [salvataggioVoce, setSalvataggioVoce] = useState<
     "inattivo" | "in-corso" | "errore"
+  >("inattivo");
+
+  // "Salva come preferito" (sezione 3): il pasto in attesa del nome nello
+  // SheetNome, e lo stato del salvataggio della composizione.
+  const [pastoDaSalvare, setPastoDaSalvare] = useState<Pasto | null>(null);
+  const [salvataggioComposizione, setSalvataggioComposizione] = useState<
+    "inattivo" | "in-corso" | "errore" | "duplicato"
   >("inattivo");
 
   // Voce 3: i pasti (fasce) di cui l'utente ha nascosto la lista di alimenti.
@@ -176,7 +204,9 @@ function OggiContenuto() {
     userId === undefined ||
     pasti === undefined ||
     vociTutte === undefined ||
-    obiettivi === undefined
+    obiettivi === undefined ||
+    composizioni === undefined ||
+    composizioniVoci === undefined
   ) {
     return (
       <main className="flex min-h-full items-center justify-center p-4">
@@ -260,6 +290,68 @@ function OggiContenuto() {
       chiudiModifica();
     } catch {
       setSalvataggioVoce("errore");
+    }
+  }
+
+  // "Salva come preferito" (sezione 3): se il pasto di oggi non corrisponde
+  // già a un pasto salvato, apre SheetNome per il nome — non window.prompt(),
+  // non disponibile in alcuni ambienti (webview integrate, alcune PWA
+  // installate). Se invece la stella è già piena, ripremerla lo toglie
+  // subito dai preferiti, senza sheet: stessa immediatezza della stella sugli
+  // alimenti singoli in SheetQuantita.
+  async function toggleSalvaPreferito(pasto: Pasto) {
+    if (!composizioni || !composizioniVoci) return;
+    const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
+    if (vociPasto.length === 0) return;
+
+    const idsCorrispondenti = composizioniCorrispondenti(
+      vociPasto,
+      composizioni,
+      composizioniVoci
+    );
+    if (idsCorrispondenti.length > 0) {
+      try {
+        await Promise.all(
+          idsCorrispondenti.map((id) => eliminaComposizione(id, composizioniVoci))
+        );
+      } catch {
+        // Azione istantanea senza sheet aperto: nessun posto dove mostrare un
+        // errore. Come toggleStellaAlimentoScelto in /aggiungi, un fallimento
+        // qui lascia solo la stella ancora piena — l'utente può riprovare.
+      }
+      return;
+    }
+
+    setPastoDaSalvare(pasto);
+    setSalvataggioComposizione("inattivo");
+  }
+
+  function chiudiSalvaPreferito() {
+    setPastoDaSalvare(null);
+    setSalvataggioComposizione("inattivo");
+  }
+
+  async function confermaSalvaPreferito(nome: string) {
+    if (!userId || !pastoDaSalvare || !composizioni) return;
+    const vociPasto = vociGiorno.filter((v) => v.pasto_id === pastoDaSalvare.id);
+    if (vociPasto.length === 0) {
+      chiudiSalvaPreferito();
+      return;
+    }
+
+    // Nome già usato da un altro pasto salvato: non si crea un duplicato
+    // silenzioso, si segnala e si lascia lo sheet aperto per correggere.
+    if (esisteComposizioneConNome(nome, composizioni)) {
+      setSalvataggioComposizione("duplicato");
+      return;
+    }
+
+    setSalvataggioComposizione("in-corso");
+    try {
+      await salvaPastoComeComposizione(userId, nome, vociPasto);
+      chiudiSalvaPreferito();
+    } catch {
+      setSalvataggioComposizione("errore");
     }
   }
 
@@ -364,6 +456,9 @@ function OggiContenuto() {
             const kcalPasto = Math.round(sommaTotali(vociPasto).kcal);
             const haVoci = vociPasto.length > 0;
             const collassato = pastiCollassati.has(pasto.id);
+            // Stella del segnalibro (sezione 3, punto 3): piena finché gli
+            // alimenti+quantità di oggi coincidono con un pasto già salvato.
+            const giaSalvato = pastoGiaSalvato(vociPasto, composizioni, composizioniVoci);
             return (
               <li key={pasto.id} className="border-b border-border py-4">
                 {/* Voce 3: se il pasto ha degli alimenti, la riga del titolo è
@@ -373,18 +468,37 @@ function OggiContenuto() {
                     giorno, così una fascia chiusa resta chiusa anche
                     cambiando data. */}
                 {haVoci ? (
-                  <button
-                    type="button"
-                    onClick={() => toggleCollasso(pasto.id)}
-                    aria-expanded={!collassato}
-                    className={`flex w-full items-baseline justify-between gap-3 text-left ${CLASSE_FOCUS}`}
-                  >
-                    <span className="flex items-baseline gap-1.5 text-lg">
+                  <div className="flex w-full items-baseline justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleCollasso(pasto.id)}
+                      aria-expanded={!collassato}
+                      className={`flex min-w-0 items-baseline gap-1.5 text-left text-lg ${CLASSE_FOCUS}`}
+                    >
                       <CaretPasto aperto={!collassato} />
-                      {pasto.nome}
-                    </span>
-                    <span className="shrink-0 text-lg">{kcalPasto} kcal</span>
-                  </button>
+                      <span className="truncate">{pasto.nome}</span>
+                    </button>
+                    <div className="flex shrink-0 items-baseline gap-2.5">
+                      {/* Voce "Salvare un pasto intero" (sezione 3): non si
+                          costruisce in una schermata apposta, si promuove da
+                          una giornata già registrata — bersaglio separato dal
+                          collasso, stessa riga. */}
+                      <button
+                        type="button"
+                        onClick={() => toggleSalvaPreferito(pasto)}
+                        aria-pressed={giaSalvato}
+                        aria-label={
+                          giaSalvato
+                            ? `Togli ${pasto.nome} dai preferiti`
+                            : `Salva ${pasto.nome} come preferito`
+                        }
+                        className={`rounded p-1 ${giaSalvato ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
+                      >
+                        <Segnalibro piena={giaSalvato} />
+                      </button>
+                      <span className="text-lg">{kcalPasto} kcal</span>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-lg">{pasto.nome}</span>
@@ -451,7 +565,45 @@ function OggiContenuto() {
           onElimina={eliminaVoce}
         />
       )}
+
+      {pastoDaSalvare && (
+        <SheetNome
+          titolo={`Salva "${pastoDaSalvare.nome}" come preferito`}
+          valoreIniziale={pastoDaSalvare.nome}
+          inCorso={salvataggioComposizione === "in-corso"}
+          errore={
+            salvataggioComposizione === "errore"
+              ? "Non è stato possibile salvare. Riprova."
+              : salvataggioComposizione === "duplicato"
+                ? "Esiste già un pasto salvato con questo nome. Scegline un altro."
+                : null
+          }
+          onAnnulla={chiudiSalvaPreferito}
+          onConferma={confermaSalvaPreferito}
+        />
+      )}
     </div>
+  );
+}
+
+// Segnalibro: "Salva come preferito" su un pasto (sezione 3). Azione, non
+// stato on/off — a differenza della stella dei preferiti-alimento, si può
+// usare più volte con nomi diversi sullo stesso pasto.
+function Segnalibro({ piena }: { piena: boolean }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill={piena ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M6 3h12v18l-6-4-6 4Z" />
+    </svg>
   );
 }
 

@@ -11,7 +11,8 @@ Priorità: 🔴 bloccante · 🟡 importante · ⚪ rifinitura
 
 ## Da fare
 
-*(vuoto — tutte implementate, in attesa di verifica in uso reale)*
+- 🟡 Nessuna UI per modificare/eliminare un pasto salvato dopo la creazione —
+  `repositoryComposizioni` ha già i metodi generici, manca solo la schermata
 
 ---
 
