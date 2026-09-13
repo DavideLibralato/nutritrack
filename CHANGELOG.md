@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-13 — Recenti in Aggiungi alimento (roadmap punto 3, solo Recenti)
+
+- Nuova `alimentiRecenti()` in `src/lib/inserimento/recenti.ts`: funzione
+  pura, ultimi 10 alimenti usati (per `creato_il` di `voci_diario`),
+  deduplicati per alimento (solo l'ultima quantità di ciascuno), con
+  l'alimento vivo dal catalogo — non la copia storica nella voce.
+- In `src/app/aggiungi/page.tsx` sostituisce lo stato vuoto della ricerca
+  quando ce n'è storico. "+" sulla riga aggiunge subito con l'ultima
+  quantità, senza aprire lo sheet (un tap, come da sezione 3 del documento);
+  tap sul nome apre lo sheet come già succede nei risultati di ricerca. La
+  scrittura della voce (`creaVoce`) è condivisa fra sheet e "+" rapido.
+  `vociGiorno` ora deriva da una nuova `vociTutte` (tutto lo storico)
+  invece di una seconda interrogazione a Dexie.
+- Preferiti e pasti salvati restano fuori, pezzo successivo.
+- Nessun bug aperto. Nota per me: `npm run dev` (Next.js 16) rigenera un
+  blocco in fondo a `CLAUDE.md` a ogni avvio — va scartato con `git restore`
+  prima di committare, non è farina del sacco dell'utente.
+
 ## 2026-09-10 — Fix voce 2: il pulsante "Crea alimento" finiva dietro la tastiera
 
 - La causa non era l'impaginazione del pulsante (già ancorato in fondo) ma
