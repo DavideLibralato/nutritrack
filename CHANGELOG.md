@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-19 — Rinomina/elimina pasti salvati + matita mancante in Recenti/Preferiti
+
+- Chiude il debito 🟡 di `NOTE_MODIFICHE.md`: `RigaPastoSalvato` (sottogruppo
+  "Pasti salvati" di Preferiti) ha ora una matita, stessa posizione/stile di
+  quella sui risultati di ricerca, separata dal tap sulla riga (aggiunge
+  subito) e dal "+". Apre `SheetNome` esteso con `modifica`/`onElimina` —
+  stesso pattern già in `SheetQuantita` (Annulla→Elimina→conferma "No/Sì,
+  elimina"). Rinomina con lo stesso controllo duplicati della creazione
+  (`esisteComposizioneConNome`, ora con `escludiId` per non segnalarsi come
+  duplicato di se stesso); elimina riusa `eliminaComposizione`. Non tocca gli
+  alimenti/quantità della composizione — per cambiarli si risalva da capo.
+- Bug trovato in uso reale: la matita di modifica su un alimento (tuo, non
+  ancora verificato) compariva solo nei risultati di ricerca, non in Recenti
+  né in Preferiti > Alimenti, pur essendo lo stesso alimento con lo stesso
+  criterio di modificabilità — mancava solo in `RigaRapida`, il componente
+  condiviso dalle altre due liste. Aggiunta lì, stesso identico criterio e
+  bottone: compare ora automaticamente in entrambe.
+- Nessun bug aperto.
+
 ## 2026-09-13 — Pasti salvati (chiude il punto 3 della roadmap)
 
 - "Salva come preferito" su un pasto in Oggi (icona segnalibro, solo se il
