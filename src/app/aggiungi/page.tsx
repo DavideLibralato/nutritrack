@@ -42,8 +42,14 @@ import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { alimentiRecenti } from "@/lib/inserimento/recenti";
 import { alimentiPreferiti } from "@/lib/inserimento/preferiti";
 import { pastiSalvati, type PastoSalvato } from "@/lib/inserimento/pastiSalvati";
+import {
+  esisteComposizioneConNome,
+  rinominaComposizione,
+  eliminaComposizione,
+} from "@/lib/repository/composizioni";
 import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
 import SheetQuantita from "@/components/SheetQuantita";
+import SheetNome from "@/components/SheetNome";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import type { Alimento } from "@/lib/db/tipi";
 
@@ -226,6 +232,14 @@ function AggiungiContenuto() {
   // quindi non ha il messaggio d'errore di SheetQuantita a disposizione.
   const [erroreRapido, setErroreRapido] = useState<string | null>(null);
 
+  // Rinomina/elimina un pasto salvato (NOTE_MODIFICHE.md): la matita in
+  // RigaPastoSalvato apre SheetNome in modalità modifica, separato dal tap
+  // sulla riga che invece aggiunge subito al diario.
+  const [pastoInModifica, setPastoInModifica] = useState<PastoSalvato | null>(null);
+  const [salvataggioModificaPasto, setSalvataggioModificaPasto] = useState<
+    "inattivo" | "in-corso" | "errore" | "duplicato"
+  >("inattivo");
+
   // `!userId` copre sia "non so ancora" (undefined) sia "nessuna sessione"
   // (null): su questa rotta il middleware garantisce comunque un utente
   // loggato, quindi il secondo caso è solo teorico. Si aspetta anche
@@ -340,6 +354,47 @@ function AggiungiContenuto() {
   function toggleStellaAlimentoScelto() {
     if (!userId || !alimentoScelto || !preferiti) return;
     togglePreferito(userId, preferiti, alimentoScelto.id).catch(() => {});
+  }
+
+  // Matita su un pasto salvato: rinomina o elimina la composizione. Non
+  // tocca gli alimenti/quantità — per cambiarli si rifà da capo dal pasto di
+  // oggi (fuori perimetro per ora, NOTE_MODIFICHE.md).
+  function apriModificaPasto(pasto: PastoSalvato) {
+    setPastoInModifica(pasto);
+    setSalvataggioModificaPasto("inattivo");
+  }
+
+  function chiudiModificaPasto() {
+    setPastoInModifica(null);
+    setSalvataggioModificaPasto("inattivo");
+  }
+
+  async function confermaRinominaPasto(nome: string) {
+    if (!pastoInModifica || !composizioni) return;
+
+    if (esisteComposizioneConNome(nome, composizioni, pastoInModifica.composizioneId)) {
+      setSalvataggioModificaPasto("duplicato");
+      return;
+    }
+
+    setSalvataggioModificaPasto("in-corso");
+    try {
+      await rinominaComposizione(pastoInModifica.composizioneId, nome);
+      chiudiModificaPasto();
+    } catch {
+      setSalvataggioModificaPasto("errore");
+    }
+  }
+
+  async function eliminaPastoInModifica() {
+    if (!pastoInModifica || !composizioniVoci) return;
+    setSalvataggioModificaPasto("in-corso");
+    try {
+      await eliminaComposizione(pastoInModifica.composizioneId, composizioniVoci);
+      chiudiModificaPasto();
+    } catch {
+      setSalvataggioModificaPasto("errore");
+    }
   }
 
   return (
@@ -461,8 +516,10 @@ function AggiungiContenuto() {
                               key={alimento.id}
                               alimento={alimento}
                               quantitaG={quantitaG}
+                              userId={userId}
                               onScegli={scegli}
                               onAggiungiRapido={aggiungiRapido}
+                              onModifica={setAlimentoInModifica}
                             />
                           ))}
                         </ul>
@@ -491,8 +548,10 @@ function AggiungiContenuto() {
                                   key={alimento.id}
                                   alimento={alimento}
                                   quantitaG={quantitaG}
+                                  userId={userId}
                                   onScegli={scegli}
                                   onAggiungiRapido={aggiungiRapido}
+                                  onModifica={setAlimentoInModifica}
                                 />
                               ))}
                             </ul>
@@ -512,6 +571,7 @@ function AggiungiContenuto() {
                                   key={pasto.composizioneId}
                                   pasto={pasto}
                                   onAggiungi={aggiungiPastoSalvatoRapido}
+                                  onModifica={apriModificaPasto}
                                 />
                               ))}
                             </ul>
@@ -627,6 +687,25 @@ function AggiungiContenuto() {
           onConferma={confermaQuantita}
         />
       )}
+
+      {pastoInModifica && (
+        <SheetNome
+          titolo={`Modifica "${pastoInModifica.nome}"`}
+          valoreIniziale={pastoInModifica.nome}
+          modifica
+          inCorso={salvataggioModificaPasto === "in-corso"}
+          errore={
+            salvataggioModificaPasto === "errore"
+              ? "Operazione non riuscita. Riprova."
+              : salvataggioModificaPasto === "duplicato"
+                ? "Esiste già un pasto salvato con questo nome. Scegline un altro."
+                : null
+          }
+          onAnnulla={chiudiModificaPasto}
+          onConferma={confermaRinominaPasto}
+          onElimina={eliminaPastoInModifica}
+        />
+      )}
     </main>
   );
 }
@@ -638,14 +717,24 @@ function AggiungiContenuto() {
 function RigaRapida({
   alimento,
   quantitaG,
+  userId,
   onScegli,
   onAggiungiRapido,
+  onModifica,
 }: {
   alimento: Alimento;
   quantitaG: number;
+  userId: string;
   onScegli: (a: Alimento) => void;
   onAggiungiRapido: (a: Alimento, grammi: number) => void;
+  onModifica: (a: Alimento) => void;
 }) {
+  // Stesso criterio della matita nei risultati di ricerca (sezione 10.8):
+  // modificabile solo se è tuo e non ancora verificato. Recenti e Preferiti
+  // possono mostrare lo stesso identico alimento che compare in ricerca — il
+  // bug segnalato era proprio che qui mancava, mentre in ricerca c'era.
+  const modificabile = alimento.user_id === userId && !alimento.verificato;
+
   return (
     <li className="flex items-center gap-2 border-b border-border py-3.5">
       {/* Tap sul nome: stesso percorso della ricerca, sheet precompilato con
@@ -662,6 +751,17 @@ function RigaRapida({
         </span>
       </button>
 
+      {modificabile && (
+        <button
+          type="button"
+          onClick={() => onModifica(alimento)}
+          aria-label={`Modifica ${etichettaAlimento(alimento)}`}
+          className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
+        >
+          <Matita />
+        </button>
+      )}
+
       {/* "+": aggiunge subito con la quantità passata, un tap, senza aprire
           lo sheet (sezione 3). */}
       <button
@@ -676,39 +776,55 @@ function RigaRapida({
   );
 }
 
-// Pasto salvato nella sezione Preferiti (sezione 3, punto 5): a differenza di
-// RigaRapida non c'è uno sheet da aprire — le quantità sono già tutte
-// decise — quindi tutta la riga è un unico bersaglio che inserisce subito
-// ogni alimento. Il "+" resta solo decorativo (aria-hidden): un secondo
-// bottone che facesse la stessa identica azione del primo confonderebbe più
-// che aiutare.
+// Pasto salvato nella sezione Preferiti (sezione 3, punto 5): stessa
+// struttura a tre bersagli della riga dei risultati di ricerca — nome
+// (aggiunge), matita (rinomina/elimina la composizione), "+" (aggiunge). Nome
+// e "+" fanno la stessa cosa: non c'è uno sheet quantità da aprire, le
+// quantità sono già tutte decise nella composizione. La matita non è
+// condizionale come nei risultati di ricerca: un pasto salvato è sempre tuo,
+// non esiste un equivalente di "condiviso/verificato".
 function RigaPastoSalvato({
   pasto,
   onAggiungi,
+  onModifica,
 }: {
   pasto: PastoSalvato;
   onAggiungi: (p: PastoSalvato) => void;
+  onModifica: (p: PastoSalvato) => void;
 }) {
   const kcalTotali = Math.round(
     pasto.voci.reduce((somma, { alimento, quantitaG }) => somma + (alimento.kcal_100g * quantitaG) / 100, 0)
   );
   const numeroAlimenti = pasto.voci.length;
+  const sottotitolo = `${numeroAlimenti} ${numeroAlimenti === 1 ? "alimento" : "alimenti"} · ${kcalTotali} kcal`;
 
   return (
-    <li className="border-b border-border">
+    <li className="flex items-center gap-2 border-b border-border py-3.5">
       <button
         type="button"
         onClick={() => onAggiungi(pasto)}
-        aria-label={`Aggiungi ${pasto.nome}, ${numeroAlimenti} alimenti, ${kcalTotali} kcal`}
-        className={`flex w-full items-center gap-2 py-3.5 text-left ${CLASSE_FOCUS}`}
+        className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
       >
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate">{pasto.nome}</span>
-          <span className="mt-0.5 text-sm text-muted">
-            {numeroAlimenti} {numeroAlimenti === 1 ? "alimento" : "alimenti"} · {kcalTotali} kcal
-          </span>
-        </span>
-        <Piu className="shrink-0 text-accent" />
+        <span className="truncate">{pasto.nome}</span>
+        <span className="mt-0.5 text-sm text-muted">{sottotitolo}</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onModifica(pasto)}
+        aria-label={`Modifica ${pasto.nome}`}
+        className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
+      >
+        <Matita />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onAggiungi(pasto)}
+        aria-label={`Aggiungi ${pasto.nome}, ${sottotitolo}`}
+        className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
+      >
+        <Piu className="text-accent" />
       </button>
     </li>
   );

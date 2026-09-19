@@ -1,15 +1,17 @@
 "use client";
 
-// Sheet minimo per chiedere un nome testuale — oggi solo "Salva come
-// preferito" in Oggi. Sostituisce window.prompt(): in alcuni ambienti
-// (webview integrate come il Simple Browser di VSCode, alcune PWA installate)
-// prompt() non è disponibile e lancia un errore invece di aprire il dialogo
-// nativo, invece di limitarsi a non fare nulla.
+// Sheet minimo per chiedere un nome testuale — "Salva come preferito" in
+// Oggi, e rinominare/eliminare un pasto salvato da Aggiungi alimento.
+// Sostituisce window.prompt(): in alcuni ambienti (webview integrate come il
+// Simple Browser di VSCode, alcune PWA installate) prompt() non è disponibile
+// e lancia un errore invece di aprire il dialogo nativo, invece di limitarsi
+// a non fare nulla.
 //
 // Stessa struttura visiva di SheetQuantita (overlay, pannello ancorato in
-// basso, riga di pulsanti Annulla/conferma) per restare coerente con l'unico
-// altro sheet dell'app, non per riuso di codice — i campi sono troppo
-// diversi per condividere il componente.
+// basso, riga di pulsanti Annulla/conferma, e lo stesso pattern di
+// modifica+Elimina con conferma "No / Sì, elimina" sulla stessa riga) per
+// restare coerente con l'unico altro sheet dell'app, non per riuso di
+// codice — i campi sono troppo diversi per condividere il componente.
 
 import { useEffect, useRef, useState } from "react";
 
@@ -24,6 +26,9 @@ interface Props {
   errore?: string | null;
   onAnnulla: () => void;
   onConferma: (nome: string) => void;
+  // --- Solo in modifica di qualcosa che esiste già ---
+  modifica?: boolean;
+  onElimina?: () => void;
 }
 
 export default function SheetNome({
@@ -34,9 +39,16 @@ export default function SheetNome({
   errore = null,
   onAnnulla,
   onConferma,
+  modifica = false,
+  onElimina,
 }: Props) {
   const [nome, setNome] = useState(valoreIniziale);
+  const [confermaElim, setConfermaElim] = useState(false);
   const rifInput = useRef<HTMLInputElement>(null);
+
+  // In modifica il pulsante di sinistra diventa "Elimina" (che poi chiede
+  // conferma nella stessa riga) — identico a SheetQuantita.
+  const modificaConElimina = modifica && !!onElimina;
 
   // All'apertura: fuoco sul campo e testo selezionato, come nello sheet
   // quantità — un valore diverso si digita senza prima cancellare.
@@ -89,23 +101,59 @@ export default function SheetNome({
 
         {errore && <p className="mt-2 text-sm text-warning">{errore}</p>}
 
+        {/* Stessa riga [sinistra] [destra] di SheetQuantita:
+            - creazione:            [Annulla]      [testoConferma]
+            - modifica:             [Elimina]      [testoConferma]
+            - modifica, conferma:   [No]           [Sì, elimina] */}
         <div className="mt-5 flex gap-3">
-          <button
-            type="button"
-            onClick={onAnnulla}
-            disabled={inCorso}
-            className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
-          >
-            Annulla
-          </button>
-          <button
-            type="button"
-            onClick={conferma}
-            disabled={!valido || inCorso}
-            className={`flex-1 rounded-lg bg-accent p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
-          >
-            {inCorso ? "Salvo..." : testoConferma}
-          </button>
+          {!modificaConElimina ? (
+            <button
+              type="button"
+              onClick={onAnnulla}
+              disabled={inCorso}
+              className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              Annulla
+            </button>
+          ) : confermaElim ? (
+            <button
+              type="button"
+              onClick={() => setConfermaElim(false)}
+              disabled={inCorso}
+              className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              No
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfermaElim(true)}
+              disabled={inCorso}
+              className={`flex-1 rounded-lg border border-warning p-3 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              Elimina
+            </button>
+          )}
+
+          {modificaConElimina && confermaElim ? (
+            <button
+              type="button"
+              onClick={() => onElimina?.()}
+              disabled={inCorso}
+              className={`flex-1 rounded-lg bg-warning p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              {inCorso ? "Elimino..." : "Sì, elimina"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={conferma}
+              disabled={!valido || inCorso}
+              className={`flex-1 rounded-lg bg-accent p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              {inCorso ? "Salvo..." : testoConferma}
+            </button>
+          )}
         </div>
       </div>
     </div>

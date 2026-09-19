@@ -11,12 +11,30 @@ Priorità: 🔴 bloccante · 🟡 importante · ⚪ rifinitura
 
 ## Da fare
 
-- 🟡 Nessuna UI per modificare/eliminare un pasto salvato dopo la creazione —
-  `repositoryComposizioni` ha già i metodi generici, manca solo la schermata
+*(vuoto — tutte implementate, in attesa di verifica in uso reale)*
 
 ---
 
 ## Fatte
+
+### 2026-09-19 — Rinomina/elimina un pasto salvato
+
+- 🟡 Nessuna UI per modificare/eliminare un pasto salvato dopo la creazione —
+  `repositoryComposizioni` aveva già i metodi generici, mancava solo la
+  schermata.
+- In Aggiungi alimento, `RigaPastoSalvato` (sottogruppo "Pasti salvati" di
+  Preferiti) ha ora una matita, stessa posizione/stile di quella sui
+  risultati di ricerca — separata dal tap sulla riga (che resta "aggiungi
+  subito") e dal "+".
+- La matita apre `SheetNome` in modalità modifica (nuovi prop `modifica` +
+  `onElimina`, stesso pattern già usato da `SheetQuantita`: bottone sinistro
+  Annulla→Elimina→conferma "No/Sì, elimina" sulla stessa riga). Rinomina con
+  lo stesso controllo duplicati della creazione (`esisteComposizioneConNome`,
+  ora con un `escludiId` per non segnalare il pasto come duplicato di se
+  stesso); elimina riusa `eliminaComposizione` già scritta per la stella in
+  Oggi.
+- Fuori perimetro, invariato: non si modificano gli alimenti/quantità della
+  composizione — per cambiarli si risalva da capo dal pasto di oggi.
 
 ### 2026-09-10 — Voci 1, 2, 3, 4, 5
 

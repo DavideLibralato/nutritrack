@@ -10,12 +10,17 @@ import type { Composizione, ComposizioneVoce, VoceDiario } from "../db/tipi";
 // case-insensitive — "Colazione" e "colazione" restano nomi diversi finché
 // l'utente non li scrive uguali). Solo fra i "pasto_salvato": una ricetta con
 // lo stesso nome non è un conflitto, sono cose diverse per l'utente.
+// `escludiId`: nella rinomina il pasto non deve risultare "duplicato di se
+// stesso" se il nome non cambia (o torna a essere quello di partenza).
 export function esisteComposizioneConNome(
   nome: string,
-  composizioni: Composizione[]
+  composizioni: Composizione[],
+  escludiId?: string
 ): boolean {
   const nomeTrim = nome.trim();
-  return composizioni.some((c) => c.tipo === "pasto_salvato" && c.nome.trim() === nomeTrim);
+  return composizioni.some(
+    (c) => c.id !== escludiId && c.tipo === "pasto_salvato" && c.nome.trim() === nomeTrim
+  );
 }
 
 // Promuove le voci di un pasto già registrato oggi a una composizione
@@ -55,6 +60,13 @@ export async function salvaPastoComeComposizione(
       })
     )
   );
+}
+
+// Rinomina un pasto salvato. Il controllo duplicati (esisteComposizioneConNome
+// con escludiId) va fatto dal chiamante prima di invocarla — qui si scrive e
+// basta, come per il resto del CRUD generico.
+export async function rinominaComposizione(id: string, nome: string): Promise<void> {
+  await repositoryComposizioni.aggiorna(id, { nome });
 }
 
 // Toglie un pasto salvato dai preferiti (sezione 3, punto 3 delle
