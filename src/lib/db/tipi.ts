@@ -23,6 +23,8 @@ export interface RigaBase {
 export type NomeTabella =
   | "profili"
   | "obiettivi"
+  | "obiettivi_target"
+  | "giorni"
   | "pasti"
   | "alimenti"
   | "voci_diario"
@@ -57,11 +59,40 @@ export type TipoObiettivo = "dimagrire" | "mantenere" | "massa";
 export interface Obiettivo extends RigaBase {
   valido_dal: string; // "YYYY-MM-DD": cambiare obiettivo inserisce una riga nuova, non modifica questa
   tipo: TipoObiettivo;
+  // kcal/proteine_g/carboidrati_g/grassi_g restano qui per ora: sono ancora
+  // l'unica cosa che profilo/page.tsx legge e scrive. obiettivi_target (sotto)
+  // esiste già ed è già popolata (backfill, tipo_giorno "normale"), ma il
+  // codice applicativo non la usa ancora — passaggio rimandato a un giro
+  // successivo, non a questa migration.
   kcal: number;
   proteine_g: number;
   carboidrati_g: number;
   grassi_g: number;
   peso_obiettivo: number | null;
+}
+
+export type TipoGiorno = "normale" | "allenamento";
+
+// Target per tipo di giorno, legati a un obiettivo (sezione 4 aggiornata:
+// giorni differenziati allenamento/normale). Ogni obiettivo ha una riga qui
+// per tipo_giorno "normale" e, quando la UI la introdurrà, una per
+// "allenamento".
+export interface ObiettivoTarget extends RigaBase {
+  obiettivo_id: string;
+  tipo_giorno: TipoGiorno;
+  kcal: number;
+  proteine_g: number;
+  carboidrati_g: number;
+  grassi_g: number;
+}
+
+// Tabella sparsa: una riga solo per i giorni il cui tipo è stato deciso
+// (prima voce del giorno, o tocco esplicito dell'utente sulla pastiglia).
+// Nessuna riga per una data = giorno "normale" per convenzione applicativa,
+// non per un default scritto nel database.
+export interface Giorno extends RigaBase {
+  data: string; // "YYYY-MM-DD"
+  tipo_giorno: TipoGiorno;
 }
 
 export interface Pasto extends RigaBase {

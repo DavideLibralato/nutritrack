@@ -12,6 +12,8 @@ import Dexie, { type Table } from "dexie";
 import type {
   Profilo,
   Obiettivo,
+  ObiettivoTarget,
+  Giorno,
   Pasto,
   Alimento,
   VoceDiario,
@@ -29,6 +31,8 @@ import type { VoceOutbox } from "../sync/outbox";
 class NutriTrackDatabase extends Dexie {
   profili!: Table<Profilo, string>;
   obiettivi!: Table<Obiettivo, string>;
+  obiettivi_target!: Table<ObiettivoTarget, string>;
+  giorni!: Table<Giorno, string>;
   pasti!: Table<Pasto, string>;
   alimenti!: Table<Alimento, string>;
   voci_diario!: Table<VoceDiario, string>;
@@ -52,6 +56,27 @@ class NutriTrackDatabase extends Dexie {
     this.version(1).stores({
       profili: "id, user_id, deleted_at",
       obiettivi: "id, user_id, valido_dal, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+    });
+
+    // version(2): due tabelle nuove per i giorni differenziati
+    // allenamento/normale (PUNTO_DI_PARTENZA.md, sezione 4 aggiornata).
+    // Nessun .upgrade(): non cambia la forma di nessuna riga già sul
+    // dispositivo, sono tabelle nuove che partono vuote e si popolano dal
+    // prossimo sync (regola B.2/B.4 di CLAUDE.md — qui il caso è ancora più
+    // semplice, non c'è nemmeno un indice esistente da ricostruire).
+    this.version(2).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
       pasti: "id, user_id, ordine, deleted_at",
       alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
       voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
