@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-19 — Schema per giorni differenziati allenamento/normale
+
+- Prima vera modifica di schema dopo aver scritto la procedura anti-perdita-
+  dati in `CLAUDE.md`: seguita punto per punto. Solo schema in questo giro,
+  nessuna UI collegata ancora.
+- Due tabelle nuove su Supabase: `obiettivi_target` (target per
+  `tipo_giorno`, legati a un `obiettivo_id`) e `giorni` (tabella sparsa: una
+  riga solo per le date il cui tipo è stato deciso). RLS attiva dalla stessa
+  migration di creazione, come sempre.
+- Backfill di `obiettivi_target` dai valori già su `obiettivi`
+  (kcal/proteine_g/carboidrati_g/grassi_g), come riga `tipo_giorno =
+  "normale"` per ogni obiettivo esistente — copia, non sposta: `obiettivi`
+  resta intatta. Verificato 4/4 righe, nessuna scoperta.
+- Dexie passa a `version(2)`: le due tabelle nuove nello store locale,
+  nessun `.upgrade()` — non cambia la forma di nessuna riga già sul
+  dispositivo. Verificato dal vivo: dati esistenti intatti dopo l'upgrade,
+  tabelle nuove presenti e vuote, nessun errore in console.
+- `tipi.ts` aggiornato (`ObiettivoTarget`, `Giorno`, `TipoGiorno`).
+- Lasciato aperto di proposito: `obiettivi.kcal/proteine_g/carboidrati_g/
+  grassi_g` restano l'unica fonte letta da `profilo/page.tsx` finché il
+  codice applicativo non passa a leggere/scrivere `obiettivi_target` — pezzo
+  successivo, non in questo commit. `get_advisors` ha segnalato una FK non
+  indicizzata su `obiettivi_target.user_id` (INFO, coerente con altre 7
+  tabelle già così nello schema): lasciata com'è, volumi piccoli, da rivedere
+  tutte insieme in un giro dedicato se mai servirà.
+- Nessun bug aperto.
+
 ## 2026-09-19 — Rinomina/elimina pasti salvati + matita mancante in Recenti/Preferiti
 
 - Chiude il debito 🟡 di `NOTE_MODIFICHE.md`: `RigaPastoSalvato` (sottogruppo
