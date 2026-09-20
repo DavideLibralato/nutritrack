@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-20 — Aggiornamento Next.js (CVE) e limite della cancellazione fisica
+
+- Next.js aggiornato da 16.3.0 a 16.3.3 (salto di patch): chiude
+  CVE-2026-75604 / GHSA-p293-qw3h-jr36, RCE non autenticata sugli host
+  Windows, più l'avviso gemello sull'ottimizzazione immagini AVIF. `npm
+  audit` passa da 1 vulnerabilità critica a 0. Non eravamo esposti (deploy
+  su Vercel), aggiornato comunque. Test, `tsc --noEmit`, `eslint` e build
+  rilanciati dopo: nessuna differenza.
+- Documentato in `PUNTO_DI_PARTENZA.md` §9.2 un limite del modello di
+  sincronizzazione trovato durante lo sviluppo di oggi: una riga cancellata
+  fisicamente sul server (SQL Editor, non dall'app — successo due volte
+  oggi durante un reset dei dati di test) è indistinguibile per la discesa
+  da una riga mai esistita, quindi nessun dispositivo che la ha già in
+  Dexie la toglie — alla prima salita la rimanda su, resuscitandola. Regola
+  operativa scritta: svuotare una tabella su Supabase richiede di svuotare
+  anche IndexedDB su ogni dispositivo che ha usato quell'account.
+- Aggiunta anche una nota che la checklist B.7 (CLAUDE.md) per `version(4)`
+  e `version(5)` di Dexie è stata verificata **per lettura del codice**
+  (ogni punto che legge `sospesa_il` o i campi di `sync_cursori` ha un
+  fallback corretto su un valore mancante), non con la prova empirica che
+  la checklist richiede — non è la B.7 superata, resta da fare prima del
+  deploy.
+- Nessun bug aperto.
+
 ## 2026-09-20 — Discesa incrementale e id deterministico per i pasti predefiniti
 
 - La sincronizzazione era a senso unico (solo verso Supabase): un
