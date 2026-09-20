@@ -713,6 +713,35 @@ Aggiungerlo in seguito significa riscrivere ogni lettura e ogni scrittura
 dell'app. Effetto collaterale: con Tesseract nel browser, **l'app funziona
 interamente offline, OCR compreso**.
 
+**I 5 pasti predefiniti hanno id deterministico**, non casuale: UUID v5
+calcolato da `user_id` + nome canonico (`src/lib/repository/pasti.ts`,
+namespace fisso e immutabile — se cambiasse, ogni dispositivo esistente
+ricalcolerebbe id diversi dagli stessi che ha già sul server). Due
+dispositivi che seminano il set predefinito senza essersi mai sincronizzati
+producono le stesse righe: `upsert()` le tratta come un aggiornamento della
+stessa riga, mai come un doppione. `garantisciPastiPredefiniti` non "semina
+una volta": controlla i 5 nomi **uno per uno** (non un controllo aggregato
+"l'utente ha già un pasto?") e ricrea solo quelli mancanti — un pasto perso
+per un bug viene auto-riparato, uno cancellato deliberatamente (riga
+presente con `deleted_at`) non viene mai resuscitato dal seed stesso.
+
+**Rischio accettato — seed su dispositivo nuovo con discesa fallita.** Se un
+dispositivo apre l'app per la prima volta a locale vuoto (fuori dal percorso
+di registrazione, che sa già che il server è vuoto) e la discesa iniziale
+fallisce (offline, permessi, bug) **proprio mentre** uno dei 5 pasti
+predefiniti era stato cancellato sul server, quel dispositivo non ha modo di
+saperlo e lo ricrea: il pasto torna a esistere. Non è più un doppione (l'id
+resta lo stesso, quindi al successivo sync riuscito la riga si allinea da
+sola), è la resurrezione di una cancellazione — comunque preferibile al
+doppione irrisolvibile del vecchio schema a id casuali. Rischio ristretto
+all'intersezione di tre condizioni (dispositivo che non ha mai visto quella
+riga, discesa fallita in quel momento, pasto predefinito già cancellato),
+non eliminabile senza un meccanismo sproporzionato al danno (valutato e
+scartato: un seed "provvisorio" che trattiene la salita fino a conferma del
+server propaga il blocco a ogni voce di diario che referenzia quei pasti via
+foreign key, e la riconciliazione per nome si rompe se l'utente rinomina un
+pasto predefinito prima di riconnettersi).
+
 ### 9.3 Precisione — sempre al grammo
 
 Nessuna quantità approssimata: la quantità è **sempre in grammi**.

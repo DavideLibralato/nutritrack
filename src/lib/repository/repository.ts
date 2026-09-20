@@ -37,12 +37,20 @@ export function creaRepository<T extends RigaBase>(
     return tabella.get(id);
   }
 
+  // idEsplicito: normalmente l'id è un uuid casuale, generato qui. Il
+  // parametro esiste per i pochi casi (oggi solo il seed dei pasti
+  // predefiniti, src/lib/repository/pasti.ts) in cui l'id deve essere
+  // deterministico — calcolato da chi chiama a partire da dati stabili
+  // (utente + nome canonico) — così due dispositivi che creano la stessa
+  // riga "di diritto" senza essersi mai sincronizzati producono lo stesso
+  // id invece di due righe diverse che poi divergono per sempre.
   async function crea(
-    dati: Omit<T, "id" | "updated_at" | "deleted_at">
+    dati: Omit<T, "id" | "updated_at" | "deleted_at">,
+    idEsplicito?: string
   ): Promise<T> {
     const riga = {
       ...dati,
-      id: crypto.randomUUID(),
+      id: idEsplicito ?? crypto.randomUUID(),
       updated_at: new Date().toISOString(),
       deleted_at: null,
     } as T;
