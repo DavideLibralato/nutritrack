@@ -725,6 +725,13 @@ una volta": controlla i 5 nomi **uno per uno** (non un controllo aggregato
 per un bug viene auto-riparato, uno cancellato deliberatamente (riga
 presente con `deleted_at`) non viene mai resuscitato dal seed stesso.
 
+Conseguenza: l'indice unico `pasti_user_nome_idx` (che impediva due pasti
+con lo stesso nome per utente) è stato **rimosso** — proteggeva solo
+l'estetica (nessun'altra tabella usa `pasti.nome` come chiave, `voci_diario`
+punta a `pasto_id`) al costo di poter bloccare in silenzio la coda outbox su
+una violazione di vincolo. Con l'id deterministico il doppione che
+giustificava l'indice non può più verificarsi per i pasti predefiniti.
+
 **Rischio accettato — seed su dispositivo nuovo con discesa fallita.** Se un
 dispositivo apre l'app per la prima volta a locale vuoto (fuori dal percorso
 di registrazione, che sa già che il server è vuoto) e la discesa iniziale
