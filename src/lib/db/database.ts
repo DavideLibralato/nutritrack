@@ -23,6 +23,7 @@ import type {
   Preferito,
 } from "./tipi";
 import type { VoceOutbox } from "../sync/outbox";
+import type { CursoreSync } from "../sync/discesa";
 
 // Table<T, string>, non EntityTable: EntityTable presuppone una chiave che
 // Dexie può generare da sola (auto-increment) e quindi opzionale in
@@ -43,6 +44,11 @@ class NutriTrackDatabase extends Dexie {
 
   // Coda delle mutazioni non ancora inviate a Supabase (src/lib/sync).
   outbox!: Table<VoceOutbox, string>;
+
+  // Un cursore per tabella (per utente): il updated_at più recente già
+  // scaricato da Supabase (src/lib/sync/discesa.ts). Solo locale, non
+  // sincronizzata a sua volta.
+  sync_cursori!: Table<CursoreSync, string>;
 
   constructor() {
     super("nutritrack");
@@ -133,6 +139,32 @@ class NutriTrackDatabase extends Dexie {
       misurazioni: "id, user_id, tipo, data, deleted_at",
       preferiti: "id, user_id, alimento_id, deleted_at",
       outbox: "id, tabella, creato_il",
+    });
+
+    // version(5): tabella nuova, sync_cursori — il cursore per tabella
+    // della discesa incrementale (src/lib/sync/discesa.ts,
+    // PUNTO_DI_PARTENZA.md sezione 9.2: prima la sincronizzazione era a
+    // senso unico, solo verso Supabase). Additiva come version(2): tabella
+    // che parte vuota, nessuna riga esistente da trasformare, nessun
+    // .upgrade() necessario (regola B.4 di CLAUDE.md). Un dispositivo che
+    // aggiorna con questa versione semplicemente non ha ancora nessun
+    // cursore: la prossima discesa lo tratta come "mai scaricato" e
+    // scarica tutto da zero, lo stesso comportamento di un dispositivo
+    // nuovo — nessun caso speciale da gestire.
+    this.version(5).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+      sync_cursori: "id, tabella, user_id",
     });
   }
 }

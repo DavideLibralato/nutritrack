@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import RegistraServiceWorker from "@/components/RegistraServiceWorker";
-import SincronizzaOutbox from "@/components/SincronizzaOutbox";
+import Sincronizzazione from "@/components/Sincronizzazione";
 
 // Font per titoli e numeri: piu caratteristico del generico Geist/Arial usato finora.
 const fontIntestazioni = Bricolage_Grotesque({
@@ -50,7 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <RegistraServiceWorker />
-        <SincronizzaOutbox />
+        <Sincronizzazione />
       </body>
     </html>
   );

@@ -646,13 +646,63 @@ Conseguenze:
 ### 9.2 Offline — local-first completo
 
 **IndexedDB è la fonte di verità.** La UI legge e scrive sempre in locale;
-Supabase è la copia remota che si allinea quando c'è rete.
+Supabase è la copia remota che si allinea quando c'è rete, **nei due sensi**.
 
 Come, in concreto:
 - **Dexie** per il database locale
 - un livello *repository*: **la UI non chiama mai Supabase direttamente**
-- **outbox**: ogni mutazione entra in una coda locale, che si svuota verso
-  Supabase quando la rete torna
+- **outbox (salita)**: ogni mutazione entra in una coda locale, che si svuota
+  verso Supabase quando la rete torna (`src/lib/sync/outbox.ts`,
+  `sincronizza.ts`)
+- **discesa**: legge da Supabase le righe cambiate e le scrive in Dexie
+  (`src/lib/sync/discesa.ts`) — senza questa metà, Supabase era solo una
+  destinazione: un dispositivo nuovo non vedeva mai i dati già presenti sul
+  server, e due dispositivi divergevano senza riallinearsi mai. **Incrementale**
+  per tabella: un cursore locale (`sync_cursori`, mai sincronizzato a sua
+  volta) tiene il `updated_at` più recente già scaricato, non l'intera
+  tabella ogni volta
+  - **paginata** (`.range()`, ordinata per `updated_at`): PostgREST applica
+    un tetto di righe per risposta (Supabase, Settings → API → Max Rows,
+    default tipico 1000 — da verificare a mano nel dashboard, non è un
+    parametro leggibile da SQL). Senza paginazione, la prima discesa di un
+    dispositivo nuovo su una tabella più grande del tetto (un diario supera
+    facilmente le mille voci in pochi mesi) riceverebbe un sottoinsieme
+    arbitrario e le righe rimaste fuori non verrebbero mai più richieste
+  - finestra di sicurezza sul cursore: interroga da (cursore − 1 minuto)
+    con `>=`, non dal cursore esatto — il trigger che assegna `updated_at`
+    usa l'inizio della transazione, non il commit, quindi due scritture
+    quasi simultanee possono arrivare fuori ordine; riscaricare qualcosa di
+    già noto è innocuo (`put` per id è idempotente), perderlo per sempre no
+  - non sovrascrive una riga locale più recente di quella scaricata (utile
+    quando c'è ancora una mutazione in coda outbox non confermata dal
+    server) — confronto per istante (`getTime()`), non fra stringhe:
+    PostgREST restituisce `updated_at` con 6 decimali e offset esplicito
+    (`...619969+00:00`), il client con 3 decimali e `Z`
+    (`new Date().toISOString()` → `...619Z`); confrontate come stringhe i
+    due formati non ordinano in modo affidabile allo stesso istante
+  - se una riga scaricata risulta cancellata (`deleted_at`), una voce
+    outbox non ancora inviata per lo stesso id viene scartata **sempre**
+    (loggata, non sparita in silenzio), **senza eccezioni sul confronto dei
+    timestamp**: è l'unico caso in cui la voce esiste davvero proprio
+    perché la modifica locale è successiva alla cancellazione (fatta offline,
+    dopo che un altro dispositivo ha cancellato) — un controllo "solo se il
+    server è più recente" lascerebbe passare esattamente il caso reale.
+    La cancellazione vince anche sulla copia locale in Dexie, per lo stesso
+    motivo: altrimenti la riga resterebbe visibile per sempre su quel
+    dispositivo con una modifica ormai orfana, che non raggiungerà mai il
+    server
+  - tre inneschi, condivisi con la salita: montaggio dell'app, ritorno
+    online, ritorno in primo piano della PWA (`visibilitychange`). Niente
+    polling a intervalli, niente Supabase Realtime — l'uso tipico
+    ("apro, registro, chiudo") non ne trae beneficio e Realtime aggiunge
+    complessità senza bisogno
+  - la discesa gira sempre prima della salita, agli stessi inneschi: riduce
+    (non elimina) la finestra in cui una modifica locale in coda potrebbe
+    sovrascrivere sul server qualcosa cambiato nel frattempo altrove — non
+    la elimina perché una voce outbox già in coda è uno snapshot congelato
+    al momento della modifica, non si aggiorna da sola quando la discesa
+    scrive Dexie. Rischio residuo accettato, coerente con "mono-dispositivo
+    alla volta" più sotto
 - sincronizzazione **last-write-wins per riga**, basata su `updated_at`. Niente
   CRDT: i dati sono mono-utente e mono-dispositivo alla volta, i conflitti veri
   sono quasi impossibili

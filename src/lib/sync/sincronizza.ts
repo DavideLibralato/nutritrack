@@ -1,10 +1,13 @@
-// Svuota la coda outbox verso Supabase.
+// Svuota la coda outbox verso Supabase — solo la salita. La discesa (legge
+// da Supabase, scrive in Dexie) è in discesa.ts; i due versi si combinano
+// in orchestratore.ts.
 //
 // Chiamata da tre punti (src/lib/repository/repository.ts e
-// src/components/SincronizzaOutbox.tsx): subito dopo ogni scrittura locale,
-// all'avvio dell'app, e quando il browser torna online. Deve quindi
-// funzionare bene anche se chiamata spesso e mentre non c'è rete — non è
-// un'operazione rara innescata a mano.
+// src/lib/sync/orchestratore.ts): subito dopo ogni scrittura locale,
+// all'avvio dell'app, e quando il browser torna online (oltre che al
+// ritorno in primo piano della PWA). Deve quindi funzionare bene anche se
+// chiamata spesso e mentre non c'è rete — non è un'operazione rara
+// innescata a mano.
 //
 // Nota: se un nome di campo su un tipo in src/lib/db/tipi.ts non
 // corrisponde esattamente al nome della colonna su Supabase, upsert()
@@ -114,16 +117,4 @@ export async function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
   }
 
   return { inviate, fallite, sospese };
-}
-
-// Da chiamare una volta all'avvio dell'app quando l'auth ci sarà.
-// Ritorna una funzione di cleanup (da usare in un useEffect) che rimuove il
-// listener.
-export function avviaSincronizzazioneAutomatica(): () => void {
-  const provaSincronizzazione = () => {
-    sincronizzaOutbox();
-  };
-
-  window.addEventListener("online", provaSincronizzazione);
-  return () => window.removeEventListener("online", provaSincronizzazione);
 }
