@@ -86,6 +86,54 @@ class NutriTrackDatabase extends Dexie {
       preferiti: "id, user_id, alimento_id, deleted_at",
       outbox: "id, tabella, creato_il",
     });
+
+    // version(3): due campi nuovi su profili (differenzia_giorni,
+    // giorni_allenamento_default — PUNTO_DI_PARTENZA.md, sezione 3 "Giorni
+    // differenziati"). Nessuno dei due va indicizzato, quindi .stores() resta
+    // testualmente identico a version(2) — ma la regola B di CLAUDE.md alza
+    // comunque il numero perché cambia la forma delle righe, non solo perché
+    // cambiano gli indici. Nessun .upgrade(): sono campi opzionali che il
+    // codice legge sempre con `?? false` / `?? null` (regola B.4) — un
+    // profilo locale salvato prima di questa versione semplicemente non li ha
+    // ancora, finché l'utente non tocca l'interruttore.
+    this.version(3).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+    });
+
+    // version(4): campo nuovo su outbox (sospesa_il — src/lib/sync/
+    // sincronizza.ts, il meccanismo che accantona una voce dopo troppi
+    // tentativi falliti invece di bloccare la coda all'infinito dietro di
+    // lei). Non indicizzato (la tabella outbox resta piccola, il filtro si
+    // fa in memoria), quindi .stores() invariato — stesso caso di
+    // version(3): cambia la forma della riga, non gli indici. Nessun
+    // .upgrade(): il codice legge sempre `sospesa_il` con `?? null` /
+    // controllo di verità, una voce vecchia senza questo campo è
+    // equivalente a "non sospesa".
+    this.version(4).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+    });
   }
 }
 

@@ -17,23 +17,32 @@ export const PASTI_PREDEFINITI: Pick<Pasto, "nome" | "ora_inizio" | "ordine">[] 
   { nome: "Cena", ora_inizio: "19:30", ordine: 4 },
 ];
 
-// Guardia contro la doppia esecuzione: l'effetto React che chiama questa
-// funzione può partire due volte di fila (StrictMode in sviluppo, o un
-// ri-render prima che la useLiveQuery si aggiorni) mentre il primo giro sta
-// ancora creando i pasti. Senza questo Set si finirebbe con 10 pasti.
+// Guardia contro la doppia esecuzione concorrente: due chiamate che partono
+// mentre la prima sta ancora scrivendo.
 const seedInCorso = new Set<string>();
 
-// Se l'utente non ha ancora nessun pasto, crea il set predefinito. Ogni
-// riga passa da repositoryPasti.crea → Dexie + outbox come qualsiasi altra
-// scrittura. Idempotente: con almeno un pasto già presente non fa nulla.
-export async function garantisciPastiPredefiniti(
-  userId: string,
-  pastiEsistenti: Pasto[]
-): Promise<void> {
-  if (pastiEsistenti.length > 0 || seedInCorso.has(userId)) return;
+// Bug reale trovato controllando Supabase: 10 pasti invece di 5. Prima
+// versione di questa funzione prendeva anche `pastiEsistenti` (lo stato
+// `pasti` di useLiveQuery, passato dal chiamante) come primo controllo — ma
+// è uno stato React derivato e reattivo, non una lettura diretta: dopo un
+// refresh completo di pagina può restare "non ancora arrivato" più a lungo
+// del previsto (dipende da quando la subscription di Dexie consegna la prima
+// emissione vera), e in quella finestra sia quel controllo sia `seedInCorso`
+// (che riparte vuoto a ogni refresh, correttamente) non bloccano nulla.
+//
+// Ora la funzione non riceve più `pasti` e non dipende da nessuno stato
+// React: l'unica fonte di verità è una lettura diretta di Dexie, fatta qui
+// dentro. Chi chiama la invoca una volta per utente per montaggio (vedi
+// page.tsx) — se lo stato vero dice che i pasti ci sono già, non scrive
+// nulla, indipendentemente da cosa stesse mostrando la UI in quel momento.
+export async function garantisciPastiPredefiniti(userId: string): Promise<void> {
+  if (seedInCorso.has(userId)) return;
 
   seedInCorso.add(userId);
   try {
+    const pastiVeriOra = await repositoryPasti.ottieniTutti(userId);
+    if (pastiVeriOra.length > 0) return;
+
     for (const pasto of PASTI_PREDEFINITI) {
       await repositoryPasti.crea({ user_id: userId, ...pasto });
     }

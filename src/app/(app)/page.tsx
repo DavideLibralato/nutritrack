@@ -100,6 +100,11 @@ function OggiContenuto() {
   // <button> vero: tap o Invio/Spazio aprono il calendario.
   const rifData = useRef<HTMLInputElement>(null);
 
+  // Ricorda per quale userId è già stato tentato il seed dei pasti
+  // predefiniti in questo montaggio, indipendentemente da come si evolve
+  // `pasti` (vedi l'effetto più sotto).
+  const rifTentatoSeed = useRef<string | null>(null);
+
   function apriCalendario() {
     const el = rifData.current;
     if (!el) return;
@@ -147,15 +152,18 @@ function OggiContenuto() {
 
   // Se l'utente non ha ancora nessun pasto (registrazione fatta prima che
   // esistesse questa logica, o primo avvio), crea il set predefinito dei 5
-  // pasti. garantisciPastiPredefiniti è idempotente e ha una guardia contro
-  // la doppia esecuzione; la useLiveQuery qui sopra si aggiorna da sola
-  // appena i pasti sono in Dexie.
+  // pasti. Una volta sola per utente per montaggio (rifTentatoSeed, non
+  // `pasti` nelle dipendenze): garantisciPastiPredefiniti decide da sola,
+  // rileggendo Dexie, se serve seminare — non dal `pasti` qui sopra, che è
+  // stato React reattivo e può restare "non ancora arrivato" più a lungo di
+  // quanto ci si aspetterebbe dopo un refresh (bug reale: un secondo
+  // refresh ravvicinato aveva rifatto il seed da capo). La useLiveQuery
+  // sopra si aggiorna comunque da sola appena i pasti sono in Dexie.
   useEffect(() => {
-    if (!userId || pasti === undefined) return;
-    if (pasti.length === 0) {
-      garantisciPastiPredefiniti(userId, pasti).catch(() => {});
-    }
-  }, [userId, pasti]);
+    if (!userId || rifTentatoSeed.current === userId) return;
+    rifTentatoSeed.current = userId;
+    garantisciPastiPredefiniti(userId).catch(() => {});
+  }, [userId]);
 
   // Modifica di una voce già a diario: tap sulla voce → riapre lo stesso
   // SheetQuantita, precompilato con i valori reali (grammi e pasto), con

@@ -25,6 +25,12 @@ export interface VoceOutbox {
   creato_il: string;
   tentativi: number;
   ultimo_errore: string | null;
+  // Valorizzato quando sincronizzaOutbox smette di ritentare questa voce
+  // dopo troppi fallimenti consecutivi (vedi sincronizza.ts). La riga non
+  // sparisce — resta qui, visibile e ispezionabile — solo esclusa dal ciclo
+  // normale, così una voce irrecuperabile non blocca tutte le altre dietro
+  // di lei per sempre.
+  sospesa_il: string | null;
 }
 
 export async function accodaMutazione(
@@ -39,6 +45,7 @@ export async function accodaMutazione(
     creato_il: new Date().toISOString(),
     tentativi: 0,
     ultimo_errore: null,
+    sospesa_il: null,
   };
 
   await db.outbox.put(voce);

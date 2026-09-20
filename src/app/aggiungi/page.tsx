@@ -15,7 +15,7 @@
 // riporta all'Oggi del giorno giusto (anche un giorno passato). Va avvolto
 // in <Suspense>, come nella pagina di login.
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
@@ -181,13 +181,18 @@ function AggiungiContenuto() {
   }, [userId]);
 
   // Rete di sicurezza: se per qualsiasi motivo l'utente non ha pasti, li crea
-  // (idempotente, stessa funzione usata da Oggi).
+  // (idempotente, stessa funzione usata da Oggi). Una volta sola per utente
+  // per montaggio (rifTentatoSeed, non `pasti` nelle dipendenze) — vedi il
+  // commento gemello in src/app/(app)/page.tsx per il bug che questo evita:
+  // `pasti` è stato React reattivo, può restare "non ancora arrivato" più a
+  // lungo del previsto dopo un refresh, garantisciPastiPredefiniti rilegge
+  // Dexie per conto suo.
+  const rifTentatoSeed = useRef<string | null>(null);
   useEffect(() => {
-    if (!userId || pasti === undefined) return;
-    if (pasti.length === 0) {
-      garantisciPastiPredefiniti(userId, pasti).catch(() => {});
-    }
-  }, [userId, pasti]);
+    if (!userId || rifTentatoSeed.current === userId) return;
+    rifTentatoSeed.current = userId;
+    garantisciPastiPredefiniti(userId).catch(() => {});
+  }, [userId]);
 
   // Proposta del pasto: se stai registrando adesso, in base all'ora (con la
   // Cena che copre la fascia dopo mezzanotte); sui giorni passati il primo
