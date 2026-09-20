@@ -59,9 +59,11 @@ const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 // Quanti alimenti mostrare in "Recenti": abbastanza da coprire la rotazione
-// tipica di pasti abituali, senza uno scroll lungo nell'area sotto la
-// ricerca (la stessa, stretta, dei risultati di ricerca).
-const NUMERO_RECENTI = 10;
+// tipica di pasti abituali (sono già deduplicati), ma non tanti da spingere
+// Preferiti e Pasti salvati — le due sezioni curate che stanno subito sotto —
+// fuori dalla prima schermata su telefono. Valore da tarare con l'uso reale,
+// non definitivo.
+const NUMERO_RECENTI = 5;
 
 export default function AggiungiPage() {
   return (

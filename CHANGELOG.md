@@ -5,6 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-20 — Recenti da 10 a 5 in "Aggiungi alimento"
+
+- `NUMERO_RECENTI` in `src/app/aggiungi/page.tsx` da 10 a 5: dieci righe (già
+  deduplicate) più l'intestazione spingevano Preferiti e Pasti salvati, le
+  due sezioni curate subito sotto, fuori dalla prima schermata su telefono.
+  Cinque coprono la rotazione abituale lasciando visibile quello che viene
+  dopo. Valore da tarare con l'uso reale, non definitivo — scritto così nel
+  commento sopra la costante.
+- Nessun test nuovo: `alimentiRecenti` riceve il limite come parametro ed è
+  già coperta. Nessun bug aperto.
+
 ## 2026-09-20 — Pastiglia Normale/Allenamento in Oggi
 
 - Implementata la differenziazione dei giorni sulla pagina Oggi (sezione 3
