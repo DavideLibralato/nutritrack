@@ -5,6 +5,73 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-20 — Stella preferiti duplicata dopo togli-e-riaggiungi
+
+- Trovato controllando le voci ferme nell'outbox durante la verifica del
+  secondo pezzo dei giorni differenziati: `togglePreferito` faceva sempre un
+  `crea()` con un id nuovo anche quando una riga cancellata per lo stesso
+  alimento esisteva già — il vincolo unico su Supabase non fa eccezione per
+  le cancellazioni logiche, quindi ogni ri-aggiunta falliva con "duplicate
+  key", in silenzio.
+- Ora risuscita la riga cancellata più recente invece di crearne una
+  seconda. Verificato con un ciclo aggiungi/togli/riaggiungi contro Supabase
+  reale, dopo un reset completo dei dati di test.
+- Nessun bug aperto.
+
+## 2026-09-20 — Coda di sync: ordine delle scritture, voci irrecuperabili, seed pasti duplicato
+
+- Tre bug reali, trovati tutti testando dal vivo il secondo pezzo dei giorni
+  differenziati (interruttore in Profilo) e verificati contro Supabase reale
+  dopo un reset completo dei dati di test:
+  - **Ordine della coda**: `sincronizzaOutbox` passava alla voce successiva
+    (`continue`) anche quando una voce falliva. Per due righe collegate da
+    una foreign key (es. un obiettivo e il suo `obiettivi_target`), se il
+    genitore falliva anche solo per un singhiozzo di rete, la figlia veniva
+    comunque tentata e falliva per forza — fallimento di sync silenzioso,
+    mai visibile a schermo. Ora si ferma al primo fallimento (`break`).
+  - **Coda bloccata all'infinito**: proprio quel `break` ha un rischio
+    simmetrico — una voce che non riuscirà mai (schema vecchio, vincolo
+    violato...) blocca tutte quelle dietro di lei per sempre. Successo
+    davvero: un pasto doppione ha bloccato la sync di tutte le tabelle per
+    settimane, scoperto solo controllando l'outbox locale a mano. Nuovo
+    meccanismo: oltre 5 tentativi falliti consecutivi la voce si accantona
+    (esclusa dal ciclo, non cancellata, segnalata con `console.error`) e la
+    coda prosegue con le altre. Dexie `version(4)` per il campo nuovo.
+  - **Seed pasti duplicato**: il set predefinito dei 5 pasti veniva creato
+    due volte a un refresh di distanza — la decisione di seminare dipendeva
+    da `pasti`, uno stato React derivato che dopo un refresh completo può
+    restare "non ancora aggiornato" più a lungo del previsto.
+    `garantisciPastiPredefiniti` ora rilegge Dexie direttamente invece di
+    fidarsi dello stato passato dal chiamante, corretto nei due punti che la
+    invocano (Oggi e Aggiungi alimento).
+- Durante l'indagine, prima di questi fix, la coda locale aveva accumulato
+  39 voci ferme dal 6 settembre — quattro cause distinte, non solo questa:
+  permessi mancanti sulle tabelle nuove (GRANT dimenticato nella migration
+  di creazione, corretto lato Supabase), righe di un vecchio account di
+  test, payload pre-split delle tabelle obiettivi/obiettivi_target, e il bug
+  preferiti sopra. Tutto ripulito con un reset completo (Supabase +
+  IndexedDB locale) prima di verificare i fix su dati puliti.
+- Nessun bug aperto.
+
+## 2026-09-20 — Interruttore Giorni differenziati in Profilo
+
+- Secondo pezzo dei giorni differenziati (dopo lo schema del 19/9): sezione
+  "Giorni differenziati" in Profilo, spenta di default. Da accesa sblocca il
+  selettore dei giorni di allenamento proposti (proposta, non regola) e un
+  secondo set di target — accanto a quello "normale" già esistente,
+  precompilato la prima volta con gli stessi valori come punto di partenza.
+- Correzione rispetto al primo pezzo: `TipoGiorno` da union chiuso
+  (`"normale" | "allenamento"`) a stringa aperta + costanti
+  (`TIPO_GIORNO_NORMALE`/`TIPO_GIORNO_ALLENAMENTO`) — il documento aggiornato
+  chiarisce che i tipi di giorno sono righe definite dall'utente, non un
+  elenco fisso nel codice; tolto di conseguenza anche il `CHECK` a due
+  valori sulle colonne `tipo_giorno` su Supabase.
+- `handleSubmitObiettivo` crea ora anche la riga "normale" in
+  `obiettivi_target` per ogni obiettivo nuovo (altrimenti l'invariante si
+  rompe in silenzio da qui in avanti, il backfill copre solo gli obiettivi
+  precedenti).
+- Bug trovati testando questo pezzo dal vivo, corretti nei due commit sotto.
+
 ## 2026-09-19 — Schema per giorni differenziati allenamento/normale
 
 - Prima vera modifica di schema dopo aver scritto la procedura anti-perdita-
