@@ -5,6 +5,48 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-20 — Discesa incrementale e id deterministico per i pasti predefiniti
+
+- La sincronizzazione era a senso unico (solo verso Supabase): un
+  dispositivo nuovo non vedeva mai i dati già sul server, due dispositivi
+  divergevano senza riallinearsi mai — la causa di fondo del "duplicate
+  key" del seed pasti di stamattina. Aggiunta la discesa (`src/lib/sync/
+  discesa.ts`): incrementale per tabella (cursore in `sync_cursori`, Dexie
+  `version(5)`), paginata (`.range()`, altrimenti il tetto di righe di
+  PostgREST perde in silenzio le righe più vecchie di una tabella grande),
+  con finestra di sicurezza di un minuto sul cursore (il trigger
+  `set_updated_at` timbra l'inizio della transazione, non il commit) e
+  confronto dei timestamp per istante (`getTime()`), non come stringhe
+  (PostgREST e il client locale usano formati diversi). Una cancellazione
+  scaricata vince sempre, anche su una modifica locale "più recente" solo
+  perché fatta offline prima di vedere la cancellazione. Discesa sempre
+  prima della salita, tre inneschi (mount, online, `visibilitychange`).
+- L'id dei 5 pasti predefiniti è passato da casuale a deterministico (UUID
+  v5 da utente + nome canonico): due dispositivi che seminano senza
+  essersi mai sincronizzati producono ora le stesse righe, mai un
+  doppione. Il seed (`garantisciPastiPredefiniti`) è passato da un
+  controllo aggregato ("l'utente ha già un pasto?") a un controllo per
+  singolo pasto — auto-riparante per una riga persa per un bug, non
+  resuscita mai una riga cancellata deliberatamente.
+- Rimosso su Supabase l'indice unico `pasti_user_nome_idx`: proteggeva solo
+  l'estetica (due pasti con lo stesso nome), al costo di poter bloccare in
+  silenzio la coda outbox su una violazione di vincolo. Con l'id
+  deterministico il doppione che lo giustificava non può più verificarsi.
+- Bug trovato e corretto durante la revisione, prima del commit: la
+  paginazione mancante avrebbe perso in silenzio le righe più vecchie di
+  una tabella oltre il tetto di PostgREST; la guardia che scarta le voci
+  outbox su una cancellazione scoperta scattava solo se il server era più
+  recente del locale, mancando esattamente il caso reale (cancellazione
+  altrove, modifica locale offline dopo); il confronto dei timestamp come
+  stringhe invece che come istanti. Nessun bug aperto.
+- Rischio accettato e scritto in `PUNTO_DI_PARTENZA.md`, sezione 9.2: un
+  dispositivo nuovo la cui discesa iniziale fallisce proprio mentre un
+  pasto predefinito era stato cancellato sul server lo ricrea (non un
+  doppione — l'id resta lo stesso — ma la resurrezione di una
+  cancellazione). Valutata e scartata un'alternativa più prudente (seminare
+  ma trattenere la salita finché la discesa non conferma): si propaga a
+  ogni voce di diario collegata via foreign key, sproporzionata al danno.
+
 ## 2026-09-20 — Stella preferiti duplicata dopo togli-e-riaggiungi
 
 - Trovato controllando le voci ferme nell'outbox durante la verifica del
