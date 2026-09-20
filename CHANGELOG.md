@@ -5,6 +5,75 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-20 — Pastiglia Normale/Allenamento in Oggi
+
+- Implementata la differenziazione dei giorni sulla pagina Oggi (sezione 3
+  di `PUNTO_DI_PARTENZA.md`): pastiglia accanto alla data, visibile solo con
+  `profili.differenzia_giorni` attivo; i tipi selezionabili sono le righe di
+  `obiettivi_target` dell'obiettivo corrente, non un elenco fisso. Le tabelle
+  `giorni` e `obiettivi_target` esistevano già dalla `version(2)` di Dexie
+  (mai usate finora): nessuna nuova migration Dexie né Supabase per questo
+  pezzo.
+- "La trappola" (sezione 3, regola 3) rispettata: il tipo del giorno si
+  scrive in due soli momenti (prima voce di diario, gancio in `creaVoce` di
+  `/aggiungi`; tocco della pastiglia) e non si ricalcola mai più dal pattern
+  settimanale — anche quando il pattern propone "normale" la riga viene
+  scritta lo stesso, altrimenti un cambio di pattern futuro riclassificherebbe
+  giorni passati mai scritti. Test permanente in
+  `src/lib/repository/giorni.test.ts`.
+- Nuova regola scritta in `PUNTO_DI_PARTENZA.md` (sezione 4,
+  `obiettivi_target`): se il tipo scritto di un giorno non ha una riga
+  corrispondente per l'obiettivo corrente (caso reale: obiettivo appena
+  cambiato, target "allenamento" non ancora risalvato), si ripiega sul target
+  "normale" dello stesso obiettivo — segnalato con `console.error`, e la
+  pastiglia mostra "Normale" anche lei finché il target mancante non torna,
+  per non mostrare un tipo con sotto i numeri di un altro. La classificazione
+  vera in `giorni` non viene toccata da questo ripiego. Test permanente in
+  `src/lib/repository/obiettiviTarget.test.ts`.
+- Id delle righe di `giorni` deterministico (UUID v5 da utente + giorno
+  logico, namespace proprio — non quello dei pasti predefiniti, per
+  leggibilità): su Supabase esiste un vincolo unico
+  `giorni_user_data_idx (user_id, data) WHERE deleted_at IS NULL`, verificato
+  con l'utente prima di scrivere codice. A differenza di
+  `pasti_user_nome_idx` (rimosso il 20/9, voce sotto), questo vincolo **non va
+  tolto**: due righe per lo stesso giorno sarebbero un errore di modello, non
+  un dettaglio estetico — l'id deterministico è quello che evita lo scontro
+  fra due dispositivi offline, non un'alternativa al vincolo.
+- Bug trovato in revisione, prima del commit (stessa forma di quello del
+  seed pasti di stamattina): `garantisciGiornoPerPrimaVoce` e
+  `scriviTipoGiornoScelto` ricevevano le righe di `giorni` già scritte come
+  parametro, passato da un `useLiveQuery` — cioè stato React, potenzialmente
+  di un giro di ridisegno indietro rispetto a Dexie. Se una classificazione
+  appena scritta (pastiglia o prima voce) non fosse ancora arrivata in
+  quello stato, la funzione non la vedeva e la sovrascriveva con la
+  proposta del pattern: la regola 3 ("la pastiglia vince sempre") cadeva in
+  silenzio. Corretto rileggendo Dexie direttamente per id
+  (`repositoryGiorni.ottieniPerId`), come già fa `garantisciPastiPredefiniti`
+  in `pasti.ts`; `scriviTipoGiornoScelto` non ha più bisogno di leggere
+  affatto, visto che l'id è sempre lo stesso e una `crea()` incondizionata
+  produce lo stesso risultato di un `aggiorna()`. Nuovo test permanente in
+  `giorni.test.ts` per il caso esatto (giorno scritto "normale" a mano,
+  pattern che nel frattempo proporrebbe "allenamento" → resta "normale").
+- Verificato a mano, 7 passi, prima del commit: differenziazione attivata in
+  Profilo, pattern impostato, pastiglia comparsa in Oggi con i tipi da
+  `obiettivi_target`, prima voce del giorno scritta con il tipo proposto dal
+  pattern, tocco della pastiglia che lo corregge, target (kcal + tre macro)
+  che seguono il tipo del giorno mostrato, e — passo decisivo — svuotato il
+  pattern nel profilo: `tipo_giorno` è rimasto "allenamento" su Supabase
+  (tabella `giorni`, una sola riga, id `bc72e483-291d-5ac9-b40a-1650067d9fec`
+  — coincide con l'id ricalcolato a mano dal namespace e da
+  `user_id:2026-09-20`, prova che il formato canonico della data regge su
+  tutti i percorsi di scrittura). Regola 3 confermata anche fuori dai test.
+- Nessun bug aperto: `tsc --noEmit`, `eslint` e la suite di test (110/110)
+  passano dopo l'implementazione e la correzione.
+- **Nota sulla checklist B.7 di CLAUDE.md**: non si applica a questo commit
+  (nessun bump di `version(N)` Dexie, lo schema era già quello di
+  `version(2)`). Resta invece aperta, com'era già scritta nella voce del 20/9
+  qui sotto, per `version(4)` e `version(5)`: verificate **solo per lettura
+  del codice**, non con la prova empirica (Dexie popolato con lo schema
+  vecchio → build nuova → righe intatte) che la checklist richiede. Va fatta
+  prima del prossimo deploy che tocca lo schema, non di questo.
+
 ## 2026-09-20 — Aggiornamento Next.js (CVE) e limite della cancellazione fisica
 
 - Next.js aggiornato da 16.3.0 a 16.3.3 (salto di patch): chiude
