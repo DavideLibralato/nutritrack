@@ -6,6 +6,7 @@ import {
   eOggi,
   eFuturo,
   giornoLogico,
+  giornoSettimanaDi,
 } from "./dataGiorno";
 
 describe("oggiLocale", () => {
@@ -111,5 +112,22 @@ describe("giornoLogico", () => {
     expect(giornoLogico("06:00:00", new Date(2026, 8, 10, 9, 0, 0))).toBe(
       "2026-09-10"
     );
+  });
+});
+
+describe("giornoSettimanaDi", () => {
+  it("riconosce ogni giorno della settimana (4-10 settembre 2026, venerdì-giovedì)", () => {
+    expect(giornoSettimanaDi("2026-09-04")).toBe("venerdi");
+    expect(giornoSettimanaDi("2026-09-05")).toBe("sabato");
+    expect(giornoSettimanaDi("2026-09-06")).toBe("domenica");
+    expect(giornoSettimanaDi("2026-09-07")).toBe("lunedi");
+    expect(giornoSettimanaDi("2026-09-08")).toBe("martedi");
+    expect(giornoSettimanaDi("2026-09-09")).toBe("mercoledi");
+    expect(giornoSettimanaDi("2026-09-10")).toBe("giovedi");
+  });
+
+  it("attraversa il cambio di mese e di anno", () => {
+    expect(giornoSettimanaDi("2026-03-01")).toBe("domenica");
+    expect(giornoSettimanaDi("2026-01-01")).toBe("giovedi");
   });
 });

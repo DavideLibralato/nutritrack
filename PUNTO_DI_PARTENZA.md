@@ -336,14 +336,38 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 - perché separata da `obiettivi` invece di aggiungere una colonna: il periodo ha
   cose che non dipendono dal giorno (il peso obiettivo). Duplicarle su due righe
   significa poterle aggiornare su una sola e dimenticare l'altra
+- **fallback quando manca la riga per il tipo scritto**: capita, non è un caso
+  raro — ogni "Salva obiettivo" ricrea subito la riga "normale" per il nuovo
+  periodo, ma "allenamento" va risalvato a mano nella sezione "Giorni
+  differenziati" del Profilo, e nel frattempo un giorno può già essere
+  scritto o proposto come "allenamento". In quel caso si usa il target
+  "normale" dello stesso obiettivo, che esiste sempre per costruzione. Non è
+  un ripiego silenzioso: se la differenziazione è attiva e succede, va
+  segnalato (oggi: `console.error`) — e la pastiglia in Oggi non deve mai
+  mostrare un tipo per cui il target non esiste (mostrerebbe "Allenamento"
+  sopra a dei numeri che sono in realtà quelli di "Normale"). La
+  classificazione scritta in `giorni` non cambia per questo: torna a
+  mostrarsi da sola appena il target mancante viene aggiunto
 
 **`giorni`** — la classificazione della giornata
 - `data`, `tipo_giorno`
+- `data` è il **giorno logico** (sezione "Il giorno logico"), la stessa
+  convenzione di `voci_diario.data` — non la data di calendario grezza. Un
+  inserimento fatto all'una di notte classifica il giorno di ieri, non quello
+  del calendario, coerentemente con la voce che quell'inserimento scrive
 - riga **sparsa**: esiste solo per le giornate effettivamente classificate. Il
   valore nasce dal pattern settimanale del profilo, ma **viene scritto** appena
   la giornata riceve la prima voce (vedi "La trappola" nella sezione 3)
 - è l'unica tabella che rappresenta un giorno: prima i giorni esistevano solo
   implicitamente, come `data` sulle voci di diario
+- vincolo unico su Supabase, `(user_id, data) WHERE deleted_at IS NULL`: due
+  righe per lo stesso giorno sarebbero un errore di modello, non un dettaglio
+  estetico. L'id di ogni riga è per questo un UUID v5 deterministico da
+  utente + data (namespace proprio, non quello dei pasti predefiniti — vedi
+  `src/lib/repository/giorni.ts`), così due dispositivi offline che
+  classificano indipendentemente lo stesso giorno (prima voce su uno,
+  pastiglia sull'altro, prima di essersi mai sincronizzati) producono la
+  stessa riga invece di scontrarsi contro il vincolo
 
 **`pasti`** — le fasce della giornata, **una riga per utente per pasto**
 - `nome` ("Colazione", "Pranzo 1"), `ora_inizio`, `ordine`

@@ -25,8 +25,10 @@ import {
   repositoryPreferiti,
   repositoryComposizioni,
   repositoryComposizioniVoci,
+  repositoryProfili,
 } from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
+import { garantisciGiornoPerPrimaVoce } from "@/lib/repository/giorni";
 import {
   catalogoLocale,
   cercaPerNome,
@@ -180,6 +182,22 @@ function AggiungiContenuto() {
     return repositoryComposizioniVoci.ottieniTutti(userId);
   }, [userId]);
 
+  // Profilo (serve solo per differenzia_giorni/giorni_allenamento_default):
+  // serve a garantisciGiornoPerPrimaVoce qui sotto, il gancio "riceve la
+  // prima voce" della sezione 3 ("La trappola"). `?? null`/`[0]`: come nella
+  // pagina Profilo, un profilo non ancora salvato è un caso normale, non un
+  // errore. Le righe di `giorni` non servono qui: garantisciGiornoPerPrima
+  // Voce le rilegge da sola direttamente da Dexie (vedi il commento su quella
+  // funzione in src/lib/repository/giorni.ts) — passargliele da uno stato
+  // React di useLiveQuery rischierebbe di darle una lista vecchia di un giro
+  // di ridisegno, facendole sovrascrivere in silenzio una classificazione
+  // già scritta.
+  const profilo = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    const righe = await repositoryProfili.ottieniTutti(userId);
+    return righe[0] ?? null;
+  }, [userId]);
+
   // Rete di sicurezza: se per qualsiasi motivo l'utente non ha pasti, li crea
   // (idempotente, stessa funzione usata da Oggi). Una volta sola per utente
   // per montaggio (rifTentatoSeed, non `pasti` nelle dipendenze) — vedi il
@@ -257,7 +275,8 @@ function AggiungiContenuto() {
     vociGiorno === undefined ||
     preferiti === undefined ||
     composizioni === undefined ||
-    composizioniVoci === undefined
+    composizioniVoci === undefined ||
+    profilo === undefined
   ) {
     return <SchermataCaricamento />;
   }
@@ -285,7 +304,18 @@ function AggiungiContenuto() {
     grammi: number,
     gruppoId: string | null = null
   ) {
-    if (!userId || !pastoSelezionatoId) return;
+    if (!userId || !pastoSelezionatoId || profilo === undefined) return;
+
+    // Gancio "riceve la prima voce di diario" (sezione 3, regola 1): non fa
+    // nulla se il giorno è già scritto o se la differenziazione non è
+    // attiva. Rilegge Dexie da sola per id (vedi il commento su
+    // garantisciGiornoPerPrimaVoce in src/lib/repository/giorni.ts) — non le
+    // passiamo righe di `giorni` da qui apposta, quindi anche le chiamate
+    // parallele di aggiungiPastoSalvatoRapido (Promise.all, più alimenti
+    // dello stesso gruppo) vedono sempre lo stato vero del dispositivo, non
+    // uno stato React potenzialmente di un giro indietro.
+    await garantisciGiornoPerPrimaVoce(userId, giorno, profilo);
+
     await repositoryVociDiario.crea({
       user_id: userId,
       alimento_id: alimento.id,

@@ -3,11 +3,15 @@
 //
 // Funzioni pure: solo stringhe e Date dentro, stringhe fuori. Niente Dexie,
 // niente React — così la navigazione fra i giorni (frecce, calendario) si
-// testa senza montare nulla.
+// testa senza montare nulla. `GiornoSettimana` è solo un tipo (si compila via,
+// non introduce Dexie): stesso principio di totaliDiario.ts, che importa i
+// tipi delle tabelle senza toccare il database.
 //
 // Perché non usare `new Date().toISOString().slice(0, 10)` come altrove:
 // toISOString() dà la data in UTC. A Roma, fra mezzanotte e le 02:00 d'estate,
 // sarebbe ancora "ieri". Qui il giorno è sempre quello dell'orologio locale.
+
+import type { GiornoSettimana } from "./db/tipi";
 
 // "YYYY-MM-DD" dell'orologio locale.
 export function oggiLocale(d: Date = new Date()): string {
@@ -91,4 +95,25 @@ export function giornoLogico(
     return giornoPrecedente(oggi);
   }
   return oggi;
+}
+
+// getDay() di JS parte dalla domenica (0): l'indice qui sotto rispetta
+// quell'ordine per poterlo usare direttamente, non l'ordine lunedì-prima
+// dell'array OPZIONI_GIORNO nella pagina Profilo.
+const GIORNI_SETTIMANA: readonly GiornoSettimana[] = [
+  "domenica",
+  "lunedi",
+  "martedi",
+  "mercoledi",
+  "giovedi",
+  "venerdi",
+  "sabato",
+];
+
+// Il giorno della settimana di una data "YYYY-MM-DD", per confrontarla con
+// `profili.giorni_allenamento_default` (sezione 3, "Giorni normali e giorni
+// di allenamento"). daISO usa il mezzogiorno locale come le altre funzioni
+// di questo file: nessun rischio legato al cambio d'ora legale.
+export function giornoSettimanaDi(iso: string): GiornoSettimana {
+  return GIORNI_SETTIMANA[daISO(iso).getDay()];
 }

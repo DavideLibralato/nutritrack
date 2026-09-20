@@ -27,10 +27,15 @@ import {
   repositoryPasti,
   repositoryVociDiario,
   repositoryObiettivi,
+  repositoryObiettiviTarget,
   repositoryComposizioni,
   repositoryComposizioniVoci,
+  repositoryProfili,
+  repositoryGiorni,
 } from "@/lib/repository";
 import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
+import { targetPerTipo, targetEffettivo } from "@/lib/repository/obiettiviTarget";
+import { tipoGiornoEffettivo, scriviTipoGiornoScelto } from "@/lib/repository/giorni";
 import {
   sommaTotali,
   totaleVoce,
@@ -44,6 +49,7 @@ import {
   eFuturo,
   giornoLogico,
 } from "@/lib/dataGiorno";
+import { TIPO_GIORNO_NORMALE } from "@/lib/db/tipi";
 import { oraInizioPrimoPasto } from "@/lib/inserimento/propostaPasto";
 import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
@@ -60,6 +66,14 @@ import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 
 const CLASSE_FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+// Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
+// elenco fisso (sezione 3), quindi non c'è una tabella di etichette da
+// mantenere — solo la prima lettera maiuscola, come già in formattaData
+// (dataGiorno.ts).
+function capitalizza(testo: string): string {
+  return testo.charAt(0).toUpperCase() + testo.slice(1);
+}
 
 export default function OggiPage() {
   return (
@@ -138,6 +152,24 @@ function OggiContenuto() {
     return repositoryObiettivi.ottieniTutti(userId);
   }, [userId]);
 
+  // Giorni differenziati (sezione 3): profilo per differenzia_giorni/
+  // giorni_allenamento_default, le righe già classificate in `giorni`, e i
+  // target per tipo di giorno. `?? null`/`[0]` come nella pagina Profilo: un
+  // profilo non ancora salvato è un caso normale, non "non so ancora".
+  const profilo = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    const righe = await repositoryProfili.ottieniTutti(userId);
+    return righe[0] ?? null;
+  }, [userId]);
+  const giorniRighe = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryGiorni.ottieniTutti(userId);
+  }, [userId]);
+  const obiettiviTarget = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryObiettiviTarget.ottieniTutti(userId);
+  }, [userId]);
+
   // Pasti salvati (solo per sapere se un pasto di oggi corrisponde già a uno
   // di essi — la stella del segnalibro, sezione 3): servono composizioni e le
   // loro righe.
@@ -164,6 +196,37 @@ function OggiContenuto() {
     rifTentatoSeed.current = userId;
     garantisciPastiPredefiniti(userId).catch(() => {});
   }, [userId]);
+
+  // Diagnostica per il ripiego "manca il target del tipo scritto" (sezione
+  // 4, "obiettivi_target"): un caso atteso (es. obiettivo appena cambiato,
+  // target "allenamento" non ancora risalvato per il nuovo periodo), non un
+  // bug, ma va comunque loggato per essere trovato quando qualcuno si chiede
+  // perché i numeri di un giorno "Allenamento" sono quelli di "Normale". In
+  // un useEffect (non nel corpo del render) per non spammare la console a
+  // ogni ridisegno: parte solo quando uno di questi valori cambia davvero.
+  useEffect(() => {
+    if (
+      giorno === null ||
+      profilo === undefined ||
+      giorniRighe === undefined ||
+      obiettivi === undefined ||
+      obiettiviTarget === undefined
+    ) {
+      return;
+    }
+    if (!profilo?.differenzia_giorni) return;
+
+    const obiettivoAttuale = obiettivoValidoPer(obiettivi, giorno);
+    if (!obiettivoAttuale) return;
+
+    const tipoScritto = tipoGiornoEffettivo(giorniRighe, profilo, giorno);
+    const haTarget = targetPerTipo(obiettiviTarget, obiettivoAttuale.id, tipoScritto) !== null;
+    if (!haTarget) {
+      console.error(
+        `Oggi (${giorno}): tipo_giorno "${tipoScritto}" scritto ma manca la riga corrispondente in obiettivi_target per l'obiettivo corrente (${obiettivoAttuale.id}). Mostro il target "normale" come ripiego.`
+      );
+    }
+  }, [giorno, profilo, giorniRighe, obiettivi, obiettiviTarget]);
 
   // Modifica di una voce già a diario: tap sulla voce → riapre lo stesso
   // SheetQuantita, precompilato con i valori reali (grammi e pasto), con
@@ -214,7 +277,10 @@ function OggiContenuto() {
     vociTutte === undefined ||
     obiettivi === undefined ||
     composizioni === undefined ||
-    composizioniVoci === undefined
+    composizioniVoci === undefined ||
+    profilo === undefined ||
+    giorniRighe === undefined ||
+    obiettiviTarget === undefined
   ) {
     return (
       <main className="flex min-h-full items-center justify-center p-4">
@@ -238,8 +304,61 @@ function OggiContenuto() {
   const totali = sommaTotali(vociGiorno);
   const obiettivo = obiettivoValidoPer(obiettivi, giorno);
 
-  const targetKcal = obiettivo?.kcal ?? null;
+  // Il tipo REALMENTE scritto per questo giorno (o proposto dal pattern se
+  // non è mai stato scritto, sezione 3) — è la classificazione vera, non
+  // tocca mai la trappola: resta questo anche se manca il target
+  // corrispondente (vedi tipoGiornoMostrato sotto).
+  const tipoGiornoScrittoGiorno = tipoGiornoEffettivo(giorniRighe, profilo, giorno);
+  const haTargetPerTipoScritto = obiettivo
+    ? targetPerTipo(obiettiviTarget, obiettivo.id, tipoGiornoScrittoGiorno) !== null
+    : true;
+
+  // Cosa si MOSTRA (pastiglia e numeri): se manca il target per il tipo
+  // scritto, la pastiglia non deve "mentire" mostrando "Allenamento" sopra a
+  // dei numeri che sono in realtà quelli di "Normale" — mostra "Normale"
+  // anche lei, finché il target mancante non viene aggiunto in Profilo. La
+  // classificazione vera in `giorni` non viene toccata da questo: appena il
+  // target esiste, torna a mostrarsi da sola senza bisogno di ritoccare la
+  // pastiglia.
+  const tipoGiornoMostrato = haTargetPerTipoScritto
+    ? tipoGiornoScrittoGiorno
+    : TIPO_GIORNO_NORMALE;
+
+  // Tipi selezionabili dalla pastiglia (sezione 3, punto 2): le righe di
+  // obiettivi_target dell'obiettivo corrente, non un elenco fisso — "normale"
+  // per primo, gli altri in ordine alfabetico (solo estetica, non limita
+  // l'insieme dei tipi possibili).
+  const tipiGiornoDisponibili = obiettivo
+    ? [
+        ...new Set(
+          obiettiviTarget
+            .filter((t) => t.obiettivo_id === obiettivo.id && t.deleted_at === null)
+            .map((t) => t.tipo_giorno)
+        ),
+      ].sort((a, b) => {
+        if (a === TIPO_GIORNO_NORMALE) return -1;
+        if (b === TIPO_GIORNO_NORMALE) return 1;
+        return a.localeCompare(b);
+      })
+    : [];
+
+  const target = obiettivo
+    ? targetEffettivo(obiettiviTarget, obiettivo.id, tipoGiornoScrittoGiorno)
+    : null;
+
+  const targetKcal = target?.kcal ?? null;
   const consumateKcal = Math.round(totali.kcal);
+
+  async function cambiaTipoGiorno(tipo: string) {
+    if (!userId || giorno === null) return;
+    try {
+      await scriviTipoGiornoScelto(userId, giorno, tipo);
+    } catch {
+      // Azione istantanea senza sheet aperto (come toggleSalvaPreferito qui
+      // sotto): nessun posto dove mostrare un errore. L'utente vede la
+      // pastiglia non cambiare e può riprovare.
+    }
+  }
 
   // La seconda riga sotto la data cambia significato a seconda del giorno
   // (sezione 3): "Rimangono X kcal" sul giorno che stai riempiendo adesso,
@@ -425,30 +544,56 @@ function OggiContenuto() {
               Oggi
             </button>
           )}
+
+          {/* Pastiglia Normale/Allenamento (sezione 3, punto 1): solo se la
+              differenziazione è attiva E c'è almeno un tipo selezionabile —
+              da spenta la riga resta esattamente com'è oggi, nessun resto.
+              Stesso trucco della select del pasto in /aggiungi: un <select>
+              nativo travestito da pillola, accessibile di default. */}
+          {profilo?.differenzia_giorni && tipiGiornoDisponibili.length > 0 && (
+            <div className={`relative ${eGiornoCorrente ? "ml-auto" : ""}`}>
+              <select
+                value={tipoGiornoMostrato}
+                onChange={(e) => cambiaTipoGiorno(e.target.value)}
+                aria-label="Tipo di giornata"
+                className={`appearance-none rounded-full border border-border bg-transparent py-1 pl-3 pr-6 text-xs ${CLASSE_FOCUS}`}
+              >
+                {tipiGiornoDisponibili.map((tipo) => (
+                  <option key={tipo} value={tipo}>
+                    {capitalizza(tipo)}
+                  </option>
+                ))}
+              </select>
+              <ChevronGiu className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-muted" />
+            </div>
+          )}
         </div>
 
         <p className={`mt-1 text-sm ${classeRigaCalorie}`}>{rigaCalorie}</p>
 
         {/* Anello + macro affiancati, non impilati (sezione 3). Ordine dei
             macro come sulle etichette dei prodotti: Grassi, Carboidrati,
-            Proteine (NOTE_MODIFICHE voce 1; le kcal sono l'anello). */}
+            Proteine (NOTE_MODIFICHE voce 1; le kcal sono l'anello). I target
+            vengono dal tipo del GIORNO MOSTRATO (tipoGiornoMostrato, sopra),
+            non dall'obiettivo generico: su un giorno di allenamento passato
+            devono restare quelli di allenamento anche se oggi è "normale". */}
         <div className="mt-5 flex items-center gap-4">
           <AnelloCalorie consumate={totali.kcal} obiettivo={targetKcal} />
           <div className="flex-1 space-y-3">
             <BarraMacro
               nome="Grassi"
               valore={totali.grassi}
-              obiettivo={obiettivo?.grassi_g ?? null}
+              obiettivo={target?.grassi_g ?? null}
             />
             <BarraMacro
               nome="Carboidrati"
               valore={totali.carboidrati}
-              obiettivo={obiettivo?.carboidrati_g ?? null}
+              obiettivo={target?.carboidrati_g ?? null}
             />
             <BarraMacro
               nome="Proteine"
               valore={totali.proteine}
-              obiettivo={obiettivo?.proteine_g ?? null}
+              obiettivo={target?.proteine_g ?? null}
             />
           </div>
         </div>
@@ -629,6 +774,28 @@ function Chevron({ verso }: { verso: "sinistra" | "destra" }) {
       aria-hidden
     >
       <path d={verso === "sinistra" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} />
+    </svg>
+  );
+}
+
+// Freccetta della pastiglia Normale/Allenamento: stesso disegno di
+// ChevronGiu in /aggiungi (il <select> del pasto), qui più piccola perché la
+// pastiglia è un testo minuscolo, non un titolo.
+function ChevronGiu({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M6 9l6 6 6-6" />
     </svg>
   );
 }

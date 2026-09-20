@@ -11,6 +11,7 @@ import type {
   Profilo,
   Obiettivo,
   ObiettivoTarget,
+  Giorno,
   Pasto,
   Alimento,
   VoceDiario,
@@ -29,6 +30,7 @@ export const repositoryObiettiviTarget = creaRepository<ObiettivoTarget>(
   db.obiettivi_target,
   "obiettivi_target"
 );
+export const repositoryGiorni = creaRepository<Giorno>(db.giorni, "giorni");
 export const repositoryPasti = creaRepository<Pasto>(db.pasti, "pasti");
 export const repositoryAlimenti = creaRepository<Alimento>(
   db.alimenti,
