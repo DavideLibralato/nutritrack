@@ -10,9 +10,21 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
-import { repositoryProfili, repositoryObiettivi, repositoryMisurazioni } from "@/lib/repository";
+import {
+  repositoryProfili,
+  repositoryObiettivi,
+  repositoryObiettiviTarget,
+  repositoryMisurazioni,
+} from "@/lib/repository";
 import { ultimaMisurazione, registraPesoSenzaDuplicati } from "@/lib/repository/misurazioni";
-import type { LivelloAttivita, Sesso, TipoObiettivo } from "@/lib/db/tipi";
+import { targetPerTipo, salvaTarget } from "@/lib/repository/obiettiviTarget";
+import type {
+  LivelloAttivita,
+  Sesso,
+  TipoObiettivo,
+  GiornoSettimana,
+} from "@/lib/db/tipi";
+import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "@/lib/db/tipi";
 import { calcolaEta, calcolaFabbisogno } from "@/lib/fabbisogno";
 
 const CLASSE_FOCUS =
@@ -36,6 +48,16 @@ const OPZIONI_OBIETTIVO: { valore: TipoObiettivo; etichetta: string }[] = [
   { valore: "dimagrire", etichetta: "Dimagrire" },
   { valore: "mantenere", etichetta: "Mantenere" },
   { valore: "massa", etichetta: "Massa" },
+];
+
+const OPZIONI_GIORNO: { valore: GiornoSettimana; etichetta: string; nomeCompleto: string }[] = [
+  { valore: "lunedi", etichetta: "Lu", nomeCompleto: "Lunedì" },
+  { valore: "martedi", etichetta: "Ma", nomeCompleto: "Martedì" },
+  { valore: "mercoledi", etichetta: "Me", nomeCompleto: "Mercoledì" },
+  { valore: "giovedi", etichetta: "Gi", nomeCompleto: "Giovedì" },
+  { valore: "venerdi", etichetta: "Ve", nomeCompleto: "Venerdì" },
+  { valore: "sabato", etichetta: "Sa", nomeCompleto: "Sabato" },
+  { valore: "domenica", etichetta: "Do", nomeCompleto: "Domenica" },
 ];
 
 export default function ProfiloPage() {
@@ -67,6 +89,26 @@ export default function ProfiloPage() {
     obiettivi === undefined
       ? undefined
       : [...obiettivi].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null;
+
+  // ?? false: un profilo locale salvato prima di questa modifica non ha
+  // ancora il campo (sezione B.4 di CLAUDE.md — vedi database.ts, version 3).
+  const differenziaGiorni = profilo?.differenzia_giorni ?? false;
+
+  const obiettiviTarget = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryObiettiviTarget.ottieniTutti(userId);
+  }, [userId]);
+
+  // undefined finché non sappiamo ancora se c'è un obiettivo corrente, o
+  // finché obiettiviTarget non è arrivato; null se l'obiettivo c'è ma non ha
+  // (ancora) un target "allenamento" — stesso principio di userId/profilo qui
+  // sopra, per non confondere "non so ancora" con "ho controllato, non c'è".
+  const targetAllenamentoCorrente =
+    obiettiviTarget === undefined || obiettivoCorrente === undefined
+      ? undefined
+      : !obiettivoCorrente
+        ? null
+        : targetPerTipo(obiettiviTarget, obiettivoCorrente.id, TIPO_GIORNO_ALLENAMENTO);
 
   const misurazioniPeso = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -145,6 +187,127 @@ export default function ProfiloPage() {
 
     if (ultimaMisurazionePeso) {
       setPesoAttuale(String(ultimaMisurazionePeso.valore));
+    }
+  }
+
+  const [inizializzatoAllenamento, setInizializzatoAllenamento] = useState(false);
+  const [giorniAllenamento, setGiorniAllenamento] = useState<GiornoSettimana[]>([]);
+  const [kcalAllenamento, setKcalAllenamento] = useState("");
+  const [proteineAllenamento, setProteineAllenamento] = useState("");
+  const [carboidratiAllenamento, setCarboidratiAllenamento] = useState("");
+  const [grassiAllenamento, setGrassiAllenamento] = useState("");
+  const [erroreAllenamento, setErroreAllenamento] = useState<string | null>(null);
+  const [salvataggioAllenamento, setSalvataggioAllenamento] = useState<
+    "inattivo" | "in-corso" | "salvato" | "errore"
+  >("inattivo");
+
+  // Popola una sola volta: i giorni proposti dal profilo, e il target
+  // "allenamento" se esiste già — altrimenti parte dagli stessi valori del
+  // set "normale" corrente, come proposta di partenza da correggere, non un
+  // vincolo (stesso principio del calcolo del fabbisogno).
+  if (
+    !inizializzatoAllenamento &&
+    profilo !== undefined &&
+    targetAllenamentoCorrente !== undefined
+  ) {
+    setInizializzatoAllenamento(true);
+
+    if (profilo?.giorni_allenamento_default) {
+      setGiorniAllenamento(profilo.giorni_allenamento_default);
+    }
+
+    if (targetAllenamentoCorrente) {
+      setKcalAllenamento(String(targetAllenamentoCorrente.kcal));
+      setProteineAllenamento(String(targetAllenamentoCorrente.proteine_g));
+      setCarboidratiAllenamento(String(targetAllenamentoCorrente.carboidrati_g));
+      setGrassiAllenamento(String(targetAllenamentoCorrente.grassi_g));
+    } else if (obiettivoCorrente) {
+      setKcalAllenamento(String(obiettivoCorrente.kcal));
+      setProteineAllenamento(String(obiettivoCorrente.proteine_g));
+      setCarboidratiAllenamento(String(obiettivoCorrente.carboidrati_g));
+      setGrassiAllenamento(String(obiettivoCorrente.grassi_g));
+    }
+  }
+
+  // L'interruttore salva subito, non aspetta un bottone "Salva" (sezione 3:
+  // è un'impostazione on/off, non un modulo da compilare). Se il profilo non
+  // esiste ancora (utente che non ha mai salvato l'anagrafica) lo crea con i
+  // valori di default già usati come stato iniziale dei campi qui sopra.
+  async function alternaDifferenziaGiorni() {
+    if (!userId) return;
+
+    const nuovoValore = !(profilo?.differenzia_giorni ?? false);
+
+    if (profilo) {
+      await repositoryProfili.aggiorna(profilo.id, { differenzia_giorni: nuovoValore });
+    } else {
+      await repositoryProfili.crea({
+        user_id: userId,
+        nome: null,
+        sesso: "non_indicato",
+        data_nascita: null,
+        altezza_cm: null,
+        livello_attivita: "sedentario",
+        differenzia_giorni: nuovoValore,
+        giorni_allenamento_default: null,
+      });
+    }
+  }
+
+  function alternaGiorno(giorno: GiornoSettimana) {
+    setGiorniAllenamento((attuali) =>
+      attuali.includes(giorno) ? attuali.filter((g) => g !== giorno) : [...attuali, giorno]
+    );
+  }
+
+  async function handleSubmitAllenamento(e: React.FormEvent) {
+    e.preventDefault();
+    setErroreAllenamento(null);
+
+    if (!userId || !profilo || !obiettivoCorrente) {
+      setErroreAllenamento("Salva prima i dati anagrafici e un obiettivo qui sopra.");
+      return;
+    }
+
+    const kcalNum = Math.round(Number(kcalAllenamento));
+    const proteineNum = Math.round(Number(proteineAllenamento));
+    const carboidratiNum = Math.round(Number(carboidratiAllenamento));
+    const grassiNum = Math.round(Number(grassiAllenamento));
+
+    if (
+      !kcalAllenamento ||
+      !proteineAllenamento ||
+      !carboidratiAllenamento ||
+      !grassiAllenamento ||
+      [kcalNum, proteineNum, carboidratiNum, grassiNum].some((n) => Number.isNaN(n) || n < 0)
+    ) {
+      setSalvataggioAllenamento("errore");
+      return;
+    }
+
+    setSalvataggioAllenamento("in-corso");
+
+    try {
+      await repositoryProfili.aggiorna(profilo.id, {
+        giorni_allenamento_default: giorniAllenamento.length > 0 ? giorniAllenamento : null,
+      });
+
+      await salvaTarget(
+        userId,
+        obiettivoCorrente.id,
+        TIPO_GIORNO_ALLENAMENTO,
+        {
+          kcal: kcalNum,
+          proteine_g: proteineNum,
+          carboidrati_g: carboidratiNum,
+          grassi_g: grassiNum,
+        },
+        obiettiviTarget ?? []
+      );
+
+      setSalvataggioAllenamento("salvato");
+    } catch {
+      setSalvataggioAllenamento("errore");
     }
   }
 
@@ -227,7 +390,7 @@ export default function ProfiloPage() {
 
       // obiettivi è uno storico (sezione 4): si inserisce sempre una riga
       // nuova, non si sovrascrive mai quella corrente.
-      await repositoryObiettivi.crea({
+      const nuovoObiettivo = await repositoryObiettivi.crea({
         user_id: userId,
         valido_dal: new Date().toISOString().slice(0, 10),
         tipo: tipoObiettivo,
@@ -236,6 +399,22 @@ export default function ProfiloPage() {
         carboidrati_g: carboidratiNum,
         grassi_g: grassiNum,
         peso_obiettivo: pesoObiettivo ? Number(pesoObiettivo) : null,
+      });
+
+      // Ogni obiettivo ha una riga "normale" in obiettivi_target (sezione 4:
+      // "senza la differenziazione attiva esiste una sola riga per periodo,
+      // con tipo_giorno = 'normale'"). Il backfill l'ha creata per gli
+      // obiettivi che esistevano prima di questa modifica — da qui in poi
+      // tocca a questo form, altrimenti l'invariante si rompe in silenzio per
+      // ogni obiettivo nuovo.
+      await repositoryObiettiviTarget.crea({
+        user_id: userId,
+        obiettivo_id: nuovoObiettivo.id,
+        tipo_giorno: TIPO_GIORNO_NORMALE,
+        kcal: kcalNum,
+        proteine_g: proteineNum,
+        carboidrati_g: carboidratiNum,
+        grassi_g: grassiNum,
       });
 
       setSalvataggioObiettivo("salvato");
@@ -271,7 +450,13 @@ export default function ProfiloPage() {
       if (profilo) {
         await repositoryProfili.aggiorna(profilo.id, campi);
       } else {
-        await repositoryProfili.crea({ user_id: userId, nome: null, ...campi });
+        await repositoryProfili.crea({
+          user_id: userId,
+          nome: null,
+          differenzia_giorni: false,
+          giorni_allenamento_default: null,
+          ...campi,
+        });
       }
       setSalvataggio("salvato");
     } catch {
@@ -492,6 +677,112 @@ export default function ProfiloPage() {
           </p>
         )}
       </form>
+
+      <div className="w-full max-w-sm space-y-6 border-t border-border pt-8 pb-8">
+        <h2 className="text-2xl font-display font-bold">Giorni differenziati</h2>
+
+        <div>
+          <button
+            type="button"
+            onClick={alternaDifferenziaGiorni}
+            aria-pressed={differenziaGiorni}
+            className={`w-full rounded-lg border p-2 text-sm ${CLASSE_FOCUS} ${
+              differenziaGiorni
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-border text-foreground"
+            }`}
+          >
+            {differenziaGiorni ? "Attivi" : "Non attivi"}
+          </button>
+          <p className="text-xs text-muted mt-1">
+            Da spento l&apos;app resta identica a com&apos;è oggi. Da acceso si
+            sbloccano i giorni di allenamento proposti qui sotto e un secondo
+            set di target.
+          </p>
+        </div>
+
+        {differenziaGiorni && (
+          <form onSubmit={handleSubmitAllenamento} className="space-y-6">
+            <div>
+              <span className="block text-sm font-medium mb-1">
+                Giorni di allenamento (proposta, non un vincolo)
+              </span>
+              <div className="flex gap-1">
+                {OPZIONI_GIORNO.map((opzione) => (
+                  <button
+                    key={opzione.valore}
+                    type="button"
+                    onClick={() => alternaGiorno(opzione.valore)}
+                    aria-pressed={giorniAllenamento.includes(opzione.valore)}
+                    aria-label={opzione.nomeCompleto}
+                    className={`flex-1 rounded-lg border p-2 text-xs ${CLASSE_FOCUS} ${
+                      giorniAllenamento.includes(opzione.valore)
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border text-foreground"
+                    }`}
+                  >
+                    {opzione.etichetta}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span className="block text-sm font-medium mb-2 uppercase tracking-wide text-muted text-xs">
+                Target giornalieri — Allenamento
+              </span>
+              <div className="space-y-3">
+                <CampoTarget
+                  id="profilo-kcal-allenamento"
+                  etichetta="Calorie"
+                  valore={kcalAllenamento}
+                  onChange={setKcalAllenamento}
+                />
+                <CampoTarget
+                  id="profilo-grassi-allenamento"
+                  etichetta="Grassi (g)"
+                  valore={grassiAllenamento}
+                  onChange={setGrassiAllenamento}
+                />
+                <CampoTarget
+                  id="profilo-carboidrati-allenamento"
+                  etichetta="Carboidrati (g)"
+                  valore={carboidratiAllenamento}
+                  onChange={setCarboidratiAllenamento}
+                />
+                <CampoTarget
+                  id="profilo-proteine-allenamento"
+                  etichetta="Proteine (g)"
+                  valore={proteineAllenamento}
+                  onChange={setProteineAllenamento}
+                />
+              </div>
+            </div>
+
+            {erroreAllenamento && <p className="text-sm text-warning">{erroreAllenamento}</p>}
+
+            <button
+              type="submit"
+              disabled={salvataggioAllenamento === "in-corso"}
+              className={`w-full rounded-lg bg-accent p-2 text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              {salvataggioAllenamento === "in-corso"
+                ? "Salvataggio..."
+                : "Salva giorni allenamento"}
+            </button>
+
+            {salvataggioAllenamento === "salvato" && (
+              <p className="text-sm text-accent">Salvato.</p>
+            )}
+            {salvataggioAllenamento === "errore" && (
+              <p className="text-sm text-warning">
+                Salvataggio non riuscito: controlla che calorie e macro siano
+                numeri validi.
+              </p>
+            )}
+          </form>
+        )}
+      </div>
     </main>
   );
 }

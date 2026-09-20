@@ -56,7 +56,10 @@ Dall'alto:
    utile della schermata: risponde alla domanda vera ("quanto posso ancora
    mangiare?") senza far fare un calcolo. **La data è navigabile** (vedi
    "Inserimento retroattivo"), e su un giorno passato la seconda riga cambia
-   testo: "2043 di 2200 kcal", perché "rimangono" su ieri non vuol dire niente
+   testo: "2043 di 2200 kcal", perché "rimangono" su ieri non vuol dire niente.
+   Se la differenziazione dei giorni è attiva, accanto alla data c'è una piccola
+   pastiglia **Normale / Allenamento** (vedi "Giorni normali e giorni di
+   allenamento"); se non è attiva, non c'è nulla
 2. **Anello + macro affiancati**: l'anello calorie a sinistra con il consumato
    grande al centro e l'obiettivo sotto ("1580 / 2200"); a destra le tre barre
    macro con valore/target ("Proteine 98 / 140 g"). Affiancati, non impilati:
@@ -128,8 +131,11 @@ Lo sheet quantità resta **uno solo**, identico per ogni sorgente (sezione 5).
   hai solo dimenticato di registrare. Sotto il numero, in piccolo, su quanti
   giorni è calcolata ("su 5 giorni")
 - **Grafico a barre "Calorie giornaliere"**: una barra per giorno (L M M G V S D),
-  con **linea tratteggiata dell'obiettivo** etichettata ("obiettivo 2200"). Il
-  colore è informazione: barra normale = dentro l'obiettivo, barra calda = sopra
+  con **linea tratteggiata dell'obiettivo** etichettata ("obiettivo 2200").
+  Attenzione: con i giorni differenziati l'obiettivo **non è più unico** — la
+  linea continua diventa un trattino sopra ogni singola barra, e l'etichetta
+  sparisce. Anche la media settimanale va letta con prudenza quando mescola
+  giorni con target diversi. Il colore è informazione: barra normale = dentro l'obiettivo, barra calda = sopra
   l'obiettivo, barra grigia = giorno senza dati. Nessuna legenda: il significato
   si legge dal confronto con la linea
 - **Grafico a linea "Peso"**, con l'intervallo agli estremi ("6 sett. fa" →
@@ -155,6 +161,9 @@ Niente insight AI in V1: prima servono dati veri da interpretare.
 - **Target giornalieri**: quattro righe (Calorie, Proteine, Carboidrati, Grassi)
   con il valore a destra. Calcolati dal fabbisogno, modificabili a mano
 - **Registra peso** e **Storico peso**: due righe con chevron, portano altrove
+- **Giorni differenziati**: interruttore acceso/spento. Da spento non compare
+  nulla, in nessuna schermata. Da acceso si sbloccano il secondo set di target e
+  i giorni della settimana in cui ti alleni di solito
 - **Tema**: Chiaro / Scuro / Sistema
 
 ### Il calcolo del fabbisogno
@@ -169,6 +178,69 @@ massa). I macro si derivano dalle calorie con percentuali predefinite.
 Il risultato è sempre e solo una **proposta**: ogni target resta modificabile a
 mano, e un target modificato non viene più ricalcolato da solo alle spalle
 dell'utente.
+
+### Giorni normali e giorni di allenamento
+
+Chi segue una dieta impostata da un nutrizionista ha spesso **target diversi nei
+giorni di allenamento**: più carboidrati e più calorie quando ci si allena, meno
+quando si riposa. Senza questa distinzione l'app mostrerebbe "Rimangono 620 kcal"
+sbagliato su metà della settimana — non è un dettaglio estetico, è il numero
+principale della schermata principale.
+
+**È spenta di default.** Chi non ne ha bisogno — la maggioranza — non deve
+vedere né l'interruttore acceso, né la pastiglia in Oggi, né il secondo set di
+target. Da spenta l'app è identica a com'è adesso.
+
+**Il tipo del giorno è proposto, non chiesto ogni volta.** Nel profilo si
+indicano i giorni della settimana in cui ci si allena di solito (lunedì,
+mercoledì, venerdì...): da lì in poi la giornata nasce già classificata e la
+pastiglia in Oggi serve solo a correggerla quando la realtà è diversa. È lo
+stesso principio del pasto proposto dall'ora: chiedere una classificazione ogni
+giorno sarebbe una tassa quotidiana su un'app che esiste per non farne pagare.
+
+**I tipi di giorno non sono cablati nel codice.** Sono i set di target che
+l'utente ha definito: se un nutrizionista ne prescrive tre (riposo, allenamento
+leggero, allenamento intenso), si aggiunge un set di target e il selettore ne
+mostra tre. Nessuna modifica allo schema.
+
+#### Le tre regole, per non lasciare ambiguità
+
+1. **Un giorno viene scritto** in due momenti soltanto: quando riceve la prima
+   voce di diario, oppure quando l'utente tocca la pastiglia in Oggi
+2. **Il pattern settimanale del profilo propone solo per i giorni non ancora
+   scritti.** Non è la fonte della verità, è il valore predefinito
+3. **Cambiare il pattern non modifica nessun giorno già scritto**, né passato né
+   della settimana in corso
+
+La pastiglia in Oggi vince sempre, in qualsiasi momento.
+
+Esempio con pattern lun/mer/gio: lunedì registri e viene scritto "allenamento";
+mercoledì non ti alleni e con un tocco diventa "normale"; venerdì ti alleni a
+sorpresa e con un tocco diventa "allenamento". Nel database la settimana risulta
+lun/gio/ven, non lun/mer/gio. Se il mese dopo cambi il pattern in lun/mer/ven,
+quelle righe restano identiche: cambia solo cosa verrà proposto da lì in avanti.
+
+Le settimane in cui ci si allena due volte invece di tre non richiedono nulla di
+speciale: quel giorno resta "normale" e nessuno lo rimette a posto. Il pattern
+serve solo a risparmiare tocchi nel caso frequente.
+
+Caso ambiguo accettato: registrando **a posteriori** una giornata mai aperta, la
+proposta arriva dal pattern *attuale*, che allora poteva essere diverso. Come per
+il pasto proposto dall'ora sui giorni passati, è un tentativo che l'utente
+corregge.
+
+#### La trappola: il tipo del giorno va scritto, non ricalcolato
+
+Il tipo si eredita dal pattern settimanale, ma **appena una giornata riceve la
+prima voce, il suo tipo viene scritto esplicitamente**. Se restasse calcolato dal
+pattern, il giorno in cui sposti l'allenamento dal mercoledì al giovedì
+**riscriveresti il passato**: mesi di mercoledì diventerebbero giorni normali,
+con i target sbagliati e i grafici ridisegnati.
+
+È lo stesso errore del giorno logico e dello storico degli obiettivi, per la
+terza volta. Vale la regola generale: **quello che l'app deduce nel momento in cui
+succede va salvato; quello che ricalcola a ogni lettura può riscrivere la
+storia.**
 
 ### I pasti: proposti dall'ora, sempre modificabili
 
@@ -236,7 +308,7 @@ bug che si nota sei mesi dopo, guardando un grafico che non torna.
 
 ---
 
-## 4. Modello dati (9 tabelle)
+## 4. Modello dati (11 tabelle)
 
 Progettate per il quadro completo, anche se in V1 se ne usa metà. **Creare una
 tabella non vuol dire costruire la feature**: alcune restano vuote finché non
@@ -245,13 +317,33 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 **`profili`** — dati utente e anagrafica corporea
 - `sesso` (con valore "non indicato"), `data_nascita`, `altezza_cm`,
   `livello_attivita`
+- `differenzia_giorni` (bool, default false) e `giorni_allenamento_default`
+  (quali giorni della settimana)
 - sono gli ingredienti del calcolo del fabbisogno, non dati decorativi
 
-**`obiettivi`** — **lo storico dei target**, non un valore singolo
-- `valido_dal`, `tipo` (dimagrire / mantenere / massa), `kcal`, `proteine`,
-  `carboidrati`, `grassi`, `peso_obiettivo` (nullable)
+**`obiettivi`** — **lo storico dei periodi**, non un valore singolo
+- `valido_dal`, `tipo` (dimagrire / mantenere / massa), `peso_obiettivo` (nullable)
 - cambiare obiettivo **non modifica** la riga esistente: ne inserisce una nuova
 - vedi "Estensioni future" più sotto: è la cosa che non si può recuperare dopo
+
+**`obiettivi_target`** — i target di un periodo, **uno per tipo di giorno**
+- `obiettivo_id`, `tipo_giorno` (testo: "normale", "allenamento", ...), `kcal`,
+  `proteine`, `carboidrati`, `grassi`
+- senza la differenziazione attiva esiste una sola riga per periodo, con
+  `tipo_giorno = 'normale'`: la tabella c'è ma non si nota
+- **i tipi di giorno sono queste righe**, non un elenco fisso nel codice: un
+  terzo set di target è una riga in più, non una migration
+- perché separata da `obiettivi` invece di aggiungere una colonna: il periodo ha
+  cose che non dipendono dal giorno (il peso obiettivo). Duplicarle su due righe
+  significa poterle aggiornare su una sola e dimenticare l'altra
+
+**`giorni`** — la classificazione della giornata
+- `data`, `tipo_giorno`
+- riga **sparsa**: esiste solo per le giornate effettivamente classificate. Il
+  valore nasce dal pattern settimanale del profilo, ma **viene scritto** appena
+  la giornata riceve la prima voce (vedi "La trappola" nella sezione 3)
+- è l'unica tabella che rappresenta un giorno: prima i giorni esistevano solo
+  implicitamente, come `data` sulle voci di diario
 
 **`pasti`** — le fasce della giornata, **una riga per utente per pasto**
 - `nome` ("Colazione", "Pranzo 1"), `ora_inizio`, `ordine`
@@ -348,6 +440,9 @@ Criterio per decidere cosa va deciso **adesso** e cosa può aspettare.
   falso. È lo stesso problema della copia dei valori nutrizionali sulle voci di
   diario, già risolto lì. Nessuna migration futura può ricostruire quel dato: o
   lo si registra mentre succede, o non esiste. → tabella `obiettivi`
+- **Il tipo di ogni giornata.** Se la differenziazione è attiva, sapere quale
+  giorno era di allenamento non è ricostruibile a posteriori: nessun dato nel
+  diario lo dice. Va scritto mentre succede. → tabella `giorni`
 - **Raggruppamento delle voci.** Un pasto salvato inserisce 3 righe nel diario.
   Senza un `gruppo_id` scritto al momento dell'inserimento, l'informazione "queste
   tre sono state messe insieme" non è più ricostruibile, e non puoi annullare o
@@ -706,7 +801,7 @@ Due difese, entrambe gratuite: la copia locale IndexedDB (che c'è già, per alt
 motivi) e un pulsante **"Esporta i miei dati"** in JSON o CSV. Vale anche come
 promessa di riservatezza: i dati sono tuoi e te li puoi portare via.
 
-### 10.5 Quattro funzioni da testare sul serio
+### 10.5 Cinque funzioni da testare sul serio
 
 Non serve testare tutto. Servono test su tre pezzi di logica pura, che non
 toccano né database né interfaccia e che sbagliano in modo silenzioso:
@@ -714,11 +809,15 @@ toccano né database né interfaccia e che sbagliano in modo silenzioso:
 1. il calcolo dei totali giornalieri a partire dalle voci
 2. le medie settimanali e mensili, **con giorni vuoti in mezzo** (sezione 3,
    Statistiche): è il caso che sbaglia più facilmente e non se ne accorge nessuno
-3. la regola del giorno logico (l'inserimento dell'una di notte)
-4. la proposta del pasto in base all'ora, inclusa la fascia che scavalca la
+3. **il target di una giornata**: dato un giorno, trovare il periodo valido a
+   quella data e dentro quel periodo il set di target del tipo di giorno giusto.
+   Sbagliarlo significa mostrare il numero principale della schermata principale
+   errato, con l'aria di essere corretto
+4. la regola del giorno logico (l'inserimento dell'una di notte)
+5. la proposta del pasto in base all'ora, inclusa la fascia che scavalca la
    mezzanotte
 
-Sono quattro funzioni, si testano con una manciata di casi. È il punto in cui un bug
+Sono cinque funzioni, si testano con una manciata di casi. È il punto in cui un bug
 non fa rumore: non crasha niente, i numeri sono solo un po' sbagliati — e te ne
 accorgi mesi dopo.
 

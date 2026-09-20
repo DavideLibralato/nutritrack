@@ -10,6 +10,7 @@ import { creaRepository } from "./repository";
 import type {
   Profilo,
   Obiettivo,
+  ObiettivoTarget,
   Pasto,
   Alimento,
   VoceDiario,
@@ -23,6 +24,10 @@ export const repositoryProfili = creaRepository<Profilo>(db.profili, "profili");
 export const repositoryObiettivi = creaRepository<Obiettivo>(
   db.obiettivi,
   "obiettivi"
+);
+export const repositoryObiettiviTarget = creaRepository<ObiettivoTarget>(
+  db.obiettivi_target,
+  "obiettivi_target"
 );
 export const repositoryPasti = creaRepository<Pasto>(db.pasti, "pasti");
 export const repositoryAlimenti = creaRepository<Alimento>(

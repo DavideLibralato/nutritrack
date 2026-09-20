@@ -33,6 +33,8 @@ describe("Pagina Profilo dopo un refresh (F5)", () => {
       data_nascita: "1994-02-02",
       altezza_cm: 170,
       livello_attivita: "attivo",
+      differenzia_giorni: false,
+      giorni_allenamento_default: null,
     });
 
     render(<ProfiloPage />);

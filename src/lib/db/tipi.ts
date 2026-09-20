@@ -42,6 +42,15 @@ export type LivelloAttivita =
   | "attivo"
   | "molto_attivo";
 
+export type GiornoSettimana =
+  | "lunedi"
+  | "martedi"
+  | "mercoledi"
+  | "giovedi"
+  | "venerdi"
+  | "sabato"
+  | "domenica";
+
 export interface Profilo extends RigaBase {
   nome: string | null; // non ancora scritto da nessuna schermata
   sesso: Sesso;
@@ -52,6 +61,14 @@ export interface Profilo extends RigaBase {
   // mandare null qui (sezione 3: "senza di loro il fabbisogno non è
   // calcolabile" — sul livello di attività il vincolo è già nello schema).
   livello_attivita: LivelloAttivita;
+  // NOT NULL con default sul database (sezione 3: "Giorni differenziati").
+  // Su un profilo locale salvato prima di questa modifica il campo può non
+  // esistere finché non si tocca l'interruttore — leggere sempre con `?? false`.
+  differenzia_giorni: boolean;
+  // Proposta, non regola (sezione 3, "Giorni normali e giorni di
+  // allenamento"): i giorni non ancora classificati in `giorni` ereditano
+  // questo pattern, ma resta sempre correggibile giorno per giorno.
+  giorni_allenamento_default: GiornoSettimana[] | null;
 }
 
 export type TipoObiettivo = "dimagrire" | "mantenere" | "massa";
@@ -71,7 +88,23 @@ export interface Obiettivo extends RigaBase {
   peso_obiettivo: number | null;
 }
 
-export type TipoGiorno = "normale" | "allenamento";
+// I tipi di giorno non sono cablati nel codice (sezione 3, "Giorni normali e
+// giorni di allenamento"): sono i set di target che l'utente ha definito in
+// obiettivi_target, un terzo tipo è una riga in più, non una migration. Per
+// questo TipoGiorno è "string" e non un union type chiuso — e per lo stesso
+// motivo il database non ha più un CHECK sui valori ammessi (tolto insieme a
+// questa modifica: un CHECK con l'elenco chiuso sarebbe la "modifica allo
+// schema" che la sezione 3 dice di non dover mai fare).
+//
+// Regola di scrittura: tipo_giorno non si scrive mai come stringa a mano nel
+// codice, solo tramite queste costanti (o un valore letto da una riga
+// esistente). Senza CHECK sul database, un refuso in una stringa a mano
+// creerebbe un tipo fantasma con target introvabili — con le costanti lo
+// stesso errore diventa un errore di compilazione TypeScript, non un dato
+// sporco su Supabase.
+export type TipoGiorno = string;
+export const TIPO_GIORNO_NORMALE: TipoGiorno = "normale";
+export const TIPO_GIORNO_ALLENAMENTO: TipoGiorno = "allenamento";
 
 // Target per tipo di giorno, legati a un obiettivo (sezione 4 aggiornata:
 // giorni differenziati allenamento/normale). Ogni obiettivo ha una riga qui
