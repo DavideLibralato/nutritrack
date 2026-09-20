@@ -691,6 +691,20 @@ Come, in concreto:
     motivo: altrimenti la riga resterebbe visibile per sempre su quel
     dispositivo con una modifica ormai orfana, che non raggiungerà mai il
     server
+  - **limite: il modello si regge sul fatto che la cancellazione fisica non
+    esista mai** — si scrive `deleted_at`, la discesa lo propaga come un
+    campo qualsiasi (punto sopra). Una riga cancellata FISICAMENTE dal
+    server (`DELETE` da SQL Editor, non dall'app) è indistinguibile per la
+    discesa da una riga mai esistita: nessuna versione con `deleted_at`
+    arriva mai, quindi nessun dispositivo che la ha già in Dexie la toglie.
+    Alla prima salita quel dispositivo la rimanda su com'era — la
+    resuscita. **Regola operativa per lo sviluppo**: svuotare una tabella
+    su Supabase (SQL Editor, reset dei dati di test) richiede di svuotare
+    anche IndexedDB su OGNI dispositivo che ha usato quell'account, non
+    solo il server — altrimenti il primo dispositivo rimasto indietro
+    riporta indietro i dati appena cancellati. Non è un rischio per gli
+    utenti (loro cancellano solo dall'app, mai da SQL Editor), è un
+    promemoria per chi sviluppa
   - tre inneschi, condivisi con la salita: montaggio dell'app, ritorno
     online, ritorno in primo piano della PWA (`visibilitychange`). Niente
     polling a intervalli, niente Supabase Realtime — l'uso tipico
@@ -707,6 +721,22 @@ Come, in concreto:
   CRDT: i dati sono mono-utente e mono-dispositivo alla volta, i conflitti veri
   sono quasi impossibili
 - service worker per l'app shell → l'app si apre anche senza rete
+
+**Checklist B.7 (CLAUDE.md) non ancora eseguita empiricamente** per
+`version(4)` (campo `sospesa_il` su outbox) e `version(5)` (tabella
+`sync_cursori`). Verificate il 2026-09-20 **per lettura del codice**, non
+con la prova che la checklist richiede (partire da un IndexedDB popolato
+con lo schema vecchio, applicare la build nuova, controllare le righe dopo
+l'upgrade). Punti controllati: `sincronizza.ts` (filtro `!v.sospesa_il`) e
+`discesa.ts` (`!voceInSospeso.sospesa_il`) — entrambi trattano un campo
+mancante (`undefined`, riga scritta prima che il campo esistesse) come
+"non sospesa", coerente col fallback previsto; nessun altro punto in `src/`
+legge `sospesa_il`. `sync_cursori` è una tabella nuova che parte vuota,
+ogni lettura passa da un controllo di esistenza (`cursore?.` o
+`cursore ? ... : null`), mai un accesso diretto. Nessun punto trovato che
+legga uno dei due valori senza fallback — ma è un argomento da lettura del
+codice, non la prova empirica: aggiornare questa nota quando viene
+eseguita davvero.
 
 Perché ora e non dopo: il local-first non è una feature, è *dove vive il dato*.
 Aggiungerlo in seguito significa riscrivere ogni lettura e ogni scrittura
