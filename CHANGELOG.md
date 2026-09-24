@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-24 — Sheet sotto la tastiera + anello di focus che sbordava
+
+- Correzione di due difetti su iPhone, entrambi legati ai campi di testo:
+  1. Gli sheet di modifica (`SheetQuantita`, `SheetNome`) a volte finivano
+     sotto la tastiera invece che sopra: erano ancorati al layout viewport
+     (`fixed inset-0`), che iOS non riduce quando la tastiera si apre — il
+     caso "corretto" era solo Safari che per caso scrollava la pagina.
+     Estratto in `src/lib/areaVisibile.ts` l'hook `useAreaVisibile` (già
+     usato solo in `/aggiungi`) che legge `window.visualViewport` e ancora
+     l'elemento all'area davvero visibile; ora lo usano anche i due sheet.
+  2. L'anello di focus in `CreaAlimentoForm` sbordava dal campo e appariva
+     tagliato ai lati: l'`outline` (sempre fuori dal bordo) veniva ritagliato
+     dal contenitore `overflow-y-auto` di `/aggiungi` (impostare un solo asse
+     di overflow rende `auto` anche l'altro). Centralizzato lo stile — prima
+     duplicato identico in 11 file — in `src/lib/classeFocus.ts`, passato da
+     `outline` a un anello interno (`box-shadow` inset). Primo tentativo con
+     `ring-inset` (sintassi Tailwind v3) non generava nessun CSS in v4:
+     corretto in `inset-ring-2`/`inset-ring-accent` (l'utility che v4 usa per
+     l'inset ring) e verificato che la regola compaia davvero nel CSS
+     generato dopo la build, non solo che la build passasse.
+- Nessun bug aperto noto da questi due; nessuna migration Supabase o Dexie
+  coinvolta (solo UI).
+
 ## 2026-09-20 — Recenti da 10 a 5 in "Aggiungi alimento"
 
 - `NUMERO_RECENTI` in `src/app/aggiungi/page.tsx` da 10 a 5: dieci righe (già

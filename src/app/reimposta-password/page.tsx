@@ -4,9 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // useSearchParams() richiede una <Suspense> attorno (stesso motivo di /login).
 export default function ReimpostaPasswordPage() {

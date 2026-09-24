@@ -26,9 +26,7 @@ import type {
 } from "@/lib/db/tipi";
 import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "@/lib/db/tipi";
 import { calcolaEta, calcolaFabbisogno } from "@/lib/fabbisogno";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 const OPZIONI_SESSO: { valore: Sesso; etichetta: string }[] = [
   { valore: "maschio", etichetta: "Uomo" },

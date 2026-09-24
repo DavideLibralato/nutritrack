@@ -6,9 +6,7 @@
 // diventa true mentre la Server Action sta girando sul server.
 import { useActionState, useState } from "react";
 import { registrati, type StatoRegistrazione } from "@/lib/actions/auth";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 const STATO_INIZIALE: StatoRegistrazione = {
   errore: null,

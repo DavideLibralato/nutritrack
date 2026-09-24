@@ -18,9 +18,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { AlimentoPerSheet } from "@/lib/inserimento/alimentoPerSheet";
 import type { Pasto } from "@/lib/db/tipi";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { useAreaVisibile } from "@/lib/areaVisibile";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 interface Props {
   alimento: AlimentoPerSheet;
@@ -70,6 +69,10 @@ export default function SheetQuantita({
   );
   const [confermaElim, setConfermaElim] = useState(false);
   const rifInput = useRef<HTMLInputElement>(null);
+  // Ancorato al VISUAL viewport, non al layout viewport: su iOS la tastiera
+  // riduce solo il primo, altrimenti lo sheet a volte finisce sotto la
+  // tastiera invece che sopra (vedi il commento in src/lib/areaVisibile.ts).
+  const areaVisibile = useAreaVisibile();
 
   const mostraSelettorePasto =
     !!pasti && pasti.length > 0 && pastoSelezionatoId != null && !!onCambiaPasto;
@@ -113,7 +116,8 @@ export default function SheetQuantita({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40"
+      style={{ top: areaVisibile.top, height: areaVisibile.height }}
+      className="fixed inset-x-0 z-50 flex items-end justify-center bg-foreground/40"
       onClick={onAnnulla}
     >
       <div

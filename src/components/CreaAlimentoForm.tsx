@@ -16,9 +16,7 @@
 import { useState } from "react";
 import { repositoryAlimenti } from "@/lib/repository";
 import type { Alimento } from "@/lib/db/tipi";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 interface Props {
   userId: string;

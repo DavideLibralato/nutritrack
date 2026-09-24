@@ -63,9 +63,7 @@ import {
   eliminaComposizione,
 } from "@/lib/repository/composizioni";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
 // elenco fisso (sezione 3), quindi non c'è una tabella di etichette da

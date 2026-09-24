@@ -4,9 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida } from "@/lib/validazione";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 export default function PasswordDimenticataPage() {
   const [email, setEmail] = useState("");

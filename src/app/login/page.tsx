@@ -5,9 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida } from "@/lib/validazione";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // useSearchParams() (sotto, in LoginForm) puo' andare in stallo durante il
 // primo render sul server se non e' avvolto in una <Suspense>: Next.js lo

@@ -14,9 +14,8 @@
 // codice — i campi sono troppo diversi per condividere il componente.
 
 import { useEffect, useRef, useState } from "react";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { useAreaVisibile } from "@/lib/areaVisibile";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 interface Props {
   titolo: string;
@@ -45,6 +44,9 @@ export default function SheetNome({
   const [nome, setNome] = useState(valoreIniziale);
   const [confermaElim, setConfermaElim] = useState(false);
   const rifInput = useRef<HTMLInputElement>(null);
+  // Ancorato al VISUAL viewport, non al layout viewport: stesso motivo di
+  // SheetQuantita (vedi il commento in src/lib/areaVisibile.ts).
+  const areaVisibile = useAreaVisibile();
 
   // In modifica il pulsante di sinistra diventa "Elimina" (che poi chiede
   // conferma nella stessa riga) — identico a SheetQuantita.
@@ -76,7 +78,8 @@ export default function SheetNome({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40"
+      style={{ top: areaVisibile.top, height: areaVisibile.height }}
+      className="fixed inset-x-0 z-50 flex items-end justify-center bg-foreground/40"
       onClick={onAnnulla}
     >
       <div

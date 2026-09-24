@@ -50,13 +50,12 @@ import {
   eliminaComposizione,
 } from "@/lib/repository/composizioni";
 import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
+import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
 import SheetNome from "@/components/SheetNome";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import type { Alimento } from "@/lib/db/tipi";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // Quanti alimenti mostrare in "Recenti": abbastanza da coprire la rotazione
 // tipica di pasti abituali (sono già deduplicati), ma non tanti da spingere
@@ -79,46 +78,6 @@ function SchermataCaricamento() {
       <p className="text-sm text-muted">Caricamento...</p>
     </main>
   );
-}
-
-// Posizione e altezza della parte VISIBILE della finestra. Su mobile —
-// iOS Safari in particolare — quando si apre la tastiera `100dvh` NON si
-// accorcia: la tastiera copre il contenuto senza ridurre il layout, così la
-// riga "Crea alimento manualmente" ancorata in fondo finisce dietro la
-// tastiera. `visualViewport` riporta l'area davvero visibile: `.height` è
-// quanto resta sopra la tastiera, `.offsetTop` di quanto iOS ha fatto
-// scorrere il contenuto per tenere a fuoco il campo. Usati per inchiodare il
-// <main> a quell'area con `position: fixed`. Fallback a tutta la finestra
-// dove l'API non c'è (render sul server, browser vecchi).
-interface AreaVisibile {
-  top: number;
-  height: string;
-}
-
-function useAreaVisibile(): AreaVisibile {
-  const [area, setArea] = useState<AreaVisibile>({ top: 0, height: "100dvh" });
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const aggiorna = () =>
-      setArea({
-        top: Math.round(vv.offsetTop),
-        height: `${Math.round(vv.height)}px`,
-      });
-    aggiorna();
-    vv.addEventListener("resize", aggiorna);
-    vv.addEventListener("scroll", aggiorna);
-    window.addEventListener("orientationchange", aggiorna);
-    return () => {
-      vv.removeEventListener("resize", aggiorna);
-      vv.removeEventListener("scroll", aggiorna);
-      window.removeEventListener("orientationchange", aggiorna);
-    };
-  }, []);
-
-  return area;
 }
 
 function AggiungiContenuto() {

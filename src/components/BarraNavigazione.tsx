@@ -10,9 +10,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const CLASSE_FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 const VOCI = [
   { href: "/", etichetta: "Oggi" },
