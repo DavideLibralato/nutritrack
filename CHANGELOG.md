@@ -5,6 +5,39 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-24 — Contorno di sistema doppio sul focus + cursore mancante sui bottoni
+
+- L'anello di focus verde (corretto la volta scorsa) lasciava comunque
+  visibile ACCANTO il contorno blu di focus di Safari: il verde prima era un
+  `outline` (che sostituiva quello del browser), ora è un `ring`/`inset-ring`
+  (una `box-shadow`, che non lo sostituisce più). Aggiunta a `CLASSE_FOCUS`
+  (`src/lib/classeFocus.ts`) la classe `focus-visible:outline-hidden` — non
+  `outline-none`: in Tailwind 4 sono due cose diverse, `outline-hidden`
+  nasconde il contorno ma lo mantiene (trasparente) in modalità
+  forced-colors/alto contrasto, `outline-none` lo toglie anche lì. Verificato
+  nel CSS generato dopo la build, non solo che la build passasse.
+- Spazzolata delle altre utility Tailwind che in v4 sono rimaste con lo
+  stesso nome ma un significato diverso (scala shadow/blur/rounded, `ring`
+  nudo, colore di default di `border`/`divide`, selettore di `space-y`,
+  variante `hover:`, gradiente): nessuna delle altre è usata nel progetto,
+  o è sempre accompagnata da un valore esplicito che la rende irrilevante.
+  `rounded` nudo (molto usato) verificato via CSS generato: produce ancora
+  `.25rem`, nessuna regressione.
+- Preflight di Tailwind 4: tolto anche il `cursor:pointer` di default sui
+  `<button>` che la v3 metteva. Rimesso in `globals.css`
+  (`button:not(:disabled){cursor:pointer}`, verificato nel CSS generato) —
+  invisibile al tocco su telefono ma conta ogni volta che l'app gira con un
+  mouse (sviluppo da browser, PWA desktop).
+- Il colore dei placeholder è cambiato anche lui nel preflight v4 (da
+  `gray-400` fisso a `currentColor` al 50%, cioè più scuro qui perché il
+  testo è quasi nero) — verifica ancora in corso da telefono, non ancora
+  corretto.
+- Scoperto durante il lavoro, non ancora sistemato: il tema chiaro/scuro/
+  sistema previsto in `PUNTO_DI_PARTENZA.md` (sezione "Tema chiaro / scuro /
+  sistema") non è mai stato costruito — nessun selettore, nessun blocco
+  scuro in `globals.css`, nessun `localStorage`. Tutte le scelte di colore
+  fatte finora valgono solo per l'unico tema esistente, quello chiaro.
+
 ## 2026-09-24 — Sheet sotto la tastiera + anello di focus che sbordava
 
 - Correzione di due difetti su iPhone, entrambi legati ai campi di testo:

@@ -22,5 +22,16 @@
 // scritta nell'HTML ma il CSS corrispondente non esiste, quindi non succede
 // niente in silenzio). L'anello interno in v4 è un'utility a parte,
 // `inset-ring-*`, non una variante di `ring-*`.
+//
+// `outline-hidden`, non `outline-none`: un `ring`/`inset-ring` è una
+// box-shadow, non un outline, quindi non sostituisce più il contorno di
+// focus di sistema del browser (azzurro su Safari) come faceva il vecchio
+// `outline` — i due restavano visibili insieme. `outline-hidden` è l'utility
+// che in Tailwind 4 nasconde quel contorno mantenendo `outline: 2px solid
+// transparent` (visibile in modalità forced-colors/alto contrasto, la parte
+// accessibile). `outline-none` esiste ancora in v4 ma da v4 in poi vuol dire
+// un'altra cosa: `outline-style: none` puro, che sparisce anche in
+// forced-colors — è la vecchia sintassi v3 con un significato nuovo, non va
+// usata qui.
 export const CLASSE_FOCUS =
-  "focus-visible:inset-ring-2 focus-visible:inset-ring-accent";
+  "focus-visible:inset-ring-2 focus-visible:inset-ring-accent focus-visible:outline-hidden";

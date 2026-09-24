@@ -42,3 +42,14 @@ input[type="search"]::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* Tailwind 4 ha tolto dal preflight il cursor:pointer sui <button> che la v3
+   metteva di default (per allinearsi al comportamento nativo del browser,
+   che per <button> è "default", non "pointer"). Rimesso qui: da mouse un
+   bottone che non lo mostra sembra non cliccabile. Invisibile al tocco su
+   telefono, quindi non serve a mobile, ma conta ogni volta che l'app gira
+   con un mouse (sviluppo da browser, PWA desktop). Non tocca i <button
+   disabled>, che restano col cursore di default. */
+button:not(:disabled) {
+  cursor: pointer;
+}
