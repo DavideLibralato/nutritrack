@@ -86,10 +86,20 @@ export function pastoSalvatoVisibile(
 // coincidono esattamente col pasto di oggi. Di norma una sola, ma niente
 // vieta di aver salvato lo stesso contenuto due volte con nomi diversi:
 // tornano tutte, così toglierlo dai preferiti (sezione 3, punto 3 delle
-// correzioni) li rimuove tutti, non solo il primo trovato. Solo sugli id:
-// non serve il catalogo, il confronto non guarda i valori nutrizionali.
+// correzioni) li rimuove tutti, non solo il primo trovato.
+//
+// Serve il catalogo per passare da vociValidePerComposizione — non per i
+// valori nutrizionali (il confronto guarda solo alimento_id e quantità), ma
+// perché una voce con l'alimento cancellato dal catalogo non deve contare:
+// altrimenti la stessa composizione risulta di N alimenti qui e di N-1 in
+// pastiSalvati(), a seconda di chi la guarda (bug del 2026-09-24, visto su
+// cbd1ae1a: la stella "già salvato" e l'elenco in Preferiti in disaccordo —
+// stesso difetto già corretto fra pastiSalvati() ed esisteComposizioneConNome,
+// sfuggito qui). Nessun altro punto nel progetto legge composizioni_voci
+// senza passare da vociValidePerComposizione (verificato).
 export function composizioniCorrispondenti(
   vociPasto: { alimento_id: string | null; quantita_g: number }[],
+  catalogo: Alimento[],
   composizioni: Composizione[],
   composizioniVoci: ComposizioneVoce[]
 ): string[] {
@@ -99,7 +109,10 @@ export function composizioniCorrispondenti(
   return composizioni
     .filter((c) => c.tipo === "pasto_salvato")
     .filter((c) => {
-      const voci = composizioniVoci.filter((v) => v.composizione_id === c.id);
+      const voci = vociValidePerComposizione(c.id, catalogo, composizioniVoci).map((v) => ({
+        alimento_id: v.alimento.id,
+        quantita_g: v.quantitaG,
+      }));
       return voci.length === vociPasto.length && chiaveMultiset(voci) === chiavePasto;
     })
     .map((c) => c.id);
@@ -109,10 +122,13 @@ export function composizioniCorrispondenti(
 // stella dell'icona "Salva come preferito" in Oggi.
 export function pastoGiaSalvato(
   vociPasto: { alimento_id: string | null; quantita_g: number }[],
+  catalogo: Alimento[],
   composizioni: Composizione[],
   composizioniVoci: ComposizioneVoce[]
 ): boolean {
-  return composizioniCorrispondenti(vociPasto, composizioni, composizioniVoci).length > 0;
+  return (
+    composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci).length > 0
+  );
 }
 
 // Confronto per multiset: ordine irrilevante, ma due righe uguali (stesso

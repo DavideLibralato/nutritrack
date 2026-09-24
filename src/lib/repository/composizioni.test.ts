@@ -17,11 +17,15 @@
 // nuovo con quello sopra.
 
 import { describe, it, expect } from "vitest";
-import { rimuoviAlimentoDaPastiSalvati, esisteComposizioneConNome } from "./composizioni";
+import {
+  rimuoviAlimentoDaPastiSalvati,
+  esisteComposizioneConNome,
+  salvaPastoComeComposizione,
+} from "./composizioni";
 import { repositoryAlimenti, repositoryComposizioni, repositoryComposizioniVoci, repositoryVociDiario } from "./index";
 import { catalogoLocale } from "./alimenti";
 import { pastiSalvati } from "../inserimento/pastiSalvati";
-import type { Alimento } from "../db/tipi";
+import type { Alimento, VoceDiario } from "../db/tipi";
 
 async function creaAlimento(userId: string, nome: string): Promise<Alimento> {
   return repositoryAlimenti.crea({
@@ -40,6 +44,24 @@ async function creaAlimento(userId: string, nome: string): Promise<Alimento> {
     porzione_default_g: 100,
     fonte: "manuale",
     verificato: false,
+  });
+}
+
+async function creaVoceDiario(userId: string, alimento: Alimento, quantitaG: number): Promise<VoceDiario> {
+  return repositoryVociDiario.crea({
+    user_id: userId,
+    alimento_id: alimento.id,
+    pasto_id: null,
+    gruppo_id: null,
+    quantita_g: quantitaG,
+    data: "2026-09-25",
+    creato_il: "2026-09-25T08:00:00.000Z",
+    consumato_alle: null,
+    nome_alimento: alimento.nome,
+    kcal_100g: alimento.kcal_100g,
+    proteine_100g: alimento.proteine_100g,
+    carboidrati_100g: alimento.carboidrati_100g,
+    grassi_100g: alimento.grassi_100g,
   });
 }
 
@@ -159,5 +181,52 @@ describe("rimuoviAlimentoDaPastiSalvati", () => {
     const catalogo = await catalogoLocale(userId);
     const risultato = pastiSalvati(catalogo, composizioni, composizioniVoci);
     expect(risultato.find((p) => p.composizioneId === composizioneId)).not.toBeUndefined();
+  });
+});
+
+describe("salvaPastoComeComposizione", () => {
+  // Bug del 2026-09-24 (visto su Supabase, composizione 74a9b00f): la voce di
+  // diario sopravvive alla cancellazione del suo alimento dal catalogo
+  // (conserva la copia dei valori nutrizionali, giusto), ma salvare quel
+  // pasto come preferito copiava comunque la voce in composizioni_voci,
+  // creando un pasto salvato "fantasma" — stavolta nuovo di zecca, non un
+  // residuo di dati vecchi.
+  it("un alimento cancellato dal catalogo non finisce nella composizione", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const pane = await creaAlimento(userId, "Pane");
+    const marmellata = await creaAlimento(userId, "Marmellata");
+    const voceP = await creaVoceDiario(userId, pane, 50);
+    const voceM = await creaVoceDiario(userId, marmellata, 20);
+
+    // La marmellata sparisce dal catalogo DOPO essere stata mangiata: la
+    // voce di diario resta (copia congelata), l'alimento no.
+    await repositoryAlimenti.elimina(marmellata.id);
+
+    const creata = await salvaPastoComeComposizione(userId, "Colazione", [voceP, voceM]);
+    expect(creata).toBe(true);
+
+    const composizioni = await repositoryComposizioni.ottieniTutti(userId);
+    const composizione = composizioni.find((c) => c.nome === "Colazione");
+    expect(composizione).not.toBeUndefined();
+
+    const composizioniVoci = await repositoryComposizioniVoci.ottieniTutti(userId);
+    const voci = composizioniVoci.filter((v) => v.composizione_id === composizione!.id);
+    expect(voci).toHaveLength(1);
+    expect(voci[0].alimento_id).toBe(pane.id);
+  });
+
+  it("se TUTTI gli alimenti del pasto sono cancellati dal catalogo, non crea nessuna composizione", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const marmellata = await creaAlimento(userId, "Marmellata");
+    const voceM = await creaVoceDiario(userId, marmellata, 20);
+    await repositoryAlimenti.elimina(marmellata.id);
+
+    const creata = await salvaPastoComeComposizione(userId, "Colazione fantasma", [voceM]);
+    expect(creata).toBe(false);
+
+    // Nessuna composizione vuota creata — sarebbe un fantasma fin dalla
+    // nascita, lo stesso problema in un'altra forma.
+    const composizioni = await repositoryComposizioni.ottieniTutti(userId);
+    expect(composizioni.find((c) => c.nome === "Colazione fantasma")).toBeUndefined();
   });
 });

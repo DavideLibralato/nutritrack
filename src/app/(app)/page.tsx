@@ -248,7 +248,7 @@ function OggiContenuto() {
   // SheetNome, e lo stato del salvataggio della composizione.
   const [pastoDaSalvare, setPastoDaSalvare] = useState<Pasto | null>(null);
   const [salvataggioComposizione, setSalvataggioComposizione] = useState<
-    "inattivo" | "in-corso" | "errore" | "duplicato"
+    "inattivo" | "in-corso" | "errore" | "duplicato" | "senza-alimenti"
   >("inattivo");
 
   // Voce 3: i pasti (fasce) di cui l'utente ha nascosto la lista di alimenti.
@@ -435,12 +435,13 @@ function OggiContenuto() {
   // subito dai preferiti, senza sheet: stessa immediatezza della stella sugli
   // alimenti singoli in SheetQuantita.
   async function toggleSalvaPreferito(pasto: Pasto) {
-    if (!composizioni || !composizioniVoci) return;
+    if (!composizioni || !composizioniVoci || !catalogo) return;
     const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
     if (vociPasto.length === 0) return;
 
     const idsCorrispondenti = composizioniCorrispondenti(
       vociPasto,
+      catalogo,
       composizioni,
       composizioniVoci
     );
@@ -483,7 +484,16 @@ function OggiContenuto() {
 
     setSalvataggioComposizione("in-corso");
     try {
-      await salvaPastoComeComposizione(userId, nome, vociPasto);
+      // false: nessuno degli alimenti di oggi è ancora nel catalogo (tutti
+      // cancellati nel frattempo) — non c'è niente da salvare, e non si crea
+      // una composizione vuota (sarebbe un fantasma fin dalla nascita). Lo
+      // sheet resta aperto con un messaggio, non si richiude in silenzio:
+      // altrimenti sembrerebbe salvato quando non lo è stato.
+      const creata = await salvaPastoComeComposizione(userId, nome, vociPasto);
+      if (!creata) {
+        setSalvataggioComposizione("senza-alimenti");
+        return;
+      }
       chiudiSalvaPreferito();
     } catch {
       setSalvataggioComposizione("errore");
@@ -619,7 +629,7 @@ function OggiContenuto() {
             const collassato = pastiCollassati.has(pasto.id);
             // Stella del segnalibro (sezione 3, punto 3): piena finché gli
             // alimenti+quantità di oggi coincidono con un pasto già salvato.
-            const giaSalvato = pastoGiaSalvato(vociPasto, composizioni, composizioniVoci);
+            const giaSalvato = pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci);
             return (
               <li key={pasto.id} className="border-b border-border py-4">
                 {/* Voce 3: se il pasto ha degli alimenti, la riga del titolo è
@@ -737,7 +747,9 @@ function OggiContenuto() {
               ? "Non è stato possibile salvare. Riprova."
               : salvataggioComposizione === "duplicato"
                 ? "Esiste già un pasto salvato con questo nome. Scegline un altro."
-                : null
+                : salvataggioComposizione === "senza-alimenti"
+                  ? "Nessuno degli alimenti di questo pasto è ancora nel catalogo: non c'è niente da salvare."
+                  : null
           }
           onAnnulla={chiudiSalvaPreferito}
           onConferma={confermaSalvaPreferito}

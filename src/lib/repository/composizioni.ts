@@ -4,6 +4,7 @@
 // "ricetta") sono un perimetro diverso, non ancora costruito.
 
 import { repositoryComposizioni, repositoryComposizioniVoci } from "./index";
+import { catalogoLocale } from "./alimenti";
 import { pastoSalvatoVisibile } from "../inserimento/pastiSalvati";
 import type { Alimento, Composizione, ComposizioneVoce, VoceDiario } from "../db/tipi";
 
@@ -40,18 +41,42 @@ export function esisteComposizioneConNome(
 // giornata già registrata). Copia alimento_id e quantita_g delle voci
 // **al momento del salvataggio**, non un riferimento che seguirebbe
 // eventuali modifiche fatte dopo alle voci di oggi.
+//
+// Restituisce false (e non scrive niente) se dopo il filtro qui sotto non
+// resta nessuna voce da salvare — il chiamante lo mostra come errore
+// all'utente invece di creare una composizione vuota, che sarebbe un
+// fantasma fin dalla nascita (vedi il filtro sull'alimento più sotto).
 export async function salvaPastoComeComposizione(
   userId: string,
   nome: string,
   vociPasto: VoceDiario[]
-): Promise<void> {
-  // In pratica alimento_id è sempre valorizzato (ogni percorso di
-  // inserimento lo imposta), ma il tipo lo ammette nullable: le righe senza
-  // alimento non hanno nulla da copiare in composizioni_voci, che invece
-  // lo richiede.
+): Promise<boolean> {
+  // Rilegge il catalogo da sola invece di riceverlo come parametro: stesso
+  // motivo di rimuoviAlimentoDaPastiSalvati qui sotto — questa è una
+  // scrittura che decide se creare o no un riferimento morto, non un
+  // dettaglio di visualizzazione, quindi non si fida di un catalogo React
+  // che potesse essere di un giro di ridisegno fa.
+  const catalogo = await catalogoLocale(userId);
+  const idAlimentiValidi = new Set(catalogo.map((a) => a.id));
+
+  // Due condizioni, non una sola:
+  // - alimento_id non null: in pratica sempre valorizzato (ogni percorso di
+  //   inserimento lo imposta), ma il tipo lo ammette nullable, e una voce
+  //   senza alimento non ha nulla da copiare in composizioni_voci, che
+  //   invece lo richiede;
+  // - l'alimento è ancora nel catalogo: le voci di diario sopravvivono alla
+  //   cancellazione del loro alimento (conservano la copia dei valori
+  //   nutrizionali, sezione 4), ma un pasto SALVATO deve poter essere
+  //   riaggiunto in futuro con i valori vivi dell'alimento — un alimento
+  //   già cancellato va escluso qui, altrimenti si crea subito un pasto
+  //   salvato "fantasma" con un riferimento morto dentro (bug del
+  //   2026-09-24, visto su Supabase: composizione 74a9b00f).
   const vociConAlimento = vociPasto.filter(
-    (v): v is VoceDiario & { alimento_id: string } => v.alimento_id !== null
+    (v): v is VoceDiario & { alimento_id: string } =>
+      v.alimento_id !== null && idAlimentiValidi.has(v.alimento_id)
   );
+
+  if (vociConAlimento.length === 0) return false;
 
   const composizione = await repositoryComposizioni.crea({
     user_id: userId,
@@ -71,6 +96,8 @@ export async function salvaPastoComeComposizione(
       })
     )
   );
+
+  return true;
 }
 
 // Rinomina un pasto salvato. Il controllo duplicati (esisteComposizioneConNome

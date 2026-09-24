@@ -5,6 +5,46 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-24 — Due fantasmi sfuggiti alla correzione precedente
+
+Prova sui dati reali di Supabase dopo il fix di poco prima (voce precedente):
+la cascata funziona (timestamp nell'ordine giusto: voce, composizione,
+alimento), ma emersi due difetti nuovi/residui, entrambi nella stessa
+famiglia.
+
+- **Bug 1**: si poteva salvare un pasto contenente un alimento già
+  cancellato dal catalogo. Le voci di diario sopravvivono alla
+  cancellazione del loro alimento (conservano la copia dei valori
+  nutrizionali, giusto), ma `salvaPastoComeComposizione` copiava comunque
+  quella voce in una nuova composizione — un fantasma creato DOPO la
+  correzione precedente, non un residuo vecchio (visto su Supabase:
+  composizione `74a9b00f`). Corretto: la funzione rilegge da sola il
+  catalogo (stesso motivo di `rimuoviAlimentoDaPastiSalvati`, non fidarsi
+  di uno stato React potenzialmente vecchio) ed esclude le voci il cui
+  alimento non c'è più. Se dopo il filtro non resta nessuna voce, non crea
+  una composizione vuota: restituisce `false`, e in Oggi lo sheet resta
+  aperto con un messaggio invece di richiudersi come se avesse salvato.
+- **Bug 2**: `composizioniCorrispondenti` (la stella "già salvato" e il
+  toggle per togliere dai preferiti) confrontava le voci grezze di
+  `composizioni_voci`, senza escludere quelle con l'alimento cancellato,
+  mentre `pastiSalvati()` le esclude già — la stessa composizione risultava
+  di N alimenti per la stella e di N-1 nell'elenco (visto su Supabase:
+  composizione `cbd1ae1a`). Era lo stesso difetto già corretto poco prima fra
+  elenco e controllo del nome doppio, sfuggito a una delle tre viste.
+  Corretto facendo passare anche questa funzione da
+  `vociValidePerComposizione`, la stessa regola unica.
+- Verificato che non resti nessun altro punto che legga `composizioni_voci`
+  per decidere se una composizione "conta ancora" fuori da quella funzione:
+  restano tre letture dirette in `composizioni.ts`
+  (`eliminaComposizione` e le due dentro `rimuoviAlimentoDaPastiSalvati`),
+  ma sono cancellazioni/bookkeeping della cascata stessa, non domande di
+  visibilità — anzi `rimuoviAlimentoDaPastiSalvati` non PUÒ usare il
+  catalogo per questo, perché nell'ordine deciso in precedenza (cascata
+  prima, cancellazione dell'alimento dopo) il catalogo al momento in cui gira
+  mostra ancora l'alimento come valido.
+- Cinque test permanenti nuovi (due in `composizioni.test.ts`, tre in
+  `pastiSalvati.test.ts`) per entrambi i bug. Nessun bug aperto noto.
+
 ## 2026-09-24 — Pasto salvato "fantasma" quando l'ultimo alimento sparisce dal catalogo
 
 - Bug: un pasto salvato ("Colazione") con un solo alimento, poi cancellato
