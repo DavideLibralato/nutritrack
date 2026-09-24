@@ -51,6 +51,7 @@ import {
 } from "@/lib/dataGiorno";
 import { TIPO_GIORNO_NORMALE } from "@/lib/db/tipi";
 import { oraInizioPrimoPasto } from "@/lib/inserimento/propostaPasto";
+import { catalogoLocale } from "@/lib/repository/alimenti";
 import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
 import SheetQuantita from "@/components/SheetQuantita";
@@ -179,6 +180,14 @@ function OggiContenuto() {
     if (!userId) return undefined;
     return repositoryComposizioniVoci.ottieniTutti(userId);
   }, [userId]);
+  // Serve solo a esisteComposizioneConNome (il controllo sul nome doppio
+  // salvando un pasto, sezione 4): deve sapere quali alimenti dei pasti
+  // salvati sono ancora nel catalogo, stessa regola di pastiSalvati() in
+  // /aggiungi.
+  const catalogo = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return catalogoLocale(userId);
+  }, [userId]);
 
   // Se l'utente non ha ancora nessun pasto (registrazione fatta prima che
   // esistesse questa logica, o primo avvio), crea il set predefinito dei 5
@@ -276,6 +285,7 @@ function OggiContenuto() {
     obiettivi === undefined ||
     composizioni === undefined ||
     composizioniVoci === undefined ||
+    catalogo === undefined ||
     profilo === undefined ||
     giorniRighe === undefined ||
     obiettiviTarget === undefined
@@ -457,7 +467,7 @@ function OggiContenuto() {
   }
 
   async function confermaSalvaPreferito(nome: string) {
-    if (!userId || !pastoDaSalvare || !composizioni) return;
+    if (!userId || !pastoDaSalvare || !composizioni || !composizioniVoci || !catalogo) return;
     const vociPasto = vociGiorno.filter((v) => v.pasto_id === pastoDaSalvare.id);
     if (vociPasto.length === 0) {
       chiudiSalvaPreferito();
@@ -466,7 +476,7 @@ function OggiContenuto() {
 
     // Nome già usato da un altro pasto salvato: non si crea un duplicato
     // silenzioso, si segnala e si lascia lo sheet aperto per correggere.
-    if (esisteComposizioneConNome(nome, composizioni)) {
+    if (esisteComposizioneConNome(nome, catalogo, composizioni, composizioniVoci)) {
       setSalvataggioComposizione("duplicato");
       return;
     }

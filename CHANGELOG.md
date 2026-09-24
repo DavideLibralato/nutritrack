@@ -5,6 +5,71 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-24 — Pasto salvato "fantasma" quando l'ultimo alimento sparisce dal catalogo
+
+- Bug: un pasto salvato ("Colazione") con un solo alimento, poi cancellato
+  dal catalogo, restava tecnicamente esistente (`deleted_at` ancora null) ma
+  invisibile in Preferiti — `pastiSalvati()` lo nascondeva perché non gli
+  restava nessun alimento, mentre `esisteComposizioneConNome` guardava tutte
+  le composizioni senza lo stesso filtro. Risalvare un pasto con lo stesso
+  nome diceva "esiste già" per un pasto che nell'elenco non c'era. La riga
+  reale ("Colazione") è già stata cancellata a mano su Supabase il
+  2026-09-22; restava da correggere il codice.
+- Regola implementata in `src/lib/repository/composizioni.ts`
+  (`rimuoviAlimentoDaPastiSalvati`, agganciata in
+  `CreaAlimentoForm.handleElimina`): cancellare un alimento dal catalogo
+  toglie anche la sua riga da ogni pasto salvato che lo conteneva; se era
+  l'ultimo alimento rimasto, cancella (logicamente) anche il pasto. Nessun
+  avviso — valutato e scartato. Non tocca la cancellazione di una voce di
+  diario, che resta un'operazione indipendente (verificato con un test).
+- `esisteComposizioneConNome` ora usa la stessa regola di visibilità di
+  `pastiSalvati()` (nuova `pastoSalvatoVisibile`, unico punto che decide "un
+  pasto salvato conta ancora"): le due parti non possono più divergere come
+  in questo bug.
+- Ordine deciso in `handleElimina`: prima si toglie l'alimento dai pasti
+  salvati, POI si cancella l'alimento — al contrario, un fallimento a metà
+  ricrea lo stesso fantasma ma invisibile (l'alimento già sparito, l'utente
+  legge solo "errore" e non ha motivo di riprovare). In quest'ordine un
+  guasto a metà lascia l'alimento ancora nel catalogo, visibile e
+  rimediabile; il secondo tentativo converge comunque (entrambe le funzioni
+  sono idempotenti). Valutata e scartata una transazione Dexie unica per le
+  due scritture: `sincronizzaOutbox()` (lanciata da ogni scrittura del
+  repository) fa vere chiamate di rete, incompatibili con la vita breve di
+  una transazione IndexedDB.
+- Tre test permanenti in `src/lib/repository/composizioni.test.ts` (ultimo
+  alimento → pasto cancellato e nome riusabile; alimento fra altri → resta
+  solo quella riga; voce di diario cancellata → pasto salvato invariato).
+  Regola scritta anche in `PUNTO_DI_PARTENZA.md`, sezione sul modello dati.
+  Nessun bug aperto noto.
+
+## 2026-09-24 — Lezione: in Tailwind 4 alcune classi non falliscono, cambiano significato
+
+Passando a Tailwind 4 (già in `package.json` da prima, scoperto lavorando
+sugli sheet e sul focus qui sopra) sono emerse classi che **non danno errore,
+non falliscono il build, non falliscono il lint — semplicemente non fanno più
+quello che facevano in v3**, o non fanno niente:
+
+- `ring-inset` (per l'anello di focus interno): in v3 combinato con `ring-*`
+  disegnava l'anello dentro il bordo; in v4 non genera nessuna regola CSS
+  per questo scopo — l'anello interno è un'utility a parte, `inset-ring-*`
+  (`inset-ring-2`, `inset-ring-accent`, ecc.).
+- `outline-none`: in v3 nascondeva il contorno di focus mantenendolo
+  (trasparente) in modalità forced-colors/alto contrasto — l'opzione
+  accessibile. In v4 lo stesso nome ora vuol dire `outline-style: none`
+  secco, che lo toglie anche lì. Chi vuole il comportamento v3 deve scrivere
+  `outline-hidden`.
+- Preflight (gli stili di base, non le classi): il colore dei placeholder
+  non è più un grigio fisso ma il colore corrente del testo al 50% di
+  opacità — su testo quasi nero i placeholder sono più scuri di prima. E i
+  `<button>` non hanno più `cursor: pointer` di default — da mouse sembrano
+  non cliccabili.
+
+**La lezione**: build e lint passano puliti in tutti questi casi, perché la
+classe/lo stile esiste sintatticamente, produce solo CSS diverso (o nessuno).
+L'unica verifica che vale è cercare la regola nel CSS generato dopo la build
+(`.next/static/chunks/*.css`), non fidarsi del nome della classe né del fatto
+che "compila". Dettagli e correzioni nelle voci sotto.
+
 ## 2026-09-24 — Striscia non scurita fra lo sheet e la tastiera
 
 - Ultimo difetto della serie sugli sheet su iPhone: dopo la correzione della

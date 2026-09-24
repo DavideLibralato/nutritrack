@@ -366,9 +366,17 @@ function AggiungiContenuto() {
   }
 
   async function confermaRinominaPasto(nome: string) {
-    if (!pastoInModifica || !composizioni) return;
+    if (!pastoInModifica || !composizioni || !composizioniVoci || !catalogo) return;
 
-    if (esisteComposizioneConNome(nome, composizioni, pastoInModifica.composizioneId)) {
+    if (
+      esisteComposizioneConNome(
+        nome,
+        catalogo,
+        composizioni,
+        composizioniVoci,
+        pastoInModifica.composizioneId
+      )
+    ) {
       setSalvataggioModificaPasto("duplicato");
       return;
     }

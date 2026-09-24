@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 import { repositoryAlimenti } from "@/lib/repository";
+import { rimuoviAlimentoDaPastiSalvati } from "@/lib/repository/composizioni";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
@@ -132,6 +133,33 @@ export default function CreaAlimentoForm({
     setErrore(null);
     setInCorso(true);
     try {
+      // ORDINE VOLUTO, non intercambiabile: prima si toglie l'alimento dai
+      // pasti salvati, POI si cancella l'alimento stesso. Al contrario, se
+      // rimuoviAlimentoDaPastiSalvati fallisse dopo che l'alimento è già
+      // cancellato, si ricrea da un'altra strada esattamente il bug che
+      // questa funzione serve a impedire — un pasto salvato che referenzia
+      // un alimento sparito — ma stavolta invisibile: l'utente legge solo
+      // "Non è stato possibile eliminare" e non ha motivo di riprovare,
+      // pensando che l'eliminazione non sia avvenuta affatto.
+      // In quest'ordine un guasto a metà lascia invece l'alimento ancora nel
+      // catalogo (visibile, l'utente può riprovare) e al più un pasto
+      // salvato già con un ingrediente in meno — stato intermedio ma corretto,
+      // mai un fantasma. Il secondo tentativo converge comunque:
+      // rimuoviAlimentoDaPastiSalvati su un alimento già ripulito esce subito
+      // (vociDaEliminare vuoto), poi repositoryAlimenti.elimina è idempotente.
+      //
+      // Le due scritture non sono in un'unica transazione Dexie: valutato e
+      // scartato. creaRepository (src/lib/repository/repository.ts) lancia
+      // sincronizzaOutbox() ad ogni scrittura, che fa vere chiamate di rete
+      // (supabase.from(...).upsert(...), in sequenza, anche più di una) — se
+      // quella catena finisse dentro l'ambient transaction di Dexie (basta
+      // che parta da dentro una db.transaction(), anche senza await: Dexie
+      // segue la catena di promise) l'IndexedDB transaction dovrebbe restare
+      // aperta per tutta quella rete, cosa che IndexedDB non permette e che
+      // farebbe fallire proprio le scritture che si voleva rendere più
+      // sicure. L'inversione basta: nessuno stato intermedio invisibile,
+      // nessuna riga fantasma.
+      await rimuoviAlimentoDaPastiSalvati(userId, alimentoDaModificare.id);
       // Cancellazione logica (deleted_at), come per tutte le tabelle.
       await repositoryAlimenti.elimina(alimentoDaModificare.id);
       onEliminato?.();

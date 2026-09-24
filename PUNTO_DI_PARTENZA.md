@@ -407,6 +407,29 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 
 **`composizioni_voci`** — gli alimenti dentro una composizione, con le quantità
 
+**Cancellare un alimento dal catalogo tocca anche i pasti salvati che lo
+contengono** (bug del 2026-09-22, "Colazione fantasma": un pasto salvato con
+un solo alimento, poi cancellato dal catalogo, restava tecnicamente
+esistente ma invisibile in Preferiti — il nome non era più riusabile).
+Regola, in `src/lib/repository/composizioni.ts` (`rimuoviAlimentoDaPastiSalvati`):
+- resta almeno un altro alimento nel pasto → si cancella solo la riga di
+  `composizioni_voci` di quell'alimento, il pasto resta con gli altri;
+- era l'ultimo alimento del pasto → si cancella (logicamente, `deleted_at`)
+  anche la composizione, altrimenti resta un guscio vuoto;
+- **nessun avviso all'utente**, in nessuno dei due casi: valutato e scartato.
+
+Da non confondere con la cancellazione di una **voce di diario** (togliere un
+alimento dal pasto di una giornata): quella non tocca mai i pasti salvati,
+sono due cancellazioni diverse su tabelle diverse — un pasto salvato è
+un modello riutilizzabile, indipendente da quali giornate lo abbiano usato.
+
+Per lo stesso motivo, il controllo "esiste già un pasto salvato con questo
+nome" (`esisteComposizioneConNome`) non guarda solo la tabella `composizioni`:
+usa la stessa regola di visibilità della sezione Preferiti
+(`pastoSalvatoVisibile`/`pastiSalvati` in `src/lib/inserimento/pastiSalvati.ts`),
+scritta una volta sola e riusata — le due cose non devono più poter
+divergere.
+
 **`misurazioni`** — peso e misure corporee
 - `tipo` (peso / vita / fianchi / …), `valore`, `unita`, `data`
 - **righe, non colonne**: aggiungere una misura in futuro è un inserimento,

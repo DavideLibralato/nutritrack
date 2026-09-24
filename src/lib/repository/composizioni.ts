@@ -4,7 +4,8 @@
 // "ricetta") sono un perimetro diverso, non ancora costruito.
 
 import { repositoryComposizioni, repositoryComposizioniVoci } from "./index";
-import type { Composizione, ComposizioneVoce, VoceDiario } from "../db/tipi";
+import { pastoSalvatoVisibile } from "../inserimento/pastiSalvati";
+import type { Alimento, Composizione, ComposizioneVoce, VoceDiario } from "../db/tipi";
 
 // Un nome già usato da un altro pasto salvato (stesso confronto: trim, non
 // case-insensitive — "Colazione" e "colazione" restano nomi diversi finché
@@ -12,14 +13,24 @@ import type { Composizione, ComposizioneVoce, VoceDiario } from "../db/tipi";
 // lo stesso nome non è un conflitto, sono cose diverse per l'utente.
 // `escludiId`: nella rinomina il pasto non deve risultare "duplicato di se
 // stesso" se il nome non cambia (o torna a essere quello di partenza).
+//
+// `pastoSalvatoVisibile` (stessa regola di pastiSalvati, sezione 4): un nome
+// non è "già preso" da una composizione che in Preferiti non compare più
+// (bug del 2026-09-22, vedi il commento su quella funzione).
 export function esisteComposizioneConNome(
   nome: string,
+  catalogo: Alimento[],
   composizioni: Composizione[],
+  composizioniVoci: ComposizioneVoce[],
   escludiId?: string
 ): boolean {
   const nomeTrim = nome.trim();
   return composizioni.some(
-    (c) => c.id !== escludiId && c.tipo === "pasto_salvato" && c.nome.trim() === nomeTrim
+    (c) =>
+      c.id !== escludiId &&
+      c.tipo === "pasto_salvato" &&
+      c.nome.trim() === nomeTrim &&
+      pastoSalvatoVisibile(c.id, catalogo, composizioniVoci)
   );
 }
 
@@ -80,4 +91,54 @@ export async function eliminaComposizione(
   const voci = composizioniVoci.filter((v) => v.composizione_id === composizioneId);
   await Promise.all(voci.map((v) => repositoryComposizioniVoci.elimina(v.id)));
   await repositoryComposizioni.elimina(composizioneId);
+}
+
+// Cancellare un alimento dal catalogo (CreaAlimentoForm, "Elimina") lo toglie
+// anche da ogni pasto salvato che lo conteneva — regola decisa, senza
+// avviso all'utente (già valutato e scartato, non riproporlo):
+// - resta almeno un altro alimento nel pasto → si cancella solo la riga di
+//   composizioni_voci di quell'alimento, il pasto resta con gli altri;
+// - era l'ultimo alimento del pasto → si cancella (logicamente) anche il
+//   pasto salvato, altrimenti resta un guscio vuoto: esiste ancora
+//   (deleted_at null) ma pastiSalvati() non lo mostra più a nessuno, e il
+//   suo nome resta bloccato per sempre — è esattamente il bug del
+//   2026-09-22 ("Colazione" non risalvabile), corretto a mano una volta su
+//   Supabase; questa funzione impedisce che si ripeta.
+//
+// Solo `tipo: "pasto_salvato"` (le ricette sono un perimetro diverso, non
+// ancora costruito: oggi non hanno mai righe in composizioni_voci, quindi
+// questo filtro non le tocca comunque).
+//
+// Rilegge composizioni/composizioni_voci da sola invece di riceverle come
+// parametro: chi cancella un alimento (CreaAlimentoForm) non le ha già in
+// mano, e prenderle da uno stato React rischierebbe un giro vecchio (stesso
+// motivo di garantisciGiornoPerPrimaVoce in src/lib/repository/giorni.ts).
+export async function rimuoviAlimentoDaPastiSalvati(
+  userId: string,
+  alimentoId: string
+): Promise<void> {
+  const [composizioni, composizioniVoci] = await Promise.all([
+    repositoryComposizioni.ottieniTutti(userId),
+    repositoryComposizioniVoci.ottieniTutti(userId),
+  ]);
+
+  const vociDaEliminare = composizioniVoci.filter((v) => v.alimento_id === alimentoId);
+  if (vociDaEliminare.length === 0) return;
+
+  await Promise.all(vociDaEliminare.map((v) => repositoryComposizioniVoci.elimina(v.id)));
+
+  const idVociEliminate = new Set(vociDaEliminare.map((v) => v.id));
+  const idComposizioniToccate = new Set(vociDaEliminare.map((v) => v.composizione_id));
+
+  const composizioniDaEliminare = composizioni.filter(
+    (c) =>
+      c.tipo === "pasto_salvato" &&
+      idComposizioniToccate.has(c.id) &&
+      // Nessuna voce le resta, a parte quelle appena cancellate qui sopra.
+      !composizioniVoci.some(
+        (v) => v.composizione_id === c.id && !idVociEliminate.has(v.id)
+      )
+  );
+
+  await Promise.all(composizioniDaEliminare.map((c) => repositoryComposizioni.elimina(c.id)));
 }

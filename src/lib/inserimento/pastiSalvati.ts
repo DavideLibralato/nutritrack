@@ -16,6 +16,37 @@ export interface PastoSalvato {
   voci: { alimento: Alimento; quantitaG: number }[];
 }
 
+// Le voci di una composizione con l'alimento ancora nel catalogo (mai
+// congelato: sempre l'oggetto vivo). Un alimento può essere stato
+// eliminato dal catalogo dopo aver salvato il pasto — di norma non
+// succede più (src/lib/repository/composizioni.ts cancella anche la riga
+// di composizioni_voci quando l'alimento sparisce, e il pasto stesso se
+// era l'ultimo alimento rimasto), ma questo filtro resta come rete di
+// sicurezza per i dati scritti prima di quella correzione, o non ancora
+// sincronizzati da un altro dispositivo.
+//
+// Unica funzione che decide "un alimento di questa composizione conta
+// ancora": usata sia per costruire l'elenco (pastiSalvati) sia per il
+// controllo booleano (pastoSalvatoVisibile) — scritta una volta sola
+// perché le due cose non possono più dare risposte diverse (bug del
+// 2026-09-22: una composizione con l'unico alimento cancellato dal
+// catalogo era "invisibile" qui ma "esistente" per
+// esisteComposizioneConNome, che la guardava con un filtro separato).
+function vociValidePerComposizione(
+  composizioneId: string,
+  catalogo: Alimento[],
+  composizioniVoci: ComposizioneVoce[]
+): { alimento: Alimento; quantitaG: number }[] {
+  return composizioniVoci
+    .filter((v) => v.composizione_id === composizioneId)
+    .sort((a, b) => a.ordine - b.ordine)
+    .map((v) => {
+      const alimento = catalogo.find((a) => a.id === v.alimento_id);
+      return alimento ? { alimento, quantitaG: v.quantita_g } : null;
+    })
+    .filter((x): x is { alimento: Alimento; quantitaG: number } => x !== null);
+}
+
 export function pastiSalvati(
   catalogo: Alimento[],
   composizioni: Composizione[],
@@ -26,16 +57,7 @@ export function pastiSalvati(
   for (const c of composizioni) {
     if (c.tipo !== "pasto_salvato") continue;
 
-    const voci = composizioniVoci
-      .filter((v) => v.composizione_id === c.id)
-      .sort((a, b) => a.ordine - b.ordine)
-      .map((v) => {
-        const alimento = catalogo.find((a) => a.id === v.alimento_id);
-        return alimento ? { alimento, quantitaG: v.quantita_g } : null;
-      })
-      // Un alimento può essere stato eliminato dal catalogo dopo aver
-      // salvato il pasto: quella riga sparisce, non tutto il pasto.
-      .filter((x): x is { alimento: Alimento; quantitaG: number } => x !== null);
+    const voci = vociValidePerComposizione(c.id, catalogo, composizioniVoci);
 
     // Se non resta nessun alimento valido, il pasto salvato non ha più
     // niente da aggiungere: non compare.
@@ -45,6 +67,19 @@ export function pastiSalvati(
   }
 
   return risultato.sort((a, b) => a.nome.localeCompare(b.nome, "it"));
+}
+
+// Un pasto salvato "esiste" per l'utente solo se gli resta almeno un
+// alimento valido — stessa regola di pastiSalvati(), riusata qui perché la
+// serve anche esisteComposizioneConNome (src/lib/repository/composizioni.ts):
+// un nome non va considerato "già preso" da una composizione che in
+// Preferiti non compare più.
+export function pastoSalvatoVisibile(
+  composizioneId: string,
+  catalogo: Alimento[],
+  composizioniVoci: ComposizioneVoce[]
+): boolean {
+  return vociValidePerComposizione(composizioneId, catalogo, composizioniVoci).length > 0;
 }
 
 // Gli id delle composizioni (solo pasto_salvato) i cui alimenti+quantità
