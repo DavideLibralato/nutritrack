@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-24 — Striscia non scurita fra lo sheet e la tastiera
+
+- Ultimo difetto della serie sugli sheet su iPhone: dopo la correzione della
+  volta scorsa (ancorati al visual viewport) restava una striscia non
+  scurita fra il bordo dello sheet e la tastiera (la zona della barra di
+  Safari) — lì si rivedeva a piena luminosità la stessa voce di diario che
+  si stava modificando nello sheet sopra, sembrava un doppione. Causa: un
+  solo `<div>` in `SheetQuantita.tsx`/`SheetNome.tsx` faceva sia da sfondo
+  scurito sia da contenitore posizionato sul visual viewport, quindi lo
+  scurimento finiva dove finiva l'area visibile, non a tutto schermo.
+- Separati i due livelli: uno sfondo scurito ancorato al layout viewport
+  (`fixed inset-0`, copre tutto lo schermo) sotto, il contenitore del
+  pannello ancorato al visual viewport (come prima) ma trasparente sopra.
+  Il tap-per-chiudere ora è su entrambi i `<div>` (si affida all'ordine nel
+  DOM, non allo z-index, per decidere chi riceve il tocco dove si
+  sovrappongono) — verificato con un test temporaneo (Testing Library,
+  cancellato dopo l'uso, non è un test permanente: non è un bug di logica
+  sottile) che il tap chiude sia sullo sfondo sia sul contenitore fuori dal
+  pannello, e non chiude toccando il pannello stesso.
+- Nessun bug aperto noto. Nessuna migration coinvolta (solo UI).
+
 ## 2026-09-24 — Contorno di sistema doppio sul focus + cursore mancante sui bottoni
 
 - L'anello di focus verde (corretto la volta scorsa) lasciava comunque

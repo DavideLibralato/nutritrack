@@ -115,18 +115,41 @@ export default function SheetQuantita({
   }
 
   return (
-    <div
-      style={{ top: areaVisibile.top, height: areaVisibile.height }}
-      className="fixed inset-x-0 z-50 flex items-end justify-center bg-foreground/40"
-      onClick={onAnnulla}
-    >
+    <>
+      {/* Due livelli separati, non un solo div che fa da sfondo scurito E da
+          contenitore posizionato: lo sfondo copre tutto il LAYOUT viewport
+          (fixed inset-0), così scurisce anche le zone che il visual viewport
+          esclude (dietro la barra di Safari, dietro la tastiera) — altrimenti
+          restava una striscia non scurita fra il pannello e la tastiera, con
+          la pagina sotto a piena luminosità (bug: "si legge la stessa voce
+          due volte"). Il contenitore del pannello resta ancorato al VISUAL
+          viewport come prima, ma trasparente: lo scurimento lo fa solo lo
+          sfondo sotto.
+          Tap-per-chiudere su ENTRAMBI i livelli: chi tocca fuori dal pannello
+          chiude comunque, che sia sopra o sotto l'area del visual viewport.
+          Funziona per l'ordine nel DOM (non per z-index, uguale sui due):
+          il contenitore viene dopo lo sfondo, quindi nella zona in cui i due
+          si sovrappongono è lui a ricevere il tocco (chiude, propaga da
+          `onClick` qui sotto); il pannello dentro ferma la propagazione
+          (`stopPropagation`) così toccarlo non chiude nulla; fuori da quella
+          zona non c'è il contenitore (è alto solo quanto l'area visibile),
+          quindi il tocco arriva allo sfondo sottostante, che chiude anche
+          lui. Verificato a mano: tocco sopra il pannello (zona scura normale)
+          e tocco nella striscia sotto (fra pannello e tastiera) chiudono
+          entrambi lo sheet. */}
+      <div className="fixed inset-0 z-50 bg-foreground/40" onClick={onAnnulla} aria-hidden />
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Quantità di ${alimento.nome}`}
-        className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-        onClick={(e) => e.stopPropagation()}
+        style={{ top: areaVisibile.top, height: areaVisibile.height }}
+        className="fixed inset-x-0 z-50 flex items-end justify-center"
+        onClick={onAnnulla}
       >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Quantità di ${alimento.nome}`}
+          className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          onClick={(e) => e.stopPropagation()}
+        >
         {!mostraSelettorePasto && (
           <p className="text-xs uppercase tracking-wide text-muted">{nomePasto}</p>
         )}
@@ -258,7 +281,8 @@ export default function SheetQuantita({
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

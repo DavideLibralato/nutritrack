@@ -77,18 +77,24 @@ export default function SheetNome({
   }
 
   return (
-    <div
-      style={{ top: areaVisibile.top, height: areaVisibile.height }}
-      className="fixed inset-x-0 z-50 flex items-end justify-center bg-foreground/40"
-      onClick={onAnnulla}
-    >
+    <>
+      {/* Due livelli separati: stesso motivo e stessa strategia di
+          tap-per-chiudere di SheetQuantita (vedi il commento lì) — lo
+          sfondo scurito copre tutto il layout viewport, il contenitore del
+          pannello resta ancorato al visual viewport ma trasparente. */}
+      <div className="fixed inset-0 z-50 bg-foreground/40" onClick={onAnnulla} aria-hidden />
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={titolo}
-        className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-        onClick={(e) => e.stopPropagation()}
+        style={{ top: areaVisibile.top, height: areaVisibile.height }}
+        className="fixed inset-x-0 z-50 flex items-end justify-center"
+        onClick={onAnnulla}
       >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={titolo}
+          className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          onClick={(e) => e.stopPropagation()}
+        >
         <h2 className="font-display text-xl font-bold">{titolo}</h2>
 
         <input
@@ -159,6 +165,7 @@ export default function SheetNome({
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
