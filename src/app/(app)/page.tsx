@@ -57,12 +57,18 @@ import BarraMacro from "@/components/BarraMacro";
 import SheetQuantita from "@/components/SheetQuantita";
 import SheetNome from "@/components/SheetNome";
 import { daVoce } from "@/lib/inserimento/alimentoPerSheet";
-import { pastoGiaSalvato, composizioniCorrispondenti } from "@/lib/inserimento/pastiSalvati";
+import {
+  pastoGiaSalvato,
+  composizioniCorrispondenti,
+  pastoSalvatoCoiSoliValidi,
+  separaVociPerCatalogo,
+} from "@/lib/inserimento/pastiSalvati";
+import { testoAvvisoEsclusi, testoGiaSalvato } from "@/lib/inserimento/testiAlimentiCancellati";
 import {
   salvaPastoComeComposizione,
-  esisteComposizioneConNome,
   eliminaComposizione,
 } from "@/lib/repository/composizioni";
+import BarraAnnulla from "@/components/BarraAnnulla";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
@@ -180,10 +186,11 @@ function OggiContenuto() {
     if (!userId) return undefined;
     return repositoryComposizioniVoci.ottieniTutti(userId);
   }, [userId]);
-  // Serve solo a esisteComposizioneConNome (il controllo sul nome doppio
-  // salvando un pasto, sezione 4): deve sapere quali alimenti dei pasti
-  // salvati sono ancora nel catalogo, stessa regola di pastiSalvati() in
-  // /aggiungi.
+  // Serve alla stella e al suo sheet: quali alimenti dei pasti salvati e
+  // delle voci di oggi sono ancora nel catalogo (stessa regola di
+  // pastiSalvati() in /aggiungi, e "Alimenti cancellati" in
+  // PUNTO_DI_PARTENZA.md). Solo per mostrare: le decisioni di scrittura
+  // rileggono il catalogo da Dexie (salvaPastoComeComposizione).
   const catalogo = useLiveQuery(async () => {
     if (!userId) return undefined;
     return catalogoLocale(userId);
@@ -248,8 +255,25 @@ function OggiContenuto() {
   // SheetNome, e lo stato del salvataggio della composizione.
   const [pastoDaSalvare, setPastoDaSalvare] = useState<Pasto | null>(null);
   const [salvataggioComposizione, setSalvataggioComposizione] = useState<
-    "inattivo" | "in-corso" | "errore" | "duplicato" | "senza-alimenti"
+    | "inattivo"
+    | "in-corso"
+    | "errore"
+    | "duplicato"
+    | "senza-alimenti"
+    | "gia-salvato"
+    | "esclusi-cambiati"
   >("inattivo");
+  // Regola "Alimenti cancellati" (PUNTO_DI_PARTENZA.md): le voci del pasto
+  // che NON verranno salvate perché il loro alimento non è più nel catalogo,
+  // così come l'utente le vede annunciate nello sheet. Passate a
+  // salvaPastoComeComposizione, che rilegge Dexie e rifiuta di salvare se
+  // nel frattempo non sono più queste.
+  const [idVociEsclusePreviste, setIdVociEsclusePreviste] = useState<string[]>([]);
+  // Testo informativo del caso "gia-salvato" nello sheet.
+  const [testoGiaSalvatoSheet, setTestoGiaSalvatoSheet] = useState<string | null>(null);
+  // Barra temporanea in basso (BarraAnnulla, qui senza azione): al tocco
+  // della stella su un pasto il cui contenuto valido è già salvato.
+  const [barra, setBarra] = useState<{ id: string; testo: string } | null>(null);
 
   // Voce 3: i pasti (fasce) di cui l'utente ha nascosto la lista di alimenti.
   // In memoria, non su disco: al riavvio dell'app tornano tutti aperti.
@@ -458,45 +482,108 @@ function OggiContenuto() {
       return;
     }
 
+    // Stella vuota perché la giornata contiene alimenti non più nel
+    // catalogo (regola "Alimenti cancellati", punto 2: la stella confronta
+    // l'elenco intero che si vede a schermo). Se le sole voci valide sono già
+    // un pasto salvato, niente sheet: si dice cosa c'è già e cosa manca
+    // (punto 3). Qui basta lo stato React: non si scrive niente, e il
+    // salvataggio vero ripete lo stesso controllo rileggendo Dexie.
+    const giaSalvatoValide = pastoSalvatoCoiSoliValidi(
+      vociPasto,
+      catalogo,
+      composizioni,
+      composizioniVoci
+    );
+    const { valide, escluse } = separaVociPerCatalogo(vociPasto, catalogo);
+    if (giaSalvatoValide) {
+      setBarra({
+        id: crypto.randomUUID(),
+        testo: testoGiaSalvato(
+          giaSalvatoValide.nome,
+          escluse.map((v) => v.nome_alimento)
+        ),
+      });
+      return;
+    }
+
     setPastoDaSalvare(pasto);
+    // Quali voci l'avviso dello sheet annuncia come escluse. Se non ne resta
+    // nessuna valida, nessun avviso: il salvataggio risponderà
+    // "senza-alimenti", che dice già tutto.
+    setIdVociEsclusePreviste(valide.length > 0 ? escluse.map((v) => v.id) : []);
+    setTestoGiaSalvatoSheet(null);
     setSalvataggioComposizione("inattivo");
   }
 
   function chiudiSalvaPreferito() {
     setPastoDaSalvare(null);
+    setIdVociEsclusePreviste([]);
+    setTestoGiaSalvatoSheet(null);
     setSalvataggioComposizione("inattivo");
   }
 
   async function confermaSalvaPreferito(nome: string) {
-    if (!userId || !pastoDaSalvare || !composizioni || !composizioniVoci || !catalogo) return;
+    if (!userId || !pastoDaSalvare) return;
     const vociPasto = vociGiorno.filter((v) => v.pasto_id === pastoDaSalvare.id);
     if (vociPasto.length === 0) {
       chiudiSalvaPreferito();
       return;
     }
 
-    // Nome già usato da un altro pasto salvato: non si crea un duplicato
-    // silenzioso, si segnala e si lascia lo sheet aperto per correggere.
-    if (esisteComposizioneConNome(nome, catalogo, composizioni, composizioniVoci)) {
-      setSalvataggioComposizione("duplicato");
-      return;
-    }
-
     setSalvataggioComposizione("in-corso");
     try {
-      // false: nessuno degli alimenti di oggi è ancora nel catalogo (tutti
-      // cancellati nel frattempo) — non c'è niente da salvare, e non si crea
-      // una composizione vuota (sarebbe un fantasma fin dalla nascita). Lo
-      // sheet resta aperto con un messaggio, non si richiude in silenzio:
-      // altrimenti sembrerebbe salvato quando non lo è stato.
-      const creata = await salvaPastoComeComposizione(userId, nome, vociPasto);
-      if (!creata) {
-        setSalvataggioComposizione("senza-alimenti");
-        return;
+      // Tutti i controlli (nome doppio, contenuto già salvato, alimenti
+      // esclusi) li fa salvaPastoComeComposizione rileggendo Dexie — non più
+      // qui sullo stato React. Ogni esito diverso da "salvato" lascia lo
+      // sheet aperto con un messaggio: chiuderlo in silenzio farebbe
+      // sembrare salvato ciò che non lo è.
+      const risultato = await salvaPastoComeComposizione(
+        userId,
+        nome,
+        vociPasto,
+        idVociEsclusePreviste
+      );
+      switch (risultato.esito) {
+        case "salvato":
+          chiudiSalvaPreferito();
+          break;
+        case "senza-alimenti":
+          setSalvataggioComposizione("senza-alimenti");
+          break;
+        case "nome-duplicato":
+          setSalvataggioComposizione("duplicato");
+          break;
+        case "gia-salvato":
+          setTestoGiaSalvatoSheet(testoGiaSalvato(risultato.nomePasto, risultato.nomiEsclusi));
+          setSalvataggioComposizione("gia-salvato");
+          break;
+        case "esclusi-cambiati":
+          // L'avviso si aggiorna con l'elenco vero; serve un altro "Salva".
+          setIdVociEsclusePreviste(risultato.idVociEscluse);
+          setSalvataggioComposizione("esclusi-cambiati");
+          break;
       }
-      chiudiSalvaPreferito();
     } catch {
       setSalvataggioComposizione("errore");
+    }
+  }
+
+  // Avviso dello sheet (punto 1): costruito dalle voci annunciate come
+  // escluse, non da un nuovo calcolo sul catalogo — dice esattamente ciò che
+  // "Salva" confermerà. Quando il contenuto è già salvato vince il
+  // messaggio informativo e l'avviso non compare (punto E).
+  let avvisoSalvaPreferito: string | null = null;
+  if (pastoDaSalvare) {
+    const vociPastoDaSalvare = vociGiorno.filter((v) => v.pasto_id === pastoDaSalvare.id);
+    const escluse = vociPastoDaSalvare.filter((v) => idVociEsclusePreviste.includes(v.id));
+    if (salvataggioComposizione === "gia-salvato") {
+      avvisoSalvaPreferito = testoGiaSalvatoSheet;
+    } else if (escluse.length > 0) {
+      avvisoSalvaPreferito = testoAvvisoEsclusi(
+        vociPastoDaSalvare.length - escluse.length,
+        vociPastoDaSalvare.length,
+        escluse.map((v) => v.nome_alimento)
+      );
     }
   }
 
@@ -706,7 +793,19 @@ function OggiContenuto() {
       {/* FASCIA BASSA — fissa. Il pulsante non deve mai finire sotto la
           piega: è l'azione per cui esiste l'app (sezione 3). Apre /aggiungi
           per il giorno mostrato. */}
-      <div className="shrink-0 border-t border-border px-4 py-3">
+      <div className="relative shrink-0 border-t border-border px-4 py-3">
+        {/* Appena sopra questa fascia, senza coprire il "+ Aggiungi". Qui
+            non serve il margine della barretta home (la gestisce la tab bar
+            sotto) né il visual viewport: quando compare non c'è nessun campo
+            di testo aperto, quindi nessuna tastiera. */}
+        {barra && (
+          <BarraAnnulla
+            key={barra.id}
+            testo={barra.testo}
+            sopra
+            onChiudi={() => setBarra(null)}
+          />
+        )}
         <button
           type="button"
           onClick={() => router.push(`/aggiungi?giorno=${giorno}`)}
@@ -749,8 +848,11 @@ function OggiContenuto() {
                 ? "Esiste già un pasto salvato con questo nome. Scegline un altro."
                 : salvataggioComposizione === "senza-alimenti"
                   ? "Nessuno degli alimenti di questo pasto è ancora nel catalogo: non c'è niente da salvare."
-                  : null
+                  : salvataggioComposizione === "esclusi-cambiati"
+                    ? "Nel frattempo l'elenco è cambiato: controlla e premi di nuovo Salva."
+                    : null
           }
+          avviso={avvisoSalvaPreferito}
           onAnnulla={chiudiSalvaPreferito}
           onConferma={confermaSalvaPreferito}
         />

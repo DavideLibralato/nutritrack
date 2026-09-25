@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-25 — Alimenti cancellati: l'app non decide più in silenzio
+
+Branch `alimenti-cancellati`, da provare su iPhone (anteprima Vercel) prima
+del merge. Regola scritta in `PUNTO_DI_PARTENZA.md` ("Alimenti
+cancellati"): cancellare ritira dal futuro, non dal passato. Quattro
+comportamenti visibili:
+
+- avviso nello sheet del nome quando un pasto contiene alimenti cancellati
+  ("Verrà salvato 1 alimento su 2…"); il salvataggio rifiuta se gli esclusi
+  sono cambiati nel frattempo;
+- stella a confronto stretto (era già così: solo commento e test);
+- contenuto valido già salvato → barra informativa al tocco della stella,
+  non errore di nome duplicato;
+- "Annulla" dopo la cancellazione di un alimento (`BarraAnnulla`), che
+  ripristina solo ciò che quella cancellazione ha toccato.
+
+Il controllo del nome doppio si è spostato dentro
+`salvaPastoComeComposizione` (rilegge Dexie), che ora ha cinque esiti.
+Test permanenti in `composizioni.test.ts`. `Claude outputs/` in
+`.gitignore`. Aperto: non ancora provato a schermo (tastiera iOS).
+
 ## 2026-09-24 — Due fantasmi sfuggiti alla correzione precedente
 
 Prova sui dati reali di Supabase dopo il fix di poco prima (voce precedente):

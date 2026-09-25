@@ -21,10 +21,18 @@ import {
   rimuoviAlimentoDaPastiSalvati,
   esisteComposizioneConNome,
   salvaPastoComeComposizione,
+  ripristinaAlimentoEliminato,
+  eliminaComposizione,
 } from "./composizioni";
 import { repositoryAlimenti, repositoryComposizioni, repositoryComposizioniVoci, repositoryVociDiario } from "./index";
 import { catalogoLocale } from "./alimenti";
-import { pastiSalvati } from "../inserimento/pastiSalvati";
+import {
+  pastiSalvati,
+  pastoGiaSalvato,
+  pastoSalvatoCoiSoliValidi,
+  separaVociPerCatalogo,
+} from "../inserimento/pastiSalvati";
+import { testoAvvisoEsclusi, testoGiaSalvato } from "../inserimento/testiAlimentiCancellati";
 import type { Alimento, VoceDiario } from "../db/tipi";
 
 async function creaAlimento(userId: string, nome: string): Promise<Alimento> {
@@ -202,8 +210,8 @@ describe("salvaPastoComeComposizione", () => {
     // voce di diario resta (copia congelata), l'alimento no.
     await repositoryAlimenti.elimina(marmellata.id);
 
-    const creata = await salvaPastoComeComposizione(userId, "Colazione", [voceP, voceM]);
-    expect(creata).toBe(true);
+    const risultato = await salvaPastoComeComposizione(userId, "Colazione", [voceP, voceM], [voceM.id]);
+    expect(risultato.esito).toBe("salvato");
 
     const composizioni = await repositoryComposizioni.ottieniTutti(userId);
     const composizione = composizioni.find((c) => c.nome === "Colazione");
@@ -221,12 +229,238 @@ describe("salvaPastoComeComposizione", () => {
     const voceM = await creaVoceDiario(userId, marmellata, 20);
     await repositoryAlimenti.elimina(marmellata.id);
 
-    const creata = await salvaPastoComeComposizione(userId, "Colazione fantasma", [voceM]);
-    expect(creata).toBe(false);
+    const risultato = await salvaPastoComeComposizione(userId, "Colazione fantasma", [voceM], []);
+    expect(risultato.esito).toBe("senza-alimenti");
 
     // Nessuna composizione vuota creata — sarebbe un fantasma fin dalla
     // nascita, lo stesso problema in un'altra forma.
     const composizioni = await repositoryComposizioni.ottieniTutti(userId);
     expect(composizioni.find((c) => c.nome === "Colazione fantasma")).toBeUndefined();
+  });
+});
+
+// Regola "Alimenti cancellati" (PUNTO_DI_PARTENZA.md, decisa il 2026-09-25):
+// cancellare un alimento lo ritira dal futuro (ricerca, recenti, preferiti,
+// pasti salvati), non dal passato (il diario lo conserva). Prima l'app lo
+// decideva in silenzio; questi test fissano i quattro comportamenti visibili.
+// Sono bug che non fanno rumore: una stella accesa a torto o un Annulla che
+// resuscita una riga vecchia si notano solo mesi dopo, se mai.
+describe("regola Alimenti cancellati", () => {
+  // Giornata tipo: una Cena con Pasta (ancora nel catalogo) e «test»
+  // (cancellato dopo essere stato mangiato).
+  async function giornataConAlimentoCancellato() {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const pasta = await creaAlimento(userId, "Pasta");
+    const test = await creaAlimento(userId, "test");
+    const vocePasta = await creaVoceDiario(userId, pasta, 80);
+    const voceTest = await creaVoceDiario(userId, test, 30);
+    await repositoryAlimenti.elimina(test.id);
+    return { userId, pasta, test, vocePasta, voceTest, vociPasto: [vocePasta, voceTest] };
+  }
+
+  async function statoLocale(userId: string) {
+    const [catalogo, composizioni, composizioniVoci] = await Promise.all([
+      catalogoLocale(userId),
+      repositoryComposizioni.ottieniTutti(userId),
+      repositoryComposizioniVoci.ottieniTutti(userId),
+    ]);
+    return { catalogo, composizioni, composizioniVoci };
+  }
+
+  it("punto 1: con un alimento cancellato il salvataggio avvisa, e salva solo le voci valide", async () => {
+    const { userId, pasta, voceTest, vociPasto } = await giornataConAlimentoCancellato();
+    const { catalogo } = await statoLocale(userId);
+
+    // Cosa annuncia lo sheet.
+    const { valide, escluse } = separaVociPerCatalogo(vociPasto, catalogo);
+    expect(escluse.map((v) => v.id)).toEqual([voceTest.id]);
+    expect(
+      testoAvvisoEsclusi(valide.length, vociPasto.length, escluse.map((v) => v.nome_alimento))
+    ).toBe("Verrà salvato 1 alimento su 2. «test» non è più nel catalogo.");
+
+    // Senza che l'utente abbia visto l'avviso (nessuna voce annunciata come
+    // esclusa) non si salva niente: l'esclusione non è mai silenziosa.
+    const senzaAvviso = await salvaPastoComeComposizione(userId, "Cena", vociPasto, []);
+    expect(senzaAvviso).toEqual({ esito: "esclusi-cambiati", idVociEscluse: [voceTest.id] });
+    expect(await repositoryComposizioni.ottieniTutti(userId)).toHaveLength(0);
+
+    // Confermato l'avviso: salvata, con la sola Pasta.
+    const confermato = await salvaPastoComeComposizione(userId, "Cena", vociPasto, [voceTest.id]);
+    expect(confermato.esito).toBe("salvato");
+    const { composizioni, composizioniVoci } = await statoLocale(userId);
+    const cena = composizioni.find((c) => c.nome === "Cena")!;
+    const voci = composizioniVoci.filter((v) => v.composizione_id === cena.id);
+    expect(voci.map((v) => v.alimento_id)).toEqual([pasta.id]);
+  });
+
+  it("punto 2: dopo il salvataggio la stella di quella giornata resta vuota", async () => {
+    const { userId, voceTest, vociPasto } = await giornataConAlimentoCancellato();
+    await salvaPastoComeComposizione(userId, "Cena", vociPasto, [voceTest.id]);
+    const { catalogo, composizioni, composizioniVoci } = await statoLocale(userId);
+
+    // A schermo ci sono Pasta e «test», il pasto salvato ha solo Pasta: non
+    // riproduce l'elenco visibile, quindi non risulta salvato. Voluto: il
+    // lato del diario NON si filtra (commento su composizioniCorrispondenti).
+    expect(pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci)).toBe(false);
+    // E il pasto salvato resta comunque visibile in Preferiti: il filtro
+    // sull'altro lato non si è rotto.
+    expect(pastiSalvati(catalogo, composizioni, composizioniVoci).map((p) => p.nome)).toEqual([
+      "Cena",
+    ]);
+  });
+
+  it("punto 3: ripremendo la stella esce il messaggio informativo, non l'errore di nome duplicato", async () => {
+    const { userId, voceTest, vociPasto } = await giornataConAlimentoCancellato();
+    await salvaPastoComeComposizione(userId, "Cena", vociPasto, [voceTest.id]);
+    const { catalogo, composizioni, composizioniVoci } = await statoLocale(userId);
+
+    // Al tocco della stella (Oggi, toggleSalvaPreferito): trovato, niente sheet.
+    const trovato = pastoSalvatoCoiSoliValidi(vociPasto, catalogo, composizioni, composizioniVoci);
+    expect(trovato?.nome).toBe("Cena");
+    expect(testoGiaSalvato("Cena", ["test"])).toBe(
+      "Hai già un pasto salvato «Cena». Non contiene «test», che non è più nel catalogo."
+    );
+
+    // Rete di sicurezza nello sheet: stesso nome → informativo, non errore.
+    const stessoNome = await salvaPastoComeComposizione(userId, "Cena", vociPasto, [voceTest.id]);
+    expect(stessoNome).toEqual({ esito: "gia-salvato", nomePasto: "Cena", nomiEsclusi: ["test"] });
+    // Il confronto è sul contenuto: anche con un altro nome non si crea un
+    // secondo pasto salvato identico (conseguenza accettata il 2026-09-25).
+    const altroNome = await salvaPastoComeComposizione(userId, "Cena bis", vociPasto, [voceTest.id]);
+    expect(altroNome.esito).toBe("gia-salvato");
+    expect(await repositoryComposizioni.ottieniTutti(userId)).toHaveLength(1);
+  });
+
+  it("punto 3: con contenuto diverso l'errore di nome duplicato resta quello di sempre", async () => {
+    const { userId, pasta, voceTest, vociPasto } = await giornataConAlimentoCancellato();
+    await salvaPastoComeComposizione(userId, "Cena", vociPasto, [voceTest.id]);
+
+    // Un'altra giornata, un'altra quantità di Pasta: contenuto diverso.
+    const altraVoce = await creaVoceDiario(userId, pasta, 120);
+    const risultato = await salvaPastoComeComposizione(userId, "Cena", [altraVoce], []);
+    expect(risultato.esito).toBe("nome-duplicato");
+  });
+
+  it("giornata senza alimenti cancellati: nessun avviso, e la stella si comporta come sempre", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const pasta = await creaAlimento(userId, "Pasta");
+    const pomodoro = await creaAlimento(userId, "Pomodoro");
+    const vociPasto = [
+      await creaVoceDiario(userId, pasta, 80),
+      await creaVoceDiario(userId, pomodoro, 100),
+    ];
+
+    const prima = await statoLocale(userId);
+    expect(separaVociPerCatalogo(vociPasto, prima.catalogo).escluse).toEqual([]);
+    expect(
+      pastoSalvatoCoiSoliValidi(vociPasto, prima.catalogo, prima.composizioni, prima.composizioniVoci)
+    ).toBeNull();
+
+    const risultato = await salvaPastoComeComposizione(userId, "Pranzo", vociPasto, []);
+    expect(risultato.esito).toBe("salvato");
+
+    const dopo = await statoLocale(userId);
+    expect(
+      pastoGiaSalvato(vociPasto, dopo.catalogo, dopo.composizioni, dopo.composizioniVoci)
+    ).toBe(true);
+  });
+
+  describe("punto 4: Annulla dopo la cancellazione di un alimento", () => {
+    // Stessi passi e stesso ordine di handleElimina in CreaAlimentoForm.
+    async function cancellaAlimento(userId: string, alimentoId: string) {
+      const traccia = await rimuoviAlimentoDaPastiSalvati(userId, alimentoId);
+      await repositoryAlimenti.elimina(alimentoId);
+      return traccia;
+    }
+
+    async function alimentiDelPasto(userId: string, nome: string) {
+      const { composizioni, composizioniVoci } = await statoLocale(userId);
+      const c = composizioni.find((x) => x.nome === nome);
+      if (!c) return undefined;
+      return composizioniVoci
+        .filter((v) => v.composizione_id === c.id)
+        .map((v) => v.alimento_id)
+        .sort();
+    }
+
+    it("alimento e pasti salvati tornano come prima, e una riga cancellata in precedenza NON torna", async () => {
+      const userId = `utente-${crypto.randomUUID()}`;
+      const pane = await creaAlimento(userId, "Pane");
+      const test = await creaAlimento(userId, "test");
+      await creaPastoSalvato(userId, "Cena", [pane, test]); // resta con il Pane
+      await creaPastoSalvato(userId, "Spuntino", [test]); // resta vuoto → cancellato
+      const colazioneId = await creaPastoSalvato(userId, "Colazione", [pane, test]);
+
+      // Molto prima: la riga di «test» in Colazione era già stata cancellata.
+      const vocePrecedente = (await repositoryComposizioniVoci.ottieniTutti(userId)).find(
+        (v) => v.composizione_id === colazioneId && v.alimento_id === test.id
+      )!;
+      await repositoryComposizioniVoci.elimina(vocePrecedente.id);
+
+      const traccia = await cancellaAlimento(userId, test.id);
+      expect(traccia.idComposizioniVoci).not.toContain(vocePrecedente.id);
+      expect(await alimentiDelPasto(userId, "Spuntino")).toBeUndefined();
+
+      const esito = await ripristinaAlimentoEliminato(userId, test.id, traccia);
+      expect(esito.pastiNonRipristinati).toEqual([]);
+
+      const { catalogo, composizioni, composizioniVoci } = await statoLocale(userId);
+      expect(catalogo.some((a) => a.id === test.id)).toBe(true);
+      expect(await alimentiDelPasto(userId, "Cena")).toEqual([pane.id, test.id].sort());
+      expect(await alimentiDelPasto(userId, "Spuntino")).toEqual([test.id]);
+      // Colazione resta com'era PRIMA di questa cancellazione: solo Pane.
+      expect(await alimentiDelPasto(userId, "Colazione")).toEqual([pane.id]);
+      expect(
+        (await repositoryComposizioniVoci.ottieniPerId(vocePrecedente.id))?.deleted_at
+      ).not.toBeNull();
+
+      expect(pastiSalvati(catalogo, composizioni, composizioniVoci).map((p) => p.nome)).toEqual([
+        "Cena",
+        "Colazione",
+        "Spuntino",
+      ]);
+    });
+
+    it("se nel frattempo è nato un pasto salvato con lo stesso nome, quello vuoto non si ripristina", async () => {
+      const userId = `utente-${crypto.randomUUID()}`;
+      const pane = await creaAlimento(userId, "Pane");
+      const test = await creaAlimento(userId, "test");
+      const vecchioId = await creaPastoSalvato(userId, "Spuntino", [test]);
+
+      const traccia = await cancellaAlimento(userId, test.id);
+      // Durante la finestra dell'Annulla (es. arriva dalla sync): un nuovo
+      // "Spuntino", con il Pane.
+      await creaPastoSalvato(userId, "Spuntino", [pane]);
+
+      const esito = await ripristinaAlimentoEliminato(userId, test.id, traccia);
+      expect(esito.pastiNonRipristinati).toEqual(["Spuntino"]);
+
+      // L'alimento torna; il vecchio Spuntino e la sua riga restano
+      // cancellati — niente doppione, niente riga orfana.
+      const { catalogo } = await statoLocale(userId);
+      expect(catalogo.some((a) => a.id === test.id)).toBe(true);
+      expect((await repositoryComposizioni.ottieniPerId(vecchioId))?.deleted_at).not.toBeNull();
+      for (const id of traccia.idComposizioniVoci) {
+        expect((await repositoryComposizioniVoci.ottieniPerId(id))?.deleted_at).not.toBeNull();
+      }
+    });
+
+    it("una riga il cui pasto salvato è stato cancellato durante la finestra non torna", async () => {
+      const userId = `utente-${crypto.randomUUID()}`;
+      const pane = await creaAlimento(userId, "Pane");
+      const test = await creaAlimento(userId, "test");
+      const cenaId = await creaPastoSalvato(userId, "Cena", [pane, test]);
+
+      const traccia = await cancellaAlimento(userId, test.id);
+      // L'utente elimina "Cena" dai preferiti mentre la barra è ancora lì.
+      await eliminaComposizione(cenaId, await repositoryComposizioniVoci.ottieniTutti(userId));
+
+      await ripristinaAlimentoEliminato(userId, test.id, traccia);
+
+      expect((await repositoryComposizioni.ottieniPerId(cenaId))?.deleted_at).not.toBeNull();
+      for (const id of traccia.idComposizioniVoci) {
+        expect((await repositoryComposizioniVoci.ottieniPerId(id))?.deleted_at).not.toBeNull();
+      }
+    });
   });
 });

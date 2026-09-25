@@ -407,16 +407,82 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 
 **`composizioni_voci`** — gli alimenti dentro una composizione, con le quantità
 
-**Cancellare un alimento dal catalogo tocca anche i pasti salvati che lo
-contengono** (bug del 2026-09-22, "Colazione fantasma": un pasto salvato con
-un solo alimento, poi cancellato dal catalogo, restava tecnicamente
-esistente ma invisibile in Preferiti — il nome non era più riusabile).
-Regola, in `src/lib/repository/composizioni.ts` (`rimuoviAlimentoDaPastiSalvati`):
+#### Alimenti cancellati (regola decisa il 2026-09-25)
+
+**Cancellare un alimento vuol dire ritirarlo dal futuro, non dal passato.**
+Il catalogo non è un archivio di alimenti esistenti: è la lista delle cose
+che potresti rimangiare. Il diario è storia, e la storia non si tocca.
+Corollario: se ho sbagliato i valori non cancello l'alimento, lo modifico.
+
+In pratica: l'alimento cancellato sparisce da ricerca, recenti, preferiti e
+pasti salvati, ma **resta nel diario**, dove ogni voce ha la sua copia dei
+valori.
+
+Strade scartate, da non riproporre:
+- **B — cancellare = "non proporlo più", alimento ancora risolvibile per id.**
+  Esiste per far sopravvivere l'alimento cancellato dentro i pasti salvati,
+  ma un pasto salvato serve a inserire in futuro, e un alimento che non
+  userai più non ha senso dentro uno stampo di inserimento futuro.
+- **C — copiare i valori in `composizioni_voci`.** Cade per il corollario:
+  correggere il Pane da 26 a 260 kcal non aggiornerebbe i pasti salvati che
+  lo contengono. Oggi il pasto salvato punta all'id ed eredita i valori
+  corretti, mentre il diario conserva le sue copie: è già giusto.
+
+**Cascata sui pasti salvati** (`rimuoviAlimentoDaPastiSalvati` in
+`src/lib/repository/composizioni.ts`; nata dal bug del 2026-09-22,
+"Colazione fantasma": un pasto salvato con un solo alimento, poi cancellato
+dal catalogo, restava tecnicamente esistente ma invisibile in Preferiti — il
+nome non era più riusabile):
 - resta almeno un altro alimento nel pasto → si cancella solo la riga di
   `composizioni_voci` di quell'alimento, il pasto resta con gli altri;
 - era l'ultimo alimento del pasto → si cancella (logicamente, `deleted_at`)
-  anche la composizione, altrimenti resta un guscio vuoto;
-- **nessun avviso all'utente**, in nessuno dei due casi: valutato e scartato.
+  anche la composizione, altrimenti resta un guscio vuoto.
+
+**L'app non decide più in silenzio.** Quattro comportamenti visibili:
+
+1. **Avviso al salvataggio.** Salvare come preferito un pasto di giornata
+   che contiene alimenti cancellati: lo sheet del nome mostra già
+   all'apertura "Verrà salvato 1 alimento su 2. «test» non è più nel
+   catalogo." — "Salva" conferma, "Annulla" non salva niente. Senza voci
+   escluse l'avviso non compare. Il salvataggio (`salvaPastoComeComposizione`)
+   riceve le voci annunciate come escluse e, rileggendo il catalogo, si
+   rifiuta di salvare se nel frattempo non sono più quelle: l'avviso si
+   aggiorna e serve un altro "Salva".
+2. **Stella: confronto stretto.** La stella di un pasto in Oggi si accende
+   solo se un pasto salvato riproduce esattamente l'elenco a schermo,
+   alimenti cancellati compresi. Un pasto di giornata con un alimento
+   cancellato non risulta mai salvato. Il filtro sugli alimenti cancellati
+   vale solo dal lato del pasto salvato (che resta nascosto se non gli resta
+   nessun alimento valido), mai dal lato del diario: filtrando un solo lato
+   la stella direbbe "già salvato" per qualcosa che non riproduce ciò che
+   l'utente vede.
+3. **Contenuto già salvato: messaggio, non errore.** Conseguenza del punto
+   2: la stella vuota invita a ripremere. Se le sole voci valide coincidono
+   già con un pasto salvato (con qualunque nome: il confronto è sul
+   contenuto), il tocco della stella non apre lo sheet e mostra una barra
+   temporanea: "Hai già un pasto salvato «Cena». Non contiene «test», che non
+   è più nel catalogo." Conseguenza accettata: da quella giornata non si può
+   salvare lo stesso contenuto con un secondo nome. Lo stesso controllo è
+   ripetuto nel salvataggio come rete di sicurezza (dati cambiati via sync
+   con lo sheet aperto). L'errore di nome duplicato resta invariato in tutti
+   gli altri casi. Quando vale il punto 3, l'avviso del punto 1 non compare.
+4. **Annulla dopo la cancellazione.** Cancellato un alimento in Aggiungi,
+   una barra in basso offre "Annulla" per qualche secondo (`BarraAnnulla`).
+   Ripristina esattamente ciò che quella cancellazione ha toccato:
+   l'alimento, le righe di `composizioni_voci` rimosse dalla cascata e i
+   pasti salvati cancellati perché rimasti vuoti — né più né meno: una riga
+   già cancellata prima non torna. Tutto logico (`deleted_at` di nuovo null)
+   e via repository, così la sync lo propaga. Ordine: alimento, pasti
+   salvati, righe — mai una riga viva che punta a qualcosa di cancellato.
+   Non si ripristina: un pasto salvato vuoto se nel frattempo ne è nato un
+   altro con lo stesso nome (lo dice la barra: niente doppione, niente nome
+   inventato), né una riga il cui pasto salvato è stato cancellato durante
+   la finestra. Se l'utente non preme, la cancellazione resta.
+
+Avviso (prima dell'azione, dentro lo sheet che già chiede conferma) e barra
+(dopo l'azione, con la possibilità di tornare indietro) sono volutamente due
+forme diverse: sono due momenti diversi. Test permanenti in
+`src/lib/repository/composizioni.test.ts` ("regola Alimenti cancellati").
 
 Da non confondere con la cancellazione di una **voce di diario** (togliere un
 alimento dal pasto di una giornata): quella non tocca mai i pasti salvati,

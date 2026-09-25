@@ -23,6 +23,12 @@ interface Props {
   testoConferma?: string;
   inCorso?: boolean;
   errore?: string | null;
+  // Testo informativo mostrato già all'apertura, sotto il titolo — non un
+  // errore, quindi non nel colore di avviso. Oggi: quali alimenti di un pasto
+  // NON verranno salvati perché non più nel catalogo (regola "Alimenti
+  // cancellati", punto 1). Lo sheet ha già Annulla e conferma: "Salva" vale
+  // come "sì, salva lo stesso", Annulla non salva niente.
+  avviso?: string | null;
   onAnnulla: () => void;
   onConferma: (nome: string) => void;
   // --- Solo in modifica di qualcosa che esiste già ---
@@ -36,6 +42,7 @@ export default function SheetNome({
   testoConferma = "Salva",
   inCorso = false,
   errore = null,
+  avviso = null,
   onAnnulla,
   onConferma,
   modifica = false,
@@ -96,6 +103,14 @@ export default function SheetNome({
           onClick={(e) => e.stopPropagation()}
         >
         <h2 className="font-display text-xl font-bold">{titolo}</h2>
+
+        {/* role="status": se l'avviso cambia mentre lo sheet è aperto
+            (esclusi cambiati nel frattempo), lo screen reader lo rilegge. */}
+        {avviso && (
+          <p role="status" className="mt-2 text-sm">
+            {avviso}
+          </p>
+        )}
 
         <input
           ref={rifInput}

@@ -15,7 +15,10 @@
 
 import { useState } from "react";
 import { repositoryAlimenti } from "@/lib/repository";
-import { rimuoviAlimentoDaPastiSalvati } from "@/lib/repository/composizioni";
+import {
+  rimuoviAlimentoDaPastiSalvati,
+  type TracciaRimozione,
+} from "@/lib/repository/composizioni";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
@@ -27,7 +30,10 @@ interface Props {
   // --- Solo in modifica di un alimento esistente ---
   alimentoDaModificare?: Alimento;
   onModificato?: () => void;
-  onEliminato?: () => void;
+  // Riceve cosa ha toccato la cancellazione, perché l'"Annulla" non può
+  // vivere qui: il chiamante smonta questo form subito dopo (vedi
+  // /aggiungi, BarraAnnulla).
+  onEliminato?: (alimento: Alimento, traccia: TracciaRimozione) => void;
 }
 
 export default function CreaAlimentoForm({
@@ -159,10 +165,14 @@ export default function CreaAlimentoForm({
       // farebbe fallire proprio le scritture che si voleva rendere più
       // sicure. L'inversione basta: nessuno stato intermedio invisibile,
       // nessuna riga fantasma.
-      await rimuoviAlimentoDaPastiSalvati(userId, alimentoDaModificare.id);
+      //
+      // La traccia (cosa è stato cancellato davvero) passa al chiamante per
+      // l'Annulla: ripristinaAlimentoEliminato
+      // (src/lib/repository/composizioni.ts) rifà questi passi al contrario.
+      const traccia = await rimuoviAlimentoDaPastiSalvati(userId, alimentoDaModificare.id);
       // Cancellazione logica (deleted_at), come per tutte le tabelle.
       await repositoryAlimenti.elimina(alimentoDaModificare.id);
-      onEliminato?.();
+      onEliminato?.(alimentoDaModificare, traccia);
     } catch {
       setInCorso(false);
       setErrore("Non è stato possibile eliminare l'alimento. Riprova.");

@@ -48,12 +48,16 @@ import {
   esisteComposizioneConNome,
   rinominaComposizione,
   eliminaComposizione,
+  ripristinaAlimentoEliminato,
+  type TracciaRimozione,
 } from "@/lib/repository/composizioni";
 import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
 import SheetNome from "@/components/SheetNome";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
+import BarraAnnulla from "@/components/BarraAnnulla";
+import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
@@ -223,6 +227,18 @@ function AggiungiContenuto() {
   const [salvataggioModificaPasto, setSalvataggioModificaPasto] = useState<
     "inattivo" | "in-corso" | "errore" | "duplicato"
   >("inattivo");
+
+  // Barra in basso dopo la cancellazione di un alimento (regola "Alimenti
+  // cancellati", punto 4). Vive qui e non in CreaAlimentoForm perché il form
+  // si smonta appena l'alimento è cancellato. `annullabile` è ciò che serve
+  // per ripristinare: presente solo nel messaggio "eliminato", assente in
+  // quello che segue un ripristino. `id` cambia a ogni messaggio e fa da
+  // `key` alla barra, così il timer riparte da capo.
+  const [barra, setBarra] = useState<{
+    id: string;
+    testo: string;
+    annullabile?: { alimento: Alimento; traccia: TracciaRimozione };
+  } | null>(null);
 
   // `!userId` copre sia "non so ancora" (undefined) sia "nessuna sessione"
   // (null): su questa rotta il middleware garantisce comunque un utente
@@ -401,6 +417,49 @@ function AggiungiContenuto() {
     }
   }
 
+  function onAlimentoEliminato(alimento: Alimento, traccia: TracciaRimozione) {
+    setAlimentoInModifica(null);
+    setBarra({
+      id: crypto.randomUUID(),
+      testo: `${elencoNomi([alimento.nome])} eliminato.`,
+      annullabile: { alimento, traccia },
+    });
+  }
+
+  // "Annulla" nella barra: ripristina esattamente ciò che quella
+  // cancellazione aveva toccato (ripristinaAlimentoEliminato, che rilegge
+  // Dexie da sola). La barra si toglie PRIMA di scrivere, così un secondo
+  // tocco ravvicinato non lancia un secondo ripristino.
+  async function annullaEliminazione() {
+    const annullabile = barra?.annullabile;
+    if (!userId || !annullabile) return;
+    setBarra(null);
+
+    const nome = elencoNomi([annullabile.alimento.nome]);
+    try {
+      const { pastiNonRipristinati } = await ripristinaAlimentoEliminato(
+        userId,
+        annullabile.alimento.id,
+        annullabile.traccia
+      );
+      let testo = `${nome} ripristinato.`;
+      if (pastiNonRipristinati.length === 1) {
+        testo += ` Il pasto salvato ${elencoNomi(pastiNonRipristinati)} no: ne hai già un altro con lo stesso nome.`;
+      } else if (pastiNonRipristinati.length > 1) {
+        testo += ` I pasti salvati ${elencoNomi(pastiNonRipristinati)} no: hai già altri pasti con gli stessi nomi.`;
+      }
+      setBarra({ id: crypto.randomUUID(), testo });
+    } catch {
+      // Si ripropone l'Annulla: ripristinaAlimentoEliminato salta ciò che è
+      // già tornato in vita, quindi riprovare dopo un guasto a metà converge.
+      setBarra({
+        id: crypto.randomUUID(),
+        testo: `Non è stato possibile ripristinare ${nome}.`,
+        annullabile,
+      });
+    }
+  }
+
   return (
     <main
       style={{ top: areaVisibile.top, height: areaVisibile.height }}
@@ -453,7 +512,7 @@ function AggiungiContenuto() {
                 scegli(a);
               }}
               onModificato={() => setAlimentoInModifica(null)}
-              onEliminato={() => setAlimentoInModifica(null)}
+              onEliminato={onAlimentoEliminato}
             />
           </div>
         ) : (
@@ -708,6 +767,23 @@ function AggiungiContenuto() {
           onAnnulla={chiudiModificaPasto}
           onConferma={confermaRinominaPasto}
           onElimina={eliminaPastoInModifica}
+        />
+      )}
+
+      {/* In fondo al <main>, che è già agganciato al visual viewport: sopra
+          la tastiera di iOS; margineHome per la barretta home, perché qui il
+          <main> arriva fino al bordo dello schermo. */}
+      {barra && (
+        <BarraAnnulla
+          key={barra.id}
+          testo={barra.testo}
+          azione={
+            barra.annullabile
+              ? { etichetta: "Annulla", onClick: annullaEliminazione }
+              : undefined
+          }
+          margineHome
+          onChiudi={() => setBarra(null)}
         />
       )}
     </main>
