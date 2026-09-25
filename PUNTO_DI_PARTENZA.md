@@ -817,7 +817,10 @@ Come, in concreto:
     solo il server — altrimenti il primo dispositivo rimasto indietro
     riporta indietro i dati appena cancellati. Non è un rischio per gli
     utenti (loro cancellano solo dall'app, mai da SQL Editor), è un
-    promemoria per chi sviluppa
+    promemoria per chi sviluppa. Per svuotare IndexedDB di un dispositivo
+    senza passare dalle impostazioni del browser (su iPhone non ha
+    funzionato) c'è "Ricarica i dati dal tuo account" in Profilo — vedi
+    "Ripristino dei dati locali" più sotto
   - tre inneschi, condivisi con la salita: montaggio dell'app, ritorno
     online, ritorno in primo piano della PWA (`visibilitychange`). Niente
     polling a intervalli, niente Supabase Realtime — l'uso tipico
@@ -850,6 +853,73 @@ ogni lettura passa da un controllo di esistenza (`cursore?.` o
 legga uno dei due valori senza fallback — ma è un argomento da lettura del
 codice, non la prova empirica: aggiornare questa nota quando viene
 eseguita davvero.
+
+#### Ripristino dei dati locali (deciso il 2026-09-25)
+
+Profilo → "Dati su questo dispositivo" → **"Ricarica i dati dal tuo
+account"**: sostituisce i dati di questo dispositivo con quelli di
+Supabase, senza uscire dall'account. È la via d'uscita generale quando il
+locale è incoerente in un modo che la sync non ripara da sola (per esempio
+righe cancellate fisicamente sul server, limite qui sopra); prima l'unica
+strada era cancellare i dati del sito dalle impostazioni del browser, che
+su iPhone non ha funzionato. Codice in `src/lib/sync/ripristino.ts`.
+
+**Il caso che l'ha fatto nascere non l'ha risolto lui.** 10 pasti a schermo
+invece di 5 (2026-09-25): si pensava a pasti con id casuali di prima del
+passaggio agli id deterministici, rimasti solo sul telefono. Verifica su
+Supabase: erano ancora sul server (creati il 2026-09-20 alle 20:11 UTC),
+con 8 voci del Pranzo sotto il doppione — ricaricare dal server li avrebbe
+riportati uguali. Si correggono sul server (voci spostate sui pasti con id
+fisso, doppioni cancellati logicamente) e la discesa porta la correzione su
+ogni dispositivo.
+
+**Prima scarica, poi sostituisce** — mai "cancella e riscarica":
+1. prova a inviare la coda outbox, poi conta ciò che resta;
+2. l'utente conferma. Se ci sono modifiche non inviate la conferma lo dice,
+   con numero e tipo, separando quelle **in attesa** ("modifiche non ancora
+   salvate online") da quelle **accantonate** dopo troppi tentativi
+   ("modifiche che l'app non è riuscita a salvare online, nemmeno
+   riprovando"): anche queste ultime sono dati dell'utente, perderle va
+   detto (regola B.5 di CLAUDE.md);
+3. scarica TUTTE le tabelle in memoria, complete, senza cursore. Se anche
+   una sola fallisce, non si tocca niente;
+4. in una sola transazione Dexie (niente rete dentro): se fra le modifiche
+   non inviate ce n'è una che l'utente non ha visto nella conferma (fatta
+   durante lo scarico, o una seconda modifica della stessa riga — il
+   confronto usa id + `creato_il`), non si tocca niente; altrimenti
+   cancella i dati di questo utente, scrive le righe scaricate, riscrive un
+   cursore per tabella al massimo `updated_at` scaricato. La discesa
+   successiva riparte incrementale.
+
+Scartato "cancella e riscarica": `scaricaTutto` non segnala le tabelle
+fallite (resterebbero vuote); una discesa in background partita prima della
+pulizia potrebbe riscrivere il suo cursore dopo, rendendo la riscarica
+incrementale e perdendo le righe vecchie; `db.delete()` chiude il database
+sotto le `useLiveQuery` aperte e si blocca con l'app aperta in un'altra
+scheda. Con lo scarico in memoria una discesa in background che finisce
+dopo può solo scrivere righe del server più recenti di quelle locali, e al
+peggio riportare indietro un cursore (una riscarica in più, nessuna riga
+persa).
+
+**Solo i dati di questo utente.** Il dispositivo può contenere dati di un
+altro utente (i dati locali non si cancellano al logout, §9.6): le sue
+righe, le sue modifiche in coda e i suoi cursori restano intatti. Il
+**catalogo condiviso** (alimenti con `user_id` null) non si cancella, si
+sovrascrive con le righe scaricate: cancellarlo lascerebbe l'altro utente
+con il cursore "alimenti" già avanti, e la sua discesa incrementale non lo
+riscaricherebbe più. Sono righe in sola lettura (RLS), senza modifiche in
+sospeso possibili. Limite accettato: una riga condivisa cancellata
+fisicamente sul server resta sul dispositivo (stesso limite di sopra).
+
+Nessun seed dei pasti predefiniti nel ripristino: i 5 canonici arrivano dal
+server con il resto. Dopo il ripristino i moduli di Profilo si ricaricano
+dai dati nuovi — altrimenti mostrerebbero i valori di prima, e un "Salva"
+li rimanderebbe al server sopra quelli giusti.
+
+`sostituisciDatiUtente` è separata apposta: con zero righe da scrivere è la
+cancellazione dei dati locali al logout (§9.6), **rimandata per scelta** —
+quando arriverà userà la stessa funzione. Test permanenti in
+`src/lib/sync/ripristino.test.ts`.
 
 Perché ora e non dopo: il local-first non è una feature, è *dove vive il dato*.
 Aggiungerlo in seguito significa riscrivere ogni lettura e ogni scrittura
@@ -891,6 +961,14 @@ scartato: un seed "provvisorio" che trattiene la salita fino a conferma del
 server propaga il blocco a ogni voce di diario che referenzia quei pasti via
 foreign key, e la riconciliazione per nome si rompe se l'utente rinomina un
 pasto predefinito prima di riconnettersi).
+
+**Difetto aperto, segnalato il 2026-09-25 e non ancora corretto.** Lo stesso
+meccanismo scatta anche su un dispositivo che NON è nuovo: se la discesa dei
+pasti fallisce, `garantisciPastiPredefiniti` crea le righe mancanti con
+`repositoryPasti.crea`, che manda al server `deleted_at` null — un pasto
+predefinito cancellato apposta, e mai scaricato su quel dispositivo, torna
+in vita anche sul server. Il ripristino dei dati locali non fa seed, quindi
+non lo peggiora; va chiuso come lavoro a sé.
 
 ### 9.3 Precisione — sempre al grammo
 

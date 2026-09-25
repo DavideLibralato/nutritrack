@@ -74,30 +74,57 @@ export function millisecondiDi(iso: string): number {
   return new Date(iso).getTime();
 }
 
-// Scarica una singola tabella per l'utente indicato. `opzioni.includiCondivisi`
-// serve solo ad "alimenti": è l'unica tabella con righe a user_id null
-// (il catalogo condiviso, sezione 9.6) che vanno scaricate insieme alle
-// proprie.
-export async function scaricaTabella<T extends RigaBase>(
+// Le tabelle dati che la discesa scarica, una volta sola per tutti: la
+// discesa normale (scaricaTutto) e il ripristino dei dati locali
+// (src/lib/sync/ripristino.ts) devono scaricare esattamente lo stesso
+// insieme. `includiCondivisi` serve solo ad "alimenti": è l'unica tabella
+// con righe a user_id null (il catalogo condiviso, sezione 9.6) che vanno
+// scaricate insieme alle proprie.
+export const TABELLE_DISCESA: {
+  nome: NomeTabella;
+  tabella: Table<RigaBase, string>;
+  includiCondivisi?: boolean;
+}[] = [
+  { nome: "profili", tabella: db.profili as unknown as Table<RigaBase, string> },
+  { nome: "obiettivi", tabella: db.obiettivi as unknown as Table<RigaBase, string> },
+  { nome: "obiettivi_target", tabella: db.obiettivi_target as unknown as Table<RigaBase, string> },
+  { nome: "giorni", tabella: db.giorni as unknown as Table<RigaBase, string> },
+  { nome: "pasti", tabella: db.pasti as unknown as Table<RigaBase, string> },
+  {
+    nome: "alimenti",
+    tabella: db.alimenti as unknown as Table<RigaBase, string>,
+    includiCondivisi: true,
+  },
+  { nome: "voci_diario", tabella: db.voci_diario as unknown as Table<RigaBase, string> },
+  { nome: "composizioni", tabella: db.composizioni as unknown as Table<RigaBase, string> },
+  {
+    nome: "composizioni_voci",
+    tabella: db.composizioni_voci as unknown as Table<RigaBase, string>,
+  },
+  { nome: "misurazioni", tabella: db.misurazioni as unknown as Table<RigaBase, string> },
+  { nome: "preferiti", tabella: db.preferiti as unknown as Table<RigaBase, string> },
+];
+
+// La lettura da Supabase, pagina per pagina — l'unico posto dove è scritta
+// la paginazione (vedi il lungo commento dentro). La usano la discesa
+// incrementale qui sotto, che scrive ogni pagina in Dexie man mano, e il
+// ripristino dei dati locali, che le accumula tutte in memoria prima di
+// toccare qualunque cosa.
+//
+// Concetto nuovo: `async function*` è un "generatore asincrono". Invece di
+// restituire un valore solo alla fine, ne consegna uno alla volta con
+// `yield`, e chi lo usa li riceve con `for await (const pagina of ...)`. Qui
+// ogni `yield` è una pagina appena arrivata: il chiamante decide cosa
+// farne prima che parta la richiesta della successiva. Un errore di rete o
+// di Supabase interrompe il ciclo del chiamante con un'eccezione.
+//
+// `daData` null = tutte le righe, senza cursore.
+export async function* pagineDaSupabase<T extends RigaBase>(
   userId: string,
-  tabella: Table<T, string>,
   nomeTabella: NomeTabella,
-  opzioni?: { includiCondivisi?: boolean }
-): Promise<void> {
+  opzioni: { daData: string | null; includiCondivisi?: boolean }
+): AsyncGenerator<T[]> {
   const supabase = createClient();
-  const idCursore = `${nomeTabella}:${userId}`;
-
-  const cursore = await db.sync_cursori.get(idCursore);
-  const daData = cursore
-    ? new Date(
-        new Date(cursore.ultimo_aggiornamento).getTime() - FINESTRA_SICUREZZA_MS
-      ).toISOString()
-    : null;
-
-  // Cursore aggiornato solo a fine funzione (mai dentro il ciclo sotto):
-  // se una pagina a metà fallisse, il cursore non deve avanzare oltre
-  // quello che è stato davvero scritto in Dexie.
-  let massimoVisto = cursore?.ultimo_aggiornamento ?? null;
 
   // PostgREST applica un tetto di righe per risposta (vedi DIMENSIONE_PAGINA):
   // senza ORDER BY + paginazione esplicita, una tabella più grande del tetto
@@ -131,11 +158,11 @@ export async function scaricaTabella<T extends RigaBase>(
       .select("*")
       .order("updated_at", { ascending: true })
       .order("id", { ascending: true });
-    query = opzioni?.includiCondivisi
+    query = opzioni.includiCondivisi
       ? query.or(`user_id.is.null,user_id.eq.${userId}`)
       : query.eq("user_id", userId);
-    if (daData) {
-      query = query.gte("updated_at", daData);
+    if (opzioni.daData) {
+      query = query.gte("updated_at", opzioni.daData);
     }
     query = query.range(scarico, scarico + DIMENSIONE_PAGINA - 1);
 
@@ -145,7 +172,39 @@ export async function scaricaTabella<T extends RigaBase>(
     }
 
     const pagina = (data ?? []) as T[];
+    yield pagina;
 
+    if (pagina.length < DIMENSIONE_PAGINA) return;
+    scarico += DIMENSIONE_PAGINA;
+  }
+}
+
+// Scarica una singola tabella per l'utente indicato, in modo incrementale
+// (dal cursore). `opzioni.includiCondivisi`: vedi TABELLE_DISCESA.
+export async function scaricaTabella<T extends RigaBase>(
+  userId: string,
+  tabella: Table<T, string>,
+  nomeTabella: NomeTabella,
+  opzioni?: { includiCondivisi?: boolean }
+): Promise<void> {
+  const idCursore = `${nomeTabella}:${userId}`;
+
+  const cursore = await db.sync_cursori.get(idCursore);
+  const daData = cursore
+    ? new Date(
+        new Date(cursore.ultimo_aggiornamento).getTime() - FINESTRA_SICUREZZA_MS
+      ).toISOString()
+    : null;
+
+  // Cursore aggiornato solo a fine funzione (mai dentro il ciclo sotto):
+  // se una pagina a metà fallisse, il cursore non deve avanzare oltre
+  // quello che è stato davvero scritto in Dexie.
+  let massimoVisto = cursore?.ultimo_aggiornamento ?? null;
+
+  for await (const pagina of pagineDaSupabase<T>(userId, nomeTabella, {
+    daData,
+    includiCondivisi: opzioni?.includiCondivisi,
+  })) {
     for (const rigaScaricata of pagina) {
       if (rigaScaricata.deleted_at) {
         // Una cancellazione dal server vince sempre, senza eccezioni sui
@@ -195,9 +254,6 @@ export async function scaricaTabella<T extends RigaBase>(
         massimoVisto = rigaScaricata.updated_at;
       }
     }
-
-    if (pagina.length < DIMENSIONE_PAGINA) break;
-    scarico += DIMENSIONE_PAGINA;
   }
 
   if (massimoVisto && massimoVisto !== cursore?.ultimo_aggiornamento) {
@@ -221,38 +277,16 @@ export async function scaricaTabella<T extends RigaBase>(
 // fallisce sempre (permessi, colonna sbagliata) scomparirebbe nel
 // Promise.allSettled senza che nessuno se ne accorga.
 export async function scaricaTutto(userId: string): Promise<void> {
-  const tabelle: NomeTabella[] = [
-    "profili",
-    "obiettivi",
-    "obiettivi_target",
-    "giorni",
-    "pasti",
-    "alimenti",
-    "voci_diario",
-    "composizioni",
-    "composizioni_voci",
-    "misurazioni",
-    "preferiti",
-  ];
-
-  const risultati = await Promise.allSettled([
-    scaricaTabella(userId, db.profili, "profili"),
-    scaricaTabella(userId, db.obiettivi, "obiettivi"),
-    scaricaTabella(userId, db.obiettivi_target, "obiettivi_target"),
-    scaricaTabella(userId, db.giorni, "giorni"),
-    scaricaTabella(userId, db.pasti, "pasti"),
-    scaricaTabella(userId, db.alimenti, "alimenti", { includiCondivisi: true }),
-    scaricaTabella(userId, db.voci_diario, "voci_diario"),
-    scaricaTabella(userId, db.composizioni, "composizioni"),
-    scaricaTabella(userId, db.composizioni_voci, "composizioni_voci"),
-    scaricaTabella(userId, db.misurazioni, "misurazioni"),
-    scaricaTabella(userId, db.preferiti, "preferiti"),
-  ]);
+  const risultati = await Promise.allSettled(
+    TABELLE_DISCESA.map((t) =>
+      scaricaTabella(userId, t.tabella, t.nome, { includiCondivisi: t.includiCondivisi })
+    )
+  );
 
   risultati.forEach((risultato, indice) => {
     if (risultato.status === "rejected") {
       console.error(
-        `Discesa: scarico fallito per "${tabelle[indice]}".`,
+        `Discesa: scarico fallito per "${TABELLE_DISCESA[indice].nome}".`,
         risultato.reason
       );
     }

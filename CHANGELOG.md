@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-25 — "Ricarica i dati dal tuo account" in Profilo
+
+Branch `ripristina-dati-locali`, da provare sull'anteprima Vercel prima del
+merge. Via d'uscita generale per uno stato locale incoerente: sostituisce i
+dati di questo dispositivo con quelli di Supabase, senza logout
+(`src/lib/sync/ripristino.ts`, PUNTO_DI_PARTENZA.md §9.2). Prima scarica
+tutto in memoria (una tabella fallita → niente toccato), poi sostituisce in
+una transazione Dexie; chiede conferma se ci sono modifiche non inviate, in
+attesa o accantonate; tocca solo i dati dell'utente corrente, il catalogo
+condiviso si sovrascrive senza cancellarlo. `discesa.ts`: paginazione
+estratta in `pagineDaSupabase`, elenco tabelle unico in `TABELLE_DISCESA`.
+8 test permanenti.
+
+- Correzione di un fatto: i 10 pasti a schermo che hanno motivato il
+  pulsante NON si risolvono con lui — i doppioni con id casuale erano
+  ancora sul server, con 8 voci del Pranzo sotto. Si correggono sul server.
+- Segnalato, non corretto: il seed dei pasti predefiniti dopo una discesa
+  fallita può resuscitare un pasto cancellato apposta.
+- Aperto: non provato a schermo né contro il Supabase vero.
+
 ## 2026-09-25 — Alimenti cancellati: l'app non decide più in silenzio
 
 Branch `alimenti-cancellati`, da provare su iPhone (anteprima Vercel) prima

@@ -27,6 +27,7 @@ import type {
 import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "@/lib/db/tipi";
 import { calcolaEta, calcolaFabbisogno } from "@/lib/fabbisogno";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import RicaricaDatiAccount from "@/components/RicaricaDatiAccount";
 
 const OPZIONI_SESSO: { valore: Sesso; etichetta: string }[] = [
   { valore: "maschio", etichetta: "Uomo" },
@@ -58,7 +59,33 @@ const OPZIONI_GIORNO: { valore: GiornoSettimana; etichetta: string; nomeCompleto
   { valore: "domenica", etichetta: "Do", nomeCompleto: "Domenica" },
 ];
 
+// La pagina tiene il <main> e la sezione "Dati su questo dispositivo"; i
+// moduli stanno in ModuliProfilo, qui sotto. Separati per un motivo preciso:
+// i campi dei moduli si riempiono UNA volta sola dai dati di Dexie (i flag
+// `inizializzato*`). Dopo "Ricarica i dati dal tuo account" mostrerebbero
+// ancora i valori di prima, e un tocco su Salva li rimanderebbe al server
+// sopra quelli giusti. Cambiare la `key` di ModuliProfilo lo fa ripartire da
+// zero (React ricrea il componente e tutto il suo stato), quindi i campi si
+// riempiono di nuovo dai dati appena scaricati. La sezione del ripristino
+// resta fuori da quella `key`, così il suo messaggio di esito non sparisce.
 export default function ProfiloPage() {
+  const userId = useUtenteId();
+  const [versioneDati, setVersioneDati] = useState(0);
+
+  return (
+    <main className="flex min-h-full flex-col items-center gap-10 p-4">
+      <ModuliProfilo key={versioneDati} />
+      {userId && (
+        <RicaricaDatiAccount
+          userId={userId}
+          onRipristinato={() => setVersioneDati((v) => v + 1)}
+        />
+      )}
+    </main>
+  );
+}
+
+function ModuliProfilo() {
   const userId = useUtenteId();
 
   // Attenzione al valore restituito quando userId non c'è ancora: deve
@@ -464,14 +491,14 @@ export default function ProfiloPage() {
 
   if (userId === undefined || profilo === undefined) {
     return (
-      <main className="flex min-h-full items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center">
         <p className="text-sm text-muted">Caricamento...</p>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="flex min-h-full flex-col items-center gap-10 p-4">
+    <>
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6 pt-8">
         <h1 className="text-2xl font-display font-bold">Profilo</h1>
 
@@ -781,7 +808,7 @@ export default function ProfiloPage() {
           </form>
         )}
       </div>
-    </main>
+    </>
   );
 }
 
