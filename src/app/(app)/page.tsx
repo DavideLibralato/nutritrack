@@ -51,7 +51,8 @@ import {
 import {
   giornoPrecedente,
   giornoSuccessivo,
-  formattaData,
+  formattaDataTitolo,
+  formattaDataEstesa,
   eFuturo,
   giornoLogico,
 } from "@/lib/dataGiorno";
@@ -80,7 +81,7 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
 // elenco fisso (sezione 3), quindi non c'è una tabella di etichette da
-// mantenere — solo la prima lettera maiuscola, come già in formattaData
+// mantenere — solo la prima lettera maiuscola, come già in formattaDataTitolo
 // (dataGiorno.ts).
 function capitalizza(testo: string): string {
   return testo.charAt(0).toUpperCase() + testo.slice(1);
@@ -379,6 +380,7 @@ function OggiContenuto() {
         return a.localeCompare(b);
       })
     : [];
+  const mostraPastiglia = Boolean(profilo?.differenzia_giorni) && tipiGiornoDisponibili.length > 0;
 
   const target = obiettivo
     ? targetEffettivo(obiettiviTarget, obiettivo.id, tipoGiornoScrittoGiorno)
@@ -600,97 +602,104 @@ function OggiContenuto() {
     <div className="flex h-[calc(100dvh-var(--altezza-tab-bar))] flex-col overflow-hidden">
       {/* FASCIA ALTA — fissa */}
       <header className="shrink-0 px-4 pt-6 pb-5">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setGiorno(giornoPrecedente(giorno))}
-            aria-label="Giorno precedente"
-            className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
-          >
-            <Chevron verso="sinistra" />
-          </button>
-
-          {/* Il titolo-data è un pulsante: aprirlo mostra il calendario
-              nativo (sezione "Inserimento retroattivo"). `max` impedisce di
-              scegliere un giorno oltre quello logico corrente (fra mezzanotte
-              e l'ora del primo pasto è ieri). L'input date resta fuori schermo
-              (sr-only) e serve solo come bersaglio di showPicker(). */}
-          <h1 className="whitespace-nowrap font-display text-2xl font-bold">
+        {/* Prima riga: ‹ data › a sinistra, "Oggi" e la pastiglia a destra.
+            Sono due gruppi dentro una riga che può andare a capo
+            (`flex-wrap`): se il gruppo di destra non entra accanto alla data,
+            il browser lo porta intero sulla riga sotto, ancora a destra
+            (`ml-auto`). Solo CSS, niente misure in JavaScript. Succede quando
+            ci sono sia "Oggi" sia la pastiglia: a 390 px la riga completa è
+            larga 367 px e lo spazio è 358 (misurato con i font veri, caso
+            "Mer 20 mag"). La data non va mai a capo (`whitespace-nowrap`). */}
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
+          <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={apriCalendario}
-              aria-label={`Cambia data, ${formattaData(giorno)}`}
-              className={`rounded ${CLASSE_FOCUS}`}
+              onClick={() => setGiorno(giornoPrecedente(giorno))}
+              aria-label="Giorno precedente"
+              className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
             >
-              {formattaData(giorno)}
+              <Chevron verso="sinistra" />
             </button>
-          </h1>
-          <input
-            ref={rifData}
-            type="date"
-            value={giorno}
-            max={giornoCorrente}
-            onChange={(e) => e.target.value && setGiorno(e.target.value)}
-            tabIndex={-1}
-            aria-hidden
-            className="sr-only"
-          />
 
-          <button
-            type="button"
-            onClick={() => setGiorno(giornoSuccessivo(giorno))}
-            disabled={eGiornoCorrente}
-            aria-label="Giorno successivo"
-            className={`rounded p-1 text-muted disabled:opacity-30 ${CLASSE_FOCUS}`}
-          >
-            <Chevron verso="destra" />
-          </button>
-        </div>
-
-        {/* Seconda riga: la riga delle calorie a sinistra, e a destra il
-            pulsante "Oggi" e la pastiglia Normale/Allenamento. Stanno qui e
-            non accanto alla data perché con un giorno dal nome lungo
-            ("Mercoledì 30 set") la data andava a capo. Misurato a 320 px di
-            schermo: le combinazioni possibili ci stanno ("Oggi" compare solo
-            su un giorno passato, dove la riga è la corta "X di Y kcal").
-            `min-w-0` sul testo e `shrink-0` sulle pillole: se un giorno non
-            ci stessero, va a capo il testo, non si schiacciano i pulsanti. */}
-        <div className="mt-1 flex items-center gap-2">
-          <p className={`min-w-0 flex-1 text-sm ${classeRigaCalorie}`}>{rigaCalorie}</p>
-
-          {!eGiornoCorrente && (
-            <button
-              type="button"
-              onClick={() => setGiorno(giornoCorrente)}
-              className={`shrink-0 rounded-full border border-border px-3 py-1 text-xs ${CLASSE_FOCUS}`}
-            >
-              Oggi
-            </button>
-          )}
-
-          {/* Pastiglia Normale/Allenamento (sezione 3, punto 1): solo se la
-              differenziazione è attiva E c'è almeno un tipo selezionabile —
-              da spenta la riga resta esattamente com'è oggi, nessun resto.
-              Stesso trucco della select del pasto in /aggiungi: un <select>
-              nativo travestito da pillola, accessibile di default. */}
-          {profilo?.differenzia_giorni && tipiGiornoDisponibili.length > 0 && (
-            <div className="relative shrink-0">
-              <select
-                value={tipoGiornoMostrato}
-                onChange={(e) => cambiaTipoGiorno(e.target.value)}
-                aria-label="Tipo di giornata"
-                className={`appearance-none rounded-full border border-border bg-transparent py-1 pl-3 pr-6 text-xs ${CLASSE_FOCUS}`}
+            {/* Il titolo-data è un pulsante: aprirlo mostra il calendario
+                nativo (sezione "Inserimento retroattivo"). `max` impedisce di
+                scegliere un giorno oltre quello logico corrente (fra
+                mezzanotte e l'ora del primo pasto è ieri). L'input date resta
+                fuori schermo (sr-only) e serve solo come bersaglio di
+                showPicker(). A schermo il giorno è abbreviato ("Mer 20 mag");
+                l'aria-label lo dice per esteso ("mercoledì 20 maggio"). */}
+            <h1 className="whitespace-nowrap font-display text-2xl font-bold">
+              <button
+                type="button"
+                onClick={apriCalendario}
+                aria-label={`Cambia data, ${formattaDataEstesa(giorno)}`}
+                className={`rounded ${CLASSE_FOCUS}`}
               >
-                {tipiGiornoDisponibili.map((tipo) => (
-                  <option key={tipo} value={tipo}>
-                    {capitalizza(tipo)}
-                  </option>
-                ))}
-              </select>
-              <ChevronGiu className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-muted" />
+                {formattaDataTitolo(giorno)}
+              </button>
+            </h1>
+            <input
+              ref={rifData}
+              type="date"
+              value={giorno}
+              max={giornoCorrente}
+              onChange={(e) => e.target.value && setGiorno(e.target.value)}
+              tabIndex={-1}
+              aria-hidden
+              className="sr-only"
+            />
+
+            <button
+              type="button"
+              onClick={() => setGiorno(giornoSuccessivo(giorno))}
+              disabled={eGiornoCorrente}
+              aria-label="Giorno successivo"
+              className={`rounded p-1 text-muted disabled:opacity-30 ${CLASSE_FOCUS}`}
+            >
+              <Chevron verso="destra" />
+            </button>
+          </div>
+
+          {(!eGiornoCorrente || mostraPastiglia) && (
+            <div className="ml-auto flex items-center gap-1">
+              {!eGiornoCorrente && (
+                <button
+                  type="button"
+                  onClick={() => setGiorno(giornoCorrente)}
+                  className={`rounded-full border border-border px-3 py-1 text-xs ${CLASSE_FOCUS}`}
+                >
+                  Oggi
+                </button>
+              )}
+
+              {/* Pastiglia Normale/Allenamento (sezione 3, punto 1): solo se
+                  la differenziazione è attiva E c'è almeno un tipo
+                  selezionabile — da spenta la riga resta esattamente com'è
+                  oggi, nessun resto. Stesso trucco della select del pasto in
+                  /aggiungi: un <select> nativo travestito da pillola,
+                  accessibile di default. */}
+              {mostraPastiglia && (
+                <div className="relative">
+                  <select
+                    value={tipoGiornoMostrato}
+                    onChange={(e) => cambiaTipoGiorno(e.target.value)}
+                    aria-label="Tipo di giornata"
+                    className={`appearance-none rounded-full border border-border bg-transparent py-1 pl-3 pr-6 text-xs ${CLASSE_FOCUS}`}
+                  >
+                    {tipiGiornoDisponibili.map((tipo) => (
+                      <option key={tipo} value={tipo}>
+                        {capitalizza(tipo)}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronGiu className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-muted" />
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        <p className={`mt-1 text-sm ${classeRigaCalorie}`}>{rigaCalorie}</p>
 
         {/* Anello + macro affiancati, non impilati (sezione 3). Ordine dei
             macro come sulle etichette dei prodotti: Grassi, Carboidrati,

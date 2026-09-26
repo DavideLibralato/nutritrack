@@ -98,14 +98,17 @@ Dall'alto:
    mangiare?") senza far fare un calcolo. **La data è navigabile** (vedi
    "Inserimento retroattivo"), e su un giorno passato la seconda riga cambia
    testo: "2043 di 2200 kcal", perché "rimangono" su ieri non vuol dire niente.
-   Sulla prima riga c'è solo ‹ data ›, sempre su una riga sola. Sulla
-   seconda, allineati a destra accanto alla riga delle calorie, ci sono il
+   **Il giorno della settimana è abbreviato** ("Mer 4 set", come nei
+   mockup), la data non va mai a capo, e lo screen reader la legge per esteso
+   ("mercoledì 4 settembre"). Sulla stessa riga, a destra, ci sono il
    pulsante **Oggi** (solo su un giorno diverso da quello corrente) e, se la
    differenziazione dei giorni è attiva, una piccola pastiglia
    **Normale / Allenamento** (vedi "Giorni normali e giorni di allenamento").
-   Se la differenziazione non è attiva, la pastiglia non c'è. Misurato a
-   320 px: la data più larga ("Mercoledì 20 mag") e la seconda riga nelle
-   combinazioni possibili ci stanno
+   Se la differenziazione non è attiva, la pastiglia non c'è. Quando "Oggi"
+   e la pastiglia non entrano accanto alla data, scendono insieme sulla riga
+   sotto, sempre a destra: è solo CSS (`flex-wrap`). Misurato con i font
+   veri, su un giorno passato con la pastiglia la riga completa è larga
+   367 px ("Mer 20 mag"), e a 390 px di schermo lo spazio è 358
 2. **Anello + macro affiancati**: l'anello calorie a sinistra con il consumato
    grande al centro e l'obiettivo sotto ("1580 / 2200"); a destra le tre barre
    macro con valore/target ("Proteine 98 / 140 g"), in ordine **Grassi,

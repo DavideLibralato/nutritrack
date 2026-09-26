@@ -5,7 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
-## 2026-09-26 — Oggi: la data non va più a capo
+## 2026-09-26 — Oggi: giorno abbreviato, testata su una riga
+
+Branch `testata-oggi`, non ancora su main. Sostituisce la versione di
+`4a6a71f` (voce sotto): la testata torna a una riga come su main, con
+‹ data › e a destra "Oggi" e la pastiglia. La riga delle kcal torna com'era
+su main. `4a6a71f` è stata scartata dopo aver visto i mockup; questo commit
+la sostituisce senza riscrivere la storia del branch già pubblicato.
+
+- Il giorno della settimana è abbreviato ("Ven 25 set",
+  `formattaDataTitolo`) e la data ha `whitespace-nowrap`. L'aria-label
+  resta per esteso ("Cambia data, venerdì 25 settembre",
+  `formattaDataEstesa`). Tolta `formattaData`, che non usa più nessuno.
+- **Perché la riga può andare a capo.** Misurata con i font veri al peso
+  esatto: su un giorno passato con la differenziazione attiva, "Mer 20
+  mag" + Oggi + pastiglia "Allenamento" fanno 367 px (374 con "Dom 20
+  mag"). A 390 px lo spazio è 358, a 320 è 288: non ci stanno. Allora
+  ‹ data › e il gruppo "Oggi" + pastiglia sono due blocchi in una riga
+  `flex-wrap`: se il gruppo non entra, scende intero sulla riga sotto,
+  allineato a destra (`ml-auto`). Solo CSS. Con uno solo dei due pulsanti
+  la riga ci sta a 390 px.
+- Verificati `tsc`, lint (0 errori), 180 test verdi, build. La prova su
+  iPhone manca.
+
+## 2026-09-26 — Oggi: la data non va più a capo (scartata)
+
+Scartata dopo i mockup, sostituita dalla voce sopra.
 
 Branch `testata-oggi`, non ancora su main. Con un giorno dal nome lungo
 ("Venerdì 25 set") la data andava su due righe. Adesso sulla prima riga ci
