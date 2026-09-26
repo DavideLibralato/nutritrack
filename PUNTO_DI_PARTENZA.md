@@ -58,19 +58,31 @@ barra Salva di Profilo è `sticky` con `bottom` uguale a quella variabile, cioè
 appena sopra la tab bar. Oggi fa eccezione: ha un'altezza fissa (schermo meno
 tab bar) e fa scorrere solo la lista dei pasti.
 
-Il motivo è la tastiera di iPhone, che non accorcia il layout ma lo copre.
-Quando il documento scorre, iOS porta da solo il campo toccato sopra la
-tastiera, e gli elementi fissi in fondo restano sotto la tastiera, coperti.
-Questo è il comportamento voluto: con la tastiera aperta si vede il campo,
-non le barre, e a tastiera chiusa tutto torna com'era. Su Android si ottiene
-lo stesso con `interactiveWidget: "resizes-visual"` (layout radice): la
-tastiera copre il layout invece di accorciarlo.
+**Mentre scrivi, le barre si nascondono.** Su un dispositivo touch, finché un
+campo ha il fuoco, la tab bar e la barra Salva di Profilo sono invisibili. Un
+campo qui è un input di testo, numero, email, password o data, una textarea o
+una select; non contano checkbox, radio e bottoni. Chiusa la tastiera, le
+barre ricompaiono. È solo CSS, in `globals.css`: `:has()` sul `<body>`, le
+barre segnate con `data-nascondi-mentre-scrivi`, e la media query
+`(hover: none) and (pointer: coarse)`. Al PC, con mouse e tastiera fisica, le
+barre restano sempre. Si usa `visibility: hidden` e non `display: none`: la
+barra Salva è sticky e occupa spazio nella pagina, toglierla farebbe saltare
+il contenuto.
 
-Fanno eccezione gli sheet e `/aggiungi`: si agganciano alla parte visibile
-(`useAreaVisibile`) e restano sopra la tastiera. **Regola:** qui non si
-corregge lo scorrimento con JavaScript dopo che iOS l'ha fatto
-(`visualViewport`, `scrollTo`, spazi calcolati). Arriva sempre in ritardo di
-un movimento e la pagina balla: è il tentativo `a648455`, annullato.
+Il motivo è la tastiera di iPhone, che copre il layout senza accorciarlo.
+Quando si tocca un campo, a volte iOS fa scorrere il documento e le barre
+fisse restano sotto la tastiera. Altre volte sposta la finestra e le barre
+salgono sopra la tastiera. Provato sul telefono il 26/9: il layout da solo
+non lo controlla, nemmeno con il documento che scorre. Su Android
+`interactiveWidget: "resizes-visual"` (layout radice) fa comportare la
+tastiera come su iOS.
+
+Gli sheet e `/aggiungi` non cambiano: si agganciano alla parte visibile
+(`useAreaVisibile`) e restano sopra la tastiera. Che sotto uno sheet la tab
+bar sia nascosta non è un problema. **Regola:** qui non si corregge lo
+scorrimento con JavaScript dopo che iOS l'ha fatto (`visualViewport`,
+`scrollTo`, spazi calcolati). Arriva sempre in ritardo di un movimento e la
+pagina balla: è il tentativo `a648455`, annullato.
 
 Le descrizioni qui sotto corrispondono ai mockup realizzati a settembre 2026 e
 li sostituiscono come specifica: dove il mockup e il testo precedente non
@@ -1511,14 +1523,11 @@ cancellazione.
 
 ### Difetti e verifiche aperti
 
-- **Tastiera iOS nelle pagine con la tab bar**: corretta nel branch
-  `tastiera-ios` (26/9), perché ora scorre il documento (sezione 3, "Layout
-  delle pagine con la tab bar"). **La prova su iPhone non è ancora fatta.**
-  Il caso da provare con più attenzione è l'ultimo campo del Profilo, cioè
-  l'ultimo target "Allenamento" con i giorni differenziati attivi: se sotto
-  quel campo c'è meno pagina dell'altezza della tastiera, iOS deve comunque
-  spostare la finestra oltre la fine del documento, e un pezzo di tab bar
-  potrebbe spuntare sopra la tastiera
+- **Tastiera iOS nelle pagine con la tab bar**: nel branch `tastiera-ios`
+  il documento scorre (`273bdbb`), ma sul telefono non è bastato: iOS a
+  volte sposta ancora la finestra e la tab bar compare sopra la tastiera.
+  Adesso le barre si nascondono mentre si scrive (sezione 3, "Layout delle
+  pagine con la tab bar"). **La nuova prova su iPhone non è ancora fatta**
 - **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
   dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
   il 25/9)
@@ -1535,9 +1544,9 @@ cancellazione.
 
 ### Prossimi passi
 
-1. **Provare su iPhone il branch `tastiera-ios`** (campo in alto, campo in
-   basso, ultimo campo del Profilo, sheet in Oggi e in Profilo), poi merge
-   su main
+1. **Provare su iPhone il branch `tastiera-ios`** (campo in alto e in basso
+   in Profilo, la select dell'attività, gli sheet in Oggi e in Profilo),
+   poi merge su main
 2. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). Due
    domande a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti), e quante volte si vorrebbe

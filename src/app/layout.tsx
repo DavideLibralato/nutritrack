@@ -38,11 +38,11 @@ export const viewport: Viewport = {
   // la parte visibile (visualViewport). È quello che fa sempre iOS, che
   // ignora questa impostazione; su Android/Chrome è il valore predefinito, lo
   // scriviamo per dire che è una scelta. Così i due sistemi si comportano
-  // allo stesso modo: tab bar e barra Salva, fisse sul fondo del layout,
-  // restano sotto la tastiera, coperte (layout.tsx di (app)); gli sheet e
-  // /aggiungi si agganciano alla parte visibile con useAreaVisibile e restano
-  // sopra la tastiera. Con "resizes-content" su Android il layout si
-  // accorcerebbe e le barre fisse salirebbero sopra la tastiera.
+  // allo stesso modo: gli sheet e /aggiungi si agganciano alla parte visibile
+  // con useAreaVisibile e restano sopra la tastiera; tab bar e barra Salva si
+  // nascondono mentre si scrive (globals.css). Con "resizes-content" su
+  // Android il layout si accorcerebbe e cambierebbe sotto i piedi di Oggi e
+  // Profilo a ogni apertura della tastiera.
   interactiveWidget: "resizes-visual",
 };
 

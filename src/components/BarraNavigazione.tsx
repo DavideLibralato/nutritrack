@@ -10,9 +10,9 @@
 //
 // `position: fixed` in fondo, alta esattamente --altezza-tab-bar (globals.css,
 // barretta home di iOS compresa): il layout di (app) lascia sotto il
-// contenuto lo stesso spazio. Fissa sul fondo del layout, con la tastiera di
-// iOS aperta finisce sotto la tastiera, coperta — è voluto (layout.tsx di
-// (app) spiega perché). `z-20`: sopra la barra Salva di Profilo (z-10),
+// contenuto lo stesso spazio. Su telefono si nasconde mentre un campo ha il
+// fuoco (`data-nascondi-mentre-scrivi`, regola in globals.css), così non
+// compare mai sopra la tastiera. `z-20`: sopra la barra Salva di Profilo (z-10),
 // sotto BarraAnnulla (z-40) e gli sheet (z-50), che la coprono con lo sfondo
 // scuro come prima.
 
@@ -30,7 +30,10 @@ export default function BarraNavigazione() {
   const percorso = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 h-[var(--altezza-tab-bar)] border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+    <nav
+      data-nascondi-mentre-scrivi
+      className="fixed inset-x-0 bottom-0 z-20 h-[var(--altezza-tab-bar)] border-t border-border bg-background pb-[env(safe-area-inset-bottom)]"
+    >
       <ul className="mx-auto flex h-full max-w-md">
         {VOCI.map((voce) => {
           const attiva =

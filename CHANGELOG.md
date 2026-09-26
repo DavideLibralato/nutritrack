@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Tastiera iOS: mentre scrivi, le barre si nascondono
+
+Branch `tastiera-ios`, non ancora su main. Provato su iPhone, `273bdbb`
+(voce sotto) non basta: iOS a volte fa scorrere il documento, e allora le
+barre restano coperte, a volte sposta la finestra, e allora la tab bar
+compare sopra la tastiera. Il layout non basta a evitarlo. Cambio di strada,
+sempre solo CSS: sui dispositivi touch (`hover: none` e `pointer: coarse`),
+finché un campo che apre la tastiera o un selettore ha il fuoco, la tab bar e
+la barra Salva di Profilo sono `visibility: hidden` e `pointer-events: none`.
+Il selettore è `body:has(...:focus)` su tutti gli input tranne checkbox,
+radio e bottoni, più textarea e select. Le barre sono segnate con
+`data-nascondi-mentre-scrivi`. Il layout di `273bdbb` (documento che scorre,
+tab bar `fixed`) resta.
+
+- Si usa `visibility` e non `display: none`: la barra Salva occupa spazio
+  nella pagina, toglierla la farebbe saltare.
+- Gli sheet non cambiano. Sotto uno sheet con un campo a fuoco anche la tab
+  bar si nasconde: accettato.
+- La prova su iPhone manca.
+
 ## 2026-09-26 — Tastiera iOS: nelle pagine con la tab bar scorre il documento
 
 Branch `tastiera-ios`, non ancora su main. Il difetto: in Profilo, con un
@@ -24,6 +44,8 @@ cambiano. Solo CSS, nessun JavaScript.
 - Da tenere d'occhio: in Profilo, con uno sheet aperto, trascinare lo sfondo
   scuro può far scorrere la pagina dietro, perché ora il documento scorre.
   Lo sheet resta al suo posto.
+- Esito della prova su iPhone: il layout funziona, ma il difetto resta. Le
+  barre possono ancora salire sopra la tastiera (vedi voce sopra).
 
 ## 2026-09-26 — Documenti: decisioni sulle frasi dubbie, via NOTE_MODIFICHE
 

@@ -60,3 +60,44 @@ input[type="search"]::-webkit-search-decoration {
 button:not(:disabled) {
   cursor: pointer;
 }
+
+/* Mentre si scrive, le barre in fondo si nascondono (PUNTO_DI_PARTENZA.md,
+   sezione 3, "Layout delle pagine con la tab bar"). Su iPhone, quando si
+   tocca un campo, a volte iOS fa scorrere il documento e le barre fisse
+   restano sotto la tastiera, altre volte sposta la finestra e le barre
+   salgono sopra la tastiera. Non lo si controlla con il layout, quindi
+   finché un campo ha il fuoco la tab bar e la barra Salva di Profilo
+   spariscono; tolto il fuoco (tastiera chiusa) ricompaiono.
+
+   - Le barre interessate portano l'attributo `data-nascondi-mentre-scrivi`.
+   - `:has()` (iOS 15.4 in su): il <body> "contiene un campo con il fuoco".
+     Contano solo i campi che aprono la tastiera o un selettore: ogni
+     <input> tranne checkbox, radio, bottoni e simili, più <textarea> e
+     <select>. Un <input> senza `type` è di testo, quindi è compreso.
+   - `visibility: hidden`, non `display: none`: la barra Salva è sticky e
+     occupa spazio nella pagina, toglierla farebbe saltare il contenuto.
+     `pointer-events: none` perché una barra invisibile non riceva tocchi.
+   - Solo su schermi touch (niente hover, puntatore grossolano = dito): al
+     PC con mouse e tastiera fisica le barre restano sempre. */
+@media (hover: none) and (pointer: coarse) {
+  body:has(
+      input:not(
+          [type="checkbox"],
+          [type="radio"],
+          [type="button"],
+          [type="submit"],
+          [type="reset"],
+          [type="range"],
+          [type="color"],
+          [type="file"],
+          [type="image"],
+          [type="hidden"]
+        ):focus,
+      textarea:focus,
+      select:focus
+    )
+    [data-nascondi-mentre-scrivi] {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
