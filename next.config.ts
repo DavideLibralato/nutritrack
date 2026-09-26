@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  // Next.js 16: quando `next dev` viene lanciato da un agente AI (es. Claude
+  // Code, riconosciuto da @vercel/detect-agent) aggiunge in fondo a
+  // CLAUDE.md un blocco "<!-- BEGIN:nextjs-agent-rules -->". CLAUDE.md è
+  // scritto a mano e versionato: quel blocco finirebbe in un commit per
+  // sbaglio. Spento qui.
+  agentRules: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "8mb",

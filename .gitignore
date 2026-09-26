@@ -42,3 +42,6 @@ next-env.d.ts
 
 # appunti personali, non fanno parte del progetto
 /Claude outputs/
+
+# stato locale del plugin di design "impeccable" (consenso, cache, critiche)
+/.impeccable/
