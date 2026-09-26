@@ -678,7 +678,8 @@ function OggiContenuto() {
 
         {/* Anello + macro affiancati, non impilati (sezione 3). Ordine dei
             macro come sulle etichette dei prodotti: Grassi, Carboidrati,
-            Proteine (NOTE_MODIFICHE voce 1; le kcal sono l'anello). I target
+            Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"; le kcal
+            sono l'anello). I target
             vengono dal tipo del GIORNO MOSTRATO (tipoGiornoMostrato, sopra),
             non dall'obiettivo generico: su un giorno di allenamento passato
             devono restare quelli di allenamento anche se oggi è "normale". */}

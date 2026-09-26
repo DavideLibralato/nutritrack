@@ -209,7 +209,7 @@ export default function SheetQuantita({
         />
 
         {/* Ordine come sulle etichette dei prodotti: kcal, Grassi, Carboidrati,
-            Proteine (NOTE_MODIFICHE voce 1). */}
+            Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"). */}
         <p className="mt-3 text-sm text-muted">
           {valido
             ? `${kcal} kcal · G ${grassi} g · C ${carboidrati} g · P ${proteine} g`

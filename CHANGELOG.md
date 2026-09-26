@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Documenti: decisioni sulle frasi dubbie, via NOTE_MODIFICHE
+
+Branch `documenti`, secondo giro. Solo documentazione e commenti.
+
+- PUNTO_DI_PARTENZA: intestazione riscritta (unica fonte, non una sintesi
+  iniziale); "(non ancora costruito)" su "Scansiona etichetta", fasce dei
+  pasti dal Profilo, modifica di `consumato_alle` (quest'ultima è descritta
+  in §4, non in §3: segnata lì) e `SorgenteAlimento` (§5); §9.4, il livello
+  2 della ricerca oggi non serve perché la discesa scarica tutto il
+  catalogo condiviso, da riprendere se diventa troppo grande.
+- §9.2, Tesseract: verificato nel codice di tesseract.js 7.0.0 e nella sua
+  documentazione che worker, core e dati della lingua arrivano da jsDelivr
+  (circa 6 MB per dispositivo con il modello LSTM predefinito). Per l'OCR
+  offline andranno ospitati da noi.
+- Scritte nel documento due regole che vivevano solo in `NOTE_MODIFICHE.md`:
+  marca negli elenchi ("Nome · Marca", §4) e rinomina/elimina di un pasto
+  salvato (§3).
+- `NOTE_MODIFICHE.md` cancellato (lista "Da fare" vuota, il resto già nel
+  CHANGELOG); i 9 commenti del codice che lo citavano ora puntano a §3, §4
+  e §7. Le citazioni nelle voci vecchie del CHANGELOG restano: sono storia.
+- `README.md`: quello di create-next-app sostituito da uno breve in
+  italiano.
+- Lint, `tsc` e 180 test verdi dopo la modifica dei commenti.
+
 ## 2026-09-26 — Documenti riallineati al codice
 
 Branch `documenti`, solo documentazione.

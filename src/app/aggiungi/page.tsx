@@ -220,7 +220,8 @@ function AggiungiContenuto() {
   // quindi non ha il messaggio d'errore di SheetQuantita a disposizione.
   const [erroreRapido, setErroreRapido] = useState<string | null>(null);
 
-  // Rinomina/elimina un pasto salvato (NOTE_MODIFICHE.md): la matita in
+  // Rinomina/elimina un pasto salvato (PUNTO_DI_PARTENZA.md §3, "Salvare
+  // un pasto intero"): la matita in
   // RigaPastoSalvato apre SheetNome in modalità modifica, separato dal tap
   // sulla riga che invece aggiunge subito al diario.
   const [pastoInModifica, setPastoInModifica] = useState<PastoSalvato | null>(null);
@@ -370,7 +371,8 @@ function AggiungiContenuto() {
 
   // Matita su un pasto salvato: rinomina o elimina la composizione. Non
   // tocca gli alimenti/quantità — per cambiarli si rifà da capo dal pasto di
-  // oggi (fuori perimetro per ora, NOTE_MODIFICHE.md).
+  // oggi (fuori perimetro per ora, PUNTO_DI_PARTENZA.md §3, "Salvare un
+  // pasto intero").
   function apriModificaPasto(pasto: PastoSalvato) {
     setPastoInModifica(pasto);
     setSalvataggioModificaPasto("inattivo");

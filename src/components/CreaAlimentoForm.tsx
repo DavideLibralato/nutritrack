@@ -50,7 +50,8 @@ export default function CreaAlimentoForm({
 
   const [nome, setNome] = useState(a ? a.nome : nomeIniziale);
   // Marca facoltativa: due prodotti omonimi di marche diverse hanno valori
-  // diversi (NOTE_MODIFICHE voce 5). La colonna `alimenti.marca` esiste già.
+  // diversi (PUNTO_DI_PARTENZA.md §4, `alimenti`). La colonna
+  // `alimenti.marca` esiste già.
   const [marca, setMarca] = useState(a?.marca ?? "");
   const [kcal, setKcal] = useState(a ? String(a.kcal_100g) : "");
   const [proteine, setProteine] = useState(a ? String(a.proteine_100g) : "");
@@ -91,7 +92,7 @@ export default function CreaAlimentoForm({
     }
 
     // Ordine dei macro come sulle etichette reali dei prodotti: Kcal, Grassi,
-    // Carboidrati, Proteine (NOTE_MODIFICHE voce 1).
+    // Carboidrati, Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro").
     const campi = {
       nome: nome.trim(),
       marca: marca.trim() || null,
@@ -224,7 +225,7 @@ export default function CreaAlimentoForm({
       </div>
 
       {/* Ordine come sulle etichette dei prodotti: Kcal, Grassi, Carboidrati,
-          Proteine (NOTE_MODIFICHE voce 1). */}
+          Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"). */}
       <p className="text-xs uppercase tracking-wide text-muted">Valori per 100 g</p>
       <div className="space-y-3">
         <CampoNumero id="crea-kcal" etichetta="Calorie (kcal)" valore={kcal} onChange={setKcal} />

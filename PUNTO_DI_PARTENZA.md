@@ -1,7 +1,14 @@
 # Punto di partenza — app tracking nutrizionale
 
-Documento di sintesi delle decisioni prese prima di ricominciare lo sviluppo.
-Serve come base per la chat di progettazione dentro il progetto Claude.ai.
+**L'unica fonte** per posizionamento, schermate, modello dati, decisioni,
+ordine di sviluppo e stato dell'app (lo stabilisce `CLAUDE.md`). Quando una
+decisione cambia, si aggiorna qui nello stesso momento: non esistono due
+versioni della stessa scelta. La storia di come ci si è arrivati, commit per
+commit, sta in `CHANGELOG.md`.
+
+Dove una parte descrive qualcosa che non esiste ancora nel codice, è
+segnata "(non ancora costruito)"; il quadro completo di cosa c'è e cosa manca
+è nella sezione 11.
 
 ---
 
@@ -94,7 +101,8 @@ Si apre a tutto schermo con freccia indietro e, come titolo, **il nome del pasto
 
 Ordine degli elementi:
 
-1. **"Scansiona etichetta"** — riquadro grande con l'accento, titolo e
+1. **"Scansiona etichetta"** *(non ancora costruito: arriva con l'OCR,
+   fase 5)* — riquadro grande con l'accento, titolo e
    sottotitolo ("Valori letti in automatico"). È il differenziante, ma resta il
    *secondo* percorso
 2. **Campo di ricerca** con lente e placeholder "Cerca un alimento"
@@ -112,6 +120,12 @@ Il punto è **come nasce** un pasto salvato: non lo si costruisce in una scherma
 apposta, lo si **promuove da una giornata già registrata**. Sulla riga del pasto
 in Oggi: "Salva come preferito". Registri la colazione una volta con calma, e da
 lì in poi è un tap. Nessun lavoro di configurazione, nessuna schermata nuova.
+
+Un pasto salvato si **rinomina o elimina** dalla matita sulla sua riga in
+Preferiti (separata dal tap sulla riga, che lo aggiunge subito). Gli
+alimenti e le quantità **non si modificano**: per cambiarli si risalva da
+capo dal pasto di una giornata. Se serva davvero modificarli lo dirà la
+settimana d'uso (sezione 11, "Prossimi passi").
 
 **Due percorsi di inserimento, non uno.** Questa è la decisione che il mockup
 introduce e che va tenuta:
@@ -314,7 +328,8 @@ sulla voce in Oggi → lo sheet quantità, con anche il pasto modificabile.
 **La struttura dei pasti è dell'utente, non dell'app.** Chi segue una dieta ha
 "Pranzo 1" e "Pranzo 2", o tre spuntini. Quindi i pasti non sono quattro valori
 fissi nel codice: sono righe di una tabella, che l'utente può rinominare,
-aggiungere, eliminare e riordinare dal Profilo.
+aggiungere, eliminare e riordinare dal Profilo *(non ancora costruito: oggi
+esiste solo il set predefinito, nessuna schermata per modificarlo)*.
 
 Ogni pasto ha **solo un'ora di inizio**, non un intervallo: dura fino all'inizio
 del pasto successivo, e l'ultimo arriva fino al primo del giorno dopo. Un campo
@@ -442,6 +457,11 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 
 **`alimenti`** — il catalogo
 - nome, marca, `barcode`
+- `marca` è facoltativa: serve a distinguere due prodotti con lo stesso nome
+  e valori diversi ("Yogurt magro" di due marche). Dove un alimento compare
+  in un elenco (ricerca, recenti, preferiti) e la marca c'è, si mostra
+  "Nome · Marca" (`etichettaAlimento` in `src/lib/repository/alimenti.ts`).
+  Nel diario no: `voci_diario` copia solo il nome
 - valori per 100 g: kcal, proteine, carboidrati, grassi
 - campi già previsti anche se non mostrati in V1: zuccheri, fibre, saturi, sale
 - `porzione_default_g`
@@ -457,7 +477,10 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 - `creato_il`: l'ora reale dell'inserimento, quella che ha fatto proporre il
   pasto. Serve a distinguere "l'app ha indovinato" da "l'utente ha corretto"
 - **`consumato_alle`** (nullable): l'ora a cui hai *mangiato*, che è un'altra
-  cosa. Precompilata con l'ora corrente e modificabile nello sheet, mai chiesta.
+  cosa. Precompilata con l'ora corrente e modificabile nello sheet, mai chiesta
+  *(la modifica nello sheet non è ancora costruita: oggi il campo si
+  riempie con l'ora corrente solo quando si registra per il giorno in corso,
+  altrimenti resta vuoto)*.
   Su un inserimento retroattivo `creato_il` è stasera e `consumato_alle` è
   l'ora di ieri a cui hai cenato
 - **copia dei valori nutrizionali al momento dell'inserimento**: se un alimento
@@ -696,6 +719,10 @@ SorgenteAlimento.ottieni() → AlimentoNormalizzato {
   nome, kcal100g, macro, porzioneSuggerita, fonte, confidenza
 }
 ```
+
+*(Non ancora nel codice: resta il progetto da seguire quando arriveranno Open
+Food Facts e l'OCR. Oggi esiste solo l'inserimento manuale, che passa già
+dall'unico sheet quantità.)*
 
 Implementazioni: `RicercaManuale`, `RicercaOpenFoodFacts`, `ScansioneEtichetta`,
 e in futuro `Barcode`, `FotoPiatto`, `Testo`, `Voce`.
@@ -1049,7 +1076,25 @@ Perché ora e non dopo: il local-first non è una feature, è *dove vive il dato
 Aggiungerlo in seguito significa riscrivere ogni lettura e ogni scrittura
 dell'app. Effetto collaterale previsto: con Tesseract nel browser, **l'app
 funzionerà interamente offline, OCR compreso** — quando l'OCR ci sarà (oggi
-non è ancora costruito, fase 5).
+non è ancora costruito, fase 5) **e a una condizione**: tesseract.js da solo
+non è offline. Verificato nel codice della versione installata (7.0.0,
+`src/worker/browser/defaultOptions.js`, `src/worker-script/browser/getCore.js`,
+`src/worker-script/index.js`) e in `docs/local-installation.md` del
+pacchetto: se non si indicano `workerPath`, `corePath` e `langPath`, scarica
+tutto da jsDelivr —
+- il worker (`tesseract.js@v7.0.0/dist/worker.min.js`, circa 0,1 MB);
+- il core WebAssembly (`tesseract.js-core@v7.0.0`): una variante scelta in
+  base al dispositivo, circa 3,9 MB con il modello predefinito (LSTM);
+- i dati della lingua (`@tesseract.js-data/ita/4.0.0_best_int`,
+  `ita.traineddata.gz`, circa 1,7 MB; 6,9 MB se servisse il modello
+  "legacy").
+
+Quindi circa **6 MB per dispositivo** al primo uso. Per l'OCR offline questi
+file vanno **ospitati da noi** (in `public/`, con i tre percorsi impostati) e
+salvati dal service worker: nomi e versioni fissi, non passano dal build di
+Next, quindi la strategia di `sw-strategia.js` andrà estesa. Nella cartella
+del core le varianti sono diverse (per dispositivi con e senza SIMD):
+vanno copiate tutte, anche se ognuno ne scarica una sola.
 
 **I 5 pasti predefiniti hanno id deterministico**, non casuale: UUID v5
 calcolato da `user_id` + nome canonico (`src/lib/repository/pasti.ts`,
@@ -1117,6 +1162,15 @@ Nessun import massivo. La ricerca funziona a **tre livelli**, non due:
    amico esiste nel database ma nessun altro riuscirebbe mai a trovarla, perché
    in locale non ce l'ha e su Open Food Facts non c'è
 3. **Open Food Facts** via API, se non l'ha trovato nessuno dei due
+
+**Oggi il livello 2 non serve.** La discesa (§9.2) scarica in Dexie **tutto**
+il catalogo condiviso (le righe di `alimenti` con `user_id` null sono
+leggibili da tutti, quindi arrivano a ogni utente), e la ricerca locale lo
+trova già, anche offline. Va ripreso se il catalogo condiviso diventa troppo
+grande per stare intero su ogni dispositivo — per esempio quando gli
+alimenti copiati da Open Food Facts cominceranno ad accumularsi: a quel
+punto la discesa del catalogo andrà limitata e la ricerca su Supabase
+tornerà necessaria.
 
 Quando scegli un alimento da OFF, viene **copiato nella tabella `alimenti`** con
 `fonte = 'off'`, il barcode e `verificato = false`. Il catalogo cresce da solo

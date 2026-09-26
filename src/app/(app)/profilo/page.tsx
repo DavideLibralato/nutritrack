@@ -96,7 +96,7 @@ const OPZIONI_GIORNO: { valore: GiornoSettimana; etichetta: string; nomeCompleto
 ];
 
 // Le righe dei target, nell'ordine delle etichette dei prodotti: Calorie,
-// Grassi, Carboidrati, Proteine (NOTE_MODIFICHE voce 1).
+// Grassi, Carboidrati, Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro").
 const CAMPI_TARGET: { chiave: keyof ValoriTarget; etichetta: string }[] = [
   { chiave: "kcal", etichetta: "Calorie" },
   { chiave: "grassi", etichetta: "Grassi (g)" },
