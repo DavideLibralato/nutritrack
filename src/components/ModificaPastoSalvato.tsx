@@ -30,11 +30,10 @@ import { cercaPerNome, etichettaAlimento } from "@/lib/repository/alimenti";
 import { eliminaComposizione } from "@/lib/repository/composizioni";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
-import { numeroDaCampo } from "@/lib/profilo/salvataggioProfilo";
 import {
   aggiungiAlimento,
   caricaModuloPasto,
-  erroreGrammi,
+  grammiValidi,
   erroreNome,
   erroriRighe,
   grammiNelModulo,
@@ -130,8 +129,9 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
   const kcalTotali = Math.round(
     attuali.righe.reduce((somma, r) => {
       const a = catalogoPerId.get(r.alimentoId);
-      if (!a || erroreGrammi(r.grammi)) return somma;
-      return somma + (a.kcal_100g * numeroDaCampo(r.grammi)) / 100;
+      const g = grammiValidi(r.grammi);
+      if (!a || g === null) return somma;
+      return somma + (a.kcal_100g * g) / 100;
     }, 0)
   );
 
@@ -507,9 +507,9 @@ function RigaAlimento({
   const nome = alimento ? etichettaAlimento(alimento) : riga.nomeAlimento;
   const idCampo = `grammi-${riga.chiave}`;
   const kcal =
-    alimento && !errore ? Math.round((alimento.kcal_100g * numeroDaCampo(riga.grammi)) / 100) : null;
+    alimento && !errore ? Math.round((alimento.kcal_100g * grammiValidi(riga.grammi)!) / 100) : null;
   const grammiCambiati =
-    prima !== null && numeroDaCampo(prima.grammi) !== numeroDaCampo(riga.grammi);
+    prima !== null && grammiValidi(prima.grammi) !== grammiValidi(riga.grammi);
 
   return (
     <li className="border-b border-border py-3">

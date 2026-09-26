@@ -382,7 +382,9 @@ describe("salvaModificaPasto", () => {
     const { userId, burro, composizioneId, caricati } = await preparaColazione();
     const prima = await istantanea(userId);
 
-    for (const grammi of ["", "0", "-5", "abc"]) {
+    // "100000": oltre numeric(7,2), in Dexie passerebbe e la sync fallirebbe
+    // in silenzio.
+    for (const grammi of ["", "0", "-5", "abc", "100000", "0,004"]) {
       const esito = await salvaModificaPasto({
         userId,
         composizioneId,
@@ -392,6 +394,30 @@ describe("salvaModificaPasto", () => {
       expect(esito.esito).toBe("da-correggere");
     }
     expect(await istantanea(userId)).toEqual(prima);
+  });
+});
+
+describe("salvaModificaPasto, arrotondamento", () => {
+  it("più di due decimali: in Dexie finisce il valore arrotondato, lo stesso che terrà il server", async () => {
+    const { userId, burro, composizioneId, caricati } = await preparaColazione();
+    const latte = await creaAlimento(userId, "Latte");
+
+    await salvaModificaPasto({
+      userId,
+      composizioneId,
+      caricati,
+      attuali: aggiungiAlimento(conGrammi(caricati, burro.id, "12,345"), latte, 1.005),
+    });
+
+    const righe = await righeDelPasto(composizioneId);
+    expect(righe.find((r) => r.alimento_id === burro.id)?.quantita_g).toBe(12.35);
+    expect(righe.find((r) => r.alimento_id === latte.id)?.quantita_g).toBe(1.01);
+  });
+
+  it("grammi che arrotondati coincidono con quelli salvati: nessuna modifica, niente riscritto", async () => {
+    const { burro, caricati } = await preparaColazione();
+    // Burro salvato a 20 g: "20,001" arrotonda a 20.
+    expect(moduloModificato(caricati, conGrammi(caricati, burro.id, "20,001"))).toBe(false);
   });
 });
 

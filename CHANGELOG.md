@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Grammi validi: limiti di numeric(7,2) e due decimali
+
+Branch `modifica-pasto-salvato`. `quantita_g` è `numeric(7,2)` su Supabase,
+sia in `voci_diario` sia in `composizioni_voci` (verificato su
+information_schema). Lo sheet quantità e la modifica del pasto salvato
+controllavano solo "> 0", e ne venivano due bug. Un valore oltre 99999,99
+si salvava in Dexie e poi faceva fallire la sync in silenzio. Con più di
+due decimali, Dexie teneva 12,345 e il server 12,35.
+
+- Nuova `leggiGrammi` in `src/lib/inserimento/grammi.ts`, usata da
+  SheetQuantita e da `modificaPastoSalvato.ts`. Tiene il massimo 99999,99 e
+  arrotonda a due decimali prima di scrivere; un valore che arrotondato fa
+  0 non vale. Nello sheet, un campo scritto ma non valido mostra il motivo.
+- 7 test permanenti nuovi (5 in `grammi.test.ts`, 2 nella modifica del
+  pasto).
+- Lasciato aperto: `CreaAlimentoForm` ha lo stesso problema su porzione e
+  valori per 100 g.
+
 ## 2026-09-26 — Modifica di un pasto salvato: alimenti e grammi
 
 Branch `modifica-pasto-salvato`. La matita su un pasto salvato in

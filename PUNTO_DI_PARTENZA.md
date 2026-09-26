@@ -175,9 +175,9 @@ sua: nome, elenco degli alimenti con i grammi, "Aggiungi alimento" ed
 logica e test in `src/lib/inserimento/modificaPastoSalvato.ts`.
 
 - **Come il Profilo, tutto in sospeso fino al Salva.** I grammi si cambiano
-  nel campo sulla riga, con sotto "Prima: 150 g". Il campo vale solo se è un
-  numero maggiore di zero, altrimenti c'è un messaggio accanto alla riga e
-  il Salva resta spento. La "×" toglie un alimento, e "Annulla modifiche"
+  nel campo sulla riga, con sotto "Prima: 150 g". Il campo segue la stessa
+  validazione dello sheet quantità (vedi "Grammi validi" più sotto),
+  altrimenti c'è un messaggio accanto alla riga e il Salva resta spento. La "×" toglie un alimento, e "Annulla modifiche"
   torna a com'era. Niente si scrive in Dexie prima del Salva. Chi esce dalla
   freccia con modifiche non salvate riceve un avviso, e così anche chi
   chiude o ricarica la scheda. Il gesto "indietro" del telefono invece esce
@@ -218,6 +218,18 @@ logica e test in `src/lib/inserimento/modificaPastoSalvato.ts`.
   cancellazione delle righe tolte. Finché resta almeno un alimento, una riga
   viva c'è sempre. Se si cancella tutto, prima le righe e per ultima la
   composizione (spiegato nel commento di `salvaModificaPasto`)
+
+**Grammi validi** (deciso il 2026-09-26). Una sola funzione,
+`leggiGrammi` in `src/lib/inserimento/grammi.ts`, per lo sheet quantità e
+per la modifica di un pasto salvato. Su Supabase `voci_diario.quantita_g` e
+`composizioni_voci.quantita_g` sono `numeric(7,2)`, e da lì vengono le
+regole:
+- un numero **maggiore di zero e al massimo 99999,99**. Oltre, Dexie lo
+  salverebbe e la sync fallirebbe in silenzio (la voce viene accantonata dopo
+  5 tentativi);
+- **arrotondato a due decimali prima di scrivere**, come fa il server. Senza,
+  Dexie terrebbe 12,345 e il server 12,35. Un valore che arrotondato fa 0
+  non vale.
 
 **Due percorsi di inserimento, non uno.** Questa è la decisione che il mockup
 introduce e che va tenuta:
@@ -1567,7 +1579,7 @@ scorrere è il documento, con la tab bar fissa. Mentre un campo ha il fuoco,
 tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
 chiude (sezione 3, "Layout delle pagine con la tab bar").
 
-**Test.** 196 test permanenti in 19 file (Vitest), tutti verdi al 26/9.
+**Test.** 203 test permanenti in 20 file (Vitest), tutti verdi al 26/9.
 
 ### Non ancora costruito
 
@@ -1609,6 +1621,11 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
   invisibile in Preferiti e non blocca il nome (`pastoSalvatoVisibile`,
   correzione del 22/9), ma la riga esiste. Lo stesso stato resta se un Salva
   che cancella tutto si interrompe fra le righe e la composizione
+- **Numeri del catalogo senza limiti** (26/9). In `CreaAlimentoForm`, la
+  porzione predefinita e i valori per 100 g sono `numeric(7,2)` su Supabase,
+  ma il form controlla solo "> 0". Un valore oltre 99999,99 o con più di due
+  decimali ha gli stessi due difetti già corretti per i grammi ("Grammi
+  validi", sezione 3). Non ancora corretto
 - **Modifica di un pasto salvato**: verificata con i test e con il build, la
   prova sul telefono (tastiera che nasconde la barra Salva, sheet quantità
   sopra la schermata) non è ancora registrata

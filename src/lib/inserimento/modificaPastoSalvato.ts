@@ -17,7 +17,7 @@
 import { repositoryComposizioni, repositoryComposizioniVoci } from "../repository";
 import { catalogoLocale } from "../repository/alimenti";
 import { esisteComposizioneConNome } from "../repository/composizioni";
-import { numeroDaCampo } from "../profilo/salvataggioProfilo";
+import { leggiGrammi } from "./grammi";
 import type { Alimento, Composizione, ComposizioneVoce } from "../db/tipi";
 
 // --- Il modulo --------------------------------------------------------------
@@ -120,29 +120,34 @@ export function aggiungiAlimento(
 // numero valido.
 export function grammiNelModulo(modulo: ModuloPasto, alimentoId: string): number | null {
   const riga = modulo.righe.find((r) => r.alimentoId === alimentoId);
-  if (!riga || erroreGrammi(riga.grammi)) return null;
-  return numeroDaCampo(riga.grammi);
+  return riga ? grammiValidi(riga.grammi) : null;
 }
 
 // --- Confronto e validazione -------------------------------------------------
 
+// Stessa validazione dello sheet quantità (src/lib/inserimento/grammi.ts):
+// limiti di numeric(7,2) e arrotondamento a due decimali. Tutto quello che
+// si confronta o si scrive passa da qui, mai dal numero grezzo del campo:
+// Dexie deve tenere lo stesso valore che terrà il server.
 export function erroreGrammi(valore: string): string | null {
-  const n = numeroDaCampo(valore);
-  if (Number.isNaN(n)) return "Inserisci i grammi";
-  if (!Number.isFinite(n) || n <= 0) return "Deve essere maggiore di zero";
-  return null;
+  return leggiGrammi(valore).errore;
+}
+
+// I grammi del campo, già arrotondati; null se il campo non è valido.
+export function grammiValidi(valore: string): number | null {
+  return leggiGrammi(valore).grammi;
 }
 
 export function erroreNome(valore: string): string | null {
   return valore.trim() === "" ? "Inserisci un nome" : null;
 }
 
-// Grammi uguali come numeri ("150" e "150,0"); un campo non valido si
-// confronta come testo.
+// Grammi uguali una volta arrotondati ("150" e "150,0", "12,345" e
+// "12,35"); un campo non valido si confronta come testo.
 function stessiGrammi(a: string, b: string): boolean {
-  const na = numeroDaCampo(a);
-  const nb = numeroDaCampo(b);
-  if (Number.isNaN(na) || Number.isNaN(nb)) return a.trim() === b.trim();
+  const na = grammiValidi(a);
+  const nb = grammiValidi(b);
+  if (na === null || nb === null) return a.trim() === b.trim();
   return na === nb;
 }
 
@@ -321,7 +326,7 @@ export async function salvaModificaPasto(r: {
   );
   await Promise.all(
     daAggiornare.map((riga) =>
-      repositoryComposizioniVoci.aggiorna(riga.voceId!, { quantita_g: numeroDaCampo(riga.grammi) })
+      repositoryComposizioniVoci.aggiorna(riga.voceId!, { quantita_g: grammiValidi(riga.grammi)! })
     )
   );
 
@@ -334,7 +339,7 @@ export async function salvaModificaPasto(r: {
         user_id: r.userId,
         composizione_id: r.composizioneId,
         alimento_id: riga.alimentoId,
-        quantita_g: numeroDaCampo(riga.grammi),
+        quantita_g: grammiValidi(riga.grammi)!,
         ordine: ordineMassimo + 1 + i,
       })
     )

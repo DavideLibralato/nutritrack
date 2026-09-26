@@ -20,6 +20,7 @@ import type { AlimentoPerSheet } from "@/lib/inserimento/alimentoPerSheet";
 import type { Pasto } from "@/lib/db/tipi";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { leggiGrammi } from "@/lib/inserimento/grammi";
 
 interface Props {
   alimento: AlimentoPerSheet;
@@ -100,10 +101,14 @@ export default function SheetQuantita({
     return () => document.removeEventListener("keydown", onKey);
   }, [onAnnulla]);
 
-  const grammiNum = Number(grammi.replace(",", "."));
-  const valido = grammi.trim() !== "" && !Number.isNaN(grammiNum) && grammiNum > 0;
+  // Validazione condivisa (src/lib/inserimento/grammi.ts): limiti di
+  // numeric(7,2) e arrotondamento a due decimali, così quello che si
+  // conferma è esattamente quello che salverà anche il server.
+  const lettura = leggiGrammi(grammi);
+  const valido = lettura.errore === null;
+  const grammiNum = lettura.grammi ?? 0;
 
-  const fattore = valido ? grammiNum / 100 : 0;
+  const fattore = grammiNum / 100;
   const kcal = Math.round(alimento.kcal_100g * fattore);
   const proteine = Math.round(alimento.proteine_100g * fattore);
   const carboidrati = Math.round(alimento.carboidrati_100g * fattore);
@@ -210,10 +215,16 @@ export default function SheetQuantita({
 
         {/* Ordine come sulle etichette dei prodotti: kcal, Grassi, Carboidrati,
             Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"). */}
-        <p className="mt-3 text-sm text-muted">
+        {/* Campo vuoto: l'invito neutro di sempre. Campo scritto ma non
+            valido (zero, troppo grande...): il motivo, col colore d'avviso. */}
+        <p
+          className={`mt-3 text-sm ${!valido && grammi.trim() !== "" ? "text-warning" : "text-muted"}`}
+        >
           {valido
             ? `${kcal} kcal · G ${grassi} g · C ${carboidrati} g · P ${proteine} g`
-            : "Inserisci una quantità in grammi"}
+            : grammi.trim() === ""
+              ? "Inserisci una quantità in grammi"
+              : lettura.errore}
         </p>
 
         {errore && <p className="mt-2 text-sm text-warning">{errore}</p>}
