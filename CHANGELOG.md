@@ -5,9 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Testata di Oggi provata su iPhone, unita a main
+
+Solo documenti. La testata "giorno sopra la data" è stata provata su
+iPhone ed è unita a main (`e933631`, merge senza fondere i commit:
+`4a6a71f` e `9a5b45e` restano nella storia). Il branch `testata-oggi` è
+cancellato. Dalle tre voci qui sotto è tolto "non ancora su main".
+
 ## 2026-09-26 — Oggi: testata "giorno sopra la data"
 
-Branch `testata-oggi`, non ancora su main. È la terza versione della
+Branch `testata-oggi`. È la terza versione della
 testata, C, e sostituisce le due voci sotto: A (`4a6a71f`, pulsanti sulla
 riga delle kcal) e B (`9a5b45e`, giorno abbreviato). Tutte e due sono state
 scartate dopo i mockup. È un commit nuovo sopra le altre due, per non
@@ -37,7 +44,7 @@ riscrivere un branch già pubblicato.
 
 Scartata dopo i mockup (versione B), sostituita dalla voce sopra.
 
-Branch `testata-oggi`, non ancora su main. Sostituisce la versione di
+Branch `testata-oggi`. Sostituisce la versione di
 `4a6a71f` (voce sotto): la testata torna a una riga come su main, con
 ‹ data › e a destra "Oggi" e la pastiglia. La riga delle kcal torna com'era
 su main. `4a6a71f` è stata scartata dopo aver visto i mockup; questo commit
@@ -62,7 +69,7 @@ la sostituisce senza riscrivere la storia del branch già pubblicato.
 
 Scartata dopo i mockup, sostituita dalla voce sopra.
 
-Branch `testata-oggi`, non ancora su main. Con un giorno dal nome lungo
+Branch `testata-oggi`. Con un giorno dal nome lungo
 ("Venerdì 25 set") la data andava su due righe. Adesso sulla prima riga ci
 sono solo ‹ data ›, con `whitespace-nowrap`. Il pulsante "Oggi" e la
 pastiglia Normale/Allenamento sono scesi sulla riga delle calorie, a destra,
