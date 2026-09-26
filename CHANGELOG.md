@@ -5,9 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Tastiera iOS provata su iPhone, difetto chiuso
+
+Solo documenti. Prova su iPhone superata: con un campo attivo, tab bar e
+barra Salva non compaiono più sopra la tastiera e tornano quando la tastiera
+si chiude. Branch `tastiera-ios` unito a main (`c5d59c0`) e cancellato. In
+PUNTO_DI_PARTENZA (§11) il difetto è tolto da "Difetti e verifiche aperti",
+c'è una riga in "Fatto", e il prossimo passo è la settimana d'uso vero.
+
 ## 2026-09-26 — Tastiera iOS: mentre scrivi, le barre si nascondono
 
-Branch `tastiera-ios`, non ancora su main. Provato su iPhone, `273bdbb`
+Branch `tastiera-ios`. Provato su iPhone, `273bdbb`
 (voce sotto) non basta: iOS a volte fa scorrere il documento, e allora le
 barre restano coperte, a volte sposta la finestra, e allora la tab bar
 compare sopra la tastiera. Il layout non basta a evitarlo. Cambio di strada,
@@ -27,7 +35,7 @@ tab bar `fixed`) resta.
 
 ## 2026-09-26 — Tastiera iOS: nelle pagine con la tab bar scorre il documento
 
-Branch `tastiera-ios`, non ancora su main. Il difetto: in Profilo, con un
+Branch `tastiera-ios`. Il difetto: in Profilo, con un
 campo in basso, iOS spostava la finestra e tab bar e barra Salva salivano
 sopra la tastiera. Adesso è il documento a scorrere, non il `<div>` interno.
 La tab bar è `fixed` in fondo e il contenuto lascia uno spazio pari a

@@ -1503,6 +1503,11 @@ pasti salvati promossi da Oggi con la stella, rinominabili ed eliminabili
 da Preferiti. Regola "alimenti cancellati" (sezione 4) con Annulla dopo la
 cancellazione.
 
+**Tastiera iOS nelle pagine con la tab bar** (26/9, provata su iPhone). A
+scorrere è il documento, con la tab bar fissa. Mentre un campo ha il fuoco,
+tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
+chiude (sezione 3, "Layout delle pagine con la tab bar").
+
 **Test.** 180 test permanenti in 18 file (Vitest), tutti verdi al 26/9.
 
 ### Non ancora costruito
@@ -1523,11 +1528,6 @@ cancellazione.
 
 ### Difetti e verifiche aperti
 
-- **Tastiera iOS nelle pagine con la tab bar**: nel branch `tastiera-ios`
-  il documento scorre (`273bdbb`), ma sul telefono non è bastato: iOS a
-  volte sposta ancora la finestra e la tab bar compare sopra la tastiera.
-  Adesso le barre si nascondono mentre si scrive (sezione 3, "Layout delle
-  pagine con la tab bar"). **La nuova prova su iPhone non è ancora fatta**
 - **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
   dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
   il 25/9)
@@ -1544,13 +1544,10 @@ cancellazione.
 
 ### Prossimi passi
 
-1. **Provare su iPhone il branch `tastiera-ios`** (campo in alto e in basso
-   in Profilo, la select dell'attività, gli sheet in Oggi e in Profilo),
-   poi merge su main
-2. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). Due
+1. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). Due
    domande a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti), e quante volte si vorrebbe
    modificare un pasto salvato (oggi si può solo rinominarlo o eliminarlo;
    per cambiarne gli alimenti lo si risalva)
-3. **Dopo la settimana:** l'indicatore di sincronizzazione in app, e la
+2. **Dopo la settimana:** l'indicatore di sincronizzazione in app, e la
    modifica di un pasto salvato — solo se la settimana dice che serve
