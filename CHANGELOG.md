@@ -5,6 +5,13 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Limiti sui numeri del catalogo provati su iPhone, uniti a main
+
+Solo documenti. I limiti sui numeri del catalogo e la somma dei macro sono
+stati provati su iPhone e uniti a main (`4ea4f9a`, `6c0830c`),
+fast-forward senza commit di merge. Il branch `limiti-alimenti` è
+cancellato, in locale e su GitHub.
+
 ## 2026-09-26 — Somma dei macro per 100 g, con tolleranza di 1,5 g
 
 Branch `limiti-alimenti`. Chiude le due questioni rimaste aperte nella
