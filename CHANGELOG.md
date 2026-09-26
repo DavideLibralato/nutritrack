@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Documenti riallineati al codice
+
+Branch `documenti`, solo documentazione.
+
+- CHANGELOG: le voci dal 13 al 24 settembre **c'erano già** (tutti i 29
+  commit del periodo coperti, scritte al momento). Integrate a posteriori
+  quattro voci con fatti ricostruiti da diff e migration:
+  `orchestratore.ts` e il cambio di nome `SincronizzaOutbox` →
+  `Sincronizzazione`, la dipendenza `uuid` con `idEsplicito`,
+  `giornoSettimanaDi`, le colonne di `profili` e le migration dei giorni
+  differenziati. L'indice unico sui pasti, creato e rimosso il 20/9, è
+  registrato senza motivazione: il perché della creazione non risulta da
+  nessuna parte. Aggiunte le voci mancanti per `44e4c28`, `093f099`,
+  `b72545e` e i commit della v0.
+- PUNTO_DI_PARTENZA: sezione 11 riscritta sullo stato del 26/9 (era ferma
+  al 4/9) con i prossimi passi nuovi; tema scuro dichiarato non costruito
+  (§7); ordine Kcal → Grassi → Carboidrati → Proteine scritto (§3, §7);
+  corrette le frasi rimaste indietro (grafico calorie "già così", OCR
+  offline, cancellazione al logout senza il "rimandato", conteggio delle
+  funzioni in 10.5 con lo stato dei test).
+
 ## 2026-09-26 — Service worker rifatto: l'app funziona offline
 
 Branch `service-worker`. `public/sw.js` riscritto a mano (Serwist valutato e
@@ -33,6 +54,9 @@ Esci svuota le pagine salvate. Middleware: esclusi `sw-strategia.js` e
   scheda, ricarica, pasto) e l'arrivo della versione nuova dopo un secondo
   deploy. Provato qui solo in simulazione (sw.js vero con cache e rete
   finte, sulla build reale).
+- Portato su `main` con un fast-forward (nessun commit di merge: `main` non
+  aveva commit nuovi), branch `service-worker` cancellato in locale e su
+  GitHub.
 
 ## 2026-09-26 — Annullata la correzione della tastiera su iPhone
 
@@ -400,6 +424,10 @@ che "compila". Dettagli e correzioni nelle voci sotto.
   tutti i percorsi di scrittura). Regola 3 confermata anche fuori dai test.
 - Nessun bug aperto: `tsc --noEmit`, `eslint` e la suite di test (110/110)
   passano dopo l'implementazione e la correzione.
+- *Integrato il 2026-09-26, ricostruito dal diff:* nuova
+  `giornoSettimanaDi()` in `src/lib/dataGiorno.ts` (con test), per
+  confrontare una data con `profili.giorni_allenamento_default` quando si
+  propone il tipo del giorno.
 - **Nota sulla checklist B.7 di CLAUDE.md**: non si applica a questo commit
   (nessun bump di `version(N)` Dexie, lo schema era già quello di
   `version(2)`). Resta invece aperta, com'era già scritta nella voce del 20/9
@@ -473,6 +501,19 @@ che "compila". Dettagli e correzioni nelle voci sotto.
   cancellazione). Valutata e scartata un'alternativa più prudente (seminare
   ma trattenere la salita finché la discesa non conferma): si propaga a
   ogni voce di diario collegata via foreign key, sproporzionata al danno.
+- *Integrato il 2026-09-26, ricostruito da diff e migration:*
+  - i due versi li mette insieme il nuovo `src/lib/sync/orchestratore.ts`
+    (`sincronizzaBidirezionale`: prima `scaricaTutto`, poi
+    `sincronizzaOutbox`; `avviaSincronizzazioneAutomatica` aggancia i tre
+    inneschi). Il componente `SincronizzaOutbox` è diventato
+    `Sincronizzazione`, perché ora fa partire entrambi i versi (`7fc7ff6`);
+  - per l'UUID v5 è entrata la dipendenza `uuid`, e `repository.crea()` ha
+    un parametro `idEsplicito` per i casi con id deterministico (`bda3971`);
+  - l'indice `pasti_user_nome_idx` rimosso qui era stato **creato la
+    stessa mattina** (migration `indice_unico_pasti_per_utente`, 20/9 ore
+    8:48, rimosso alle 12:12 con `rimuovi_indice_unico_pasti_nome`). Perché
+    fosse stato creato non risulta né dai commit né dal documento: lo
+    registro senza motivazione.
 
 ## 2026-09-20 — Stella preferiti duplicata dopo togli-e-riaggiungi
 
@@ -516,7 +557,8 @@ che "compila". Dettagli e correzioni nelle voci sotto.
 - Durante l'indagine, prima di questi fix, la coda locale aveva accumulato
   39 voci ferme dal 6 settembre — quattro cause distinte, non solo questa:
   permessi mancanti sulle tabelle nuove (GRANT dimenticato nella migration
-  di creazione, corretto lato Supabase), righe di un vecchio account di
+  di creazione, corretto lato Supabase con la migration
+  `grant_authenticated_obiettivi_target_giorni`), righe di un vecchio account di
   test, payload pre-split delle tabelle obiettivi/obiettivi_target, e il bug
   preferiti sopra. Tutto ripulito con un reset completo (Supabase +
   IndexedDB locale) prima di verificare i fix su dati puliti.
@@ -540,6 +582,13 @@ che "compila". Dettagli e correzioni nelle voci sotto.
   rompe in silenzio da qui in avanti, il backfill copre solo gli obiettivi
   precedenti).
 - Bug trovati testando questo pezzo dal vivo, corretti nei due commit sotto.
+- *Integrato il 2026-09-26, ricostruito da diff e migration:* le colonne
+  nuove su `profili` sono `differenzia_giorni` (boolean, NOT NULL con
+  default) e `giorni_allenamento_default` (elenco di giorni della
+  settimana, tipo `GiornoSettimana`), dalla migration
+  `profili_giorni_differenziati` del 19/9. Nessun bump Dexie: sul
+  dispositivo il campo si legge sempre con `?? false` (commento in
+  `tipi.ts`). Il `CHECK` tolto è la migration `allenta_check_tipo_giorno`.
 
 ## 2026-09-19 — Schema per giorni differenziati allenamento/normale
 
@@ -811,6 +860,13 @@ che "compila". Dettagli e correzioni nelle voci sotto.
   con l'ora attuale solo se si registra oggi, altrimenti `null` (l'editor
   nello sheet è un pezzo successivo)
 
+## 2026-09-06 — Mockup di riferimento
+
+Commit `44e4c28`, voce aggiunta a posteriori. In `docs/mockups/` le quattro
+schermate di riferimento (Oggi, Aggiungi alimento, Statistiche, Profilo),
+richiamate dalla sezione 3 di `PUNTO_DI_PARTENZA.md`. Solo immagini, nessun
+codice.
+
 ## 2026-09-06 — Pagina Oggi (fase 2, sola lettura da Dexie)
 
 - Pagina Oggi a tre fasce come da `mockup1oggi.png`: in alto (fisso) data
@@ -911,6 +967,22 @@ che "compila". Dettagli e correzioni nelle voci sotto.
   error saving new user". Rimosso dal database
 - Regola aggiunta a `CLAUDE.md`: niente commit senza ok esplicito
 
+## 2026-09-05 — Permessi di Claude Code dopo la ripulitura
+
+Commit `093f099`, voce aggiunta a posteriori. `.claude/settings.json`:
+aggiunti i permessi usati per la ripulitura del repo (commit, tag,
+install/uninstall npm, cancellazione del codice v0). Nessun effetto
+sull'app.
+
+## 2026-09-05 — Leaked Password Protection: è a pagamento, resta spenta
+
+Commit `b72545e`, voce aggiunta a posteriori. Corretta la nota in
+`PUNTO_DI_PARTENZA.md`: l'avviso del linter Supabase su Leaked Password
+Protection non si risolve gratis — verificato in dashboard, la funzione
+c'è solo dal piano Pro (25$/mese). Resta disattivata per la regola "niente
+servizi a pagamento senza avvisare"; da riconsiderare solo se l'app si
+aprisse al pubblico.
+
 ## 2026-09-04/05 — Livello dati local-first (fase 0) e ripulitura repo
 
 - Schema Dexie (le 9 tabelle), livello repository, coda outbox — non ancora
@@ -928,3 +1000,20 @@ che "compila". Dettagli e correzioni nelle voci sotto.
   su tutte con policy `user_id = auth.uid()`; `alimenti` come eccezione
   (catalogo condiviso, sola lettura sulle righe condivise/verificate)
 - `updated_at` scritto da un trigger sul server, non dal client
+
+## 2026-08-09 / 2026-09-04 — App v0 (codice superato)
+
+Voce aggiunta a posteriori, per i commit precedenti a questo registro. È la
+prima versione dell'app, poi ripulita (vedi "Livello dati local-first e
+ripulitura repo" sopra): il suo codice non esiste più in `main`, resta
+consultabile con il tag `v0-vecchia-app`.
+
+- `4c84f2e` (08-09) progetto creato con Create Next App
+- `2516f47` (08-09) login, registrazione, dashboard e middleware di auth
+- `2d2a601` (08-09) dashboard, CRUD pasti manuali e storico filtrabile
+- `1ff724d` (08-16) OCR delle etichette con Tesseract.js
+- `5106f03` (08-16) scansione barcode + Open Food Facts, tema chiaro fisso
+- `9a03927` (08-16) stima AI con Gemini (foto e testo), limite delle Server
+  Actions, ridimensionamento immagini
+- `2399add` (08-16) statistiche
+- `441d9fc` (09-04) salvataggio dello stato v0 prima della ripulitura

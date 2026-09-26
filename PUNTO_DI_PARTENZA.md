@@ -62,12 +62,15 @@ Dall'alto:
    allenamento"); se non è attiva, non c'è nulla
 2. **Anello + macro affiancati**: l'anello calorie a sinistra con il consumato
    grande al centro e l'obiettivo sotto ("1580 / 2200"); a destra le tre barre
-   macro con valore/target ("Proteine 98 / 140 g"). Affiancati, non impilati:
-   sta tutto sopra la piega
+   macro con valore/target ("Proteine 98 / 140 g"), in ordine **Grassi,
+   Carboidrati, Proteine** (vedi "Le barre macro" nella sezione 7).
+   Affiancati, non impilati: sta tutto sopra la piega
 3. **I pasti in lista** — quanti e quali dipende dall'utente (tabella `pasti`,
    cinque nel set predefinito, non quattro come nel mockup). Per ognuno il nome,
    le kcal totali a destra, e sotto in grigio i nomi degli alimenti separati da
-   punto medio. Un pasto vuoto mostra "—", non viene nascosto
+   punto medio. Un pasto vuoto mostra "—", non viene nascosto. Un tocco sulla
+   riga di un pasto con alimenti nasconde o mostra il suo elenco (solo in
+   memoria: a ogni apertura dell'app sono tutti aperti)
 4. **Pulsante "+ Aggiungi"**, a pillola, centrato
 
 Nient'altro: nessun grafico, nessun banner, nessun consiglio.
@@ -735,9 +738,9 @@ Confermate dai mockup, con una correzione.
   dentro card. Lo spazio bianco separa
 - Numeri grandi, etichette piccole e grigie, spesso in maiuscoletto
   ("OBIETTIVO", "TARGET GIORNALIERI"). Pesi tipografici: solo regular e medium
-- **Il colore nei grafici segnala, non decora.** Nel grafico calorie funziona
-  già così: verde = dentro l'obiettivo, arancio = sopra, grigio = giorno senza
-  dati
+- **Il colore nei grafici segnala, non decora.** Nel grafico calorie del
+  mockup (la pagina Statistiche non è ancora costruita) funziona così: verde =
+  dentro l'obiettivo, arancio = sopra, grigio = giorno senza dati
 - **Attenzione a una trappola**: per le calorie il verde è *restare sotto* il
   target, per le proteine è *arrivarci*. Sono posizioni opposte rispetto alla
   soglia, quindi la regola non è "verde = sotto" ma **"verde = stai andando come
@@ -762,6 +765,15 @@ Da verificare in tema scuro: che l'arancio "sopra l'obiettivo" resti distinguibi
 e che il verde d'accento non risulti fluorescente su fondo nero. Non si aggiusta
 a occhio in chiaro e si spera.
 
+**Stato: il tema scuro NON è costruito.** Esiste solo il tema chiaro:
+`src/app/globals.css` ha un unico `:root` con i colori chiari, nessun blocco
+scuro, nessun selettore in Profilo, niente in `localStorage`. Il vincolo qui
+sopra invece è rispettato (verificato il 2026-09-26: nessun colore scritto
+a mano nei componenti), quindi il giorno che si fa bastano i valori scuri
+delle stesse variabili, più il selettore. Fuori dalle variabili CSS, e da
+rivedere quel giorno: `themeColor` in `src/app/layout.tsx`, i colori di
+`public/manifest.json` e quelli ricopiati in `public/offline.html`.
+
 ### Le barre macro (corretto rispetto al mockup)
 
 Nel mockup le tre barre macro erano blu, arancio e rosso. **Diventano tutte
@@ -776,6 +788,13 @@ Il colore entra solo quando dice qualcosa:
 - arancio: target superato
 
 Una regola sola, valida in tutta l'app.
+
+**Ordine: Kcal → Grassi → Carboidrati → Proteine**, ovunque i quattro valori
+compaiono insieme (form crea/modifica alimento, anteprima dello sheet
+quantità, Oggi, target del Profilo). Scelto il 2026-09-10 perché è l'ordine
+delle etichette nutrizionali dei prodotti: copiando i valori da una
+confezione non si salta avanti e indietro fra i campi. In Oggi le kcal sono
+l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
 
 ---
 
@@ -1028,8 +1047,9 @@ quando arriverà userà la stessa funzione. Test permanenti in
 
 Perché ora e non dopo: il local-first non è una feature, è *dove vive il dato*.
 Aggiungerlo in seguito significa riscrivere ogni lettura e ogni scrittura
-dell'app. Effetto collaterale: con Tesseract nel browser, **l'app funziona
-interamente offline, OCR compreso**.
+dell'app. Effetto collaterale previsto: con Tesseract nel browser, **l'app
+funzionerà interamente offline, OCR compreso** — quando l'OCR ci sarà (oggi
+non è ancora costruito, fase 5).
 
 **I 5 pasti predefiniti hanno id deterministico**, non casuale: UUID v5
 calcolato da `user_id` + nome canonico (`src/lib/repository/pasti.ts`,
@@ -1153,7 +1173,12 @@ costruzione e non per attenzione.
   riga esiste nel database ma **non viene mai esposto all'app**: gli altri
   utenti vedono l'alimento, non chi l'ha inserito né quando
 - I dati sul dispositivo (IndexedDB) vanno **cancellati al logout**: su un
-  telefono condiviso resterebbero leggibili
+  telefono condiviso resterebbero leggibili. **Rimandato per scelta**: oggi
+  l'app gira su dispositivi personali, e cancellare a ogni uscita costerebbe
+  una riscarica completa al rientro senza proteggere da nessuno. Si riprende
+  quando l'app si apre agli amici; la funzione pronta è
+  `sostituisciDatiUtente` (§9.2, "Ripristino dei dati locali"). Esci oggi
+  svuota solo le pagine salvate dal service worker
 - Se un giorno l'app si apre al pubblico servono anche informativa privacy,
   export dei propri dati e cancellazione dell'account. In Europa i dati
   nutrizionali collegati a peso e obiettivi ricadono in una categoria protetta,
@@ -1215,7 +1240,7 @@ promessa di riservatezza: i dati sono tuoi e te li puoi portare via.
 
 ### 10.5 Cinque funzioni da testare sul serio
 
-Non serve testare tutto. Servono test su tre pezzi di logica pura, che non
+Non serve testare tutto. Servono test su cinque pezzi di logica pura, che non
 toccano né database né interfaccia e che sbagliano in modo silenzioso:
 
 1. il calcolo dei totali giornalieri a partire dalle voci
@@ -1233,8 +1258,14 @@ Sono cinque funzioni, si testano con una manciata di casi. È il punto in cui un
 non fa rumore: non crasha niente, i numeri sono solo un po' sbagliati — e te ne
 accorgi mesi dopo.
 
+Stato al 2026-09-26: hanno test permanenti la 1 (`totaliDiario.test.ts`), la
+3 (`obiettivoValidoPer` in `totaliDiario.test.ts`, il ripiego sul target
+"normale" in `obiettiviTarget.test.ts`), la 4 (`dataGiorno.test.ts`) e la 5
+(`propostaPasto.test.ts`). La 2 aspetta le Statistiche, che non esistono
+ancora.
+
 **Aggiornamento (6 settembre 2026):** Vitest + Testing Library + jsdom sono
-configurati nel progetto — non solo per queste quattro funzioni, ma per ogni
+configurati nel progetto — non solo per queste cinque funzioni, ma per ogni
 bug di questa famiglia. Il primo caso reale non era nella lista sopra ma
 identico nello spirito: una race condition tra `useUtenteId()` e
 `useLiveQuery` nella pagina Profilo faceva sparire i dati precaricati al
@@ -1324,95 +1355,116 @@ dalla lingua). Da rivedere quando l'app si apre agli amici.
 
 ## 11. Stato attuale
 
-Aggiornato al 4 settembre 2026.
+Aggiornato al 26 settembre 2026. È la fotografia di oggi; la storia, commit
+per commit, sta in `CHANGELOG.md`.
 
-### Database — fatto
+### Fatto
 
-Il progetto Supabase `nutritrack` è attivo e lo schema nuovo è applicato.
-Quattro migration:
+**Database Supabase.** Le 11 tabelle della sezione 4, RLS attiva su tutte,
+13 migration (`list_migrations`): schema iniziale e policy del 4 settembre,
+rimozione del trigger orfano della v0 (5/9), tabelle `obiettivi_target` e
+`giorni` con backfill, colonne dei giorni differenziati su `profili`,
+`CHECK` su `tipo_giorno` tolto (19/9), `GRANT` mancanti sulle due tabelle
+nuove (20/9), indice unico sui nomi dei pasti creato e rimosso lo stesso
+giorno (20/9). Scelte prese durante la prima migration, ancora valide:
 
-1. `pulizia_vecchio_schema` — drop di `profiles`, `alimenti`, `pasti` (le
-   tabelle della v0, tutte a zero righe). Schema `auth` non toccato
-2. `schema_iniziale` — le 9 tabelle della sezione 4, con `id` uuid, `user_id`,
-   `updated_at` e `deleted_at` su ognuna
-3. `rls_policies` — RLS attiva su tutte e 9, quattro policy ciascuna
-4. `fix_search_path_set_updated_at` — chiusura di un avviso del linter
-
-Tre scelte prese durante la migration, non presenti nel documento prima:
-
-- **`updated_at` lo scrive un trigger sul server** (`public.set_updated_at`), non
-  il client. È la difesa contro l'orologio sbagliato del punto 10.6: il
-  dispositivo può mandare quello che vuole, il valore che conta lo mette Postgres
+- **`updated_at` lo scrive un trigger sul server** (`public.set_updated_at`),
+  non il client: è la difesa contro l'orologio sbagliato del punto 10.6
 - **Gli enum sono `text` + vincolo `check`**, non tipi `enum` di Postgres.
-  Aggiungere un valore domani è una riga di SQL invece di una migration delicata
+  Eccezione voluta: `tipo_giorno` non ha più il `check`, perché i tipi di
+  giorno sono righe definite dall'utente (sezione 3)
 - **Su `alimenti` le policy di `update` e `delete` richiedono
-  `user_id = auth.uid() and verificato = false`.** Una riga condivisa
-  (`user_id` null) non soddisfa mai la condizione: il catalogo condiviso è in
-  sola lettura per costruzione (punto 10.8). La policy di `insert` impedisce
-  anche di crearsi alimenti già `verificato = true`
+  `user_id = auth.uid() and verificato = false`**: il catalogo condiviso è in
+  sola lettura per costruzione (punto 10.8), e l'`insert` impedisce di
+  crearsi alimenti già `verificato = true`
 
 Resta un solo avviso del linter, non risolvibile gratuitamente:
-**Leaked Password Protection** disattivata (Authentication → Sign In / Providers
-→ Email → "Prevent use of leaked passwords"). Verificato in dashboard: la
-funzione è **disponibile solo dal piano Pro in su** (25$/mese), non è
-gratuita come pensavo inizialmente. Resta disattivata: per un'app con pochi
-utenti il rischio è basso, e la regola "niente servizi a pagamento senza
-avvisare prima" vale anche qui. Da riconsiderare solo se l'app si aprisse
-al pubblico.
+**Leaked Password Protection** disattivata (Authentication → Sign In /
+Providers → Email → "Prevent use of leaked passwords"). Disponibile solo dal
+piano Pro (25$/mese), quindi resta spenta per la regola "niente servizi a
+pagamento senza avvisare". Da riconsiderare solo se l'app si aprisse al
+pubblico.
 
-### Repo — ripulito
+**Repo.** Ripulito il 4-5 settembre invece di crearne uno nuovo: history e
+configurazione Vercel mantenute, codice della v0 consultabile sul tag
+`v0-vecchia-app`.
 
-Il repo esistente (`~/Progetti/nutritrack`) è stato ripulito invece di crearne
-uno nuovo: history git e configurazione Vercel mantenute. Il vecchio codice
-della v0 resta consultabile sul tag `v0-vecchia-app`. AI e barcode tolti dalle
-dipendenze (`@google/genai`, `html5-qrcode`); aggiunte `dexie` e
-`dexie-react-hooks`.
+**Punto 0 — local-first** (sezione 9.2). Dexie è a `version(5)`: le 11
+tabelle più `outbox` e `sync_cursori`. Repository unico per ogni scrittura;
+salita dall'outbox che si ferma al primo errore e accantona una voce dopo 5
+tentativi falliti; discesa incrementale e paginata; `orchestratore.ts`
+(discesa prima della salita, tre inneschi); id deterministici per i pasti
+predefiniti e per le righe di `giorni`; "Ricarica i dati dal tuo account"
+in Profilo; service worker scritto a mano per l'uso offline; utente
+riconosciuto offline anche con il token scaduto (punto 10.6).
 
-### Punto 0 — livello dati local-first: fatto e verificato end-to-end
+**Punto 1 — auth, profilo, fabbisogno.** Login e registrazione con Supabase
+Auth (beta a inviti), recupero password. Profilo rifatto il 26/9 con un
+solo Salva e la scelta fra cambio vero e correzione (sezione 3), calcolo
+Mifflin-St Jeor, storico in `obiettivi`, "Registra peso", peso obiettivo,
+giorni differenziati, Esci.
 
-Schema Dexie (le 9 tabelle, `src/lib/db/tipi.ts` + `database.ts`), livello
-repository (`src/lib/repository/`) e coda outbox (`src/lib/sync/`) scritti e
-poi collegati alla sincronizzazione reale verso Supabase.
+**Punto 2 — Oggi e inserimento manuale.** Oggi a tre fasce con data
+navigabile (frecce e calendario), giorno logico, anello e barre macro,
+pastiglia Normale/Allenamento, pasti richiudibili, voce spostabile di pasto
+dallo sheet. Aggiungi alimento con ricerca nel catalogo locale, crea,
+modifica ed elimina alimento (con la marca), sheet quantità unico.
 
-Due bug reali trovati testando contro il database vero (non solo a
-compilazione), entrambi corretti:
+**Punto 3 — recenti, preferiti, pasti salvati.** Recenti (5), Preferiti,
+pasti salvati promossi da Oggi con la stella, rinominabili ed eliminabili
+da Preferiti. Regola "alimenti cancellati" (sezione 4) con Annulla dopo la
+cancellazione.
 
-- **La sync partiva solo all'avvio dell'app e sull'evento `online`**, mai dopo
-  una scrittura fatta a connessione già presente — quindi salvare un dato non
-  lo mandava mai su Supabase finché non si ricaricava la pagina. Corretto in
-  `repository.ts`: `crea` e `aggiorna` (ed `elimina`, che richiama `aggiorna`)
-  ora chiamano `sincronizzaOutbox()` subito dopo, senza `await` (la UI ha già
-  risposto dal passo locale, il tentativo di rete va in background). Un
-  fallimento di rete durante la sync è ora gestito con `try/catch`: la voce
-  resta in coda con `tentativi`/`ultimo_errore`, non blocca le altre
-- **I tipi TypeScript di `src/lib/db/tipi.ts` non corrispondevano esattamente
-  alle colonne reali su Supabase** su più tabelle: `obiettivi.proteine/
-  carboidrati/grassi` dovevano essere `proteine_g/carboidrati_g/grassi_g`
-  (causa di un salvataggio che falliva in silenzio: "Salvato." a schermo ma
-  niente su Supabase), `profili.livello_attivita` era NOT NULL sul database ma
-  nullable nel tipo, `voci_diario.alimento_nome` doveva essere `nome_alimento`,
-  mancavano `composizioni.alimento_id` e `composizioni_voci.ordine`. Tutto
-  allineato
+**Test.** 180 test permanenti in 18 file (Vitest), tutti verdi al 26/9.
 
-**Lezione da questo:** un fallimento di sync oggi non arriva mai all'utente —
-la UI conferma dal passo locale, che riesce sempre. Va bene per l'MVP (i dati
-non si perdono, restano in coda), ma prima o poi serve un indicatore
-"sincronizzazione in corso/fallita" visibile, altrimenti un problema come
-questo si scopre solo controllando il database a mano. Non blocca lo sviluppo
-attuale, da tenere presente.
+### Non ancora costruito
 
-### Punto 1 — auth, profilo, fabbisogno: fatto
+- **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
+- **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
+  (fase 5)
+- **Tema scuro** (sezione 7): esiste solo il tema chiaro
+- Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
+  barra **"Aggiunto — Annulla" dopo un inserimento** (10.2; oggi c'è solo
+  dopo la cancellazione di un alimento), **"Esporta i miei dati"** (10.4)
+- Gestione delle fasce dei pasti dal Profilo (rinominare, aggiungere,
+  riordinare: sezione 3, "I pasti") e ora del consumo (`consumato_alle`)
+  modificabile nello sheet
+- **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
+  arriva mai all'utente, la UI conferma dal passo locale
+- Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
-Login/registrazione con Supabase Auth (beta a inviti, `CODICE_INVITO` in
-`.env.local`), pagina Profilo con i dati anagrafici e la sezione Obiettivo
-(Mifflin-St Jeor, storico in `obiettivi`, peso in `misurazioni` senza
-duplicati per lo stesso giorno). Corrette tre piccolezze di UX su
-login/registrazione: recupero password aggiunto, il form di registrazione non
-si svuota più su codice di invito sbagliato, messaggi di validazione in
-italiano. Email di Supabase (reset password) restano in inglese per ora
-(punto 10.9).
+### Difetti e verifiche aperti
+
+- **Tastiera iOS nelle pagine con la tab bar**: in Profilo, toccando un campo
+  in basso, iOS sposta la finestra e le barre in fondo salgono sopra la
+  tastiera. Il tentativo `a648455` è stato annullato (`065c864`, vedi
+  `CHANGELOG.md`)
+- **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
+  dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
+  il 25/9)
+- **Checklist B.7 non eseguita empiricamente** per `version(4)` e
+  `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
+  lo schema locale
+- **Colore dei placeholder** cambiato con Tailwind 4 (più scuro): il 24/9 la
+  verifica sul telefono era in corso, non risulta corretto né chiuso
+- **Service worker** (26/9): provato in simulazione e con il server locale,
+  la prova sul telefono (modalità aereo, cambio scheda, secondo deploy) non
+  è ancora registrata
+- Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
+  Profilo: accettato per ora (sezione 3, "Un solo Salva")
 
 ### Prossimi passi
 
-Fase 2 (sezione 6): pagina Oggi + inserimento manuale — la prima schermata da
-usare sul serio per una settimana.
+1. **Tastiera iOS nelle pagine con la tab bar.** Far scorrere il documento
+   invece del `<div>` interno, con tab bar e barra Salva in
+   `position: fixed` in fondo: così iOS porta da solo il campo sopra la
+   tastiera e le barre restano coperte. Il tentativo `a648455`, che
+   correggeva dopo lo spostamento di iOS, è stato annullato: arrivava
+   sempre in ritardo di un movimento (vedi `CHANGELOG.md`)
+2. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). Due
+   domande a cui deve rispondere: da quale sezione di Aggiungi si parte
+   davvero (ricerca, Recenti o Preferiti), e quante volte si vorrebbe
+   modificare un pasto salvato (oggi si può solo rinominarlo o eliminarlo;
+   per cambiarne gli alimenti lo si risalva)
+3. **Dopo la settimana:** l'indicatore di sincronizzazione in app, e la
+   modifica di un pasto salvato — solo se la settimana dice che serve
