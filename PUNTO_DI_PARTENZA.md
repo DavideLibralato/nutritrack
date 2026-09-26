@@ -231,6 +231,33 @@ regole:
   Dexie terrebbe 12,345 e il server 12,35. Un valore che arrotondato fa 0
   non vale.
 
+La parte comune a ogni colonna `numeric(7,2)` (virgola accettata,
+arrotondamento, massimo 99999,99) sta in `leggiNumeroDecimale`, in
+`src/lib/numeriDecimali.ts`. La usano sia `leggiGrammi` sia i valori
+dell'alimento, qui sotto.
+
+**Valori dell'alimento** (deciso il 2026-09-26). "Nuovo alimento" e
+"Modifica alimento" (`CreaAlimentoForm`) passano da `validaValoriAlimento`,
+in `src/lib/inserimento/valoriAlimento.ts`. In `alimenti`, kcal, macro per
+100 g e porzione predefinita sono tutti `numeric(7,2)`, quindi valgono le
+stesse regole dei grammi. In più, per i valori per 100 g, ci sono i limiti
+fisici, perché superarli è sempre un errore di battitura:
+- ogni macro (grassi, carboidrati, proteine, zuccheri, fibre, saturi, sale)
+  **al massimo 100 g**, e le **kcal al massimo 900** (il grasso puro fa
+  9 kcal/g). Zero è ammesso;
+- **zuccheri non più dei carboidrati, saturi non più dei grassi**, perché
+  ne sono una parte. Il confronto usa i valori già arrotondati;
+- la porzione predefinita deve essere maggiore di zero, con il solo limite
+  dello schema.
+
+Il messaggio compare sotto il campo sbagliato mentre si scrive, e il
+pulsante resta spento finché c'è un errore. I campi obbligatori ancora vuoti
+non si segnano in rosso uno per uno, perché un form nuovo parte vuoto, non
+sbagliato: si elencano sopra il pulsante ("Per salvare mancano: …").
+
+Oggi il form **non mostra** zuccheri, fibre, saturi e sale, che si scrivono
+`null`. La validazione li copre già, e servirà quando arriveranno.
+
 **Due percorsi di inserimento, non uno.** Questa è la decisione che il mockup
 introduce e che va tenuta:
 
@@ -1579,7 +1606,7 @@ scorrere è il documento, con la tab bar fissa. Mentre un campo ha il fuoco,
 tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
 chiude (sezione 3, "Layout delle pagine con la tab bar").
 
-**Test.** 203 test permanenti in 20 file (Vitest), tutti verdi al 26/9.
+**Test.** 212 test permanenti in 21 file (Vitest), tutti verdi al 26/9.
 
 ### Non ancora costruito
 
@@ -1621,11 +1648,6 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
   invisibile in Preferiti e non blocca il nome (`pastoSalvatoVisibile`,
   correzione del 22/9), ma la riga esiste. Lo stesso stato resta se un Salva
   che cancella tutto si interrompe fra le righe e la composizione
-- **Numeri del catalogo senza limiti** (26/9). In `CreaAlimentoForm`, la
-  porzione predefinita e i valori per 100 g sono `numeric(7,2)` su Supabase,
-  ma il form controlla solo "> 0". Un valore oltre 99999,99 o con più di due
-  decimali ha gli stessi due difetti già corretti per i grammi ("Grammi
-  validi", sezione 3). Non ancora corretto
 
 ### Prossimi passi
 

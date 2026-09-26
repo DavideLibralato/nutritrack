@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Limiti sui numeri del catalogo (CreaAlimentoForm)
+
+Branch `limiti-alimenti`. Chiude il difetto aperto "numeri del catalogo
+senza limiti". Il form controllava solo "numero valido, ≥ 0" (porzione
+"> 0"), ma in `alimenti` sono tutti `numeric(7,2)`.
+
+- Nuova `leggiNumeroDecimale` in `src/lib/numeriDecimali.ts`: virgola,
+  arrotondamento a due decimali, massimo 99999,99. `leggiGrammi` ora la
+  usa, con gli stessi messaggi, e i suoi test restano verdi senza modifiche.
+- Nuova `validaValoriAlimento` in `src/lib/inserimento/valoriAlimento.ts`,
+  con i limiti fisici per 100 g: macro al massimo 100 g, kcal al massimo
+  900, zuccheri non più dei carboidrati, saturi non più dei grassi. Ha 9
+  test permanenti.
+- Nel form (nuovo e modifica) il messaggio compare sotto il campo
+  sbagliato, il pulsante resta spento finché c'è un errore, e i campi
+  vuoti sono elencati sopra il pulsante. I valori salvati sono già
+  arrotondati.
+- Verificato su Supabase: nessuno dei 24 alimenti vivi supera i nuovi
+  limiti (somma dei macro al massimo 93,10 g).
+- Aperto: il controllo sulla somma grassi + carboidrati + proteine aspetta
+  la decisione sulla tolleranza. Il form non mostra zuccheri, fibre, saturi
+  e sale, quindi le due regole "parte-tutto" oggi non possono scattare.
+
 ## 2026-09-26 — Modifica di un pasto salvato provata su iPhone, unita a main
 
 Solo documenti. La modifica di un pasto salvato e la correzione dei grammi

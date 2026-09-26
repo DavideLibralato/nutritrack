@@ -21,6 +21,20 @@ import {
 } from "@/lib/repository/composizioni";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { validaValoriAlimento, type CampoAlimento } from "@/lib/inserimento/valoriAlimento";
+
+// Come si chiamano i campi nell'elenco "Per salvare mancano: ...".
+const ETICHETTE_MANCANTI: Record<CampoAlimento, string> = {
+  kcal: "calorie",
+  grassi: "grassi",
+  carboidrati: "carboidrati",
+  proteine: "proteine",
+  porzione: "porzione",
+  zuccheri: "zuccheri",
+  fibre: "fibre",
+  saturi: "saturi",
+  sale: "sale",
+};
 
 interface Props {
   userId: string;
@@ -62,45 +76,35 @@ export default function CreaAlimentoForm({
   const [inCorso, setInCorso] = useState(false);
   const [confermaElim, setConfermaElim] = useState(false);
 
+  // Validazione a ogni ridisegno (src/lib/inserimento/valoriAlimento.ts):
+  // limiti di numeric(7,2), arrotondamento a due decimali, limiti fisici per
+  // 100 g. Il messaggio compare accanto al campo mentre si scrive, e il
+  // pulsante resta spento finché c'è un errore o manca qualcosa.
+  const validazione = validaValoriAlimento({ kcal, grassi, carboidrati, proteine, porzione });
+  const mancanti = [
+    ...(nome.trim() === "" ? ["nome"] : []),
+    ...validazione.mancanti.map((c) => ETICHETTE_MANCANTI[c]),
+  ];
+  const salvabile = validazione.valori !== null && nome.trim() !== "";
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrore(null);
-
-    const num = (s: string) => Number(s.replace(",", "."));
-    const kcalN = num(kcal);
-    const proteineN = num(proteine);
-    const carboidratiN = num(carboidrati);
-    const grassiN = num(grassi);
-    const porzioneN = num(porzione);
-
-    if (!nome.trim()) {
-      setErrore("Dai un nome all'alimento.");
-      return;
-    }
-    if (
-      [kcal, proteine, carboidrati, grassi].some((v) => v.trim() === "") ||
-      [kcalN, proteineN, carboidratiN, grassiN].some(
-        (n) => Number.isNaN(n) || n < 0
-      )
-    ) {
-      setErrore("Calorie e macro devono essere numeri validi (anche 0).");
-      return;
-    }
-    if (porzione.trim() === "" || Number.isNaN(porzioneN) || porzioneN <= 0) {
-      setErrore("La porzione predefinita deve essere un numero di grammi maggiore di 0.");
-      return;
-    }
+    // Il pulsante è già spento in questi casi; Invio da tastiera no.
+    const valori = validazione.valori;
+    if (!valori || !salvabile) return;
 
     // Ordine dei macro come sulle etichette reali dei prodotti: Kcal, Grassi,
     // Carboidrati, Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro").
+    // Valori già arrotondati a due decimali, come li terrà il server.
     const campi = {
       nome: nome.trim(),
       marca: marca.trim() || null,
-      kcal_100g: kcalN,
-      grassi_100g: grassiN,
-      carboidrati_100g: carboidratiN,
-      proteine_100g: proteineN,
-      porzione_default_g: porzioneN,
+      kcal_100g: valori.kcal_100g,
+      grassi_100g: valori.grassi_100g,
+      carboidrati_100g: valori.carboidrati_100g,
+      proteine_100g: valori.proteine_100g,
+      porzione_default_g: valori.porzione_default_g,
     };
 
     setInCorso(true);
@@ -228,18 +232,32 @@ export default function CreaAlimentoForm({
           Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"). */}
       <p className="text-xs uppercase tracking-wide text-muted">Valori per 100 g</p>
       <div className="space-y-3">
-        <CampoNumero id="crea-kcal" etichetta="Calorie (kcal)" valore={kcal} onChange={setKcal} />
-        <CampoNumero id="crea-grassi" etichetta="Grassi (g)" valore={grassi} onChange={setGrassi} />
+        <CampoNumero
+          id="crea-kcal"
+          etichetta="Calorie (kcal)"
+          valore={kcal}
+          errore={validazione.errori.kcal}
+          onChange={setKcal}
+        />
+        <CampoNumero
+          id="crea-grassi"
+          etichetta="Grassi (g)"
+          valore={grassi}
+          errore={validazione.errori.grassi}
+          onChange={setGrassi}
+        />
         <CampoNumero
           id="crea-carboidrati"
           etichetta="Carboidrati (g)"
           valore={carboidrati}
+          errore={validazione.errori.carboidrati}
           onChange={setCarboidrati}
         />
         <CampoNumero
           id="crea-proteine"
           etichetta="Proteine (g)"
           valore={proteine}
+          errore={validazione.errori.proteine}
           onChange={setProteine}
         />
       </div>
@@ -254,14 +272,28 @@ export default function CreaAlimentoForm({
           inputMode="decimal"
           value={porzione}
           onChange={(e) => setPorzione(e.target.value)}
-          className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+          aria-invalid={!!validazione.errori.porzione}
+          aria-describedby={validazione.errori.porzione ? "crea-porzione-errore" : undefined}
+          className={`w-full rounded-lg border p-2 ${validazione.errori.porzione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
         />
+        {validazione.errori.porzione && (
+          <p id="crea-porzione-errore" className="mt-1 text-sm text-warning">
+            {validazione.errori.porzione}
+          </p>
+        )}
         <p className="text-xs text-muted mt-1">
           È il valore già pronto nello sheet quantità: scegli quello che pesi più spesso.
         </p>
       </div>
 
       {errore && <p className="text-sm text-warning">{errore}</p>}
+
+      {/* Perché il pulsante è spento, quando manca qualcosa: i campi vuoti
+          non si segnano in rosso uno per uno (un form nuovo parte vuoto, non
+          sbagliato), si elencano qui. */}
+      {mancanti.length > 0 && (
+        <p className="text-sm text-muted">Per salvare mancano: {mancanti.join(", ")}.</p>
+      )}
 
       {modifica ? (
         /* Riga pulsanti in modifica: [Elimina] [Salva]; il tap su Elimina
@@ -300,7 +332,7 @@ export default function CreaAlimentoForm({
               </button>
               <button
                 type="submit"
-                disabled={inCorso}
+                disabled={inCorso || !salvabile}
                 className={`flex-1 rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
               >
                 {inCorso ? "Salvataggio..." : "Salva"}
@@ -311,7 +343,7 @@ export default function CreaAlimentoForm({
       ) : (
         <button
           type="submit"
-          disabled={inCorso}
+          disabled={inCorso || !salvabile}
           className={`w-full rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
         >
           {inCorso ? "Salvataggio..." : "Crea e scegli la quantità"}
@@ -325,21 +357,33 @@ function CampoNumero(props: {
   id: string;
   etichetta: string;
   valore: string;
+  // Messaggio sotto il campo, allineato a destra sotto l'input.
+  errore?: string;
   onChange: (valore: string) => void;
 }) {
+  const idErrore = `${props.id}-errore`;
   return (
-    <div className="flex items-center justify-between gap-4">
-      <label htmlFor={props.id} className="text-sm">
-        {props.etichetta}
-      </label>
-      <input
-        id={props.id}
-        type="text"
-        inputMode="decimal"
-        value={props.valore}
-        onChange={(e) => props.onChange(e.target.value)}
-        className={`w-28 rounded-lg border border-border p-2 text-right ${CLASSE_FOCUS}`}
-      />
+    <div>
+      <div className="flex items-center justify-between gap-4">
+        <label htmlFor={props.id} className="text-sm">
+          {props.etichetta}
+        </label>
+        <input
+          id={props.id}
+          type="text"
+          inputMode="decimal"
+          value={props.valore}
+          onChange={(e) => props.onChange(e.target.value)}
+          aria-invalid={!!props.errore}
+          aria-describedby={props.errore ? idErrore : undefined}
+          className={`w-28 rounded-lg border p-2 text-right ${props.errore ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+        />
+      </div>
+      {props.errore && (
+        <p id={idErrore} className="mt-1 text-right text-sm text-warning">
+          {props.errore}
+        </p>
+      )}
     </div>
   );
 }
