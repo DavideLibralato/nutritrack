@@ -19,6 +19,10 @@ esplicita, aggiungo una voce in cima a `CHANGELOG.md`** (ordine
 cronologico inverso, più recente in alto) con: data, una riga su cosa è
 cambiato e perché, ed eventuali bug trovati/corretti o lasciati aperti. Poche
 righe, non un altro riepilogo completo — quello resta nella chat.
+Una voce scritta su un branch dice solo il nome del branch ("Branch
+`testata-oggi`."), mai "non ancora su main" o simili: che sia stato unito
+lo dice la voce del merge. Così non serve un commit in più per correggere
+le voci dopo il merge.
 
 ## Chi sono e come aiutarmi
 

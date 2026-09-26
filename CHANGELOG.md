@@ -5,6 +5,14 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — CLAUDE.md: regola sulle voci scritte su un branch
+
+Solo documenti. Nel paragrafo "Changelog" di CLAUDE.md c'è una regola
+nuova: una voce scritta su un branch dice solo il nome del branch, mai
+"non ancora su main". Il merge lo registra la sua voce. Motivo: due volte
+in un giorno (`tastiera-ios`, `testata-oggi`) quella frase è diventata
+falsa al merge e ha richiesto un commit solo per correggerla.
+
 ## 2026-09-26 — Testata di Oggi provata su iPhone, unita a main
 
 Solo documenti. La testata "giorno sopra la data" è stata provata su
