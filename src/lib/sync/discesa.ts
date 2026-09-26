@@ -66,13 +66,13 @@ const FINESTRA_SICUREZZA_MS = 60_000;
 // vedi il ciclo qui sotto.
 export const DIMENSIONE_PAGINA = 500;
 
-// Esportata solo per il test: verifica che due timestamp dello stesso
-// istante ma in formati diversi (locale, PostgREST) producano lo stesso
-// valore numerico — il confronto fra stringhe non lo garantisce (vedi il
-// commento sul confronto riga-per-riga più sotto).
-export function millisecondiDi(iso: string): number {
-  return new Date(iso).getTime();
-}
+// Spostata in src/lib/istanti.ts (modulo puro, la usa anche totaliDiario.ts);
+// riesportata qui per chi la importava da questo file — il test verifica che
+// due timestamp dello stesso istante ma in formati diversi (locale,
+// PostgREST) producano lo stesso valore numerico (vedi il commento sul
+// confronto riga-per-riga più sotto).
+import { millisecondiDi } from "../istanti";
+export { millisecondiDi };
 
 // Le tabelle dati che la discesa scarica, una volta sola per tutti: la
 // discesa normale (scaricaTutto) e il ripristino dei dati locali

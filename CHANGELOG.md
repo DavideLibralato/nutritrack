@@ -5,6 +5,37 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Profilo rifatto: un solo Salva, cambio vero o correzione, Esci
+
+Branch `profilo-rifacimento`, da provare su iPhone (anteprima Vercel) prima
+del merge. Un solo pulsante Salva per Dati personali, Obiettivo e Giorni
+differenziati: scrive solo le tabelle delle sezioni cambiate, niente più
+ordine obbligato né interruttore che salva da solo. Se cambia l'obiettivo o
+un target, domanda "cambio vero" (periodo nuovo con data d'inizio
+modificabile, dal giorno dopo l'inizio del periodo in corso a oggi) o
+"avevo sbagliato" (aggiorna il periodo in corso). "Registra peso" con il
+suo pulsante, intestazione con nome/peso/altezza, tasto Esci. Logica in
+`src/lib/profilo/salvataggioProfilo.ts`, con test permanenti.
+
+- Bug corretto: ogni "Salva obiettivo" apriva un periodo nuovo anche per un
+  refuso, con uno stacco finto nello storico.
+- Decisione cambiata (regola A): un giorno precedente a tutti i periodi
+  prende il più vecchio, non più null.
+- Bug corretti: `valido_dal` e la data delle pesate usavano il giorno UTC
+  (fra mezzanotte e le 2 era "ieri"); il Profilo sceglieva il periodo
+  corrente per `updated_at`, Oggi per `valido_dal` — ora c'è una sola
+  definizione (`periodoInCorso`, sul giorno logico). `obiettivoValidoPer`
+  confronta `updated_at` come istante (`millisecondiDi`, spostata in
+  `src/lib/istanti.ts`), non come stringa.
+- Le decisioni di scrittura (crea o aggiorna, quale periodo) si prendono
+  rileggendo Dexie dentro `salvaProfilo`; se nel frattempo è cambiato il
+  periodo in corso non salva niente e fa ripetere.
+- Esci solo da questo dispositivo (`scope: "local"`), mai offline né "a
+  metà"; i dati locali restano (§9.6 rimandata).
+- Aperto: non provato a schermo né contro il Supabase vero; il cambio
+  scheda dalla tab bar con modifiche non salvate le perde senza avviso
+  (accettato); i due periodi reali del 20 e 21/09 non toccati.
+
 ## 2026-09-25 — "Ricarica i dati dal tuo account" in Profilo
 
 Branch `ripristina-dati-locali`, da provare sull'anteprima Vercel prima del

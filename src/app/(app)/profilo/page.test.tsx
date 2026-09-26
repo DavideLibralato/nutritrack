@@ -19,6 +19,12 @@ vi.mock("@/lib/supabase/useUtente", () => ({
     }, []);
     return id;
   },
+  useNomeUtente: () => null,
+}));
+
+// EsciAccount usa il router di Next.js, che fuori dall'app vera non esiste.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: () => {}, refresh: () => {} }),
 }));
 
 describe("Pagina Profilo dopo un refresh (F5)", () => {

@@ -52,6 +52,13 @@ export function formattaData(iso: string): string {
   return testo.charAt(0).toUpperCase() + testo.slice(1);
 }
 
+// "2026-09-21" → "21/09/2026": solo stringhe, niente Date e quindi niente
+// fusi orari. Per le date in Profilo (data di nascita, inizio di un periodo).
+export function formattaDataBreve(iso: string): string {
+  const [anno, mese, giorno] = iso.split("-");
+  return `${giorno}/${mese}/${anno}`;
+}
+
 export function eOggi(iso: string, adesso: Date = new Date()): boolean {
   return iso === oggiLocale(adesso);
 }

@@ -8,6 +8,7 @@
 // logica che sbagliano in silenzio).
 
 import type { VoceDiario, Obiettivo } from "./db/tipi";
+import { millisecondiDi } from "./istanti";
 
 export interface TotaliNutrizionali {
   kcal: number;
@@ -57,25 +58,56 @@ export function vociDelGiorno(voci: VoceDiario[], giornoISO: string): VoceDiario
 
 // L'obiettivo in vigore in una certa data: la riga con `valido_dal` più
 // recente ma non successivo alla data (obiettivi è uno storico, sezione 4 —
-// cambiare obiettivo inserisce una riga nuova, non modifica quella vecchia).
-// A parità di `valido_dal` (due cambi lo stesso giorno) vince `updated_at`.
+// un cambio vero inserisce una riga nuova, non modifica quella vecchia).
+// A parità di `valido_dal` (due cambi lo stesso giorno) vince `updated_at`,
+// confrontato come istante (millisecondiDi) e non come stringa: una riga
+// scritta in locale e una scaricata da PostgREST hanno formati diversi (vedi
+// src/lib/istanti.ts).
 //
-// Restituisce null se a quella data non era ancora stato impostato nessun
-// obiettivo: un giorno passato prima del primo obiettivo non deve mostrare
-// un target inventato — è lo stesso principio per cui il passato non si
-// riscrive mai da solo (sezione "Il giorno logico").
+// Un giorno PRECEDENTE a tutti i periodi prende il periodo più vecchio: il
+// primo periodo vale "da sempre" (PUNTO_DI_PARTENZA.md, sezione 4,
+// "obiettivi", decisione del 2026-09-26). Serve perché in Oggi si possono
+// registrare giornate a ritroso, anche prima del giorno in cui si è
+// impostato il primo obiettivo, e quelle giornate devono avere un target.
+// È una regola di lettura, non una data finta (tipo 1900-01-01) scritta nei
+// dati. Prima di questa decisione qui si restituiva null.
+//
+// null solo se non esiste nessun obiettivo.
 export function obiettivoValidoPer(
   obiettivi: Obiettivo[],
   giornoISO: string
 ): Obiettivo | null {
-  const validi = obiettivi
-    .filter((o) => o.deleted_at === null && o.valido_dal <= giornoISO)
+  const vivi = obiettivi.filter((o) => o.deleted_at === null);
+
+  const validi = vivi
+    .filter((o) => o.valido_dal <= giornoISO)
     .sort((a, b) => {
       const perValidoDal = b.valido_dal.localeCompare(a.valido_dal);
       return perValidoDal !== 0
         ? perValidoDal
-        : b.updated_at.localeCompare(a.updated_at);
+        : millisecondiDi(b.updated_at) - millisecondiDi(a.updated_at);
     });
+  if (validi[0]) return validi[0];
 
-  return validi[0] ?? null;
+  // Prima di tutti i periodi: il più vecchio, e fra due periodi nati lo
+  // stesso giorno quello che vince in quel giorno (updated_at più recente).
+  const piuVecchi = [...vivi].sort((a, b) => {
+    const perValidoDal = a.valido_dal.localeCompare(b.valido_dal);
+    return perValidoDal !== 0
+      ? perValidoDal
+      : millisecondiDi(b.updated_at) - millisecondiDi(a.updated_at);
+  });
+  return piuVecchi[0] ?? null;
+}
+
+// "Il periodo in corso": UNA sola definizione per tutta l'app — il periodo
+// valido nel giorno logico corrente (giornoLogico in dataGiorno.ts), lo
+// stesso "oggi" della pagina Oggi. Non il più recente per updated_at né per
+// valido_dal: con la data d'inizio modificabile, il periodo scritto per
+// ultimo non è per forza quello in vigore.
+export function periodoInCorso(
+  obiettivi: Obiettivo[],
+  giornoCorrente: string
+): Obiettivo | null {
+  return obiettivoValidoPer(obiettivi, giornoCorrente);
 }

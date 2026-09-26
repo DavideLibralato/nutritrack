@@ -212,8 +212,8 @@ function OggiContenuto() {
   }, [userId]);
 
   // Diagnostica per il ripiego "manca il target del tipo scritto" (sezione
-  // 4, "obiettivi_target"): un caso atteso (es. obiettivo appena cambiato,
-  // target "allenamento" non ancora risalvato per il nuovo periodo), non un
+  // 4, "obiettivi_target"): un caso atteso (es. un periodo creato prima del
+  // Salva unico del Profilo, senza riga "allenamento"), non un
   // bug, ma va comunque loggato per essere trovato quando qualcuno si chiede
   // perché i numeri di un giorno "Allenamento" sono quelli di "Normale". In
   // un useEffect (non nel corpo del render) per non spammare la console a

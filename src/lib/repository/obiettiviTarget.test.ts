@@ -1,10 +1,9 @@
 // Test permanente per il fallback "manca il target del tipo scritto"
-// (PUNTO_DI_PARTENZA.md, sezione 4, "obiettivi_target"): caso reale, non
-// raro — ogni volta che si cambia obiettivo, "normale" nasce subito ma
-// "allenamento" va risalvato a mano nella sezione "Giorni differenziati" del
-// Profilo. Nel frattempo un giorno può benissimo essere scritto o proposto
-// come "allenamento" senza che quella riga esista ancora per il nuovo
-// obiettivo.
+// (PUNTO_DI_PARTENZA.md, sezione 4, "obiettivi_target"): caso reale — la
+// riga "allenamento" può mancare per un periodo (creato prima del Salva
+// unico del Profilo, o differenziazione accesa senza mai toccare i target di
+// allenamento), mentre un giorno è già scritto o proposto come
+// "allenamento".
 
 import { describe, it, expect } from "vitest";
 import { targetPerTipo, targetEffettivo } from "./obiettiviTarget";

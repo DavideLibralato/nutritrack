@@ -34,3 +34,35 @@ export function useUtenteId(): string | null | undefined {
 
   return userId;
 }
+
+// Il nome scritto alla registrazione. Non sta in `profili.nome` (colonna che
+// nessuna schermata scrive ancora) ma nei metadati dell'utente Supabase
+// (`options.data.nome` in src/lib/actions/auth.ts). getSession() legge la
+// sessione già salvata sul dispositivo, senza rete: l'intestazione del
+// Profilo si vede anche offline. null se il nome non c'è.
+export function useNomeUtente(): string | null {
+  const [nome, setNome] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    function daMetadati(metadati: Record<string, unknown> | undefined): string | null {
+      const valore = metadati?.nome;
+      return typeof valore === "string" && valore.trim() !== "" ? valore.trim() : null;
+    }
+
+    supabase.auth.getSession().then(({ data }) => {
+      setNome(daMetadati(data.session?.user.user_metadata));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_evento, sessione) => {
+      setNome(daMetadati(sessione?.user.user_metadata));
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return nome;
+}

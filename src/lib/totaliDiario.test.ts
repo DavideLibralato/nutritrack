@@ -111,9 +111,50 @@ describe("obiettivoValidoPer", () => {
     expect(obiettivoValidoPer([vecchio, nuovo], "2026-09-04")?.kcal).toBe(1800);
   });
 
-  it("un giorno precedente al primo obiettivo non ha target (null)", () => {
-    const primo = obiettivo({ valido_dal: "2026-06-01" });
-    expect(obiettivoValidoPer([primo], "2026-05-31")).toBeNull();
+  it("a parità di valido_dal confronta updated_at come istante, non come testo", () => {
+    // 22:00+02:00 è 20:00 UTC: PRIMA delle 21:00Z, anche se come stringa
+    // "22" > "21". Un confronto fra stringhe sceglierebbe la riga sbagliata.
+    const dalServer = obiettivo({
+      valido_dal: "2026-09-04",
+      updated_at: "2026-09-04T22:00:00+02:00",
+      kcal: 2100,
+    });
+    const locale = obiettivo({
+      valido_dal: "2026-09-04",
+      updated_at: "2026-09-04T21:00:00.000Z",
+      kcal: 1900,
+    });
+    expect(obiettivoValidoPer([dalServer, locale], "2026-09-04")?.kcal).toBe(1900);
+    expect(obiettivoValidoPer([dalServer, locale], "2026-01-01")?.kcal).toBe(1900);
+  });
+
+  // Decisione del 2026-09-26 (regola A): il primo periodo vale "da sempre".
+  // Prima un giorno così restituiva null, e una giornata registrata a
+  // ritroso prima del primo obiettivo restava senza target.
+  it("un giorno precedente a tutti i periodi prende il più vecchio", () => {
+    const primo = obiettivo({ valido_dal: "2026-06-01", kcal: 2000 });
+    const secondo = obiettivo({ valido_dal: "2026-08-01", kcal: 1800 });
+    expect(obiettivoValidoPer([secondo, primo], "2026-05-31")?.kcal).toBe(2000);
+  });
+
+  it("prima di tutti i periodi, fra due nati lo stesso giorno vince updated_at", () => {
+    const mattina = obiettivo({
+      valido_dal: "2026-06-01",
+      updated_at: "2026-06-01T08:00:00.000Z",
+      kcal: 2100,
+    });
+    const sera = obiettivo({
+      valido_dal: "2026-06-01",
+      updated_at: "2026-06-01T20:00:00.000Z",
+      kcal: 1900,
+    });
+    expect(obiettivoValidoPer([mattina, sera], "2026-01-01")?.kcal).toBe(1900);
+  });
+
+  it("senza nessun obiettivo (o solo cancellati) restituisce null", () => {
+    expect(obiettivoValidoPer([], "2026-05-31")).toBeNull();
+    const cancellato = obiettivo({ deleted_at: "2026-06-02T00:00:00.000Z" });
+    expect(obiettivoValidoPer([cancellato], "2026-05-31")).toBeNull();
   });
 
   it("a parità di valido_dal vince updated_at (due cambi nello stesso giorno)", () => {

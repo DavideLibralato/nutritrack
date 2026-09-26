@@ -22,10 +22,10 @@ export function targetPerTipo(
 
 // Il target da mostrare per un tipo di giorno, con la regola di fallback
 // (PUNTO_DI_PARTENZA.md, sezione 4, "obiettivi_target"): se manca la riga
-// per il tipo esatto — tipicamente un obiettivo cambiato da poco, il cui
-// target "allenamento" non è ancora stato risalvato per il nuovo periodo —
-// si ripiega sul target "normale" dello stesso obiettivo, che esiste sempre
-// per costruzione (ogni "Salva obiettivo" ne crea una). Chi chiama e sa
+// per il tipo esatto — un periodo creato prima del Salva unico del Profilo,
+// o la differenziazione accesa senza aver mai toccato i target di
+// allenamento — si ripiega sul target "normale" dello stesso obiettivo, che
+// esiste sempre per costruzione (ogni periodo nuovo ne crea una). Chi chiama e sa
 // distinguere il caso di ripiego da quello diretto (per non mostrare in giro
 // un tipo di giorno per cui il target non esiste davvero, es. la pastiglia
 // in Oggi) usa targetPerTipo per il confronto e questa solo per il numero.

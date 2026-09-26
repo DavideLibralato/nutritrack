@@ -3,7 +3,7 @@
 // Sezione minima di Profilo "Dati su questo dispositivo": il pulsante che
 // sostituisce i dati locali con quelli del server (src/lib/sync/ripristino.ts,
 // PUNTO_DI_PARTENZA.md §9.2 "Ripristino dei dati locali"). Volutamente
-// essenziale: la pagina Profilo verrà rifatta a breve.
+// essenziale. Accanto, nella stessa sezione, c'è "Esci" (EsciAccount.tsx).
 //
 // Passi visti dall'utente:
 // 1. tocco sul pulsante → breve controllo (prova a inviare ciò che è in
@@ -16,7 +16,7 @@
 // 4. messaggio di esito. Se è andata bene, `onRipristinato` fa ricaricare i
 //    moduli della pagina dai dati nuovi.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   preparaRipristino,
   ripristinaDatiLocali,
@@ -31,8 +31,9 @@ type Stato =
   | { fase: "in-corso" }
   | { fase: "esito"; riuscito: boolean; testo: string };
 
-// "3 modifiche non ancora salvate online (diario, preferiti)".
-function descriviGruppo(
+// "3 modifiche non ancora salvate online (diario, preferiti)". Esportata
+// perché la usa anche la conferma di Esci (EsciAccount.tsx).
+export function descriviGruppo(
   numero: number,
   singolare: string,
   plurale: string,
@@ -42,7 +43,14 @@ function descriviGruppo(
   return `${testo} (${tipi.join(", ")})`;
 }
 
-export function testoConferma(modifiche: ModificheNonInviate): string {
+// moduloNonSalvato: il modulo di Profilo ha modifiche non ancora salvate con
+// Salva. Il ripristino ricrea il modulo dai dati scaricati, quindi andrebbero
+// perse anche quelle — va detto, come per le modifiche non inviate (regola:
+// mai perdere dati in silenzio).
+export function testoConferma(
+  modifiche: ModificheNonInviate,
+  moduloNonSalvato = false
+): string {
   const { inAttesa, nonRiuscite } = modifiche;
   const parti: string[] = [];
   if (inAttesa.numero > 0) {
@@ -66,6 +74,9 @@ export function testoConferma(modifiche: ModificheNonInviate): string {
     );
   }
 
+  if (parti.length === 0 && moduloNonSalvato) {
+    return "I dati di questo dispositivo verranno sostituiti con quelli del tuo account. Le modifiche al profilo che non hai salvato andranno perse.";
+  }
   if (parti.length === 0) {
     return "I dati di questo dispositivo verranno sostituiti con quelli del tuo account. Non perdi niente: è tutto già salvato online.";
   }
@@ -73,15 +84,19 @@ export function testoConferma(modifiche: ModificheNonInviate): string {
   const totale = inAttesa.numero + nonRiuscite.numero;
   return `Su questo dispositivo ${totale === 1 ? "c'è" : "ci sono"} ${parti.join(" e ")}. Ricaricando ${
     totale === 1 ? "andrà persa" : "andranno perse"
-  }.`;
+  }.${moduloNonSalvato ? " Andranno perse anche le modifiche al profilo che non hai salvato." : ""}`;
 }
 
 export default function RicaricaDatiAccount({
   userId,
   onRipristinato,
+  modificheModuloNonSalvate = false,
+  children,
 }: {
   userId: string;
   onRipristinato: () => void;
+  modificheModuloNonSalvate?: boolean;
+  children?: ReactNode;
 }) {
   const [stato, setStato] = useState<Stato>({ fase: "inattivo" });
 
@@ -139,7 +154,8 @@ export default function RicaricaDatiAccount({
   const occupato = stato.fase === "controllo" || stato.fase === "in-corso";
   const conPerdita =
     stato.fase === "conferma" &&
-    stato.modifiche.inAttesa.numero + stato.modifiche.nonRiuscite.numero > 0;
+    (stato.modifiche.inAttesa.numero + stato.modifiche.nonRiuscite.numero > 0 ||
+      modificheModuloNonSalvate);
 
   return (
     <section className="w-full max-w-sm space-y-3 border-t border-border pt-8 pb-8">
@@ -152,7 +168,7 @@ export default function RicaricaDatiAccount({
       {stato.fase === "conferma" ? (
         <>
           <p className={`text-sm ${conPerdita ? "text-warning" : ""}`}>
-            {testoConferma(stato.modifiche)}
+            {testoConferma(stato.modifiche, modificheModuloNonSalvate)}
           </p>
           <div className="flex gap-3">
             <button
@@ -202,6 +218,9 @@ export default function RicaricaDatiAccount({
           </p>
         )}
       </div>
+
+      {/* Le altre azioni sull'account in questo dispositivo: oggi "Esci". */}
+      {children}
     </section>
   );
 }

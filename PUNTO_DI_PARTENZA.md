@@ -150,21 +150,74 @@ Niente insight AI in V1: prima servono dati veri da interpretare.
 ### Profilo
 
 - **Intestazione**: avatar con l'iniziale, nome, e sotto in grigio "78,4 kg · 180 cm"
-- **Dati per il calcolo**: sesso, data di nascita, altezza, livello di attività.
+  (ultima pesata e altezza salvate). Il nome viene dai metadati dell'account
+  scritti alla registrazione (`profili.nome` non lo scrive ancora nessuno): se
+  manca, niente avatar e il titolo resta "Profilo"
+- **Dati personali** (per il calcolo): sesso, data di nascita, altezza, livello di attività.
   Non sono dati "in più": senza di loro il fabbisogno non è calcolabile (vedi
   sotto). Il sesso ammette "preferisco non indicarlo", che disattiva il calcolo
   automatico e lascia i target manuali
+- **Registra peso**: un campo con il suo pulsante, che salva **subito** in
+  `misurazioni` (una pesata al giorno, la seconda aggiorna la prima). È fuori dal
+  Salva: il peso è una misurazione, non un'impostazione
 - **Obiettivo**: tre pulsanti affiancati (Dimagrire / Mantenere / Massa), quello
   attivo con sfondo e bordo d'accento
 - **Peso obiettivo**: facoltativo. Se c'è, compare come linea di riferimento nel
   grafico del peso — allo stesso modo della linea tratteggiata delle calorie
-- **Target giornalieri**: quattro righe (Calorie, Proteine, Carboidrati, Grassi)
-  con il valore a destra. Calcolati dal fabbisogno, modificabili a mano
-- **Registra peso** e **Storico peso**: due righe con chevron, portano altrove
+- **Target giornalieri**: quattro righe (Calorie, Grassi, Carboidrati, Proteine)
+  con il valore a destra. "Calcola proposta" li riempie dal fabbisogno usando i
+  dati personali sul modulo e l'ultima pesata (senza pesate è disattivato:
+  "Registra prima il tuo peso"); restano modificabili a mano
 - **Giorni differenziati**: interruttore acceso/spento. Da spento non compare
   nulla, in nessuna schermata. Da acceso si sbloccano il secondo set di target e
   i giorni della settimana in cui ti alleni di solito
-- **Tema**: Chiaro / Scuro / Sistema
+- **Storico peso**: arriverà con Statistiche, non in Profilo per ora
+- **Dati su questo dispositivo**: "Ricarica i dati dal tuo account" (§9.2) ed
+  **Esci**. Esci chiede conferma solo se uscire può far perdere qualcosa:
+  modifiche non ancora inviate (restano sul dispositivo ma non arrivano
+  all'account finché non si rientra da lì) o modifiche al modulo non salvate.
+  Esce solo questo dispositivo (`scope: "local"`), e non offline: senza rete
+  non si esce, con un messaggio, mai "a metà". I dati locali restano (§9.6,
+  cancellazione al logout rimandata)
+- **Tema**: Chiaro / Scuro / Sistema — **non ancora costruito**, e non va
+  mostrato finché non esiste: tre pulsanti che non cambiano niente sembrano
+  rotti. È un lavoro a sé
+
+#### Un solo Salva (deciso il 2026-09-26)
+
+Dati personali, Obiettivo e Giorni differenziati sono **un unico modulo con un
+solo pulsante Salva**, in una barra in fondo alla pagina. Il Salva confronta i
+valori sullo schermo con quelli caricati e **scrive solo le tabelle delle
+sezioni cambiate** (Dati personali → `profili`; Obiettivo → `obiettivi` +
+target "normale"; Giorni differenziati → `profili` + target "allenamento").
+Nessun ordine obbligato fra le sezioni, nessun salvataggio automatico al
+tocco dell'interruttore. Le sezioni toccate hanno bordo d'accento ed
+etichetta "Modificato", sotto ogni campo cambiato c'è il valore precedente, e
+la barra dice quali sezioni verranno aggiornate (con "Annulla modifiche").
+Ricarica, Esci e la chiusura/ricarica della pagina avvisano se ci sono
+modifiche non salvate; il cambio di scheda dalla tab bar no (accettato per
+ora). Logica e test in `src/lib/profilo/salvataggioProfilo.ts`.
+
+**Cambio vero o correzione.** Se è cambiato l'obiettivo o un target (anche
+solo quello di allenamento) di un periodo già esistente, il Salva chiede:
+- **"È un cambio vero"** (predefinita) → periodo nuovo in `obiettivi`, con la
+  **data d'inizio modificabile**: da oggi (giorno logico) indietro fino al
+  **giorno dopo** l'inizio del periodo in corso. Non prima: il periodo nuovo
+  non sarebbe mai quello in corso. Non lo stesso giorno: il vecchio resterebbe
+  senza nemmeno un giorno di validità. Non nel futuro: dopo il Salva la pagina
+  mostrerebbe ancora i valori vecchi. Se il periodo in corso è iniziato oggi,
+  si può solo correggere. Il periodo nuovo nasce con la riga "normale" e, se la
+  differenziazione è attiva o il periodo precedente l'aveva, con la riga
+  "allenamento"
+- **"Avevo sbagliato a inserirlo"** → aggiorna il periodo in corso (e le sue
+  righe di `obiettivi_target` cambiate), `valido_dal` invariato: i valori
+  corretti valgono per tutto il periodo, anche i giorni già passati
+
+Al **primo inserimento** (nessun obiettivo) non si chiede niente: si crea il
+primo periodo, che vale "da sempre" (vedi `obiettivi` nella sezione 4).
+
+**Il periodo in corso** ha una sola definizione in tutta l'app: il periodo
+valido nel giorno logico corrente (`periodoInCorso` in `totaliDiario.ts`).
 
 ### Il calcolo del fabbisogno
 
@@ -323,7 +376,16 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 
 **`obiettivi`** — **lo storico dei periodi**, non un valore singolo
 - `valido_dal`, `tipo` (dimagrire / mantenere / massa), `peso_obiettivo` (nullable)
-- cambiare obiettivo **non modifica** la riga esistente: ne inserisce una nuova
+- un **cambio vero** di obiettivo **non modifica** la riga esistente: ne
+  inserisce una nuova. Una **correzione** (un refuso) aggiorna invece il periodo
+  in corso, senza aprire nello storico uno stacco mai avvenuto — la scelta la fa
+  l'utente al Salva del Profilo (sezione 3, "Un solo Salva")
+- un giorno **precedente a tutti i periodi** prende il periodo più vecchio: il
+  primo periodo vale "da sempre" (decisione del 2026-09-26). È una regola di
+  lettura in `obiettivoValidoPer`, non una data finta scritta nei dati; serve
+  perché in Oggi si registrano anche giornate a ritroso, prima del giorno in cui
+  si è impostato il primo obiettivo. Prima di questa decisione quei giorni
+  restavano senza target
 - vedi "Estensioni future" più sotto: è la cosa che non si può recuperare dopo
 
 **`obiettivi_target`** — i target di un periodo, **uno per tipo di giorno**
@@ -336,10 +398,11 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 - perché separata da `obiettivi` invece di aggiungere una colonna: il periodo ha
   cose che non dipendono dal giorno (il peso obiettivo). Duplicarle su due righe
   significa poterle aggiornare su una sola e dimenticare l'altra
-- **fallback quando manca la riga per il tipo scritto**: capita, non è un caso
-  raro — ogni "Salva obiettivo" ricrea subito la riga "normale" per il nuovo
-  periodo, ma "allenamento" va risalvato a mano nella sezione "Giorni
-  differenziati" del Profilo, e nel frattempo un giorno può già essere
+- **fallback quando manca la riga per il tipo scritto**: dal Salva unico
+  (2026-09-26) un periodo nuovo nasce già con la riga "allenamento" se la
+  differenziazione è attiva, ma la riga può mancare ancora — periodi creati
+  prima, o differenziazione accesa senza mai toccare i target di allenamento —
+  e intanto un giorno può già essere
   scritto o proposto come "allenamento". In quel caso si usa il target
   "normale" dello stesso obiettivo, che esiste sempre per costruzione. Non è
   un ripiego silenzioso: se la differenziazione è attiva e succede, va

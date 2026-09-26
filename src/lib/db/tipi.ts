@@ -74,13 +74,13 @@ export interface Profilo extends RigaBase {
 export type TipoObiettivo = "dimagrire" | "mantenere" | "massa";
 
 export interface Obiettivo extends RigaBase {
-  valido_dal: string; // "YYYY-MM-DD": cambiare obiettivo inserisce una riga nuova, non modifica questa
+  valido_dal: string; // "YYYY-MM-DD": un cambio vero inserisce una riga nuova, una correzione aggiorna questa
   tipo: TipoObiettivo;
-  // kcal/proteine_g/carboidrati_g/grassi_g restano qui per ora: sono ancora
-  // l'unica cosa che profilo/page.tsx legge e scrive. obiettivi_target (sotto)
-  // esiste già ed è già popolata (backfill, tipo_giorno "normale"), ma il
-  // codice applicativo non la usa ancora — passaggio rimandato a un giro
-  // successivo, non a questa migration.
+  // kcal/proteine_g/carboidrati_g/grassi_g restano qui, allineate al target
+  // "normale" di obiettivi_target (sotto), che è quello letto da Oggi e dal
+  // Profilo. Il Salva del Profilo le scrive insieme
+  // (src/lib/profilo/salvataggioProfilo.ts); qui servono da ripiego per un
+  // periodo a cui mancasse la riga "normale".
   kcal: number;
   proteine_g: number;
   carboidrati_g: number;

@@ -1,33 +1,69 @@
 "use client";
 
-// Dexie vive solo nel browser (IndexedDB), quindi questa pagina è client.
+// La pagina Profilo (PUNTO_DI_PARTENZA.md, sezione 3, "Profilo").
 //
+// Dexie vive solo nel browser (IndexedDB), quindi questa pagina è client.
 // useLiveQuery (dexie-react-hooks) esegue la query e ridisegna da solo il
-// componente ogni volta che i dati in Dexie cambiano — non serve un
-// useEffect che rilegge a mano dopo ogni salvataggio, come si farebbe con
-// una fetch normale.
+// componente ogni volta che i dati in Dexie cambiano.
+//
+// UN SOLO SALVA per tutto il modulo (Dati personali, Obiettivo, Giorni
+// differenziati), nella barra in fondo. La pagina tiene due copie dei valori:
+//   - `caricati`: com'erano in Dexie quando la pagina li ha letti (o
+//     all'ultimo Salva riuscito);
+//   - `attuali`: quello che c'è sullo schermo.
+// La differenza fra le due dice quali sezioni sono cambiate: quelle hanno il
+// bordo d'accento e "Modificato", sotto i campi toccati c'è il valore di
+// prima, e il Salva scrive SOLO le loro tabelle (la logica sta in
+// src/lib/profilo/salvataggioProfilo.ts, con i suoi test).
+//
+// Fuori dal Salva, con i loro pulsanti: "Registra peso" (una misurazione,
+// non un'impostazione) e la sezione "Dati su questo dispositivo" (Ricarica,
+// Esci).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useUtenteId } from "@/lib/supabase/useUtente";
+import { useUtenteId, useNomeUtente } from "@/lib/supabase/useUtente";
 import {
   repositoryProfili,
   repositoryObiettivi,
   repositoryObiettiviTarget,
   repositoryMisurazioni,
+  repositoryPasti,
 } from "@/lib/repository";
-import { ultimaMisurazione, registraPesoSenzaDuplicati } from "@/lib/repository/misurazioni";
-import { targetPerTipo, salvaTarget } from "@/lib/repository/obiettiviTarget";
-import type {
-  LivelloAttivita,
-  Sesso,
-  TipoObiettivo,
-  GiornoSettimana,
-} from "@/lib/db/tipi";
-import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "@/lib/db/tipi";
+import { ultimaMisurazione } from "@/lib/repository/misurazioni";
+import type { LivelloAttivita, Sesso, TipoObiettivo, GiornoSettimana } from "@/lib/db/tipi";
 import { calcolaEta, calcolaFabbisogno } from "@/lib/fabbisogno";
+import { periodoInCorso } from "@/lib/totaliDiario";
+import { giornoLogico, oggiLocale, formattaDataBreve } from "@/lib/dataGiorno";
+import { oraInizioPrimoPasto } from "@/lib/inserimento/propostaPasto";
+import {
+  valoriDaDati,
+  modifiche,
+  sezioniModificate,
+  validaModulo,
+  serveSceltaPeriodo,
+  limitiDataInizio,
+  salvaProfilo,
+  dopoSalvataggio,
+  ribasaModulo,
+  numeriUguali,
+  giorniUguali,
+  numeroDaCampo,
+  type ValoriModulo,
+  type ValoriTarget,
+  type ErroriModulo,
+  type SceltaPeriodo,
+} from "@/lib/profilo/salvataggioProfilo";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import RicaricaDatiAccount from "@/components/RicaricaDatiAccount";
+import EsciAccount from "@/components/EsciAccount";
+import IntestazioneProfilo from "@/components/IntestazioneProfilo";
+import RegistraPeso from "@/components/RegistraPeso";
+import SezioneProfilo from "@/components/SezioneProfilo";
+import ValorePrecedente from "@/components/ValorePrecedente";
+import CampoTarget from "@/components/CampoTarget";
+import BarraSalvaProfilo from "@/components/BarraSalvaProfilo";
+import SheetCambioObiettivo from "@/components/SheetCambioObiettivo";
 
 const OPZIONI_SESSO: { valore: Sesso; etichetta: string }[] = [
   { valore: "maschio", etichetta: "Uomo" },
@@ -59,81 +95,96 @@ const OPZIONI_GIORNO: { valore: GiornoSettimana; etichetta: string; nomeCompleto
   { valore: "domenica", etichetta: "Do", nomeCompleto: "Domenica" },
 ];
 
-// La pagina tiene il <main> e la sezione "Dati su questo dispositivo"; i
-// moduli stanno in ModuliProfilo, qui sotto. Separati per un motivo preciso:
-// i campi dei moduli si riempiono UNA volta sola dai dati di Dexie (i flag
-// `inizializzato*`). Dopo "Ricarica i dati dal tuo account" mostrerebbero
-// ancora i valori di prima, e un tocco su Salva li rimanderebbe al server
-// sopra quelli giusti. Cambiare la `key` di ModuliProfilo lo fa ripartire da
-// zero (React ricrea il componente e tutto il suo stato), quindi i campi si
-// riempiono di nuovo dai dati appena scaricati. La sezione del ripristino
-// resta fuori da quella `key`, così il suo messaggio di esito non sparisce.
+// Le righe dei target, nell'ordine delle etichette dei prodotti: Calorie,
+// Grassi, Carboidrati, Proteine (NOTE_MODIFICHE voce 1).
+const CAMPI_TARGET: { chiave: keyof ValoriTarget; etichetta: string }[] = [
+  { chiave: "kcal", etichetta: "Calorie" },
+  { chiave: "grassi", etichetta: "Grassi (g)" },
+  { chiave: "carboidrati", etichetta: "Carboidrati (g)" },
+  { chiave: "proteine", etichetta: "Proteine (g)" },
+];
+
+const CLASSE_CAMPO = `w-full rounded-lg border border-border bg-background p-2 text-base ${CLASSE_FOCUS}`;
+
+function classeScelta(attiva: boolean, dimensione = "text-sm") {
+  return `flex-1 rounded-lg border p-2 ${dimensione} ${CLASSE_FOCUS} ${
+    attiva ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground"
+  }`;
+}
+
+function etichettaDi<T extends string>(opzioni: { valore: T; etichetta: string }[], valore: T | "") {
+  return opzioni.find((o) => o.valore === valore)?.etichetta ?? "Non impostato";
+}
+
+function elencoGiorni(giorni: GiornoSettimana[]): string {
+  const scelti = OPZIONI_GIORNO.filter((o) => giorni.includes(o.valore));
+  return scelti.length > 0 ? scelti.map((o) => o.etichetta).join(" ") : "nessuno";
+}
+
+// La pagina tiene il <main> e la sezione "Dati su questo dispositivo"; il
+// modulo sta in ModuliProfilo, qui sotto. Separati per un motivo preciso: i
+// valori del modulo si leggono UNA volta sola da Dexie. Dopo "Ricarica i dati
+// dal tuo account" cambiare la `key` di ModuliProfilo lo fa ripartire da zero
+// (React ricrea il componente e tutto il suo stato), quindi rilegge i dati
+// appena scaricati. La sezione del ripristino resta fuori da quella `key`,
+// così il suo messaggio di esito non sparisce.
+//
+// ModuliProfilo restituisce un frammento: i suoi elementi sono figli diretti
+// del <main>, e la barra del Salva (sticky, `order-last`) resta attaccata al
+// fondo dell'area visibile per tutta la pagina e finisce per ultima, sotto
+// "Dati su questo dispositivo".
 export default function ProfiloPage() {
   const userId = useUtenteId();
   const [versioneDati, setVersioneDati] = useState(0);
+  // Se il modulo ha modifiche non salvate: Ricarica ed Esci lo dicono nella
+  // loro conferma, invece di farle sparire in silenzio.
+  const [moduloModificato, setModuloModificato] = useState(false);
 
   return (
-    <main className="flex min-h-full flex-col items-center gap-10 p-4">
-      <ModuliProfilo key={versioneDati} />
+    <main className="flex min-h-full flex-col items-center gap-8 p-4 pb-0">
+      <ModuliProfilo key={versioneDati} onModificatoCambiato={setModuloModificato} />
       {userId && (
         <RicaricaDatiAccount
           userId={userId}
           onRipristinato={() => setVersioneDati((v) => v + 1)}
-        />
+          modificheModuloNonSalvate={moduloModificato}
+        >
+          <EsciAccount userId={userId} modificheModuloNonSalvate={moduloModificato} />
+        </RicaricaDatiAccount>
       )}
     </main>
   );
 }
 
-function ModuliProfilo() {
+function ModuliProfilo({
+  onModificatoCambiato,
+}: {
+  onModificatoCambiato: (modificato: boolean) => void;
+}) {
   const userId = useUtenteId();
+  const nome = useNomeUtente();
 
   // Attenzione al valore restituito quando userId non c'è ancora: deve
   // essere `undefined` (= "non so ancora"), mai `null`/`[]` (= "so che non
   // c'è niente"). Al primo render, subito dopo un F5, userId è sempre
   // undefined per un istante (useUtenteId legge la sessione in modo
-  // asincrono) — se qui rispondessimo "niente", gli effetti qui sotto
-  // segnerebbero il form come già inizializzato prima ancora di aver letto
-  // i dati veri da Dexie, e i campi resterebbero vuoti per sempre.
+  // asincrono) — se qui rispondessimo "niente", il modulo verrebbe
+  // inizializzato vuoto prima di aver letto i dati veri da Dexie.
   const profilo = useLiveQuery(async () => {
     if (!userId) return undefined;
     const righe = await repositoryProfili.ottieniTutti(userId);
     return righe[0] ?? null;
   }, [userId]);
 
-  // obiettivi è uno storico (sezione 4): ogni riga è un obiettivo diverso nel
-  // tempo, non c'è una riga sola da aggiornare. "Quello attuale" è il più
-  // recente per updated_at, non per valido_dal — due righe create lo stesso
-  // giorno avrebbero lo stesso valido_dal, ma updated_at le distingue sempre.
   const obiettivi = useLiveQuery(async () => {
     if (!userId) return undefined;
     return repositoryObiettivi.ottieniTutti(userId);
   }, [userId]);
 
-  const obiettivoCorrente =
-    obiettivi === undefined
-      ? undefined
-      : [...obiettivi].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0] ?? null;
-
-  // ?? false: un profilo locale salvato prima di questa modifica non ha
-  // ancora il campo (sezione B.4 di CLAUDE.md — vedi database.ts, version 3).
-  const differenziaGiorni = profilo?.differenzia_giorni ?? false;
-
   const obiettiviTarget = useLiveQuery(async () => {
     if (!userId) return undefined;
     return repositoryObiettiviTarget.ottieniTutti(userId);
   }, [userId]);
-
-  // undefined finché non sappiamo ancora se c'è un obiettivo corrente, o
-  // finché obiettiviTarget non è arrivato; null se l'obiettivo c'è ma non ha
-  // (ancora) un target "allenamento" — stesso principio di userId/profilo qui
-  // sopra, per non confondere "non so ancora" con "ho controllato, non c'è".
-  const targetAllenamentoCorrente =
-    obiettiviTarget === undefined || obiettivoCorrente === undefined
-      ? undefined
-      : !obiettivoCorrente
-        ? null
-        : targetPerTipo(obiettiviTarget, obiettivoCorrente.id, TIPO_GIORNO_ALLENAMENTO);
 
   const misurazioniPeso = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -141,355 +192,72 @@ function ModuliProfilo() {
     return righe.filter((riga) => riga.tipo === "peso");
   }, [userId]);
 
-  const ultimaMisurazionePeso =
-    misurazioniPeso === undefined ? undefined : ultimaMisurazione(misurazioniPeso);
+  // Servono solo per il giorno logico (l'ora del primo pasto).
+  const pasti = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return repositoryPasti.ottieniTutti(userId);
+  }, [userId]);
 
-  const [inizializzato, setInizializzato] = useState(false);
-  const [sesso, setSesso] = useState<Sesso>("non_indicato");
-  const [dataNascita, setDataNascita] = useState("");
-  const [altezzaCm, setAltezzaCm] = useState("");
-  const [livelloAttivita, setLivelloAttivita] = useState<LivelloAttivita | "">("");
-  const [erroreAnagrafica, setErroreAnagrafica] = useState<string | null>(null);
-  const [salvataggio, setSalvataggio] = useState<"inattivo" | "in-corso" | "salvato" | "errore">(
-    "inattivo"
-  );
+  // Il giorno corrente è il giorno logico, lo stesso "oggi" della pagina
+  // Oggi: fra mezzanotte e il primo pasto è ancora ieri.
+  const giornoCorrente = giornoLogico(oraInizioPrimoPasto(pasti ?? []));
+  // Il periodo in corso: una sola definizione in tutta l'app (totaliDiario.ts).
+  const periodo = obiettivi ? periodoInCorso(obiettivi, giornoCorrente) : null;
+  const ultimaPesata = misurazioniPeso ? ultimaMisurazione(misurazioniPeso) : null;
 
-  // Popola il form una sola volta, quando il profilo esistente (se c'è)
-  // arriva da Dexie. Dopo, i campi seguono solo quello che digita l'utente:
-  // non vogliamo che un futuro ri-render sovrascriva a metà digitazione.
-  //
-  // Aggiornato durante il render, non in un useEffect: è il pattern che
-  // React consiglia per "sincronizzare stato in risposta a un cambiamento"
-  // (react.dev, "You Might Not Need an Effect") — un giro di render in meno
-  // rispetto a un effetto equivalente, e nessun problema se `profilo` non
-  // cambia più dopo la prima volta (il flag `inizializzato` blocca tutto).
-  if (!inizializzato && profilo !== undefined) {
-    setInizializzato(true);
+  const [caricati, setCaricati] = useState<ValoriModulo | null>(null);
+  const [attuali, setAttuali] = useState<ValoriModulo | null>(null);
 
-    if (profilo) {
-      setSesso(profilo.sesso);
-      setDataNascita(profilo.data_nascita ?? "");
-      setAltezzaCm(profilo.altezza_cm != null ? String(profilo.altezza_cm) : "");
-      setLivelloAttivita(profilo.livello_attivita ?? "");
-    }
-  }
-
-  const [inizializzatoObiettivo, setInizializzatoObiettivo] = useState(false);
-  const [tipoObiettivo, setTipoObiettivo] = useState<TipoObiettivo>("mantenere");
-  const [pesoAttuale, setPesoAttuale] = useState("");
-  const [pesoObiettivo, setPesoObiettivo] = useState("");
-  const [kcal, setKcal] = useState("");
-  const [proteine, setProteine] = useState("");
-  const [carboidrati, setCarboidrati] = useState("");
-  const [grassi, setGrassi] = useState("");
-  const [erroreCalcolo, setErroreCalcolo] = useState<string | null>(null);
-  const [salvataggioObiettivo, setSalvataggioObiettivo] = useState<
-    "inattivo" | "in-corso" | "salvato" | "errore"
-  >("inattivo");
-
-  // Stesso principio della sezione anagrafica (aggiornato durante il
-  // render, non in un useEffect): popola una sola volta con l'obiettivo/
-  // peso esistenti, poi lascia fare all'utente. Il calcolo del fabbisogno
-  // non deve mai sovrascrivere questi campi da solo — solo il pulsante
-  // "Calcola proposta" lo fa, ed è un'azione esplicita.
+  // Popola il modulo una sola volta, quando tutti i dati sono arrivati da
+  // Dexie. Dopo, i campi seguono solo quello che scrive l'utente: un
+  // ridisegno non deve sovrascriverli a metà. Aggiornato durante il render,
+  // non in un useEffect: è il pattern che React consiglia per "sincronizzare
+  // stato in risposta a un cambiamento" (react.dev, "You Might Not Need an
+  // Effect") — il controllo `caricati === null` lo fa scattare una volta sola.
   if (
-    !inizializzatoObiettivo &&
-    obiettivoCorrente !== undefined &&
-    ultimaMisurazionePeso !== undefined
-  ) {
-    setInizializzatoObiettivo(true);
-
-    if (obiettivoCorrente) {
-      setTipoObiettivo(obiettivoCorrente.tipo);
-      setKcal(String(obiettivoCorrente.kcal));
-      setProteine(String(obiettivoCorrente.proteine_g));
-      setCarboidrati(String(obiettivoCorrente.carboidrati_g));
-      setGrassi(String(obiettivoCorrente.grassi_g));
-      setPesoObiettivo(
-        obiettivoCorrente.peso_obiettivo != null ? String(obiettivoCorrente.peso_obiettivo) : ""
-      );
-    }
-
-    if (ultimaMisurazionePeso) {
-      setPesoAttuale(String(ultimaMisurazionePeso.valore));
-    }
-  }
-
-  const [inizializzatoAllenamento, setInizializzatoAllenamento] = useState(false);
-  const [giorniAllenamento, setGiorniAllenamento] = useState<GiornoSettimana[]>([]);
-  const [kcalAllenamento, setKcalAllenamento] = useState("");
-  const [proteineAllenamento, setProteineAllenamento] = useState("");
-  const [carboidratiAllenamento, setCarboidratiAllenamento] = useState("");
-  const [grassiAllenamento, setGrassiAllenamento] = useState("");
-  const [erroreAllenamento, setErroreAllenamento] = useState<string | null>(null);
-  const [salvataggioAllenamento, setSalvataggioAllenamento] = useState<
-    "inattivo" | "in-corso" | "salvato" | "errore"
-  >("inattivo");
-
-  // Popola una sola volta: i giorni proposti dal profilo, e il target
-  // "allenamento" se esiste già — altrimenti parte dagli stessi valori del
-  // set "normale" corrente, come proposta di partenza da correggere, non un
-  // vincolo (stesso principio del calcolo del fabbisogno).
-  if (
-    !inizializzatoAllenamento &&
+    caricati === null &&
     profilo !== undefined &&
-    targetAllenamentoCorrente !== undefined
+    obiettivi !== undefined &&
+    obiettiviTarget !== undefined &&
+    pasti !== undefined
   ) {
-    setInizializzatoAllenamento(true);
-
-    if (profilo?.giorni_allenamento_default) {
-      setGiorniAllenamento(profilo.giorni_allenamento_default);
-    }
-
-    if (targetAllenamentoCorrente) {
-      setKcalAllenamento(String(targetAllenamentoCorrente.kcal));
-      setProteineAllenamento(String(targetAllenamentoCorrente.proteine_g));
-      setCarboidratiAllenamento(String(targetAllenamentoCorrente.carboidrati_g));
-      setGrassiAllenamento(String(targetAllenamentoCorrente.grassi_g));
-    } else if (obiettivoCorrente) {
-      setKcalAllenamento(String(obiettivoCorrente.kcal));
-      setProteineAllenamento(String(obiettivoCorrente.proteine_g));
-      setCarboidratiAllenamento(String(obiettivoCorrente.carboidrati_g));
-      setGrassiAllenamento(String(obiettivoCorrente.grassi_g));
-    }
+    const valori = valoriDaDati(profilo, periodo, obiettiviTarget);
+    setCaricati(valori);
+    setAttuali(valori);
   }
 
-  // L'interruttore salva subito, non aspetta un bottone "Salva" (sezione 3:
-  // è un'impostazione on/off, non un modulo da compilare). Se il profilo non
-  // esiste ancora (utente che non ha mai salvato l'anagrafica) lo crea con i
-  // valori di default già usati come stato iniziale dei campi qui sopra.
-  async function alternaDifferenziaGiorni() {
-    if (!userId) return;
+  const sezioni = caricati && attuali ? sezioniModificate(caricati, attuali) : [];
+  const modificato = sezioni.length > 0;
 
-    const nuovoValore = !(profilo?.differenzia_giorni ?? false);
+  // Avvisa la pagina (Ricarica, Esci) e il browser (ricarica o chiusura
+  // della scheda) quando ci sono modifiche non salvate.
+  useEffect(() => {
+    onModificatoCambiato(modificato);
+  }, [modificato, onModificatoCambiato]);
 
-    if (profilo) {
-      await repositoryProfili.aggiorna(profilo.id, { differenzia_giorni: nuovoValore });
-    } else {
-      await repositoryProfili.crea({
-        user_id: userId,
-        nome: null,
-        sesso: "non_indicato",
-        data_nascita: null,
-        altezza_cm: null,
-        livello_attivita: "sedentario",
-        differenzia_giorni: nuovoValore,
-        giorni_allenamento_default: null,
-      });
+  useEffect(() => {
+    if (!modificato) return;
+    // "beforeunload": il browser chiede conferma prima di ricaricare o
+    // chiudere la pagina. Il testo della domanda lo decide il browser, non
+    // si può personalizzare. Non scatta cambiando scheda dalla tab bar
+    // (navigazione interna di Next.js): quel caso è accettato per ora.
+    function avvisa(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
     }
-  }
+    window.addEventListener("beforeunload", avvisa);
+    return () => window.removeEventListener("beforeunload", avvisa);
+  }, [modificato]);
 
-  function alternaGiorno(giorno: GiornoSettimana) {
-    setGiorniAllenamento((attuali) =>
-      attuali.includes(giorno) ? attuali.filter((g) => g !== giorno) : [...attuali, giorno]
-    );
-  }
+  const [errori, setErrori] = useState<ErroriModulo>({});
+  const [erroreCalcolo, setErroreCalcolo] = useState<string | null>(null);
+  const [sheetAperto, setSheetAperto] = useState(false);
+  const [inCorso, setInCorso] = useState(false);
+  const [esito, setEsito] = useState<
+    "salvato" | "errore" | "da-correggere" | "periodo-cambiato" | null
+  >(null);
 
-  async function handleSubmitAllenamento(e: React.FormEvent) {
-    e.preventDefault();
-    setErroreAllenamento(null);
-
-    if (!userId || !profilo || !obiettivoCorrente) {
-      setErroreAllenamento("Salva prima i dati anagrafici e un obiettivo qui sopra.");
-      return;
-    }
-
-    const kcalNum = Math.round(Number(kcalAllenamento));
-    const proteineNum = Math.round(Number(proteineAllenamento));
-    const carboidratiNum = Math.round(Number(carboidratiAllenamento));
-    const grassiNum = Math.round(Number(grassiAllenamento));
-
-    if (
-      !kcalAllenamento ||
-      !proteineAllenamento ||
-      !carboidratiAllenamento ||
-      !grassiAllenamento ||
-      [kcalNum, proteineNum, carboidratiNum, grassiNum].some((n) => Number.isNaN(n) || n < 0)
-    ) {
-      setSalvataggioAllenamento("errore");
-      return;
-    }
-
-    setSalvataggioAllenamento("in-corso");
-
-    try {
-      await repositoryProfili.aggiorna(profilo.id, {
-        giorni_allenamento_default: giorniAllenamento.length > 0 ? giorniAllenamento : null,
-      });
-
-      await salvaTarget(
-        userId,
-        obiettivoCorrente.id,
-        TIPO_GIORNO_ALLENAMENTO,
-        {
-          kcal: kcalNum,
-          proteine_g: proteineNum,
-          carboidrati_g: carboidratiNum,
-          grassi_g: grassiNum,
-        },
-        obiettiviTarget ?? []
-      );
-
-      setSalvataggioAllenamento("salvato");
-    } catch {
-      setSalvataggioAllenamento("errore");
-    }
-  }
-
-  // Riempie i quattro campi con una proposta calcolata: non salva niente.
-  // "Sempre e solo una proposta" (sezione 3) — chi la vuole diversa la
-  // corregge prima di premere "Salva obiettivo".
-  function calcolaProposta() {
-    setErroreCalcolo(null);
-
-    if (!profilo) {
-      setErroreCalcolo("Completa prima i dati anagrafici qui sopra.");
-      return;
-    }
-    if (profilo.sesso === "non_indicato") {
-      setErroreCalcolo(
-        "Il calcolo automatico richiede di indicare il sesso, nella sezione qui sopra."
-      );
-      return;
-    }
-    if (!profilo.data_nascita || !profilo.altezza_cm || !profilo.livello_attivita) {
-      setErroreCalcolo(
-        "Completa data di nascita, altezza e livello di attività qui sopra per calcolare una proposta."
-      );
-      return;
-    }
-
-    const peso = Number(pesoAttuale);
-    if (!pesoAttuale || Number.isNaN(peso) || peso <= 0) {
-      setErroreCalcolo("Inserisci il tuo peso attuale per calcolare una proposta.");
-      return;
-    }
-
-    const proposta = calcolaFabbisogno({
-      sesso: profilo.sesso,
-      eta: calcolaEta(profilo.data_nascita),
-      altezzaCm: profilo.altezza_cm,
-      pesoKg: peso,
-      livelloAttivita: profilo.livello_attivita,
-      tipoObiettivo,
-    });
-
-    setKcal(String(proposta.kcal));
-    setProteine(String(proposta.proteine));
-    setCarboidrati(String(proposta.carboidrati));
-    setGrassi(String(proposta.grassi));
-  }
-
-  async function handleSubmitObiettivo(e: React.FormEvent) {
-    e.preventDefault();
-    if (!userId) return;
-
-    // Math.round: le colonne su Supabase sono "integer" (kcal, proteine_g,
-    // carboidrati_g, grassi_g) — un valore con decimali farebbe fallire
-    // l'insert con un errore di tipo, non solo di validazione nostra.
-    const kcalNum = Math.round(Number(kcal));
-    const proteineNum = Math.round(Number(proteine));
-    const carboidratiNum = Math.round(Number(carboidrati));
-    const grassiNum = Math.round(Number(grassi));
-
-    if (
-      !kcal ||
-      !proteine ||
-      !carboidrati ||
-      !grassi ||
-      [kcalNum, proteineNum, carboidratiNum, grassiNum].some((n) => Number.isNaN(n) || n < 0)
-    ) {
-      setSalvataggioObiettivo("errore");
-      return;
-    }
-
-    setSalvataggioObiettivo("in-corso");
-
-    try {
-      // Il peso entra nello storico misurazioni, ma senza duplicare (vedi
-      // src/lib/repository/misurazioni.ts).
-      const pesoNum = Number(pesoAttuale);
-      if (pesoAttuale && !Number.isNaN(pesoNum) && pesoNum > 0) {
-        await registraPesoSenzaDuplicati(userId, pesoNum, misurazioniPeso ?? []);
-      }
-
-      // obiettivi è uno storico (sezione 4): si inserisce sempre una riga
-      // nuova, non si sovrascrive mai quella corrente.
-      const nuovoObiettivo = await repositoryObiettivi.crea({
-        user_id: userId,
-        valido_dal: new Date().toISOString().slice(0, 10),
-        tipo: tipoObiettivo,
-        kcal: kcalNum,
-        proteine_g: proteineNum,
-        carboidrati_g: carboidratiNum,
-        grassi_g: grassiNum,
-        peso_obiettivo: pesoObiettivo ? Number(pesoObiettivo) : null,
-      });
-
-      // Ogni obiettivo ha una riga "normale" in obiettivi_target (sezione 4:
-      // "senza la differenziazione attiva esiste una sola riga per periodo,
-      // con tipo_giorno = 'normale'"). Il backfill l'ha creata per gli
-      // obiettivi che esistevano prima di questa modifica — da qui in poi
-      // tocca a questo form, altrimenti l'invariante si rompe in silenzio per
-      // ogni obiettivo nuovo.
-      await repositoryObiettiviTarget.crea({
-        user_id: userId,
-        obiettivo_id: nuovoObiettivo.id,
-        tipo_giorno: TIPO_GIORNO_NORMALE,
-        kcal: kcalNum,
-        proteine_g: proteineNum,
-        carboidrati_g: carboidratiNum,
-        grassi_g: grassiNum,
-      });
-
-      setSalvataggioObiettivo("salvato");
-    } catch {
-      setSalvataggioObiettivo("errore");
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!userId) return;
-
-    setErroreAnagrafica(null);
-
-    // livello_attivita è NOT NULL sul database (a differenza di sesso, data
-    // di nascita e altezza): senza questo controllo il salvataggio locale
-    // "riuscirebbe" e la sync verso Supabase fallirebbe in silenzio dopo.
-    if (!livelloAttivita) {
-      setErroreAnagrafica("Seleziona il livello di attività prima di salvare.");
-      return;
-    }
-
-    setSalvataggio("in-corso");
-
-    const campi = {
-      sesso,
-      data_nascita: dataNascita || null,
-      altezza_cm: altezzaCm ? Number(altezzaCm) : null,
-      livello_attivita: livelloAttivita,
-    };
-
-    try {
-      if (profilo) {
-        await repositoryProfili.aggiorna(profilo.id, campi);
-      } else {
-        await repositoryProfili.crea({
-          user_id: userId,
-          nome: null,
-          differenzia_giorni: false,
-          giorni_allenamento_default: null,
-          ...campi,
-        });
-      }
-      setSalvataggio("salvato");
-    } catch {
-      setSalvataggio("errore");
-    }
-  }
-
-  if (userId === undefined || profilo === undefined) {
+  if (userId === undefined || caricati === null || attuali === null) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-sm text-muted">Caricamento...</p>
@@ -497,11 +265,179 @@ function ModuliProfilo() {
     );
   }
 
+  // Da qui in poi caricati e attuali ci sono sempre: copie locali non
+  // nullable, per non ripetere il controllo in ogni funzione.
+  const prima = caricati;
+  const ora = attuali;
+  const m = modifiche(prima, ora);
+
+  function aggiorna(nuovi: ValoriModulo) {
+    setAttuali(nuovi);
+    // Appena si ricomincia a modificare, l'esito dell'ultimo Salva non vale
+    // più.
+    setEsito(null);
+  }
+
+  function aggiornaDati(campi: Partial<ValoriModulo["datiPersonali"]>) {
+    aggiorna({ ...ora, datiPersonali: { ...ora.datiPersonali, ...campi } });
+  }
+  function aggiornaObiettivo(campi: Partial<ValoriModulo["obiettivo"]>) {
+    aggiorna({ ...ora, obiettivo: { ...ora.obiettivo, ...campi } });
+  }
+  function aggiornaGiorni(campi: Partial<ValoriModulo["giorni"]>) {
+    aggiorna({ ...ora, giorni: { ...ora.giorni, ...campi } });
+  }
+
+  function alternaGiorno(giorno: GiornoSettimana) {
+    const attivi = ora.giorni.giorniAllenamento;
+    aggiornaGiorni({
+      giorniAllenamento: attivi.includes(giorno)
+        ? attivi.filter((g) => g !== giorno)
+        : [...attivi, giorno],
+    });
+  }
+
+  // Riempie i quattro campi con una proposta calcolata: non salva niente
+  // ("sempre e solo una proposta", sezione 3). Usa i dati personali SUL
+  // MODULO, anche se non ancora salvati, e l'ultima pesata registrata.
+  function calcolaProposta() {
+    setErroreCalcolo(null);
+    const dati = ora.datiPersonali;
+
+    if (!ultimaPesata) return; // il pulsante è già disattivato
+    if (dati.sesso === "non_indicato") {
+      setErroreCalcolo(
+        "Il calcolo automatico richiede di indicare il sesso, in Dati personali. Altrimenti scrivi i target a mano."
+      );
+      return;
+    }
+    const altezza = numeroDaCampo(dati.altezzaCm);
+    if (!dati.dataNascita || Number.isNaN(altezza) || altezza <= 0 || !dati.livelloAttivita) {
+      setErroreCalcolo(
+        "Per calcolare una proposta servono data di nascita, altezza e livello di attività, in Dati personali."
+      );
+      return;
+    }
+
+    const proposta = calcolaFabbisogno({
+      sesso: dati.sesso,
+      eta: calcolaEta(dati.dataNascita),
+      altezzaCm: altezza,
+      pesoKg: ultimaPesata.valore,
+      livelloAttivita: dati.livelloAttivita,
+      tipoObiettivo: ora.obiettivo.tipo,
+    });
+
+    aggiornaObiettivo({
+      target: {
+        kcal: String(proposta.kcal),
+        grassi: String(proposta.grassi),
+        carboidrati: String(proposta.carboidrati),
+        proteine: String(proposta.proteine),
+      },
+    });
+  }
+
+  function annullaModifiche() {
+    setAttuali(prima);
+    setErrori({});
+    setErroreCalcolo(null);
+    setEsito(null);
+  }
+
+  function avviaSalvataggio() {
+    const erroriTrovati = validaModulo(ora, m, { profilo: profilo ?? null, periodo });
+    setErrori(erroriTrovati);
+    if (Object.keys(erroriTrovati).length > 0) {
+      setEsito("da-correggere");
+      return;
+    }
+    // La domanda "cambio vero o correzione?" solo se serve: al primo
+    // inserimento, o se l'obiettivo non è cambiato, si salva direttamente.
+    if (serveSceltaPeriodo(m, periodo)) {
+      setSheetAperto(true);
+      return;
+    }
+    void esegui(null);
+  }
+
+  // Le decisioni di scrittura (crea o aggiorna, quale periodo) le prende
+  // salvaProfilo rileggendo Dexie: da qui partono solo i valori del modulo
+  // e l'id del periodo che l'utente ha davanti.
+  async function esegui(scelta: SceltaPeriodo | null) {
+    if (!userId) return;
+    setInCorso(true);
+    try {
+      const risultato = await salvaProfilo({
+        userId,
+        caricati: prima,
+        attuali: ora,
+        giornoCorrente,
+        periodoVistoId: periodo?.id ?? null,
+        scelta,
+      });
+      setSheetAperto(false);
+      switch (risultato.esito) {
+        case "salvato": {
+          const nuovi = dopoSalvataggio(prima, ora);
+          setCaricati(nuovi);
+          setAttuali(nuovi);
+          setEsito("salvato");
+          break;
+        }
+        case "da-correggere":
+          setErrori(risultato.errori);
+          setEsito("da-correggere");
+          break;
+        case "periodo-cambiato":
+          // Niente è stato scritto. Il modulo riparte dai valori riletti,
+          // tenendo solo ciò che l'utente aveva cambiato: al prossimo Salva
+          // la domanda riguarderà il periodo giusto.
+          setCaricati(risultato.caricati);
+          setAttuali(ribasaModulo(prima, risultato.caricati, ora));
+          setEsito("periodo-cambiato");
+          break;
+      }
+    } catch (errore) {
+      console.error("Salvataggio del profilo non riuscito.", errore);
+      setEsito("errore");
+    } finally {
+      setInCorso(false);
+    }
+  }
+
+  const messaggioBarra =
+    esito === "salvato"
+      ? { testo: "Salvato.", avviso: false }
+      : esito === "errore"
+        ? { testo: "Salvataggio non riuscito. Riprova.", avviso: true }
+        : esito === "da-correggere"
+          ? { testo: "Correggi i campi segnalati prima di salvare.", avviso: true }
+          : esito === "periodo-cambiato"
+            ? {
+                testo:
+                  "Nel frattempo l'obiettivo in corso è cambiato, forse da un altro dispositivo. Non è stato salvato niente: controlla i valori e salva di nuovo.",
+                avviso: true,
+              }
+            : null;
+
+  const dp = { prima: prima.datiPersonali, ora: ora.datiPersonali };
+  const ob = { prima: prima.obiettivo, ora: ora.obiettivo };
+  const gi = { prima: prima.giorni, ora: ora.giorni };
+
   return (
     <>
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6 pt-8">
-        <h1 className="text-2xl font-display font-bold">Profilo</h1>
+      <IntestazioneProfilo
+        nome={nome}
+        pesoKg={ultimaPesata?.valore ?? null}
+        altezzaCm={profilo?.altezza_cm ?? null}
+      />
 
+      <SezioneProfilo
+        titolo="Dati personali"
+        modificata={m.datiPersonali}
+        errore={errori.datiPersonali}
+      >
         <div>
           <span className="block text-sm font-medium mb-1">Sesso</span>
           <div className="flex gap-2">
@@ -509,18 +445,18 @@ function ModuliProfilo() {
               <button
                 key={opzione.valore}
                 type="button"
-                onClick={() => setSesso(opzione.valore)}
-                aria-pressed={sesso === opzione.valore}
-                className={`flex-1 rounded-lg border p-2 text-sm ${CLASSE_FOCUS} ${
-                  sesso === opzione.valore
-                    ? "border-accent bg-accent/10 text-accent"
-                    : "border-border text-foreground"
-                }`}
+                onClick={() => aggiornaDati({ sesso: opzione.valore })}
+                aria-pressed={dp.ora.sesso === opzione.valore}
+                className={classeScelta(dp.ora.sesso === opzione.valore)}
               >
                 {opzione.etichetta}
               </button>
             ))}
           </div>
+          <ValorePrecedente
+            visibile={dp.prima.sesso !== dp.ora.sesso}
+            valore={etichettaDi(OPZIONI_SESSO, dp.prima.sesso)}
+          />
         </div>
 
         <div>
@@ -530,10 +466,14 @@ function ModuliProfilo() {
           <input
             id="profilo-data-nascita"
             type="date"
-            value={dataNascita}
-            onChange={(e) => setDataNascita(e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+            value={dp.ora.dataNascita}
+            onChange={(e) => aggiornaDati({ dataNascita: e.target.value })}
+            max={oggiLocale()}
+            className={CLASSE_CAMPO}
+          />
+          <ValorePrecedente
+            visibile={dp.prima.dataNascita !== dp.ora.dataNascita}
+            valore={dp.prima.dataNascita ? formattaDataBreve(dp.prima.dataNascita) : ""}
           />
         </div>
 
@@ -547,9 +487,13 @@ function ModuliProfilo() {
             inputMode="numeric"
             min={0}
             max={280}
-            value={altezzaCm}
-            onChange={(e) => setAltezzaCm(e.target.value)}
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+            value={dp.ora.altezzaCm}
+            onChange={(e) => aggiornaDati({ altezzaCm: e.target.value })}
+            className={CLASSE_CAMPO}
+          />
+          <ValorePrecedente
+            visibile={!numeriUguali(dp.prima.altezzaCm, dp.ora.altezzaCm)}
+            valore={dp.prima.altezzaCm}
           />
         </div>
 
@@ -559,9 +503,11 @@ function ModuliProfilo() {
           </label>
           <select
             id="profilo-attivita"
-            value={livelloAttivita}
-            onChange={(e) => setLivelloAttivita(e.target.value as LivelloAttivita)}
-            className={`w-full rounded-lg border border-border p-2 bg-background ${CLASSE_FOCUS}`}
+            value={dp.ora.livelloAttivita}
+            onChange={(e) =>
+              aggiornaDati({ livelloAttivita: e.target.value as LivelloAttivita | "" })
+            }
+            className={CLASSE_CAMPO}
           >
             <option value="">Non impostato</option>
             {OPZIONI_ATTIVITA.map((opzione) => (
@@ -570,32 +516,16 @@ function ModuliProfilo() {
               </option>
             ))}
           </select>
+          <ValorePrecedente
+            visibile={dp.prima.livelloAttivita !== dp.ora.livelloAttivita}
+            valore={etichettaDi(OPZIONI_ATTIVITA, dp.prima.livelloAttivita)}
+          />
         </div>
+      </SezioneProfilo>
 
-        {erroreAnagrafica && <p className="text-sm text-warning">{erroreAnagrafica}</p>}
+      {userId && <RegistraPeso userId={userId} misurazioniPeso={misurazioniPeso ?? []} />}
 
-        <button
-          type="submit"
-          disabled={salvataggio === "in-corso"}
-          className={`w-full rounded-lg bg-accent p-2 text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
-        >
-          {salvataggio === "in-corso" ? "Salvataggio..." : "Salva"}
-        </button>
-
-        {salvataggio === "salvato" && (
-          <p className="text-sm text-accent">Salvato.</p>
-        )}
-        {salvataggio === "errore" && (
-          <p className="text-sm text-warning">Salvataggio non riuscito. Riprova.</p>
-        )}
-      </form>
-
-      <form
-        onSubmit={handleSubmitObiettivo}
-        className="w-full max-w-sm space-y-6 border-t border-border pt-8 pb-8"
-      >
-        <h2 className="text-2xl font-display font-bold">Obiettivo</h2>
-
+      <SezioneProfilo titolo="Obiettivo" modificata={m.obiettivo} errore={errori.obiettivo}>
         <div>
           <span className="block text-sm font-medium mb-1">Obiettivo</span>
           <div className="flex gap-2">
@@ -603,49 +533,19 @@ function ModuliProfilo() {
               <button
                 key={opzione.valore}
                 type="button"
-                onClick={() => setTipoObiettivo(opzione.valore)}
-                aria-pressed={tipoObiettivo === opzione.valore}
-                className={`flex-1 rounded-lg border p-2 text-sm ${CLASSE_FOCUS} ${
-                  tipoObiettivo === opzione.valore
-                    ? "border-accent bg-accent/10 text-accent"
-                    : "border-border text-foreground"
-                }`}
+                onClick={() => aggiornaObiettivo({ tipo: opzione.valore })}
+                aria-pressed={ob.ora.tipo === opzione.valore}
+                className={classeScelta(ob.ora.tipo === opzione.valore)}
               >
                 {opzione.etichetta}
               </button>
             ))}
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="profilo-peso-attuale" className="block text-sm font-medium mb-1">
-            Peso attuale (kg)
-          </label>
-          <input
-            id="profilo-peso-attuale"
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            min={0}
-            value={pesoAttuale}
-            onChange={(e) => setPesoAttuale(e.target.value)}
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+          <ValorePrecedente
+            visibile={ob.prima.tipo !== ob.ora.tipo}
+            valore={etichettaDi(OPZIONI_OBIETTIVO, ob.prima.tipo)}
           />
-          <p className="text-xs text-muted mt-1">
-            Usato solo per calcolare la proposta qui sotto; se lo cambi, alla
-            prossima registrazione aggiorna il tuo storico peso.
-          </p>
         </div>
-
-        <button
-          type="button"
-          onClick={calcolaProposta}
-          className={`w-full rounded-lg border border-accent p-2 text-accent ${CLASSE_FOCUS}`}
-        >
-          Calcola proposta
-        </button>
-
-        {erroreCalcolo && <p className="text-sm text-warning">{erroreCalcolo}</p>}
 
         <div>
           <label htmlFor="profilo-peso-obiettivo" className="block text-sm font-medium mb-1">
@@ -657,77 +557,79 @@ function ModuliProfilo() {
             inputMode="decimal"
             step="0.1"
             min={0}
-            value={pesoObiettivo}
-            onChange={(e) => setPesoObiettivo(e.target.value)}
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+            value={ob.ora.pesoObiettivo}
+            onChange={(e) => aggiornaObiettivo({ pesoObiettivo: e.target.value })}
+            className={CLASSE_CAMPO}
+          />
+          <ValorePrecedente
+            visibile={!numeriUguali(ob.prima.pesoObiettivo, ob.ora.pesoObiettivo)}
+            valore={ob.prima.pesoObiettivo}
           />
         </div>
 
-        <div>
-          <span className="block text-sm font-medium mb-2 uppercase tracking-wide text-muted text-xs">
-            Target giornalieri
-          </span>
-          {/* Ordine come sulle etichette dei prodotti: Calorie, Grassi,
-              Carboidrati, Proteine (NOTE_MODIFICHE voce 1). */}
-          <div className="space-y-3">
-            <CampoTarget id="profilo-kcal" etichetta="Calorie" valore={kcal} onChange={setKcal} />
-            <CampoTarget id="profilo-grassi" etichetta="Grassi (g)" valore={grassi} onChange={setGrassi} />
-            <CampoTarget
-              id="profilo-carboidrati"
-              etichetta="Carboidrati (g)"
-              valore={carboidrati}
-              onChange={setCarboidrati}
-            />
-            <CampoTarget
-              id="profilo-proteine"
-              etichetta="Proteine (g)"
-              valore={proteine}
-              onChange={setProteine}
-            />
-          </div>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={calcolaProposta}
+            disabled={!ultimaPesata}
+            className={`w-full rounded-lg border border-accent p-2 text-accent disabled:border-border disabled:text-muted ${CLASSE_FOCUS}`}
+          >
+            Calcola proposta
+          </button>
+          {!ultimaPesata && (
+            <p className="text-sm text-muted">Registra prima il tuo peso, qui sopra.</p>
+          )}
+          {erroreCalcolo && <p className="text-sm text-warning">{erroreCalcolo}</p>}
         </div>
 
-        <button
-          type="submit"
-          disabled={salvataggioObiettivo === "in-corso"}
-          className={`w-full rounded-lg bg-accent p-2 text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
-        >
-          {salvataggioObiettivo === "in-corso" ? "Salvataggio..." : "Salva obiettivo"}
-        </button>
+        <div>
+          <span className="block text-xs font-medium uppercase tracking-wide text-muted mb-2">
+            Target giornalieri
+          </span>
+          <div className="space-y-3">
+            {CAMPI_TARGET.map((campo) => (
+              <CampoTarget
+                key={campo.chiave}
+                id={`profilo-${campo.chiave}`}
+                etichetta={campo.etichetta}
+                valore={ob.ora.target[campo.chiave]}
+                precedente={ob.prima.target[campo.chiave]}
+                cambiato={!numeriUguali(ob.prima.target[campo.chiave], ob.ora.target[campo.chiave])}
+                onChange={(valore) =>
+                  aggiornaObiettivo({ target: { ...ob.ora.target, [campo.chiave]: valore } })
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </SezioneProfilo>
 
-        {salvataggioObiettivo === "salvato" && <p className="text-sm text-accent">Salvato.</p>}
-        {salvataggioObiettivo === "errore" && (
-          <p className="text-sm text-warning">
-            Salvataggio non riuscito: controlla che calorie e macro siano numeri validi.
-          </p>
-        )}
-      </form>
-
-      <div className="w-full max-w-sm space-y-6 border-t border-border pt-8 pb-8">
-        <h2 className="text-2xl font-display font-bold">Giorni differenziati</h2>
-
+      <SezioneProfilo
+        titolo="Giorni differenziati"
+        modificata={m.giorniProfilo || m.targetAllenamento}
+        errore={errori.giorni}
+      >
         <div>
           <button
             type="button"
-            onClick={alternaDifferenziaGiorni}
-            aria-pressed={differenziaGiorni}
-            className={`w-full rounded-lg border p-2 text-sm ${CLASSE_FOCUS} ${
-              differenziaGiorni
-                ? "border-accent bg-accent/10 text-accent"
-                : "border-border text-foreground"
-            }`}
+            onClick={() => aggiornaGiorni({ differenzia: !gi.ora.differenzia })}
+            aria-pressed={gi.ora.differenzia}
+            className={`w-full ${classeScelta(gi.ora.differenzia)}`}
           >
-            {differenziaGiorni ? "Attivi" : "Non attivi"}
+            {gi.ora.differenzia ? "Attivi" : "Non attivi"}
           </button>
-          <p className="text-xs text-muted mt-1">
-            Da spento l&apos;app resta identica a com&apos;è oggi. Da acceso si
-            sbloccano i giorni di allenamento proposti qui sotto e un secondo
-            set di target.
+          <ValorePrecedente
+            visibile={gi.prima.differenzia !== gi.ora.differenzia}
+            valore={gi.prima.differenzia ? "Attivi" : "Non attivi"}
+          />
+          <p className="text-sm text-muted mt-1">
+            Da spenti l&apos;app resta com&apos;è. Da accesi si sbloccano i giorni di allenamento
+            proposti qui sotto e un secondo set di target.
           </p>
         </div>
 
-        {differenziaGiorni && (
-          <form onSubmit={handleSubmitAllenamento} className="space-y-6">
+        {gi.ora.differenzia && (
+          <>
             <div>
               <span className="block text-sm font-medium mb-1">
                 Giorni di allenamento (proposta, non un vincolo)
@@ -738,100 +640,72 @@ function ModuliProfilo() {
                     key={opzione.valore}
                     type="button"
                     onClick={() => alternaGiorno(opzione.valore)}
-                    aria-pressed={giorniAllenamento.includes(opzione.valore)}
+                    aria-pressed={gi.ora.giorniAllenamento.includes(opzione.valore)}
                     aria-label={opzione.nomeCompleto}
-                    className={`flex-1 rounded-lg border p-2 text-xs ${CLASSE_FOCUS} ${
-                      giorniAllenamento.includes(opzione.valore)
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border text-foreground"
-                    }`}
+                    className={classeScelta(
+                      gi.ora.giorniAllenamento.includes(opzione.valore),
+                      "text-xs"
+                    )}
                   >
                     {opzione.etichetta}
                   </button>
                 ))}
               </div>
+              <ValorePrecedente
+                visibile={!giorniUguali(gi.prima.giorniAllenamento, gi.ora.giorniAllenamento)}
+                valore={elencoGiorni(gi.prima.giorniAllenamento)}
+              />
             </div>
 
             <div>
-              <span className="block text-sm font-medium mb-2 uppercase tracking-wide text-muted text-xs">
+              <span className="block text-xs font-medium uppercase tracking-wide text-muted mb-2">
                 Target giornalieri — Allenamento
               </span>
               <div className="space-y-3">
-                <CampoTarget
-                  id="profilo-kcal-allenamento"
-                  etichetta="Calorie"
-                  valore={kcalAllenamento}
-                  onChange={setKcalAllenamento}
-                />
-                <CampoTarget
-                  id="profilo-grassi-allenamento"
-                  etichetta="Grassi (g)"
-                  valore={grassiAllenamento}
-                  onChange={setGrassiAllenamento}
-                />
-                <CampoTarget
-                  id="profilo-carboidrati-allenamento"
-                  etichetta="Carboidrati (g)"
-                  valore={carboidratiAllenamento}
-                  onChange={setCarboidratiAllenamento}
-                />
-                <CampoTarget
-                  id="profilo-proteine-allenamento"
-                  etichetta="Proteine (g)"
-                  valore={proteineAllenamento}
-                  onChange={setProteineAllenamento}
-                />
+                {CAMPI_TARGET.map((campo) => (
+                  <CampoTarget
+                    key={campo.chiave}
+                    id={`profilo-${campo.chiave}-allenamento`}
+                    etichetta={campo.etichetta}
+                    valore={gi.ora.targetAllenamento[campo.chiave]}
+                    precedente={gi.prima.targetAllenamento[campo.chiave]}
+                    cambiato={
+                      !numeriUguali(
+                        gi.prima.targetAllenamento[campo.chiave],
+                        gi.ora.targetAllenamento[campo.chiave]
+                      )
+                    }
+                    onChange={(valore) =>
+                      aggiornaGiorni({
+                        targetAllenamento: { ...gi.ora.targetAllenamento, [campo.chiave]: valore },
+                      })
+                    }
+                  />
+                ))}
               </div>
             </div>
-
-            {erroreAllenamento && <p className="text-sm text-warning">{erroreAllenamento}</p>}
-
-            <button
-              type="submit"
-              disabled={salvataggioAllenamento === "in-corso"}
-              className={`w-full rounded-lg bg-accent p-2 text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              {salvataggioAllenamento === "in-corso"
-                ? "Salvataggio..."
-                : "Salva giorni allenamento"}
-            </button>
-
-            {salvataggioAllenamento === "salvato" && (
-              <p className="text-sm text-accent">Salvato.</p>
-            )}
-            {salvataggioAllenamento === "errore" && (
-              <p className="text-sm text-warning">
-                Salvataggio non riuscito: controlla che calorie e macro siano
-                numeri validi.
-              </p>
-            )}
-          </form>
+          </>
         )}
-      </div>
-    </>
-  );
-}
+      </SezioneProfilo>
 
-function CampoTarget(props: {
-  id: string;
-  etichetta: string;
-  valore: string;
-  onChange: (valore: string) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <label htmlFor={props.id} className="text-sm">
-        {props.etichetta}
-      </label>
-      <input
-        id={props.id}
-        type="number"
-        inputMode="numeric"
-        min={0}
-        value={props.valore}
-        onChange={(e) => props.onChange(e.target.value)}
-        className={`w-28 rounded-lg border border-border p-2 text-right ${CLASSE_FOCUS}`}
+      <BarraSalvaProfilo
+        sezioni={sezioni}
+        inCorso={inCorso}
+        messaggio={messaggioBarra}
+        onAnnulla={annullaModifiche}
+        onSalva={avviaSalvataggio}
       />
-    </div>
+
+      {sheetAperto && periodo && (
+        <SheetCambioObiettivo
+          inizioPeriodo={periodo.valido_dal}
+          limiti={limitiDataInizio(periodo, giornoCorrente)}
+          inCorso={inCorso}
+          errore={esito === "errore" ? "Salvataggio non riuscito. Riprova." : null}
+          onAnnulla={() => setSheetAperto(false)}
+          onConferma={(scelta) => void esegui(scelta)}
+        />
+      )}
+    </>
   );
 }

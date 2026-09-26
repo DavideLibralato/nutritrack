@@ -1,9 +1,10 @@
 // Helper specifici per le misurazioni (peso, in questa fase), oltre al CRUD
 // generico di repositoryMisurazioni. Vivono qui e non nella pagina Profilo
-// perché li riuserà anche la futura schermata "Registra peso".
+// perché li usa il campo "Registra peso" (src/components/RegistraPeso.tsx).
 
 import { repositoryMisurazioni } from "./index";
 import type { Misurazione } from "../db/tipi";
+import { oggiLocale } from "../dataGiorno";
 
 // La più recente per data (non per updated_at: due misurazioni possono
 // essere inserite in ordine diverso da quello dei giorni a cui si
@@ -26,7 +27,9 @@ export async function registraPesoSenzaDuplicati(
   valoreKg: number,
   misurazioniPesoEsistenti: Misurazione[]
 ): Promise<void> {
-  const oggi = new Date().toISOString().slice(0, 10);
+  // Il giorno dell'orologio locale, non quello UTC di toISOString(): a Roma
+  // fra mezzanotte e le 2 sarebbe ancora "ieri" (vedi dataGiorno.ts).
+  const oggi = oggiLocale();
   const rigaOggi = misurazioniPesoEsistenti.find((riga) => riga.data === oggi);
 
   if (rigaOggi) {
