@@ -5,7 +5,37 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
-## 2026-09-26 — Oggi: giorno abbreviato, testata su una riga
+## 2026-09-26 — Oggi: testata "giorno sopra la data"
+
+Branch `testata-oggi`, non ancora su main. È la terza versione della
+testata, C, e sostituisce le due voci sotto: A (`4a6a71f`, pulsanti sulla
+riga delle kcal) e B (`9a5b45e`, giorno abbreviato). Tutte e due sono state
+scartate dopo i mockup. È un commit nuovo sopra le altre due, per non
+riscrivere un branch già pubblicato.
+
+- La data è un blocco centrato su due livelli: sopra il giorno intero,
+  piccolo (11 px, maiuscolo, spaziato, tenue); sotto "25 set" in grande
+  come prima. Tutto il blocco è il pulsante del calendario, e l'aria-label
+  legge la data per esteso. A destra, sulla stessa riga, "Oggi" e la
+  pastiglia con le regole di prima. La riga delle kcal è come su main.
+  Nuove `formattaGiornoSettimana` e `formattaGiornoMese`; tolta
+  `formattaDataTitolo`.
+- **Perché C: la forma è sempre la stessa.** Con il giorno sopra, il blocco
+  data è largo quanto "30 mag" (87 px) e la riga nel caso peggiore ("Oggi"
+  e "Allenamento" insieme) arriva a 315 px. Resta un margine di 43 px a 390
+  e di 28 px a 375. B invece a 390 px andava a capo proprio in quel caso
+  (367 px su 358).
+- `flex-wrap` resta come rete di sicurezza. Scatta solo a 320 px, dove
+  mancano 27 px, o con un tipo di giorno dal nome più lungo di
+  "Allenamento": "Oggi" e la pastiglia scendono insieme sulla riga sotto.
+- La testata è più alta di circa 15 px: la scritta piccola con
+  l'interlinea normale.
+- Verificati `tsc`, lint (0 errori), 180 test verdi, build. La prova su
+  iPhone manca.
+
+## 2026-09-26 — Oggi: giorno abbreviato, testata su una riga (scartata)
+
+Scartata dopo i mockup (versione B), sostituita dalla voce sopra.
 
 Branch `testata-oggi`, non ancora su main. Sostituisce la versione di
 `4a6a71f` (voce sotto): la testata torna a una riga come su main, con

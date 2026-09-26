@@ -98,17 +98,21 @@ Dall'alto:
    mangiare?") senza far fare un calcolo. **La data è navigabile** (vedi
    "Inserimento retroattivo"), e su un giorno passato la seconda riga cambia
    testo: "2043 di 2200 kcal", perché "rimangono" su ieri non vuol dire niente.
-   **Il giorno della settimana è abbreviato** ("Mer 4 set", come nei
-   mockup), la data non va mai a capo, e lo screen reader la legge per esteso
-   ("mercoledì 4 settembre"). Sulla stessa riga, a destra, ci sono il
-   pulsante **Oggi** (solo su un giorno diverso da quello corrente) e, se la
-   differenziazione dei giorni è attiva, una piccola pastiglia
-   **Normale / Allenamento** (vedi "Giorni normali e giorni di allenamento").
-   Se la differenziazione non è attiva, la pastiglia non c'è. Quando "Oggi"
-   e la pastiglia non entrano accanto alla data, scendono insieme sulla riga
-   sotto, sempre a destra: è solo CSS (`flex-wrap`). Misurato con i font
-   veri, su un giorno passato con la pastiglia la riga completa è larga
-   367 px ("Mer 20 mag"), e a 390 px di schermo lo spazio è 358
+   **Giorno sopra la data** (dai mockup): la data è un blocco centrato su due
+   livelli. Sopra c'è il giorno della settimana intero, piccolo (11 px),
+   maiuscolo e tenue ("MERCOLEDÌ"); sotto c'è "4 set" in grande, che non va
+   mai a capo. Tutto il blocco è il pulsante del calendario, e lo screen
+   reader legge la data per esteso ("mercoledì 4 settembre"). Sulla stessa
+   riga, a destra, ci sono il pulsante **Oggi** (solo su un giorno diverso da
+   quello corrente) e, se la differenziazione dei giorni è attiva, una
+   piccola pastiglia **Normale / Allenamento** (vedi "Giorni normali e giorni
+   di allenamento"). Se la differenziazione non è attiva, la pastiglia non
+   c'è. **La testata ha sempre la stessa forma**, misurata con i font veri:
+   nel caso peggiore ("30 mag", "Oggi" e "Allenamento" insieme) è larga
+   315 px, e ci sta a 390 e a 375 px di schermo. Rete di sicurezza, solo CSS
+   (`flex-wrap`): se "Oggi" e la pastiglia non entrano, scendono insieme
+   sulla riga sotto, a destra. Succede a 320 px con tutti e due, o con un
+   tipo di giorno dal nome più lungo di "Allenamento"
 2. **Anello + macro affiancati**: l'anello calorie a sinistra con il consumato
    grande al centro e l'obiettivo sotto ("1580 / 2200"); a destra le tre barre
    macro con valore/target ("Proteine 98 / 140 g"), in ordine **Grassi,

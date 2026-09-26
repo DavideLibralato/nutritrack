@@ -41,21 +41,20 @@ export function giornoSuccessivo(iso: string): string {
   return oggiLocale(d);
 }
 
-// "Mer 4 set" — il titolo di Oggi, come nei mockup: giorno della settimana
-// abbreviato, così la data sta su una riga anche con "Oggi" e la pastiglia
-// accanto. toLocaleDateString dà "mer 4 set" (minuscolo), qui si alza solo
-// la prima lettera.
-export function formattaDataTitolo(iso: string): string {
-  const testo = daISO(iso).toLocaleDateString("it-IT", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-  return testo.charAt(0).toUpperCase() + testo.slice(1);
+// I due livelli del titolo di Oggi ("giorno sopra la data", come nei
+// mockup): sopra il giorno della settimana in piccolo, sotto "4 set" in
+// grande. "mercoledì" esce minuscolo: il maiuscolo lo fa il CSS
+// (`uppercase`), così il testo resta quello vero.
+export function formattaGiornoSettimana(iso: string): string {
+  return daISO(iso).toLocaleDateString("it-IT", { weekday: "long" });
 }
 
-// "mercoledì 4 settembre" — la stessa data per esteso, per lo screen reader:
-// "mer" letto ad alta voce non vuol dire niente.
+export function formattaGiornoMese(iso: string): string {
+  return daISO(iso).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+}
+
+// "mercoledì 4 settembre" — la data per esteso, per lo screen reader: il
+// titolo a schermo ("4 set", mese abbreviato) letto ad alta voce è peggio.
 export function formattaDataEstesa(iso: string): string {
   return daISO(iso).toLocaleDateString("it-IT", {
     weekday: "long",

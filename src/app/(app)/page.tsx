@@ -51,7 +51,8 @@ import {
 import {
   giornoPrecedente,
   giornoSuccessivo,
-  formattaDataTitolo,
+  formattaGiornoSettimana,
+  formattaGiornoMese,
   formattaDataEstesa,
   eFuturo,
   giornoLogico,
@@ -81,8 +82,7 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
 // elenco fisso (sezione 3), quindi non c'è una tabella di etichette da
-// mantenere — solo la prima lettera maiuscola, come già in formattaDataTitolo
-// (dataGiorno.ts).
+// mantenere — solo la prima lettera maiuscola.
 function capitalizza(testo: string): string {
   return testo.charAt(0).toUpperCase() + testo.slice(1);
 }
@@ -603,13 +603,14 @@ function OggiContenuto() {
       {/* FASCIA ALTA — fissa */}
       <header className="shrink-0 px-4 pt-6 pb-5">
         {/* Prima riga: ‹ data › a sinistra, "Oggi" e la pastiglia a destra.
-            Sono due gruppi dentro una riga che può andare a capo
-            (`flex-wrap`): se il gruppo di destra non entra accanto alla data,
-            il browser lo porta intero sulla riga sotto, ancora a destra
-            (`ml-auto`). Solo CSS, niente misure in JavaScript. Succede quando
-            ci sono sia "Oggi" sia la pastiglia: a 390 px la riga completa è
-            larga 367 px e lo spazio è 358 (misurato con i font veri, caso
-            "Mer 20 mag"). La data non va mai a capo (`whitespace-nowrap`). */}
+            Misurata con i font veri, nel caso peggiore ("30 mag", "Oggi" e
+            "Allenamento" insieme) la riga è larga 315 px: a 390 e 375 px di
+            schermo ci sta con 43 e 28 px di margine, quindi la forma è
+            sempre la stessa. `flex-wrap` è solo una rete di sicurezza: se il
+            gruppo di destra non entra (schermo da 320 px, o un tipo di
+            giorno dal nome più lungo di "Allenamento"), il browser lo porta
+            intero sulla riga sotto, ancora a destra (`ml-auto`), invece di
+            farlo uscire dallo schermo. Solo CSS. */}
         <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
           <div className="flex items-center gap-1">
             <button
@@ -626,16 +627,25 @@ function OggiContenuto() {
                 scegliere un giorno oltre quello logico corrente (fra
                 mezzanotte e l'ora del primo pasto è ieri). L'input date resta
                 fuori schermo (sr-only) e serve solo come bersaglio di
-                showPicker(). A schermo il giorno è abbreviato ("Mer 20 mag");
-                l'aria-label lo dice per esteso ("mercoledì 20 maggio"). */}
+                showPicker().
+                "Giorno sopra la data": una colonna centrata, sopra il giorno
+                della settimana piccolo, maiuscolo e tenue ("VENERDÌ", nel
+                font del testo), sotto "25 set" alla grandezza e nel font di
+                sempre. Tutto il blocco è il pulsante; l'aria-label dice la
+                data per esteso ("venerdì 25 settembre"). La scritta piccola
+                eredita l'interlinea normale e aggiunge circa 15 px di
+                altezza alla testata. */}
             <h1 className="whitespace-nowrap font-display text-2xl font-bold">
               <button
                 type="button"
                 onClick={apriCalendario}
                 aria-label={`Cambia data, ${formattaDataEstesa(giorno)}`}
-                className={`rounded ${CLASSE_FOCUS}`}
+                className={`flex flex-col items-center rounded ${CLASSE_FOCUS}`}
               >
-                {formattaDataTitolo(giorno)}
+                <span className="font-sans text-[11px] font-medium uppercase tracking-wider text-muted">
+                  {formattaGiornoSettimana(giorno)}
+                </span>
+                <span>{formattaGiornoMese(giorno)}</span>
               </button>
             </h1>
             <input
