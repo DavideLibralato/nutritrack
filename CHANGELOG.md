@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Annullata la correzione della tastiera su iPhone
+
+Branch `profilo-rifacimento`. Tolto il codice di a648455 (`AreaContenuto`,
+`useCampoSopraTastiera` e il loro uso nel layout con la tab bar): torna il
+comportamento di prima. Provata su iPhone non funzionava: con il campo
+molto in basso iOS spostava ancora la finestra, e in posizione intermedia
+la pagina "ballava" (saliva e poi scendeva). È il limite di correggere iOS
+DOPO che ha già spostato la finestra: si arriva sempre in ritardo di un
+movimento.
+
+- Aperto: il difetto originale resta (barre sopra o sotto la tastiera a
+  seconda di dove sta il campo in Profilo). La soluzione vera, da fare a
+  parte: far scorrere il documento invece del `<div>` interno, con tab bar
+  e barra Salva `position: fixed` in fondo — così iOS porta il campo sopra
+  la tastiera da solo e le barre restano coperte.
+
 ## 2026-09-26 — Tastiera su iPhone: barre in fondo sempre coperte
 
 Branch `profilo-rifacimento`. Difetto trovato provando l'anteprima: in
