@@ -34,11 +34,16 @@ export const viewport: Viewport = {
   themeColor: "#1F1B16",
   width: "device-width",
   initialScale: 1,
-  // Quando si apre la tastiera software, l'area di layout si rimpicciolisce
-  // davvero (invece di farsi coprire): cosi `100dvh` e le righe ancorate in
-  // fondo restano sopra la tastiera. Supportato da Chrome/Android; su iOS e
-  // ignorato e ci pensa il fallback con visualViewport in /aggiungi.
-  interactiveWidget: "resizes-content",
+  // La tastiera software copre il layout senza accorciarlo; si accorcia solo
+  // la parte visibile (visualViewport). È quello che fa sempre iOS, che
+  // ignora questa impostazione; su Android/Chrome è il valore predefinito, lo
+  // scriviamo per dire che è una scelta. Così i due sistemi si comportano
+  // allo stesso modo: tab bar e barra Salva, fisse sul fondo del layout,
+  // restano sotto la tastiera, coperte (layout.tsx di (app)); gli sheet e
+  // /aggiungi si agganciano alla parte visibile con useAreaVisibile e restano
+  // sopra la tastiera. Con "resizes-content" su Android il layout si
+  // accorcerebbe e le barre fisse salirebbero sopra la tastiera.
+  interactiveWidget: "resizes-visual",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

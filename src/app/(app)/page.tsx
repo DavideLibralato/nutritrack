@@ -14,6 +14,12 @@
 //   - al centro, scorrevole: la lista dei pasti
 //   - in basso, fisso: il pulsante "+ Aggiungi"
 //
+// Altezza fissa: lo schermo meno la tab bar (--altezza-tab-bar, globals.css).
+// Nelle pagine con la tab bar a scorrere è il documento (layout.tsx di
+// (app)); qui il documento è alto esattamente uno schermo e non scorre, e
+// scorre solo la lista centrale. Oggi non ha campi che aprono la tastiera
+// fuori dagli sheet, che si agganciano da soli alla parte visibile.
+//
 // Il pulsante "+ Aggiungi" apre /aggiungi passando il giorno mostrato, così
 // dopo il salvataggio si torna all'Oggi del giorno giusto (anche un giorno
 // passato). Per leggere ?giorno= serve useSearchParams, che va avvolto in
@@ -84,7 +90,7 @@ export default function OggiPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-full items-center justify-center p-4">
+        <main className="flex flex-1 items-center justify-center p-4">
           <p className="text-sm text-muted">Caricamento...</p>
         </main>
       }
@@ -315,7 +321,7 @@ function OggiContenuto() {
     obiettiviTarget === undefined
   ) {
     return (
-      <main className="flex min-h-full items-center justify-center p-4">
+      <main className="flex flex-1 items-center justify-center p-4">
         <p className="text-sm text-muted">Caricamento...</p>
       </main>
     );
@@ -591,7 +597,7 @@ function OggiContenuto() {
     pasti.find((p) => p.id === (voceInModifica?.pasto_id ?? ""))?.nome ?? "";
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-[calc(100dvh-var(--altezza-tab-bar))] flex-col overflow-hidden">
       {/* FASCIA ALTA — fissa */}
       <header className="shrink-0 px-4 pt-6 pb-5">
         <div className="flex items-center gap-1">

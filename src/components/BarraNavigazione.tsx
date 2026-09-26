@@ -7,6 +7,14 @@
 // usePathname() (next/navigation) dà il percorso corrente lato client:
 // serve per evidenziare in verde la voce attiva. Vive nel layout del route
 // group (app), quindi non compare su login/registrazione.
+//
+// `position: fixed` in fondo, alta esattamente --altezza-tab-bar (globals.css,
+// barretta home di iOS compresa): il layout di (app) lascia sotto il
+// contenuto lo stesso spazio. Fissa sul fondo del layout, con la tastiera di
+// iOS aperta finisce sotto la tastiera, coperta — è voluto (layout.tsx di
+// (app) spiega perché). `z-20`: sopra la barra Salva di Profilo (z-10),
+// sotto BarraAnnulla (z-40) e gli sheet (z-50), che la coprono con lo sfondo
+// scuro come prima.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,8 +30,8 @@ export default function BarraNavigazione() {
   const percorso = usePathname();
 
   return (
-    <nav className="shrink-0 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
-      <ul className="mx-auto flex max-w-md">
+    <nav className="fixed inset-x-0 bottom-0 z-20 h-[var(--altezza-tab-bar)] border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+      <ul className="mx-auto flex h-full max-w-md">
         {VOCI.map((voce) => {
           const attiva =
             voce.href === "/" ? percorso === "/" : percorso.startsWith(voce.href);
@@ -32,7 +40,7 @@ export default function BarraNavigazione() {
               <Link
                 href={voce.href}
                 aria-current={attiva ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 py-2 text-xs ${
+                className={`flex h-full flex-col items-center justify-center gap-1 text-xs ${
                   attiva ? "text-accent" : "text-muted"
                 } ${CLASSE_FOCUS}`}
               >

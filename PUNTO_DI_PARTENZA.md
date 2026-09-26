@@ -50,6 +50,28 @@ Decisioni prese:
 Navigazione a tab bar con tre voci (Oggi, Statistiche, Profilo). La pagina di
 inserimento si apre sopra, non è una tab.
 
+**Layout delle pagine con la tab bar.** A scorrere è il **documento**, non un
+contenitore interno. La tab bar è `position: fixed` in fondo, e il contenuto
+lascia sotto di sé uno spazio pari alla sua altezza (variabile CSS
+`--altezza-tab-bar` in `globals.css`, unico posto dove sta il numero). La
+barra Salva di Profilo è `sticky` con `bottom` uguale a quella variabile, cioè
+appena sopra la tab bar. Oggi fa eccezione: ha un'altezza fissa (schermo meno
+tab bar) e fa scorrere solo la lista dei pasti.
+
+Il motivo è la tastiera di iPhone, che non accorcia il layout ma lo copre.
+Quando il documento scorre, iOS porta da solo il campo toccato sopra la
+tastiera, e gli elementi fissi in fondo restano sotto la tastiera, coperti.
+Questo è il comportamento voluto: con la tastiera aperta si vede il campo,
+non le barre, e a tastiera chiusa tutto torna com'era. Su Android si ottiene
+lo stesso con `interactiveWidget: "resizes-visual"` (layout radice): la
+tastiera copre il layout invece di accorciarlo.
+
+Fanno eccezione gli sheet e `/aggiungi`: si agganciano alla parte visibile
+(`useAreaVisibile`) e restano sopra la tastiera. **Regola:** qui non si
+corregge lo scorrimento con JavaScript dopo che iOS l'ha fatto
+(`visualViewport`, `scrollTo`, spazi calcolati). Arriva sempre in ritardo di
+un movimento e la pagina balla: è il tentativo `a648455`, annullato.
+
 Le descrizioni qui sotto corrispondono ai mockup realizzati a settembre 2026 e
 li sostituiscono come specifica: dove il mockup e il testo precedente non
 coincidevano, ha vinto il mockup.
@@ -1489,10 +1511,14 @@ cancellazione.
 
 ### Difetti e verifiche aperti
 
-- **Tastiera iOS nelle pagine con la tab bar**: in Profilo, toccando un campo
-  in basso, iOS sposta la finestra e le barre in fondo salgono sopra la
-  tastiera. Il tentativo `a648455` è stato annullato (`065c864`, vedi
-  `CHANGELOG.md`)
+- **Tastiera iOS nelle pagine con la tab bar**: corretta nel branch
+  `tastiera-ios` (26/9), perché ora scorre il documento (sezione 3, "Layout
+  delle pagine con la tab bar"). **La prova su iPhone non è ancora fatta.**
+  Il caso da provare con più attenzione è l'ultimo campo del Profilo, cioè
+  l'ultimo target "Allenamento" con i giorni differenziati attivi: se sotto
+  quel campo c'è meno pagina dell'altezza della tastiera, iOS deve comunque
+  spostare la finestra oltre la fine del documento, e un pezzo di tab bar
+  potrebbe spuntare sopra la tastiera
 - **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
   dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
   il 25/9)
@@ -1509,12 +1535,9 @@ cancellazione.
 
 ### Prossimi passi
 
-1. **Tastiera iOS nelle pagine con la tab bar.** Far scorrere il documento
-   invece del `<div>` interno, con tab bar e barra Salva in
-   `position: fixed` in fondo: così iOS porta da solo il campo sopra la
-   tastiera e le barre restano coperte. Il tentativo `a648455`, che
-   correggeva dopo lo spostamento di iOS, è stato annullato: arrivava
-   sempre in ritardo di un movimento (vedi `CHANGELOG.md`)
+1. **Provare su iPhone il branch `tastiera-ios`** (campo in alto, campo in
+   basso, ultimo campo del Profilo, sheet in Oggi e in Profilo), poi merge
+   su main
 2. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). Due
    domande a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti), e quante volte si vorrebbe

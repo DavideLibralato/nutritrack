@@ -12,6 +12,13 @@
   --tenue: #8a8271;
   --accento: #3f7d4c;
   --avviso: #b5533c;
+
+  /* Ingombro della tab bar fissa in fondo (BarraNavigazione): 61px (bordo
+     di 1px + voce di 60px) più la barretta home di iOS. Unico posto dove sta
+     questo numero: lo usano la tab bar per la sua altezza, il layout di
+     (app) come spazio in fondo al contenuto, Oggi per la sua altezza fissa e
+     la barra Salva di Profilo per attaccarsi sopra la tab bar. */
+  --altezza-tab-bar: calc(3.8125rem + env(safe-area-inset-bottom));
 }
 
 @theme inline {

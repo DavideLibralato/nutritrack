@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Tastiera iOS: nelle pagine con la tab bar scorre il documento
+
+Branch `tastiera-ios`, non ancora su main. Il difetto: in Profilo, con un
+campo in basso, iOS spostava la finestra e tab bar e barra Salva salivano
+sopra la tastiera. Adesso è il documento a scorrere, non il `<div>` interno.
+La tab bar è `fixed` in fondo e il contenuto lascia uno spazio pari a
+`--altezza-tab-bar` (`globals.css`). La barra Salva è `sticky` sopra la tab
+bar. Oggi ha altezza fissa (schermo meno tab bar) e le sue tre fasce non
+cambiano. Solo CSS, nessun JavaScript.
+
+- `interactiveWidget` passa da `resizes-content` a `resizes-visual`: su
+  Android la tastiera ora copre il layout come su iOS, invece di accorciarlo
+  e spingere su le barre fisse.
+- Verificati `tsc`, lint (0 errori), 180 test verdi, build e CSS compilato.
+  **La prova su iPhone manca.** Caso a rischio: l'ultimo campo del Profilo,
+  se sotto di lui resta meno pagina dell'altezza della tastiera.
+- Da tenere d'occhio: in Profilo, con uno sheet aperto, trascinare lo sfondo
+  scuro può far scorrere la pagina dietro, perché ora il documento scorre.
+  Lo sheet resta al suo posto.
+
 ## 2026-09-26 — Documenti: decisioni sulle frasi dubbie, via NOTE_MODIFICHE
 
 Branch `documenti`, secondo giro. Solo documentazione e commenti.

@@ -1,7 +1,10 @@
-// La barra del Salva unico, in fondo alla pagina Profilo. `sticky bottom-0`:
-// resta attaccata al bordo inferiore dell'area che scorre (sopra la tab bar)
-// finché la pagina continua sotto, e si ferma al suo posto quando si arriva
-// in fondo.
+// La barra del Salva unico, in fondo alla pagina Profilo. `sticky` con
+// `bottom` pari a --altezza-tab-bar (globals.css): a scorrere è il documento
+// e la tab bar è fissa in fondo, quindi la barra resta attaccata appena sopra
+// la tab bar finché la pagina continua sotto, e si ferma al suo posto quando
+// si arriva in fondo. Come la tab bar si aggancia al fondo del layout: con la
+// tastiera di iOS aperta finisce sotto la tastiera, coperta (layout.tsx di
+// (app) spiega perché).
 //
 // Inerte quando non c'è niente da salvare; altrimenti dice quali sezioni
 // verranno aggiornate, e offre "Annulla modifiche" per tornare ai valori
@@ -27,7 +30,7 @@ export default function BarraSalvaProfilo({
   const daSalvare = sezioni.length > 0;
 
   return (
-    <div className="sticky bottom-0 z-10 order-last -mx-4 w-[calc(100%+2rem)] border-t border-border bg-background px-4 py-3">
+    <div className="sticky bottom-[var(--altezza-tab-bar)] z-10 order-last -mx-4 w-[calc(100%+2rem)] border-t border-border bg-background px-4 py-3">
       <div className="mx-auto w-full max-w-sm space-y-2">
         {/* role="status": lo screen reader legge quali sezioni verranno
             aggiornate e l'esito, quando cambiano. */}
