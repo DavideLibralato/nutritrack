@@ -5,6 +5,14 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Modifica di un pasto salvato provata su iPhone, unita a main
+
+Solo documenti. La modifica di un pasto salvato e la correzione dei grammi
+sono state provate su iPhone e unite a main (`89d25c0`, `4fe0943`),
+fast-forward senza commit di merge. Il branch `modifica-pasto-salvato` è
+cancellato, in locale e su GitHub. In PUNTO_DI_PARTENZA è chiuso il
+difetto aperto "prova sul telefono non registrata".
+
 ## 2026-09-26 — Grammi validi: limiti di numeric(7,2) e due decimali
 
 Branch `modifica-pasto-salvato`. `quantita_g` è `numeric(7,2)` su Supabase,

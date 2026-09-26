@@ -1570,8 +1570,8 @@ modifica ed elimina alimento (con la marca), sheet quantità unico.
 
 **Punto 3 — recenti, preferiti, pasti salvati.** Recenti (5), Preferiti,
 pasti salvati promossi da Oggi con la stella. Dalla matita in Preferiti si
-modificano: nome, alimenti e grammi, eliminazione (26/9, branch
-`modifica-pasto-salvato`, sezione 3). Regola "alimenti cancellati"
+modificano: nome, alimenti e grammi, eliminazione (26/9, provata su iPhone,
+sezione 3). Regola "alimenti cancellati"
 (sezione 4) con Annulla dopo la cancellazione.
 
 **Tastiera iOS nelle pagine con la tab bar** (26/9, provata su iPhone). A
@@ -1626,9 +1626,6 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
   ma il form controlla solo "> 0". Un valore oltre 99999,99 o con più di due
   decimali ha gli stessi due difetti già corretti per i grammi ("Grammi
   validi", sezione 3). Non ancora corretto
-- **Modifica di un pasto salvato**: verificata con i test e con il build, la
-  prova sul telefono (tastiera che nasconde la barra Salva, sheet quantità
-  sopra la schermata) non è ancora registrata
 
 ### Prossimi passi
 
