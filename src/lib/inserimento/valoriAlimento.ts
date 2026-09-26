@@ -9,7 +9,9 @@
 // 2. quelli fisici dei valori per 100 g, che nessun alimento reale supera
 //    e quindi sono sempre errori di battitura: ogni macro al massimo 100 g,
 //    kcal al massimo 900 (il grasso puro, 9 kcal/g), zuccheri non più dei
-//    carboidrati (ne sono una parte), saturi non più dei grassi (idem).
+//    carboidrati (ne sono una parte), saturi non più dei grassi (idem),
+//    grassi + carboidrati + proteine non oltre 100 g più la tolleranza degli
+//    arrotondamenti in etichetta (TOLLERANZA_SOMMA_MACRO, qui sotto).
 //
 // Funzione pura, senza React: i test sono in valoriAlimento.test.ts.
 
@@ -53,10 +55,24 @@ export interface EsitoValidazioneAlimento {
   // vuoto, non sbagliato): bloccano il salvataggio, ma il form li elenca
   // una volta sola invece di segnare in rosso ogni campo.
   mancanti: CampoAlimento[];
+  // Errore che non appartiene a un campo solo (la somma dei macro): il form
+  // lo mostra sotto il gruppo "Valori per 100 g".
+  erroreSomma: string | null;
 }
 
 export const MASSIMO_KCAL_100G = 900;
 export const MASSIMO_MACRO_100G = 100;
+
+// Grassi + carboidrati + proteine non possono superare 100 g per 100 g, ma
+// le etichette arrotondano (linee guida UE del 2012 sul Reg. 1169/2011: al
+// grammo da 10 g in su, al decimo sotto). Ogni valore stampato può essere
+// più alto del vero di 0,5 g al massimo, quindi tre valori insieme di 1,5 g:
+// oltre 101,5 g non è più arrotondamento, è un errore di battitura. In
+// etichetta UE la fibra è fuori dai carboidrati, quindi la somma vera sta
+// sotto 100 anche per i prodotti "puri" (olio, zucchero). Deciso il
+// 2026-09-26.
+export const TOLLERANZA_SOMMA_MACRO = 1.5;
+export const MASSIMO_SOMMA_MACRO = MASSIMO_MACRO_100G + TOLLERANZA_SOMMA_MACRO;
 
 const OBBLIGATORI: CampoAlimento[] = ["kcal", "grassi", "carboidrati", "proteine", "porzione"];
 
@@ -113,8 +129,20 @@ export function validaValoriAlimento(campi: CampiAlimento): EsitoValidazioneAlim
     errori.saturi = `Non più dei grassi (${formatta(grassi)} g)`;
   }
 
-  if (Object.keys(errori).length > 0 || mancanti.length > 0) {
-    return { valori: null, errori, mancanti };
+  // Somma dei tre macro, solo se tutti e tre sono validi (altrimenti c'è già
+  // un messaggio sul campo). Arrotondata ai centesimi: sono valori a due
+  // decimali, ma la loro somma in virgola mobile può uscire "sporca"
+  // (50.1 + 32.2 + 19.2 = 101.50000000000001, che non deve superare 101,5).
+  let erroreSomma: string | null = null;
+  if (grassi != null && carboidrati != null && letti.proteine != null) {
+    const somma = Math.round((grassi + carboidrati + letti.proteine) * 100) / 100;
+    if (somma > MASSIMO_SOMMA_MACRO) {
+      erroreSomma = `Grassi, carboidrati e proteine insieme fanno ${formatta(somma)} g: più di 100 g per 100 g`;
+    }
+  }
+
+  if (Object.keys(errori).length > 0 || mancanti.length > 0 || erroreSomma !== null) {
+    return { valori: null, errori, mancanti, erroreSomma };
   }
   return {
     valori: {
@@ -130,5 +158,6 @@ export function validaValoriAlimento(campi: CampiAlimento): EsitoValidazioneAlim
     },
     errori,
     mancanti,
+    erroreSomma,
   };
 }

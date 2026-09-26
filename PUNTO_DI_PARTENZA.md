@@ -247,6 +247,14 @@ fisici, perché superarli è sempre un errore di battitura:
   9 kcal/g). Zero è ammesso;
 - **zuccheri non più dei carboidrati, saturi non più dei grassi**, perché
   ne sono una parte. Il confronto usa i valori già arrotondati;
+- **grassi + carboidrati + proteine al massimo 101,5 g**, cioè 100 g più
+  1,5 g di tolleranza. Il motivo: le etichette arrotondano al grammo da 10 g
+  in su e al decimo sotto (linee guida UE del 2012 sul Reg. 1169/2011),
+  quindi ogni valore stampato può essere più alto del vero di 0,5 g, e tre
+  valori insieme di 1,5 g. In etichetta UE la fibra è fuori dai
+  carboidrati, quindi la somma vera sta sotto 100 anche per olio e
+  zucchero. Il messaggio sta sotto il gruppo "Valori per 100 g", non su un
+  campo, e blocca il salvataggio;
 - la porzione predefinita deve essere maggiore di zero, con il solo limite
   dello schema.
 
@@ -255,8 +263,13 @@ pulsante resta spento finché c'è un errore. I campi obbligatori ancora vuoti
 non si segnano in rosso uno per uno, perché un form nuovo parte vuoto, non
 sbagliato: si elencano sopra il pulsante ("Per salvare mancano: …").
 
-Oggi il form **non mostra** zuccheri, fibre, saturi e sale, che si scrivono
-`null`. La validazione li copre già, e servirà quando arriveranno.
+**Zuccheri, fibre, saturi e sale non sono nel form, per scelta** (decisa il
+2026-09-26): quattro campi in più da compilare a ogni alimento creato a
+mano aumentano l'attrito (sezione 1). Si scrivono `null`, e in modifica
+restano quelli che erano. Arriveranno con l'OCR (fase 5), che li leggerà
+dall'etichetta. La validazione li copre già, comprese le regole
+zuccheri ≤ carboidrati e saturi ≤ grassi, che oggi quindi non possono
+scattare.
 
 **Due percorsi di inserimento, non uno.** Questa è la decisione che il mockup
 introduce e che va tenuta:
@@ -1606,7 +1619,7 @@ scorrere è il documento, con la tab bar fissa. Mentre un campo ha il fuoco,
 tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
 chiude (sezione 3, "Layout delle pagine con la tab bar").
 
-**Test.** 212 test permanenti in 21 file (Vitest), tutti verdi al 26/9.
+**Test.** 215 test permanenti in 21 file (Vitest), tutti verdi al 26/9.
 
 ### Non ancora costruito
 

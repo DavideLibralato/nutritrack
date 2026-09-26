@@ -260,6 +260,13 @@ export default function CreaAlimentoForm({
           errore={validazione.errori.proteine}
           onChange={setProteine}
         />
+        {/* La somma dei macro non è colpa di un campo solo: il messaggio sta
+            sotto tutto il gruppo. */}
+        {validazione.erroreSomma && (
+          <p role="status" className="text-sm text-warning">
+            {validazione.erroreSomma}
+          </p>
+        )}
       </div>
 
       <div>

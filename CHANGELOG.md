@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Somma dei macro per 100 g, con tolleranza di 1,5 g
+
+Branch `limiti-alimenti`. Chiude le due questioni rimaste aperte nella
+voce qui sotto.
+
+- `validaValoriAlimento` blocca grassi + carboidrati + proteine oltre
+  101,5 g. La tolleranza di 1,5 g copre il caso peggiore degli
+  arrotondamenti in etichetta: 0,5 g per ciascuno dei tre valori (linee
+  guida UE del 2012). Il messaggio sta sotto il gruppo "Valori per 100 g".
+  La somma è arrotondata ai centesimi prima del confronto, perché
+  50,1 + 32,2 + 19,2 in JavaScript fa 101,50000000000001.
+- 3 test nuovi: 100,5 e 101,5 passano, 101,6 e 105 no; il caso della
+  virgola mobile; nessun controllo se un macro manca o è già sbagliato.
+- Deciso: zuccheri, fibre, saturi e sale non entrano nel form,
+  arriveranno con l'OCR. Scritto in PUNTO_DI_PARTENZA.
+
 ## 2026-09-26 — Limiti sui numeri del catalogo (CreaAlimentoForm)
 
 Branch `limiti-alimenti`. Chiude il difetto aperto "numeri del catalogo

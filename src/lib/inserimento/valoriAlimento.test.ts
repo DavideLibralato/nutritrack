@@ -68,7 +68,8 @@ describe("validaValoriAlimento", () => {
   });
 
   it("limiti fisici: ogni macro al massimo 100 g, kcal al massimo 900", () => {
-    expect(con({ grassi: "100", kcal: "900" }).valori).not.toBeNull();
+    // L'olio: 100 g di grassi e niente altro.
+    expect(con({ grassi: "100", carboidrati: "0", proteine: "0", kcal: "900" }).valori).not.toBeNull();
     for (const campo of ["grassi", "carboidrati", "proteine", "zuccheri", "fibre", "saturi", "sale"] as const) {
       expect(con({ [campo]: "100,01" }).errori[campo]).toBe("Al massimo 100 g per 100 g");
     }
@@ -91,6 +92,37 @@ describe("validaValoriAlimento", () => {
     });
     // Uguali vanno bene (lo zucchero è tutto carboidrati).
     expect(con({ zuccheri: "30", saturi: "10" }).valori).not.toBeNull();
+  });
+
+  it("somma grassi + carboidrati + proteine: al massimo 100 g più 1,5 g di tolleranza", () => {
+    const somma = (grassi: string, carboidrati: string, proteine: string) =>
+      con({ grassi, carboidrati, proteine });
+
+    // 100,5 e 101,5: dentro la tolleranza degli arrotondamenti in etichetta.
+    expect(somma("0", "100", "0,5").erroreSomma).toBeNull();
+    expect(somma("0", "100", "0,5").valori).not.toBeNull();
+    expect(somma("50", "50", "1,5").erroreSomma).toBeNull();
+    // 101,6 e 105: errore sotto il gruppo, salvataggio bloccato, nessun
+    // campo segnato da solo.
+    const oltre = somma("50", "50", "1,6");
+    expect(oltre.valori).toBeNull();
+    expect(oltre.errori).toEqual({});
+    expect(oltre.erroreSomma).toBe(
+      "Grassi, carboidrati e proteine insieme fanno 101,6 g: più di 100 g per 100 g"
+    );
+    expect(somma("60", "30", "15").erroreSomma).toBe(
+      "Grassi, carboidrati e proteine insieme fanno 105 g: più di 100 g per 100 g"
+    );
+  });
+
+  it("somma: esattamente 101,5 anche quando la virgola mobile dà 101,50000000000001", () => {
+    // 50.1 + 32.2 + 19.2 in JavaScript fa 101.50000000000001 (verificato con node).
+    expect(con({ grassi: "50,1", carboidrati: "32,2", proteine: "19,2" }).erroreSomma).toBeNull();
+  });
+
+  it("somma: nessun controllo se uno dei tre macro manca o è già sbagliato", () => {
+    expect(con({ grassi: "", carboidrati: "90", proteine: "90" }).erroreSomma).toBeNull();
+    expect(con({ grassi: "abc", carboidrati: "90", proteine: "90" }).erroreSomma).toBeNull();
   });
 
   it("il confronto parte-tutto usa i valori arrotondati, quelli che si scrivono", () => {
