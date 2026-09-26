@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Oggi: la data non va più a capo
+
+Branch `testata-oggi`, non ancora su main. Con un giorno dal nome lungo
+("Venerdì 25 set") la data andava su due righe. Adesso sulla prima riga ci
+sono solo ‹ data ›, con `whitespace-nowrap`. Il pulsante "Oggi" e la
+pastiglia Normale/Allenamento sono scesi sulla riga delle calorie, a destra,
+e compaiono nelle stesse condizioni di prima. Le altre fasce non cambiano.
+
+- Misurato con i font veri (fontkit, script temporaneo fuori dal progetto)
+  su uno schermo di 320 px. Per la data restano 224 px: la più larga
+  possibile, "Mercoledì 20 mag", è 213 px anche al peso 800, più largo del
+  grassetto usato. Seconda riga: 282 px su 288 su un giorno passato ("X di
+  Y kcal" + Oggi + pastiglia), 272 sul giorno corrente ("... kcal oltre
+  l'obiettivo" + pastiglia).
+- Quando c'è una pillola, la riga delle calorie è alta 26 px invece di 20: la
+  lista dei pasti perde 6 px.
+- Verificati `tsc`, lint (0 errori), 180 test verdi, build. La prova su
+  iPhone manca.
+
 ## 2026-09-26 — Tastiera iOS provata su iPhone, difetto chiuso
 
 Solo documenti. Prova su iPhone superata: con un campo attivo, tab bar e

@@ -615,7 +615,7 @@ function OggiContenuto() {
               scegliere un giorno oltre quello logico corrente (fra mezzanotte
               e l'ora del primo pasto è ieri). L'input date resta fuori schermo
               (sr-only) e serve solo come bersaglio di showPicker(). */}
-          <h1 className="font-display text-2xl font-bold">
+          <h1 className="whitespace-nowrap font-display text-2xl font-bold">
             <button
               type="button"
               onClick={apriCalendario}
@@ -645,12 +645,24 @@ function OggiContenuto() {
           >
             <Chevron verso="destra" />
           </button>
+        </div>
+
+        {/* Seconda riga: la riga delle calorie a sinistra, e a destra il
+            pulsante "Oggi" e la pastiglia Normale/Allenamento. Stanno qui e
+            non accanto alla data perché con un giorno dal nome lungo
+            ("Mercoledì 30 set") la data andava a capo. Misurato a 320 px di
+            schermo: le combinazioni possibili ci stanno ("Oggi" compare solo
+            su un giorno passato, dove la riga è la corta "X di Y kcal").
+            `min-w-0` sul testo e `shrink-0` sulle pillole: se un giorno non
+            ci stessero, va a capo il testo, non si schiacciano i pulsanti. */}
+        <div className="mt-1 flex items-center gap-2">
+          <p className={`min-w-0 flex-1 text-sm ${classeRigaCalorie}`}>{rigaCalorie}</p>
 
           {!eGiornoCorrente && (
             <button
               type="button"
               onClick={() => setGiorno(giornoCorrente)}
-              className={`ml-auto rounded-full border border-border px-3 py-1 text-xs ${CLASSE_FOCUS}`}
+              className={`shrink-0 rounded-full border border-border px-3 py-1 text-xs ${CLASSE_FOCUS}`}
             >
               Oggi
             </button>
@@ -662,7 +674,7 @@ function OggiContenuto() {
               Stesso trucco della select del pasto in /aggiungi: un <select>
               nativo travestito da pillola, accessibile di default. */}
           {profilo?.differenzia_giorni && tipiGiornoDisponibili.length > 0 && (
-            <div className={`relative ${eGiornoCorrente ? "ml-auto" : ""}`}>
+            <div className="relative shrink-0">
               <select
                 value={tipoGiornoMostrato}
                 onChange={(e) => cambiaTipoGiorno(e.target.value)}
@@ -679,8 +691,6 @@ function OggiContenuto() {
             </div>
           )}
         </div>
-
-        <p className={`mt-1 text-sm ${classeRigaCalorie}`}>{rigaCalorie}</p>
 
         {/* Anello + macro affiancati, non impilati (sezione 3). Ordine dei
             macro come sulle etichette dei prodotti: Grassi, Carboidrati,

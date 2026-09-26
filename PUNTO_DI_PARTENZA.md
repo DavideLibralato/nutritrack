@@ -98,9 +98,14 @@ Dall'alto:
    mangiare?") senza far fare un calcolo. **La data è navigabile** (vedi
    "Inserimento retroattivo"), e su un giorno passato la seconda riga cambia
    testo: "2043 di 2200 kcal", perché "rimangono" su ieri non vuol dire niente.
-   Se la differenziazione dei giorni è attiva, accanto alla data c'è una piccola
-   pastiglia **Normale / Allenamento** (vedi "Giorni normali e giorni di
-   allenamento"); se non è attiva, non c'è nulla
+   Sulla prima riga c'è solo ‹ data ›, sempre su una riga sola. Sulla
+   seconda, allineati a destra accanto alla riga delle calorie, ci sono il
+   pulsante **Oggi** (solo su un giorno diverso da quello corrente) e, se la
+   differenziazione dei giorni è attiva, una piccola pastiglia
+   **Normale / Allenamento** (vedi "Giorni normali e giorni di allenamento").
+   Se la differenziazione non è attiva, la pastiglia non c'è. Misurato a
+   320 px: la data più larga ("Mercoledì 20 mag") e la seconda riga nelle
+   combinazioni possibili ci stanno
 2. **Anello + macro affiancati**: l'anello calorie a sinistra con il consumato
    grande al centro e l'obiettivo sotto ("1580 / 2200"); a destra le tre barre
    macro con valore/target ("Proteine 98 / 140 g"), in ordine **Grassi,
