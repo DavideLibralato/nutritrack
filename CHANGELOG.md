@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Service worker rifatto: l'app funziona offline
+
+Branch `service-worker`. `public/sw.js` riscritto a mano (Serwist valutato e
+scartato, motivi in PUNTO_DI_PARTENZA.md §9.2). Tre difetti della v1
+corretti:
+- le pagine non si salvavano mai: offline si vedeva `manifest.json` come
+  testo. Ora le quattro schermate si salvano (prima la rete, copia se
+  offline), più un riscaldamento dopo il login che le salva anche se mai
+  aperte, e `offline.html` quando manca la copia;
+- "prima la cache" su tutto, comprese le richieste RSC della tab bar: un'app
+  rimasta aperta dopo un deploy riceveva le pagine vecchie. Ora le RSC vanno
+  solo in rete; in cache "per sempre" solo i file con nome versionato;
+- cache con nome fisso (`nutritrack-v1`): ora `-statici-v2` e `-pagine-v2`,
+  la v1 si cancella da sola.
+
+Esci svuota le pagine salvate. Middleware: esclusi `sw-strategia.js` e
+`offline.html`, altrimenti il redirect al login rompeva l'installazione.
+
+- Bug trovato e corretto: offline `useUtenteId` diventava `null` (`getUser()`
+  fallisce per rete e sovrascriveva l'id), e con il token scaduto anche
+  `getSession()` e `INITIAL_SESSION` danno null pur con la sessione ancora
+  salvata. Ora l'id si legge dal cookie; solo SIGNED_OUT o un rifiuto vero
+  del server portano a null. Test permanenti per questo e per la strategia
+  del service worker.
+- Da provare sul dispositivo: la sequenza completa (online → aereo → cambio
+  scheda, ricarica, pasto) e l'arrivo della versione nuova dopo un secondo
+  deploy. Provato qui solo in simulazione (sw.js vero con cache e rete
+  finte, sulla build reale).
+
 ## 2026-09-26 — Annullata la correzione della tastiera su iPhone
 
 Branch `profilo-rifacimento`. Tolto il codice di a648455 (`AreaContenuto`,

@@ -81,8 +81,11 @@ function copiaCookieSessione(
   return risposta
 }
 
+// I file del service worker (sw.js, sw-strategia.js, offline.html) devono
+// restare fuori: il browser li scarica anche senza login, e un redirect a
+// /login al loro posto farebbe fallire l'installazione del service worker.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|apple-touch-icon.png|icons/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|sw-strategia.js|offline.html|apple-touch-icon.png|icons/).*)',
   ],
 }

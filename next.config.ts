@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
         ],
       },
+      // Caricato da sw.js con importScripts: stessa regola, altrimenti un
+      // sw.js nuovo potrebbe girare con la sua logica vecchia.
+      {
+        source: "/sw-strategia.js",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+        ],
+      },
     ];
   },
 };

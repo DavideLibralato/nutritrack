@@ -31,6 +31,7 @@ import { modificheNonInviate, type ModificheNonInviate } from "@/lib/sync/ripris
 import { sincronizzaOutbox } from "@/lib/sync/sincronizza";
 import { descriviGruppo } from "./RicaricaDatiAccount";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { svuotaPagineSalvate } from "@/lib/serviceWorker";
 
 type Stato =
   | { fase: "inattivo" }
@@ -160,6 +161,10 @@ export default function EsciAccount({
       setStato({ fase: "errore", testo: TESTO_SENZA_RETE });
       return;
     }
+
+    // 4. Via le pagine salvate per l'uso offline: altrimenti, senza rete,
+    //    l'app si riaprirebbe come se si fosse ancora dentro.
+    await svuotaPagineSalvate().catch(() => {});
 
     // Navigazione interna (non window.location): non fa scattare l'avviso
     // "modifiche non salvate" della pagina, già confermato qui sopra.

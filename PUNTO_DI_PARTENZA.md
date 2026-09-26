@@ -900,6 +900,48 @@ Come, in concreto:
   CRDT: i dati sono mono-utente e mono-dispositivo alla volta, i conflitti veri
   sono quasi impossibili
 - service worker per l'app shell → l'app si apre anche senza rete
+  (`public/sw.js`, scritto a mano, senza librerie). Strategia per tipo di
+  richiesta, decisa da una funzione pura con test
+  (`public/sw-strategia.js`, `src/lib/swStrategia.test.ts`):
+  - **file con nome versionato** (`/_next/static/`, `/icons/`,
+    `/apple-touch-icon.png`): prima la cache. Il nome cambia a ogni
+    modifica, quindi una copia non è mai vecchia
+  - **le quattro schermate** (`/`, `/aggiungi`, `/statistiche`, `/profilo`):
+    prima la rete, e se risponde se ne salva una copia (chiave = percorso,
+    senza query). Offline si usa la copia; se manca, `/offline.html` ("Sei
+    offline"). Non si salvano risposte non ok né redirect (il middleware
+    rimanda a `/login` chi non è entrato). Una pagina si salva **solo dopo**
+    che tutti i file che cita (JS, CSS e i font citati dal CSS) sono in
+    cache: mai una copia che cerca file assenti
+  - **altre navigazioni** (login, registrazione, password): solo rete,
+    offline "Sei offline". Per entrare serve comunque la rete
+  - **richieste RSC** (header `RSC: 1`, parametro `_rsc`: i dati con cui la
+    tab bar cambia pagina): solo rete, mai in cache. Se falliscono, Next 16
+    ripiega da solo su una navigazione completa (verificato in
+    `fetch-server-response.js`), che trova la copia della pagina. Metterle
+    in cache era il difetto della prima versione: un'app rimasta aperta
+    dopo un deploy riceveva dalla cache pagine della build vecchia, che
+    Next accettava perché uguali alla build ancora in memoria — e non
+    scopriva mai il deploy
+  - **tutto il resto**, Supabase compreso: il service worker non interviene
+  - **riscaldamento**: con un utente entrato e la rete, l'app chiede al
+    service worker di scaricare le quattro schermate e i file che citano
+    (l'elenco si legge dall'HTML delle pagine: nella build di Next 16 con
+    Turbopack ogni file JS è citato da almeno una pagina). Così offline si
+    apre anche una scheda mai visitata. A ogni riscaldamento si tolgono i
+    file che nessuna pagina salvata cita più (i deploy vecchi)
+  - **Esci** svuota le pagine salvate (i file statici restano: non hanno
+    niente dell'utente)
+  - due cache, `nutritrack-statici-v2` e `nutritrack-pagine-v2`; `activate`
+    cancella tutte le altre. Il numero si alza solo se cambia la forma di
+    ciò che è salvato o `offline.html`
+  - scartato Serwist (`@serwist/turbopack` 9.5.12): per Turbopack è un
+    ripiego dichiarato (route handler + esbuild), non salva le pagine HTML
+    (le nostre stanno dietro il login, il riscaldamento andrebbe scritto
+    comunque) e le sue regole predefinite scadono dopo 24 ore e mettono in
+    cache le RSC. Da rivedere se arriveranno file caricati a richiesta
+    (es. OCR con `next/dynamic`), che l'HTML non cita: oggi verrebbero
+    salvati solo al primo uso online
 
 **Checklist B.7 (CLAUDE.md) non ancora eseguita empiricamente** per
 `version(4)` (campo `sospesa_il` su outbox) e `version(5)` (tabella
@@ -1222,7 +1264,17 @@ Conseguenze della sezione 9.2 che non erano state tirate fino in fondo.
   controllo ingenuo porterebbe alla schermata di login — con i dati tutti lì in
   IndexedDB e nessun modo di entrare. La regola: **senza rete l'app resta
   utilizzabile con i dati locali**, e il login si richiede solo quando la rete
-  c'è e il rinnovo del token fallisce davvero
+  c'è e il rinnovo del token fallisce davvero.
+  Come, in concreto (`src/lib/supabase/utenteOffline.ts`, con test): offline
+  e con il token scaduto supabase-js (auth-js 2.115) risponde "nessuna
+  sessione" da `getSession()`, `getUser()` e `INITIAL_SESSION`, ma **non
+  cancella la sessione salvata** nel cookie — la cancella (con
+  `SIGNED_OUT`) solo quando il server la rifiuta davvero. Per Dexie basta
+  l'id, non un token valido: se supabase-js dice "nessuna sessione" all'avvio
+  e il cookie c'è ancora, `useUtenteId` prende l'id da lì. Un errore di rete
+  non porta mai a "nessun utente"; ci portano solo `SIGNED_OUT` (Esci, o
+  sessione cancellata da supabase-js) e un rifiuto vero di `getUser()`
+  (nessuna sessione, 401/403/404: utente cancellato, sessione revocata)
 
 ### 10.7 L'aggiornamento della PWA
 
@@ -1231,6 +1283,14 @@ a servirlo dopo che hai pubblicato una versione nuova. Si corregge una volta
 sola, nella configurazione del service worker, decidendo la strategia di
 aggiornamento. Se ci si pensa dopo, si passa il tempo a chiedere agli amici di
 disinstallare e reinstallare.
+
+**Deciso** (strategie complete in 9.2): online vince sempre la rete per
+pagine e RSC; solo i file con nome versionato stanno in cache "per sempre".
+`sw.js` e `sw-strategia.js` sono serviti con `max-age=0` (`next.config.ts`),
+il service worker nuovo entra subito (`skipWaiting` + `clients.claim`) e
+cancella le cache con un nome diverso dal suo — così la vecchia
+`nutritrack-v1`, con le RSC salvate, sparisce dai dispositivi al primo
+aggiornamento.
 
 ### 10.8 Chi corregge il catalogo condiviso
 
