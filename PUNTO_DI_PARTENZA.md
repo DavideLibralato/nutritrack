@@ -167,11 +167,57 @@ apposta, lo si **promuove da una giornata già registrata**. Sulla riga del past
 in Oggi: "Salva come preferito". Registri la colazione una volta con calma, e da
 lì in poi è un tap. Nessun lavoro di configurazione, nessuna schermata nuova.
 
-Un pasto salvato si **rinomina o elimina** dalla matita sulla sua riga in
-Preferiti (separata dal tap sulla riga, che lo aggiunge subito). Gli
-alimenti e le quantità **non si modificano**: per cambiarli si risalva da
-capo dal pasto di una giornata. Se serva davvero modificarli lo dirà la
-settimana d'uso (sezione 11, "Prossimi passi").
+**Modificare un pasto salvato** (deciso il 2026-09-26). La matita sulla sua
+riga in Preferiti (separata dal tap sulla riga, che lo aggiunge subito) apre
+una schermata di modifica dentro Aggiungi, a tutta altezza con una testata
+sua: nome, elenco degli alimenti con i grammi, "Aggiungi alimento" ed
+"Elimina pasto". Codice in `src/components/ModificaPastoSalvato.tsx`,
+logica e test in `src/lib/inserimento/modificaPastoSalvato.ts`.
+
+- **Come il Profilo, tutto in sospeso fino al Salva.** I grammi si cambiano
+  nel campo sulla riga, con sotto "Prima: 150 g". Il campo vale solo se è un
+  numero maggiore di zero, altrimenti c'è un messaggio accanto alla riga e
+  il Salva resta spento. La "×" toglie un alimento, e "Annulla modifiche"
+  torna a com'era. Niente si scrive in Dexie prima del Salva. Chi esce dalla
+  freccia con modifiche non salvate riceve un avviso, e così anche chi
+  chiude o ricarica la scheda. Il gesto "indietro" del telefono invece esce
+  senza avviso, come il cambio di scheda in Profilo
+- **Aggiungere un alimento**: si cerca nel catalogo, come in Aggiungi, e si
+  conferma con lo stesso sheet quantità. La conferma aggiunge una riga in
+  fondo, in memoria, e non scrive nel diario. Da qui non si crea un
+  alimento nuovo: se manca, lo si crea prima in Aggiungi. Nessun riordino
+  delle righe: `ordine` decide solo la sequenza a schermo, e il confronto
+  della stella lo ignora
+- **Alimento già nel pasto: i grammi si sostituiscono, non si sommano.** Lo
+  sheet si apre con i grammi attuali di quella riga, e il numero confermato
+  è quello che finisce nel pasto. Con la somma, chi scrive "150" pensando al
+  totale si ritroverebbe 250 senza accorgersene. I pasti vecchi con due righe
+  dello stesso alimento restano come sono, ognuna col suo campo, e lo sheet
+  agisce sulla prima
+- **Eliminare subito, dopo una conferma**: "Elimina pasto", e togliere
+  l'ultimo alimento, che chiede "È l'ultimo alimento del pasto: toglierlo
+  elimina il pasto salvato". Sono le sole scritture fuori dal Salva. Un
+  pasto salvato vuoto non deve esistere (i pasti fantasma del 22/9)
+- **Il diario non cambia.** Le voci hanno la loro copia dei valori (sezione
+  4), e la modifica vale da adesso in avanti. Un giorno, anche oggi, che
+  conteneva il pasto nella versione vecchia vede spegnersi la stella in
+  Oggi perché non coincide più. È corretto
+- **Il Salva rilegge Dexie**, non lo stato React, e si ferma senza scrivere
+  in due casi. Se il pasto è stato cancellato altrove, l'esito è
+  `pasto-eliminato` e la schermata si chiude con un messaggio. Se nome o
+  righe non sono più quelli caricati all'apertura, l'esito è
+  `pasto-cambiato`: la schermata mostra la versione riletta e dice che le
+  modifiche non sono state salvate. Le due versioni non si uniscono: per un
+  caso raro, con un solo utente, sarebbe logica sottile. Un alimento uscito
+  dal catalogo mentre la schermata era aperta non finisce in
+  `composizioni_voci` e non fa scattare `pasto-cambiato`. Le altre modifiche
+  si salvano, e il messaggio dice cosa è stato escluso. Se non resta nessun
+  alimento, il pasto si cancella. Il nome doppio si controlla con
+  `esisteComposizioneConNome`, escludendo il pasto stesso
+- **Ordine delle scritture**: nome, grammi cambiati, righe nuove, poi la
+  cancellazione delle righe tolte. Finché resta almeno un alimento, una riga
+  viva c'è sempre. Se si cancella tutto, prima le righe e per ultima la
+  composizione (spiegato nel commento di `salvaModificaPasto`)
 
 **Due percorsi di inserimento, non uno.** Questa è la decisione che il mockup
 introduce e che va tenuta:
@@ -1511,16 +1557,17 @@ dallo sheet. Aggiungi alimento con ricerca nel catalogo locale, crea,
 modifica ed elimina alimento (con la marca), sheet quantità unico.
 
 **Punto 3 — recenti, preferiti, pasti salvati.** Recenti (5), Preferiti,
-pasti salvati promossi da Oggi con la stella, rinominabili ed eliminabili
-da Preferiti. Regola "alimenti cancellati" (sezione 4) con Annulla dopo la
-cancellazione.
+pasti salvati promossi da Oggi con la stella. Dalla matita in Preferiti si
+modificano: nome, alimenti e grammi, eliminazione (26/9, branch
+`modifica-pasto-salvato`, sezione 3). Regola "alimenti cancellati"
+(sezione 4) con Annulla dopo la cancellazione.
 
 **Tastiera iOS nelle pagine con la tab bar** (26/9, provata su iPhone). A
 scorrere è il documento, con la tab bar fissa. Mentre un campo ha il fuoco,
 tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
 chiude (sezione 3, "Layout delle pagine con la tab bar").
 
-**Test.** 180 test permanenti in 18 file (Vitest), tutti verdi al 26/9.
+**Test.** 196 test permanenti in 19 file (Vitest), tutti verdi al 26/9.
 
 ### Non ancora costruito
 
@@ -1552,14 +1599,23 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
   la prova sul telefono (modalità aereo, cambio scheda, secondo deploy) non
   è ancora registrata
 - Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
-  Profilo: accettato per ora (sezione 3, "Un solo Salva")
+  Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
+  per il gesto "indietro" nella modifica di un pasto salvato
+- **Pasto salvato vuoto da due dispositivi offline** (26/9, non risolvibile
+  dal client). Un pasto con due alimenti viene modificato su due dispositivi
+  offline, e ciascuno toglie un alimento diverso. La sync tiene per ogni
+  riga la scrittura più recente, quindi le due cancellazioni passano
+  entrambe e la composizione resta viva senza righe vive. È innocua: resta
+  invisibile in Preferiti e non blocca il nome (`pastoSalvatoVisibile`,
+  correzione del 22/9), ma la riga esiste. Lo stesso stato resta se un Salva
+  che cancella tutto si interrompe fra le righe e la composizione
+- **Modifica di un pasto salvato**: verificata con i test e con il build, la
+  prova sul telefono (tastiera che nasconde la barra Salva, sheet quantità
+  sopra la schermata) non è ancora registrata
 
 ### Prossimi passi
 
-1. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). Due
-   domande a cui deve rispondere: da quale sezione di Aggiungi si parte
-   davvero (ricerca, Recenti o Preferiti), e quante volte si vorrebbe
-   modificare un pasto salvato (oggi si può solo rinominarlo o eliminarlo;
-   per cambiarne gli alimenti lo si risalva)
-2. **Dopo la settimana:** l'indicatore di sincronizzazione in app, e la
-   modifica di un pasto salvato — solo se la settimana dice che serve
+1. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
+   domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
+   davvero (ricerca, Recenti o Preferiti)
+2. **Dopo la settimana:** l'indicatore di sincronizzazione in app

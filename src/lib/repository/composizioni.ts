@@ -162,21 +162,16 @@ export async function salvaPastoComeComposizione(
   return { esito: "salvato" };
 }
 
-// Rinomina un pasto salvato. Il controllo duplicati (esisteComposizioneConNome
-// con escludiId) va fatto dal chiamante prima di invocarla — qui si scrive e
-// basta, come per il resto del CRUD generico.
-export async function rinominaComposizione(id: string, nome: string): Promise<void> {
-  await repositoryComposizioni.aggiorna(id, { nome });
-}
-
 // Toglie un pasto salvato dai preferiti (sezione 3, punto 3 delle
 // correzioni: ripremere la stella già piena lo rimuove). Cancellazione
 // logica su composizione e sue voci insieme — altrimenti le voci restano
 // "vive" ma orfane, invisibili nella UI ma comunque righe in giro.
-export async function eliminaComposizione(
-  composizioneId: string,
-  composizioniVoci: ComposizioneVoce[]
-): Promise<void> {
+// Le righe si rileggono da Dexie qui dentro, non da uno stato React del
+// chiamante: una riga aggiunta un istante prima (sync, o un Salva appena
+// fatto) resterebbe fuori e viva, orfana. Prima le righe, per ultima la
+// composizione (vedi salvaModificaPasto per il perché di quest'ordine).
+export async function eliminaComposizione(userId: string, composizioneId: string): Promise<void> {
+  const composizioniVoci = await repositoryComposizioniVoci.ottieniTutti(userId);
   const voci = composizioniVoci.filter((v) => v.composizione_id === composizioneId);
   await Promise.all(voci.map((v) => repositoryComposizioniVoci.elimina(v.id)));
   await repositoryComposizioni.elimina(composizioneId);

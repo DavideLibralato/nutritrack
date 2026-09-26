@@ -467,7 +467,7 @@ function OggiContenuto() {
   // subito dai preferiti, senza sheet: stessa immediatezza della stella sugli
   // alimenti singoli in SheetQuantita.
   async function toggleSalvaPreferito(pasto: Pasto) {
-    if (!composizioni || !composizioniVoci || !catalogo) return;
+    if (!userId || !composizioni || !composizioniVoci || !catalogo) return;
     const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
     if (vociPasto.length === 0) return;
 
@@ -480,7 +480,7 @@ function OggiContenuto() {
     if (idsCorrispondenti.length > 0) {
       try {
         await Promise.all(
-          idsCorrispondenti.map((id) => eliminaComposizione(id, composizioniVoci))
+          idsCorrispondenti.map((id) => eliminaComposizione(userId, id))
         );
       } catch {
         // Azione istantanea senza sheet aperto: nessun posto dove mostrare un

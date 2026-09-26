@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Modifica di un pasto salvato: alimenti e grammi
+
+Branch `modifica-pasto-salvato`. La matita su un pasto salvato in
+Preferiti non apre più SheetNome, che permetteva solo di rinominare o
+eliminare. Apre `ModificaPastoSalvato`, una schermata a tutta altezza
+dentro Aggiungi con nome, alimenti con i grammi, aggiungi alimento ed
+"Elimina pasto". Le regole sono in PUNTO_DI_PARTENZA, sezione 3.
+
+- Logica senza React in `src/lib/inserimento/modificaPastoSalvato.ts`,
+  con 16 test permanenti: cambio grammi, togliere o aggiungere, togliere
+  tutto, alimento cancellato durante la modifica, Annulla, diario intatto,
+  nome doppio, pasto cambiato o cancellato altrove, grammi non validi.
+- `eliminaComposizione` ora rilegge le righe da Dexie invece di riceverle
+  dalla pagina. Cambia anche la chiamata della stella in Oggi. Tolta
+  `rinominaComposizione`, non più usata.
+- Nuovo `SheetConferma`, sheet sì/no generico.
+- Difetto lasciato aperto e documentato: due dispositivi offline che tolgono
+  ciascuno un alimento diverso possono lasciare un pasto vivo senza righe
+  (innocuo, invisibile). Non provato sul telefono.
+
 ## 2026-09-26 — CLAUDE.md: regola sulle voci scritte su un branch
 
 Solo documenti. Nel paragrafo "Changelog" di CLAUDE.md c'è una regola

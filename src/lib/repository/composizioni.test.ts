@@ -453,7 +453,7 @@ describe("regola Alimenti cancellati", () => {
 
       const traccia = await cancellaAlimento(userId, test.id);
       // L'utente elimina "Cena" dai preferiti mentre la barra è ancora lì.
-      await eliminaComposizione(cenaId, await repositoryComposizioniVoci.ottieniTutti(userId));
+      await eliminaComposizione(userId, cenaId);
 
       await ripristinaAlimentoEliminato(userId, test.id, traccia);
 

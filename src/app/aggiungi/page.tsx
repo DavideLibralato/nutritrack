@@ -45,16 +45,13 @@ import { alimentiRecenti } from "@/lib/inserimento/recenti";
 import { alimentiPreferiti } from "@/lib/inserimento/preferiti";
 import { pastiSalvati, type PastoSalvato } from "@/lib/inserimento/pastiSalvati";
 import {
-  esisteComposizioneConNome,
-  rinominaComposizione,
-  eliminaComposizione,
   ripristinaAlimentoEliminato,
   type TracciaRimozione,
 } from "@/lib/repository/composizioni";
 import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
-import SheetNome from "@/components/SheetNome";
+import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
@@ -220,14 +217,11 @@ function AggiungiContenuto() {
   // quindi non ha il messaggio d'errore di SheetQuantita a disposizione.
   const [erroreRapido, setErroreRapido] = useState<string | null>(null);
 
-  // Rinomina/elimina un pasto salvato (PUNTO_DI_PARTENZA.md §3, "Salvare
-  // un pasto intero"): la matita in
-  // RigaPastoSalvato apre SheetNome in modalità modifica, separato dal tap
-  // sulla riga che invece aggiunge subito al diario.
-  const [pastoInModifica, setPastoInModifica] = useState<PastoSalvato | null>(null);
-  const [salvataggioModificaPasto, setSalvataggioModificaPasto] = useState<
-    "inattivo" | "in-corso" | "errore" | "duplicato"
-  >("inattivo");
+  // Modifica di un pasto salvato (PUNTO_DI_PARTENZA.md §3, "Salvare un pasto
+  // intero"): la matita in RigaPastoSalvato apre ModificaPastoSalvato,
+  // separata dal tap sulla riga che invece aggiunge subito al diario. Basta
+  // l'id: la schermata rilegge da sola il pasto da Dexie.
+  const [pastoInModificaId, setPastoInModificaId] = useState<string | null>(null);
 
   // Barra in basso dopo la cancellazione di un alimento (regola "Alimenti
   // cancellati", punto 4). Vive qui e non in CreaAlimentoForm perché il form
@@ -369,54 +363,12 @@ function AggiungiContenuto() {
     togglePreferito(userId, preferiti, alimentoScelto.id).catch(() => {});
   }
 
-  // Matita su un pasto salvato: rinomina o elimina la composizione. Non
-  // tocca gli alimenti/quantità — per cambiarli si rifà da capo dal pasto di
-  // oggi (fuori perimetro per ora, PUNTO_DI_PARTENZA.md §3, "Salvare un
-  // pasto intero").
-  function apriModificaPasto(pasto: PastoSalvato) {
-    setPastoInModifica(pasto);
-    setSalvataggioModificaPasto("inattivo");
-  }
-
-  function chiudiModificaPasto() {
-    setPastoInModifica(null);
-    setSalvataggioModificaPasto("inattivo");
-  }
-
-  async function confermaRinominaPasto(nome: string) {
-    if (!pastoInModifica || !composizioni || !composizioniVoci || !catalogo) return;
-
-    if (
-      esisteComposizioneConNome(
-        nome,
-        catalogo,
-        composizioni,
-        composizioniVoci,
-        pastoInModifica.composizioneId
-      )
-    ) {
-      setSalvataggioModificaPasto("duplicato");
-      return;
-    }
-
-    setSalvataggioModificaPasto("in-corso");
-    try {
-      await rinominaComposizione(pastoInModifica.composizioneId, nome);
-      chiudiModificaPasto();
-    } catch {
-      setSalvataggioModificaPasto("errore");
-    }
-  }
-
-  async function eliminaPastoInModifica() {
-    if (!pastoInModifica || !composizioniVoci) return;
-    setSalvataggioModificaPasto("in-corso");
-    try {
-      await eliminaComposizione(pastoInModifica.composizioneId, composizioniVoci);
-      chiudiModificaPasto();
-    } catch {
-      setSalvataggioModificaPasto("errore");
-    }
+  // Chiusura della schermata di modifica: l'esito (aggiornato, eliminato,
+  // cancellato altrove...) lo dice la barra in basso, perché la schermata non
+  // c'è più per dirlo.
+  function chiudiModificaPasto(messaggio: string | null) {
+    setPastoInModificaId(null);
+    if (messaggio) setBarra({ id: crypto.randomUUID(), testo: messaggio });
   }
 
   function onAlimentoEliminato(alimento: Alimento, traccia: TracciaRimozione) {
@@ -636,7 +588,7 @@ function AggiungiContenuto() {
                                   key={pasto.composizioneId}
                                   pasto={pasto}
                                   onAggiungi={aggiungiPastoSalvatoRapido}
-                                  onModifica={apriModificaPasto}
+                                  onModifica={(p) => setPastoInModificaId(p.composizioneId)}
                                 />
                               ))}
                             </ul>
@@ -753,22 +705,14 @@ function AggiungiContenuto() {
         />
       )}
 
-      {pastoInModifica && (
-        <SheetNome
-          titolo={`Modifica "${pastoInModifica.nome}"`}
-          valoreIniziale={pastoInModifica.nome}
-          modifica
-          inCorso={salvataggioModificaPasto === "in-corso"}
-          errore={
-            salvataggioModificaPasto === "errore"
-              ? "Operazione non riuscita. Riprova."
-              : salvataggioModificaPasto === "duplicato"
-                ? "Esiste già un pasto salvato con questo nome. Scegline un altro."
-                : null
-          }
-          onAnnulla={chiudiModificaPasto}
-          onConferma={confermaRinominaPasto}
-          onElimina={eliminaPastoInModifica}
+      {/* Copre tutta la pagina (absolute dentro il <main>, che è già
+          agganciato al visual viewport). */}
+      {pastoInModificaId && (
+        <ModificaPastoSalvato
+          userId={userId}
+          composizioneId={pastoInModificaId}
+          catalogo={catalogo}
+          onChiudi={chiudiModificaPasto}
         />
       )}
 
@@ -860,7 +804,7 @@ function RigaRapida({
 
 // Pasto salvato nella sezione Preferiti (sezione 3, punto 5): stessa
 // struttura a tre bersagli della riga dei risultati di ricerca — nome
-// (aggiunge), matita (rinomina/elimina la composizione), "+" (aggiunge). Nome
+// (aggiunge), matita (apre ModificaPastoSalvato), "+" (aggiunge). Nome
 // e "+" fanno la stessa cosa: non c'è uno sheet quantità da aprire, le
 // quantità sono già tutte decise nella composizione. La matita non è
 // condizionale come nei risultati di ricerca: un pasto salvato è sempre tuo,
