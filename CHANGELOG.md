@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-09-26 — Tastiera su iPhone: barre in fondo sempre coperte
+
+Branch `profilo-rifacimento`. Difetto trovato provando l'anteprima: in
+Profilo, toccando un campo in basso, iOS spostava tutta la finestra e tab
+bar + barra Salva salivano sopra la tastiera (del campo restava una
+striscia); toccando un campo più in alto restavano coperte. Causa: l'area
+che scorre è un `<div>` interno che non sa della tastiera, e l'unica mossa
+che restava a iOS era spostare il visual viewport. Ora
+`src/lib/campoSopraTastiera.ts` (usato da `AreaContenuto` nel layout con la
+tab bar) riporta a zero lo spostamento e fa scorrere l'area fino a mostrare
+il campo sopra la tastiera, con uno spazio in fondo alto quanto la tastiera.
+Gli sheet (`role="dialog"`) e `/aggiungi` restano sopra la tastiera come
+deciso il 24/09. Oggi non ha campi di testo, quindi nessun difetto lì.
+
+- Aperto: provabile solo su iPhone vero, non verificato qui.
+
+## 2026-09-26 — next dev non riscrive più CLAUDE.md
+
+Branch `profilo-rifacimento`, commit e4aa380 (voce aggiunta qui perché
+mancava). `agentRules: false` in `next.config.ts`: Next.js 16, quando `next
+dev` lo lancia un agente AI, aggiungeva un blocco di regole in fondo a
+`CLAUDE.md`, che poteva finire in un commit per sbaglio. `.impeccable/`
+(stato locale del plugin di design) in `.gitignore`.
+
 ## 2026-09-26 — Profilo rifatto: un solo Salva, cambio vero o correzione, Esci
 
 Branch `profilo-rifacimento`, da provare su iPhone (anteprima Vercel) prima
