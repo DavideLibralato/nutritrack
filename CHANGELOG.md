@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — "Aggiunto — Annulla" provato su iPhone, unito a main
+
+Solo documenti. La barra "Aggiunto — Annulla" (`5a25f32`) è stata provata
+su iPhone, da Safari e dall'app installata, e unita a main con
+fast-forward, senza commit di merge. Il branch `feature/annulla-inserimento`
+è cancellato, in locale e su GitHub.
+
+- CLAUDE.md: nuova regola, il Supabase collegato è quello di produzione.
+  Niente utenti creati, righe scritte o cancellate senza un ok esplicito;
+  per le prove nel browser si chiede prima quale account usare. Allineata
+  la regola sugli script di verifica. Nato dalla prova in `npm run dev`,
+  che aveva creato e poi cancellato due utenti di prova senza chiedere.
+- Trovato durante quella pulizia, lasciato aperto in PUNTO §11: cancellando
+  un utente, `alimenti` resta con `user_id` null (`ON DELETE SET NULL`), e
+  `giorni` / `obiettivi_target` (`NO ACTION`) bloccano la cancellazione.
+  Da sistemare prima di "elimina account".
+
 ## 2026-10-02 — "Aggiunto — Annulla" dopo ogni inserimento
 
 Branch `feature/annulla-inserimento`. Chiude il rimedio 10.2: dopo i tre

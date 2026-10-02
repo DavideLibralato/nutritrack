@@ -1681,7 +1681,8 @@ iPhone). Un solo "oggi" (`oggiLocale`) per Oggi, Aggiungi e Profilo; fra
 mezzanotte e il primo pasto si propone il primo pasto (sezione 4, "Il
 giorno è quello del calendario").
 
-**"Aggiunto — Annulla" dopo ogni inserimento** (2/10, punto 10.2). Barra in
+**"Aggiunto — Annulla" dopo ogni inserimento** (2/10, punto 10.2, provata
+su iPhone da Safari e dall'app installata). Barra in
 Oggi dopo i tre percorsi di inserimento; annulla le voci di
 quell'inserimento con una cancellazione logica (sezione 3, "Dopo ogni
 inserimento, «Annulla»").
@@ -1711,9 +1712,12 @@ inserimento, «Annulla»").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
-- **"Aggiunto — Annulla"** (2/10): provato in `npm run dev` con Chrome
-  (inserimento dallo sheet, Annulla, cancellazione arrivata su Supabase), da
-  provare su iPhone, sia da Safari sia dall'app installata
+- **Cancellando un utente, le sue righe in `alimenti` non vengono
+  cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
+  non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e
+  `obiettivi_target` sono `NO ACTION`: se l'utente ha righe lì, la
+  cancellazione dell'utente fallisce. Da sistemare prima di "elimina
+  account". Le altre tabelle sono `CASCADE`
 - Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
   Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
   per il gesto "indietro" nella modifica di un pasto salvato

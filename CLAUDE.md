@@ -71,11 +71,12 @@ non dice il contrario.
   `/lib`) il nome del file deve dire cosa fa
 - Commit piccoli e frequenti, messaggi in italiano
 - **Test permanenti solo per bug di logica sottile** (race condition, calcoli,
-  regole come il giorno logico) — quelli che non fanno rumore e si scoprono
+  regole sulle date) — quelli che non fanno rumore e si scoprono
   mesi dopo (sezione 10.5). Scrivi il test, tienilo nel progetto (Vitest +
   Testing Library, già configurati). Gli script usati per verificare a mano
-  contro Supabase reale (creare un utente, controllare una riga) restano
-  temporanei come sempre: si cancellano dopo l'uso
+  contro Supabase reale restano temporanei come sempre: si cancellano dopo
+  l'uso. Se scrivono qualcosa (un utente, una riga), vale la regola sul
+  Supabase di produzione qui sotto: prima il mio ok
 - **Non committare mai di tua iniziativa.** Finisci il pezzo di lavoro
   richiesto, riepiloga cosa hai fatto e come l'hai verificato, poi fermati
   e aspetta. Committa solo quando scrivo esplicitamente "committa"
@@ -92,6 +93,11 @@ non dice il contrario.
   `NEXT_PUBLIC_`, `.env.local` mai committato. Le chiamate AI, quando
   arriveranno, partono da Edge Function
 - **Niente servizi a pagamento senza avvisarmi prima**: obiettivo costo zero
+- **Il Supabase collegato è quello di PRODUZIONE, con i dati reali**, anche
+  dalla preview e da `npm run dev`. Non creare utenti, non scrivere e non
+  cancellare righe senza chiedermi prima l'ok esplicito. Per le prove nel
+  browser chiedimi prima se usare il mio account o crearne uno di prova. Le
+  query in sola lettura vanno bene
 - Prima di aggiungere una feature, la domanda della sezione 1: riduce o aumenta
   l'attrito dell'inserimento?
 
