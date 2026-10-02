@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Tab bar fluttuante provata su iPhone, unita a main; "Salvato." in Profilo
+
+La tab bar fluttuante (`8da5690`) è stata provata su iPhone, da Safari e
+dall'app installata, e unita a main con fast-forward, senza commit di
+merge. Il branch `feature/tab-bar-fluttuante` è cancellato, in locale e su
+GitHub.
+
+Aggiunto prima del merge, dopo la prova sul telefono: in Profilo, dopo un
+salvataggio riuscito, "Salvato." per circa 2500 ms con una BarraAnnulla
+senza azione, sopra la pillola, dove stava la barra Salva (che a quel punto
+sparisce). Tolto il "Salvato." dentro la barra Salva, che non si vedeva
+più. Il test della pagina Profilo controlla che compaia una volta sola dopo
+il salvataggio, non dopo "Annulla modifiche", e che se ne vada da solo. Non
+ancora visto sul telefono.
+
 ## 2026-10-02 — Tab bar fluttuante (opzione B)
 
 Branch `feature/tab-bar-fluttuante`. La tab bar diventa una pillola

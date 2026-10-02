@@ -432,7 +432,9 @@ bordi. Lo spazio in fondo alla pagina resta sempre riservato, come se la barra
 ci fosse: quando compare non copre "Ricarica i dati" ed "Esci", e la pagina
 non salta. Compare con una dissolvenza di 150 ms, nessuna animazione con
 `prefers-reduced-motion`. Sparisce dopo il salvataggio e dopo "Annulla
-modifiche", quindi il messaggio "Salvato" di prima non si vede più. Il Salva
+modifiche". Dopo un salvataggio riuscito, nello stesso punto sopra la
+pillola, compare "Salvato." per circa 2,5 secondi: una BarraAnnulla senza
+azione, perché la barra Salva a quel punto non c'è più. Il Salva
 confronta i
 valori sullo schermo con quelli caricati e **scrive solo le tabelle delle
 sezioni cambiate** (Dati personali → `profili`; Obiettivo → `obiettivi` +
@@ -1731,10 +1733,13 @@ dall'app sulla Home). `viewportFit: "cover"` (sezione 3, "Barretta home di
 iOS"). Il margine in più solo in modalità standalone è stato tolto con la
 tab bar fluttuante, che ha la sua distanza dal fondo.
 
-**Tab bar fluttuante** (2/10, "opzione B"). Pillola staccata dai bordi con
-sfondo vetro; in Oggi "+ Aggiungi" fluttuante e lista fino in fondo; barra
-Salva di Profilo solo con modifiche (sezione 3, "La tab bar è una pillola
-fluttuante" e "Un solo Salva"; sezione 7).
+**Tab bar fluttuante** (2/10, "opzione B", provata su iPhone da Safari e
+dall'app installata). Pillola staccata dai bordi con sfondo vetro; in Oggi
+"+ Aggiungi" fluttuante e lista fino in fondo; barra Salva di Profilo solo
+con modifiche (sezione 3, "La tab bar è una pillola fluttuante" e "Un solo
+Salva"; sezione 7). Aggiunto dopo la prova: "Salvato." in Profilo dopo un
+salvataggio riuscito, coperto dal test della pagina ma non ancora visto sul
+telefono.
 
 **Giorno del calendario al posto del giorno logico** (2/10, provato su
 iPhone). Un solo "oggi" (`oggiLocale`) per Oggi, Aggiungi e Profilo; fra
@@ -1772,15 +1777,6 @@ inserimento, «Annulla»").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
-- **Tab bar fluttuante** (2/10): geometria misurata in `npm run dev` a 375 e
-  390 px, con il CSS vero e una pagina di prova (senza login). Da provare
-  su iPhone sulla preview, da Safari e dall'app installata:
-  - distanza della pillola dalla barretta home;
-  - sfocatura;
-  - Oggi con la lista lunga;
-  - barra "Aggiunto — Annulla" sopra "+ Aggiungi";
-  - barra Salva di Profilo che compare e sparisce;
-  - tastiera aperta in Profilo
 - **Cancellando un utente, le sue righe in `alimenti` non vengono
   cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
   non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e

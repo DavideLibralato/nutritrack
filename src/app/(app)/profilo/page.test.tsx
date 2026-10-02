@@ -105,6 +105,8 @@ describe("Barra Salva del Profilo", () => {
     fireEvent.click(screen.getByRole("button", { name: "Annulla modifiche" }));
     expect(altezza.value).toBe("180");
     expect(barra()?.getAttribute("data-visibile")).toBe("false");
+    // Annullare non è salvare: niente "Salvato.".
+    expect(screen.queryByText("Salvato.")).toBeNull();
 
     fireEvent.change(altezza, { target: { value: "182" } });
     expect(barra()?.getAttribute("data-visibile")).toBe("true");
@@ -112,5 +114,12 @@ describe("Barra Salva del Profilo", () => {
     await waitFor(() => expect(barra()?.getAttribute("data-visibile")).toBe("false"));
     const salvato = await db.profili.filter((p) => p.user_id === USER_ID).first();
     expect(salvato?.altezza_cm).toBe(182);
-  });
+
+    // Dopo il salvataggio la barra Salva sparisce e la conferma la dà una
+    // BarraAnnulla breve, una sola, che se ne va da sola dopo ~2500 ms.
+    expect(screen.getAllByText("Salvato.")).toHaveLength(1);
+    await waitFor(() => expect(screen.queryByText("Salvato.")).toBeNull(), {
+      timeout: 4000,
+    });
+  }, 10000);
 });

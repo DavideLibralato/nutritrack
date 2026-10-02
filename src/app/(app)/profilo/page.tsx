@@ -61,6 +61,7 @@ import SezioneProfilo from "@/components/SezioneProfilo";
 import ValorePrecedente from "@/components/ValorePrecedente";
 import CampoTarget from "@/components/CampoTarget";
 import BarraSalvaProfilo from "@/components/BarraSalvaProfilo";
+import BarraAnnulla from "@/components/BarraAnnulla";
 import SheetCambioObiettivo from "@/components/SheetCambioObiettivo";
 
 const OPZIONI_SESSO: { valore: Sesso; etichetta: string }[] = [
@@ -249,6 +250,11 @@ function ModuliProfilo({
   const [esito, setEsito] = useState<
     "salvato" | "errore" | "da-correggere" | "periodo-cambiato" | null
   >(null);
+  // "Salvato." dopo un salvataggio riuscito: la barra Salva a quel punto
+  // sparisce (non ci sono più modifiche), quindi la conferma la dà una
+  // BarraAnnulla breve, senza azione, nello stesso punto sopra la pillola.
+  // Il valore è la `key`: un secondo salvataggio fa ripartire il timer.
+  const [barraSalvato, setBarraSalvato] = useState<string | null>(null);
 
   if (userId === undefined || caricati === null || attuali === null) {
     return (
@@ -376,6 +382,7 @@ function ModuliProfilo({
           setCaricati(nuovi);
           setAttuali(nuovi);
           setEsito("salvato");
+          setBarraSalvato(crypto.randomUUID());
           break;
         }
         case "da-correggere":
@@ -399,10 +406,10 @@ function ModuliProfilo({
     }
   }
 
+  // Solo gli esiti che lasciano modifiche da salvare: con "salvato" la barra
+  // Salva sparisce, e "Salvato." lo dice la BarraAnnulla (barraSalvato).
   const messaggioBarra =
-    esito === "salvato"
-      ? { testo: "Salvato.", avviso: false }
-      : esito === "errore"
+    esito === "errore"
         ? { testo: "Salvataggio non riuscito. Riprova.", avviso: true }
         : esito === "da-correggere"
           ? { testo: "Correggi i campi segnalati prima di salvare.", avviso: true }
@@ -688,6 +695,20 @@ function ModuliProfilo({
         onAnnulla={annullaModifiche}
         onSalva={avviaSalvataggio}
       />
+
+      {/* Stesso punto della barra Salva: il contenitore parte dalla cima della
+          pillola (--ingombro-tab-bar) e il margine in fondo della
+          BarraAnnulla (0.75rem) è --spazio-fra-barre. z-40 come in Oggi. */}
+      {barraSalvato && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[var(--ingombro-tab-bar)] z-40 mx-auto max-w-md">
+          <BarraAnnulla
+            key={barraSalvato}
+            testo="Salvato."
+            durataMs={2500}
+            onChiudi={() => setBarraSalvato(null)}
+          />
+        </div>
+      )}
 
       {sheetAperto && periodo && (
         <SheetCambioObiettivo
