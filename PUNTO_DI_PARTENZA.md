@@ -1832,11 +1832,10 @@ inserimento, «Annulla»").
 dall'app installata, compreso "Salvato." in Profilo). Stesso vetro della
 tab bar, icona, linea del tempo; durate di 5, 4 e 2,5 secondi (sezione 7).
 
-**Swipe per cambiare giorno in Oggi** (2/10, branch `feature/swipe`, da
-provare su iPhone). Dito a sinistra giorno dopo, a destra giorno prima,
+**Swipe per cambiare giorno in Oggi** (2/10, provato su iPhone da Safari
+e dall'app installata). Dito a sinistra giorno dopo, a destra giorno prima,
 elastico oltre oggi; la lista riparte dall'alto a ogni cambio di giorno
-(sezione 3, "Swipe per cambiare giorno"). Provato in Chrome con tocchi
-simulati, non ancora sul telefono.
+(sezione 3, "Swipe per cambiare giorno").
 
 **Test.** 244 test permanenti in 25 file (Vitest), tutti verdi al 2/10.
 

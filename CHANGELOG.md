@@ -5,6 +5,15 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Swipe provato su iPhone, unito a main
+
+Lo swipe per cambiare giorno (`ec8f4f0`) è stato provato su iPhone, da
+Safari e dall'app installata, e funziona tutto: la lista non riparte in
+verticale dopo un gesto orizzontale (il `touchmove` è registrato con
+`passive: false`, quindi iOS rispetta il `preventDefault`). Unito a main
+con fast-forward, senza commit di merge; branch `feature/swipe`
+cancellato, in locale e su GitHub.
+
 ## 2026-10-02 — Swipe per cambiare giorno in Oggi
 
 Branch `feature/swipe`. In Oggi un trascinamento orizzontale cambia giorno:
