@@ -49,7 +49,7 @@ export function sommaTotali(voci: VoceDiario[]): TotaliNutrizionali {
   }, { ...TOTALI_ZERO });
 }
 
-// Le voci di un certo giorno logico. `deleted_at` è ricontrollato qui anche
+// Le voci di un certo giorno. `deleted_at` è ricontrollato qui anche
 // se il repository lo filtra già: la funzione è pura e deve dare il
 // risultato giusto da sola, a chiunque le passi una lista.
 export function vociDelGiorno(voci: VoceDiario[], giornoISO: string): VoceDiario[] {
@@ -101,7 +101,7 @@ export function obiettivoValidoPer(
 }
 
 // "Il periodo in corso": UNA sola definizione per tutta l'app — il periodo
-// valido nel giorno logico corrente (giornoLogico in dataGiorno.ts), lo
+// valido nel giorno corrente (oggiLocale in dataGiorno.ts), lo
 // stesso "oggi" della pagina Oggi. Non il più recente per updated_at né per
 // valido_dal: con la data d'inizio modificabile, il periodo scritto per
 // ultimo non è per forza quello in vigore.

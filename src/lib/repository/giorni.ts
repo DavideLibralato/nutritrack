@@ -39,7 +39,7 @@ import type { Giorno, Profilo, TipoGiorno } from "../db/tipi";
 const NAMESPACE_GIORNI = "e417e7f6-16e8-4e13-85e6-cbcf7c20e8e2";
 
 // `data` DEVE essere sempre nella forma canonica "YYYY-MM-DD" prodotta da
-// giornoLogico()/oggiLocale() in dataGiorno.ts — mai un oggetto Date, mai una
+// oggiLocale() in dataGiorno.ts — mai un oggetto Date, mai una
 // stringa con un formato diverso. Due chiamanti che passano forme diverse
 // per lo stesso giorno calcolerebbero id diversi per la stessa riga logica,
 // e il doppione che il vincolo unico dovrebbe impedire tornerebbe in

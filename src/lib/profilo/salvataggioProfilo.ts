@@ -232,7 +232,7 @@ export function serveSceltaPeriodo(m: Modifiche, periodo: Obiettivo | null): boo
 }
 
 // Le date ammesse per l'inizio di un periodo nuovo ("È un cambio vero").
-//   - Massimo: il giorno corrente (il giorno logico, come in Oggi). Un
+//   - Massimo: il giorno corrente (oggi del calendario, come in Oggi). Un
 //     periodo che parte domani non sarebbe il periodo in corso: dopo il
 //     Salva la pagina tornerebbe a mostrare i valori vecchi.
 //   - Minimo: il giorno DOPO l'inizio del periodo in corso. Prima non
@@ -395,7 +395,7 @@ export interface RichiestaSalvataggio {
   userId: string;
   caricati: ValoriModulo;
   attuali: ValoriModulo;
-  // Il giorno logico corrente: data del primo periodo e limite massimo di
+  // Oggi (oggiLocale): data del primo periodo e limite massimo di
   // un periodo nuovo.
   giornoCorrente: string;
   // L'id del periodo in corso che la pagina mostrava quando l'utente ha

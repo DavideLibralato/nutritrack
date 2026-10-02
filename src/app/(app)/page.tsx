@@ -55,10 +55,9 @@ import {
   formattaGiornoMese,
   formattaDataEstesa,
   eFuturo,
-  giornoLogico,
+  oggiLocale,
 } from "@/lib/dataGiorno";
 import { TIPO_GIORNO_NORMALE } from "@/lib/db/tipi";
-import { oraInizioPrimoPasto } from "@/lib/inserimento/propostaPasto";
 import { catalogoLocale } from "@/lib/repository/alimenti";
 import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
@@ -107,16 +106,13 @@ function OggiContenuto() {
   const searchParams = useSearchParams();
 
   // Il giorno visualizzato, "YYYY-MM-DD". Se /aggiungi ci ha rimandato qui con
-  // un ?giorno= (e non è futuro) si parte da quello. Altrimenti il giorno di
-  // partenza è il GIORNO LOGICO, che non è sempre l'oggi del calendario:
-  // all'una di notte è ancora "ieri" perché la Cena scavalca la mezzanotte
-  // (PUNTO_DI_PARTENZA.md, sezione "Il giorno logico"). Il giorno logico
-  // dipende dall'ora del primo pasto, che arriva da Dexie in modo asincrono:
-  // finché non la conosciamo `giorno` resta null e la pagina mostra
-  // "Caricamento" (come già fa per userId/pasti/voci).
-  const [giorno, setGiorno] = useState<string | null>(() => {
+  // un ?giorno= (e non è futuro) si parte da quello. Altrimenti si parte
+  // dall'oggi del calendario, anche all'una di notte (PUNTO_DI_PARTENZA.md,
+  // sezione 4, "Il giorno è quello del calendario"): non serve aspettare
+  // i pasti da Dexie per saperlo.
+  const [giorno, setGiorno] = useState<string>(() => {
     const param = searchParams.get("giorno");
-    return param && !eFuturo(param) ? param : null;
+    return param && !eFuturo(param) ? param : oggiLocale();
   });
 
   // Il calendario si apre da codice con showPicker() sull'input date, non
@@ -227,7 +223,6 @@ function OggiContenuto() {
   // ogni ridisegno: parte solo quando uno di questi valori cambia davvero.
   useEffect(() => {
     if (
-      giorno === null ||
       profilo === undefined ||
       giorniRighe === undefined ||
       obiettivi === undefined ||
@@ -297,19 +292,7 @@ function OggiContenuto() {
     });
   }
 
-  // Nessun ?giorno= in arrivo: il giorno di partenza è quello logico (vedi il
-  // commento sullo useState sopra). Serve l'ora del primo pasto, quindi si
-  // aspettano i `pasti` da Dexie. Impostato durante il render e guardato da
-  // `=== null` — come nella pagina Profilo — non in un useEffect (che React
-  // segnala come set-state-in-effect). Se per un attimo `pasti` è [] (default
-  // non ancora creati) vale l'oggi del calendario: si corregge da sé al
-  // prossimo avvio, il caso è il primo utilizzo in assoluto fra le 00 e le 06.
-  if (giorno === null && pasti !== undefined) {
-    setGiorno(giornoLogico(oraInizioPrimoPasto(pasti)));
-  }
-
   if (
-    giorno === null ||
     userId === undefined ||
     pasti === undefined ||
     vociTutte === undefined ||
@@ -328,13 +311,11 @@ function OggiContenuto() {
     );
   }
 
-  // Da qui in giù `giorno`, `pasti`, `vociTutte` e `obiettivi` ci sono di sicuro.
+  // Da qui in giù `pasti`, `vociTutte` e `obiettivi` ci sono di sicuro.
 
-  // Il giorno logico "adesso": di norma l'oggi del calendario, ma fra la
-  // mezzanotte e l'ora del primo pasto è ieri (sezione "Il giorno logico").
-  // È il giorno a cui riporta il pulsante "Oggi" e oltre il quale non si
-  // naviga in avanti.
-  const giornoCorrente = giornoLogico(oraInizioPrimoPasto(pasti));
+  // L'oggi del calendario: il giorno a cui riporta il pulsante "Oggi" e oltre
+  // il quale non si naviga in avanti (lo stesso limite di eFuturo).
+  const giornoCorrente = oggiLocale();
   const eGiornoCorrente = giorno === giornoCorrente;
 
   // Derivati: con React Compiler attivo non serve useMemo, il ricalcolo a

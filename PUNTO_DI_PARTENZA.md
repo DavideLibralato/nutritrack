@@ -375,7 +375,7 @@ ora). Logica e test in `src/lib/profilo/salvataggioProfilo.ts`.
 **Cambio vero o correzione.** Se è cambiato l'obiettivo o un target (anche
 solo quello di allenamento) di un periodo già esistente, il Salva chiede:
 - **"È un cambio vero"** (predefinita) → periodo nuovo in `obiettivi`, con la
-  **data d'inizio modificabile**: da oggi (giorno logico) indietro fino al
+  **data d'inizio modificabile**: da oggi (data del calendario) indietro fino al
   **giorno dopo** l'inizio del periodo in corso. Non prima: il periodo nuovo
   non sarebbe mai quello in corso. Non lo stesso giorno: il vecchio resterebbe
   senza nemmeno un giorno di validità. Non nel futuro: dopo il Salva la pagina
@@ -391,7 +391,8 @@ Al **primo inserimento** (nessun obiettivo) non si chiede niente: si crea il
 primo periodo, che vale "da sempre" (vedi `obiettivi` nella sezione 4).
 
 **Il periodo in corso** ha una sola definizione in tutta l'app: il periodo
-valido nel giorno logico corrente (`periodoInCorso` in `totaliDiario.ts`).
+valido oggi, data del calendario (`periodoInCorso` in `totaliDiario.ts`), lo
+stesso "oggi" della pagina Oggi.
 
 ### Il calcolo del fabbisogno
 
@@ -464,8 +465,8 @@ pattern, il giorno in cui sposti l'allenamento dal mercoledì al giovedì
 **riscriveresti il passato**: mesi di mercoledì diventerebbero giorni normali,
 con i target sbagliati e i grafici ridisegnati.
 
-È lo stesso errore del giorno logico e dello storico degli obiettivi, per la
-terza volta. Vale la regola generale: **quello che l'app deduce nel momento in cui
+È lo stesso errore della data delle voci (sezione 4, "Il giorno è quello del
+calendario") e dello storico degli obiettivi, per la terza volta. Vale la regola generale: **quello che l'app deduce nel momento in cui
 succede va salvato; quello che ricalcola a ogni lettura può riscrivere la
 storia.**
 
@@ -489,8 +490,11 @@ aggiungere, eliminare e riordinare dal Profilo *(non ancora costruito: oggi
 esiste solo il set predefinito, nessuna schermata per modificarlo)*.
 
 Ogni pasto ha **solo un'ora di inizio**, non un intervallo: dura fino all'inizio
-del pasto successivo, e l'ultimo arriva fino al primo del giorno dopo. Un campo
-invece di due, e per costruzione niente buchi e niente sovrapposizioni.
+del pasto successivo, e l'ultimo arriva fino a mezzanotte. Un campo invece di
+due, e per costruzione niente buchi e niente sovrapposizioni. Fra mezzanotte
+e l'inizio del primo pasto l'app propone il primo pasto (alle 00:30 la
+Colazione), perché il giorno è quello del calendario (sezione 4): proporre
+la Cena metterebbe la voce nella Cena di stasera, non ancora mangiata.
 
 Set predefinito creato alla registrazione:
 
@@ -589,10 +593,11 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 
 **`giorni`** — la classificazione della giornata
 - `data`, `tipo_giorno`
-- `data` è il **giorno logico** (sezione "Il giorno logico"), la stessa
-  convenzione di `voci_diario.data` — non la data di calendario grezza. Un
-  inserimento fatto all'una di notte classifica il giorno di ieri, non quello
-  del calendario, coerentemente con la voce che quell'inserimento scrive
+- `data` è il **giorno del calendario** (sezione "Il giorno è quello del
+  calendario"), la stessa convenzione di `voci_diario.data`. Un inserimento
+  fatto all'una di notte classifica il giorno del calendario, coerentemente
+  con la voce che quell'inserimento scrive. Le righe scritte prima del 2/10
+  con la regola del giorno logico restano come sono
 - riga **sparsa**: esiste solo per le giornate effettivamente classificate. Il
   valore nasce dal pattern settimanale del profilo, ma **viene scritto** appena
   la giornata riceve la prima voce (vedi "La trappola" nella sezione 3)
@@ -768,23 +773,24 @@ condiviso, visibile a tutti; valorizzato = alimento privato di quell'utente.
 
 ---
 
-### Il giorno logico
+### Il giorno è quello del calendario
 
-Serve una regola, perché l'ultimo pasto della giornata scavalca la mezzanotte
-(Cena inizia alle 19:30 e dura fino alle 06:00).
+> Un inserimento appartiene al **giorno del calendario** dell'orologio locale
+> (`oggiLocale` in `dataGiorno.ts`), a qualunque ora. Alle 01:30 è già oggi.
 
-> Un inserimento fatto **prima dell'ora di inizio del primo pasto** appartiene al
-> giorno precedente.
-
-Registri qualcosa all'una di notte: finisce nella Cena di ieri, non nella
-Colazione di oggi. È la stessa logica con cui l'app propone il pasto, applicata
-alla data.
+C'è **un solo "oggi"** in tutta l'app: lo stesso per Oggi, l'inserimento, il
+periodo in corso del Profilo e la pesata.
 
 **La data è calcolata una volta e memorizzata**, non ricalcolata a ogni lettura.
-Gli orari dei pasti sono modificabili dall'utente: se fossero ricalcolati,
-spostare la Colazione dalle 06:00 alle 05:00 riscriverebbe l'appartenenza di
-voci di mesi fa. Stesso principio dello storico degli obiettivi — il passato non
-si riscrive mai da solo.
+Il passato non si riscrive mai da solo: stesso principio dello storico degli
+obiettivi.
+
+**Decisione ritirata (2 ottobre 2026): il "giorno logico".** Prima valeva la
+regola inversa: un inserimento fatto prima dell'inizio del primo pasto
+apparteneva al giorno precedente. Il 1/10 alle 05:57 tre voci sono finite
+nella Cena del 30/9 e sono state cancellate a mano. In più la pesata usava già
+la data del calendario: c'erano due "oggi". Le voci salvate con la regola
+vecchia restano come sono, con la loro `data`.
 
 ### Estensioni future: cosa tocca lo schema e cosa no
 
@@ -1461,18 +1467,21 @@ toccano né database né interfaccia e che sbagliano in modo silenzioso:
    quella data e dentro quel periodo il set di target del tipo di giorno giusto.
    Sbagliarlo significa mostrare il numero principale della schermata principale
    errato, con l'aria di essere corretto
-4. la regola del giorno logico (l'inserimento dell'una di notte)
-5. la proposta del pasto in base all'ora, inclusa la fascia che scavalca la
-   mezzanotte
+4. il giorno di un inserimento: la data dell'orologio locale, non quella UTC
+   (`oggiLocale`), anche all'una di notte. Fino al 2 ottobre 2026 era la
+   regola del giorno logico, ritirata (sezione 4, "Il giorno è quello del
+   calendario")
+5. la proposta del pasto in base all'ora, inclusi gli orari fra mezzanotte e
+   il primo pasto (si propone il primo pasto)
 
 Sono cinque funzioni, si testano con una manciata di casi. È il punto in cui un bug
 non fa rumore: non crasha niente, i numeri sono solo un po' sbagliati — e te ne
 accorgi mesi dopo.
 
-Stato al 2026-09-26: hanno test permanenti la 1 (`totaliDiario.test.ts`), la
+Stato al 2026-10-02: hanno test permanenti la 1 (`totaliDiario.test.ts`), la
 3 (`obiettivoValidoPer` in `totaliDiario.test.ts`, il ripiego sul target
-"normale" in `obiettiviTarget.test.ts`), la 4 (`dataGiorno.test.ts`) e la 5
-(`propostaPasto.test.ts`). La 2 aspetta le Statistiche, che non esistono
+"normale" in `obiettiviTarget.test.ts`), la 4 (`oggiLocale` in
+`dataGiorno.test.ts`) e la 5 (`pastoPerOrario` in `propostaPasto.test.ts`). La 2 aspetta le Statistiche, che non esistono
 ancora.
 
 **Aggiornamento (6 settembre 2026):** Vitest + Testing Library + jsdom sono
@@ -1483,7 +1492,7 @@ identico nello spirito: una race condition tra `useUtenteId()` e
 refresh, perché una risposta "non so ancora" (`undefined`) veniva confusa con
 "ho controllato, non c'è nulla" (`null`/`[]`). Corretto, e tenuto come test
 permanente. Regola pratica: un bug di logica sottile (calcoli, race
-condition, regole come il giorno logico) diventa un test che resta nel
+condition, regole sulle date) diventa un test che resta nel
 progetto; uno script di verifica manuale contro Supabase reale resta
 temporaneo come prima.
 
@@ -1618,7 +1627,8 @@ Mifflin-St Jeor, storico in `obiettivi`, "Registra peso", peso obiettivo,
 giorni differenziati, Esci.
 
 **Punto 2 — Oggi e inserimento manuale.** Oggi a tre fasce con data
-navigabile (frecce e calendario), giorno logico, anello e barre macro,
+navigabile (frecce e calendario), giorno = data del calendario (il giorno
+logico è ritirato dal 2/10, sezione 4), anello e barre macro,
 pastiglia Normale/Allenamento, pasti richiudibili, voce spostabile di pasto
 dallo sheet. Aggiungi alimento con ricerca nel catalogo locale, crea,
 modifica ed elimina alimento (con la marca), sheet quantità unico.
@@ -1638,7 +1648,7 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
 dall'app sulla Home). `viewportFit: "cover"` e 0.75rem in più in fondo solo
 in modalità standalone (sezione 3, "Barretta home di iOS").
 
-**Test.** 215 test permanenti in 21 file (Vitest), tutti verdi al 2/10.
+**Test.** 208 test permanenti in 21 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
 
@@ -1664,6 +1674,9 @@ in modalità standalone (sezione 3, "Barretta home di iOS").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
+- **Giorno del calendario al posto del giorno logico** (2/10): da provare su
+  iPhone fra mezzanotte e l'ora della Colazione (giorno mostrato in Oggi,
+  dove finisce la voce, pasto proposto)
 - Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
   Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
   per il gesto "indietro" nella modifica di un pasto salvato

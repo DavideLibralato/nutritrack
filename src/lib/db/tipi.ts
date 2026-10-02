@@ -130,7 +130,10 @@ export interface Giorno extends RigaBase {
 
 export interface Pasto extends RigaBase {
   nome: string; // "Colazione", "Pranzo 1", ... — le fasce sono dell'utente, non fisse nel codice
-  ora_inizio: string; // "HH:mm": dura fino all'inizio del pasto successivo
+  // "HH:mm" se creato sul dispositivo, "HH:mm:ss" se scaricato da Postgres
+  // (colonna `time`): per confrontarlo con un orario usare solo i primi 5
+  // caratteri (pastoPerOrario). Dura fino all'inizio del pasto successivo.
+  ora_inizio: string;
   ordine: number;
 }
 
@@ -165,7 +168,7 @@ export interface VoceDiario extends RigaBase {
   pasto_id: string | null;
   gruppo_id: string | null; // righe inserite insieme da un pasto salvato/ricetta
   quantita_g: number;
-  data: string; // "YYYY-MM-DD": il giorno logico (vedi PUNTO_DI_PARTENZA.md)
+  data: string; // "YYYY-MM-DD": il giorno del calendario (vedi PUNTO_DI_PARTENZA.md)
   creato_il: string; // ISO 8601: quando è stata scritta la riga
   consumato_alle: string | null; // ISO 8601: quando è stata mangiata
 

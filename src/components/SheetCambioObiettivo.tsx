@@ -45,7 +45,7 @@ export default function SheetCambioObiettivo({
   const [tipo, setTipo] = useState<SceltaPeriodo["tipo"]>(
     cambioPossibile ? "nuovo" : "correzione"
   );
-  // Predefinita: oggi (il giorno logico, come in Oggi) — il massimo.
+  // Predefinita: oggi (la data del calendario, come in Oggi) — il massimo.
   const [validoDal, setValidoDal] = useState(limiti?.max ?? "");
   const areaVisibile = useAreaVisibile();
 

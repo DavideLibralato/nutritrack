@@ -10,6 +10,11 @@
 // Perché non usare `new Date().toISOString().slice(0, 10)` come altrove:
 // toISOString() dà la data in UTC. A Roma, fra mezzanotte e le 02:00 d'estate,
 // sarebbe ancora "ieri". Qui il giorno è sempre quello dell'orologio locale.
+//
+// `oggiLocale()` è l'unico "oggi" dell'app: Oggi, l'inserimento, il periodo
+// in corso del Profilo e la pesata usano tutti la data del calendario.
+// Anche all'una di notte (PUNTO_DI_PARTENZA.md, sezione 4, "Il giorno è
+// quello del calendario").
 
 import type { GiornoSettimana } from "./db/tipi";
 
@@ -86,33 +91,6 @@ export function oraCorrente(d: Date = new Date()): string {
   const ore = String(d.getHours()).padStart(2, "0");
   const minuti = String(d.getMinutes()).padStart(2, "0");
   return `${ore}:${minuti}`;
-}
-
-// Il "giorno logico" a cui appartiene un inserimento fatto adesso
-// (PUNTO_DI_PARTENZA.md, sezione "Il giorno logico"). L'ultimo pasto scavalca
-// la mezzanotte (la Cena dura fino alla mattina dopo), quindi:
-//
-//   un inserimento fatto PRIMA dell'ora di inizio del primo pasto appartiene
-//   al giorno precedente.
-//
-// Registri qualcosa all'una di notte → finisce nella giornata di "ieri", non
-// nell'oggi del calendario. È la stessa logica con cui l'app propone il pasto,
-// applicata alla data.
-//
-// `oraInizioPrimoPasto` è "HH:mm" (l'ora del pasto più mattiniero, non del
-// primo per `ordine`: le fasce sono riordinabili dall'utente). Se è null
-// — nessun pasto ancora, nessuna regola da applicare — vale il giorno del
-// calendario. Il confronto fra stringhe "HH:mm" funziona perché sono a
-// lunghezza fissa e zero-padded, come già in pastoPerOrario.
-export function giornoLogico(
-  oraInizioPrimoPasto: string | null,
-  adesso: Date = new Date()
-): string {
-  const oggi = oggiLocale(adesso);
-  if (oraInizioPrimoPasto && oraCorrente(adesso) < oraInizioPrimoPasto) {
-    return giornoPrecedente(oggi);
-  }
-  return oggi;
 }
 
 // getDay() di JS parte dalla domenica (0): l'indice qui sotto rispetta

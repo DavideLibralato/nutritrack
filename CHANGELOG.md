@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Abolito il giorno logico: il giorno è quello del calendario
+
+Branch `feature/abolisci-giorno-logico`. Prima, un inserimento fatto prima
+del primo pasto finiva nel giorno precedente: il 1/10 alle 05:57 tre voci
+sono finite nella Cena del 30/9. Ora c'è un solo "oggi", `oggiLocale()`,
+per Oggi, Aggiungi e Profilo. La pesata lo usava già.
+
+- Tolte `giornoLogico` (dataGiorno.ts) e `oraInizioPrimoPasto`
+  (propostaPasto.ts). Oggi parte subito dall'oggi del calendario, senza
+  aspettare i pasti da Dexie. Il Profilo non legge più i pasti.
+- `pastoPerOrario`: prima dell'inizio del primo pasto propone il primo
+  pasto, non più la Cena. Bug trovato e corretto: con `ora_inizio`
+  "HH:mm:ss" (come arriva da Postgres), all'ora esatta di inizio veniva
+  proposto il pasto precedente.
+- Test: tolti gli 8 di `giornoLogico` e i 3 di `oraInizioPrimoPasto`,
+  riscritti e aggiunti i casi di `pastoPerOrario`. 208 test, tutti verdi.
+- Nessuna modifica a schema Dexie o Supabase. I dati salvati non cambiano.
+- PUNTO_DI_PARTENZA: §4 "Il giorno è quello del calendario" con la
+  decisione ritirata, `giorni.data`, §3, §10.5 e §11.
+
 ## 2026-10-02 — Tab bar provata su iPhone, unita a main
 
 Solo documenti. La tab bar nell'app installata (`4f61433`, `26b0545`) è

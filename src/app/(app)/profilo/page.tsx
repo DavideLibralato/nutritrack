@@ -28,14 +28,12 @@ import {
   repositoryObiettivi,
   repositoryObiettiviTarget,
   repositoryMisurazioni,
-  repositoryPasti,
 } from "@/lib/repository";
 import { ultimaMisurazione } from "@/lib/repository/misurazioni";
 import type { LivelloAttivita, Sesso, TipoObiettivo, GiornoSettimana } from "@/lib/db/tipi";
 import { calcolaEta, calcolaFabbisogno } from "@/lib/fabbisogno";
 import { periodoInCorso } from "@/lib/totaliDiario";
-import { giornoLogico, oggiLocale, formattaDataBreve } from "@/lib/dataGiorno";
-import { oraInizioPrimoPasto } from "@/lib/inserimento/propostaPasto";
+import { oggiLocale, formattaDataBreve } from "@/lib/dataGiorno";
 import {
   valoriDaDati,
   modifiche,
@@ -192,15 +190,10 @@ function ModuliProfilo({
     return righe.filter((riga) => riga.tipo === "peso");
   }, [userId]);
 
-  // Servono solo per il giorno logico (l'ora del primo pasto).
-  const pasti = useLiveQuery(async () => {
-    if (!userId) return undefined;
-    return repositoryPasti.ottieniTutti(userId);
-  }, [userId]);
-
-  // Il giorno corrente è il giorno logico, lo stesso "oggi" della pagina
-  // Oggi: fra mezzanotte e il primo pasto è ancora ieri.
-  const giornoCorrente = giornoLogico(oraInizioPrimoPasto(pasti ?? []));
+  // Il giorno corrente è l'oggi del calendario, lo stesso della pagina Oggi
+  // (PUNTO_DI_PARTENZA.md, sezione 4, "Il giorno è quello del
+  // calendario").
+  const giornoCorrente = oggiLocale();
   // Il periodo in corso: una sola definizione in tutta l'app (totaliDiario.ts).
   const periodo = obiettivi ? periodoInCorso(obiettivi, giornoCorrente) : null;
   const ultimaPesata = misurazioniPeso ? ultimaMisurazione(misurazioniPeso) : null;
@@ -218,8 +211,7 @@ function ModuliProfilo({
     caricati === null &&
     profilo !== undefined &&
     obiettivi !== undefined &&
-    obiettiviTarget !== undefined &&
-    pasti !== undefined
+    obiettiviTarget !== undefined
   ) {
     const valori = valoriDaDati(profilo, periodo, obiettiviTarget);
     setCaricati(valori);

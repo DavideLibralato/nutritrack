@@ -35,11 +35,7 @@ import {
   etichettaAlimento,
 } from "@/lib/repository/alimenti";
 import { ePreferito, togglePreferito } from "@/lib/repository/preferiti";
-import {
-  pastoPerOrario,
-  primoPastoVuoto,
-  oraInizioPrimoPasto,
-} from "@/lib/inserimento/propostaPasto";
+import { pastoPerOrario, primoPastoVuoto } from "@/lib/inserimento/propostaPasto";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { alimentiRecenti } from "@/lib/inserimento/recenti";
 import { alimentiPreferiti } from "@/lib/inserimento/preferiti";
@@ -48,7 +44,7 @@ import {
   ripristinaAlimentoEliminato,
   type TracciaRimozione,
 } from "@/lib/repository/composizioni";
-import { eFuturo, oraCorrente, giornoLogico } from "@/lib/dataGiorno";
+import { eFuturo, oraCorrente, oggiLocale } from "@/lib/dataGiorno";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
 import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
@@ -93,24 +89,21 @@ function AggiungiContenuto() {
     return [...righe].sort((a, b) => a.ordine - b.ordine);
   }, [userId]);
 
-  // Il giorno logico "adesso": di norma l'oggi del calendario, ma fra la
-  // mezzanotte e l'ora del primo pasto è ieri, perché la Cena scavalca la
-  // mezzanotte (PUNTO_DI_PARTENZA.md, sezione "Il giorno logico"). Serve l'ora
-  // del primo pasto, che arriva da Dexie: finché `pasti` è undefined vale
-  // l'oggi del calendario, ma la pagina mostra comunque "Caricamento".
-  const giornoLogicoOggi = giornoLogico(oraInizioPrimoPasto(pasti ?? []));
+  // L'oggi del calendario, anche all'una di notte (PUNTO_DI_PARTENZA.md,
+  // sezione 4, "Il giorno è quello del calendario"). È lo stesso "oggi"
+  // di eFuturo e del limite in avanti di Oggi.
+  const oggi = oggiLocale();
 
   // Il giorno a cui appartiene la voce arriva da Oggi come ?giorno=. Se manca,
-  // o è oltre il giorno logico corrente, si ripiega su quest'ultimo.
+  // o è nel futuro, si ripiega su oggi.
   const giornoParam = searchParams.get("giorno");
-  const giorno =
-    giornoParam && !eFuturo(giornoParam) ? giornoParam : giornoLogicoOggi;
+  const giorno = giornoParam && !eFuturo(giornoParam) ? giornoParam : oggi;
 
-  // "Sto registrando adesso?" — vero quando il giorno mostrato è il giorno
-  // logico corrente. Ne dipendono la proposta del pasto (per orario, non
-  // "primo pasto ancora vuoto") e se precompilare `consumato_alle` con l'ora
-  // attuale invece di lasciarlo null.
-  const registroAdesso = giorno === giornoLogicoOggi;
+  // "Sto registrando adesso?" — vero quando il giorno mostrato è oggi. Ne
+  // dipendono la proposta del pasto (per orario, non "primo pasto ancora
+  // vuoto") e se precompilare `consumato_alle` con l'ora attuale invece di
+  // lasciarlo null.
+  const registroAdesso = giorno === oggi;
 
   // Tutto lo storico delle voci diario dell'utente: serve sia alla proposta
   // del pasto sui giorni passati (primo pasto ancora vuoto, filtrato sul solo
@@ -174,8 +167,8 @@ function AggiungiContenuto() {
     garantisciPastiPredefiniti(userId).catch(() => {});
   }, [userId]);
 
-  // Proposta del pasto: se stai registrando adesso, in base all'ora (con la
-  // Cena che copre la fascia dopo mezzanotte); sui giorni passati il primo
+  // Proposta del pasto: se stai registrando adesso, in base all'ora (prima
+  // del primo pasto, il primo pasto stesso); sui giorni passati il primo
   // pasto ancora vuoto (sezione "I pasti" / "Inserimento retroattivo").
   let pastoPropostoId: string | null = null;
   if (pasti && pasti.length > 0) {

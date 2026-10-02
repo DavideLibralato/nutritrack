@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   pastoPerOrario,
   primoPastoVuoto,
-  oraInizioPrimoPasto,
 } from "./propostaPasto";
 import type { Pasto } from "../db/tipi";
 
@@ -41,16 +40,56 @@ describe("pastoPerOrario", () => {
     expect(pastoPerOrario(SET, "19:30")?.nome).toBe("Cena");
   });
 
-  it("un orario prima del primo pasto ricade nella Cena (fascia che scavalca la mezzanotte)", () => {
-    expect(pastoPerOrario(SET, "05:59")?.nome).toBe("Cena");
-    expect(pastoPerOrario(SET, "00:30")?.nome).toBe("Cena");
-    expect(pastoPerOrario(SET, "03:00")?.nome).toBe("Cena");
+  // Il giorno è quello del calendario (PUNTO_DI_PARTENZA.md, sezione 4): fra
+  // mezzanotte e il primo pasto si propone il primo pasto, non la Cena, che
+  // sarebbe quella di stasera, non ancora mangiata.
+  it("un orario prima del primo pasto propone il primo pasto (Colazione)", () => {
+    expect(pastoPerOrario(SET, "00:30")?.nome).toBe("Colazione");
+    expect(pastoPerOrario(SET, "05:57")?.nome).toBe("Colazione");
+    expect(pastoPerOrario(SET, "06:00")?.nome).toBe("Colazione");
+  });
+
+  it("la sera resta la Cena fino a mezzanotte", () => {
+    expect(pastoPerOrario(SET, "23:30")?.nome).toBe("Cena");
+    expect(pastoPerOrario(SET, "23:59")?.nome).toBe("Cena");
+  });
+
+  it("rispetta orari personalizzati: primo pasto alle 07:30, alle 07:00 propone il primo pasto", () => {
+    const personalizzati = [
+      pasto("Colazione", "07:30", 0),
+      pasto("Pranzo", "13:00", 1),
+      pasto("Cena", "20:00", 2),
+    ];
+    expect(pastoPerOrario(personalizzati, "07:00")?.nome).toBe("Colazione");
+    expect(pastoPerOrario(personalizzati, "07:30")?.nome).toBe("Colazione");
+    expect(pastoPerOrario(personalizzati, "12:59")?.nome).toBe("Colazione");
+  });
+
+  it("il primo pasto è il più mattiniero per ora, non il primo per ordine", () => {
+    // La Cena messa in cima per `ordine`: alle 03:00 si propone comunque la
+    // Colazione, perché è lei il pasto che inizia per primo.
+    const riordinati = [
+      { ...SET[4], ordine: 0 },
+      { ...SET[1], ordine: 1 },
+      { ...SET[2], ordine: 2 },
+      { ...SET[3], ordine: 3 },
+      { ...SET[0], ordine: 4 },
+    ];
+    expect(pastoPerOrario(riordinati, "03:00")?.nome).toBe("Colazione");
+  });
+
+  it("accetta ora_inizio come 'HH:mm:ss' (come arriva da Postgres): l'ora esatta resta di quel pasto", () => {
+    const daPostgres = SET.map((p) => ({ ...p, ora_inizio: `${p.ora_inizio}:00` }));
+    expect(pastoPerOrario(daPostgres, "06:00")?.nome).toBe("Colazione");
+    expect(pastoPerOrario(daPostgres, "12:30")?.nome).toBe("Pranzo");
+    expect(pastoPerOrario(daPostgres, "19:30")?.nome).toBe("Cena");
+    expect(pastoPerOrario(daPostgres, "00:30")?.nome).toBe("Colazione");
   });
 
   it("non dipende dall'ordine in cui arrivano i pasti", () => {
     const mescolati = [SET[3], SET[0], SET[4], SET[1], SET[2]];
     expect(pastoPerOrario(mescolati, "13:00")?.nome).toBe("Pranzo");
-    expect(pastoPerOrario(mescolati, "04:00")?.nome).toBe("Cena");
+    expect(pastoPerOrario(mescolati, "04:00")?.nome).toBe("Colazione");
   });
 
   it("lista vuota → null", () => {
@@ -75,28 +114,5 @@ describe("primoPastoVuoto", () => {
 
   it("lista vuota → null", () => {
     expect(primoPastoVuoto([], new Set())).toBeNull();
-  });
-});
-
-describe("oraInizioPrimoPasto", () => {
-  it("restituisce l'ora del pasto più mattiniero", () => {
-    expect(oraInizioPrimoPasto(SET)).toBe("06:00");
-  });
-
-  it("guarda l'ora, non l'ordine: un pasto riordinato in cima ma serale non conta", () => {
-    // La Cena (19:30) messa come primo per `ordine`, la Colazione (06:00) per
-    // ultima: il primo pasto della giornata resta quello delle 06:00.
-    const riordinati = [
-      { ...SET[4], ordine: 0 },
-      { ...SET[1], ordine: 1 },
-      { ...SET[2], ordine: 2 },
-      { ...SET[3], ordine: 3 },
-      { ...SET[0], ordine: 4 },
-    ];
-    expect(oraInizioPrimoPasto(riordinati)).toBe("06:00");
-  });
-
-  it("lista vuota → null", () => {
-    expect(oraInizioPrimoPasto([])).toBeNull();
   });
 });
