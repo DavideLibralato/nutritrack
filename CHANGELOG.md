@@ -5,6 +5,14 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Tab bar più alta nell'app installata
+
+Branch `fix/tab-bar-installata`. Provata la correzione qui sotto: la tab
+bar non finisce più sotto la barretta home, ma le voci restavano troppo in
+basso. Nuova variabile `--margine-sotto-tab-bar` (0.75rem), sommata a
+`--altezza-tab-bar` e al padding della tab bar, solo con
+`@media (display-mode: standalone)`. In Safari non cambia nulla.
+
 ## 2026-10-02 — Tab bar sotto la barretta home nell'app installata
 
 Branch `fix/tab-bar-installata`. Nell'app aperta dalla Home dell'iPhone la

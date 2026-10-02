@@ -9,7 +9,7 @@
 // group (app), quindi non compare su login/registrazione.
 //
 // `position: fixed` in fondo, alta esattamente --altezza-tab-bar (globals.css,
-// barretta home di iOS compresa): il layout di (app) lascia sotto il
+// barretta home di iOS e --margine-sotto-tab-bar compresi): il layout di (app) lascia sotto il
 // contenuto lo stesso spazio. Su telefono si nasconde mentre un campo ha il
 // fuoco (`data-nascondi-mentre-scrivi`, regola in globals.css), così non
 // compare mai sopra la tastiera. `z-20`: sopra la barra Salva di Profilo (z-10),
@@ -32,7 +32,7 @@ export default function BarraNavigazione() {
   return (
     <nav
       data-nascondi-mentre-scrivi
-      className="fixed inset-x-0 bottom-0 z-20 h-[var(--altezza-tab-bar)] border-t border-border bg-background pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-20 h-[var(--altezza-tab-bar)] border-t border-border bg-background pb-[calc(env(safe-area-inset-bottom)+var(--margine-sotto-tab-bar))]"
     >
       <ul className="mx-auto flex h-full max-w-md">
         {VOCI.map((voce) => {

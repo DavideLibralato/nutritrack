@@ -20,8 +20,22 @@
      la barra Salva di Profilo per attaccarsi sopra la tab bar.
      env(safe-area-inset-bottom) vale qualcosa solo con viewportFit "cover"
      (viewport in src/app/layout.tsx): senza, è 0 e nell'app installata la
-     tab bar finisce sotto la barretta home. */
-  --altezza-tab-bar: calc(3.8125rem + env(safe-area-inset-bottom));
+     tab bar finisce sotto la barretta home.
+     --margine-sotto-tab-bar: spazio in più fra le voci e la barretta, solo
+     nell'app installata (media query qui sotto); in Safari resta 0, perché
+     sotto c'è già la barra di Safari. */
+  --margine-sotto-tab-bar: 0px;
+  --altezza-tab-bar: calc(
+    3.8125rem + env(safe-area-inset-bottom) + var(--margine-sotto-tab-bar)
+  );
+}
+
+/* App aperta dalla Home (manifest "display": "standalone"): la tab bar
+   arriva fino al bordo, la barretta home da sola la lasciava troppo bassa. */
+@media (display-mode: standalone) {
+  :root {
+    --margine-sotto-tab-bar: 0.75rem;
+  }
 }
 
 @theme inline {

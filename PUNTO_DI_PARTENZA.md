@@ -62,7 +62,11 @@ tab bar) e fa scorrere solo la lista dei pasti.
 `env(safe-area-inset-bottom)`, e lo stesso valore fa da spazio in fondo agli
 sheet. iOS lo restituisce solo se il viewport ha `viewportFit: "cover"`
 (layout radice), altrimenti vale 0. In Safari non si nota, ma nell'app
-installata sulla Home la tab bar finiva sotto la barretta. In alto non serve
+installata sulla Home la tab bar finiva sotto la barretta. Sempre solo
+nell'app installata (`@media (display-mode: standalone)`), la tab bar ha in
+fondo 0.75rem in più (`--margine-sotto-tab-bar`), compresi in
+`--altezza-tab-bar`: con la sola barretta le voci restavano troppo in basso.
+In Safari il margine è 0. In alto non serve
 nulla: con `statusBarStyle: "default"` la barra di stato di iOS è opaca e la
 pagina comincia sotto l'orologio. Passando a `"black-translucent"` andrebbe
 aggiunto `env(safe-area-inset-top)` alle testate.
