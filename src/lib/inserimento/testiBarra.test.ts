@@ -5,6 +5,7 @@ import {
   messaggioRipristinato,
   MESSAGGIO_ANNULLATO,
   MESSAGGIO_SALVATO,
+  DURATE_BARRA,
 } from "./testiBarra";
 import { prendiInserimento, segnaInserimento } from "./ultimoInserimento";
 
@@ -39,9 +40,26 @@ describe("testi della barra", () => {
       testo: "Ripristinato:",
       nome: "Mela",
       icona: "spunta",
+      durataMs: DURATE_BARRA.breve,
     });
-    expect(MESSAGGIO_ANNULLATO).toEqual({ testo: "Annullato.", icona: "annulla" });
-    expect(MESSAGGIO_SALVATO).toEqual({ testo: "Salvato.", icona: "spunta" });
+    expect(MESSAGGIO_ANNULLATO).toEqual({
+      testo: "Annullato.",
+      icona: "annulla",
+      durataMs: DURATE_BARRA.breve,
+    });
+    expect(MESSAGGIO_SALVATO).toEqual({
+      testo: "Salvato.",
+      icona: "spunta",
+      durataMs: DURATE_BARRA.breve,
+    });
+  });
+
+  it("durate: 5 s con Annulla, 4 s per una frase, 2,5 s per una conferma breve", () => {
+    expect(DURATE_BARRA).toEqual({ conAzione: 5000, frase: 4000, breve: 2500 });
+    // Aggiunto ed Eliminato hanno "Annulla": nessuna durata propria, la
+    // barra usa quella con azione.
+    expect(messaggioAggiunto("Pane", null).durataMs).toBeUndefined();
+    expect(messaggioEliminato("Mela").durataMs).toBeUndefined();
   });
 });
 

@@ -705,7 +705,6 @@ function ModuliProfilo({
           <BarraAnnulla
             key={barraSalvato}
             {...MESSAGGIO_SALVATO}
-            durataMs={2500}
             onChiudi={() => setBarraSalvato(null)}
           />
         </div>

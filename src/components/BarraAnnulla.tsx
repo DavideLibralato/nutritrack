@@ -52,7 +52,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import type { IconaBarra } from "@/lib/inserimento/testiBarra";
+import { DURATE_BARRA, type IconaBarra } from "@/lib/inserimento/testiBarra";
 
 interface Props {
   testo: string;
@@ -72,7 +72,10 @@ export default function BarraAnnulla({
   coda,
   icona = "info",
   azione,
-  durataMs = 8000,
+  // Le durate stanno in testiBarra.ts: con "Annulla" serve il tempo di
+  // decidere, senza azione è una frase da leggere. I messaggi brevi
+  // (Salvato, Annullato…) portano la loro.
+  durataMs = azione ? DURATE_BARRA.conAzione : DURATE_BARRA.frase,
   onChiudi,
   sopra = false,
   margineHome = false,

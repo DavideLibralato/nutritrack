@@ -1028,7 +1028,18 @@ Confermate dai mockup, con una correzione.
 
   Sul bordo basso una linea di 2 px (`--linea-tempo`) si accorcia per tutta
   la durata. Si ferma con il dito o il fuoco sulla barra e riparte da piena
-  insieme al timer. Con `prefers-reduced-motion` la linea non c'è
+  insieme al timer. Con `prefers-reduced-motion` la linea non c'è.
+
+  **Durate** (dal 2/10; erano 8 secondi per tutto, troppi). Sono costanti
+  in un posto solo, `DURATE_BARRA` in `src/lib/inserimento/testiBarra.ts`:
+  - **5 secondi** con l'azione "Annulla" (Aggiunto, Eliminato);
+  - **4 secondi** per una frase intera (il messaggio della stella, l'avviso
+    del pasto salvato non ripristinato, gli errori);
+  - **2,5 secondi** per una conferma breve (Salvato, Ripristinato,
+    Annullato).
+
+  La barra sceglie da sola 5 o 4 secondi, a seconda che ci sia un'azione;
+  i messaggi brevi portano la loro durata
 - Numeri grandi, etichette piccole e grigie, spesso in maiuscoletto
   ("OBIETTIVO", "TARGET GIORNALIERI"). Pesi tipografici: solo regular e medium
 - **Il colore nei grafici segnala, non decora.** Nel grafico calorie del
@@ -1758,8 +1769,8 @@ dall'app installata). Pillola staccata dai bordi con sfondo vetro; in Oggi
 "+ Aggiungi" fluttuante e lista fino in fondo; barra Salva di Profilo solo
 con modifiche (sezione 3, "La tab bar è una pillola fluttuante" e "Un solo
 Salva"; sezione 7). Aggiunto dopo la prova: "Salvato." in Profilo dopo un
-salvataggio riuscito, coperto dal test della pagina ma non ancora visto sul
-telefono.
+salvataggio riuscito, poi provato su iPhone con la barra "vetro" (vedi
+sotto).
 
 **Giorno del calendario al posto del giorno logico** (2/10, provato su
 iPhone). Un solo "oggi" (`oggiLocale`) per Oggi, Aggiungi e Profilo; fra
@@ -1772,7 +1783,11 @@ Oggi dopo i tre percorsi di inserimento; annulla le voci di
 quell'inserimento con una cancellazione logica (sezione 3, "Dopo ogni
 inserimento, «Annulla»").
 
-**Test.** 220 test permanenti in 24 file (Vitest), tutti verdi al 2/10.
+**Barra dei messaggi "vetro"** (2/10, provata su iPhone da Safari e
+dall'app installata, compreso "Salvato." in Profilo). Stesso vetro della
+tab bar, icona, linea del tempo; durate di 5, 4 e 2,5 secondi (sezione 7).
+
+**Test.** 222 test permanenti in 24 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
 
@@ -1797,14 +1812,6 @@ inserimento, «Annulla»").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
-- **Barra dei messaggi "vetro"** (2/10): aspetto controllato in `npm run dev`
-  a 375 e 390 px (con il CSS vero su una pagina di prova, senza login), e
-  comportamento coperto dai test. Da provare su iPhone, da Safari e
-  dall'app installata:
-  - Oggi: Aggiunto, Annullato e il messaggio della stella;
-  - Aggiungi: Eliminato, Ripristinato e l'avviso lungo;
-  - Profilo: Salvato, mai visto prima sul telefono;
-  - la linea del tempo che si ferma tenendo il dito sulla barra
 - **Cancellando un utente, le sue righe in `alimenti` non vengono
   cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
   non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e

@@ -29,6 +29,32 @@ describe("BarraAnnulla", () => {
     expect(onChiudi).toHaveBeenCalledTimes(1);
   });
 
+  it("senza durataMs: 5 s con un'azione, 4 s senza (DURATE_BARRA)", () => {
+    const conAzione = vi.fn();
+    render(
+      <BarraAnnulla
+        testo="Aggiunto:"
+        nome="Pane"
+        azione={{ etichetta: "Annulla", onClick: () => {} }}
+        onChiudi={conAzione}
+      />
+    );
+    expect(screen.getByRole("status").style.getPropertyValue("--durata-barra")).toBe("5000ms");
+    act(() => vi.advanceTimersByTime(4999));
+    expect(conAzione).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(conAzione).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    const frase = vi.fn();
+    render(<BarraAnnulla testo="«Colazione» è già tra i preferiti." onChiudi={frase} />);
+    expect(screen.getByRole("status").style.getPropertyValue("--durata-barra")).toBe("4000ms");
+    act(() => vi.advanceTimersByTime(3999));
+    expect(frase).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(frase).toHaveBeenCalledTimes(1);
+  });
+
   it("in pausa il timer e la linea si fermano; dopo, ripartono da capo", () => {
     const onChiudi = vi.fn();
     render(

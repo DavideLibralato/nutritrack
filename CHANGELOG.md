@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Barra "vetro" provata su iPhone, unita a main; durate più brevi
+
+La barra dei messaggi "vetro" (`b85d310`) è stata provata su iPhone, da
+Safari e dall'app installata, compreso "Salvato." in Profilo, e unita a
+main con fast-forward, senza commit di merge. Il branch
+`feature/barra-vetro` è cancellato, in locale e su GitHub.
+
+Ritocco prima del merge: 8 secondi per tutto erano troppi. Ora le durate
+sono costanti in un posto solo, `DURATE_BARRA` in `testiBarra.ts`:
+- 5000 ms con "Annulla" (Aggiunto, Eliminato);
+- 4000 ms per una frase intera (stella, avviso del pasto non ripristinato,
+  errori);
+- 2500 ms per una conferma breve (Salvato, Ripristinato, Annullato).
+
+La barra sceglie da sola 5000 o 4000 ms, a seconda che ci sia un'azione; i
+messaggi brevi portano `durataMs`. Nei componenti non resta nessun numero:
+tolto il `durataMs={2500}` di Profilo. Pausa e linea del tempo invariate.
+Test: le durate predefinite con e senza azione, e quelle dei messaggi
+brevi. 222 test. Le durate nuove non sono ancora state viste sul telefono.
+
 ## 2026-10-02 — Barra dei messaggi "vetro" (opzione A)
 
 Branch `feature/barra-vetro`. La BarraAnnulla passa dal nero pieno al

@@ -116,7 +116,8 @@ describe("Barra Salva del Profilo", () => {
     expect(salvato?.altezza_cm).toBe(182);
 
     // Dopo il salvataggio la barra Salva sparisce e la conferma la dà una
-    // BarraAnnulla breve, una sola, che se ne va da sola dopo ~2500 ms.
+    // BarraAnnulla breve (DURATE_BARRA.breve, 2500 ms), una sola, che se ne
+    // va da sola.
     expect(screen.getAllByText("Salvato.")).toHaveLength(1);
     await waitFor(() => expect(screen.queryByText("Salvato.")).toBeNull(), {
       timeout: 4000,
