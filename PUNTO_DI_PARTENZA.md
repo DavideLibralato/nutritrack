@@ -339,7 +339,8 @@ e tre tornano a Oggi, e lì compare la barra in basso "Aggiunto: Pane", oppure
 "Annulla" per qualche secondo. Il verbo sta prima del nome, così non ci
 sono problemi di genere ("Mela aggiunto"). Il nome si tronca con "…" su una
 riga sola. Lo stesso formato vale per "Eliminato: Mela" e "Ripristinato:
-Mela" in /aggiungi.
+Mela" in /aggiungi. Com'è fatta la barra (vetro, icona, linea del tempo) è
+descritto nella sezione 7.
 
 - **Cosa annulla.** Esattamente le voci di quell'inserimento, per id: una
   per un alimento, tutte quelle del gruppo per un pasto salvato. È una
@@ -1009,6 +1010,25 @@ Confermate dai mockup, con una correzione.
   capsula di sfondo, `--capsula-attiva`: un token solo, per provare
   alternative cambiando una riga. Tutti derivati con `color-mix` dai token
   di base, nessun colore scritto a mano, quindi seguono anche il tema scuro
+- **La barra dei messaggi in basso** (`BarraAnnulla`, dal 2/10, "opzione
+  A") è dello stesso vetro della tab bar: `.vetro`, bordo,
+  `--ombra-fluttuante`, mai il nero pieno. È una pillola larga quanto il
+  contenuto e centrata, al massimo quanto lo schermo meno 32 px. Se il testo
+  va a capo diventa un rettangolo molto arrotondato, perché il raggio è fisso.
+  Da sinistra:
+  - **icona in un cerchio di 26 px**: spunta su fondo accento per
+    Aggiunto, Salvato e Ripristinato; su fondo `--linea` la freccia ↶
+    (Annullato), il cestino (Eliminato) o la "i" (avvisi, errori, il
+    messaggio della stella);
+  - **testo**: il verbo normale e il nome in medium (non bold: qui valgono
+    regular e medium), troncato con "…"; il dettaglio, per esempio
+    "(3 alimenti)", resta sempre visibile;
+  - **"Annulla"**: accento, in una capsula `--capsula-attiva`, con un'area
+    toccabile di 44 px.
+
+  Sul bordo basso una linea di 2 px (`--linea-tempo`) si accorcia per tutta
+  la durata. Si ferma con il dito o il fuoco sulla barra e riparte da piena
+  insieme al timer. Con `prefers-reduced-motion` la linea non c'è
 - Numeri grandi, etichette piccole e grigie, spesso in maiuscoletto
   ("OBIETTIVO", "TARGET GIORNALIERI"). Pesi tipografici: solo regular e medium
 - **Il colore nei grafici segnala, non decora.** Nel grafico calorie del
@@ -1752,7 +1772,7 @@ Oggi dopo i tre percorsi di inserimento; annulla le voci di
 quell'inserimento con una cancellazione logica (sezione 3, "Dopo ogni
 inserimento, «Annulla»").
 
-**Test.** 217 test permanenti in 23 file (Vitest), tutti verdi al 2/10.
+**Test.** 220 test permanenti in 24 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
 
@@ -1777,6 +1797,14 @@ inserimento, «Annulla»").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
+- **Barra dei messaggi "vetro"** (2/10): aspetto controllato in `npm run dev`
+  a 375 e 390 px (con il CSS vero su una pagina di prova, senza login), e
+  comportamento coperto dai test. Da provare su iPhone, da Safari e
+  dall'app installata:
+  - Oggi: Aggiunto, Annullato e il messaggio della stella;
+  - Aggiungi: Eliminato, Ripristinato e l'avviso lungo;
+  - Profilo: Salvato, mai visto prima sul telefono;
+  - la linea del tempo che si ferma tenendo il dito sulla barra
 - **Cancellando un utente, le sue righe in `alimenti` non vengono
   cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
   non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e

@@ -5,6 +5,34 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Barra dei messaggi "vetro" (opzione A)
+
+Branch `feature/barra-vetro`. La BarraAnnulla passa dal nero pieno al
+vetro della tab bar (`.vetro`, bordo, `--ombra-fluttuante`). È una pillola
+larga quanto il contenuto, centrata, al massimo quanto lo schermo meno
+32 px; se il testo va a capo diventa un rettangolo arrotondato.
+
+- Icona in un cerchio, una sola prop nuova `icona` (predefinito `"info"`):
+  spunta su accento (Aggiunto, Salvato, Ripristinato), ↶ (Annullato),
+  cestino (Eliminato), "i" (avvisi, errori, stella), su `--linea`.
+- Nome in medium (la §7 ammette solo regular e medium), troncato; verbo e
+  dettaglio sempre visibili. I testi erano già a parti dal lavoro su
+  "Annulla": `testiBarra.ts` ora aggiunge l'icona e `MESSAGGIO_SALVATO`.
+- "Annulla" in una capsula `--capsula-attiva`, con un'area toccabile di
+  44 px.
+- Linea del tempo, solo CSS (`.linea-tempo`, durata in `--durata-barra`,
+  colore `--linea-tempo`). In pausa si ferma; quando la pausa finisce
+  riparte da piena insieme al timer, che già ripartiva da capo. Con
+  `prefers-reduced-motion` non c'è.
+- Bug trovato nella prova: con un nome lungo la pillola usciva dallo
+  schermo (`w-fit` misura il testo intero prima di troncarlo). Limite
+  corretto: `max-w-[min(28rem,100%)]`.
+- Test: `BarraAnnulla.test.tsx` nuovo (chiusura dopo la durata; pausa che
+  ferma timer e linea; ripartenza da capo; durata passata alla linea) e
+  `testiBarra.test.ts` aggiornato con le icone. 220 test, tutti verdi.
+- Aspetto controllato in `npm run dev` a 375 e 390 px, con gli 8 messaggi
+  della barra su una pagina di prova e il CSS vero, senza login.
+
 ## 2026-10-02 — Tab bar fluttuante provata su iPhone, unita a main; "Salvato." in Profilo
 
 La tab bar fluttuante (`8da5690`) è stata provata su iPhone, da Safari e

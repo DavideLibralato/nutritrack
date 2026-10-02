@@ -62,6 +62,7 @@ import ValorePrecedente from "@/components/ValorePrecedente";
 import CampoTarget from "@/components/CampoTarget";
 import BarraSalvaProfilo from "@/components/BarraSalvaProfilo";
 import BarraAnnulla from "@/components/BarraAnnulla";
+import { MESSAGGIO_SALVATO } from "@/lib/inserimento/testiBarra";
 import SheetCambioObiettivo from "@/components/SheetCambioObiettivo";
 
 const OPZIONI_SESSO: { valore: Sesso; etichetta: string }[] = [
@@ -703,7 +704,7 @@ function ModuliProfilo({
         <div className="pointer-events-none fixed inset-x-0 bottom-[var(--ingombro-tab-bar)] z-40 mx-auto max-w-md">
           <BarraAnnulla
             key={barraSalvato}
-            testo="Salvato."
+            {...MESSAGGIO_SALVATO}
             durataMs={2500}
             onChiudi={() => setBarraSalvato(null)}
           />

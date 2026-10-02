@@ -888,6 +888,7 @@ function OggiContenuto() {
             testo={barra.testo}
             nome={barra.nome}
             coda={barra.coda}
+            icona={barra.icona}
             azione={
               barra.idVociDaAnnullare
                 ? { etichetta: "Annulla", onClick: annullaUltimoInserimento }

@@ -19,10 +19,13 @@
      --vetro: lo sfondo semitrasparente della pillola, sotto cui passa la
      pagina sfocata (classe .vetro qui sotto).
      --ombra-fluttuante: l'ombra leggera degli elementi staccati dal fondo
-     (pillola, "+ Aggiungi", barra Salva di Profilo). */
+     (pillola, "+ Aggiungi", barra Salva di Profilo, BarraAnnulla).
+     --linea-tempo: la linea sul bordo basso della BarraAnnulla che si
+     accorcia mentre passa il tempo (classe .linea-tempo qui sotto). */
   --capsula-attiva: color-mix(in srgb, var(--accento) 12%, transparent);
   --vetro: color-mix(in srgb, var(--background) 75%, transparent);
   --ombra-fluttuante: 0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
+  --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
 
   /* La tab bar è una pillola staccata dal fondo (BarraNavigazione,
      PUNTO_DI_PARTENZA.md sezione 3, "Layout delle pagine con la tab bar").
@@ -81,6 +84,30 @@ body:has([data-pulsante-aggiungi]) {
     color-mix(in srgb, var(--background) 0%, transparent),
     var(--background) 70%
   );
+}
+
+/* Linea del tempo della BarraAnnulla: si accorcia da piena a zero in
+   --durata-barra (la durata passata al componente). In pausa (dito o fuoco
+   sulla barra) il componente la ferma con animation-play-state; quando la
+   pausa finisce riparte da piena, insieme al timer. Solo CSS, niente
+   JavaScript che la ridisegna. Con prefers-reduced-motion non c'è. */
+@keyframes linea-tempo {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.linea-tempo {
+  background: var(--linea-tempo);
+  transform-origin: left;
+  animation: linea-tempo var(--durata-barra) linear forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .linea-tempo {
+    display: none;
+  }
 }
 
 @theme inline {

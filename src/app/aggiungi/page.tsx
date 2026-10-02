@@ -745,6 +745,7 @@ function AggiungiContenuto() {
           testo={barra.testo}
           nome={barra.nome}
           coda={barra.coda}
+          icona={barra.icona}
           azione={
             barra.annullabile
               ? { etichetta: "Annulla", onClick: annullaEliminazione }
