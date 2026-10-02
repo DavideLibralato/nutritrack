@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Swipe per cambiare giorno in Oggi
+
+Branch `feature/swipe`. In Oggi un trascinamento orizzontale cambia giorno:
+dito a sinistra giorno dopo, a destra giorno prima. Oltre oggi non si va,
+con un elastico. Si muove il pannello del giorno (anello, macro, lista),
+la testata resta ferma. Nessuna libreria: hook `useSwipeGiorno`
+(`src/lib/swipeGiorno.ts`) con Pointer Events, decisioni pure in
+`decisioneSwipe.ts` (soglie come costanti). A ogni cambio di giorno, anche
+con freccette e "Oggi", la lista riparte dall'alto.
+
+Test: 22 nuovi (swipe nei due sensi, sotto soglia, flick, diagonale,
+bordi, oltre oggi, blocco del click una volta sola), 244 in tutto. Provato
+in Chrome con tocchi simulati su una pagina temporanea, poi cancellata.
+Trovato nella prova: Chrome headless consegna i movimenti ogni ~33 ms, e
+il primo flick di prova era troppo lento per la soglia. Era un limite del
+simulatore, le soglie non sono cambiate. Da verificare su iPhone: che lo
+scroll verticale non riparta dopo che il gesto è stato deciso orizzontale
+(in Chrome non succede nemmeno senza protezione, iOS non l'ho potuto
+provare).
+
 ## 2026-10-02 — Barra "vetro" provata su iPhone, unita a main; durate più brevi
 
 La barra dei messaggi "vetro" (`b85d310`) è stata provata su iPhone, da

@@ -188,6 +188,51 @@ Se su schermi piccoli la fascia scorrevole risulta troppo stretta, la fascia
 alta può rimpicciolirsi mentre si scorre (l'anello diventa una riga compatta) —
 da valutare sul dispositivo vero, non ora.
 
+#### Swipe per cambiare giorno (deciso il 2/10)
+
+Trascinando il dito in orizzontale si cambia giorno, come con le
+freccette: **dito verso sinistra = giorno dopo, verso destra = giorno
+prima**. Freccette, calendario e "Oggi" restano come sono.
+
+- **Area**: il pannello del giorno, cioè anello, macro e lista, che si
+  muovono insieme col dito. La testata (data, "Oggi", pastiglia, calorie
+  rimanenti) resta ferma e cambia testo quando cambia il giorno. Al
+  rilascio oltre la soglia il pannello esce e il giorno nuovo entra dal
+  lato giusto. Sotto la soglia torna al suo posto. Durante il
+  trascinamento il giorno vicino **non** si vede: servirebbe disegnare due
+  giorni insieme, rimandato a dopo la prova d'uso
+- **Oltre oggi non si va**: il pannello segue il dito solo per un terzo
+  (elastico) e torna indietro, senza cambiare giorno
+- **Verticale contro orizzontale**: la direzione si decide dopo 10 px e
+  non cambia più. È orizzontale solo se lo spostamento orizzontale supera
+  1,5 volte quello verticale (al massimo ~34° di inclinazione). Il
+  pannello ha `touch-action: pan-y`, così lo scroll verticale resta al
+  browser. Deciso l'orizzontale, la lista non scorre più fino al rilascio
+  (`preventDefault` sul `touchmove` e `overflow-y: hidden` per la durata
+  del gesto)
+- **Soglie**: 80 px, oppure un gesto veloce (0,5 px/ms negli ultimi
+  100 ms) di almeno 30 px. Tutti i numeri sono costanti in
+  `src/lib/decisioneSwipe.ts`
+- **Bordi**: un gesto che parte a meno di 24 px da un bordo è ignorato (in
+  Safari quello sinistro è "indietro"). Vale anche nell'app installata,
+  per coerenza
+- **Tocchi**: un trascinamento non apre lo sheet della riga da cui è
+  partito e non preme stella o freccetta. Si blocca un click solo, che
+  scade dopo 400 ms o al tocco seguente. Il mouse è escluso: al PC ci sono
+  le freccette
+- **Spento** con uno sheet aperto, con un campo di testo a fuoco e durante
+  l'animazione di un cambio già in corso
+- **Barra "Aggiunto — Annulla"**: resta. Annulla lavora per id, quindi
+  funziona su qualunque giorno mostrato
+- **`prefers-reduced-motion`**: il gesto vale, ma niente si muove e il
+  giorno cambia subito
+- **A ogni cambio di giorno** (swipe, frecce, "Oggi", calendario) la lista
+  riparte dall'alto
+
+Nessuna libreria: Pointer Events nell'hook `useSwipeGiorno`
+(`src/lib/swipeGiorno.ts`). Le decisioni sono funzioni pure, testate in
+`decisioneSwipe.test.ts`.
+
 ### Aggiungi alimento (la pagina su cui si gioca il prodotto)
 
 Si apre a tutto schermo con freccia indietro e, come titolo, **il nome del pasto**
@@ -1787,7 +1832,13 @@ inserimento, «Annulla»").
 dall'app installata, compreso "Salvato." in Profilo). Stesso vetro della
 tab bar, icona, linea del tempo; durate di 5, 4 e 2,5 secondi (sezione 7).
 
-**Test.** 222 test permanenti in 24 file (Vitest), tutti verdi al 2/10.
+**Swipe per cambiare giorno in Oggi** (2/10, branch `feature/swipe`, da
+provare su iPhone). Dito a sinistra giorno dopo, a destra giorno prima,
+elastico oltre oggi; la lista riparte dall'alto a ogni cambio di giorno
+(sezione 3, "Swipe per cambiare giorno"). Provato in Chrome con tocchi
+simulati, non ancora sul telefono.
+
+**Test.** 244 test permanenti in 25 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
 

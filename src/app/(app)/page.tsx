@@ -26,7 +26,7 @@
 // passato). Per leggere ?giorno= serve useSearchParams, che va avvolto in
 // <Suspense> (come nella pagina di login).
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
@@ -86,6 +86,7 @@ import {
 import { annullaInserimento } from "@/lib/repository/vociDiario";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { useSwipeGiorno } from "@/lib/swipeGiorno";
 
 // Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
 // elenco fisso (sezione 3), quindi non c'è una tabella di etichette da
@@ -327,6 +328,26 @@ function OggiContenuto() {
       setBarra({ ...precedente, id: crypto.randomUUID() });
     }
   }
+
+  // Swipe per cambiare giorno (sezione 3, "Swipe per cambiare giorno"): si
+  // attiva sul pannello del giorno (anello, macro e lista), non sulla testata
+  // con la data. Spento con uno sheet aperto.
+  const rifLista = useRef<HTMLUListElement>(null);
+  const rifPannello = useSwipeGiorno({
+    giorno,
+    attivo: voceInModifica === null && pastoDaSalvare === null,
+    onCambia: (verso) =>
+      setGiorno((g) => (verso === "successivo" ? giornoSuccessivo(g) : giornoPrecedente(g))),
+    rifScorrimento: rifLista,
+  });
+
+  // A ogni cambio di giorno (swipe, frecce, "Oggi", calendario) la lista
+  // riparte dall'alto, non dalla posizione del giorno prima. Layout effect:
+  // gira dopo che il DOM mostra il giorno nuovo ma prima che venga
+  // dipinto, quindi non si vede mai il giorno nuovo nella posizione vecchia.
+  useLayoutEffect(() => {
+    if (rifLista.current) rifLista.current.scrollTop = 0;
+  }, [giorno]);
 
   // Voce 3: i pasti (fasce) di cui l'utente ha nascosto la lista di alimenti.
   // In memoria, non su disco: al riavvio dell'app tornano tutti aperti.
@@ -636,7 +657,7 @@ function OggiContenuto() {
           statusBarStyle "default" (la pagina comincia sotto l'orologio); è
           qui solo perché la testata resti fuori dall'orologio anche se un
           giorno la barra di stato diventasse trasparente. */}
-      <header className="shrink-0 px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-5">
+      <header className="shrink-0 px-4 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         {/* Prima riga: ‹ data › a sinistra, "Oggi" e la pastiglia a destra.
             Misurata con i font veri, nel caso peggiore ("30 mag", "Oggi" e
             "Allenamento" insieme) la riga è larga 315 px: a 390 e 375 px di
@@ -745,7 +766,14 @@ function OggiContenuto() {
         </div>
 
         <p className={`mt-1 text-sm ${classeRigaCalorie}`}>{rigaCalorie}</p>
+      </header>
 
+      {/* PANNELLO DEL GIORNO — anello, macro e lista: è l'area dello swipe
+          (useSwipeGiorno) e si muove tutto insieme col dito. La testata
+          sopra resta ferma e cambia testo quando cambia il giorno.
+          `touch-pan-y` (touch-action: pan-y): lo scroll verticale lo fa il
+          browser, i trascinamenti orizzontali arrivano allo swipe. */}
+      <div ref={rifPannello} className="flex min-h-0 flex-1 touch-pan-y flex-col">
         {/* Anello + macro affiancati, non impilati (sezione 3). Ordine dei
             macro come sulle etichette dei prodotti: Grassi, Carboidrati,
             Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"; le kcal
@@ -753,7 +781,7 @@ function OggiContenuto() {
             vengono dal tipo del GIORNO MOSTRATO (tipoGiornoMostrato, sopra),
             non dall'obiettivo generico: su un giorno di allenamento passato
             devono restare quelli di allenamento anche se oggi è "normale". */}
-        <div className="mt-5 flex items-center gap-4">
+        <div className="mt-5 flex shrink-0 items-center gap-4 px-4 pb-5">
           <AnelloCalorie consumate={totali.kcal} obiettivo={targetKcal} />
           <div className="flex-1 space-y-3">
             <BarraMacro
@@ -773,96 +801,101 @@ function OggiContenuto() {
             />
           </div>
         </div>
-      </header>
 
-      {/* FASCIA CENTRALE — l'unica che scorre, fino al fondo dello schermo:
-          passa sotto "+ Aggiungi" e la pillola. Lo spazio in fondo
-          (--ingombro-oggi, globals.css) fa salire l'ultimo alimento sopra
-          bottone e pillola. */}
-      <ul className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(var(--ingombro-oggi)+1rem)]">
-        {pasti.length === 0 ? (
-          <li className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</li>
-        ) : (
-          pasti.map((pasto) => {
-            const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
-            const kcalPasto = Math.round(sommaTotali(vociPasto).kcal);
-            const haVoci = vociPasto.length > 0;
-            const collassato = pastiCollassati.has(pasto.id);
-            // Stella del segnalibro (sezione 3, punto 3): piena finché gli
-            // alimenti+quantità di oggi coincidono con un pasto già salvato.
-            const giaSalvato = pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci);
-            return (
-              <li key={pasto.id} className="border-b border-border py-4">
-                {/* Voce 3: se il pasto ha degli alimenti, la riga del titolo è
-                    un pulsante che ne nasconde/mostra la lista. Il pasto vuoto
-                    resta una riga non interattiva (non c'è niente da
-                    collassare). Lo stato è tenuto per id di pasto e non per
-                    giorno, così una fascia chiusa resta chiusa anche
-                    cambiando data. */}
-                {haVoci ? (
-                  <div className="flex w-full items-baseline justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleCollasso(pasto.id)}
-                      aria-expanded={!collassato}
-                      className={`flex min-w-0 items-baseline gap-1.5 text-left text-lg ${CLASSE_FOCUS}`}
-                    >
-                      <CaretPasto aperto={!collassato} />
-                      <span className="truncate">{pasto.nome}</span>
-                    </button>
-                    <div className="flex shrink-0 items-baseline gap-2.5">
-                      {/* Voce "Salvare un pasto intero" (sezione 3): non si
-                          costruisce in una schermata apposta, si promuove da
-                          una giornata già registrata — bersaglio separato dal
-                          collasso, stessa riga. */}
+        {/* FASCIA CENTRALE — l'unica che scorre, fino al fondo dello schermo:
+            passa sotto "+ Aggiungi" e la pillola. Lo spazio in fondo
+            (--ingombro-oggi, globals.css) fa salire l'ultimo alimento sopra
+            bottone e pillola. Anche qui `touch-pan-y`: la lista è un'area che
+            scorre per conto suo, e il browser controlla touch-action fino a
+            lei. */}
+        <ul
+          ref={rifLista}
+          className="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(var(--ingombro-oggi)+1rem)]"
+        >
+          {pasti.length === 0 ? (
+            <li className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</li>
+          ) : (
+            pasti.map((pasto) => {
+              const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
+              const kcalPasto = Math.round(sommaTotali(vociPasto).kcal);
+              const haVoci = vociPasto.length > 0;
+              const collassato = pastiCollassati.has(pasto.id);
+              // Stella del segnalibro (sezione 3, punto 3): piena finché gli
+              // alimenti+quantità di oggi coincidono con un pasto già salvato.
+              const giaSalvato = pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci);
+              return (
+                <li key={pasto.id} className="border-b border-border py-4">
+                  {/* Voce 3: se il pasto ha degli alimenti, la riga del titolo è
+                      un pulsante che ne nasconde/mostra la lista. Il pasto vuoto
+                      resta una riga non interattiva (non c'è niente da
+                      collassare). Lo stato è tenuto per id di pasto e non per
+                      giorno, così una fascia chiusa resta chiusa anche
+                      cambiando data. */}
+                  {haVoci ? (
+                    <div className="flex w-full items-baseline justify-between gap-3">
                       <button
                         type="button"
-                        onClick={() => toggleSalvaPreferito(pasto)}
-                        aria-pressed={giaSalvato}
-                        aria-label={
-                          giaSalvato
-                            ? `Togli ${pasto.nome} dai preferiti`
-                            : `Salva ${pasto.nome} come preferito`
-                        }
-                        className={`rounded p-1 ${giaSalvato ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
+                        onClick={() => toggleCollasso(pasto.id)}
+                        aria-expanded={!collassato}
+                        className={`flex min-w-0 items-baseline gap-1.5 text-left text-lg ${CLASSE_FOCUS}`}
                       >
-                        <Segnalibro piena={giaSalvato} />
+                        <CaretPasto aperto={!collassato} />
+                        <span className="truncate">{pasto.nome}</span>
                       </button>
-                      <span className="text-lg">{kcalPasto} kcal</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-lg">{pasto.nome}</span>
-                    <span className="shrink-0 text-lg">—</span>
-                  </div>
-                )}
-
-                {/* Ogni voce è tappabile: apre lo SheetQuantita in modifica
-                    (sezione 5). */}
-                {haVoci && !collassato && (
-                  <ul className="mt-1.5">
-                    {vociPasto.map((voce) => (
-                      <li key={voce.id}>
+                      <div className="flex shrink-0 items-baseline gap-2.5">
+                        {/* Voce "Salvare un pasto intero" (sezione 3): non si
+                            costruisce in una schermata apposta, si promuove da
+                            una giornata già registrata — bersaglio separato dal
+                            collasso, stessa riga. */}
                         <button
                           type="button"
-                          onClick={() => apriModifica(voce)}
-                          className={`flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
+                          onClick={() => toggleSalvaPreferito(pasto)}
+                          aria-pressed={giaSalvato}
+                          aria-label={
+                            giaSalvato
+                              ? `Togli ${pasto.nome} dai preferiti`
+                              : `Salva ${pasto.nome} come preferito`
+                          }
+                          className={`rounded p-1 ${giaSalvato ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
                         >
-                          <span className="min-w-0 truncate">{voce.nome_alimento}</span>
-                          <span className="shrink-0">
-                            {voce.quantita_g} g · {Math.round(totaleVoce(voce).kcal)} kcal
-                          </span>
+                          <Segnalibro piena={giaSalvato} />
                         </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })
-        )}
-      </ul>
+                        <span className="text-lg">{kcalPasto} kcal</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-lg">{pasto.nome}</span>
+                      <span className="shrink-0 text-lg">—</span>
+                    </div>
+                  )}
+
+                  {/* Ogni voce è tappabile: apre lo SheetQuantita in modifica
+                      (sezione 5). */}
+                  {haVoci && !collassato && (
+                    <ul className="mt-1.5">
+                      {vociPasto.map((voce) => (
+                        <li key={voce.id}>
+                          <button
+                            type="button"
+                            onClick={() => apriModifica(voce)}
+                            className={`flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
+                          >
+                            <span className="min-w-0 truncate">{voce.nome_alimento}</span>
+                            <span className="shrink-0">
+                              {voce.quantita_g} g · {Math.round(totaleVoce(voce).kcal)} kcal
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })
+          )}
+        </ul>
+      </div>
 
       {/* "+ Aggiungi" FLUTTUANTE, centrato appena sopra la pillola della tab
           bar. Non deve mai finire sotto la piega: è l'azione per cui esiste
