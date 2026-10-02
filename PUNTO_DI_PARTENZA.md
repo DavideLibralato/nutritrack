@@ -1648,6 +1648,11 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
 dall'app sulla Home). `viewportFit: "cover"` e 0.75rem in più in fondo solo
 in modalità standalone (sezione 3, "Barretta home di iOS").
 
+**Giorno del calendario al posto del giorno logico** (2/10, provato su
+iPhone). Un solo "oggi" (`oggiLocale`) per Oggi, Aggiungi e Profilo; fra
+mezzanotte e il primo pasto si propone il primo pasto (sezione 4, "Il
+giorno è quello del calendario").
+
 **Test.** 208 test permanenti in 21 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
@@ -1674,9 +1679,6 @@ in modalità standalone (sezione 3, "Barretta home di iOS").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
-- **Giorno del calendario al posto del giorno logico** (2/10): da provare su
-  iPhone fra mezzanotte e l'ora della Colazione (giorno mostrato in Oggi,
-  dove finisce la voce, pasto proposto)
 - Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
   Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
   per il gesto "indietro" nella modifica di un pasto salvato

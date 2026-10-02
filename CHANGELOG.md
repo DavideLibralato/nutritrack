@@ -5,6 +5,13 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Giorno del calendario provato su iPhone, unito a main
+
+Solo documenti. L'abolizione del giorno logico (`f76ed1b`) è stata provata
+su iPhone, sulla preview, e unita a main con fast-forward, senza commit di
+merge. Il branch `feature/abolisci-giorno-logico` è cancellato, in locale e
+su GitHub.
+
 ## 2026-10-02 — Abolito il giorno logico: il giorno è quello del calendario
 
 Branch `feature/abolisci-giorno-logico`. Prima, un inserimento fatto prima
