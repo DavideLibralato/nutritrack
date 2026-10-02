@@ -5,8 +5,15 @@
 // dentro SheetNome, che compare PRIMA e chiede conferma. Oggi la usano:
 // - /aggiungi, dopo la cancellazione di un alimento, con "Annulla" (regola
 //   "Alimenti cancellati" in PUNTO_DI_PARTENZA.md, punto 4);
+// - Oggi, dopo ogni inserimento nel diario, con "Annulla" (punto 10.2);
 // - Oggi, al tocco della stella su un pasto il cui contenuto è già salvato
 //   (punto 3), senza azione.
+//
+// `nome` (facoltativo): il nome di un alimento o di un pasto, mostrato dopo
+// `testo` e troncato con "…" su una riga sola; `coda` resta sempre visibile
+// dopo il nome ("Aggiunto: Colazione tipo (3 alimenti)"). I testi stanno in
+// src/lib/inserimento/testiBarra.ts. Senza `nome`, `testo` va a capo se
+// serve (i messaggi lunghi e rari, come gli avvisi del ripristino).
 //
 // Se l'utente non fa niente, dopo `durataMs` chiama onChiudi e sparisce: non
 // succede nient'altro. Il conto alla rovescia si ferma mentre il dito/mouse
@@ -34,6 +41,8 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 interface Props {
   testo: string;
+  nome?: string;
+  coda?: string;
   azione?: { etichetta: string; onClick: () => void };
   durataMs?: number;
   onChiudi: () => void;
@@ -43,6 +52,8 @@ interface Props {
 
 export default function BarraAnnulla({
   testo,
+  nome,
+  coda,
   azione,
   durataMs = 8000,
   onChiudi,
@@ -82,7 +93,15 @@ export default function BarraAnnulla({
         onBlur={() => setInPausa(false)}
         className="pointer-events-auto mx-auto flex max-w-md items-center gap-3 rounded-xl bg-foreground py-3 pl-4 pr-2 text-sm text-background shadow-lg"
       >
-        <p className="min-w-0 flex-1">{testo}</p>
+        {nome === undefined ? (
+          <p className="min-w-0 flex-1">{testo}</p>
+        ) : (
+          <p className="flex min-w-0 flex-1 gap-1 whitespace-nowrap">
+            <span className="shrink-0">{testo}</span>
+            <span className="min-w-0 truncate">{nome}</span>
+            {coda && <span className="shrink-0">{coda}</span>}
+          </p>
+        )}
         {azione && (
           <button
             type="button"

@@ -295,6 +295,33 @@ introduce e che va tenuta:
 
 Lo sheet quantità resta **uno solo**, identico per ogni sorgente (sezione 5).
 
+**Dopo ogni inserimento, "Annulla"** (punto 10.2). I percorsi che scrivono
+nel diario sono tre, tutti in `creaVoce` di /aggiungi: la conferma dallo
+sheet, il "+" rapido su Recenti/Preferiti, e il "+" di un pasto salvato. Tutti
+e tre tornano a Oggi, e lì compare la barra in basso "Aggiunto: Pane", oppure
+"Aggiunto: Colazione tipo (3 alimenti)" per un pasto salvato, con
+"Annulla" per qualche secondo. Il verbo sta prima del nome, così non ci
+sono problemi di genere ("Mela aggiunto"). Il nome si tronca con "…" su una
+riga sola. Lo stesso formato vale per "Eliminato: Mela" e "Ripristinato:
+Mela" in /aggiungi.
+
+- **Cosa annulla.** Esattamente le voci di quell'inserimento, per id: una
+  per un alimento, tutte quelle del gruppo per un pasto salvato. È una
+  cancellazione logica via repository (`annullaInserimento` in
+  `src/lib/repository/vociDiario.ts`), che rilegge le voci da Dexie e
+  passa dall'outbox (punto 10.6). Dopo compare "Annullato."
+- **La riga di `giorni` resta.** Se si annulla la prima voce di un giorno,
+  la classificazione scritta in quel momento non si cancella: nei secondi
+  della barra può essere arrivata una scelta esplicita dalla pastiglia, che
+  vince sempre. Annullare si comporta come cancellare l'ultima voce dallo
+  sheet in Oggi.
+- **Una barra sola.** Un nuovo messaggio sostituisce il precedente e
+  riparte da capo.
+- **Da /aggiungi a Oggi** l'inserimento passa in memoria
+  (`src/lib/inserimento/ultimoInserimento.ts`), non nell'URL: ricaricando
+  la pagina o tornando indietro la barra di un inserimento vecchio non
+  ricompare. Oggi lo legge una volta sola, in un `useEffect`.
+
 ### Statistiche
 
 - **Selettore Settimana / Mese** in alto, a segmenti
@@ -1430,7 +1457,8 @@ apertura.
 
 Il "+" sui recenti inserisce senza chiedere conferma. Bene — ma solo se sbagliare
 è indolore. Dopo ogni inserimento, per qualche secondo, una barra in basso:
-**"Aggiunto — Annulla"**.
+**"Aggiunto — Annulla"**. Costruita il 2/10: com'è fatta è nella sezione 3,
+"Dopo ogni inserimento, «Annulla»".
 
 Senza rete di sicurezza il tap veloce diventa un tap prudente, e il vantaggio
 sparisce. È il complemento necessario della decisione, non un dettaglio.
@@ -1653,7 +1681,12 @@ iPhone). Un solo "oggi" (`oggiLocale`) per Oggi, Aggiungi e Profilo; fra
 mezzanotte e il primo pasto si propone il primo pasto (sezione 4, "Il
 giorno è quello del calendario").
 
-**Test.** 208 test permanenti in 21 file (Vitest), tutti verdi al 2/10.
+**"Aggiunto — Annulla" dopo ogni inserimento** (2/10, punto 10.2). Barra in
+Oggi dopo i tre percorsi di inserimento; annulla le voci di
+quell'inserimento con una cancellazione logica (sezione 3, "Dopo ogni
+inserimento, «Annulla»").
+
+**Test.** 216 test permanenti in 23 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
 
@@ -1662,8 +1695,7 @@ giorno è quello del calendario").
   (fase 5)
 - **Tema scuro** (sezione 7): esiste solo il tema chiaro
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
-  barra **"Aggiunto — Annulla" dopo un inserimento** (10.2; oggi c'è solo
-  dopo la cancellazione di un alimento), **"Esporta i miei dati"** (10.4)
+  **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti dal Profilo (rinominare, aggiungere,
   riordinare: sezione 3, "I pasti") e ora del consumo (`consumato_alle`)
   modificabile nello sheet
@@ -1679,6 +1711,9 @@ giorno è quello del calendario").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
+- **"Aggiunto — Annulla"** (2/10): provato in `npm run dev` con Chrome
+  (inserimento dallo sheet, Annulla, cancellazione arrivata su Supabase), da
+  provare su iPhone, sia da Safari sia dall'app installata
 - Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
   Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
   per il gesto "indietro" nella modifica di un pasto salvato

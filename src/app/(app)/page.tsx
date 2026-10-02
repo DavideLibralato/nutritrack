@@ -76,6 +76,13 @@ import {
   eliminaComposizione,
 } from "@/lib/repository/composizioni";
 import BarraAnnulla from "@/components/BarraAnnulla";
+import { prendiInserimento } from "@/lib/inserimento/ultimoInserimento";
+import {
+  messaggioAggiunto,
+  MESSAGGIO_ANNULLATO,
+  type MessaggioBarra,
+} from "@/lib/inserimento/testiBarra";
+import { annullaInserimento } from "@/lib/repository/vociDiario";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
@@ -273,9 +280,52 @@ function OggiContenuto() {
   const [idVociEsclusePreviste, setIdVociEsclusePreviste] = useState<string[]>([]);
   // Testo informativo del caso "gia-salvato" nello sheet.
   const [testoGiaSalvatoSheet, setTestoGiaSalvatoSheet] = useState<string | null>(null);
-  // Barra temporanea in basso (BarraAnnulla, qui senza azione): al tocco
-  // della stella su un pasto il cui contenuto valido è già salvato.
-  const [barra, setBarra] = useState<{ id: string; testo: string } | null>(null);
+  // Barra temporanea in basso (BarraAnnulla), una sola alla volta: un
+  // messaggio nuovo sostituisce il precedente e `id` (la `key`) fa ripartire
+  // il timer. La usano:
+  // - ogni inserimento nel diario fatto in /aggiungi, con "Annulla"
+  //   (`idVociDaAnnullare`, punto 10.2);
+  // - il tocco della stella su un pasto il cui contenuto valido è già
+  //   salvato, senza azione.
+  const [barra, setBarra] = useState<
+    (MessaggioBarra & { id: string; idVociDaAnnullare?: string[] }) | null
+  >(null);
+
+  // L'inserimento appena fatto in /aggiungi, che ci ha riportati qui
+  // (src/lib/inserimento/ultimoInserimento.ts). Letto e svuotato in un
+  // useEffect, non durante il render: in sviluppo React (Strict Mode) può
+  // ripetere il render, e un secondo "leggi e svuota" troverebbe già vuoto.
+  // L'effetto può ripetersi anch'esso, ma lo stato messo dal primo giro
+  // resta, e il secondo trova vuoto e non fa nulla.
+  useEffect(() => {
+    const inserimento = prendiInserimento();
+    if (!inserimento) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincronizzazione con una sorgente esterna (il modulo in memoria), una volta al montaggio
+    setBarra({
+      id: crypto.randomUUID(),
+      ...messaggioAggiunto(inserimento.nome, inserimento.numeroAlimenti),
+      idVociDaAnnullare: inserimento.idVoci,
+    });
+  }, []);
+
+  // "Annulla" nella barra: cancellazione logica delle voci appena scritte
+  // (annullaInserimento, che le rilegge da Dexie e passa dal repository,
+  // quindi anche dall'outbox). La barra si toglie PRIMA di scrivere, così
+  // un secondo tocco ravvicinato non lancia un secondo annullamento.
+  async function annullaUltimoInserimento() {
+    const idVoci = barra?.idVociDaAnnullare;
+    if (!idVoci) return;
+    const precedente = barra;
+    setBarra(null);
+    try {
+      await annullaInserimento(idVoci);
+      setBarra({ id: crypto.randomUUID(), ...MESSAGGIO_ANNULLATO });
+    } catch {
+      // Si ripropone l'Annulla: le voci già cancellate vengono saltate,
+      // quindi riprovare dopo un guasto a metà converge.
+      setBarra({ ...precedente, id: crypto.randomUUID() });
+    }
+  }
 
   // Voce 3: i pasti (fasce) di cui l'utente ha nascosto la lista di alimenti.
   // In memoria, non su disco: al riavvio dell'app tornano tutti aperti.
@@ -819,6 +869,13 @@ function OggiContenuto() {
           <BarraAnnulla
             key={barra.id}
             testo={barra.testo}
+            nome={barra.nome}
+            coda={barra.coda}
+            azione={
+              barra.idVociDaAnnullare
+                ? { etichetta: "Annulla", onClick: annullaUltimoInserimento }
+                : undefined
+            }
             sopra
             onChiudi={() => setBarra(null)}
           />

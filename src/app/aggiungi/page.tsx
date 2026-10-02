@@ -51,7 +51,13 @@ import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
-import type { Alimento } from "@/lib/db/tipi";
+import type { Alimento, VoceDiario } from "@/lib/db/tipi";
+import { segnaInserimento } from "@/lib/inserimento/ultimoInserimento";
+import {
+  messaggioEliminato,
+  messaggioRipristinato,
+  type MessaggioBarra,
+} from "@/lib/inserimento/testiBarra";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // Quanti alimenti mostrare in "Recenti": abbastanza da coprire la rotazione
@@ -222,11 +228,13 @@ function AggiungiContenuto() {
   // per ripristinare: presente solo nel messaggio "eliminato", assente in
   // quello che segue un ripristino. `id` cambia a ogni messaggio e fa da
   // `key` alla barra, così il timer riparte da capo.
-  const [barra, setBarra] = useState<{
-    id: string;
-    testo: string;
-    annullabile?: { alimento: Alimento; traccia: TracciaRimozione };
-  } | null>(null);
+  const [barra, setBarra] = useState<
+    | (MessaggioBarra & {
+        id: string;
+        annullabile?: { alimento: Alimento; traccia: TracciaRimozione };
+      })
+    | null
+  >(null);
 
   // `!userId` copre sia "non so ancora" (undefined) sia "nessuna sessione"
   // (null): su questa rotta il middleware garantisce comunque un utente
@@ -264,12 +272,14 @@ function AggiungiContenuto() {
   // (aggiungiPastoSalvatoRapido, una chiamata per alimento con lo stesso
   // gruppoId). Non naviga da sola: i chiamanti che inseriscono più righe in
   // una volta sola devono farlo solo dopo che tutte sono scritte.
+  // Restituisce la voce scritta (null se mancano i dati per scriverla): i
+  // chiamanti ne tengono l'id per l'"Annulla" in Oggi (punto 10.2).
   async function creaVoce(
     alimento: Alimento,
     grammi: number,
     gruppoId: string | null = null
-  ) {
-    if (!userId || !pastoSelezionatoId || profilo === undefined) return;
+  ): Promise<VoceDiario | null> {
+    if (!userId || !pastoSelezionatoId || profilo === undefined) return null;
 
     // Gancio "riceve la prima voce di diario" (sezione 3, regola 1): non fa
     // nulla se il giorno è già scritto o se la differenziazione non è
@@ -281,7 +291,7 @@ function AggiungiContenuto() {
     // uno stato React potenzialmente di un giro indietro.
     await garantisciGiornoPerPrimaVoce(userId, giorno, profilo);
 
-    await repositoryVociDiario.crea({
+    return repositoryVociDiario.crea({
       user_id: userId,
       alimento_id: alimento.id,
       pasto_id: pastoSelezionatoId,
@@ -307,7 +317,10 @@ function AggiungiContenuto() {
     if (!alimentoScelto) return;
     setSalvataggio("in-corso");
     try {
-      await creaVoce(alimentoScelto, grammi);
+      const voce = await creaVoce(alimentoScelto, grammi);
+      if (voce) {
+        segnaInserimento({ idVoci: [voce.id], nome: alimentoScelto.nome, numeroAlimenti: null });
+      }
       router.replace(`/?giorno=${giorno}`);
     } catch {
       setSalvataggio("errore");
@@ -321,7 +334,10 @@ function AggiungiContenuto() {
   async function aggiungiRapido(alimento: Alimento, grammi: number) {
     setErroreRapido(null);
     try {
-      await creaVoce(alimento, grammi);
+      const voce = await creaVoce(alimento, grammi);
+      if (voce) {
+        segnaInserimento({ idVoci: [voce.id], nome: alimento.nome, numeroAlimenti: null });
+      }
       router.replace(`/?giorno=${giorno}`);
     } catch {
       setErroreRapido("Non è stato possibile aggiungere. Riprova.");
@@ -335,9 +351,14 @@ function AggiungiContenuto() {
     setErroreRapido(null);
     const gruppoId = crypto.randomUUID();
     try {
-      await Promise.all(
+      const voci = await Promise.all(
         pasto.voci.map(({ alimento, quantitaG }) => creaVoce(alimento, quantitaG, gruppoId))
       );
+      // "Annulla" toglie tutto il pasto insieme: gli id di tutte le voci.
+      const idVoci = voci.filter((v): v is VoceDiario => v !== null).map((v) => v.id);
+      if (idVoci.length > 0) {
+        segnaInserimento({ idVoci, nome: pasto.nome, numeroAlimenti: idVoci.length });
+      }
       router.replace(`/?giorno=${giorno}`);
     } catch {
       setErroreRapido("Non è stato possibile aggiungere. Riprova.");
@@ -368,7 +389,7 @@ function AggiungiContenuto() {
     setAlimentoInModifica(null);
     setBarra({
       id: crypto.randomUUID(),
-      testo: `${elencoNomi([alimento.nome])} eliminato.`,
+      ...messaggioEliminato(alimento.nome),
       annullabile: { alimento, traccia },
     });
   }
@@ -389,10 +410,16 @@ function AggiungiContenuto() {
         annullabile.alimento.id,
         annullabile.traccia
       );
-      let testo = `${nome} ripristinato.`;
+      // Caso normale: "Ripristinato: Mela", su una riga. Se un pasto salvato
+      // non è tornato, serve la frase intera, che può andare a capo.
+      if (pastiNonRipristinati.length === 0) {
+        setBarra({ id: crypto.randomUUID(), ...messaggioRipristinato(annullabile.alimento.nome) });
+        return;
+      }
+      let testo = `Ripristinato: ${annullabile.alimento.nome}.`;
       if (pastiNonRipristinati.length === 1) {
         testo += ` Il pasto salvato ${elencoNomi(pastiNonRipristinati)} no: ne hai già un altro con lo stesso nome.`;
-      } else if (pastiNonRipristinati.length > 1) {
+      } else {
         testo += ` I pasti salvati ${elencoNomi(pastiNonRipristinati)} no: hai già altri pasti con gli stessi nomi.`;
       }
       setBarra({ id: crypto.randomUUID(), testo });
@@ -716,6 +743,8 @@ function AggiungiContenuto() {
         <BarraAnnulla
           key={barra.id}
           testo={barra.testo}
+          nome={barra.nome}
+          coda={barra.coda}
           azione={
             barra.annullabile
               ? { etichetta: "Annulla", onClick: annullaEliminazione }

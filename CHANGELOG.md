@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — "Aggiunto — Annulla" dopo ogni inserimento
+
+Branch `feature/annulla-inserimento`. Chiude il rimedio 10.2: dopo i tre
+percorsi di inserimento (sheet, "+" rapido, pasto salvato) Oggi mostra
+"Aggiunto: Pane" o "Aggiunto: Colazione tipo (3 alimenti)" con "Annulla".
+
+- `annullaInserimento` (`src/lib/repository/vociDiario.ts`): cancellazione
+  logica via repository delle voci di quell'inserimento, per id, rilette da
+  Dexie. Per un pasto salvato si annullano tutte le voci del gruppo.
+  L'outbox ha una voce sola per riga, quindi la cancellazione sostituisce
+  l'inserimento non ancora partito (§10.6).
+- La riga di `giorni` creata dalla prima voce resta: può contenere una
+  scelta fatta con la pastiglia nel frattempo.
+- `ultimoInserimento.ts` passa l'inserimento da /aggiungi a Oggi, in
+  memoria. Oggi lo legge in un `useEffect`, non nel render (Strict Mode).
+- Testi con il verbo prima del nome, nome troncato su una riga:
+  "Eliminato: Mela" e "Ripristinato: Mela" anche in /aggiungi.
+- 8 test nuovi (annullamento singolo e di un pasto salvato, outbox,
+  ripetizione, testi). 216 test, tutti verdi.
+- Provato in `npm run dev` con Chrome e un utente di prova temporaneo
+  (cancellato): barra comparsa, Annulla, voce arrivata su Supabase con
+  `deleted_at`.
+
 ## 2026-10-02 — Giorno del calendario provato su iPhone, unito a main
 
 Solo documenti. L'abolizione del giorno logico (`f76ed1b`) è stata provata
