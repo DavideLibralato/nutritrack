@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { useState, useEffect } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
 import ProfiloPage from "./page";
 import { repositoryProfili } from "@/lib/repository";
+import { db } from "@/lib/db/database";
 
 const USER_ID = "utente-test-refresh";
 
@@ -26,6 +27,11 @@ vi.mock("@/lib/supabase/useUtente", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: () => {}, refresh: () => {} }),
 }));
+
+// Senza `globals` in vitest.config la pulizia automatica di Testing Library
+// non parte: si smonta a mano, altrimenti la pagina del test prima resta
+// nel documento e il test dopo legge i suoi campi.
+afterEach(cleanup);
 
 describe("Pagina Profilo dopo un refresh (F5)", () => {
   it("precompila i campi con i dati già presenti in IndexedDB, anche se userId arriva con un tick di ritardo", async () => {
@@ -66,5 +72,45 @@ describe("Pagina Profilo dopo un refresh (F5)", () => {
 
     const inputData = screen.getByLabelText("Data di nascita") as HTMLInputElement;
     expect(inputData.value).toBe("1994-02-02");
+  });
+});
+
+// La barra Salva compare solo quando ci sono modifiche da salvare
+// (PUNTO_DI_PARTENZA.md, sezione 3, "Un solo Salva"): si controlla
+// `data-visibile`, perché la classe `invisible` di Tailwind in jsdom non ha
+// effetto (il CSS non c'è).
+describe("Barra Salva del Profilo", () => {
+  it("compare dopo una modifica e sparisce con «Annulla modifiche» e dopo il salvataggio", async () => {
+    await db.profili.clear();
+    await repositoryProfili.crea({
+      user_id: USER_ID,
+      nome: null,
+      sesso: "maschio",
+      data_nascita: "1990-05-05",
+      altezza_cm: 180,
+      livello_attivita: "moderato",
+      differenzia_giorni: false,
+      giorni_allenamento_default: null,
+    });
+
+    render(<ProfiloPage />);
+    const altezza = (await screen.findByLabelText("Altezza (cm)")) as HTMLInputElement;
+    await waitFor(() => expect(altezza.value).toBe("180"));
+    const barra = () => document.querySelector("[data-visibile]");
+    expect(barra()?.getAttribute("data-visibile")).toBe("false");
+
+    fireEvent.change(altezza, { target: { value: "181" } });
+    expect(barra()?.getAttribute("data-visibile")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Annulla modifiche" }));
+    expect(altezza.value).toBe("180");
+    expect(barra()?.getAttribute("data-visibile")).toBe("false");
+
+    fireEvent.change(altezza, { target: { value: "182" } });
+    expect(barra()?.getAttribute("data-visibile")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    await waitFor(() => expect(barra()?.getAttribute("data-visibile")).toBe("false"));
+    const salvato = await db.profili.filter((p) => p.user_id === USER_ID).first();
+    expect(salvato?.altezza_cm).toBe(182);
   });
 });

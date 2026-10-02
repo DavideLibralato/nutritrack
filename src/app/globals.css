@@ -13,29 +13,74 @@
   --accento: #3f7d4c;
   --avviso: #b5533c;
 
-  /* Ingombro della tab bar fissa in fondo (BarraNavigazione): 61px (bordo
-     di 1px + voce di 60px) più la barretta home di iOS. Unico posto dove sta
-     questo numero: lo usano la tab bar per la sua altezza, il layout di
-     (app) come spazio in fondo al contenuto, Oggi per la sua altezza fissa e
-     la barra Salva di Profilo per attaccarsi sopra la tab bar.
-     env(safe-area-inset-bottom) vale qualcosa solo con viewportFit "cover"
-     (viewport in src/app/layout.tsx): senza, è 0 e nell'app installata la
-     tab bar finisce sotto la barretta home.
-     --margine-sotto-tab-bar: spazio in più fra le voci e la barretta, solo
-     nell'app installata (media query qui sotto); in Safari resta 0, perché
-     sotto c'è già la barra di Safari. */
-  --margine-sotto-tab-bar: 0px;
-  --altezza-tab-bar: calc(
-    3.8125rem + env(safe-area-inset-bottom) + var(--margine-sotto-tab-bar)
+  /* Colori derivati dai token qui sopra, mai scritti a mano nei componenti.
+     --capsula-attiva: lo sfondo dietro la voce attiva della tab bar; per
+     provare un'alternativa basta cambiare questa riga.
+     --vetro: lo sfondo semitrasparente della pillola, sotto cui passa la
+     pagina sfocata (classe .vetro qui sotto).
+     --ombra-fluttuante: l'ombra leggera degli elementi staccati dal fondo
+     (pillola, "+ Aggiungi", barra Salva di Profilo). */
+  --capsula-attiva: color-mix(in srgb, var(--accento) 12%, transparent);
+  --vetro: color-mix(in srgb, var(--background) 75%, transparent);
+  --ombra-fluttuante: 0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
+
+  /* La tab bar è una pillola staccata dal fondo (BarraNavigazione,
+     PUNTO_DI_PARTENZA.md sezione 3, "Layout delle pagine con la tab bar").
+     Unico posto dove stanno questi numeri.
+     - --tab-bar-distanza: dal bordo dello schermo al fondo della pillola.
+       Appena sopra la barretta home di iOS: 34px di safe area nell'app
+       installata → 22px; in Safari, con la sua barra degli strumenti sotto,
+       la safe area è 0 → 12px. env(safe-area-inset-bottom) vale qualcosa
+       solo con viewportFit "cover" (viewport in src/app/layout.tsx).
+     - --ingombro-tab-bar: quanto spazio occupa la pillola dal fondo.
+       Lo usano Profilo e Statistiche come spazio in fondo alla pagina e la
+       barra Salva di Profilo per stare sopra la pillola.
+     - --ingombro-oggi: in Oggi in più c'è "+ Aggiungi" sopra la pillola;
+       è lo spazio in fondo alla lista dei pasti, così l'ultimo alimento si
+       porta sempre sopra bottone e pillola.
+     - --altezza-sfumatura: la sfumatura dietro le barre in fondo; in Oggi
+       sale fino a coprire anche il bottone (regola :has più sotto). */
+  --tab-bar-altezza: 4rem;
+  --tab-bar-distanza: max(calc(env(safe-area-inset-bottom) - 12px), 12px);
+  --ingombro-tab-bar: calc(var(--tab-bar-distanza) + var(--tab-bar-altezza));
+  --aggiungi-altezza: 3rem;
+  --spazio-fra-barre: 0.75rem;
+  --ingombro-oggi: calc(
+    var(--ingombro-tab-bar) + var(--spazio-fra-barre) + var(--aggiungi-altezza)
   );
+  --altezza-sfumatura: calc(var(--ingombro-tab-bar) + 1.5rem);
 }
 
-/* App aperta dalla Home (manifest "display": "standalone"): la tab bar
-   arriva fino al bordo, la barretta home da sola la lasciava troppo bassa. */
-@media (display-mode: standalone) {
-  :root {
-    --margine-sotto-tab-bar: 0.75rem;
+/* In Oggi la sfumatura copre anche "+ Aggiungi" (data-pulsante-aggiungi in
+   src/app/(app)/page.tsx): una sola sfumatura, più alta, invece di due
+   sovrapposte che farebbero uno scalino. */
+body:has([data-pulsante-aggiungi]) {
+  --altezza-sfumatura: calc(var(--ingombro-oggi) + 1.5rem);
+}
+
+/* Sfondo della pillola: semitrasparente, con la pagina sfocata sotto. Dove
+   backdrop-filter non c'è, sfondo pieno: un semitrasparente senza sfocatura
+   lascerebbe leggere il testo che passa sotto. */
+.vetro {
+  background: var(--vetro);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vetro {
+    background: var(--background);
   }
+}
+
+/* Dal trasparente al colore di fondo, dietro le barre in fondo: il testo
+   che passa sotto non disturba. Non riceve tocchi. */
+.sfumatura-in-basso {
+  height: var(--altezza-sfumatura);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--background) 0%, transparent),
+    var(--background) 70%
+  );
 }
 
 @theme inline {

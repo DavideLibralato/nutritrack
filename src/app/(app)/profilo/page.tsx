@@ -128,8 +128,9 @@ function elencoGiorni(giorni: GiornoSettimana[]): string {
 // così il suo messaggio di esito non sparisce.
 //
 // ModuliProfilo restituisce un frammento: i suoi elementi sono figli diretti
-// del <main>, e la barra del Salva (sticky, `order-last`) resta attaccata
-// sopra la tab bar per tutta la pagina e finisce per ultima, sotto
+// del <main>, e la barra del Salva (sticky, `order-last`, visibile solo con
+// modifiche da salvare) resta sopra la pillola della tab bar per tutta la
+// pagina e finisce per ultima, sotto
 // "Dati su questo dispositivo".
 export default function ProfiloPage() {
   const userId = useUtenteId();
@@ -139,7 +140,7 @@ export default function ProfiloPage() {
   const [moduloModificato, setModuloModificato] = useState(false);
 
   return (
-    <main className="flex flex-1 flex-col items-center gap-8 p-4 pb-0">
+    <main className="flex flex-1 flex-col items-center gap-8 p-4 pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))]">
       <ModuliProfilo key={versioneDati} onModificatoCambiato={setModuloModificato} />
       {userId && (
         <RicaricaDatiAccount

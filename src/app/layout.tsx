@@ -38,7 +38,7 @@ export const viewport: Viewport = {
   // Safari non si vede (la sua barra degli strumenti sta già sopra la
   // barretta home), ma nell'app installata sulla Home la pagina arriva fino
   // al bordo e la tab bar finiva sotto la barretta. Con "cover" il valore è
-  // quello vero, e --altezza-tab-bar (globals.css) e gli sheet lo usano già.
+  // quello vero, e --tab-bar-distanza (globals.css) e gli sheet lo usano già.
   // In alto non cambia nulla: con statusBarStyle "default" la barra di stato
   // di iOS è opaca e la pagina comincia sotto l'orologio (inset-top = 0);
   // solo "black-translucent" la farebbe finire sotto.

@@ -1,14 +1,19 @@
-// La barra del Salva unico, in fondo alla pagina Profilo. `sticky` con
-// `bottom` pari a --altezza-tab-bar (globals.css): a scorrere è il documento
-// e la tab bar è fissa in fondo, quindi la barra resta attaccata appena sopra
-// la tab bar finché la pagina continua sotto, e si ferma al suo posto quando
-// si arriva in fondo. Come la tab bar, su telefono si nasconde mentre un
-// campo ha il fuoco (`data-nascondi-mentre-scrivi`, regola in globals.css):
-// resta invisibile ma occupa il suo spazio, così la pagina non salta.
+// La barra del Salva unico, in fondo alla pagina Profilo: una scheda
+// staccata dai bordi, come la pillola della tab bar. `sticky` con `bottom`
+// pari a --ingombro-tab-bar più --spazio-fra-barre (globals.css): a
+// scorrere è il documento e la pillola è fissa, quindi la barra resta
+// appena sopra la pillola finché la pagina continua sotto, e si ferma al
+// suo posto quando si arriva in fondo.
 //
-// Inerte quando non c'è niente da salvare; altrimenti dice quali sezioni
-// verranno aggiornate, e offre "Annulla modifiche" per tornare ai valori
-// salvati senza dover ricaricare niente.
+// Compare SOLO quando ci sono modifiche da salvare (PUNTO_DI_PARTENZA.md,
+// sezione 3, "Un solo Salva"): due elementi fluttuanti fissi sono troppi.
+// Quando non serve è `invisible` ma occupa sempre il suo spazio, così quando
+// compare non copre gli ultimi elementi (Ricarica, Esci) e la pagina non
+// salta. Compare con una dissolvenza di 150 ms, niente con
+// prefers-reduced-motion. Come la pillola, su telefono si nasconde anche
+// mentre un campo ha il fuoco (`data-nascondi-mentre-scrivi`, regola in
+// globals.css). Quando c'è, dice quali sezioni verranno aggiornate e offre
+// "Annulla modifiche" per tornare ai valori salvati.
 
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { ETICHETTE_SEZIONI, type Sezione } from "@/lib/profilo/salvataggioProfilo";
@@ -32,7 +37,11 @@ export default function BarraSalvaProfilo({
   return (
     <div
       data-nascondi-mentre-scrivi
-      className="sticky bottom-[var(--altezza-tab-bar)] z-10 order-last -mx-4 w-[calc(100%+2rem)] border-t border-border bg-background px-4 py-3"
+      data-visibile={daSalvare}
+      style={{ boxShadow: "var(--ombra-fluttuante)" }}
+      className={`sticky bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-30 order-last w-full max-w-md rounded-2xl border border-border bg-background px-4 py-3 transition-[opacity,visibility] duration-150 motion-reduce:transition-none ${
+        daSalvare ? "visible opacity-100" : "invisible opacity-0"
+      }`}
     >
       <div className="mx-auto w-full max-w-sm space-y-2">
         {/* role="status": lo screen reader legge quali sezioni verranno

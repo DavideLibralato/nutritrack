@@ -8,13 +8,21 @@
 // serve per evidenziare in verde la voce attiva. Vive nel layout del route
 // group (app), quindi non compare su login/registrazione.
 //
-// `position: fixed` in fondo, alta esattamente --altezza-tab-bar (globals.css,
-// barretta home di iOS e --margine-sotto-tab-bar compresi): il layout di (app) lascia sotto il
-// contenuto lo stesso spazio. Su telefono si nasconde mentre un campo ha il
-// fuoco (`data-nascondi-mentre-scrivi`, regola in globals.css), così non
-// compare mai sopra la tastiera. `z-20`: sopra la barra Salva di Profilo (z-10),
-// sotto BarraAnnulla (z-40) e gli sheet (z-50), che la coprono con lo sfondo
-// scuro come prima.
+// Una "pillola" staccata dai bordi (16 px ai lati), alta --tab-bar-altezza e
+// appoggiata a --tab-bar-distanza dal fondo, appena sopra la barretta home
+// di iOS (globals.css: lì stanno tutti i numeri). Sfondo "vetro": la pagina
+// passa sotto sfocata; dove la sfocatura non c'è, sfondo pieno. La voce
+// attiva ha una capsula di sfondo (--capsula-attiva) e il colore accento.
+//
+// Sotto la pillola, una sfumatura dal trasparente al colore di fondo
+// (.sfumatura-in-basso): il testo che scorre sotto non disturba. Non riceve
+// tocchi. In Oggi sale fino a coprire anche "+ Aggiungi".
+//
+// Pillola e sfumatura si nascondono mentre un campo ha il fuoco
+// (`data-nascondi-mentre-scrivi`, regola in globals.css), così non compaiono
+// mai sopra la tastiera. Livelli: sfumatura z-20, pillola z-30 (come
+// "+ Aggiungi" e la barra Salva di Profilo), sotto BarraAnnulla (z-40) e gli
+// sheet (z-50), che la coprono con lo sfondo scuro.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -30,31 +38,41 @@ export default function BarraNavigazione() {
   const percorso = usePathname();
 
   return (
-    <nav
-      data-nascondi-mentre-scrivi
-      className="fixed inset-x-0 bottom-0 z-20 h-[var(--altezza-tab-bar)] border-t border-border bg-background pb-[calc(env(safe-area-inset-bottom)+var(--margine-sotto-tab-bar))]"
-    >
-      <ul className="mx-auto flex h-full max-w-md">
-        {VOCI.map((voce) => {
-          const attiva =
-            voce.href === "/" ? percorso === "/" : percorso.startsWith(voce.href);
-          return (
-            <li key={voce.href} className="flex-1">
-              <Link
-                href={voce.href}
-                aria-current={attiva ? "page" : undefined}
-                className={`flex h-full flex-col items-center justify-center gap-1 text-xs ${
-                  attiva ? "text-accent" : "text-muted"
-                } ${CLASSE_FOCUS}`}
-              >
-                <Icona nome={voce.etichetta} />
-                {voce.etichetta}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <>
+      <div
+        aria-hidden
+        data-nascondi-mentre-scrivi
+        className="sfumatura-in-basso pointer-events-none fixed inset-x-0 bottom-0 z-20"
+      />
+      <nav
+        aria-label="Navigazione principale"
+        data-nascondi-mentre-scrivi
+        style={{ boxShadow: "var(--ombra-fluttuante)" }}
+        className="vetro fixed inset-x-4 bottom-[var(--tab-bar-distanza)] z-30 mx-auto h-[var(--tab-bar-altezza)] max-w-md rounded-full border border-border"
+      >
+        <ul className="flex h-full gap-1 p-1.5">
+          {VOCI.map((voce) => {
+            const attiva =
+              voce.href === "/" ? percorso === "/" : percorso.startsWith(voce.href);
+            return (
+              <li key={voce.href} className="flex-1">
+                {/* Area toccabile: tutta la capsula, alta ~52 px. */}
+                <Link
+                  href={voce.href}
+                  aria-current={attiva ? "page" : undefined}
+                  className={`flex h-full flex-col items-center justify-center gap-0.5 rounded-full text-xs ${
+                    attiva ? "bg-[var(--capsula-attiva)] font-medium text-accent" : "text-muted"
+                  } ${CLASSE_FOCUS}`}
+                >
+                  <Icona nome={voce.etichetta} />
+                  {voce.etichetta}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </>
   );
 }
 

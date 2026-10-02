@@ -4,7 +4,7 @@
 
 export default function StatistichePage() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+    <main className="flex flex-1 flex-col items-center justify-center gap-2 p-8 pb-[calc(var(--ingombro-tab-bar)+1rem)] text-center">
       <h1 className="text-2xl font-display font-bold">Statistiche</h1>
       <p className="text-sm text-muted">
         Prossimamente: medie di calorie e proteine, grafico delle calorie

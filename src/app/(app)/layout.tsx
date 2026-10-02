@@ -6,10 +6,16 @@
 // Login e registrazione stanno fuori da questo gruppo, quindi non ereditano
 // la tab bar.
 //
-// Struttura: a scorrere è il DOCUMENTO, non un <div> interno. La tab bar è
-// `position: fixed` in fondo (BarraNavigazione) e il contenuto lascia sotto
-// di sé uno spazio pari alla sua altezza (--altezza-tab-bar, globals.css),
-// così l'ultima riga non le finisce dietro.
+// Struttura: la tab bar è una pillola `position: fixed` che galleggia sopra
+// il fondo (BarraNavigazione). Lo spazio in fondo lo lascia ogni pagina, non
+// questo layout, perché le pagine non scorrono allo stesso modo:
+// - Profilo e Statistiche: scorre il DOCUMENTO; in fondo lasciano
+//   --ingombro-tab-bar (globals.css), così l'ultima riga non finisce dietro
+//   la pillola;
+// - Oggi: alta esattamente lo schermo, scorre solo la sua lista, che arriva
+//   fino in fondo passando sotto "+ Aggiungi" e la pillola, con il suo
+//   spazio in fondo (--ingombro-oggi). Se lo lasciasse anche il layout, il
+//   documento scorrerebbe di quello spazio.
 //
 // Tastiera di iPhone: a volte iOS fa scorrere il documento e le barre fisse
 // restano sotto la tastiera, altre volte sposta la finestra e le barre
@@ -20,8 +26,7 @@
 //
 // `flex-1 flex-col`: il <body> è già una colonna alta almeno lo schermo, e
 // questo contenitore la riempie, così una pagina corta (Statistiche) può
-// centrarsi con `flex-1` nello spazio sopra la tab bar. Oggi invece si dà
-// un'altezza fissa e fa scorrere solo la sua lista centrale.
+// centrarsi con `flex-1` nello spazio sopra la pillola.
 
 import type { ReactNode } from "react";
 import BarraNavigazione from "@/components/BarraNavigazione";
@@ -29,7 +34,7 @@ import BarraNavigazione from "@/components/BarraNavigazione";
 export default function LayoutApp({ children }: { children: ReactNode }) {
   return (
     <>
-      <div className="flex flex-1 flex-col pb-[var(--altezza-tab-bar)]">{children}</div>
+      <div className="flex flex-1 flex-col">{children}</div>
       <BarraNavigazione />
     </>
   );

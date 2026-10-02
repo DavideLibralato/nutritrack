@@ -50,29 +50,59 @@ Decisioni prese:
 Navigazione a tab bar con tre voci (Oggi, Statistiche, Profilo). La pagina di
 inserimento si apre sopra, non è una tab.
 
-**Layout delle pagine con la tab bar.** A scorrere è il **documento**, non un
-contenitore interno. La tab bar è `position: fixed` in fondo, e il contenuto
-lascia sotto di sé uno spazio pari alla sua altezza (variabile CSS
-`--altezza-tab-bar` in `globals.css`, unico posto dove sta il numero). La
-barra Salva di Profilo è `sticky` con `bottom` uguale a quella variabile, cioè
-appena sopra la tab bar. Oggi fa eccezione: ha un'altezza fissa (schermo meno
-tab bar) e fa scorrere solo la lista dei pasti.
+**La tab bar è una pillola fluttuante** (dal 2/10, "opzione B"). Non è più
+una striscia a tutta larghezza: è staccata dai bordi (16 px ai lati), alta
+64 px, con gli angoli del tutto arrotondati, e appoggiata appena sopra la
+barretta home. Lo sfondo è semitrasparente con la pagina sfocata sotto
+(`backdrop-filter`), con bordo sottile e ombra leggera. La voce attiva ha una
+capsula di sfondo e il colore accento. Dietro le barre in fondo c'è una
+sfumatura dal trasparente al colore di fondo, così il testo che passa sotto
+non disturba. Vale su Oggi, Statistiche e Profilo (`BarraNavigazione`).
 
-**Barretta home di iOS.** `--altezza-tab-bar` comprende
-`env(safe-area-inset-bottom)`, e lo stesso valore fa da spazio in fondo agli
-sheet. iOS lo restituisce solo se il viewport ha `viewportFit: "cover"`
-(layout radice), altrimenti vale 0. In Safari non si nota, ma nell'app
-installata sulla Home la tab bar finiva sotto la barretta. Sempre solo
-nell'app installata (`@media (display-mode: standalone)`), la tab bar ha in
-fondo 0.75rem in più (`--margine-sotto-tab-bar`), compresi in
-`--altezza-tab-bar`: con la sola barretta le voci restavano troppo in basso.
-In Safari il margine è 0. In alto non serve
-nulla: con `statusBarStyle: "default"` la barra di stato di iOS è opaca e la
-pagina comincia sotto l'orologio. Passando a `"black-translucent"` andrebbe
-aggiunto `env(safe-area-inset-top)` alle testate.
+**Layout delle pagine con la tab bar.** La pillola è `position: fixed`, e
+**lo spazio in fondo lo lascia ogni pagina**, non il layout, perché le
+pagine non scorrono allo stesso modo:
+- **Profilo e Statistiche**: a scorrere è il **documento**; in fondo lasciano
+  `--ingombro-tab-bar`.
+- **Oggi**: alta esattamente lo schermo, scorre solo la lista dei pasti, che
+  arriva fino in fondo passando sotto "+ Aggiungi" e la pillola. In fondo alla
+  lista c'è `--ingombro-oggi`, così l'ultimo alimento si porta sempre sopra
+  bottone e pillola.
+
+I numeri stanno tutti in `globals.css`, in un posto solo:
+
+| Variabile | Cosa è |
+|---|---|
+| `--tab-bar-altezza` | 64 px |
+| `--tab-bar-distanza` | dal fondo dello schermo alla pillola |
+| `--ingombro-tab-bar` | distanza + altezza |
+| `--aggiungi-altezza` | il bottone "+ Aggiungi" |
+| `--spazio-fra-barre` | lo spazio fra pillola e bottone, e fra pillola e barra Salva |
+| `--ingombro-oggi` | pillola + spazio + bottone |
+
+Livelli: sfumatura z-20; pillola, "+ Aggiungi" e barra Salva z-30;
+BarraAnnulla z-40; gli sheet z-50, sopra a tutto.
+
+**Barretta home di iOS.** `--tab-bar-distanza` è
+`max(env(safe-area-inset-bottom) − 12px, 12px)`:
+- **app installata**: safe area di 34 px, quindi la pillola sta a 22 px dal
+  bordo, appena sopra la barretta;
+- **Safari**: sotto c'è già la barra degli strumenti, la safe area vale 0,
+  quindi 12 px.
+
+Lo stesso `env()` fa da spazio in fondo agli sheet. iOS lo restituisce solo
+se il viewport ha `viewportFit: "cover"` (layout radice), altrimenti vale 0 e
+nell'app installata la tab bar finiva sotto la barretta.
+
+In alto non serve nulla: con `statusBarStyle: "default"` la barra di stato di
+iOS è opaca e la pagina comincia sotto l'orologio. La testata di Oggi ha
+comunque `env(safe-area-inset-top)` nel padding (vale 0), così resterebbe
+fuori dall'orologio anche passando a `"black-translucent"`. Le altre testate
+andrebbero sistemate in quel caso.
 
 **Mentre scrivi, le barre si nascondono.** Su un dispositivo touch, finché un
-campo ha il fuoco, la tab bar e la barra Salva di Profilo sono invisibili. Un
+campo ha il fuoco, sono invisibili la pillola della tab bar, la sfumatura,
+"+ Aggiungi" e la barra Salva di Profilo. Un
 campo qui è un input di testo, numero, email, password o data, una textarea o
 una select; non contano checkbox, radio e bottoni. Chiusa la tastiera, le
 barre ricompaiono. È solo CSS, in `globals.css`: `:has()` sul `<body>`, le
@@ -141,11 +171,17 @@ Dall'alto:
 
 Nient'altro: nessun grafico, nessun banner, nessun consiglio.
 
-**Layout: tre fasce, solo quella centrale scorre.**
+**Layout: in alto fisso, sotto la lista che scorre fino in fondo.**
 
 - **In alto, fisso**: data, calorie rimanenti, anello e barre macro
-- **Al centro, scorrevole**: la lista dei pasti
-- **In basso, fisso** sopra la tab bar: il pulsante "+ Aggiungi"
+- **Sotto, scorrevole**: la lista dei pasti, fino al fondo dello schermo
+- **Fluttuante**, centrato appena sopra la pillola della tab bar: il pulsante
+  "+ Aggiungi", con un'ombra leggera. La lista ci passa sotto, sfumata. La
+  barra "Aggiunto — Annulla" compare sopra il pulsante, senza coprirlo
+
+Fino al 2/10 c'era una fascia bassa fissa per "+ Aggiungi". È sparita con la
+tab bar fluttuante: Oggi resta a scorrimento interno (la pagina è alta
+esattamente lo schermo), così anello e calorie restano sempre visibili.
 
 Il pulsante non deve mai finire sotto la piega: è l'azione per cui esiste l'app.
 Se su schermi piccoli la fascia scorrevole risulta troppo stretta, la fascia
@@ -387,7 +423,17 @@ Niente insight AI in V1: prima servono dati veri da interpretare.
 #### Un solo Salva (deciso il 2026-09-26)
 
 Dati personali, Obiettivo e Giorni differenziati sono **un unico modulo con un
-solo pulsante Salva**, in una barra in fondo alla pagina. Il Salva confronta i
+solo pulsante Salva**, in una barra in fondo alla pagina. **La barra compare
+solo quando ci sono modifiche da salvare** (dal 2/10). Prima era sempre
+visibile, inerte quando non c'era niente da salvare. Con la tab bar diventata
+una pillola fluttuante, due elementi fluttuanti fissi erano troppi: ora il
+Salva compare quando serve, sopra la pillola, come una scheda staccata dai
+bordi. Lo spazio in fondo alla pagina resta sempre riservato, come se la barra
+ci fosse: quando compare non copre "Ricarica i dati" ed "Esci", e la pagina
+non salta. Compare con una dissolvenza di 150 ms, nessuna animazione con
+`prefers-reduced-motion`. Sparisce dopo il salvataggio e dopo "Annulla
+modifiche", quindi il messaggio "Salvato" di prima non si vede più. Il Salva
+confronta i
 valori sullo schermo con quelli caricati e **scrive solo le tabelle delle
 sezioni cambiate** (Dati personali → `profili`; Obiettivo → `obiettivi` +
 target "normale"; Giorni differenziati → `profili` + target "allenamento").
@@ -953,6 +999,14 @@ Confermate dai mockup, con una correzione.
   Tutto il resto è neutro: nero per i numeri, grigio per le etichette
 - Nessun bordo dove non serve: separatori sottili tra le righe, niente card
   dentro card. Lo spazio bianco separa
+- **Elementi fluttuanti** (dal 2/10): la pillola della tab bar, "+ Aggiungi"
+  in Oggi e la barra Salva di Profilo galleggiano sopra il contenuto, con
+  un'ombra leggera (`--ombra-fluttuante`). La pillola ha lo sfondo "vetro"
+  (`--vetro`, semitrasparente, con `backdrop-filter`; sfondo pieno dove la
+  sfocatura non è supportata, con `@supports`). La voce attiva ha una
+  capsula di sfondo, `--capsula-attiva`: un token solo, per provare
+  alternative cambiando una riga. Tutti derivati con `color-mix` dai token
+  di base, nessun colore scritto a mano, quindi seguono anche il tema scuro
 - Numeri grandi, etichette piccole e grigie, spesso in maiuscoletto
   ("OBIETTIVO", "TARGET GIORNALIERI"). Pesi tipografici: solo regular e medium
 - **Il colore nei grafici segnala, non decora.** Nel grafico calorie del
@@ -1673,8 +1727,14 @@ tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
 chiude (sezione 3, "Layout delle pagine con la tab bar").
 
 **Tab bar nell'app installata** (2/10, provata su iPhone da Safari e
-dall'app sulla Home). `viewportFit: "cover"` e 0.75rem in più in fondo solo
-in modalità standalone (sezione 3, "Barretta home di iOS").
+dall'app sulla Home). `viewportFit: "cover"` (sezione 3, "Barretta home di
+iOS"). Il margine in più solo in modalità standalone è stato tolto con la
+tab bar fluttuante, che ha la sua distanza dal fondo.
+
+**Tab bar fluttuante** (2/10, "opzione B"). Pillola staccata dai bordi con
+sfondo vetro; in Oggi "+ Aggiungi" fluttuante e lista fino in fondo; barra
+Salva di Profilo solo con modifiche (sezione 3, "La tab bar è una pillola
+fluttuante" e "Un solo Salva"; sezione 7).
 
 **Giorno del calendario al posto del giorno logico** (2/10, provato su
 iPhone). Un solo "oggi" (`oggiLocale`) per Oggi, Aggiungi e Profilo; fra
@@ -1687,7 +1747,7 @@ Oggi dopo i tre percorsi di inserimento; annulla le voci di
 quell'inserimento con una cancellazione logica (sezione 3, "Dopo ogni
 inserimento, «Annulla»").
 
-**Test.** 216 test permanenti in 23 file (Vitest), tutti verdi al 2/10.
+**Test.** 217 test permanenti in 23 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
 
@@ -1712,6 +1772,15 @@ inserimento, «Annulla»").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
+- **Tab bar fluttuante** (2/10): geometria misurata in `npm run dev` a 375 e
+  390 px, con il CSS vero e una pagina di prova (senza login). Da provare
+  su iPhone sulla preview, da Safari e dall'app installata:
+  - distanza della pillola dalla barretta home;
+  - sfocatura;
+  - Oggi con la lista lunga;
+  - barra "Aggiunto — Annulla" sopra "+ Aggiungi";
+  - barra Salva di Profilo che compare e sparisce;
+  - tastiera aperta in Profilo
 - **Cancellando un utente, le sue righe in `alimenti` non vengono
   cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
   non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e

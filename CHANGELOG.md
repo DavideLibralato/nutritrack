@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Tab bar fluttuante (opzione B)
+
+Branch `feature/tab-bar-fluttuante`. La tab bar diventa una pillola
+staccata dai bordi, con sfondo vetro (`backdrop-filter`, sfondo pieno dove
+non è supportato), bordo, ombra leggera e capsula sulla voce attiva. Vale per
+Oggi, Statistiche e Profilo.
+
+- Oggi: sparita la fascia bassa. La pagina è alta lo schermo, la lista
+  scorre fino in fondo sotto "+ Aggiungi" (ora fluttuante) e la pillola, con
+  una sfumatura dietro. "Aggiunto — Annulla" sta sopra il bottone.
+- Variabili in `globals.css`:
+  - tolte `--altezza-tab-bar` e `--margine-sotto-tab-bar`;
+  - nuove `--tab-bar-distanza` (`max(safe area − 12px, 12px)`),
+    `--ingombro-tab-bar`, `--ingombro-oggi`, `--spazio-fra-barre`;
+  - token `--capsula-attiva`, `--vetro`, `--ombra-fluttuante`, tutti con
+    `color-mix` dai token di base.
+- Lo spazio in fondo lo lascia ogni pagina, non più il layout di (app).
+- Profilo: la barra Salva compare solo quando ci sono modifiche, con
+  dissolvenza di 150 ms (nessuna con `prefers-reduced-motion`). Lo spazio
+  resta sempre riservato. Il messaggio "Salvato" non si vede più.
+- Test nuovo sulla pagina Profilo: la barra compare dopo una modifica e
+  sparisce con "Annulla modifiche" e dopo il salvataggio. Nel file serviva
+  `afterEach(cleanup)`: senza `globals` in Vitest la pulizia automatica di
+  Testing Library non parte. 217 test, tutti verdi.
+- Geometria misurata in `npm run dev` a 375 e 390 px, con il CSS vero su
+  una pagina di prova e senza login: pillola a 16 px dai lati e 12 px dal
+  fondo, alta 64 px; capsula di 50 px; "+ Aggiungi" 12 px sopra la pillola;
+  l'ultima voce della lista arriva sopra il bottone; il documento non scorre.
+
 ## 2026-10-02 — "Aggiunto — Annulla" provato su iPhone, unito a main
 
 Solo documenti. La barra "Aggiunto — Annulla" (`5a25f32`) è stata provata

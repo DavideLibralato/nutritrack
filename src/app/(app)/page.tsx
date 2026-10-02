@@ -9,16 +9,17 @@
 // Come nella pagina Profilo, le query rispondono `undefined` (= "non so
 // ancora") finché non conosciamo l'utente, mai `[]` (= "so che è vuoto").
 //
-// Layout a tre fasce, solo quella centrale scorre (sezione 3):
-//   - in alto, fisso: data navigabile, calorie rimanenti, anello e macro
-//   - al centro, scorrevole: la lista dei pasti
-//   - in basso, fisso: il pulsante "+ Aggiungi"
+// Layout (sezione 3): in alto, fisso, data navigabile, calorie rimanenti,
+// anello e macro; sotto, la lista dei pasti, l'unica cosa che scorre. Sopra
+// la lista galleggiano il bottone "+ Aggiungi" e la pillola della tab bar.
 //
-// Altezza fissa: lo schermo meno la tab bar (--altezza-tab-bar, globals.css).
-// Nelle pagine con la tab bar a scorrere è il documento (layout.tsx di
-// (app)); qui il documento è alto esattamente uno schermo e non scorre, e
-// scorre solo la lista centrale. Oggi non ha campi che aprono la tastiera
-// fuori dagli sheet, che si agganciano da soli alla parte visibile.
+// Altezza fissa: esattamente lo schermo (h-dvh). Nelle altre pagine con la
+// tab bar a scorrere è il documento (layout.tsx di (app)); qui il documento
+// è alto uno schermo e non scorre, e scorre solo la lista, che arriva fino
+// al fondo passando sotto bottone e pillola. Scorrimento interno apposta:
+// così anello e calorie restano sempre visibili. Oggi non ha campi che
+// aprono la tastiera fuori dagli sheet, che si agganciano da soli alla
+// parte visibile.
 //
 // Il pulsante "+ Aggiungi" apre /aggiungi passando il giorno mostrato, così
 // dopo il salvataggio si torna all'Oggi del giorno giusto (anche un giorno
@@ -630,9 +631,12 @@ function OggiContenuto() {
     pasti.find((p) => p.id === (voceInModifica?.pasto_id ?? ""))?.nome ?? "";
 
   return (
-    <div className="flex h-[calc(100dvh-var(--altezza-tab-bar))] flex-col overflow-hidden">
-      {/* FASCIA ALTA — fissa */}
-      <header className="shrink-0 px-4 pt-6 pb-5">
+    <div className="flex h-dvh flex-col overflow-hidden">
+      {/* FASCIA ALTA — fissa. `safe-area-inset-top` vale 0 con
+          statusBarStyle "default" (la pagina comincia sotto l'orologio); è
+          qui solo perché la testata resti fuori dall'orologio anche se un
+          giorno la barra di stato diventasse trasparente. */}
+      <header className="shrink-0 px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-5">
         {/* Prima riga: ‹ data › a sinistra, "Oggi" e la pastiglia a destra.
             Misurata con i font veri, nel caso peggiore ("30 mag", "Oggi" e
             "Allenamento" insieme) la riga è larga 315 px: a 390 e 375 px di
@@ -771,8 +775,11 @@ function OggiContenuto() {
         </div>
       </header>
 
-      {/* FASCIA CENTRALE — l'unica che scorre */}
-      <ul className="min-h-0 flex-1 overflow-y-auto px-4">
+      {/* FASCIA CENTRALE — l'unica che scorre, fino al fondo dello schermo:
+          passa sotto "+ Aggiungi" e la pillola. Lo spazio in fondo
+          (--ingombro-oggi, globals.css) fa salire l'ultimo alimento sopra
+          bottone e pillola. */}
+      <ul className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(var(--ingombro-oggi)+1rem)]">
         {pasti.length === 0 ? (
           <li className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</li>
         ) : (
@@ -857,14 +864,24 @@ function OggiContenuto() {
         )}
       </ul>
 
-      {/* FASCIA BASSA — fissa. Il pulsante non deve mai finire sotto la
-          piega: è l'azione per cui esiste l'app (sezione 3). Apre /aggiungi
-          per il giorno mostrato. */}
-      <div className="relative shrink-0 border-t border-border px-4 py-3">
-        {/* Appena sopra questa fascia, senza coprire il "+ Aggiungi". Qui
-            non serve il margine della barretta home (la gestisce la tab bar
-            sotto) né il visual viewport: quando compare non c'è nessun campo
-            di testo aperto, quindi nessuna tastiera. */}
+      {/* "+ Aggiungi" FLUTTUANTE, centrato appena sopra la pillola della tab
+          bar. Non deve mai finire sotto la piega: è l'azione per cui esiste
+          l'app (sezione 3). Apre /aggiungi per il giorno mostrato. Il gruppo
+          non riceve tocchi (la lista sotto resta scorrevole ai lati del
+          bottone), il bottone e la BarraAnnulla sì.
+          `data-pulsante-aggiungi`: alza la sfumatura dietro le barre fino a
+          coprire anche il bottone (regola :has in globals.css). Si nasconde
+          mentre un campo ha il fuoco, come la pillola. */}
+      <div
+        data-pulsante-aggiungi
+        data-nascondi-mentre-scrivi
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-30 mx-auto max-w-md"
+      >
+        {/* Appena sopra il bottone, senza coprirlo. Ha il suo sfondo pieno,
+            quindi resta leggibile sopra la lista che passa sotto. Qui non
+            serve il margine della barretta home (c'è la pillola sotto) né il
+            visual viewport: quando compare non c'è nessun campo di testo
+            aperto, quindi nessuna tastiera. */}
         {barra && (
           <BarraAnnulla
             key={barra.id}
@@ -883,7 +900,8 @@ function OggiContenuto() {
         <button
           type="button"
           onClick={() => router.push(`/aggiungi?giorno=${giorno}`)}
-          className={`mx-auto block rounded-full bg-accent px-10 py-3 font-medium text-background ${CLASSE_FOCUS}`}
+          style={{ boxShadow: "var(--ombra-fluttuante)" }}
+          className={`pointer-events-auto mx-auto flex h-[var(--aggiungi-altezza)] items-center rounded-full bg-accent px-10 font-medium text-background ${CLASSE_FOCUS}`}
         >
           + Aggiungi
         </button>
