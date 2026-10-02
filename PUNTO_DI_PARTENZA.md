@@ -1634,6 +1634,10 @@ scorrere è il documento, con la tab bar fissa. Mentre un campo ha il fuoco,
 tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
 chiude (sezione 3, "Layout delle pagine con la tab bar").
 
+**Tab bar nell'app installata** (2/10, provata su iPhone da Safari e
+dall'app sulla Home). `viewportFit: "cover"` e 0.75rem in più in fondo solo
+in modalità standalone (sezione 3, "Barretta home di iOS").
+
 **Test.** 215 test permanenti in 21 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
@@ -1660,9 +1664,6 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
-- **Tab bar nell'app installata** (2/10): corretta con `viewportFit:
-  "cover"` (sezione 3, "Barretta home di iOS"), da provare su iPhone sia da
-  Safari sia dall'app sulla Home
 - Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
   Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
   per il gesto "indietro" nella modifica di un pasto salvato

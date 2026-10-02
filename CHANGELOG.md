@@ -5,6 +5,13 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Tab bar provata su iPhone, unita a main
+
+Solo documenti. La tab bar nell'app installata (`4f61433`, `26b0545`) è
+stata provata su iPhone, da Safari e dall'app sulla Home, e unita a main
+con fast-forward, senza commit di merge. Il branch `fix/tab-bar-installata`
+è cancellato (esisteva solo in locale).
+
 ## 2026-10-02 — Tab bar più alta nell'app installata
 
 Branch `fix/tab-bar-installata`. Provata la correzione qui sotto: la tab
