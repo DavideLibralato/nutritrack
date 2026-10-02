@@ -17,7 +17,10 @@
      di 1px + voce di 60px) più la barretta home di iOS. Unico posto dove sta
      questo numero: lo usano la tab bar per la sua altezza, il layout di
      (app) come spazio in fondo al contenuto, Oggi per la sua altezza fissa e
-     la barra Salva di Profilo per attaccarsi sopra la tab bar. */
+     la barra Salva di Profilo per attaccarsi sopra la tab bar.
+     env(safe-area-inset-bottom) vale qualcosa solo con viewportFit "cover"
+     (viewport in src/app/layout.tsx): senza, è 0 e nell'app installata la
+     tab bar finisce sotto la barretta home. */
   --altezza-tab-bar: calc(3.8125rem + env(safe-area-inset-bottom));
 }
 

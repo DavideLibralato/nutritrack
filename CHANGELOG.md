@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-02 — Tab bar sotto la barretta home nell'app installata
+
+Branch `fix/tab-bar-installata`. Nell'app aperta dalla Home dell'iPhone la
+tab bar finiva sotto la barretta home, in Safari no. Causa: senza
+`viewport-fit=cover` iOS restituisce 0 per `env(safe-area-inset-bottom)`,
+quindi `--altezza-tab-bar` e il padding in fondo perdevano lo spazio della
+barretta. Correzione: `viewportFit: "cover"` nel viewport del layout
+radice, nessun JavaScript. In alto non cambia nulla, perché con
+`statusBarStyle: "default"` la pagina comincia sotto l'orologio. Da provare
+su iPhone.
+
+PUNTO_DI_PARTENZA allineato: §3 spiega la safe area; in §11 tolte le voci
+chiuse (colore dei placeholder; service worker, provato sul telefono il
+26/9) e aggiornata la data.
+
 ## 2026-09-26 — Limiti sui numeri del catalogo provati su iPhone, uniti a main
 
 Solo documenti. I limiti sui numeri del catalogo e la somma dei macro sono

@@ -58,6 +58,15 @@ barra Salva di Profilo è `sticky` con `bottom` uguale a quella variabile, cioè
 appena sopra la tab bar. Oggi fa eccezione: ha un'altezza fissa (schermo meno
 tab bar) e fa scorrere solo la lista dei pasti.
 
+**Barretta home di iOS.** `--altezza-tab-bar` comprende
+`env(safe-area-inset-bottom)`, e lo stesso valore fa da spazio in fondo agli
+sheet. iOS lo restituisce solo se il viewport ha `viewportFit: "cover"`
+(layout radice), altrimenti vale 0. In Safari non si nota, ma nell'app
+installata sulla Home la tab bar finiva sotto la barretta. In alto non serve
+nulla: con `statusBarStyle: "default"` la barra di stato di iOS è opaca e la
+pagina comincia sotto l'orologio. Passando a `"black-translucent"` andrebbe
+aggiunto `env(safe-area-inset-top)` alle testate.
+
 **Mentre scrivi, le barre si nascondono.** Su un dispositivo touch, finché un
 campo ha il fuoco, la tab bar e la barra Salva di Profilo sono invisibili. Un
 campo qui è un input di testo, numero, email, password o data, una textarea o
@@ -1553,7 +1562,7 @@ dalla lingua). Da rivedere quando l'app si apre agli amici.
 
 ## 11. Stato attuale
 
-Aggiornato al 26 settembre 2026. È la fotografia di oggi; la storia, commit
+Aggiornato al 2 ottobre 2026. È la fotografia di oggi; la storia, commit
 per commit, sta in `CHANGELOG.md`.
 
 ### Fatto
@@ -1594,7 +1603,9 @@ tentativi falliti; discesa incrementale e paginata; `orchestratore.ts`
 (discesa prima della salita, tre inneschi); id deterministici per i pasti
 predefiniti e per le righe di `giorni`; "Ricarica i dati dal tuo account"
 in Profilo; service worker scritto a mano per l'uso offline; utente
-riconosciuto offline anche con il token scaduto (punto 10.6).
+riconosciuto offline anche con il token scaduto (punto 10.6). Service
+worker provato sul telefono il 26/9, sulla preview: offline, token scaduto
+da più di un'ora, Esci.
 
 **Punto 1 — auth, profilo, fabbisogno.** Login e registrazione con Supabase
 Auth (beta a inviti), recupero password. Profilo rifatto il 26/9 con un
@@ -1619,7 +1630,7 @@ scorrere è il documento, con la tab bar fissa. Mentre un campo ha il fuoco,
 tab bar e barra Salva si nascondono e ricompaiono quando la tastiera si
 chiude (sezione 3, "Layout delle pagine con la tab bar").
 
-**Test.** 215 test permanenti in 21 file (Vitest), tutti verdi al 26/9.
+**Test.** 215 test permanenti in 21 file (Vitest), tutti verdi al 2/10.
 
 ### Non ancora costruito
 
@@ -1645,11 +1656,9 @@ chiude (sezione 3, "Layout delle pagine con la tab bar").
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale
-- **Colore dei placeholder** cambiato con Tailwind 4 (più scuro): il 24/9 la
-  verifica sul telefono era in corso, non risulta corretto né chiuso
-- **Service worker** (26/9): provato in simulazione e con il server locale,
-  la prova sul telefono (modalità aereo, cambio scheda, secondo deploy) non
-  è ancora registrata
+- **Tab bar nell'app installata** (2/10): corretta con `viewportFit:
+  "cover"` (sezione 3, "Barretta home di iOS"), da provare su iPhone sia da
+  Safari sia dall'app sulla Home
 - Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
   Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
   per il gesto "indietro" nella modifica di un pasto salvato
