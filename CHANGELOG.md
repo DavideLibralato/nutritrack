@@ -5,9 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Colore principale e barra provati su iPhone, uniti a main
+
+I due commit del branch `accento` (`1f433a7` colore principale,
+`c04eb6f` barra dei messaggi) sono stati provati su iPhone, tutto bene.
+Uniti a main con fast-forward, senza commit di merge; branch `accento`
+cancellato, in locale e su GitHub. Con questo la pagina Impostazioni è
+completa (passi 1–6); Pasti e orari, Preferiti e pasti salvati e
+l'indicatore di sincronizzazione restano lavori a sé.
+
 ## 2026-10-03 — Barra dei messaggi: durate più brevi, pausa che riprende
 
-Branch `accento`.
+Branch `accento`. **Provato su iPhone il 3/10**: 3 s con Annulla, 2,5 s il
+resto, pausa che riprende da dove era, tocchi ripetuti.
 
 - **Durate** (`DURATE_BARRA`):
   - prima: 5 s con "Annulla", 4 s per le frasi, 2,5 s per le conferme;
@@ -28,7 +38,9 @@ Branch `accento`.
 
 ## 2026-10-03 — Impostazioni, passo 6: colore principale e grigio più scuro
 
-Branch `accento`.
+Branch `accento`. **Provato su iPhone il 3/10**: quattro colori in chiaro
+e scuro, riga Aspetto, grigio nuovo, avvio a freddo senza lampo verde,
+offline, Safari privato.
 
 - **Colore principale.** Aspetto ha un gruppo "Colore principale": Verde /
   Blu / Viola / Petrolio, applicato al tocco. La scelta è salvata in

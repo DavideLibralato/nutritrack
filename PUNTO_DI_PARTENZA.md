@@ -518,12 +518,16 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 6. `accento` — colore principale e grigio più scuro *(fatto 3/10, branch
    `accento`)*
 
-Con il passo 6 la pagina Impostazioni è completa per questo giro. Oggi
-l'elenco ha: la scheda dell'account (→ Profilo); **Alimentazione**:
-Obiettivi, Peso; **App**: Aspetto, Sincronizzazione; **Informazioni**;
-**Esci**. Le righe che mancano rispetto alla struttura finale (Pasti e
-orari, Preferiti e pasti salvati, l'indicatore di sincronizzazione)
-arrivano dopo, come lavori a sé.
+**La pagina Impostazioni è completa (passi 1–6, tutti provati su iPhone,
+il 6 il 3/10).** Oggi l'elenco ha: la scheda dell'account (→ Profilo);
+**Alimentazione**: Obiettivi, Peso; **App**: Aspetto, Sincronizzazione;
+**Informazioni**; **Esci**. Restano fuori, come **lavori a sé** e non come
+passi di questa pagina, le righe che mancano rispetto alla struttura
+finale:
+- **Pasti e orari** (gruppo Alimentazione);
+- **Preferiti e pasti salvati** (gruppo App);
+- **l'indicatore di sincronizzazione** (nella riga e nella pagina
+  Sincronizzazione).
 
 ### Obiettivi (dal 3/10, passo "obiettivi")
 
@@ -2270,8 +2274,9 @@ inserimento, «Annulla»").
 **Barra dei messaggi "vetro"** (2/10, provata su iPhone da Safari e
 dall'app installata, compreso "Salvato." in Profilo). Stesso vetro della
 tab bar, icona, linea del tempo; durate di 5, 4 e 2,5 secondi, dal 3/10
-3 e 2,5, con la pausa che riprende da dove era (branch `accento`, da
-provare su iPhone; sezione 7).
+3 e 2,5, con la pausa che riprende da dove era (provato su iPhone il 3/10:
+3 s con Annulla, 2,5 s il resto, pausa che riprende da dove era, tocchi
+ripetuti; sezione 7).
 
 **Swipe per cambiare giorno in Oggi** (2/10, provato su iPhone da Safari
 e dall'app installata). Dito a sinistra giorno dopo, a destra giorno prima,
@@ -2328,8 +2333,9 @@ salvata nel dispositivo; script in `<head>` che applica il tema prima del
 disegno; riga Aspetto nell'elenco (sezione 3, "Aspetto"; sezione 7, "Tema
 chiaro / scuro / sistema").
 
-**Impostazioni, passo 6: colore principale** (3/10, branch `accento`, da
-provare su iPhone). Gruppo "Colore principale" in Aspetto con Verde / Blu /
+**Impostazioni, passo 6: colore principale** (3/10, provato su iPhone: i
+quattro colori in chiaro e in scuro, riga Aspetto, grigio nuovo, avvio a
+freddo senza lampo verde, offline, Safari privato). Gruppo "Colore principale" in Aspetto con Verde / Blu /
 Viola / Petrolio, applicato subito; `data-accento` scritto dallo stesso
 script del tema; riga Aspetto "Sistema · Verde"; grigio `--tenue` più
 scuro in chiaro; test permanente dei contrasti per ogni colore e tema
