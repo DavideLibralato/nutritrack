@@ -1307,7 +1307,8 @@ a occhio in chiaro e si spera.
 
 **Stato (3/10): fatti tutti e due i passi.** Passo 1, l'app segue il tema
 del telefono; passo 2 (passo "tema" di Impostazioni), la scelta Chiaro /
-Scuro / Sistema in Impostazioni > Aspetto, predefinito Sistema.
+Scuro / Sistema in Impostazioni > Aspetto, predefinito Sistema. Provati
+su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
 
 **Come funziona la scelta** (`src/lib/tema.ts`):
 
@@ -1438,7 +1439,8 @@ Scuro / Sistema in Impostazioni > Aspetto, predefinito Sistema.
   l'orologio sarebbe sempre bianco, quindi invisibile in chiaro.
 - **Selezione del testo e campi compilati in automatico**: lasciati ai
   colori del browser. Il solito trucco per ricolorare i campi compilati in
-  automatico (`box-shadow` inset) cancellerebbe l'anello di focus.
+  automatico (`box-shadow` inset) cancellerebbe l'anello di focus. Provato
+  su iPhone il 3/10 nel login in Scuro: vanno bene così.
 
 ### Le barre macro (corretto rispetto al mockup)
 
@@ -2208,6 +2210,16 @@ peso", uscito da Profilo; riga Peso nell'elenco; "Calcola proposta" in
 Obiettivi rimanda a Peso; regola della pesata corretta (stesso valore in un
 giorno nuovo ora si scrive) (sezione 3, "Peso").
 
+**Impostazioni, passo 5: Aspetto** (3/10, provato su iPhone: Safari e app
+installata, Chiaro / Scuro / Sistema, cambio dal Centro di controllo con
+"Sistema", avvio a freddo dell'app installata in tutti e due i versi senza
+lampo, login in Scuro con i campi compilati in automatico, offline con il
+tema scelto, Safari privato, sheet, date, tab bar e grafici). Pagina
+`/impostazioni/aspetto` con le tre anteprime, scelta applicata subito e
+salvata nel dispositivo; script in `<head>` che applica il tema prima del
+disegno; riga Aspetto nell'elenco (sezione 3, "Aspetto"; sezione 7, "Tema
+chiaro / scuro / sistema").
+
 **Test.** 284 test permanenti in 31 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
@@ -2239,9 +2251,6 @@ giorno nuovo ora si scrive) (sezione 3, "Peso").
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
   comparire con la data nuova. Il resto del passo 4 è provato; questo
   caso lo copre già il test (`misurazioni.test.ts`)
-- **Tema scuro: campi compilati in automatico non ancora guardati al
-  buio** (3/10). Il resto è provato su iPhone; se i colori del browser
-  stonano, si interviene (sezione 7)
 - **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
   dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
   il 25/9)

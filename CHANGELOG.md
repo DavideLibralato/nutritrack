@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Tema provato su iPhone, unito a main
+
+Il passo 5 di Impostazioni (`9500498`) è stato provato su iPhone, in Safari
+e nell'app installata:
+- Chiaro / Scuro / Sistema, e cambio dal Centro di controllo con "Sistema";
+- avvio a freddo dell'app installata in tutti e due i versi, senza lampo;
+- login in Scuro con i campi compilati in automatico, che chiude la verifica
+  aperta in §11;
+- offline con il tema scelto, Safari privato;
+- sheet, date, tab bar e grafici.
+
+Tutto bene. Unito a main con fast-forward, senza commit di merge; branch
+`tema` cancellato, in locale e su GitHub.
+
 ## 2026-10-03 — Impostazioni, passo 5: la pagina Aspetto (tema)
 
 Branch `tema`.
