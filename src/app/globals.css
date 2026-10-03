@@ -139,6 +139,21 @@ body:has([data-pulsante-aggiungi]) {
   );
 }
 
+/* Righe dell'elenco Impostazioni (RigaImpostazioni dentro
+   GruppoImpostazioni): fra una riga e la successiva una linea sottile che
+   parte dal testo, non dal bordo, come nelle impostazioni dell'iPhone.
+   --rientro-linea lo imposta la riga: 58px se ha l'icona (16 di margine +
+   32 di icona + 10 di spazio), 16px se no. La prima riga del gruppo non
+   ha linea sopra. */
+.riga-impostazioni + .riga-impostazioni::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--rientro-linea, 16px);
+  border-top: 1px solid var(--linea);
+}
+
 /* Linea del tempo della BarraAnnulla: si accorcia da piena a zero in
    --durata-barra (la durata passata al componente). In pausa (dito o fuoco
    sulla barra) il componente la ferma con animation-play-state; quando la

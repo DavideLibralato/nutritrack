@@ -1,19 +1,20 @@
 "use client";
 
-// "Esci" in Profilo, nella sezione "Dati su questo dispositivo" accanto a
-// "Ricarica i dati dal tuo account".
+// "Esci", in fondo all'elenco Impostazioni: una riga arancio centrata nel
+// suo gruppo, come nel mockup (docs/mockups/impostazioni.html). La conferma,
+// quando serve, compare dentro lo stesso gruppo.
 //
 // I DATI LOCALI NON SI CANCELLANO all'uscita: la cancellazione al logout
 // (PUNTO_DI_PARTENZA.md §9.6) è rimandata per scelta finché l'app non si apre
 // ad altri utenti. Le modifiche non ancora inviate restano sul dispositivo.
 //
 // La conferma compare SOLO se uscire può far perdere qualcosa (regola: mai
-// perdere dati in silenzio):
-//   - modifiche non ancora inviate al tuo account (modificheNonInviate,
-//     accantonate comprese): restano qui, ma non arrivano al tuo account
-//     finché non rientri da questo dispositivo;
-//   - modifiche al modulo del Profilo non ancora salvate: quelle si perdono.
-// Se non c'è niente di tutto questo, si esce senza chiedere.
+// perdere dati in silenzio): modifiche non ancora inviate al tuo account
+// (modificheNonInviate, accantonate comprese), che restano qui ma non
+// arrivano al tuo account finché non rientri da questo dispositivo. Se non
+// ce ne sono, si esce senza chiedere. Le modifiche non salvate di un modulo
+// non c'entrano più: l'elenco non ne ha, e per lasciare una sotto-pagina con
+// modifiche il guardiano chiede già prima (GuardianoModifiche).
 //
 // Offline non si esce. Dopo l'uscita per rientrare serve comunque la rete,
 // e signOut offline con il token scaduto non riesce a togliere la sessione:
@@ -32,6 +33,7 @@ import { sincronizzaOutbox } from "@/lib/sync/sincronizza";
 import { descriviGruppo } from "./RicaricaDatiAccount";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { svuotaPagineSalvate } from "@/lib/serviceWorker";
+import GruppoImpostazioni from "./GruppoImpostazioni";
 
 type Stato =
   | { fase: "inattivo" }
@@ -42,10 +44,7 @@ type Stato =
 
 const TESTO_SENZA_RETE = "Per uscire serve la connessione. Non sei uscito: riprova quando sei online.";
 
-export function testoConfermaUscita(
-  modifiche: ModificheNonInviate,
-  moduloNonSalvato: boolean
-): string | null {
+export function testoConfermaUscita(modifiche: ModificheNonInviate): string | null {
   const { inAttesa, nonRiuscite } = modifiche;
   const frasi: string[] = [];
 
@@ -78,10 +77,6 @@ export function testoConfermaUscita(
       } qui, ma non ${totale === 1 ? "arriva" : "arrivano"} al tuo account finché non rientri da questo dispositivo.`
     );
   }
-  if (moduloNonSalvato) {
-    frasi.push("Le modifiche al profilo che non hai salvato andranno perse.");
-  }
-
   return frasi.length > 0 ? frasi.join(" ") : null;
 }
 
@@ -106,13 +101,7 @@ function useOnline(): boolean {
   );
 }
 
-export default function EsciAccount({
-  userId,
-  modificheModuloNonSalvate,
-}: {
-  userId: string;
-  modificheModuloNonSalvate: boolean;
-}) {
+export default function EsciAccount({ userId }: { userId: string }) {
   const router = useRouter();
   const [stato, setStato] = useState<Stato>({ fase: "inattivo" });
   // Solo per disattivare il pulsante quando il browser sa già di essere
@@ -126,7 +115,7 @@ export default function EsciAccount({
     await sincronizzaOutbox().catch(() => {});
     let testo: string | null;
     try {
-      testo = testoConfermaUscita(await modificheNonInviate(userId), modificheModuloNonSalvate);
+      testo = testoConfermaUscita(await modificheNonInviate(userId));
     } catch {
       setStato({ fase: "errore", testo: "Controllo non riuscito. Non sei uscito: riprova." });
       return;
@@ -175,43 +164,48 @@ export default function EsciAccount({
   const occupato = stato.fase === "controllo" || stato.fase === "uscita";
 
   return (
-    <div className="space-y-3 pt-2">
-      {stato.fase === "conferma" ? (
-        <>
-          <p className="text-sm text-warning">{stato.testo}</p>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setStato({ fase: "inattivo" })}
-              className={`flex-1 rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
-            >
-              Annulla
-            </button>
-            <button
-              type="button"
-              onClick={esci}
-              className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong ${CLASSE_FOCUS}`}
-            >
-              Esci lo stesso
-            </button>
+    <div className="w-full">
+      <GruppoImpostazioni>
+        {stato.fase === "conferma" ? (
+          <div className="space-y-3 p-4">
+            <p className="text-sm text-warning">{stato.testo}</p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setStato({ fase: "inattivo" })}
+                className={`flex-1 rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                onClick={esci}
+                className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong ${CLASSE_FOCUS}`}
+              >
+                Esci lo stesso
+              </button>
+            </div>
           </div>
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={avvia}
-          disabled={occupato || !online}
-          className={`w-full rounded-lg border border-border p-2 disabled:opacity-50 ${CLASSE_FOCUS}`}
-        >
-          {stato.fase === "controllo" ? "Controllo..." : stato.fase === "uscita" ? "Esco..." : "Esci"}
-        </button>
-      )}
-
-      <div role="status">
-        {!online && stato.fase !== "errore" && (
-          <p className="text-sm text-muted">Per uscire serve la connessione.</p>
+        ) : (
+          <button
+            type="button"
+            onClick={avvia}
+            disabled={occupato || !online}
+            className={`flex min-h-[52px] w-full items-center justify-center px-4 text-base font-medium text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+          >
+            {stato.fase === "controllo" ? "Controllo..." : stato.fase === "uscita" ? "Esco..." : "Esci"}
+          </button>
         )}
-        {stato.fase === "errore" && <p className="text-sm text-warning">{stato.testo}</p>}
+      </GruppoImpostazioni>
+
+      {/* role="status": gli screen reader leggono i messaggi quando
+          cambiano, senza spostare il fuoco. Sta sempre nella pagina (vuoto
+          = nascosto), altrimenti il primo messaggio non verrebbe letto. */}
+      <div role="status" className="mx-4 mt-2 text-sm empty:hidden">
+        {!online && stato.fase !== "errore" && (
+          <p className="text-muted">Per uscire serve la connessione.</p>
+        )}
+        {stato.fase === "errore" && <p className="text-warning">{stato.testo}</p>}
       </div>
     </div>
   );

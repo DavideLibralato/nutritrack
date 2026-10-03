@@ -1,7 +1,7 @@
 "use client";
 
 // La tab bar in basso (PUNTO_DI_PARTENZA.md, sezione 3): tre voci — Oggi,
-// Statistiche, Profilo. La pagina di inserimento non è una tab, si apre
+// Statistiche, Impostazioni. La pagina di inserimento non è una tab, si apre
 // sopra.
 //
 // usePathname() (next/navigation) dà il percorso corrente lato client:
@@ -23,15 +23,20 @@
 // mai sopra la tastiera. Livelli: sfumatura z-20, pillola z-30 (come
 // "+ Aggiungi" e la barra Salva di Profilo), sotto BarraAnnulla (z-40) e gli
 // sheet (z-50), che la coprono con lo sfondo scuro.
+//
+// Le voci sono LinkProtetto: se la pagina ha modifiche non salvate
+// (GuardianoModifiche), toccarle chiede prima "Esci senza salvare?". Vale
+// anche per la voce già attiva: da una sotto-pagina di Impostazioni riporta
+// all'elenco, come su iPhone.
 
-import Link from "next/link";
+import LinkProtetto from "./LinkProtetto";
 import { usePathname } from "next/navigation";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 const VOCI = [
   { href: "/", etichetta: "Oggi" },
   { href: "/statistiche", etichetta: "Statistiche" },
-  { href: "/profilo", etichetta: "Profilo" },
+  { href: "/impostazioni", etichetta: "Impostazioni" },
 ] as const;
 
 export default function BarraNavigazione() {
@@ -57,7 +62,7 @@ export default function BarraNavigazione() {
             return (
               <li key={voce.href} className="flex-1">
                 {/* Area toccabile: tutta la capsula, alta ~52 px. */}
-                <Link
+                <LinkProtetto
                   href={voce.href}
                   aria-current={attiva ? "page" : undefined}
                   className={`flex h-full flex-col items-center justify-center gap-0.5 rounded-full text-xs ${
@@ -66,7 +71,7 @@ export default function BarraNavigazione() {
                 >
                   <Icona nome={voce.etichetta} />
                   {voce.etichetta}
-                </Link>
+                </LinkProtetto>
               </li>
             );
           })}
@@ -77,7 +82,7 @@ export default function BarraNavigazione() {
 }
 
 // Icone in stile lineare, come nel mockup: cerchio (l'anello) per Oggi, barre
-// per Statistiche, sagoma per Profilo. `currentColor` eredita il colore del
+// per Statistiche, ingranaggio per Impostazioni. `currentColor` eredita il colore del
 // Link (verde se attivo, grigio se no), così non c'è nessun colore scritto a
 // mano qui dentro.
 function Icona({ nome }: { nome: string }) {
@@ -107,10 +112,11 @@ function Icona({ nome }: { nome: string }) {
       </svg>
     );
   }
+  // Ingranaggio, lo stesso disegno del mockup (docs/mockups/impostazioni.html).
   return (
     <svg {...comuni}>
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z" />
     </svg>
   );
 }

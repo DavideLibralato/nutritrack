@@ -5,6 +5,36 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Impostazioni, passo 1: la tab Profilo diventa Impostazioni
+
+Branch `impostazioni`. Primo dei sei passi decisi sull'analisi
+(sezione 3, "Impostazioni", con le decisioni A–D).
+
+- Tab "Impostazioni" con l'ingranaggio, al posto di "Profilo".
+- Elenco `/impostazioni` come il mockup: scheda dell'account (iniziali,
+  nome, peso · altezza), Sincronizzazione, Informazioni, Esci in arancio.
+  Componenti nuovi: `GruppoImpostazioni`, `RigaImpostazioni`,
+  `SchedaAccount`, `IntestazioneSottopagina`.
+- Profilo spostato intero con `git mv` in `/impostazioni/profilo` (anche
+  il suo test), con l'email in sola lettura; via Ricarica ed Esci.
+- `/impostazioni/sincronizzazione` con "Ricarica i dati";
+  `/impostazioni/informazioni` con versione e commit, scritti alla build
+  da `env` in `next.config.ts` ("sviluppo" in locale).
+- Guardiano delle modifiche non salvate (`GuardianoModifiche`,
+  `LinkProtetto`), in `(app)/layout.tsx` perché avvolga anche la tab bar.
+  Ricarica ed Esci non ricevono più `modificheModuloNonSalvate`.
+- `/profilo` → `/impostazioni`, redirect 307.
+- Service worker: `PAGINE_APP` con le pagine nuove, `pagineDaTogliere`
+  per cancellare la copia di `/profilo` nel riscaldamento; `sw.js` con un
+  commento datato, `CACHE_STATICI` invariata.
+
+Test: 3 nuovi su `pagineDaTogliere`, aggiornati quelli che citavano
+`/profilo`; 250 in tutto. Lint pulito, build riuscita. Redirect provato
+con `next start`. Aspetto controllato in Chrome a 390 px, chiaro e scuro,
+su una pagina temporanea pubblica con dati finti (poi cancellata, come
+l'eccezione nel middleware). Le pagine vere stanno dietro il login: da
+provare su iPhone, anche in modalità aereo.
+
 ## 2026-10-03 — Tema scuro provato su iPhone, unito a main
 
 Il tema scuro passo 1 (`4086feb`) è stato provato su iPhone (Safari e app

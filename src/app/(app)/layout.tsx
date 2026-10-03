@@ -1,7 +1,8 @@
 // Layout condiviso delle schermate con la tab bar (Oggi, Statistiche,
-// Profilo). Le parentesi in "(app)" fanno di questa cartella un *route
-// group*: raggruppa più pagine sotto un layout comune senza aggiungere
-// nulla all'URL — "/" resta "/" e "/profilo" resta "/profilo".
+// Impostazioni e le sue sotto-pagine). Le parentesi in "(app)" fanno di
+// questa cartella un *route group*: raggruppa più pagine sotto un layout
+// comune senza aggiungere nulla all'URL — "/" resta "/" e "/impostazioni"
+// resta "/impostazioni".
 //
 // Login e registrazione stanno fuori da questo gruppo, quindi non ereditano
 // la tab bar.
@@ -28,14 +29,23 @@
 // questo contenitore la riempie, così una pagina corta (Statistiche) può
 // centrarsi con `flex-1` nello spazio sopra la pillola.
 
+//
+// GuardianoModifiche avvolge sia le pagine sia la tab bar: è il contesto
+// delle modifiche non salvate, e la tab bar deve poterlo leggere per non
+// lasciar uscire da una pagina con modifiche senza chiedere. Per questo sta
+// qui e non in impostazioni/layout.tsx, che non contiene la tab bar.
+// Questo file resta un componente server: GuardianoModifiche è un
+// componente client e le pagine gli passano attraverso come `children`.
+
 import type { ReactNode } from "react";
 import BarraNavigazione from "@/components/BarraNavigazione";
+import GuardianoModifiche from "@/components/GuardianoModifiche";
 
 export default function LayoutApp({ children }: { children: ReactNode }) {
   return (
-    <>
+    <GuardianoModifiche>
       <div className="flex flex-1 flex-col">{children}</div>
       <BarraNavigazione />
-    </>
+    </GuardianoModifiche>
   );
 }

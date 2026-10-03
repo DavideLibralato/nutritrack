@@ -47,8 +47,10 @@ Decisioni prese:
 
 ## 3. Le 4 pagine
 
-Navigazione a tab bar con tre voci (Oggi, Statistiche, Profilo). La pagina di
-inserimento si apre sopra, non è una tab.
+Navigazione a tab bar con tre voci (Oggi, Statistiche, Impostazioni). La
+pagina di inserimento si apre sopra, non è una tab. Impostazioni (dal 3/10)
+ha preso il posto di Profilo: un elenco a gruppi da cui si entra nelle
+sotto-pagine, Profilo compreso (vedi "Impostazioni" più sotto).
 
 **La tab bar è una pillola fluttuante** (dal 2/10, "opzione B"). Non è più
 una striscia a tutta larghezza: è staccata dai bordi (16 px ai lati), alta
@@ -57,13 +59,15 @@ barretta home. Lo sfondo è semitrasparente con la pagina sfocata sotto
 (`backdrop-filter`), con bordo sottile e ombra leggera. La voce attiva ha una
 capsula di sfondo e il colore accento. Dietro le barre in fondo c'è una
 sfumatura dal trasparente al colore di fondo, così il testo che passa sotto
-non disturba. Vale su Oggi, Statistiche e Profilo (`BarraNavigazione`).
+non disturba. Vale su Oggi, Statistiche, Impostazioni e le sue sotto-pagine
+(`BarraNavigazione`). Sulle sotto-pagine resta attiva la voce Impostazioni, e
+toccarla riporta all'elenco, come su iPhone.
 
 **Layout delle pagine con la tab bar.** La pillola è `position: fixed`, e
 **lo spazio in fondo lo lascia ogni pagina**, non il layout, perché le
 pagine non scorrono allo stesso modo:
-- **Profilo e Statistiche**: a scorrere è il **documento**; in fondo lasciano
-  `--ingombro-tab-bar`.
+- **Impostazioni (con le sotto-pagine) e Statistiche**: a scorrere è il
+  **documento**; in fondo lasciano `--ingombro-tab-bar`.
 - **Oggi**: alta esattamente lo schermo, scorre solo la lista dei pasti, che
   arriva fino in fondo passando sotto "+ Aggiungi" e la pillola. In fondo alla
   lista c'è `--ingombro-oggi`, così l'ultimo alimento si porta sempre sopra
@@ -102,7 +106,7 @@ andrebbero sistemate in quel caso.
 
 **Mentre scrivi, le barre si nascondono.** Su un dispositivo touch, finché un
 campo ha il fuoco, sono invisibili la pillola della tab bar, la sfumatura,
-"+ Aggiungi" e la barra Salva di Profilo. Un
+"+ Aggiungi" e la barra Salva di Impostazioni > Profilo. Un
 campo qui è un input di testo, numero, email, password o data, una textarea o
 una select; non contano checkbox, radio e bottoni. Chiusa la tastiera, le
 barre ricompaiono. È solo CSS, in `globals.css`: `:has()` sul `<body>`, le
@@ -275,7 +279,8 @@ logica e test in `src/lib/inserimento/modificaPastoSalvato.ts`.
   torna a com'era. Niente si scrive in Dexie prima del Salva. Chi esce dalla
   freccia con modifiche non salvate riceve un avviso, e così anche chi
   chiude o ricarica la scheda. Il gesto "indietro" del telefono invece esce
-  senza avviso, come il cambio di scheda in Profilo
+  senza avviso (in Profilo invece il cambio di scheda ora avvisa: vedi
+  "Impostazioni", il guardiano)
 - **Aggiungere un alimento**: si cerca nel catalogo, come in Aggiungi, e si
   conferma con lo stesso sheet quantità. La conferma aggiunge una riga in
   fondo, in memoria, e non scrive nel diario. Da qui non si crea un
@@ -430,12 +435,93 @@ descrizione di un'abitudine, non un consiglio — resta dentro il perimetro.
 
 Niente insight AI in V1: prima servono dati veri da interpretare.
 
+### Impostazioni (dal 3/10, al posto della tab Profilo)
+
+Strutturata come le impostazioni dell'iPhone: un elenco a gruppi arrotondati
+da cui si entra nelle sotto-pagine. Mockup approvato in
+`docs/mockups/impostazioni.html`. Componenti: `GruppoImpostazioni` (riquadro
+con titolo e nota facoltativi), `RigaImpostazioni` (icona in un quadratino,
+etichetta, valore grigio a destra, freccia; la linea fra le righe parte dal
+testo, regola `.riga-impostazioni` in `globals.css`), `SchedaAccount`,
+`IntestazioneSottopagina` ("‹ Impostazioni" e titolo grande).
+
+**Struttura finale** (le righe compaiono solo quando la loro pagina esiste:
+un comando che non fa niente sembra rotto):
+
+- in cima la **scheda dell'account**: iniziali (prime due parole del nome),
+  nome, "78,4 kg · 180 cm"; porta a **Profilo**;
+- gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
+  kcal" con i giorni differenziati accesi), Pasti e orari, Peso;
+- gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale),
+  Preferiti e pasti salvati, Sincronizzazione (qui andrà l'indicatore);
+- **Informazioni** (versione da `package.json` e commit corto del deploy,
+  `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
+  `next.config.ts`; in locale "sviluppo");
+- **Esci** in fondo, in arancio, con la conferma di sempre.
+
+**Rotte.** `/impostazioni`, `/impostazioni/profilo`,
+`/impostazioni/sincronizzazione`, `/impostazioni/informazioni`; poi
+`/impostazioni/obiettivi`, `/impostazioni/peso`, `/impostazioni/aspetto`.
+Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
+layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
+"torna indietro": aperta da un indirizzo diretto, o ricaricata offline, la
+pagina non ha cronologia. `/profilo` rimanda a `/impostazioni` con un
+redirect temporaneo (307) in `next.config.ts`. Ogni sotto-pagina nuova va
+anche in `PAGINE_APP` del service worker (sezione 9.2), nello stesso passo.
+
+**Modifiche non salvate: il guardiano** (`GuardianoModifiche`). Una pagina
+con un modulo dice "ho modifiche" (`useSegnalaModifiche`); "‹ Impostazioni"
+e le voci della tab bar (`LinkProtetto`), compreso il tocco sulla voce già
+attiva, invece di navigare aprono "Esci senza salvare?" (Annulla / Esci
+senza salvare). Il contesto sta in `src/app/(app)/layout.tsx` perché deve
+avvolgere insieme le pagine e la tab bar. Quando la pagina col modulo si
+chiude, lo stato torna "nessuna modifica". Ricarica e chiusura della pagina
+le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
+"indietro" di Safari dal bordo dello schermo, che non si può intercettare
+(nell'app installata non c'è).
+
+**Decisioni sull'analisi del 3/10** (valgono per tutti i passi):
+
+- **A. L'interruttore "giorni differenziati" resta**, spento di default. Nella
+  pagina Obiettivi sta in un gruppo "Giorni di allenamento" (interruttore e
+  cerchi L M M G V S D) **sopra** i target: accendendolo, il contenuto
+  compare sotto e non fuori dallo schermo. Da spento niente selettore
+  Normale | Allenamento, niente giorni, e la riga in Impostazioni dice
+  "2500 kcal"; da acceso "2500 · 2950 kcal"
+- **B. Campi numerici direttamente nella riga**, allineati a destra. La
+  domanda "cambio di dieta / correzione" si fa una volta sola, al Salva
+- **C. Testo sotto i giorni**: "Da oggi i giorni segnati partono come
+  Allenamento. Quelli già registrati non cambiano." (regola 3 più sotto)
+- **D. Superficie bianca in chiaro** (come nel mockup): passo a sé, in cui si
+  rimisura anche il contrasto della capsula attiva
+- I 4 colori principali si decidono al passo "accento", con un mockup prima
+- **Schema dati invariato**: la settimana tipo (`giorni_allenamento_default`)
+  e l'interruttore esistono già; tema e colore principale sono preferenze
+  del dispositivo (`localStorage`)
+
+**Ordine dei passi**, un branch ciascuno, provabile da solo su iPhone:
+1. `impostazioni` — elenco, Profilo spostato intero, Sincronizzazione,
+   Informazioni, Esci, guardiano, redirect, service worker *(fatto 3/10)*
+2. `superficie` — superficie bianca in chiaro, contrasto della capsula
+3. `obiettivi` — pagina Obiettivi; Profilo resta con i dati personali
+4. `peso` — pagina Peso
+5. `tema` — Aspetto: Chiaro / Scuro / Sistema
+6. `accento` — colore principale
+
+Dopo, come lavori a sé: Pasti e orari, Preferiti e pasti salvati,
+l'indicatore di sincronizzazione.
+
 ### Profilo
 
-- **Intestazione**: avatar con l'iniziale, nome, e sotto in grigio "78,4 kg · 180 cm"
-  (ultima pesata e altezza salvate). Il nome viene dai metadati dell'account
-  scritti alla registrazione (`profili.nome` non lo scrive ancora nessuno): se
-  manca, niente avatar e il titolo resta "Profilo"
+Oggi in Impostazioni > Profilo (`/impostazioni/profilo`): è la vecchia
+pagina spostata intera, finché i passi "obiettivi" e "peso" non porteranno
+Obiettivo, Giorni differenziati e Registra peso nelle loro pagine.
+
+- **Intestazione**: sopra, "‹ Impostazioni" e il titolo "Profilo"; sotto,
+  iniziali, nome, "78,4 kg · 180 cm" (ultima pesata e altezza salvate) ed
+  email dell'account in sola lettura. Il nome viene dai metadati
+  dell'account scritti alla registrazione (`profili.nome` non lo scrive
+  ancora nessuno): se manca, niente iniziali e niente nome
 - **Dati personali** (per il calcolo): sesso, data di nascita, altezza, livello di attività.
   Non sono dati "in più": senza di loro il fabbisogno non è calcolabile (vedi
   sotto). Il sesso ammette "preferisco non indicarlo", che disattiva il calcolo
@@ -455,16 +541,17 @@ Niente insight AI in V1: prima servono dati veri da interpretare.
   nulla, in nessuna schermata. Da acceso si sbloccano il secondo set di target e
   i giorni della settimana in cui ti alleni di solito
 - **Storico peso**: arriverà con Statistiche, non in Profilo per ora
-- **Dati su questo dispositivo**: "Ricarica i dati dal tuo account" (§9.2) ed
-  **Esci**. Esci chiede conferma solo se uscire può far perdere qualcosa:
-  modifiche non ancora inviate (restano sul dispositivo ma non arrivano
-  all'account finché non si rientra da lì) o modifiche al modulo non salvate.
-  Esce solo questo dispositivo (`scope: "local"`), e non offline: senza rete
-  non si esce, con un messaggio, mai "a metà". I dati locali restano (§9.6,
+- **"Ricarica i dati dal tuo account"** (§9.2) è passato in Impostazioni >
+  Sincronizzazione; **Esci** in fondo all'elenco Impostazioni. Esci chiede
+  conferma solo se uscire può far perdere qualcosa: modifiche non ancora
+  inviate (restano sul dispositivo ma non arrivano all'account finché non
+  si rientra da lì). Le modifiche non salvate di un modulo non c'entrano più:
+  per lasciare la pagina col modulo il guardiano chiede già prima. Esce solo
+  questo dispositivo (`scope: "local"`), e non offline: senza rete non si
+  esce, con un messaggio, mai "a metà". I dati locali restano (§9.6,
   cancellazione al logout rimandata)
-- **Tema**: Chiaro / Scuro / Sistema — **non ancora costruito**, e non va
-  mostrato finché non esiste: tre pulsanti che non cambiano niente sembrano
-  rotti. È un lavoro a sé
+- **Tema**: Chiaro / Scuro / Sistema — passo "tema" di Impostazioni (pagina
+  Aspetto); non va mostrato finché non esiste
 
 #### Un solo Salva (deciso il 2026-09-26)
 
@@ -475,7 +562,7 @@ visibile, inerte quando non c'era niente da salvare. Con la tab bar diventata
 una pillola fluttuante, due elementi fluttuanti fissi erano troppi: ora il
 Salva compare quando serve, sopra la pillola, come una scheda staccata dai
 bordi. Lo spazio in fondo alla pagina resta sempre riservato, come se la barra
-ci fosse: quando compare non copre "Ricarica i dati" ed "Esci", e la pagina
+ci fosse: quando compare non copre gli ultimi campi, e la pagina
 non salta. Compare con una dissolvenza di 150 ms, nessuna animazione con
 `prefers-reduced-motion`. Sparisce dopo il salvataggio e dopo "Annulla
 modifiche". Dopo un salvataggio riuscito, nello stesso punto sopra la
@@ -489,9 +576,11 @@ Nessun ordine obbligato fra le sezioni, nessun salvataggio automatico al
 tocco dell'interruttore. Le sezioni toccate hanno bordo d'accento ed
 etichetta "Modificato", sotto ogni campo cambiato c'è il valore precedente, e
 la barra dice quali sezioni verranno aggiornate (con "Annulla modifiche").
-Ricarica, Esci e la chiusura/ricarica della pagina avvisano se ci sono
-modifiche non salvate; il cambio di scheda dalla tab bar no (accettato per
-ora). Logica e test in `src/lib/profilo/salvataggioProfilo.ts`.
+Con modifiche non salvate, lasciare la pagina da "‹ Impostazioni" o dalla
+tab bar chiede "Esci senza salvare?" (il guardiano, vedi "Impostazioni"
+sopra; dal 3/10, prima il cambio di scheda non avvisava); chiusura e
+ricarica della pagina le avvisa il browser. Logica e test in
+`src/lib/profilo/salvataggioProfilo.ts`.
 
 **Cambio vero o correzione.** Se è cambiato l'obiettivo o un target (anche
 solo quello di allenamento) di un periodo già esistente, il Salva chiede:
@@ -607,8 +696,9 @@ sulla voce in Oggi → lo sheet quantità, con anche il pasto modificabile.
 **La struttura dei pasti è dell'utente, non dell'app.** Chi segue una dieta ha
 "Pranzo 1" e "Pranzo 2", o tre spuntini. Quindi i pasti non sono quattro valori
 fissi nel codice: sono righe di una tabella, che l'utente può rinominare,
-aggiungere, eliminare e riordinare dal Profilo *(non ancora costruito: oggi
-esiste solo il set predefinito, nessuna schermata per modificarlo)*.
+aggiungere, eliminare e riordinare da Impostazioni > Pasti e orari *(non
+ancora costruito: oggi esiste solo il set predefinito, nessuna schermata per
+modificarlo)*.
 
 Ogni pasto ha **solo un'ora di inizio**, non un intervallo: dura fino all'inizio
 del pasto successivo, e l'ultimo arriva fino a mezzanotte. Un campo invece di
@@ -1292,7 +1382,7 @@ Come, in concreto:
     utenti (loro cancellano solo dall'app, mai da SQL Editor), è un
     promemoria per chi sviluppa. Per svuotare IndexedDB di un dispositivo
     senza passare dalle impostazioni del browser (su iPhone non ha
-    funzionato) c'è "Ricarica i dati dal tuo account" in Profilo — vedi
+    funzionato) c'è "Ricarica i dati dal tuo account" in Impostazioni > Sincronizzazione — vedi
     "Ripristino dei dati locali" più sotto
   - tre inneschi, condivisi con la salita: montaggio dell'app, ritorno
     online, ritorno in primo piano della PWA (`visibilitychange`). Niente
@@ -1316,7 +1406,8 @@ Come, in concreto:
   - **file con nome versionato** (`/_next/static/`, `/icons/`,
     `/apple-touch-icon.png`): prima la cache. Il nome cambia a ogni
     modifica, quindi una copia non è mai vecchia
-  - **le quattro schermate** (`/`, `/aggiungi`, `/statistiche`, `/profilo`):
+  - **le pagine dell'app** (`PAGINE_APP`: `/`, `/aggiungi`, `/statistiche`,
+    `/impostazioni` e le sue sotto-pagine, dal 3/10 al posto di `/profilo`):
     prima la rete, e se risponde se ne salva una copia (chiave = percorso,
     senza query). Offline si usa la copia; se manca, `/offline.html` ("Sei
     offline"). Non si salvano risposte non ok né redirect (il middleware
@@ -1335,11 +1426,14 @@ Come, in concreto:
     scopriva mai il deploy
   - **tutto il resto**, Supabase compreso: il service worker non interviene
   - **riscaldamento**: con un utente entrato e la rete, l'app chiede al
-    service worker di scaricare le quattro schermate e i file che citano
+    service worker di scaricare tutte le `PAGINE_APP` e i file che citano
     (l'elenco si legge dall'HTML delle pagine: nella build di Next 16 con
     Turbopack ogni file JS è citato da almeno una pagina). Così offline si
-    apre anche una scheda mai visitata. A ogni riscaldamento si tolgono i
-    file che nessuna pagina salvata cita più (i deploy vecchi)
+    apre anche una scheda mai visitata. A ogni riscaldamento si cancellano
+    prima le copie delle pagine tolte dall'elenco (`pagineDaTogliere`, dal
+    3/10: la vecchia `/profilo`), poi i file che nessuna pagina salvata
+    cita più (i deploy vecchi). Senza il primo passo una copia rimasta
+    terrebbe in cache per sempre i file che cita
   - **Esci** svuota le pagine salvate (i file statici restano: non hanno
     niente dell'utente)
   - due cache, `nutritrack-statici-v2` e `nutritrack-pagine-v2`; `activate`
@@ -1371,7 +1465,7 @@ eseguita davvero.
 
 #### Ripristino dei dati locali (deciso il 2026-09-25)
 
-Profilo → "Dati su questo dispositivo" → **"Ricarica i dati dal tuo
+Impostazioni → Sincronizzazione → **"Ricarica i dati dal tuo
 account"**: sostituisce i dati di questo dispositivo con quelli di
 Supabase, senza uscire dall'account. È la via d'uscita generale quando il
 locale è incoerente in un modo che la sync non ripara da sola (per esempio
@@ -1427,9 +1521,12 @@ sospeso possibili. Limite accettato: una riga condivisa cancellata
 fisicamente sul server resta sul dispositivo (stesso limite di sopra).
 
 Nessun seed dei pasti predefiniti nel ripristino: i 5 canonici arrivano dal
-server con il resto. Dopo il ripristino i moduli di Profilo si ricaricano
-dai dati nuovi — altrimenti mostrerebbero i valori di prima, e un "Salva"
-li rimanderebbe al server sopra quelli giusti.
+server con il resto. Dal 3/10 il ripristino sta in una pagina senza moduli:
+le pagine con un modulo (Profilo) leggono i dati da Dexie quando si aprono,
+quindi dopo il ripristino mostrano già quelli nuovi. Prima, con Ricarica
+dentro Profilo, il modulo andava ricaricato a mano — altrimenti avrebbe
+mostrato i valori di prima, e un "Salva" li avrebbe rimandati al server
+sopra quelli giusti.
 
 `sostituisciDatiUtente` è separata apposta: con zero righe da scrivere è la
 cancellazione dei dati locali al logout (§9.6), **rimandata per scelta** —
@@ -1885,18 +1982,30 @@ nativi; la barra dell'orologio è in tinta con la pagina). L'app segue la
 modalità chiara/scura del sistema, palette "Caldo"; in chiaro nessun pixel
 è cambiato (sezione 7, "Tema chiaro / scuro / sistema").
 
-**Test.** 247 test permanenti in 26 file (Vitest), tutti verdi al 3/10.
+**Impostazioni, passo 1** (3/10, branch `impostazioni`, da provare su
+iPhone). La tab Profilo è diventata Impostazioni (ingranaggio): elenco a
+gruppi con scheda dell'account, Sincronizzazione ("Ricarica i dati"),
+Informazioni (versione e commit) ed Esci; il vecchio Profilo spostato intero
+in `/impostazioni/profilo`, con l'email in sola lettura; guardiano delle
+modifiche non salvate su "‹ Impostazioni" e tab bar; `/profilo` rimanda a
+`/impostazioni`; service worker con le pagine nuove (sezione 3,
+"Impostazioni").
+
+**Test.** 250 test permanenti in 26 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
-- **Selettore del tema in Profilo** (Chiaro / Scuro / Sistema, passo 2
-  del tema scuro, sezione 7): oggi l'app segue sempre il telefono
+- **Selettore del tema** (Chiaro / Scuro / Sistema, passo 2 del tema scuro,
+  sezione 7): sarà la pagina Impostazioni > Aspetto (passo "tema"); oggi
+  l'app segue sempre il telefono
+- **Impostazioni, passi 2–6** (sezione 3, "Impostazioni"): superficie
+  bianca, Obiettivi, Peso, tema, colore principale
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
-- Gestione delle fasce dei pasti dal Profilo (rinominare, aggiungere,
+- Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
   riordinare: sezione 3, "I pasti") e ora del consumo (`consumato_alle`)
   modificabile nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
@@ -1905,6 +2014,10 @@ modalità chiara/scura del sistema, palette "Caldo"; in chiaro nessun pixel
 
 ### Difetti e verifiche aperti
 
+- **Impostazioni passo 1 da provare su iPhone** (3/10), anche offline in
+  modalità aereo: elenco e sotto-pagine, "Esci senza salvare?" da
+  "‹ Impostazioni" e dalla tab bar, Ricarica ed Esci nelle posizioni nuove,
+  un segnalibro a `/profilo`
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)
@@ -1920,9 +2033,10 @@ modalità chiara/scura del sistema, palette "Caldo"; in chiaro nessun pixel
   `obiettivi_target` sono `NO ACTION`: se l'utente ha righe lì, la
   cancellazione dell'utente fallisce. Da sistemare prima di "elimina
   account". Le altre tabelle sono `CASCADE`
-- Il cambio di scheda dalla tab bar non avvisa di modifiche non salvate in
-  Profilo: accettato per ora (sezione 3, "Un solo Salva"). Lo stesso vale
-  per il gesto "indietro" nella modifica di un pasto salvato
+- Il gesto "indietro" nella modifica di un pasto salvato esce senza avviso
+  di modifiche non salvate: accettato per ora. In Impostazioni il cambio di
+  scheda ora avvisa (il guardiano, sezione 3); resta scoperto solo il gesto
+  "indietro" di Safari dal bordo dello schermo
 - **Pasto salvato vuoto da due dispositivi offline** (26/9, non risolvibile
   dal client). Un pasto con due alimenti viene modificato su due dispositivi
   offline, e ciascuno toglie un alimento diverso. La sync tiene per ogni

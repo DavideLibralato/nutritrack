@@ -9,6 +9,8 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  PAGINE_APP,
+  pagineDaTogliere,
   scegliStrategia,
   chiavePagina,
   estraiRisorseStatiche,
@@ -31,21 +33,31 @@ describe("scegliStrategia", () => {
 
   it("richieste RSC (cambio scheda): sempre rete, mai cache — era il bug della v1", () => {
     // Con l'header RSC: 1
-    expect(scegliStrategia(richiesta(`${ORIGINE}/profilo`, { rsc: true }), ORIGINE)).toBe("rete");
+    expect(scegliStrategia(richiesta(`${ORIGINE}/impostazioni`, { rsc: true }), ORIGINE)).toBe("rete");
     // Con il solo parametro _rsc
-    expect(scegliStrategia(richiesta(`${ORIGINE}/profilo?_rsc=1a2b3`), ORIGINE)).toBe("rete");
+    expect(scegliStrategia(richiesta(`${ORIGINE}/impostazioni/profilo?_rsc=1a2b3`), ORIGINE)).toBe("rete");
     // Anche se per assurdo fosse una navigazione
     expect(scegliStrategia(richiesta(`${ORIGINE}/?_rsc=x`, { mode: "navigate" }), ORIGINE)).toBe("rete");
   });
 
-  it("navigazioni alle quattro schermate: pagina con copia, anche con query", () => {
-    for (const p of ["/", "/aggiungi", "/statistiche", "/profilo", "/aggiungi?giorno=2026-09-20"]) {
+  it("navigazioni alle schermate e alle sotto-pagine di Impostazioni: pagina con copia, anche con query", () => {
+    for (const p of [
+      "/",
+      "/aggiungi",
+      "/statistiche",
+      "/impostazioni",
+      "/impostazioni/profilo",
+      "/impostazioni/sincronizzazione",
+      "/impostazioni/informazioni",
+      "/aggiungi?giorno=2026-09-20",
+    ]) {
       expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe("pagina");
     }
   });
 
   it("navigazioni a login e simili: nessuna copia salvata", () => {
-    for (const p of ["/login", "/register", "/password-dimenticata", "/reimposta-password", "/pagina-che-non-esiste"]) {
+    // /profilo compresa: è diventata /impostazioni, il server la rimanda lì.
+    for (const p of ["/login", "/register", "/password-dimenticata", "/reimposta-password", "/profilo", "/pagina-che-non-esiste"]) {
       expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe("pagina-senza-copia");
     }
   });
@@ -66,6 +78,26 @@ describe("scegliStrategia", () => {
     for (const p of ["/manifest.json", "/favicon.ico", "/sw.js", "/offline.html", "/_next/image?url=x"]) {
       expect(scegliStrategia(richiesta(`${ORIGINE}${p}`), ORIGINE)).toBe("rete");
     }
+  });
+});
+
+describe("pagineDaTogliere", () => {
+  const chiave = (percorso: string) => chiavePagina(`${ORIGINE}${percorso}`);
+
+  it("cancella la copia di una pagina tolta dall'elenco (/profilo), tiene le altre", () => {
+    const salvate = [chiave("/"), chiave("/aggiungi"), chiave("/profilo"), chiave("/impostazioni")];
+    expect(pagineDaTogliere(salvate, PAGINE_APP)).toEqual([chiave("/profilo")]);
+  });
+
+  it("niente da togliere se tutte le pagine salvate sono nell'elenco", () => {
+    expect(pagineDaTogliere(PAGINE_APP.map(chiave), PAGINE_APP)).toEqual([]);
+    expect(pagineDaTogliere([], PAGINE_APP)).toEqual([]);
+  });
+
+  it("confronta il percorso esatto: /impostazioni non salva /impostazioni-vecchia", () => {
+    expect(pagineDaTogliere([chiave("/impostazioni-vecchia")], PAGINE_APP)).toEqual([
+      chiave("/impostazioni-vecchia"),
+    ]);
   });
 });
 

@@ -17,8 +17,17 @@
 
 importScripts("/sw-strategia.js");
 
-const { PAGINE_APP, scegliStrategia, chiavePagina, estraiRisorseStatiche, rispostaPaginaSalvabile } =
-  self.StrategiaSW;
+// 3/10/2026: Profilo diventa Impostazioni (pagine nuove in PAGINE_APP,
+// copie delle pagine tolte cancellate nel riscaldamento). Questo commento
+// cambia anche il file sw.js stesso, così il telefono lo vede come nuovo.
+const {
+  PAGINE_APP,
+  pagineDaTogliere,
+  scegliStrategia,
+  chiavePagina,
+  estraiRisorseStatiche,
+  rispostaPaginaSalvabile,
+} = self.StrategiaSW;
 
 // Nomi nuovi rispetto a "nutritrack-v1": activate cancella ogni cache con un
 // nome diverso da questi, compresa la v1 "avvelenata" dalle richieste RSC.
@@ -198,9 +207,11 @@ function salvaPagina(chiave, html) {
 // --- Riscaldamento ------------------------------------------------------
 
 // Chiesto dall'app (RegistraServiceWorker) quando c'è un utente entrato e
-// la rete: scarica le quattro pagine anche se non sono mai state visitate,
+// la rete: scarica tutte le PAGINE_APP anche se non sono mai state visitate,
 // così offline si può cambiare scheda subito. Una pagina che risponde con
-// un redirect (sessione non valida) si salta.
+// un redirect (sessione non valida) si salta. Alla fine cancella le copie
+// delle pagine tolte dall'elenco, poi i file statici che nessuna pagina
+// salvata cita più.
 async function riscalda() {
   for (const percorso of PAGINE_APP) {
     try {
@@ -213,7 +224,21 @@ async function riscalda() {
       // prossimo giro.
     }
   }
-  await inCoda(pulisciStatici);
+  await inCoda(async () => {
+    await togliPagineVecchie();
+    await pulisciStatici();
+  });
+}
+
+// Cancella le copie delle pagine che non sono più in PAGINE_APP
+// (pagineDaTogliere, sw-strategia.js). Prima di pulisciStatici: così i file
+// citati solo da quelle copie risultano non più usati e vengono tolti.
+async function togliPagineVecchie() {
+  const cache = await caches.open(CACHE_PAGINE);
+  const chiavi = (await cache.keys()).map((richiesta) => richiesta.url);
+  for (const chiave of pagineDaTogliere(chiavi, PAGINE_APP)) {
+    await cache.delete(chiave);
+  }
 }
 
 // Toglie i file /_next/static/ che nessuna pagina salvata cita più (quelli

@@ -10,10 +10,22 @@
 // serviti così come sono, senza passare dalla build di Next.
 
 (function (globale) {
-  // Le pagine dell'app che si salvano per l'uso offline: le quattro
-  // schermate principali. Login, registrazione e password NON si salvano:
-  // offline non servono (per entrare serve la rete) e mostrano "Sei offline".
-  const PAGINE_APP = ["/", "/aggiungi", "/statistiche", "/profilo"];
+  // Le pagine dell'app che si salvano per l'uso offline: le schermate
+  // principali e le sotto-pagine di Impostazioni. Ogni sotto-pagina nuova va
+  // aggiunta qui nello stesso passo in cui nasce: offline il cambio di
+  // pagina interno di Next non riesce e diventa una navigazione completa,
+  // che trova la copia salvata solo se la pagina è in questo elenco.
+  // Login, registrazione e password NON si salvano: offline non servono
+  // (per entrare serve la rete) e mostrano "Sei offline".
+  const PAGINE_APP = [
+    "/",
+    "/aggiungi",
+    "/statistiche",
+    "/impostazioni",
+    "/impostazioni/profilo",
+    "/impostazioni/sincronizzazione",
+    "/impostazioni/informazioni",
+  ];
 
   // Decide come trattare una richiesta. Restituisce:
   //   "statico" — file con nome versionato (cambia nome a ogni modifica):
@@ -94,8 +106,20 @@
     );
   }
 
+  // Le pagine salvate da cancellare: quelle il cui percorso non è più in
+  // PAGINE_APP (per esempio /profilo, diventata /impostazioni). Una copia
+  // rimasta in cache non verrebbe più mostrata, ma la pulizia dei file
+  // statici (pulisciStatici in sw.js) terrebbe per sempre i file che cita,
+  // e la cache crescerebbe a ogni deploy.
+  // chiaviSalvate: gli URL delle pagine in cache (forma di chiavePagina).
+  // Restituisce le chiavi da cancellare.
+  function pagineDaTogliere(chiaviSalvate, pagineApp) {
+    return chiaviSalvate.filter((chiave) => !pagineApp.includes(new URL(chiave).pathname));
+  }
+
   const api = {
     PAGINE_APP,
+    pagineDaTogliere,
     scegliStrategia,
     chiavePagina,
     estraiRisorseStatiche,

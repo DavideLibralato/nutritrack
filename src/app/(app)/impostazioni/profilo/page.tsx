@@ -1,6 +1,10 @@
 "use client";
 
-// La pagina Profilo (PUNTO_DI_PARTENZA.md, sezione 3, "Profilo").
+// Impostazioni > Profilo (PUNTO_DI_PARTENZA.md, sezione 3, "Profilo" e
+// "Impostazioni"). Era la pagina /profilo, spostata intera: dati personali,
+// peso, obiettivo e giorni differenziati restano qui finché i passi
+// "obiettivi" e "peso" non li porteranno in pagine loro. "Ricarica i dati"
+// è passato in Impostazioni > Sincronizzazione, "Esci" in fondo all'elenco.
 //
 // Dexie vive solo nel browser (IndexedDB), quindi questa pagina è client.
 // useLiveQuery (dexie-react-hooks) esegue la query e ridisegna da solo il
@@ -16,13 +20,17 @@
 // prima, e il Salva scrive SOLO le loro tabelle (la logica sta in
 // src/lib/profilo/salvataggioProfilo.ts, con i suoi test).
 //
-// Fuori dal Salva, con i loro pulsanti: "Registra peso" (una misurazione,
-// non un'impostazione) e la sezione "Dati su questo dispositivo" (Ricarica,
-// Esci).
+// Fuori dal Salva, con il suo pulsante: "Registra peso" (una misurazione,
+// non un'impostazione).
+//
+// Modifiche non salvate: la pagina le dice al guardiano
+// (useSegnalaModifiche, GuardianoModifiche), così "‹ Impostazioni" e la tab
+// bar chiedono "Esci senza salvare?" invece di farle sparire. Ricarica e
+// chiusura della scheda le copre il `beforeunload` qui sotto.
 
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useUtenteId, useNomeUtente } from "@/lib/supabase/useUtente";
+import { useUtenteId, useNomeUtente, useEmailUtente } from "@/lib/supabase/useUtente";
 import {
   repositoryProfili,
   repositoryObiettivi,
@@ -53,8 +61,8 @@ import {
   type SceltaPeriodo,
 } from "@/lib/profilo/salvataggioProfilo";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import RicaricaDatiAccount from "@/components/RicaricaDatiAccount";
-import EsciAccount from "@/components/EsciAccount";
+import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
+import { useSegnalaModifiche } from "@/components/GuardianoModifiche";
 import IntestazioneProfilo from "@/components/IntestazioneProfilo";
 import RegistraPeso from "@/components/RegistraPeso";
 import SezioneProfilo from "@/components/SezioneProfilo";
@@ -121,49 +129,26 @@ function elencoGiorni(giorni: GiornoSettimana[]): string {
   return scelti.length > 0 ? scelti.map((o) => o.etichetta).join(" ") : "nessuno";
 }
 
-// La pagina tiene il <main> e la sezione "Dati su questo dispositivo"; il
-// modulo sta in ModuliProfilo, qui sotto. Separati per un motivo preciso: i
-// valori del modulo si leggono UNA volta sola da Dexie. Dopo "Ricarica i dati
-// dal tuo account" cambiare la `key` di ModuliProfilo lo fa ripartire da zero
-// (React ricrea il componente e tutto il suo stato), quindi rilegge i dati
-// appena scaricati. La sezione del ripristino resta fuori da quella `key`,
-// così il suo messaggio di esito non sparisce.
-//
-// ModuliProfilo restituisce un frammento: i suoi elementi sono figli diretti
-// del <main>, e la barra del Salva (sticky, `order-last`, visibile solo con
-// modifiche da salvare) resta sopra la pillola della tab bar per tutta la
-// pagina e finisce per ultima, sotto
-// "Dati su questo dispositivo".
+// La pagina tiene il <main> e l'intestazione "‹ Impostazioni"; il modulo sta
+// in ModuliProfilo, qui sotto. ModuliProfilo restituisce un frammento: i suoi
+// elementi sono figli diretti del <main>, e la barra del Salva (sticky,
+// `order-last`, visibile solo con modifiche da salvare) resta sopra la
+// pillola della tab bar per tutta la pagina e finisce per ultima.
 export default function ProfiloPage() {
-  const userId = useUtenteId();
-  const [versioneDati, setVersioneDati] = useState(0);
-  // Se il modulo ha modifiche non salvate: Ricarica ed Esci lo dicono nella
-  // loro conferma, invece di farle sparire in silenzio.
-  const [moduloModificato, setModuloModificato] = useState(false);
-
   return (
-    <main className="flex flex-1 flex-col items-center gap-8 p-4 pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))]">
-      <ModuliProfilo key={versioneDati} onModificatoCambiato={setModuloModificato} />
-      {userId && (
-        <RicaricaDatiAccount
-          userId={userId}
-          onRipristinato={() => setVersioneDati((v) => v + 1)}
-          modificheModuloNonSalvate={moduloModificato}
-        >
-          <EsciAccount userId={userId} modificheModuloNonSalvate={moduloModificato} />
-        </RicaricaDatiAccount>
-      )}
+    <main className="flex flex-1 flex-col items-center gap-8 p-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))]">
+      <div className="w-full max-w-sm">
+        <IntestazioneSottopagina titolo="Profilo" />
+      </div>
+      <ModuliProfilo />
     </main>
   );
 }
 
-function ModuliProfilo({
-  onModificatoCambiato,
-}: {
-  onModificatoCambiato: (modificato: boolean) => void;
-}) {
+function ModuliProfilo() {
   const userId = useUtenteId();
   const nome = useNomeUtente();
+  const email = useEmailUtente();
 
   // Attenzione al valore restituito quando userId non c'è ancora: deve
   // essere `undefined` (= "non so ancora"), mai `null`/`[]` (= "so che non
@@ -224,18 +209,16 @@ function ModuliProfilo({
   const sezioni = caricati && attuali ? sezioniModificate(caricati, attuali) : [];
   const modificato = sezioni.length > 0;
 
-  // Avvisa la pagina (Ricarica, Esci) e il browser (ricarica o chiusura
+  // Avvisa il guardiano (link interni) e il browser (ricarica o chiusura
   // della scheda) quando ci sono modifiche non salvate.
-  useEffect(() => {
-    onModificatoCambiato(modificato);
-  }, [modificato, onModificatoCambiato]);
+  useSegnalaModifiche(modificato);
 
   useEffect(() => {
     if (!modificato) return;
     // "beforeunload": il browser chiede conferma prima di ricaricare o
     // chiudere la pagina. Il testo della domanda lo decide il browser, non
-    // si può personalizzare. Non scatta cambiando scheda dalla tab bar
-    // (navigazione interna di Next.js): quel caso è accettato per ora.
+    // si può personalizzare. Non scatta con la navigazione interna di
+    // Next.js (tab bar, "‹ Impostazioni"): quella la ferma il guardiano.
     function avvisa(e: BeforeUnloadEvent) {
       e.preventDefault();
       e.returnValue = "";
@@ -432,6 +415,7 @@ function ModuliProfilo({
         nome={nome}
         pesoKg={ultimaPesata?.valore ?? null}
         altezzaCm={profilo?.altezza_cm ?? null}
+        email={email}
       />
 
       <SezioneProfilo

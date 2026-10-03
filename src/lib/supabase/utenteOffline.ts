@@ -38,6 +38,7 @@ export function chiaveSessione(supabaseUrl: string): string {
 export type SessioneSalvata = {
   id: string;
   metadati: Record<string, unknown> | undefined;
+  email: string | undefined;
 };
 
 // Legge la sessione dal cookie, senza rete e senza guardare la scadenza.
@@ -63,7 +64,12 @@ export function leggiSessioneSalvata(
     const sessione = JSON.parse(json);
     const id = sessione?.user?.id;
     if (typeof id !== "string" || id === "") return null;
-    return { id, metadati: sessione.user.user_metadata };
+    const email = sessione.user.email;
+    return {
+      id,
+      metadati: sessione.user.user_metadata,
+      email: typeof email === "string" && email !== "" ? email : undefined,
+    };
   } catch {
     // Cookie illeggibile: come se non ci fosse.
     return null;

@@ -101,3 +101,31 @@ export function useNomeUtente(): string | null {
 
   return nome;
 }
+
+// L'email dell'account, per mostrarla in sola lettura in Impostazioni >
+// Profilo. Stessa strada di useNomeUtente: prima la sessione salvata sul
+// dispositivo (senza rete), e con il token scaduto offline il cookie.
+// null se non c'è.
+export function useEmailUtente(): string | null {
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getSession().then(({ data }) => {
+      setEmail(data.session?.user.email ?? sessioneSalvata()?.email ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((evento, sessione) => {
+      if (sessione) setEmail(sessione.user.email ?? null);
+      else if (evento === "SIGNED_OUT") setEmail(null);
+      else setEmail(sessioneSalvata()?.email ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return email;
+}
