@@ -30,11 +30,19 @@
 //
 // Se l'utente non fa niente, dopo `durataMs` chiama onChiudi e sparisce: non
 // succede nient'altro. Il conto alla rovescia si ferma mentre il dito/mouse
-// è sopra la barra o il pulsante ha il fuoco da tastiera, e riparte da capo
-// quando se ne va — un tempo che scade mentre qualcuno sta per premere è la
-// cosa più frustrante che una barra così possa fare. La linea fa lo stesso:
-// in pausa si ferma (animation-play-state), poi riparte da piena insieme al
-// timer (la sua `key` cambia).
+// è sopra la barra o qualcosa dentro ha il fuoco da tastiera — un tempo che
+// scade mentre qualcuno sta per premere è la cosa più frustrante che una
+// barra così possa fare. Quando la pausa finisce riprende da quanto
+// restava, non da capo (dal 3/10): un tocco per sbaglio non deve allungare
+// la barra, né tocchi ripetuti tenerla aperta. Il calcolo sta in
+// tempoBarra.ts (funzioni pure, con test).
+//
+// Timer e linea leggono lo stesso stato (`tempo`), quindi non vanno fuori
+// passo. A ogni pausa e ripresa la linea si ridisegna (cambia la sua `key`)
+// con un animation-delay NEGATIVO pari al tempo già passato: un'animazione
+// con ritardo negativo parte "come se fosse cominciata prima", cioè dalla
+// lunghezza che corrisponde al tempo rimasto, e arriva a zero proprio
+// quando scatta il timer. In pausa resta ferma lì (animation-play-state).
 //
 // Posizione: `absolute`, ancorata al fondo del contenitore in cui la si
 // mette (il chiamante gli dà `relative`). Non ha un suo `fixed` apposta: in
@@ -54,6 +62,13 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { DURATE_BARRA, type IconaBarra } from "@/lib/inserimento/testiBarra";
+import {
+  avviaTempo,
+  pausaTempo,
+  riprendiTempo,
+  tempoRimasto,
+  type TempoBarra,
+} from "@/lib/inserimento/tempoBarra";
 
 interface Props {
   testo: string;
@@ -73,18 +88,19 @@ export default function BarraAnnulla({
   coda,
   icona = "info",
   azione,
-  // Le durate stanno in testiBarra.ts: con "Annulla" serve il tempo di
-  // decidere, senza azione è una frase da leggere. I messaggi brevi
-  // (Salvato, Annullato…) portano la loro.
-  durataMs = azione ? DURATE_BARRA.conAzione : DURATE_BARRA.frase,
+  // Le durate stanno in testiBarra.ts: con "Annulla" un po' di più, per il
+  // tempo di decidere.
+  durataMs = azione ? DURATE_BARRA.conAzione : DURATE_BARRA.senzaAzione,
   onChiudi,
   sopra = false,
   margineHome = false,
 }: Props) {
-  const [inPausa, setInPausa] = useState(false);
-  // Quante volte la pausa è finita: fa da `key` alla linea del tempo, che
-  // così riparte da piena insieme al timer.
-  const [ripartenze, setRipartenze] = useState(0);
+  const [tempo, setTempo] = useState<TempoBarra>(() => avviaTempo(durataMs, Date.now()));
+  // Le due cose che mettono in pausa, il dito (o il mouse) e il fuoco: in
+  // pausa finché almeno una c'è. In ref e non in stato perché due eventi
+  // possono arrivare di fila prima che React ridisegni.
+  const rifDito = useRef(false);
+  const rifFuoco = useRef(false);
 
   // onChiudi tenuto in un ref: la pagina che ospita la barra si ridisegna
   // spesso (useLiveQuery), e se il timer dipendesse direttamente da
@@ -96,18 +112,22 @@ export default function BarraAnnulla({
   }, [onChiudi]);
 
   useEffect(() => {
-    if (inPausa) return;
-    const timer = setTimeout(() => rifOnChiudi.current(), durataMs);
+    if (tempo.partitoAlle === null) return;
+    const timer = setTimeout(() => rifOnChiudi.current(), tempoRimasto(tempo, Date.now()));
     return () => clearTimeout(timer);
-  }, [inPausa, durataMs]);
+  }, [tempo]);
 
-  function pausa() {
-    setInPausa(true);
+  function cambia(dito: boolean, fuoco: boolean) {
+    rifDito.current = dito;
+    rifFuoco.current = fuoco;
+    const ora = Date.now();
+    setTempo((t) => (dito || fuoco ? pausaTempo(t, ora) : riprendiTempo(t, ora)));
   }
-  function riprendi() {
-    setInPausa(false);
-    setRipartenze((n) => n + 1);
-  }
+
+  const inPausa = tempo.partitoAlle === null;
+  // Quanto della linea è già passato quando è stata ridisegnata l'ultima
+  // volta: il ritardo negativo dell'animazione.
+  const passatoMs = tempo.durataMs - tempo.rimanenteMs;
 
   return (
     <div
@@ -119,10 +139,10 @@ export default function BarraAnnulla({
           senza spostare il fuoco da dove l'utente si trova. */}
       <div
         role="status"
-        onPointerEnter={pausa}
-        onPointerLeave={riprendi}
-        onFocus={pausa}
-        onBlur={riprendi}
+        onPointerEnter={() => cambia(true, rifFuoco.current)}
+        onPointerLeave={() => cambia(false, rifFuoco.current)}
+        onFocus={() => cambia(rifDito.current, true)}
+        onBlur={() => cambia(rifDito.current, false)}
         style={
           {
             boxShadow: "var(--ombra-fluttuante)",
@@ -157,9 +177,12 @@ export default function BarraAnnulla({
           </button>
         )}
         <span
-          key={ripartenze}
+          key={`${tempo.rimanenteMs}-${tempo.partitoAlle}`}
           aria-hidden
-          style={{ animationPlayState: inPausa ? "paused" : "running" }}
+          style={{
+            animationDelay: `-${passatoMs}ms`,
+            animationPlayState: inPausa ? "paused" : "running",
+          }}
           className="linea-tempo pointer-events-none absolute inset-x-0 bottom-0 h-0.5"
         />
       </div>

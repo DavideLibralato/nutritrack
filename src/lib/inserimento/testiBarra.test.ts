@@ -40,26 +40,30 @@ describe("testi della barra", () => {
       testo: "Ripristinato:",
       nome: "Mela",
       icona: "spunta",
-      durataMs: DURATE_BARRA.breve,
     });
     expect(MESSAGGIO_ANNULLATO).toEqual({
       testo: "Annullato.",
       icona: "annulla",
-      durataMs: DURATE_BARRA.breve,
     });
     expect(MESSAGGIO_SALVATO).toEqual({
       testo: "Salvato.",
       icona: "spunta",
-      durataMs: DURATE_BARRA.breve,
     });
   });
 
-  it("durate: 5 s con Annulla, 4 s per una frase, 2,5 s per una conferma breve", () => {
-    expect(DURATE_BARRA).toEqual({ conAzione: 5000, frase: 4000, breve: 2500 });
-    // Aggiunto ed Eliminato hanno "Annulla": nessuna durata propria, la
-    // barra usa quella con azione.
-    expect(messaggioAggiunto("Pane", null).durataMs).toBeUndefined();
-    expect(messaggioEliminato("Mela").durataMs).toBeUndefined();
+  it("durate: 3 s con Annulla, 2,5 s per tutto il resto", () => {
+    expect(DURATE_BARRA).toEqual({ conAzione: 3000, senzaAzione: 2500 });
+    // Nessun messaggio porta una durata sua: la barra sceglie da sola, con
+    // o senza azione.
+    for (const m of [
+      messaggioAggiunto("Pane", null),
+      messaggioEliminato("Mela"),
+      messaggioRipristinato("Mela"),
+      MESSAGGIO_ANNULLATO,
+      MESSAGGIO_SALVATO,
+    ]) {
+      expect(m.durataMs).toBeUndefined();
+    }
   });
 });
 

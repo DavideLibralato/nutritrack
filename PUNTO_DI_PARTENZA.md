@@ -673,7 +673,7 @@ ci fosse: quando compare non copre gli ultimi campi, e la pagina
 non salta. Compare con una dissolvenza di 150 ms, nessuna animazione con
 `prefers-reduced-motion`. Sparisce dopo il salvataggio e dopo "Annulla
 modifiche". Dopo un salvataggio riuscito, nello stesso punto sopra la
-pillola, compare "Salvato." per circa 2,5 secondi: una BarraAnnulla senza
+pillola, compare "Salvato." per 2,5 secondi: una BarraAnnulla senza
 azione, perché la barra Salva a quel punto non c'è più. Il Salva
 confronta i
 valori sullo schermo con quelli caricati e **scrive solo le tabelle delle
@@ -1282,19 +1282,30 @@ Confermate dai mockup, con una correzione.
     toccabile di 44 px.
 
   Sul bordo basso una linea di 2 px (`--linea-tempo`) si accorcia per tutta
-  la durata. Si ferma con il dito o il fuoco sulla barra e riparte da piena
-  insieme al timer. Con `prefers-reduced-motion` la linea non c'è.
+  la durata. Con `prefers-reduced-motion` la linea non c'è.
 
-  **Durate** (dal 2/10; erano 8 secondi per tutto, troppi). Sono costanti
-  in un posto solo, `DURATE_BARRA` in `src/lib/inserimento/testiBarra.ts`:
-  - **5 secondi** con l'azione "Annulla" (Aggiunto, Eliminato);
-  - **4 secondi** per una frase intera (il messaggio della stella, l'avviso
-    del pasto salvato non ripristinato, gli errori);
-  - **2,5 secondi** per una conferma breve (Salvato, Ripristinato,
-    Annullato).
+  **Pausa** (regola del 3/10): finché il dito o il fuoco è sulla barra,
+  timer e linea sono fermi; quando finisce **riprendono da quanto
+  restava, non da capo**. Prima ripartivano pieni: un tocco per sbaglio
+  allungava la barra, e tocchi ripetuti la tenevano aperta. La barra resta
+  quindi visibile al massimo la sua durata più il tempo passato in pausa.
+  Il calcolo sta in `src/lib/inserimento/tempoBarra.ts` (funzioni pure,
+  test in `tempoBarra.test.ts`). Timer e linea leggono lo stesso stato: a
+  ogni pausa o ripresa la linea si ridisegna con un `animation-delay`
+  negativo pari al tempo già passato, così parte dal punto giusto e arriva
+  a zero quando la barra sparisce.
 
-  La barra sceglie da sola 5 o 4 secondi, a seconda che ci sia un'azione;
-  i messaggi brevi portano la loro durata
+  **Durate** (dal 3/10; dal 2/10 erano 5 s con Annulla, 4 s per una frase,
+  2,5 s per una conferma breve, e prima ancora 8 s per tutto: troppi
+  inserendo più alimenti di fila). Sono costanti in un posto solo,
+  `DURATE_BARRA` in `src/lib/inserimento/testiBarra.ts`:
+  - **3 secondi** con l'azione "Annulla" (Aggiunto, Eliminato);
+  - **2,5 secondi** per tutto il resto: conferme brevi (Salvato,
+    Ripristinato, Annullato) e frasi (il messaggio della stella, l'avviso
+    del pasto salvato non ripristinato, gli errori).
+
+  La barra sceglie da sola, a seconda che ci sia un'azione; i messaggi non
+  portano una durata loro
 - Numeri grandi, etichette piccole e grigie, spesso in maiuscoletto
   ("OBIETTIVO", "TARGET GIORNALIERI"). Pesi tipografici: solo regular e medium
 - **Il colore nei grafici segnala, non decora.** Nel grafico calorie del
@@ -2258,7 +2269,9 @@ inserimento, «Annulla»").
 
 **Barra dei messaggi "vetro"** (2/10, provata su iPhone da Safari e
 dall'app installata, compreso "Salvato." in Profilo). Stesso vetro della
-tab bar, icona, linea del tempo; durate di 5, 4 e 2,5 secondi (sezione 7).
+tab bar, icona, linea del tempo; durate di 5, 4 e 2,5 secondi, dal 3/10
+3 e 2,5, con la pausa che riprende da dove era (branch `accento`, da
+provare su iPhone; sezione 7).
 
 **Swipe per cambiare giorno in Oggi** (2/10, provato su iPhone da Safari
 e dall'app installata). Dito a sinistra giorno dopo, a destra giorno prima,
@@ -2323,7 +2336,7 @@ scuro in chiaro; test permanente dei contrasti per ogni colore e tema
 (sezione 3, "Aspetto"; sezione 7, "Colore principale"). Con questo passo
 la pagina Impostazioni è completa per questo giro.
 
-**Test.** 300 test permanenti in 32 file (Vitest), tutti verdi al 3/10.
+**Test.** 308 test permanenti in 33 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
 

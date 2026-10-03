@@ -17,18 +17,17 @@
 export type IconaBarra = "spunta" | "annulla" | "elimina" | "info";
 
 // Quanto resta la barra, in un posto solo (mai numeri nei componenti):
-// - conAzione: c'è "Annulla" (Aggiunto, Eliminato), serve il tempo di
+// - conAzione, 3 s: c'è "Annulla" (Aggiunto, Eliminato), serve il tempo di
 //   decidere e toccare;
-// - frase: una frase intera da leggere (il messaggio della stella, l'avviso
-//   del pasto salvato non ripristinato, gli errori);
-// - breve: una conferma di una parola (Salvato, Ripristinato, Annullato).
-// La barra sceglie da sola fra conAzione e frase (c'è un'azione o no); i
-// messaggi brevi portano `durataMs` qui sotto. Il dito o il fuoco sulla
-// barra fermano comunque il conto.
+// - senzaAzione, 2,5 s: tutto il resto, frasi e conferme brevi (Salvato,
+//   Ripristinato, Annullato, il messaggio della stella, gli avvisi).
+// Dal 3/10; prima 5 s, 4 s e 2,5 s: 5 e 4 erano troppi inserendo più
+// alimenti di fila. La barra sceglie da sola (c'è un'azione o no), i
+// messaggi non portano una durata loro. Il dito o il fuoco sulla barra
+// fermano il conto, che poi riprende da dove era (tempoBarra.ts).
 export const DURATE_BARRA = {
-  conAzione: 5000,
-  frase: 4000,
-  breve: 2500,
+  conAzione: 3000,
+  senzaAzione: 2500,
 } as const;
 
 export interface MessaggioBarra {
@@ -55,17 +54,15 @@ export function messaggioEliminato(nome: string): MessaggioBarra {
 }
 
 export function messaggioRipristinato(nome: string): MessaggioBarra {
-  return { testo: "Ripristinato:", nome, icona: "spunta", durataMs: DURATE_BARRA.breve };
+  return { testo: "Ripristinato:", nome, icona: "spunta" };
 }
 
 export const MESSAGGIO_ANNULLATO: MessaggioBarra = {
   testo: "Annullato.",
   icona: "annulla",
-  durataMs: DURATE_BARRA.breve,
 };
 
 export const MESSAGGIO_SALVATO: MessaggioBarra = {
   testo: "Salvato.",
   icona: "spunta",
-  durataMs: DURATE_BARRA.breve,
 };

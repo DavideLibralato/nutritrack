@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Barra dei messaggi: durate più brevi, pausa che riprende
+
+Branch `accento`.
+
+- **Durate** (`DURATE_BARRA`):
+  - prima: 5 s con "Annulla", 4 s per le frasi, 2,5 s per le conferme;
+  - ora: 3 s con "Annulla", 2,5 s per tutto il resto;
+  - motivo: inserendo più alimenti di fila, 5 e 4 secondi erano troppi;
+  - i messaggi non portano più una durata propria.
+- **Pausa al tocco**: prima, dopo la pausa (dito o fuoco sulla barra),
+  timer e linea ripartivano pieni. Un tocco per sbaglio allungava la barra
+  e tocchi ripetuti la tenevano aperta.
+  - Ora riprendono da quanto restava.
+  - Il calcolo sta nelle funzioni pure di `tempoBarra.ts`, con test: pausa
+    a metà, ripresa, più pause di fila. La barra resta visibile al massimo
+    la durata più il tempo in pausa.
+  - Timer e linea leggono lo stesso stato. La linea si ridisegna con un
+    `animation-delay` negativo, quindi arriva a zero insieme al timer.
+  - La pausa ora tiene conto di dito e fuoco insieme: riprende solo quando
+    sono andati via tutti e due.
+
 ## 2026-10-03 — Impostazioni, passo 6: colore principale e grigio più scuro
 
 Branch `accento`.
