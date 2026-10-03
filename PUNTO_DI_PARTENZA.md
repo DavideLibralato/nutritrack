@@ -2021,8 +2021,8 @@ modifiche non salvate su "‹ Impostazioni" e tab bar; `/profilo` rimanda a
 `/impostazioni`; service worker con le pagine nuove (sezione 3,
 "Impostazioni").
 
-**Impostazioni, passo 2: superficie bianca** (3/10, branch `superficie`,
-da provare su iPhone). In chiaro `--superficie` è `#ffffff`: pillola, barra
+**Impostazioni, passo 2: superficie bianca** (3/10, provato su iPhone da
+Safari e dall'app installata, in chiaro e in scuro). In chiaro `--superficie` è `#ffffff`: pillola, barra
 dei messaggi, sheet, barra Salva, gruppi e scheda dell'account. Testo sopra
 la capsula in `--testo-capsula` (4,9:1 nel caso peggiore). Il tema scuro
 non cambia (sezione 7, contrasti misurati).
@@ -2057,9 +2057,6 @@ non cambia (sezione 7, contrasti misurati).
   `#78705f` darebbe 4,6:1 sul crema e 4,9:1 sul bianco, ma cambia
   l'aspetto di tutte le etichette: si decide al passo "accento"
   (passo 6), nello stesso mockup dei colori principali
-- **Superficie bianca da provare su iPhone** (3/10): pillola e barra dei
-  messaggi sopra la lista di Oggi, sheet, Impostazioni, barra Salva di
-  Profilo; in scuro deve essere tutto come prima
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)

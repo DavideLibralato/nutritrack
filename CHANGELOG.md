@@ -5,6 +5,13 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Superficie bianca provata su iPhone, unita a main
+
+Il passo 2 di Impostazioni (`6ae53d1`) è stato provato su iPhone, da
+Safari e dall'app installata, in chiaro e in scuro, e funziona tutto.
+Unito a main con fast-forward, senza commit di merge; branch `superficie`
+cancellato, in locale e su GitHub.
+
 ## 2026-10-03 — Impostazioni, passo 2: superficie bianca in chiaro
 
 Branch `superficie`. Decisione D (sezione 3, "Impostazioni"): in chiaro
