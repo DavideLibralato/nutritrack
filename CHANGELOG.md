@@ -5,6 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Tema scuro provato su iPhone, unito a main
+
+Il tema scuro passo 1 (`4086feb`) è stato provato su iPhone (Safari e app
+installata), in chiaro e in scuro, e funziona: Oggi, sheet con il velo,
+bottoni, menu nativi. Con `statusBarStyle: "default"` la barra
+dell'orologio dell'app installata in scuro è in tinta con la pagina,
+nessuno stacco. Non ancora guardati al buio: i campi compilati in
+automatico. Unito a main con fast-forward, senza commit di merge; branch
+`feature/tema-scuro` cancellato, in locale e su GitHub.
+
 ## 2026-10-03 — Tema scuro, passo 1: l'app segue il telefono
 
 Branch `feature/tema-scuro`. Palette "Caldo" in un solo blocco

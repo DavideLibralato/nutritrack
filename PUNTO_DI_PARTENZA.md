@@ -1124,7 +1124,7 @@ passo 2 e non è costruito: oggi vale sempre "Sistema".
   `#3a342d`, tenue `#a39a8b`, accento `#7bb887`, avviso `#e8916f`.
   Contrasti: tenue su sfondo 6,4:1, accento su sfondo 7,6:1, avviso su
   sfondo 7,3:1. L'arancio resta distinguibile dal verde e il verde non è
-  fluorescente; la prova finale si fa sul telefono.
+  fluorescente: confermato su iPhone il 3/10.
 - **Token aggiunti per il tema scuro.** In chiaro valgono quanto quelli di
   base, quindi in chiaro non cambia nessun pixel (verificato con un
   confronto pixel per pixel con main):
@@ -1158,8 +1158,9 @@ passo 2 e non è costruito: oggi vale sempre "Sistema".
   - `offline.html` ha il suo blocco scuro.
 - **Barra di stato dell'app installata: resta `statusBarStyle:
   "default"`.** iOS la fa opaca, la colora secondo il tema del sistema e la
-  pagina comincia sotto. Con "black-translucent" l'orologio sarebbe sempre
-  bianco, quindi invisibile in chiaro.
+  pagina comincia sotto. Provato su iPhone il 3/10: in chiaro e in scuro
+  la barra è in tinta con la pagina, senza stacco. Con "black-translucent"
+  l'orologio sarebbe sempre bianco, quindi invisibile in chiaro.
 - **Selezione del testo e campi compilati in automatico**: lasciati ai
   colori del browser. Il solito trucco per ricolorare i campi compilati in
   automatico (`box-shadow` inset) cancellerebbe l'anello di focus.
@@ -1878,7 +1879,9 @@ e dall'app installata). Dito a sinistra giorno dopo, a destra giorno prima,
 elastico oltre oggi; la lista riparte dall'alto a ogni cambio di giorno
 (sezione 3, "Swipe per cambiare giorno").
 
-**Tema scuro, passo 1** (3/10, da provare sul telefono). L'app segue la
+**Tema scuro, passo 1** (3/10, provato su iPhone da Safari e dall'app
+installata, in chiaro e in scuro: Oggi, sheet con il velo, bottoni, menu
+nativi; la barra dell'orologio è in tinta con la pagina). L'app segue la
 modalità chiara/scura del sistema, palette "Caldo"; in chiaro nessun pixel
 è cambiato (sezione 7, "Tema chiaro / scuro / sistema").
 
@@ -1902,13 +1905,9 @@ modalità chiara/scura del sistema, palette "Caldo"; in chiaro nessun pixel
 
 ### Difetti e verifiche aperti
 
-- **Tema scuro da provare sul telefono** (3/10). Nel browser si possono
-  vedere solo le pagine senza login. Restano da guardare al buio:
-  - Oggi, Aggiungi e Profilo;
-  - gli sheet con il velo;
-  - pillola e barra dei messaggi sulla superficie;
-  - la barra dell'orologio nell'app installata;
-  - i campi compilati in automatico nel login.
+- **Tema scuro: campi compilati in automatico non ancora guardati al
+  buio** (3/10). Il resto è provato su iPhone; se i colori del browser
+  stonano, si interviene (sezione 7)
 - **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
   dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
   il 25/9)
