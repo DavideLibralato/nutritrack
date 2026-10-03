@@ -12,7 +12,8 @@
 // appoggiata a --tab-bar-distanza dal fondo, appena sopra la barretta home
 // di iOS (globals.css: lì stanno tutti i numeri). Sfondo "vetro": la pagina
 // passa sotto sfocata; dove la sfocatura non c'è, sfondo pieno. La voce
-// attiva ha una capsula di sfondo (--capsula-attiva) e il colore accento.
+// attiva ha una capsula di sfondo (--capsula-attiva) e il colore accento
+// (--testo-capsula: l'accento appena più scuro, per il contrasto in chiaro).
 //
 // Sotto la pillola, una sfumatura dal trasparente al colore di fondo
 // (.sfumatura-in-basso): il testo che scorre sotto non disturba. Non riceve
@@ -66,7 +67,7 @@ export default function BarraNavigazione() {
                   href={voce.href}
                   aria-current={attiva ? "page" : undefined}
                   className={`flex h-full flex-col items-center justify-center gap-0.5 rounded-full text-xs ${
-                    attiva ? "bg-[var(--capsula-attiva)] font-medium text-accent" : "text-muted"
+                    attiva ? "bg-[var(--capsula-attiva)] font-medium text-[var(--testo-capsula)]" : "text-muted"
                   } ${CLASSE_FOCUS}`}
                 >
                   <Icona nome={voce.etichetta} />

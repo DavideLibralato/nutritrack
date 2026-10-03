@@ -22,7 +22,8 @@
 //   una riga sola, `coda` (il dettaglio) sempre visibile. Senza `nome`,
 //   `testo` va a capo se serve (i messaggi lunghi e rari, come gli avvisi
 //   del ripristino);
-// - l'azione, in colore accento dentro una capsula (--capsula-attiva).
+// - l'azione, in colore accento dentro una capsula (--capsula-attiva), con
+//   il testo in --testo-capsula: l'accento appena più scuro, per il contrasto.
 //   L'area toccabile è alta 44 px anche se la capsula si vede più piccola.
 // Sul bordo basso, una linea sottile (.linea-tempo in globals.css) si
 // accorcia in `durataMs`: mostra quanto manca prima che la barra sparisca.
@@ -150,7 +151,7 @@ export default function BarraAnnulla({
             onClick={azione.onClick}
             className={`flex min-h-11 shrink-0 items-center rounded-full px-1 ${CLASSE_FOCUS}`}
           >
-            <span className="rounded-full bg-[var(--capsula-attiva)] px-3 py-1 font-medium text-accent">
+            <span className="rounded-full bg-[var(--capsula-attiva)] px-3 py-1 font-medium text-[var(--testo-capsula)]">
               {azione.etichetta}
             </span>
           </button>

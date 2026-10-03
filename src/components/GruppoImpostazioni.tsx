@@ -4,9 +4,8 @@
 // grigio e in maiuscolo ("ALIMENTAZIONE", "APP"). Sotto, una nota
 // facoltativa in grigio (come le spiegazioni sotto i gruppi dell'iPhone).
 //
-// Lo sfondo è --superficie (bg-surface): in chiaro oggi è uguale allo
-// sfondo della pagina, quindi il gruppo si vede dal bordo; il passo
-// "superficie" lo renderà bianco.
+// Lo sfondo è --superficie (bg-surface): bianco sul crema in chiaro, un
+// marrone appena più chiaro dello sfondo al buio.
 
 import type { ReactNode } from "react";
 

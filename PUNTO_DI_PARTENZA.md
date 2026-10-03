@@ -503,6 +503,7 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 1. `impostazioni` — elenco, Profilo spostato intero, Sincronizzazione,
    Informazioni, Esci, guardiano, redirect, service worker *(fatto 3/10)*
 2. `superficie` — superficie bianca in chiaro, contrasto della capsula
+   *(fatto 3/10, branch `superficie`)*
 3. `obiettivi` — pagina Obiettivi; Profilo resta con i dati personali
 4. `peso` — pagina Peso
 5. `tema` — Aspetto: Chiaro / Scuro / Sistema
@@ -1143,7 +1144,9 @@ Confermate dai mockup, con una correzione.
   (`--vetro`, semitrasparente, con `backdrop-filter`; sfondo pieno dove la
   sfocatura non è supportata, con `@supports`). La voce attiva ha una
   capsula di sfondo, `--capsula-attiva`: un token solo, per provare
-  alternative cambiando una riga. Tutti derivati con `color-mix` dai token
+  alternative cambiando una riga. Il testo sopra la capsula (etichetta della
+  voce attiva, "Annulla") usa `--testo-capsula`, dal 3/10: vedi i contrasti
+  in "Tema chiaro / scuro / sistema". Tutti derivati con `color-mix` dai token
   di base, nessun colore scritto a mano, quindi seguono anche il tema scuro
 - **La barra dei messaggi in basso** (`BarraAnnulla`, dal 2/10, "opzione
   A") è dello stesso vetro della tab bar: `.vetro`, bordo,
@@ -1215,12 +1218,16 @@ passo 2 e non è costruito: oggi vale sempre "Sistema".
   Contrasti: tenue su sfondo 6,4:1, accento su sfondo 7,6:1, avviso su
   sfondo 7,3:1. L'arancio resta distinguibile dal verde e il verde non è
   fluorescente: confermato su iPhone il 3/10.
-- **Token aggiunti per il tema scuro.** In chiaro valgono quanto quelli di
-  base, quindi in chiaro non cambia nessun pixel (verificato con un
-  confronto pixel per pixel con main):
+- **Token aggiunti per il tema scuro.** Quando sono nati (3/10) in chiaro
+  valevano quanto quelli di base, quindi in chiaro non cambiava nessun pixel
+  (verificato con un confronto pixel per pixel con main). Dal passo
+  "superficie" fa eccezione `--superficie`:
   - `--superficie` (`bg-surface`): pillola, barra dei messaggi, sheet,
-    barra Salva. Al buio `#26221e`, un po' più chiara dello sfondo,
-    altrimenti questi elementi spariscono;
+    barra Salva, gruppi e scheda dell'account di Impostazioni. **In chiaro
+    `#ffffff`** dal 3/10 (decisione D, sezione 3): i riquadri bianchi
+    staccano dal crema come nel mockup; prima era uguale allo sfondo. Al
+    buio `#26221e`, un po' più chiara dello sfondo, altrimenti questi
+    elementi spariscono;
   - `--accento-pieno` / `--avviso-pieno` (`bg-accent-strong` /
     `bg-warning-strong`): il riempimento dei bottoni con testo sopra. Al
     buio restano `#3f7d4c` e `#b5533c`, perché il bianco sopra il verde e
@@ -1231,11 +1238,33 @@ passo 2 e non è costruito: oggi vale sempre "Sistema".
     `bg-foreground/40`, che al buio avrebbe sbiancato la pagina invece di
     scurirla; al buio è nero al 60%.
 
+  - `--testo-capsula`: il testo accento sopra `--capsula-attiva`
+    (etichetta della voce attiva della tab bar, "Annulla" nella barra dei
+    messaggi). In chiaro è l'accento con il 10% di nero
+    (`color-mix`, quindi seguirà anche il colore principale del passo
+    "accento"); al buio è `--accento`.
+
   `--accento` resta per tutto ciò che non ha testo sopra: anello, icone,
-  voce attiva, "Annulla", testi verdi, barra macro raggiunta.
+  testi verdi, barra macro raggiunta.
+- **Contrasti in chiaro misurati il 3/10, con la superficie bianca** (caso
+  peggiore: la pillola è vetro, bianco al 75% sopra lo sfondo crema):
+  - testo sopra la capsula: con l'accento puro 4,2:1 sul vetro e 4,2:1 sul
+    bianco, sotto il 4,5:1 del testo; ridurre la capsula non bastava
+    (all'10% 4,3:1, all'8% 4,4:1). Con `--testo-capsula` **4,9:1** sul
+    vetro e **5,0:1** sul bianco. Prima del passo, con il vetro crema, era
+    4,0:1;
+  - `--accento` su bianco 4,9:1 (su crema 4,6:1);
+  - `--tenue` su bianco **3,8:1**, sul crema 3,6:1: **sotto 4,5:1 già
+    prima** di questo passo (vedi §11, "Difetti e verifiche aperti");
+  - `--linea` su bianco 1,3:1 (su crema 1,2:1): bordi e separatori si
+    vedono ancora, come prima; sono decorativi;
+  - campi di testo dentro gli sheet: restano col colore dello sfondo, cioè
+    caselle crema dentro il riquadro bianco (crema su bianco 1,07:1, più il
+    bordo). Si leggono come caselle da riempire, come i campi grigi
+    dell'iPhone: lasciati così.
 - **Ogni token di colore del chiaro deve avere il suo valore scuro**, anche
-  i derivati (`--vetro`, `--capsula-attiva`, `--ombra-fluttuante`,
-  `--linea-tempo`). Lo controlla il test `src/app/temaScuro.test.ts`, che
+  i derivati (`--vetro`, `--capsula-attiva`, `--testo-capsula`,
+  `--ombra-fluttuante`, `--linea-tempo`). Lo controlla il test `src/app/temaScuro.test.ts`, che
   verifica anche che `public/offline.html` abbia gli stessi valori.
 - **`color-scheme: light dark`** su `:root`: select, calendario delle date
   e scrollbar diventano scuri anche loro.
@@ -1992,6 +2021,12 @@ modifiche non salvate su "‹ Impostazioni" e tab bar; `/profilo` rimanda a
 `/impostazioni`; service worker con le pagine nuove (sezione 3,
 "Impostazioni").
 
+**Impostazioni, passo 2: superficie bianca** (3/10, branch `superficie`,
+da provare su iPhone). In chiaro `--superficie` è `#ffffff`: pillola, barra
+dei messaggi, sheet, barra Salva, gruppi e scheda dell'account. Testo sopra
+la capsula in `--testo-capsula` (4,9:1 nel caso peggiore). Il tema scuro
+non cambia (sezione 7, contrasti misurati).
+
 **Test.** 250 test permanenti in 26 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
@@ -2002,8 +2037,8 @@ modifiche non salvate su "‹ Impostazioni" e tab bar; `/profilo` rimanda a
 - **Selettore del tema** (Chiaro / Scuro / Sistema, passo 2 del tema scuro,
   sezione 7): sarà la pagina Impostazioni > Aspetto (passo "tema"); oggi
   l'app segue sempre il telefono
-- **Impostazioni, passi 2–6** (sezione 3, "Impostazioni"): superficie
-  bianca, Obiettivi, Peso, tema, colore principale
+- **Impostazioni, passi 3–6** (sezione 3, "Impostazioni"): Obiettivi, Peso,
+  tema, colore principale
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
@@ -2015,6 +2050,16 @@ modifiche non salvate su "‹ Impostazioni" e tab bar; `/profilo` rimanda a
 
 ### Difetti e verifiche aperti
 
+- **`--tenue` sotto 4,5:1 in chiaro** (misurato il 3/10): 3,6:1 sul crema,
+  3,8:1 sul bianco. Riguarda le etichette piccole grigie, la voce inattiva
+  della tab bar, i valori a destra in Impostazioni. C'era già prima della
+  superficie bianca (che lo migliora appena). Un grigio più scuro come
+  `#78705f` darebbe 4,6:1 sul crema e 4,9:1 sul bianco, ma cambia
+  l'aspetto di tutte le etichette: si decide al passo "accento"
+  (passo 6), nello stesso mockup dei colori principali
+- **Superficie bianca da provare su iPhone** (3/10): pillola e barra dei
+  messaggi sopra la lista di Oggi, sheet, Impostazioni, barra Salva di
+  Profilo; in scuro deve essere tutto come prima
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)

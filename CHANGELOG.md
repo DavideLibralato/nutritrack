@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Impostazioni, passo 2: superficie bianca in chiaro
+
+Branch `superficie`. Decisione D (sezione 3, "Impostazioni"): in chiaro
+`--superficie` passa da crema (uguale allo sfondo) a `#ffffff`, come nel
+mockup. Cambiano pillola della tab bar e barra dei messaggi (vetro più
+bianco), sheet, barra Salva di Profilo, gruppi e scheda dell'account di
+Impostazioni. Il valore scuro non cambia.
+
+Contrasti rimisurati in chiaro (sezione 7). Il testo accento sopra la
+capsula faceva 4,2:1, e ridurre la capsula non bastava: token nuovo
+`--testo-capsula` (accento con il 10% di nero, al buio l'accento), usato
+dall'etichetta della tab attiva e da "Annulla": 4,9:1 nel caso peggiore.
+Trovato e lasciato aperto: `--tenue` è sotto 4,5:1 già da prima (3,6:1 sul
+crema, 3,8:1 sul bianco), da decidere al passo 6 nel mockup dei colori. I campi crema dentro gli
+sheet bianchi restano così: si leggono come caselle da riempire.
+
+`offline.html` non usa `--superficie` né la capsula: non cambia, quindi
+`CACHE_STATICI` resta com'è. Il test dei token copre già il token nuovo
+(che ha il suo valore scuro). Screenshot prima/dopo a 390 px su una pagina
+temporanea pubblica, poi cancellata con la sua eccezione nel middleware: in
+chiaro i cambi previsti, in scuro 0 pixel diversi.
+
 ## 2026-10-03 — Impostazioni passo 1 provato su iPhone, unito a main
 
 Il passo 1 di Impostazioni (`e9f940f`) è stato provato su iPhone, da
