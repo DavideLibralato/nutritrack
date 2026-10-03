@@ -21,6 +21,7 @@ importScripts("/sw-strategia.js");
 // copie delle pagine tolte cancellate nel riscaldamento). Questo commento
 // cambia anche il file sw.js stesso, così il telefono lo vede come nuovo.
 // 3/10/2026, passo "obiettivi": /impostazioni/obiettivi in PAGINE_APP.
+// 3/10/2026, passo "peso": /impostazioni/peso in PAGINE_APP.
 const {
   PAGINE_APP,
   pagineDaTogliere,

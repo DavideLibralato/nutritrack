@@ -464,8 +464,8 @@ un comando che non fa niente sembra rotto):
 - **Esci** in fondo, in arancio, con la conferma di sempre.
 
 **Rotte.** `/impostazioni`, `/impostazioni/profilo`,
-`/impostazioni/obiettivi`, `/impostazioni/sincronizzazione`,
-`/impostazioni/informazioni`; poi `/impostazioni/peso`,
+`/impostazioni/obiettivi`, `/impostazioni/peso`,
+`/impostazioni/sincronizzazione`, `/impostazioni/informazioni`; poi
 `/impostazioni/aspetto`.
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
 layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
@@ -511,7 +511,7 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
    *(fatto 3/10, branch `superficie`)*
 3. `obiettivi` — pagina Obiettivi; Profilo resta con i dati personali
    *(fatto 3/10, branch `obiettivi`)*
-4. `peso` — pagina Peso
+4. `peso` — pagina Peso *(fatto 3/10, branch `peso`)*
 5. `tema` — Aspetto: Chiaro / Scuro / Sistema
 6. `accento` — colore principale
 
@@ -528,9 +528,9 @@ In Impostazioni > Obiettivi (`/impostazioni/obiettivi`), con
   riferimento nel grafico del peso, come la linea tratteggiata delle
   calorie) e **"Calcola proposta"**: riempie i target del giorno normale dal
   fabbisogno, usando i dati personali salvati e l'ultima pesata. Senza
-  pesata è disattivato; se mancano dati, il messaggio dice quali e porta a
-  Profilo con un link (la pesata sta in Profilo fino al passo "peso"). I
-  target restano modificabili a mano
+  pesata è disattivato e la nota porta a Peso con un link; se mancano dati
+  personali, il messaggio dice quali e porta a Profilo. I target restano
+  modificabili a mano
 - **Giorni di allenamento** (decisione A): l'interruttore "Obiettivi diversi
   nei giorni di allenamento" e, se acceso, i cerchi L M M G V S D con la
   frase della decisione C. Da spento: "Da spento, l'app usa gli stessi
@@ -554,12 +554,45 @@ allenamento, completa il tuo profilo con il livello di attività." e il link
 a "Calcola proposta"), ma toglierlo vorrebbe dire cambiare lo schema:
 lasciato così il 3/10.
 
+### Peso (dal 3/10, passo "peso")
+
+In Impostazioni > Peso (`/impostazioni/peso`), con "‹ Impostazioni":
+
+- **Ultima pesata**, in grande con la data: "85 kg · 2 ottobre" (l'anno
+  solo se non è quello in corso), o "Nessuna pesata registrata"
+  (`testoUltimaPesata`). Il peso ha lo stesso formato ovunque: decimale
+  solo se c'è, con la virgola ("85 kg", "78,4 kg")
+- **Registra peso**: un campo con il suo pulsante, che salva **subito** in
+  `misurazioni` (una pesata al giorno, la regola è qui sotto). È
+  fuori da ogni Salva: il peso è una misurazione, non un'impostazione.
+  Per questo la pagina non ha il guardiano: un numero scritto e non
+  registrato si riscrive in un attimo, e "Esci senza salvare?" su una
+  pagina senza Salva confonderebbe
+- **Storico peso**: arriverà con Statistiche, non qui
+
+Nell'elenco, la riga Peso mostra l'ultima pesata come la scheda
+dell'account ("85 kg", "78,4 kg") o "Da registrare" (`testoRigaPeso`).
+
+**La regola della pesata** (`registraPesoSenzaDuplicati`, decisa il 3/10):
+- **stesso giorno** → la pesata nuova sostituisce quella del giorno (con lo
+  stesso valore non scrive niente): al massimo una pesata al giorno;
+- **giorno diverso** → si scrive **sempre**, anche se il valore è uguale
+  all'ultima pesata: "oggi peso come ieri" è un dato, serve allo storico e
+  al grafico del peso.
+
+Fino al 3/10 un valore uguale all'ultima pesata, in un giorno nuovo, non si
+scriveva, mentre il messaggio diceva "Registrato … oggi": un bug. Veniva dal
+6/9, quando il peso partiva con ogni "Salva obiettivo" anche se non era
+stato toccato; con "Registra peso", un gesto esplicito, quel motivo non c'è
+più. La pesata del giorno si cerca rileggendo Dexie dentro la funzione, non
+da uno stato React che può essere indietro (stessa regola di
+`salvaProfilo`). Test in `src/lib/repository/misurazioni.test.ts`.
+
 ### Profilo
 
 In Impostazioni > Profilo (`/impostazioni/profilo`), stile a gruppi con i
-campi nella riga. Dal passo "obiettivi" ci sono solo i dati personali e,
-fino al passo "peso", Registra peso; obiettivo, target e giorni sono in
-Obiettivi.
+campi nella riga. Ci sono solo i dati personali; obiettivo, target e giorni
+sono in Obiettivi, la pesata in Peso.
 
 - **Intestazione**: sopra, "‹ Impostazioni" e il titolo "Profilo"; sotto,
   iniziali, nome, "78,4 kg · 180 cm" (ultima pesata e altezza salvate) ed
@@ -572,10 +605,6 @@ Obiettivi.
   indicato", nel selettore a tre segmenti), che disattiva il calcolo
   automatico e lascia i target manuali. Il livello di attività ha il menu a
   tutta larghezza sotto il nome, perché le voci sono lunghe
-- **Registra peso**: un campo con il suo pulsante, che salva **subito** in
-  `misurazioni` (una pesata al giorno, la seconda aggiorna la prima). È fuori dal
-  Salva: il peso è una misurazione, non un'impostazione
-- **Storico peso**: arriverà con Statistiche, non in Profilo per ora
 - **"Ricarica i dati dal tuo account"** (§9.2) è passato in Impostazioni >
   Sincronizzazione; **Esci** in fondo all'elenco Impostazioni. Esci chiede
   conferma solo se uscire può far perdere qualcosa: modifiche non ancora
@@ -2103,7 +2132,13 @@ selettore Normale | Allenamento; Profilo con i soli dati personali e la
 pesata, nello stile a gruppi; riga "Obiettivi" nell'elenco con le calorie
 del periodo in corso (sezione 3, "Obiettivi").
 
-**Test.** 260 test permanenti in 28 file (Vitest), tutti verdi al 3/10.
+**Impostazioni, passo 4: Peso** (3/10, branch `peso`, da provare su
+iPhone). Pagina `/impostazioni/peso` con l'ultima pesata e "Registra
+peso", uscito da Profilo; riga Peso nell'elenco; "Calcola proposta" in
+Obiettivi rimanda a Peso; regola della pesata corretta (stesso valore in un
+giorno nuovo ora si scrive) (sezione 3, "Peso").
+
+**Test.** 269 test permanenti in 30 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
 
@@ -2113,8 +2148,8 @@ del periodo in corso (sezione 3, "Obiettivi").
 - **Selettore del tema** (Chiaro / Scuro / Sistema, passo 2 del tema scuro,
   sezione 7): sarà la pagina Impostazioni > Aspetto (passo "tema"); oggi
   l'app segue sempre il telefono
-- **Impostazioni, passi 4–6** (sezione 3, "Impostazioni"): Peso, tema,
-  colore principale
+- **Impostazioni, passi 5–6** (sezione 3, "Impostazioni"): tema, colore
+  principale
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
@@ -2133,6 +2168,10 @@ del periodo in corso (sezione 3, "Obiettivi").
   `#78705f` darebbe 4,6:1 sul crema e 4,9:1 sul bianco, ma cambia
   l'aspetto di tutte le etichette: si decide al passo "accento"
   (passo 6), nello stesso mockup dei colori principali
+- **Peso da provare su iPhone** (3/10), con l'account di prova in Safari:
+  pagina Peso con e senza pesate, una seconda pesata lo stesso giorno, lo
+  stesso valore in un giorno nuovo (deve comparire con la data nuova), la
+  riga Peso dell'elenco, "Vai a Peso" da Obiettivi senza pesate, offline
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)

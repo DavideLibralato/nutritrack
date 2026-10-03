@@ -18,35 +18,49 @@ export function ultimaMisurazione(righe: Misurazione[]): Misurazione | null {
   })[0];
 }
 
-// Registra un peso senza riempire lo storico di duplicati: se esiste già
-// una misurazione di oggi la aggiorna, altrimenti ne crea una nuova solo se
-// il valore è cambiato rispetto all'ultima registrata (o se non c'era
-// ancora nessuna misurazione).
+// Registra la pesata del giorno (PUNTO_DI_PARTENZA.md, sezione 3, "Peso"):
+//   - nello stesso giorno c'è al massimo una pesata: se esiste già, il
+//     valore nuovo la sostituisce (stesso valore = niente da scrivere);
+//   - in un giorno diverso si scrive SEMPRE, anche se il valore è uguale
+//     all'ultima pesata: "oggi peso come ieri" è un dato, serve allo storico
+//     e al grafico del peso.
+// Fino al 3/10 un valore uguale all'ultima pesata di un altro giorno non si
+// scriveva: veniva dal 6/9, quando il peso partiva con ogni "Salva
+// obiettivo" anche se non era stato toccato. Con "Registra peso" (un gesto
+// esplicito, con il suo pulsante) quel motivo non c'è più, e il messaggio
+// "Registrato" mentiva.
+//
+// La pesata del giorno si cerca rileggendo Dexie QUI DENTRO, non da un
+// elenco passato dalla pagina (stato React di useLiveQuery, che può essere
+// indietro di un giro): due "Registra" ravvicinati creerebbero due righe
+// per lo stesso giorno. Stessa regola di salvaProfilo e
+// garantisciGiornoPerPrimaVoce.
+//
+// `giorno`: "YYYY-MM-DD", il giorno dell'orologio locale (oggiLocale), non
+// quello UTC di toISOString(): a Roma fra mezzanotte e le 2 sarebbe ancora
+// "ieri" (vedi dataGiorno.ts). Parametro solo per i test.
 export async function registraPesoSenzaDuplicati(
   userId: string,
   valoreKg: number,
-  misurazioniPesoEsistenti: Misurazione[]
+  giorno: string = oggiLocale()
 ): Promise<void> {
-  // Il giorno dell'orologio locale, non quello UTC di toISOString(): a Roma
-  // fra mezzanotte e le 2 sarebbe ancora "ieri" (vedi dataGiorno.ts).
-  const oggi = oggiLocale();
-  const rigaOggi = misurazioniPesoEsistenti.find((riga) => riga.data === oggi);
+  const righe = await repositoryMisurazioni.ottieniTutti(userId);
+  const rigaDelGiorno = righe.find(
+    (riga) => riga.tipo === "peso" && riga.data === giorno && riga.deleted_at === null
+  );
 
-  if (rigaOggi) {
-    if (rigaOggi.valore !== valoreKg) {
-      await repositoryMisurazioni.aggiorna(rigaOggi.id, { valore: valoreKg });
+  if (rigaDelGiorno) {
+    if (rigaDelGiorno.valore !== valoreKg) {
+      await repositoryMisurazioni.aggiorna(rigaDelGiorno.id, { valore: valoreKg });
     }
     return;
   }
 
-  const ultima = ultimaMisurazione(misurazioniPesoEsistenti);
-  if (!ultima || ultima.valore !== valoreKg) {
-    await repositoryMisurazioni.crea({
-      user_id: userId,
-      tipo: "peso",
-      valore: valoreKg,
-      unita: "kg",
-      data: oggi,
-    });
-  }
+  await repositoryMisurazioni.crea({
+    user_id: userId,
+    tipo: "peso",
+    valore: valoreKg,
+    unita: "kg",
+    data: giorno,
+  });
 }

@@ -5,6 +5,42 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Impostazioni, passo 4: la pagina Peso
+
+Branch `peso`.
+
+- Pagina `/impostazioni/peso`: in alto l'ultima pesata con la data
+  ("85 kg · 2 ottobre", "Nessuna pesata registrata"), sotto "Registra
+  peso", che salva subito. Niente storico: arriva con Statistiche. Il peso
+  ha lo stesso formato ovunque: decimale solo se c'è.
+- Profilo: tolto "Registra peso", restano i dati personali.
+- Elenco: riga Peso sotto Obiettivi ("85 kg", "78,4 kg", "Da
+  registrare"); come Obiettivi, vuota finché i dati non arrivano.
+- Obiettivi: senza pesate, "Calcola proposta" rimanda a Peso ("Vai a
+  Peso"), non più a Profilo.
+- Testi da `testiPeso.ts` (`testoRigaPeso`, `testoUltimaPesata`), con il
+  loro test (5 casi).
+- Service worker: `/impostazioni/peso` in `PAGINE_APP`, commento datato
+  in sw.js, test aggiornato.
+- Nessun guardiano in Peso: non c'è un Salva, e un numero scritto e non
+  registrato si riscrive in un attimo.
+
+**Bug trovato e corretto:** registrare in un giorno nuovo lo stesso peso
+dell'ultima pesata non scriveva niente, mentre il messaggio diceva
+"Registrato … oggi", e una pesata stabile si perdeva (anche per il grafico
+del peso). Veniva dal 6/9 (`4f11e08`), quando il peso partiva con ogni
+"Salva obiettivo"; con "Registra peso" il motivo non c'è più. Regola
+nuova: stesso giorno → sostituisce la pesata del giorno; giorno diverso →
+si scrive sempre. `registraPesoSenzaDuplicati` ora rilegge Dexie invece di
+ricevere l'elenco dalla pagina (stato React che può essere indietro), e
+RegistraPeso non ha più la prop `misurazioniPeso`. Test nuovo
+`misurazioni.test.ts` (4 casi); verificato che rimettendo la vecchia
+regola fallisce proprio il caso "giorno diverso, stesso valore".
+
+269 test. Aspetto controllato in Chrome a 390 px, chiaro e scuro, su una
+pagina temporanea pubblica con dati finti, poi cancellata con la sua
+eccezione nel middleware.
+
 ## 2026-10-03 — Obiettivi provato su iPhone, unito a main
 
 Il passo 3 di Impostazioni è stato provato su iPhone. Con l'account di

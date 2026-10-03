@@ -244,7 +244,6 @@ export function useModuloImpostazioni() {
     profilo: profilo ?? null,
     periodo,
     ultimaPesata,
-    misurazioniPeso: misurazioniPeso ?? [],
     giornoCorrente,
     // Valori del modulo: non null quando `pronto` è vero.
     prima: caricati,

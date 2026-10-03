@@ -1,31 +1,25 @@
 "use client";
 
-// "Registra peso" in Impostazioni > Profilo (fino al passo "peso"), dentro
-// un gruppo "Peso" che porta la nota "Si registra subito, senza il pulsante
+// "Registra peso" in Impostazioni > Peso (dal passo "peso", 3/10), dentro
+// un gruppo che porta la nota "Si registra subito, senza il pulsante
 // Salva". Un campo con il suo pulsante, che salva SUBITO
 // in misurazioni — fuori dal Salva unico del modulo. La regola da leggere
 // nella pagina: Salva riguarda i campi del modulo; il peso è una
 // misurazione del giorno, non un'impostazione, e ha il suo pulsante.
 //
 // Riusa registraPesoSenzaDuplicati: una seconda pesata nello stesso giorno
-// aggiorna quella di oggi invece di aggiungere una riga.
+// aggiorna quella di oggi invece di aggiungere una riga; in un giorno nuovo
+// si scrive sempre, anche con lo stesso valore di ieri.
 //
-// È un <form> a sé (Invio nel campo = Registra). La pagina Profilo non ha un
+// È un <form> a sé (Invio nel campo = Registra). La pagina Peso non ha un
 // <form> esterno, quindi non ci sono form annidati.
 
 import { useState } from "react";
 import { registraPesoSenzaDuplicati } from "@/lib/repository/misurazioni";
 import { numeroDaCampo } from "@/lib/profilo/salvataggioProfilo";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import type { Misurazione } from "@/lib/db/tipi";
 
-export default function RegistraPeso({
-  userId,
-  misurazioniPeso,
-}: {
-  userId: string;
-  misurazioniPeso: Misurazione[];
-}) {
+export default function RegistraPeso({ userId }: { userId: string }) {
   const [valore, setValore] = useState("");
   const [stato, setStato] = useState<
     { fase: "inattivo" } | { fase: "in-corso" } | { fase: "esito"; riuscito: boolean; testo: string }
@@ -41,7 +35,7 @@ export default function RegistraPeso({
 
     setStato({ fase: "in-corso" });
     try {
-      await registraPesoSenzaDuplicati(userId, Math.round(kg * 10) / 10, misurazioniPeso);
+      await registraPesoSenzaDuplicati(userId, Math.round(kg * 10) / 10);
       setValore("");
       setStato({
         fase: "esito",

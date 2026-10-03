@@ -24,6 +24,7 @@
     "/impostazioni",
     "/impostazioni/profilo",
     "/impostazioni/obiettivi",
+    "/impostazioni/peso",
     "/impostazioni/sincronizzazione",
     "/impostazioni/informazioni",
   ];

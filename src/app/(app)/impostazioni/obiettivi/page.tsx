@@ -64,18 +64,26 @@ function targetCambiati(a: ValoriTarget, b: ValoriTarget): boolean {
   return CAMPI_TARGET.some((c) => !numeriUguali(a[c.chiave], b[c.chiave]));
 }
 
-// Rimando a Profilo, dove si completano dati personali e pesata (la pagina
-// Peso nasce al passo 4). È un LinkProtetto: con modifiche non salvate qui,
-// chiede prima "Esci senza salvare?".
-function LinkProfilo() {
+// Rimandi alle pagine dove si completa ciò che manca: Profilo per i dati
+// personali, Peso per la pesata. Sono LinkProtetto: con modifiche non
+// salvate qui, chiedono prima "Esci senza salvare?".
+function LinkSottopagina({ href, testo }: { href: string; testo: string }) {
   return (
     <LinkProtetto
-      href="/impostazioni/profilo"
+      href={href}
       className={`font-medium text-accent underline underline-offset-2 rounded ${CLASSE_FOCUS}`}
     >
-      Vai a Profilo
+      {testo}
     </LinkProtetto>
   );
+}
+
+function LinkProfilo() {
+  return <LinkSottopagina href="/impostazioni/profilo" testo="Vai a Profilo" />;
+}
+
+function LinkPeso() {
+  return <LinkSottopagina href="/impostazioni/peso" testo="Vai a Peso" />;
 }
 
 export default function ObiettiviPage() {
@@ -117,7 +125,7 @@ export default function ObiettiviPage() {
 
   // Riempie i target normali con una proposta calcolata: non salva niente
   // ("sempre e solo una proposta", sezione 3). Usa i dati personali salvati
-  // (si cambiano in Profilo) e l'ultima pesata registrata.
+  // (si cambiano in Profilo) e l'ultima pesata registrata (in Peso).
   function calcolaProposta() {
     setErroreCalcolo(null);
     const dati = ora.datiPersonali;
@@ -211,7 +219,7 @@ export default function ObiettiviPage() {
         nota={
           !ultimaPesata ? (
             <>
-              Per la proposta serve una pesata: registrala in Profilo. <LinkProfilo />
+              Per la proposta serve una pesata: registrala in Peso. <LinkPeso />
             </>
           ) : null
         }

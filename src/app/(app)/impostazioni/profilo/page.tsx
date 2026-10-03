@@ -1,10 +1,11 @@
 "use client";
 
 // Impostazioni > Profilo (PUNTO_DI_PARTENZA.md, sezione 3, "Profilo" e
-// "Impostazioni"). Dal passo "obiettivi" (3/10) restano qui i dati personali
-// (sesso, data di nascita, altezza, livello di attività), l'email in sola
-// lettura e "Registra peso" (fino al passo "peso"). Obiettivo, target e
-// giorni di allenamento sono in Impostazioni > Obiettivi.
+// "Impostazioni"). Restano qui solo i dati personali (sesso, data di
+// nascita, altezza, livello di attività) e l'email in sola lettura.
+// Obiettivo, target e giorni di allenamento sono in Impostazioni >
+// Obiettivi (passo "obiettivi"), la pesata in Impostazioni > Peso (passo
+// "peso").
 //
 // Stile a gruppi come l'elenco, con i campi nella riga (decisione B).
 //
@@ -14,9 +15,6 @@
 // La pagina modifica solo i dati personali: le altre sezioni restano quelle
 // caricate e il Salva non le scrive. Sotto i campi cambiati c'è il valore di
 // prima; il gruppo ha il bordo d'accento e "Modificato".
-//
-// Fuori dal Salva, con il suo pulsante: "Registra peso" (una misurazione,
-// non un'impostazione).
 
 import { useNomeUtente, useEmailUtente } from "@/lib/supabase/useUtente";
 import { useModuloImpostazioni } from "@/lib/profilo/useModuloImpostazioni";
@@ -29,7 +27,6 @@ import IntestazioneProfilo from "@/components/IntestazioneProfilo";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaCampo from "@/components/RigaCampo";
 import SelettoreSegmenti from "@/components/SelettoreSegmenti";
-import RegistraPeso from "@/components/RegistraPeso";
 import ValorePrecedente from "@/components/ValorePrecedente";
 import SalvataggioModulo from "@/components/SalvataggioModulo";
 
@@ -77,7 +74,7 @@ export default function ProfiloPage() {
     );
   }
 
-  const { prima, ora, m, errori, userId, profilo, ultimaPesata } = modulo;
+  const { prima, ora, m, errori, profilo, ultimaPesata } = modulo;
   const dp = { prima: prima.datiPersonali, ora: ora.datiPersonali };
 
   function aggiornaDati(campi: Partial<ValoriModulo["datiPersonali"]>) {
@@ -173,12 +170,6 @@ export default function ProfiloPage() {
           />
         </div>
       </GruppoImpostazioni>
-
-      {userId && (
-        <GruppoImpostazioni titolo="Peso" nota="Si registra subito, senza il pulsante Salva.">
-          <RegistraPeso userId={userId} misurazioniPeso={modulo.misurazioniPeso} />
-        </GruppoImpostazioni>
-      )}
 
       <SalvataggioModulo modulo={modulo} />
     </main>

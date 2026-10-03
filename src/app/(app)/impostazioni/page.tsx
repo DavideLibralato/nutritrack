@@ -5,14 +5,16 @@
 // come le impostazioni dell'iPhone, da cui si entra nelle sotto-pagine.
 //
 // Ci sono solo le righe che funzionano (sezione 3: un comando che non fa
-// niente sembra rotto). Peso e Aspetto arrivano con i loro passi; Pasti e
-// orari, Preferiti e lo stato della sincronizzazione restano fuori finché
-// non esistono. Finché Peso non è una pagina a sé, la pesata si registra da
-// Profilo (la scheda dell'account in cima).
+// niente sembra rotto). Aspetto arriva con il suo passo; Pasti e orari,
+// Preferiti e lo stato della sincronizzazione restano fuori finché non
+// esistono.
 //
 // La riga Obiettivi mostra a destra le calorie del periodo valido oggi
 // (testoRigaObiettivi, con il suo test): "2500 kcal", oppure "2500 · 2950
 // kcal" con i giorni differenziati accesi, "Da impostare" senza periodo.
+// La riga Peso mostra l'ultima pesata ("85 kg", "78,4 kg") o "Da
+// registrare" (testoRigaPeso, con il suo test). Tutte e due non mostrano
+// niente finché i dati non sono arrivati da Dexie.
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -29,6 +31,7 @@ import { ultimaMisurazione } from "@/lib/repository/misurazioni";
 import { periodoInCorso } from "@/lib/totaliDiario";
 import { oggiLocale } from "@/lib/dataGiorno";
 import { testoRigaObiettivi } from "@/lib/profilo/rigaObiettivi";
+import { testoRigaPeso } from "@/lib/profilo/testiPeso";
 import SchedaAccount from "@/components/SchedaAccount";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
@@ -71,6 +74,8 @@ export default function ImpostazioniPage() {
         )
       : undefined;
 
+  const valorePeso = ultimaPesata === undefined ? undefined : testoRigaPeso(ultimaPesata);
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+1.5rem)]">
       <h1 className="mx-1 mt-1.5 font-display text-[34px] font-bold leading-tight">Impostazioni</h1>
@@ -87,6 +92,12 @@ export default function ImpostazioniPage() {
           icona={<IconaObiettivi />}
           valore={valoreObiettivi}
           href="/impostazioni/obiettivi"
+        />
+        <RigaImpostazioni
+          etichetta="Peso"
+          icona={<IconaPeso />}
+          valore={valorePeso}
+          href="/impostazioni/peso"
         />
       </GruppoImpostazioni>
 
@@ -131,6 +142,16 @@ function IconaObiettivi() {
       <circle cx="12" cy="12" r="8" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="12" cy="12" r=".6" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconaPeso() {
+  return (
+    <svg {...TRATTO}>
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="M9 10a3 3 0 016 0" />
+      <path d="M12 10l1.2-1.6" />
     </svg>
   );
 }
