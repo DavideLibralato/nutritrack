@@ -1,6 +1,11 @@
-// Il Salva unico della pagina Profilo (PUNTO_DI_PARTENZA.md, sezione 3,
-// "Profilo"): un solo pulsante per tutto il modulo, che scrive SOLO le
-// tabelle delle sezioni cambiate rispetto ai valori caricati.
+// Il Salva delle pagine Profilo e Obiettivi di Impostazioni
+// (PUNTO_DI_PARTENZA.md, sezione 3, "Un solo Salva" e "Impostazioni"): un
+// solo pulsante per pagina, che scrive SOLO le tabelle delle sezioni
+// cambiate rispetto ai valori caricati. Dal 3/10 il modulo vive in due
+// pagine: Profilo modifica i dati personali, Obiettivi obiettivo, target e
+// giorni. Ognuna carica tutto il modulo e passa tutto: le sezioni dell'altra
+// pagina non cambiano, quindi non vengono scritte. Stato React e azioni
+// comuni in useModuloImpostazioni.ts.
 //
 // Qui niente React: la pagina tiene due copie dei valori del modulo — quelli
 // caricati da Dexie ("caricati") e quelli sullo schermo ("attuali") — e
@@ -17,7 +22,7 @@
 // Le tre sezioni e le tabelle che toccano:
 //   - Dati personali      → profili (sesso, data di nascita, altezza, attività)
 //   - Obiettivo           → obiettivi + obiettivi_target "normale"
-//   - Giorni differenziati → profili (interruttore, giorni) + obiettivi_target
+//   - Giorni di allenamento → profili (interruttore, giorni) + obiettivi_target
 //                            "allenamento"
 // Ordine delle scritture: profili → obiettivi → obiettivi_target (un target
 // ha bisogno del suo periodo, non il contrario).
@@ -77,7 +82,7 @@ export type Sezione = keyof ValoriModulo;
 export const ETICHETTE_SEZIONI: Record<Sezione, string> = {
   datiPersonali: "Dati personali",
   obiettivo: "Obiettivo",
-  giorni: "Giorni differenziati",
+  giorni: "Giorni di allenamento",
 };
 
 const TARGET_VUOTO: ValoriTarget = { kcal: "", grassi: "", carboidrati: "", proteine: "" };
@@ -279,8 +284,15 @@ export function validaModulo(
   // "riuscirebbe" e la sync fallirebbe in silenzio dopo. Serve anche quando
   // si crea il profilo dalla sola sezione "Giorni differenziati": l'app non
   // inventa un livello di attività al posto dell'utente.
+  //
+  // Il messaggio dice dove si completa il campo: in Profilo, se il Salva
+  // parte da lì (dati personali cambiati); se parte da Obiettivi (solo i
+  // giorni), il campo sta in un'altra pagina e la pagina Obiettivi mostra
+  // il messaggio con il link a Profilo.
   if (scriveProfilo && !attuali.datiPersonali.livelloAttivita) {
-    errori.datiPersonali = "Seleziona il livello di attività.";
+    errori.datiPersonali = m.datiPersonali
+      ? "Seleziona il livello di attività."
+      : "Per salvare i giorni di allenamento serve il livello di attività: impostalo in Profilo.";
   } else if (m.datiPersonali) {
     const altezza = attuali.datiPersonali.altezzaCm;
     const n = numeroDaCampo(altezza);
@@ -304,8 +316,9 @@ export function validaModulo(
       errori.giorni = "Calorie e macro dei giorni di allenamento devono essere numeri, zero o più.";
     } else if (!contesto.periodo && !m.obiettivo) {
       // I target di allenamento appartengono a un periodo, e il primo
-      // periodo nasce dai target della sezione Obiettivo.
-      errori.giorni = "Compila anche i target giornalieri nella sezione Obiettivo.";
+      // periodo nasce dai target del giorno normale (stessa pagina,
+      // scheda "Normale").
+      errori.giorni = "Compila anche i target del giorno normale, nella scheda «Normale».";
     }
   }
 

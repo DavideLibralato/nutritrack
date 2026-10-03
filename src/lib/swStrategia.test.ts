@@ -47,6 +47,7 @@ describe("scegliStrategia", () => {
       "/statistiche",
       "/impostazioni",
       "/impostazioni/profilo",
+      "/impostazioni/obiettivi",
       "/impostazioni/sincronizzazione",
       "/impostazioni/informazioni",
       "/aggiungi?giorno=2026-09-20",

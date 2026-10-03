@@ -5,6 +5,48 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Impostazioni, passo 3: la pagina Obiettivi
+
+Branch `obiettivi`. Decisioni A, B, C (sezione 3, "Impostazioni").
+
+- Pagina `/impostazioni/obiettivi`, dall'alto:
+  - Obiettivo: tipo, peso obiettivo, "Calcola proposta", con il link a
+    Profilo se mancano dati o la pesata;
+  - Giorni di allenamento: l'interruttore e, se acceso, i cerchi L…D con
+    la frase della decisione C;
+  - target con i campi nella riga; con l'interruttore acceso, il
+    selettore Normale | Allenamento con il pallino sulla scheda modificata.
+- Profilo con i soli dati personali, l'email e la pesata, nello stile a
+  gruppi; il sesso diventa un selettore a tre segmenti ("Non indicato" a
+  schermo, la frase intera per lo screen reader).
+- Elenco: gruppo "Alimentazione" con la riga Obiettivi ("2500 kcal",
+  "2500 · 2950 kcal", "Da impostare"), calcolata da `testoRigaObiettivi`.
+- Logica comune in `useModuloImpostazioni` (hook) e `SalvataggioModulo`
+  (barra, "Salvato.", bivio); `salvaProfilo` invariato, ogni pagina passa
+  tutto il modulo. Componenti nuovi: `RigaCampo`, `Interruttore`,
+  `SelettoreSegmenti`, `CerchiGiorni`; tolti `SezioneProfilo` e
+  `CampoTarget`, non più usati.
+- `validaModulo`: se il Salva da Obiettivi deve creare il profilo senza
+  livello di attività, il messaggio rimanda a Profilo (con link); la
+  sezione "Giorni differenziati" si chiama "Giorni di allenamento".
+- Token nuovo `--segmento-attivo`: al buio la scheda scelta era più scura
+  della capsula intorno, ora è più chiara (`#4a433a`).
+- Service worker: `/impostazioni/obiettivi` in `PAGINE_APP`, sw.js
+  cambiato con un commento datato.
+
+Test: nuovi `rigaObiettivi.test.ts` (6) e il test della pagina Obiettivi
+(4: precompilazione dopo un refresh con l'utente in ritardo, bivio con
+correzione e "Salvato.", interruttore e schede con la riga allenamento
+scritta, "È un cambio vero" con una data: il periodo nuovo ha il normale
+cambiato e l'allenamento copiato uguale, il vecchio resta com'era). Il
+cambio vero non si prova su iPhone con i dati veri, per non creare un
+secondo periodo in produzione: lo copre il test, verificato anche
+togliendo per prova la copia dell'allenamento (il test fallisce). Il test
+di Profilo resta, con l'etichetta "Altezza". 260 test in tutto. Aspetto controllato in Chrome a 390 px, chiaro e scuro, su una
+pagina temporanea pubblica con dati finti, poi cancellata con la sua
+eccezione nel middleware. Le prove con i dati veri restano da fare su
+iPhone.
+
 ## 2026-10-03 — Superficie bianca provata su iPhone, unita a main
 
 Il passo 2 di Impostazioni (`6ae53d1`) è stato provato su iPhone, da

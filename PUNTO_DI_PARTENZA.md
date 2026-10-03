@@ -443,7 +443,11 @@ da cui si entra nelle sotto-pagine. Mockup approvato in
 con titolo e nota facoltativi), `RigaImpostazioni` (icona in un quadratino,
 etichetta, valore grigio a destra, freccia; la linea fra le righe parte dal
 testo, regola `.riga-impostazioni` in `globals.css`), `SchedaAccount`,
-`IntestazioneSottopagina` ("‹ Impostazioni" e titolo grande).
+`IntestazioneSottopagina` ("‹ Impostazioni" e titolo grande). Per le pagine con
+un modulo (dal passo "obiettivi"): `RigaCampo` (campo nella riga con
+l'unità e "Prima: …"), `Interruttore`, `SelettoreSegmenti` (la scheda
+scelta su `--segmento-attivo`), `CerchiGiorni`, `SalvataggioModulo` (barra
+Salva, "Salvato." e bivio); il gruppo mostra "Modificato" ed errori.
 
 **Struttura finale** (le righe compaiono solo quando la loro pagina esiste:
 un comando che non fa niente sembra rotto):
@@ -460,8 +464,9 @@ un comando che non fa niente sembra rotto):
 - **Esci** in fondo, in arancio, con la conferma di sempre.
 
 **Rotte.** `/impostazioni`, `/impostazioni/profilo`,
-`/impostazioni/sincronizzazione`, `/impostazioni/informazioni`; poi
-`/impostazioni/obiettivi`, `/impostazioni/peso`, `/impostazioni/aspetto`.
+`/impostazioni/obiettivi`, `/impostazioni/sincronizzazione`,
+`/impostazioni/informazioni`; poi `/impostazioni/peso`,
+`/impostazioni/aspetto`.
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
 layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
 "torna indietro": aperta da un indirizzo diretto, o ricaricata offline, la
@@ -505,6 +510,7 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 2. `superficie` — superficie bianca in chiaro, contrasto della capsula
    *(fatto 3/10, branch `superficie`)*
 3. `obiettivi` — pagina Obiettivi; Profilo resta con i dati personali
+   *(fatto 3/10, branch `obiettivi`)*
 4. `peso` — pagina Peso
 5. `tema` — Aspetto: Chiaro / Scuro / Sistema
 6. `accento` — colore principale
@@ -512,11 +518,39 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 Dopo, come lavori a sé: Pasti e orari, Preferiti e pasti salvati,
 l'indicatore di sincronizzazione.
 
+### Obiettivi (dal 3/10, passo "obiettivi")
+
+In Impostazioni > Obiettivi (`/impostazioni/obiettivi`), con
+"‹ Impostazioni" e il guardiano delle modifiche. Dall'alto:
+
+- **Obiettivo**: Dimagrire / Mantenere / Massa (selettore a segmenti),
+  **peso obiettivo** (facoltativo; se c'è, comparirà come linea di
+  riferimento nel grafico del peso, come la linea tratteggiata delle
+  calorie) e **"Calcola proposta"**: riempie i target del giorno normale dal
+  fabbisogno, usando i dati personali salvati e l'ultima pesata. Senza
+  pesata è disattivato; se mancano dati, il messaggio dice quali e porta a
+  Profilo con un link (la pesata sta in Profilo fino al passo "peso"). I
+  target restano modificabili a mano
+- **Giorni di allenamento** (decisione A): l'interruttore "Obiettivi diversi
+  nei giorni di allenamento" e, se acceso, i cerchi L M M G V S D con la
+  frase della decisione C. Da spento: "Da spento, l'app usa gli stessi
+  obiettivi tutti i giorni", e niente pastiglia in Oggi
+- **Target**: Calorie, Grassi, Carboidrati, Proteine, con i campi nella riga
+  (decisione B). Con l'interruttore acceso, sopra c'è il selettore Normale |
+  Allenamento, con un pallino sulla scheda che ha modifiche non salvate; la
+  scheda Allenamento, senza una riga "allenamento", parte dai valori del
+  normale. Sotto: "In vigore dal …", oppure, senza periodo, "Il primo
+  obiettivo vale per tutti i giorni, finché non lo cambi"
+
+Un solo Salva per tutta la pagina, anche cambiando scheda; il bivio "cambio
+vero o correzione?" una volta sola, al Salva, solo se serve.
+
 ### Profilo
 
-Oggi in Impostazioni > Profilo (`/impostazioni/profilo`): è la vecchia
-pagina spostata intera, finché i passi "obiettivi" e "peso" non porteranno
-Obiettivo, Giorni differenziati e Registra peso nelle loro pagine.
+In Impostazioni > Profilo (`/impostazioni/profilo`), stile a gruppi con i
+campi nella riga. Dal passo "obiettivi" ci sono solo i dati personali e,
+fino al passo "peso", Registra peso; obiettivo, target e giorni sono in
+Obiettivi.
 
 - **Intestazione**: sopra, "‹ Impostazioni" e il titolo "Profilo"; sotto,
   iniziali, nome, "78,4 kg · 180 cm" (ultima pesata e altezza salvate) ed
@@ -525,22 +559,13 @@ Obiettivo, Giorni differenziati e Registra peso nelle loro pagine.
   ancora nessuno): se manca, niente iniziali e niente nome
 - **Dati personali** (per il calcolo): sesso, data di nascita, altezza, livello di attività.
   Non sono dati "in più": senza di loro il fabbisogno non è calcolabile (vedi
-  sotto). Il sesso ammette "preferisco non indicarlo", che disattiva il calcolo
-  automatico e lascia i target manuali
+  sotto). Il sesso ammette "preferisco non indicarlo" (a schermo "Non
+  indicato", nel selettore a tre segmenti), che disattiva il calcolo
+  automatico e lascia i target manuali. Il livello di attività ha il menu a
+  tutta larghezza sotto il nome, perché le voci sono lunghe
 - **Registra peso**: un campo con il suo pulsante, che salva **subito** in
   `misurazioni` (una pesata al giorno, la seconda aggiorna la prima). È fuori dal
   Salva: il peso è una misurazione, non un'impostazione
-- **Obiettivo**: tre pulsanti affiancati (Dimagrire / Mantenere / Massa), quello
-  attivo con sfondo e bordo d'accento
-- **Peso obiettivo**: facoltativo. Se c'è, compare come linea di riferimento nel
-  grafico del peso — allo stesso modo della linea tratteggiata delle calorie
-- **Target giornalieri**: quattro righe (Calorie, Grassi, Carboidrati, Proteine)
-  con il valore a destra. "Calcola proposta" li riempie dal fabbisogno usando i
-  dati personali sul modulo e l'ultima pesata (senza pesate è disattivato:
-  "Registra prima il tuo peso"); restano modificabili a mano
-- **Giorni differenziati**: interruttore acceso/spento. Da spento non compare
-  nulla, in nessuna schermata. Da acceso si sbloccano il secondo set di target e
-  i giorni della settimana in cui ti alleni di solito
 - **Storico peso**: arriverà con Statistiche, non in Profilo per ora
 - **"Ricarica i dati dal tuo account"** (§9.2) è passato in Impostazioni >
   Sincronizzazione; **Esci** in fondo all'elenco Impostazioni. Esci chiede
@@ -556,8 +581,16 @@ Obiettivo, Giorni differenziati e Registra peso nelle loro pagine.
 
 #### Un solo Salva (deciso il 2026-09-26)
 
-Dati personali, Obiettivo e Giorni differenziati sono **un unico modulo con un
-solo pulsante Salva**, in una barra in fondo alla pagina. **La barra compare
+Dati personali, Obiettivo e Giorni di allenamento sono **un unico modulo**;
+dal 3/10 sta in due pagine, Profilo (dati personali) e Obiettivi (obiettivo,
+target, giorni), con **un solo pulsante Salva per pagina**, in una barra in
+fondo. Ogni pagina carica tutto il modulo e ne modifica la sua parte; il
+Salva passa tutto e scrive solo le sezioni cambiate, quindi quelle
+dell'altra pagina non vengono toccate. Stato e azioni comuni in
+`useModuloImpostazioni` (un hook React), barra e bivio in
+`SalvataggioModulo`. Se il Salva da Obiettivi deve creare il profilo e manca
+il livello di attività, il messaggio dice di impostarlo in Profilo, con il
+link. **La barra compare
 solo quando ci sono modifiche da salvare** (dal 2/10). Prima era sempre
 visibile, inerte quando non c'era niente da salvare. Con la tab bar diventata
 una pillola fluttuante, due elementi fluttuanti fissi erano troppi: ora il
@@ -572,7 +605,7 @@ azione, perché la barra Salva a quel punto non c'è più. Il Salva
 confronta i
 valori sullo schermo con quelli caricati e **scrive solo le tabelle delle
 sezioni cambiate** (Dati personali → `profili`; Obiettivo → `obiettivi` +
-target "normale"; Giorni differenziati → `profili` + target "allenamento").
+target "normale"; Giorni di allenamento → `profili` + target "allenamento").
 Nessun ordine obbligato fra le sezioni, nessun salvataggio automatico al
 tocco dell'interruttore. Le sezioni toccate hanno bordo d'accento ed
 etichetta "Modificato", sotto ogni campo cambiato c'è il valore precedente, e
@@ -1242,7 +1275,12 @@ passo 2 e non è costruito: oggi vale sempre "Sistema".
     (etichetta della voce attiva della tab bar, "Annulla" nella barra dei
     messaggi). In chiaro è l'accento con il 10% di nero
     (`color-mix`, quindi seguirà anche il colore principale del passo
-    "accento"); al buio è `--accento`.
+    "accento"); al buio è `--accento`;
+  - `--segmento-attivo`: la scheda scelta di un selettore a segmenti
+    (Normale | Allenamento, Dimagrire / Mantenere / Massa, il sesso). Deve
+    essere più chiara della capsula grigia intorno, come sull'iPhone: in
+    chiaro è la superficie bianca, al buio `#4a433a` (la superficie scura
+    sarebbe più scura della capsula). Testo sopra 8,4:1.
 
   `--accento` resta per tutto ciò che non ha testo sopra: anello, icone,
   testi verdi, barra macro raggiunta.
@@ -1264,6 +1302,7 @@ passo 2 e non è costruito: oggi vale sempre "Sistema".
     dell'iPhone: lasciati così.
 - **Ogni token di colore del chiaro deve avere il suo valore scuro**, anche
   i derivati (`--vetro`, `--capsula-attiva`, `--testo-capsula`,
+  `--segmento-attivo`,
   `--ombra-fluttuante`, `--linea-tempo`). Lo controlla il test `src/app/temaScuro.test.ts`, che
   verifica anche che `public/offline.html` abbia gli stessi valori.
 - **`color-scheme: light dark`** su `:root`: select, calendario delle date
@@ -2027,7 +2066,14 @@ dei messaggi, sheet, barra Salva, gruppi e scheda dell'account. Testo sopra
 la capsula in `--testo-capsula` (4,9:1 nel caso peggiore). Il tema scuro
 non cambia (sezione 7, contrasti misurati).
 
-**Test.** 250 test permanenti in 26 file (Vitest), tutti verdi al 3/10.
+**Impostazioni, passo 3: Obiettivi** (3/10, branch `obiettivi`, da provare
+su iPhone). Pagina `/impostazioni/obiettivi` con obiettivo, "Calcola
+proposta", giorni di allenamento con l'interruttore e target nella riga,
+selettore Normale | Allenamento; Profilo con i soli dati personali e la
+pesata, nello stile a gruppi; riga "Obiettivi" nell'elenco con le calorie
+del periodo in corso (sezione 3, "Obiettivi").
+
+**Test.** 260 test permanenti in 28 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
 
@@ -2037,8 +2083,8 @@ non cambia (sezione 7, contrasti misurati).
 - **Selettore del tema** (Chiaro / Scuro / Sistema, passo 2 del tema scuro,
   sezione 7): sarà la pagina Impostazioni > Aspetto (passo "tema"); oggi
   l'app segue sempre il telefono
-- **Impostazioni, passi 3–6** (sezione 3, "Impostazioni"): Obiettivi, Peso,
-  tema, colore principale
+- **Impostazioni, passi 4–6** (sezione 3, "Impostazioni"): Peso, tema,
+  colore principale
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
@@ -2057,6 +2103,11 @@ non cambia (sezione 7, contrasti misurati).
   `#78705f` darebbe 4,6:1 sul crema e 4,9:1 sul bianco, ma cambia
   l'aspetto di tutte le etichette: si decide al passo "accento"
   (passo 6), nello stesso mockup dei colori principali
+- **Obiettivi da provare su iPhone** (3/10), con i dati veri: bivio con
+  la correzione ("È un cambio vero" no: creerebbe un secondo periodo in
+  produzione, lo copre il test della pagina), "Esci senza salvare?" da Obiettivi, interruttore e
+  giorni (poi la pastiglia in Oggi), "Calcola proposta", la riga
+  "Obiettivi" dell'elenco, Profilo e Obiettivi offline
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)

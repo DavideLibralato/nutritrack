@@ -1,6 +1,8 @@
 "use client";
 
-// "Registra peso" in Profilo: un campo con il suo pulsante, che salva SUBITO
+// "Registra peso" in Impostazioni > Profilo (fino al passo "peso"), dentro
+// un gruppo "Peso" che porta la nota "Si registra subito, senza il pulsante
+// Salva". Un campo con il suo pulsante, che salva SUBITO
 // in misurazioni — fuori dal Salva unico del modulo. La regola da leggere
 // nella pagina: Salva riguarda i campi del modulo; il peso è una
 // misurazione del giorno, non un'impostazione, e ha il suo pulsante.
@@ -55,9 +57,9 @@ export default function RegistraPeso({
     <form
       onSubmit={registra}
       aria-label="Registra peso"
-      className="w-full max-w-sm space-y-2 rounded-xl border border-border p-4"
+      className="space-y-2 p-4"
     >
-      <label htmlFor="profilo-registra-peso" className="block text-xl font-display font-bold">
+      <label htmlFor="profilo-registra-peso" className="block text-base">
         Registra peso
       </label>
       <div className="flex gap-3">
@@ -81,8 +83,7 @@ export default function RegistraPeso({
           {stato.fase === "in-corso" ? "Registro..." : "Registra"}
         </button>
       </div>
-      <p className="text-sm text-muted">Si registra subito, senza il pulsante Salva.</p>
-      <div role="status">
+      <div role="status" className="empty:hidden">
         {stato.fase === "esito" && (
           <p className={`text-sm ${stato.riuscito ? "text-accent" : "text-warning"}`}>
             {stato.testo}

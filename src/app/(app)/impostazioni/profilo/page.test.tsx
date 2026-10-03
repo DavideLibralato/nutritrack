@@ -60,7 +60,7 @@ describe("Pagina Profilo dopo un refresh (F5)", () => {
       expect(screen.queryByText("Caricamento...")).toBeNull();
     });
 
-    const inputAltezza = (await screen.findByLabelText("Altezza (cm)")) as HTMLInputElement;
+    const inputAltezza = (await screen.findByLabelText("Altezza")) as HTMLInputElement;
     await waitFor(() => {
       expect(inputAltezza.value).toBe("170");
     });
@@ -95,7 +95,7 @@ describe("Barra Salva del Profilo", () => {
     });
 
     render(<ProfiloPage />);
-    const altezza = (await screen.findByLabelText("Altezza (cm)")) as HTMLInputElement;
+    const altezza = (await screen.findByLabelText("Altezza")) as HTMLInputElement;
     await waitFor(() => expect(altezza.value).toBe("180"));
     const barra = () => document.querySelector("[data-visibile]");
     expect(barra()?.getAttribute("data-visibile")).toBe("false");

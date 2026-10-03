@@ -23,6 +23,7 @@
     "/statistiche",
     "/impostazioni",
     "/impostazioni/profilo",
+    "/impostazioni/obiettivi",
     "/impostazioni/sincronizzazione",
     "/impostazioni/informazioni",
   ];

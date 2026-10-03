@@ -53,6 +53,12 @@
      del passo "accento". Al buio non serve: l'accento chiaro fa già 5,7:1. */
   --capsula-attiva: color-mix(in srgb, var(--accento) 12%, transparent);
   --testo-capsula: color-mix(in srgb, var(--accento) 90%, #000000);
+  /* --segmento-attivo: la scheda scelta di un selettore a segmenti
+     (SelettoreSegmenti: Normale | Allenamento, Dimagrire / Mantenere /
+     Massa). Deve essere PIÙ CHIARA della capsula grigia intorno, come
+     sull'iPhone: in chiaro è la superficie bianca; al buio la superficie
+     sarebbe più scura della capsula, quindi ha un valore suo. */
+  --segmento-attivo: var(--superficie);
   --vetro: color-mix(in srgb, var(--superficie) 75%, transparent);
   --ombra-fluttuante: 0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
   --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
@@ -87,6 +93,7 @@
 
     --capsula-attiva: color-mix(in srgb, var(--accento) 16%, transparent);
     --testo-capsula: var(--accento);
+    --segmento-attivo: #4a433a;
     --vetro: color-mix(in srgb, var(--superficie) 75%, transparent);
     --ombra-fluttuante: 0 4px 16px color-mix(in srgb, #000000 45%, transparent);
     --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
