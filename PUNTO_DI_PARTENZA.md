@@ -545,6 +545,15 @@ In Impostazioni > Obiettivi (`/impostazioni/obiettivi`), con
 Un solo Salva per tutta la pagina, anche cambiando scheda; il bivio "cambio
 vero o correzione?" una volta sola, al Salva, solo se serve.
 
+**Utente senza profilo.** Accendere l'interruttore e salvare crea la riga
+in `profili`, e `livello_attivita` è `NOT NULL` su Supabase (sezione 4,
+"profili"): il livello serve anche se l'utente vuole solo i giorni di
+allenamento. Il Salva si ferma con "Prima di salvare i giorni di
+allenamento, completa il tuo profilo con il livello di attività." e il link
+"Vai a Profilo". Il collegamento non è ovvio per l'utente (il livello serve
+a "Calcola proposta"), ma toglierlo vorrebbe dire cambiare lo schema:
+lasciato così il 3/10.
+
 ### Profilo
 
 In Impostazioni > Profilo (`/impostazioni/profilo`), stile a gruppi con i
@@ -797,6 +806,17 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 - `differenzia_giorni` (bool, default false) e `giorni_allenamento_default`
   (quali giorni della settimana)
 - sono gli ingredienti del calcolo del fabbisogno, non dati decorativi
+- **`livello_attivita` è `NOT NULL` su Supabase** (gli altri tre campi
+  anagrafici no): un profilo non si crea senza. Il motivo è il bug del 6/9:
+  i tipi non lo riflettevano, il salvataggio riusciva in locale ("Salvato."
+  a schermo) e la sync verso Supabase falliva in silenzio. Da allora
+  `validaModulo` lo pretende prima di scrivere `profili`, anche quando il
+  Salva parte dai giorni di allenamento. In Dexie non c'è nessun vincolo
+  (solo indici): il limite è del database. Toglierlo vorrebbe dire
+  `ALTER COLUMN livello_attivita DROP NOT NULL`, con la checklist A di
+  CLAUDE.md (una migration versionata, `get_advisors`, `tipi.ts` con
+  `LivelloAttivita | null` e ogni lettura con il suo ripiego). Deciso il
+  3/10 di lasciarlo così
 
 **`obiettivi`** — **lo storico dei periodi**, non un valore singolo
 - `valido_dal`, `tipo` (dimagrire / mantenere / massa), `peso_obiettivo` (nullable)
@@ -1945,6 +1965,13 @@ dalla lingua). Da rivedere quando l'app si apre agli amici.
 Aggiornato al 3 ottobre 2026. È la fotografia di oggi; la storia, commit
 per commit, sta in `CHANGELOG.md`.
 
+**Account di prova.** Esiste un account di prova fisso,
+davidemancon02@gmail.com, creato il 3/10. Si usa in Safari per le prove
+che scrivono dati (utente nuovo, cambio vero, ...), mentre l'app
+installata resta sull'account vero. Non va cancellato: con i vincoli
+verso `auth.users` oggi non si può comunque (vedi "Difetti e verifiche
+aperti"), e sarà il primo caso di prova per "elimina account".
+
 ### Fatto
 
 **Database Supabase.** Le 11 tabelle della sezione 4, RLS attiva su tutte,
@@ -2122,7 +2149,8 @@ del periodo in corso (sezione 3, "Obiettivi").
   non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e
   `obiettivi_target` sono `NO ACTION`: se l'utente ha righe lì, la
   cancellazione dell'utente fallisce. Da sistemare prima di "elimina
-  account". Le altre tabelle sono `CASCADE`
+  account". Le altre tabelle sono `CASCADE`. Primo caso di prova:
+  l'account di prova fisso (sopra, "Account di prova")
 - Il gesto "indietro" nella modifica di un pasto salvato esce senza avviso
   di modifiche non salvate: accettato per ora. In Impostazioni il cambio di
   scheda ora avvisa (il guardiano, sezione 3); resta scoperto solo il gesto

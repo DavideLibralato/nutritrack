@@ -280,9 +280,10 @@ export function validaModulo(
   const errori: ErroriModulo = {};
   const scriveProfilo = m.datiPersonali || m.giorniProfilo;
 
-  // livello_attivita è NOT NULL su Supabase: senza, il salvataggio locale
-  // "riuscirebbe" e la sync fallirebbe in silenzio dopo. Serve anche quando
-  // si crea il profilo dalla sola sezione "Giorni differenziati": l'app non
+  // livello_attivita è NOT NULL su Supabase (PUNTO_DI_PARTENZA.md sezione 4,
+  // "profili"): senza, il salvataggio locale "riuscirebbe" e la sync
+  // fallirebbe in silenzio dopo. Serve anche quando si crea il profilo dalla
+  // sola sezione "Giorni di allenamento" (pagina Obiettivi): l'app non
   // inventa un livello di attività al posto dell'utente.
   //
   // Il messaggio dice dove si completa il campo: in Profilo, se il Salva
@@ -292,7 +293,7 @@ export function validaModulo(
   if (scriveProfilo && !attuali.datiPersonali.livelloAttivita) {
     errori.datiPersonali = m.datiPersonali
       ? "Seleziona il livello di attività."
-      : "Per salvare i giorni di allenamento serve il livello di attività: impostalo in Profilo.";
+      : "Prima di salvare i giorni di allenamento, completa il tuo profilo con il livello di attività.";
   } else if (m.datiPersonali) {
     const altezza = attuali.datiPersonali.altezzaCm;
     const n = numeroDaCampo(altezza);

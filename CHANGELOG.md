@@ -47,6 +47,15 @@ pagina temporanea pubblica con dati finti, poi cancellata con la sua
 eccezione nel middleware. Le prove con i dati veri restano da fare su
 iPhone.
 
+Dopo la prima prova con un utente nuovo (senza profilo): accendere
+l'interruttore e salvare chiede il livello di attività, perché crea la
+riga in `profili` e `livello_attivita` è `NOT NULL` su Supabase (bug del
+6/9). Toglierlo vorrebbe dire cambiare lo schema: lasciato così, scritto in
+PUNTO §4 e §3. Cambiato solo il testo: "Prima di salvare i giorni di
+allenamento, completa il tuo profilo con il livello di attività.", con il
+link "Vai a Profilo". In PUNTO §11 anche l'account di prova fisso (Safari),
+da non cancellare.
+
 ## 2026-10-03 — Superficie bianca provata su iPhone, unita a main
 
 Il passo 2 di Impostazioni (`6ae53d1`) è stato provato su iPhone, da
