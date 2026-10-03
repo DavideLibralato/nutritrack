@@ -2093,8 +2093,11 @@ dei messaggi, sheet, barra Salva, gruppi e scheda dell'account. Testo sopra
 la capsula in `--testo-capsula` (4,9:1 nel caso peggiore). Il tema scuro
 non cambia (sezione 7, contrasti misurati).
 
-**Impostazioni, passo 3: Obiettivi** (3/10, branch `obiettivi`, da provare
-su iPhone). Pagina `/impostazioni/obiettivi` con obiettivo, "Calcola
+**Impostazioni, passo 3: Obiettivi** (3/10, provato su iPhone: con
+l'account di prova in Safari, utente nuovo, interruttore senza profilo,
+cambio vero, "Calcola proposta", guardiano; con l'account vero nell'app
+installata. Dopo le prove è cambiato solo il testo del messaggio sul
+livello di attività). Pagina `/impostazioni/obiettivi` con obiettivo, "Calcola
 proposta", giorni di allenamento con l'interruttore e target nella riga,
 selettore Normale | Allenamento; Profilo con i soli dati personali e la
 pesata, nello stile a gruppi; riga "Obiettivi" nell'elenco con le calorie
@@ -2130,11 +2133,6 @@ del periodo in corso (sezione 3, "Obiettivi").
   `#78705f` darebbe 4,6:1 sul crema e 4,9:1 sul bianco, ma cambia
   l'aspetto di tutte le etichette: si decide al passo "accento"
   (passo 6), nello stesso mockup dei colori principali
-- **Obiettivi da provare su iPhone** (3/10), con i dati veri: bivio con
-  la correzione ("È un cambio vero" no: creerebbe un secondo periodo in
-  produzione, lo copre il test della pagina), "Esci senza salvare?" da Obiettivi, interruttore e
-  giorni (poi la pastiglia in Oggi), "Calcola proposta", la riga
-  "Obiettivi" dell'elenco, Profilo e Obiettivi offline
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)

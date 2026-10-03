@@ -5,6 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Obiettivi provato su iPhone, unito a main
+
+Il passo 3 di Impostazioni è stato provato su iPhone. Con l'account di
+prova in Safari: utente nuovo, interruttore senza profilo (da lì il
+messaggio riscritto), cambio vero, "Calcola proposta", guardiano. Con
+l'account vero nell'app installata. L'unica modifica dopo le prove è il
+testo del messaggio sul livello di attività (`54cca62`). Unito a main con
+fast-forward, senza commit di merge; branch `obiettivi` cancellato, in
+locale e su GitHub.
+
 ## 2026-10-03 — Impostazioni, passo 3: la pagina Obiettivi
 
 Branch `obiettivi`. Decisioni A, B, C (sezione 3, "Impostazioni").
