@@ -2132,8 +2132,10 @@ selettore Normale | Allenamento; Profilo con i soli dati personali e la
 pesata, nello stile a gruppi; riga "Obiettivi" nell'elenco con le calorie
 del periodo in corso (sezione 3, "Obiettivi").
 
-**Impostazioni, passo 4: Peso** (3/10, branch `peso`, da provare su
-iPhone). Pagina `/impostazioni/peso` con l'ultima pesata e "Registra
+**Impostazioni, passo 4: Peso** (3/10, provato su iPhone: con l'account
+di prova in Safari riga e pagina senza pesate, "Vai a Peso", pesata e
+sostituzione nello stesso giorno, Profilo senza "Registra peso", offline;
+con l'account vero nell'app installata la riga Peso). Pagina `/impostazioni/peso` con l'ultima pesata e "Registra
 peso", uscito da Profilo; riga Peso nell'elenco; "Calcola proposta" in
 Obiettivi rimanda a Peso; regola della pesata corretta (stesso valore in un
 giorno nuovo ora si scrive) (sezione 3, "Peso").
@@ -2168,10 +2170,10 @@ giorno nuovo ora si scrive) (sezione 3, "Peso").
   `#78705f` darebbe 4,6:1 sul crema e 4,9:1 sul bianco, ma cambia
   l'aspetto di tutte le etichette: si decide al passo "accento"
   (passo 6), nello stesso mockup dei colori principali
-- **Peso da provare su iPhone** (3/10), con l'account di prova in Safari:
-  pagina Peso con e senza pesate, una seconda pesata lo stesso giorno, lo
-  stesso valore in un giorno nuovo (deve comparire con la data nuova), la
-  riga Peso dell'elenco, "Vai a Peso" da Obiettivi senza pesate, offline
+- **Peso, prova da fare il 4/10** con l'account di prova in Safari:
+  registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
+  comparire con la data nuova. Il resto del passo 4 è provato; questo
+  caso lo copre già il test (`misurazioni.test.ts`)
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)

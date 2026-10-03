@@ -5,6 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Peso provato su iPhone, unito a main
+
+Il passo 4 di Impostazioni (`edb1b83`) è stato provato su iPhone. Con
+l'account di prova in Safari: riga e pagina senza pesate, "Vai a Peso",
+pesata e sostituzione nello stesso giorno, Profilo senza "Registra peso",
+offline. Con l'account vero nell'app installata: riga Peso corretta. Resta
+da provare domani "stesso valore in un giorno nuovo" (già coperto dal
+test), lasciato in §11. Unito a main con fast-forward, senza commit di
+merge; branch `peso` cancellato, in locale e su GitHub.
+
 ## 2026-10-03 — Impostazioni, passo 4: la pagina Peso
 
 Branch `peso`.
