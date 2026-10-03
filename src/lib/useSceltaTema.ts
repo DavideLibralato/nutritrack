@@ -1,8 +1,9 @@
 "use client";
 
-// La scelta del tema salvata sul dispositivo (src/lib/tema.ts), letta da un
-// componente e aggiornata da sola quando cambia: dalla pagina Aspetto
-// (EVENTO_TEMA) o da un'altra scheda dello stesso browser ("storage").
+// Le scelte di Aspetto salvate sul dispositivo (src/lib/tema.ts): tema e
+// colore principale, letti da un componente e aggiornati da soli quando
+// cambiano: dalla pagina Aspetto (EVENTO_TEMA) o da un'altra scheda dello
+// stesso browser ("storage").
 //
 // useSyncExternalStore è il modo di React per leggere un valore che vive
 // fuori da React (qui localStorage) e ridisegnare quando cambia: gli si
@@ -11,7 +12,13 @@
 // mostra nessuna scelta finché il browser non ha letto quella vera.
 
 import { useSyncExternalStore } from "react";
-import { EVENTO_TEMA, leggiSceltaTema, type SceltaTema } from "./tema";
+import {
+  EVENTO_TEMA,
+  leggiSceltaAccento,
+  leggiSceltaTema,
+  type Accento,
+  type SceltaTema,
+} from "./tema";
 
 function iscriviti(avvisa: () => void) {
   window.addEventListener(EVENTO_TEMA, avvisa);
@@ -24,4 +31,8 @@ function iscriviti(avvisa: () => void) {
 
 export function useSceltaTema(): SceltaTema | null {
   return useSyncExternalStore(iscriviti, leggiSceltaTema, () => null);
+}
+
+export function useSceltaAccento(): Accento | null {
+  return useSyncExternalStore(iscriviti, leggiSceltaAccento, () => null);
 }

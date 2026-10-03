@@ -14,8 +14,9 @@
 // La riga Peso mostra l'ultima pesata ("85 kg", "78,4 kg") o "Da
 // registrare" (testoRigaPeso, con il suo test). Tutte e due non mostrano
 // niente finché i dati non sono arrivati da Dexie.
-// La riga Aspetto mostra la scelta del tema salvata su questo dispositivo
-// ("Chiaro", "Scuro", "Sistema"), niente finché il browser non l'ha letta.
+// La riga Aspetto mostra le scelte salvate su questo dispositivo, tema e
+// colore principale ("Sistema · Verde"), niente finché il browser non le ha
+// lette.
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -33,8 +34,8 @@ import { periodoInCorso } from "@/lib/totaliDiario";
 import { oggiLocale } from "@/lib/dataGiorno";
 import { testoRigaObiettivi } from "@/lib/profilo/rigaObiettivi";
 import { testoRigaPeso } from "@/lib/profilo/testiPeso";
-import { useSceltaTema } from "@/lib/useSceltaTema";
-import type { SceltaTema } from "@/lib/tema";
+import { useSceltaAccento, useSceltaTema } from "@/lib/useSceltaTema";
+import { NOMI_ACCENTO, type SceltaTema } from "@/lib/tema";
 import SchedaAccount from "@/components/SchedaAccount";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
@@ -44,6 +45,7 @@ export default function ImpostazioniPage() {
   const userId = useUtenteId();
   const nome = useNomeUtente();
   const sceltaTema = useSceltaTema();
+  const sceltaAccento = useSceltaAccento();
 
   const profilo = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -109,7 +111,11 @@ export default function ImpostazioniPage() {
         <RigaImpostazioni
           etichetta="Aspetto"
           icona={<IconaAspetto />}
-          valore={sceltaTema ? NOMI_TEMA[sceltaTema] : undefined}
+          valore={
+            sceltaTema && sceltaAccento
+              ? `${NOMI_TEMA[sceltaTema]} · ${NOMI_ACCENTO[sceltaAccento]}`
+              : undefined
+          }
           href="/impostazioni/aspetto"
         />
         <RigaImpostazioni

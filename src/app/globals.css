@@ -19,26 +19,32 @@
    esteso (#..., rgb...) senza i due interruttori si vedrebbe uguale al
    buio: lo controlla src/app/temaScuro.test.ts.
 
-   `[data-tema]` oltre a `:root`: le variabili si calcolano sull'elemento
-   dove sono scritte. Così un elemento con data-tema="scuro" dentro una
-   pagina chiara (le anteprime della pagina Aspetto) ricalcola i colori
-   con i suoi interruttori, e dentro di lui le classi normali (bg-surface,
-   text-foreground...) danno i colori scuri. */
+   `[data-tema]` e `[data-accento]` oltre a `:root`: le variabili si
+   calcolano sull'elemento dove sono scritte, e chi sta dentro riceve il
+   risultato già calcolato. Così un elemento con data-tema="scuro" dentro
+   una pagina chiara, o con data-accento="blu" dentro una pagina verde (le
+   anteprime della pagina Aspetto), ricalcola qui tutti i colori, derivati
+   compresi (capsula, testo sulla capsula, linea del tempo...), e dentro
+   di lui le classi normali (bg-surface, text-accent...) danno i suoi. */
 :root,
-[data-tema] {
+[data-tema],
+[data-accento] {
   /* Palette "Opzione A — minimal caratteristico": bianco/nero caldo invece
      del bianco/nero puro; al buio la palette "Caldo", il suo gemello. Un
-     solo colore d'accento, il verde (sezione 7): azione principale, stato
-     attivo, anello calorie. Il terracotta resta, ma con un significato
-     diverso e solo suo: segnala quando un obiettivo viene superato, mai
-     come colore decorativo.
-     Contrasti al buio: --tenue su sfondo 6,4:1, bianco su --accento-pieno
-     4,9:1, --accento su sfondo 7,6:1, --avviso su sfondo 7,3:1. */
+     solo colore d'accento, il colore principale scelto in Aspetto (verde
+     se nessuno: sezione 7): azione principale, stato attivo, anello
+     calorie. --accento prende i suoi due valori da --accento-chiaro e
+     --accento-scuro, scritti più sotto per ogni colore. Il terracotta
+     resta, ma con un significato diverso e solo suo: segnala quando un
+     obiettivo viene superato, mai come colore decorativo.
+     --tenue in chiaro #78705f dal passo "accento" (prima #8a8271, sotto
+     4,5:1). Tutti i contrasti del testo, per ogni colore e tutti e due i
+     temi, li controlla src/app/contrasti.test.ts (almeno 4,5:1). */
   --background: var(--se-chiaro, #faf7f2) var(--se-scuro, #1b1815);
   --foreground: var(--se-chiaro, #1f1b16) var(--se-scuro, #f2ede4);
   --linea: var(--se-chiaro, #e7e0d2) var(--se-scuro, #3a342d);
-  --tenue: var(--se-chiaro, #8a8271) var(--se-scuro, #a39a8b);
-  --accento: var(--se-chiaro, #3f7d4c) var(--se-scuro, #7bb887);
+  --tenue: var(--se-chiaro, #78705f) var(--se-scuro, #a39a8b);
+  --accento: var(--se-chiaro, var(--accento-chiaro)) var(--se-scuro, var(--accento-scuro));
   --avviso: var(--se-chiaro, #b5533c) var(--se-scuro, #e8916f);
 
   /* --superficie: gli elementi staccati dal fondo (pillola, barra dei
@@ -50,13 +56,13 @@
      altrimenti spariscono.
      --accento-pieno / --avviso-pieno: il riempimento dei bottoni con il
      testo sopra ("+ Aggiungi", Salva, conferme, Elimina). In chiaro sono
-     l'accento e l'avviso; al buio restano il verde e il rosso del chiaro:
-     il bianco sopra il verde e l'arancio chiari del tema scuro non si
-     leggerebbe.
+     l'accento e l'avviso; al buio restano i valori del chiaro (per
+     l'accento: --accento-chiaro del colore scelto): il bianco sopra i
+     colori chiari del tema scuro non si leggerebbe.
      --su-pieno: il testo sopra quei riempimenti.
      --velo: lo sfondo scuro dietro gli sheet aperti. */
   --superficie: var(--se-chiaro, #ffffff) var(--se-scuro, #26221e);
-  --accento-pieno: var(--se-chiaro, var(--accento)) var(--se-scuro, #3f7d4c);
+  --accento-pieno: var(--accento-chiaro);
   --avviso-pieno: var(--se-chiaro, var(--avviso)) var(--se-scuro, #b5533c);
   --su-pieno: var(--se-chiaro, var(--background)) var(--se-scuro, #ffffff);
   --velo:
@@ -78,8 +84,8 @@
      il 4,5:1 del testo); ridurre la capsula non basta (all'8% fa ancora
      4,4:1). Quindi lo stesso accento con il 10% di nero: 4,9:1 nel caso
      peggiore (vetro sopra lo sfondo crema), 5,0:1 sul bianco. È una
-     miscela e non un colore fisso, così segue anche il colore principale
-     del passo "accento". Al buio non serve: l'accento chiaro fa già 5,7:1. */
+     miscela e non un colore fisso, così segue il colore principale. Al
+     buio non serve: l'accento chiaro basta già. */
   --capsula-attiva:
     var(--se-chiaro, color-mix(in srgb, var(--accento) 12%, transparent))
     var(--se-scuro, color-mix(in srgb, var(--accento) 16%, transparent));
@@ -126,6 +132,34 @@
     --se-scuro: initial;
     color-scheme: dark;
   }
+}
+
+/* IL COLORE PRINCIPALE (Impostazioni > Aspetto, sezione 7). Per ogni
+   colore solo due valori, una volta sola: l'accento in chiaro e al buio.
+   Tutto il resto (--accento, --accento-pieno, capsula, testo sulla
+   capsula, linea del tempo...) ne deriva nel blocco in cima.
+   - data-accento su <html> lo scrive lo stesso script del tema, prima del
+     disegno. Le anteprime della pagina Aspetto lo usano su elementi
+     singoli.
+   - Rete di sicurezza: senza attributo vale `:root`, cioè il verde.
+   Un colore nuovo va anche in ACCENTI (src/lib/tema.ts): lo controlla
+   temaScuro.test.ts, e contrasti.test.ts ne misura i contrasti. */
+:root,
+[data-accento="verde"] {
+  --accento-chiaro: #3f7d4c;
+  --accento-scuro: #7bb887;
+}
+[data-accento="blu"] {
+  --accento-chiaro: #356d96;
+  --accento-scuro: #8ab8de;
+}
+[data-accento="viola"] {
+  --accento-chiaro: #6b56a0;
+  --accento-scuro: #b5a3e0;
+}
+[data-accento="petrolio"] {
+  --accento-chiaro: #2c7472;
+  --accento-scuro: #6fbdb8;
 }
 
 :root {

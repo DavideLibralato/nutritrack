@@ -3,18 +3,24 @@ import path from "node:path";
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  ACCENTI,
+  CHIAVE_ACCENTO,
   CHIAVE_TEMA,
   COLORI_BARRA,
   EVENTO_TEMA,
   SCRIPT_TEMA,
+  accentoEffettivo,
+  leggiSceltaAccento,
   leggiSceltaTema,
+  salvaSceltaAccento,
   salvaSceltaTema,
   temaEffettivo,
 } from "./tema";
 
-// Il tema da disegnare (PUNTO_DI_PARTENZA.md sezione 7). Due copie della
-// stessa logica girano nel browser: SCRIPT_TEMA (generato da temaEffettivo
-// e avviaTema, nell'<head> dell'app) e lo script ricopiato in
+// Il tema e il colore principale da disegnare (PUNTO_DI_PARTENZA.md
+// sezione 7). Due copie della stessa logica girano nel browser: SCRIPT_TEMA
+// (generato da temaEffettivo, accentoEffettivo e avviaTema, nell'<head>
+// dell'app) e lo script ricopiato in
 // public/offline.html. Qui girano tutte e due, in una pagina finta, sugli
 // stessi casi: se la copia di offline.html si allontana dall'originale, un
 // caso fallisce.
@@ -33,6 +39,19 @@ describe("temaEffettivo", () => {
   });
 });
 
+describe("accentoEffettivo", () => {
+  it("un colore dell'elenco vale com'è", () => {
+    for (const accento of ACCENTI) expect(accentoEffettivo(accento, ACCENTI)).toBe(accento);
+  });
+
+  it("niente salvato o un valore sconosciuto: verde", () => {
+    expect(ACCENTI[0]).toBe("verde");
+    for (const scelta of [null, "", "rosso", "Blu", "sistema"]) {
+      expect(accentoEffettivo(scelta, ACCENTI)).toBe("verde");
+    }
+  });
+});
+
 const radice = path.resolve(import.meta.dirname, "../..");
 const offlineHtml = readFileSync(path.join(radice, "public/offline.html"), "utf8");
 
@@ -41,8 +60,8 @@ const META = `
   <meta name="theme-color" content="#1b1815" media="(prefers-color-scheme: dark)">`;
 
 // "app" esegue proprio la stringa SCRIPT_TEMA che layout.tsx mette in
-// <head>, non le funzioni da cui è ricavata: se temaEffettivo o avviaTema
-// usassero qualcosa di fuori (un import, una funzione del modulo), nel
+// <head>, non le funzioni da cui è ricavata: se temaEffettivo,
+// accentoEffettivo o avviaTema usassero qualcosa di fuori (un import, una funzione del modulo), nel
 // testo copiato non esisterebbe e questi casi fallirebbero (provato il
 // 3/10 facendo chiamare a temaEffettivo una funzione esterna: 4 rossi).
 const PAGINE = {
@@ -50,12 +69,17 @@ const PAGINE = {
   "offline.html": offlineHtml,
 };
 
-// Apre una pagina finta con la scelta salvata e il tema del telefono dati.
+// Apre una pagina finta con le scelte salvate e il tema del telefono dati.
 // storageRotto: localStorage lancia un errore al solo accesso, come Safari
 // in navigazione privata.
 function apri(
   html: string,
-  { scelta, sistemaScuro, storageRotto = false }: { scelta: string | null; sistemaScuro: boolean; storageRotto?: boolean }
+  {
+    scelta,
+    sistemaScuro,
+    accento = null,
+    storageRotto = false,
+  }: { scelta: string | null; sistemaScuro: boolean; accento?: string | null; storageRotto?: boolean }
 ) {
   const ascoltatori: (() => void)[] = [];
   const sistema = {
@@ -74,8 +98,9 @@ function apri(
             throw new window.DOMException("accesso negato", "SecurityError");
           },
         });
-      } else if (scelta !== null) {
-        window.localStorage.setItem(CHIAVE_TEMA, scelta);
+      } else {
+        if (scelta !== null) window.localStorage.setItem(CHIAVE_TEMA, scelta);
+        if (accento !== null) window.localStorage.setItem(CHIAVE_ACCENTO, accento);
       }
     },
   });
@@ -83,6 +108,7 @@ function apri(
   return {
     window: dom.window,
     tema: () => documento.documentElement.getAttribute("data-tema"),
+    accento: () => documento.documentElement.getAttribute("data-accento"),
     // Il browser usa il primo theme-color che vale: deve essere quello dello
     // script (senza media), uno solo, con i due della pagina intatti dopo.
     coloriBarra: () =>
@@ -116,9 +142,21 @@ describe.each(Object.entries(PAGINE))("script del tema: %s", (_nome, html) => {
     }
   });
 
-  it("senza localStorage (Safari privato) fa come sistema, senza errori", () => {
+  it("prima del disegno scrive data-accento: il colore salvato, altrimenti verde", () => {
+    for (const accento of [...ACCENTI, null, "rosso", ""]) {
+      const pagina = apri(html, { scelta: null, sistemaScuro: false, accento });
+      expect(pagina.accento(), `salvato: ${accento}`).toBe(accentoEffettivo(accento, ACCENTI));
+    }
+    // Il colore non dipende dal tema, e il tema non dal colore.
+    const blu = apri(html, { scelta: "scuro", sistemaScuro: false, accento: "blu" });
+    expect([blu.tema(), blu.accento()]).toEqual(["scuro", "blu"]);
+  });
+
+  it("senza localStorage (Safari privato) fa come sistema e verde, senza errori", () => {
     expect(apri(html, { scelta: null, sistemaScuro: false, storageRotto: true }).tema()).toBe("chiaro");
-    expect(apri(html, { scelta: null, sistemaScuro: true, storageRotto: true }).tema()).toBe("scuro");
+    const pagina = apri(html, { scelta: null, sistemaScuro: true, storageRotto: true });
+    expect(pagina.tema()).toBe("scuro");
+    expect(pagina.accento()).toBe("verde");
   });
 
   it("con sistema segue il telefono quando cambia; con una scelta esplicita no", () => {
@@ -139,10 +177,13 @@ describe.each(Object.entries(PAGINE))("script del tema: %s", (_nome, html) => {
     pagina.window.localStorage.setItem(CHIAVE_TEMA, "scuro");
     pagina.window.dispatchEvent(new pagina.window.StorageEvent("storage", { key: CHIAVE_TEMA }));
     expect(pagina.tema()).toBe("scuro");
+    pagina.window.localStorage.setItem(CHIAVE_ACCENTO, "viola");
+    pagina.window.dispatchEvent(new pagina.window.StorageEvent("storage", { key: CHIAVE_ACCENTO }));
+    expect(pagina.accento()).toBe("viola");
   });
 });
 
-describe("pagina Aspetto: leggiSceltaTema e salvaSceltaTema", () => {
+describe("pagina Aspetto: leggere e salvare le scelte", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     window.localStorage.clear();
@@ -161,6 +202,19 @@ describe("pagina Aspetto: leggiSceltaTema e salvaSceltaTema", () => {
     window.removeEventListener(EVENTO_TEMA, avvisi);
   });
 
+  it("colore principale: salva, rilegge, avvisa; sconosciuto o assente è verde", () => {
+    const avvisi = vi.fn();
+    window.addEventListener(EVENTO_TEMA, avvisi);
+    expect(leggiSceltaAccento()).toBe("verde");
+    salvaSceltaAccento("petrolio");
+    expect(window.localStorage.getItem(CHIAVE_ACCENTO)).toBe("petrolio");
+    expect(leggiSceltaAccento()).toBe("petrolio");
+    window.localStorage.setItem(CHIAVE_ACCENTO, "rosso");
+    expect(leggiSceltaAccento()).toBe("verde");
+    expect(avvisi).toHaveBeenCalledTimes(1);
+    window.removeEventListener(EVENTO_TEMA, avvisi);
+  });
+
   it("un valore sconosciuto si legge come sistema", () => {
     window.localStorage.setItem(CHIAVE_TEMA, "viola");
     expect(leggiSceltaTema()).toBe("sistema");
@@ -176,12 +230,17 @@ describe("pagina Aspetto: leggiSceltaTema e salvaSceltaTema", () => {
     expect(leggiSceltaTema()).toBe("sistema");
     expect(() => salvaSceltaTema("scuro")).not.toThrow();
     expect(leggiSceltaTema()).toBe("sistema");
+    expect(leggiSceltaAccento()).toBe("verde");
+    expect(() => salvaSceltaAccento("blu")).not.toThrow();
+    expect(leggiSceltaAccento()).toBe("verde");
   });
 
-  it("lo script dell'app riapplica il tema quando la pagina Aspetto salva", () => {
+  it("lo script dell'app riapplica tema e colore quando la pagina Aspetto salva", () => {
     const pagina = apri(PAGINE.app, { scelta: null, sistemaScuro: false });
     pagina.window.localStorage.setItem(CHIAVE_TEMA, "scuro");
+    pagina.window.localStorage.setItem(CHIAVE_ACCENTO, "blu");
     pagina.window.dispatchEvent(new pagina.window.Event(EVENTO_TEMA));
     expect(pagina.tema()).toBe("scuro");
+    expect(pagina.accento()).toBe("blu");
   });
 });

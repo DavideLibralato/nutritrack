@@ -24,6 +24,8 @@ importScripts("/sw-strategia.js");
 // 3/10/2026, passo "peso": /impostazioni/peso in PAGINE_APP.
 // 3/10/2026, passo "tema": /impostazioni/aspetto in PAGINE_APP e
 // offline.html che segue la scelta di Aspetto (CACHE_STATICI v4).
+// 3/10/2026, passo "accento": offline.html segue anche il colore
+// principale e ha il grigio nuovo (CACHE_STATICI v5).
 const {
   PAGINE_APP,
   pagineDaTogliere,
@@ -40,7 +42,8 @@ const {
 // si riscrivono da sole a ogni visita online.
 // v3 (3/10/2026): offline.html con i colori del tema scuro.
 // v4 (3/10/2026): offline.html segue la scelta di Impostazioni > Aspetto.
-const CACHE_STATICI = "nutritrack-statici-v4";
+// v5 (3/10/2026): offline.html segue anche il colore principale.
+const CACHE_STATICI = "nutritrack-statici-v5";
 const CACHE_PAGINE = "nutritrack-pagine-v2";
 const PAGINA_OFFLINE = "/offline.html";
 

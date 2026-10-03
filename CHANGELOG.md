@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Impostazioni, passo 6: colore principale e grigio più scuro
+
+Branch `accento`.
+
+- **Colore principale.** Aspetto ha un gruppo "Colore principale": Verde /
+  Blu / Viola / Petrolio, applicato al tocco. La scelta è salvata in
+  `localStorage` (`nutritrack:accento`); un valore sconosciuto vale verde.
+- **Riga dell'elenco**: "Sistema · Verde".
+- **Script del tema.** Lo stesso script in `<head>` scrive anche
+  `data-accento`, con la nuova funzione autonoma `accentoEffettivo`. Il
+  test esegue la stringa vera; senza script l'app è verde.
+- **CSS.** Per ogni colore solo `--accento-chiaro` / `--accento-scuro`, una
+  copia. Il blocco dei token vale anche su `[data-accento]`, così i derivati
+  si ricalcolano sulle anteprime.
+- **Grigio `--tenue`** in chiaro: `#78705f`, prima `#8a8271`.
+- **Test.** Nuovo `contrasti.test.ts`, test permanente: calcola dal CSS
+  vero i contrasti di ogni colore, in chiaro e in scuro, con soglia 4,5:1.
+  Con il grigio vecchio diventa rosso. La lettura del CSS per i test è in
+  `palettaCss.ts`.
+- **offline.html** segue anche il colore; `CACHE_STATICI` passa a v5.
+- **Colori fuori dalle variabili**: nessuno nell'app (Recharts non è
+  ancora usato). Le icone e `manifest.json` non contengono il verde.
+- **Mockup** `docs/mockups/colore-principale.html` aggiunto.
+
 ## 2026-10-03 — Tema provato su iPhone, unito a main
 
 Il passo 5 di Impostazioni (`9500498`) è stato provato su iPhone, in Safari

@@ -457,7 +457,7 @@ un comando che non fa niente sembra rotto):
 - gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
   kcal" con i giorni differenziati accesi), Pasti e orari, Peso;
 - gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
-  a destra "Chiaro", "Scuro" o "Sistema"), Preferiti e pasti salvati,
+  a destra tema e colore, "Sistema · Verde"), Preferiti e pasti salvati,
   Sincronizzazione (qui andrà l'indicatore);
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
@@ -499,7 +499,9 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
   Allenamento. Quelli già registrati non cambiano." (regola 3 più sotto)
 - **D. Superficie bianca in chiaro** (come nel mockup): passo a sé, in cui si
   rimisura anche il contrasto della capsula attiva
-- I 4 colori principali si decidono al passo "accento", con un mockup prima
+- I 4 colori principali (verde, blu, viola, petrolio) e il grigio `--tenue`
+  più scuro sono decisi al passo "accento", sul mockup
+  `docs/mockups/colore-principale.html` (sezione 7)
 - **Schema dati invariato**: la settimana tipo (`giorni_allenamento_default`)
   e l'interruttore esistono già; tema e colore principale sono preferenze
   del dispositivo (`localStorage`)
@@ -513,10 +515,15 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
    *(fatto 3/10, branch `obiettivi`)*
 4. `peso` — pagina Peso *(fatto 3/10, branch `peso`)*
 5. `tema` — Aspetto: Chiaro / Scuro / Sistema *(fatto 3/10, branch `tema`)*
-6. `accento` — colore principale
+6. `accento` — colore principale e grigio più scuro *(fatto 3/10, branch
+   `accento`)*
 
-Dopo, come lavori a sé: Pasti e orari, Preferiti e pasti salvati,
-l'indicatore di sincronizzazione.
+Con il passo 6 la pagina Impostazioni è completa per questo giro. Oggi
+l'elenco ha: la scheda dell'account (→ Profilo); **Alimentazione**:
+Obiettivi, Peso; **App**: Aspetto, Sincronizzazione; **Informazioni**;
+**Esci**. Le righe che mancano rispetto alla struttura finale (Pasti e
+orari, Preferiti e pasti salvati, l'indicatore di sincronizzazione)
+arrivano dopo, come lavori a sé.
 
 ### Obiettivi (dal 3/10, passo "obiettivi")
 
@@ -588,7 +595,7 @@ più. La pesata del giorno si cerca rileggendo Dexie dentro la funzione, non
 da uno stato React che può essere indietro (stessa regola di
 `salvaProfilo`). Test in `src/lib/repository/misurazioni.test.ts`.
 
-### Aspetto (dal 3/10, passo "tema")
+### Aspetto (dal 3/10, passi "tema" e "accento")
 
 In Impostazioni > Aspetto (`/impostazioni/aspetto`), con "‹ Impostazioni".
 Gruppo **Tema**: tre anteprime affiancate, Chiaro / Scuro / Sistema, come
@@ -598,12 +605,24 @@ nel mockup; "Sistema" è metà chiara e metà scura. La scelta si applica
 quando cambia da sola la sera." e "Nell’app aggiunta alla schermata Home,
 la barra in alto con l’ora segue sempre la modalità dell’iPhone, non
 questa scelta." Come funziona e i limiti: sezione 7, "Tema chiaro / scuro /
-sistema". Il colore principale arriva col passo 6.
+sistema".
 
-Le anteprime non hanno colori propri: sono pezzi di pagina con
-`data-tema="chiaro"` o `"scuro"` (`SelettoreTema`), e dentro di loro
-`globals.css` ricalcola i token per quel tema. Sono veri radio button:
-da tastiera le frecce passano da una scelta all'altra.
+Sotto, gruppo **Colore principale** (passo 6, mockup
+`docs/mockups/colore-principale.html`): quattro pallini con il nome sotto,
+Verde / Blu / Viola / Petrolio; quello scelto ha un anello del colore del
+testo e il nome in grassetto. Anche questo si applica al tocco, senza
+Salva. Nota: "Colora l'anello, i pulsanti e la voce attiva. L'arancio resta
+per quando superi un obiettivo." Sta sotto il gruppo come le altre note di
+Impostazioni (nel mockup era dentro il riquadro). La riga Aspetto
+dell'elenco dice tema e colore: "Sistema · Verde".
+
+Anteprime e pallini non hanno colori propri: sono pezzi di pagina con
+`data-tema="chiaro"` / `"scuro"` (`SelettoreTema`) o
+`data-accento="blu"`... (`SelettoreAccento`), e dentro di loro
+`globals.css` ricalcola i token per quel tema o colore. Così le anteprime
+del tema mostrano il colore principale in uso, e i pallini il colore vero
+nel tema in uso. Sono veri radio button: da tastiera le frecce passano da
+una scelta all'altra.
 
 ### Profilo
 
@@ -1309,25 +1328,34 @@ a occhio in chiaro e si spera.
 del telefono; passo 2 (passo "tema" di Impostazioni), la scelta Chiaro /
 Scuro / Sistema in Impostazioni > Aspetto, predefinito Sistema. Provati
 su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
+Dal passo "accento" (passo 6 di Impostazioni) anche il **colore
+principale** si sceglie lì, con lo stesso meccanismo (sotto, "Colore
+principale").
 
 **Come funziona la scelta** (`src/lib/tema.ts`):
 
 - **Dove sta**: `localStorage`, chiave `nutritrack:tema`, valori `chiaro`
-  | `scuro` | `sistema`. Ogni lettura e scrittura è in try/catch: senza
-  `localStorage` (Safari privato) l'app fa come "Sistema", senza errori.
+  | `scuro` | `sistema`; per il colore chiave `nutritrack:accento`, valori
+  `verde` | `blu` | `viola` | `petrolio` (`ACCENTI`), un valore
+  sconosciuto vale `verde`. Ogni lettura e scrittura è in try/catch: senza
+  `localStorage` (Safari privato) l'app fa come "Sistema" e verde, senza
+  errori.
 - **Chi la applica**: uno script piccolissimo in linea dentro `<head>`
   (`layout.tsx`), che il browser esegue prima di disegnare la pagina: niente
-  lampo del tema sbagliato. Scrive `data-tema="chiaro|scuro"` su `<html>`
-  e il colore della barra, e lo rifà quando cambia il tema del telefono,
+  lampo del tema sbagliato. Scrive `data-tema="chiaro|scuro"` e
+  `data-accento="verde|blu|viola|petrolio"` su `<html>` e il colore della
+  barra, e lo rifà quando cambia il tema del telefono,
   quando la pagina Aspetto salva (evento `nutritrack:tema`) e quando
   un'altra scheda cambia la scelta (evento `storage`). `<html>` ha
   `suppressHydrationWarning`: React non segnala l'attributo aggiunto dallo
   script.
-- **Una sola copia della logica**: la decisione è la funzione pura
-  `temaEffettivo(scelta, telefonoScuro)`; lo script non è scritto a mano,
-  è il testo di `temaEffettivo` e `avviaTema` (`toString()`).
-  **Regola: `temaEffettivo` e `avviaTema` devono restare autonome, niente
-  import e niente funzioni o costanti di fuori**: nel testo copiato in
+- **Una sola copia della logica**: le decisioni sono le funzioni pure
+  `temaEffettivo(scelta, telefonoScuro)` e `accentoEffettivo(scelta,
+  accenti)`; lo script non è scritto a mano, è il testo di
+  `temaEffettivo`, `accentoEffettivo` e `avviaTema` (`toString()`).
+  **Regola: `temaEffettivo`, `accentoEffettivo` e `avviaTema` devono
+  restare autonome, niente import e niente funzioni o costanti di fuori**
+  (l'elenco dei colori arriva come parametro): nel testo copiato in
   `<head>` il resto del modulo non esiste e lo script si romperebbe. Lo
   scopre `src/lib/tema.test.ts`, che esegue in una pagina finta proprio la
   stringa `SCRIPT_TEMA`. `offline.html` (fuori da Next) ha una copia dello
@@ -1349,6 +1377,69 @@ su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
   `[data-tema="scuro"]` e, **senza attributo** (script non partito), con
   `@media (prefers-color-scheme: dark)`, come prima di Aspetto.
 
+**Colore principale** (passo "accento", deciso il 3/10 sul mockup
+`docs/mockups/colore-principale.html`). Quattro colori, verde predefinito:
+
+| Colore | Chiaro | Scuro |
+|---|---|---|
+| Verde | `#3f7d4c` | `#7bb887` |
+| Blu | `#356d96` | `#8ab8de` |
+| Viola | `#6b56a0` | `#b5a3e0` |
+| Petrolio | `#2c7472` | `#6fbdb8` |
+
+- **Cosa cambia**: per ogni colore solo due valori, `--accento-chiaro` e
+  `--accento-scuro`, scritti una volta in `[data-accento="..."]` in
+  `globals.css` (il verde anche su `:root`: senza attributo, cioè senza
+  script, l'app è verde). `--accento` li legge con gli interruttori del
+  tema; `--accento-pieno` è sempre `--accento-chiaro` (al buio il
+  riempimento resta il valore chiaro, come per il verde da sempre). Tutto il
+  resto deriva da `--accento`: capsula, testo sulla capsula, linea del
+  tempo, anello di focus, anello delle calorie, icone.
+- **Anteprime con un colore diverso da quello in uso**: il blocco dei token
+  vale su `:root, [data-tema], [data-accento]`. Le variabili CSS si
+  calcolano sull'elemento dove sono scritte e chi sta dentro riceve il
+  risultato già fatto: per questo un elemento con solo `data-accento="blu"`
+  deve ridichiarare tutti i token, derivati compresi, altrimenti la capsula
+  e il testo sulla capsula resterebbero quelli del colore di `<html>`. Con
+  il selettore in quella lista lo fa da solo.
+- **Un colore nuovo**: una regola `[data-accento="..."]` in `globals.css`
+  e in `offline.html`, il nome in `ACCENTI` e `NOMI_ACCENTO`
+  (`src/lib/tema.ts`). `temaScuro.test.ts` controlla che CSS, offline.html
+  e `ACCENTI` coincidano; `contrasti.test.ts` ne misura i contrasti.
+- **Dove il colore non passa dalle variabili** (cercato il 3/10): da
+  nessuna parte nell'app. Anello, barre, icone e bottoni usano già le
+  classi dei token; Recharts non è ancora usato (Statistiche è un
+  segnaposto: i grafici, quando arriveranno, dovranno prendere i colori
+  dalle variabili); nessun colore in JavaScript. `offline.html` segue il
+  colore (`CACHE_STATICI` v5). **Restano fissi apposta**: le icone
+  dell'app e `manifest.json` (icona scura con "NT" bianco, sfondo crema:
+  non contengono il verde) e `theme-color`, che è lo sfondo.
+- **L'arancio** "superato" (`--avviso`) non cambia con il colore
+  principale: resta il solo segnale di obiettivo superato.
+
+**Grigio `--tenue`**: in chiaro da `#8a8271` a **`#78705f`** dal passo
+"accento" (prima era sotto 4,5:1, vedi i contrasti sotto). Al buio resta
+`#a39a8b`.
+
+**Contrasti misurati il 3/10** (testo, soglia 4,5:1), tutti sopra la
+soglia; li controlla `src/app/contrasti.test.ts`, che calcola i colori da
+`globals.css` così com'è (segue `var()` e `color-mix()` e sovrappone
+vetro e capsula):
+
+| | Verde | Blu | Viola | Petrolio |
+|---|---|---|---|---|
+| Chiaro: accento su sfondo / su superficie | 4,6 / 4,9 | 5,2 / 5,6 | 5,7 / 6,1 | 5,1 / 5,5 |
+| Chiaro: testo sul pieno | 4,6 | 5,2 | 5,7 | 5,1 |
+| Chiaro: testo-capsula su capsula e vetro | 4,9 | 5,5 | 5,9 | 5,4 |
+| Scuro: accento su sfondo / su superficie | 7,6 / 6,8 | 8,4 / 7,5 | 7,8 / 7,0 | 8,1 / 7,3 |
+| Scuro: testo bianco sul pieno | 4,9 | 5,6 | 6,1 | 5,5 |
+| Scuro: testo-capsula su capsula e vetro | 5,2 | 5,6 | 5,3 | 5,5 |
+
+`--tenue`: in chiaro 4,6 su sfondo e 4,9 su superficie, al buio 6,4 e
+5,7, uguale per tutti i colori. Il caso più stretto è `--tenue` sullo
+sfondo crema, 4,59:1. Rimesso per prova il grigio vecchio, il test
+diventa rosso (3,57:1).
+
 **Due limiti da sapere:**
 
 - **Nell'app installata la barra in alto con l'ora segue il tema del
@@ -1362,9 +1453,10 @@ su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
   l'app sulla Home, e viceversa.
 
 - **Palette "Caldo"**, il gemello scuro di quella chiara. Tutti i valori
-  scuri stanno accanto ai chiari, nel blocco `:root, [data-tema]` di
-  `src/app/globals.css`: sfondo `#1b1815`, testo `#f2ede4`, linea
-  `#3a342d`, tenue `#a39a8b`, accento `#7bb887`, avviso `#e8916f`.
+  scuri stanno accanto ai chiari, nel blocco `:root, [data-tema],
+  [data-accento]` di `src/app/globals.css`: sfondo `#1b1815`, testo
+  `#f2ede4`, linea `#3a342d`, tenue `#a39a8b`, accento `#7bb887` (per il
+  verde; gli altri colori sopra), avviso `#e8916f`.
   Contrasti: tenue su sfondo 6,4:1, accento su sfondo 7,6:1, avviso su
   sfondo 7,3:1. L'arancio resta distinguibile dal verde e il verde non è
   fluorescente: confermato su iPhone il 3/10.
@@ -1380,7 +1472,8 @@ su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
     elementi spariscono;
   - `--accento-pieno` / `--avviso-pieno` (`bg-accent-strong` /
     `bg-warning-strong`): il riempimento dei bottoni con testo sopra. Al
-    buio restano `#3f7d4c` e `#b5533c`, perché il bianco sopra il verde e
+    buio restano il valore chiaro dell'accento (`#3f7d4c` per il verde) e
+    `#b5533c`, perché il bianco sopra il verde e
     l'arancio chiari del tema scuro non si legge (sull'arancio 2,4:1);
   - `--su-pieno` (`text-on-strong`): il testo sopra quei riempimenti. In
     chiaro è il colore dello sfondo, come prima; al buio è bianco, 4,9:1;
@@ -1391,8 +1484,8 @@ su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
   - `--testo-capsula`: il testo accento sopra `--capsula-attiva`
     (etichetta della voce attiva della tab bar, "Annulla" nella barra dei
     messaggi). In chiaro è l'accento con il 10% di nero
-    (`color-mix`, quindi seguirà anche il colore principale del passo
-    "accento"); al buio è `--accento`;
+    (`color-mix`, quindi segue il colore principale); al buio è
+    `--accento`;
   - `--segmento-attivo`: la scheda scelta di un selettore a segmenti
     (Normale | Allenamento, Dimagrire / Mantenere / Massa, il sesso). Deve
     essere più chiara della capsula grigia intorno, come sull'iPhone: in
@@ -1409,8 +1502,9 @@ su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
     vetro e **5,0:1** sul bianco. Prima del passo, con il vetro crema, era
     4,0:1;
   - `--accento` su bianco 4,9:1 (su crema 4,6:1);
-  - `--tenue` su bianco **3,8:1**, sul crema 3,6:1: **sotto 4,5:1 già
-    prima** di questo passo (vedi §11, "Difetti e verifiche aperti");
+  - `--tenue` su bianco 3,8:1, sul crema 3,6:1: sotto 4,5:1 già prima di
+    questo passo. Corretto al passo "accento" con `#78705f` (4,9 e 4,6,
+    tabella sopra);
   - `--linea` su bianco 1,3:1 (su crema 1,2:1): bordi e separatori si
     vedono ancora, come prima; sono decorativi;
   - campi di testo dentro gli sheet: restano col colore dello sfondo, cioè
@@ -1420,8 +1514,9 @@ su iPhone il 3/10, in Safari e nell'app installata (dettaglio in §11).
 - **Ogni colore scritto per esteso ha i due valori** (chiaro e scuro); uno
   senza interruttori deve derivare da altri token (`--vetro`,
   `--linea-tempo`). Lo controlla il test `src/app/temaScuro.test.ts`, che
-  verifica anche gli interruttori nei tre casi, che il colore della barra
-  sia lo sfondo e che `public/offline.html` abbia gli stessi valori.
+  verifica anche gli interruttori nei tre casi, i colori principali, che
+  il colore della barra sia lo sfondo e che `public/offline.html` abbia
+  gli stessi valori.
 - **`color-scheme`** segue il tema in uso (`light` o `dark`, negli stessi
   blocchi degli interruttori): select, calendario delle date e scrollbar
   hanno lo stesso tema della pagina.
@@ -2220,15 +2315,21 @@ salvata nel dispositivo; script in `<head>` che applica il tema prima del
 disegno; riga Aspetto nell'elenco (sezione 3, "Aspetto"; sezione 7, "Tema
 chiaro / scuro / sistema").
 
-**Test.** 284 test permanenti in 31 file (Vitest), tutti verdi al 3/10.
+**Impostazioni, passo 6: colore principale** (3/10, branch `accento`, da
+provare su iPhone). Gruppo "Colore principale" in Aspetto con Verde / Blu /
+Viola / Petrolio, applicato subito; `data-accento` scritto dallo stesso
+script del tema; riga Aspetto "Sistema · Verde"; grigio `--tenue` più
+scuro in chiaro; test permanente dei contrasti per ogni colore e tema
+(sezione 3, "Aspetto"; sezione 7, "Colore principale"). Con questo passo
+la pagina Impostazioni è completa per questo giro.
+
+**Test.** 300 test permanenti in 32 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
-- **Impostazioni, passo 6** (sezione 3, "Impostazioni"): colore
-  principale
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
@@ -2240,13 +2341,6 @@ chiaro / scuro / sistema").
 
 ### Difetti e verifiche aperti
 
-- **`--tenue` sotto 4,5:1 in chiaro** (misurato il 3/10): 3,6:1 sul crema,
-  3,8:1 sul bianco. Riguarda le etichette piccole grigie, la voce inattiva
-  della tab bar, i valori a destra in Impostazioni. C'era già prima della
-  superficie bianca (che lo migliora appena). Un grigio più scuro come
-  `#78705f` darebbe 4,6:1 sul crema e 4,9:1 sul bianco, ma cambia
-  l'aspetto di tutte le etichette: si decide al passo "accento"
-  (passo 6), nello stesso mockup dei colori principali
 - **Peso, prova da fare il 4/10** con l'account di prova in Safari:
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
   comparire con la data nuova. Il resto del passo 4 è provato; questo
