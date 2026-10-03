@@ -39,7 +39,7 @@ export default function BarraSalvaProfilo({
       data-nascondi-mentre-scrivi
       data-visibile={daSalvare}
       style={{ boxShadow: "var(--ombra-fluttuante)" }}
-      className={`sticky bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-30 order-last w-full max-w-md rounded-2xl border border-border bg-background px-4 py-3 transition-[opacity,visibility] duration-150 motion-reduce:transition-none ${
+      className={`sticky bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-30 order-last w-full max-w-md rounded-2xl border border-border bg-surface px-4 py-3 transition-[opacity,visibility] duration-150 motion-reduce:transition-none ${
         daSalvare ? "visible opacity-100" : "invisible opacity-0"
       }`}
     >
@@ -73,7 +73,7 @@ export default function BarraSalvaProfilo({
             type="button"
             onClick={onSalva}
             disabled={!daSalvare || inCorso}
-            className={`flex-1 rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+            className={`flex-1 rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
           >
             {inCorso ? "Salvataggio..." : "Salva"}
           </button>

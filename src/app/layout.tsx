@@ -22,6 +22,12 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
+    // "default": nell'app installata la barra dell'orologio è opaca, la
+    // pagina comincia sotto, e iOS la colora secondo il tema del sistema
+    // (chiara con orologio nero in chiaro, scura con orologio bianco al
+    // buio). Segue già il tema da sola. "black-translucent" no: la pagina
+    // passerebbe sotto l'orologio, che è sempre bianco, quindi invisibile
+    // sul fondo chiaro, e ogni pagina dovrebbe lasciare lo spazio in alto.
     statusBarStyle: "default",
     title: "NutriTrack",
   },
@@ -31,7 +37,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1F1B16",
+  // Colore della barra di Safari/Chrome e dell'anteprima nel multitasking:
+  // in tinta con lo sfondo della pagina, uno per tema. Sono --background
+  // chiaro e scuro di globals.css, ricopiati qui perché il <meta> non legge
+  // le variabili CSS.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf7f2" },
+    { media: "(prefers-color-scheme: dark)", color: "#1b1815" },
+  ],
   width: "device-width",
   initialScale: 1,
   // Senza "cover" iOS restituisce 0 per ogni env(safe-area-inset-*): in
@@ -40,8 +53,7 @@ export const viewport: Viewport = {
   // al bordo e la tab bar finiva sotto la barretta. Con "cover" il valore è
   // quello vero, e --tab-bar-distanza (globals.css) e gli sheet lo usano già.
   // In alto non cambia nulla: con statusBarStyle "default" la barra di stato
-  // di iOS è opaca e la pagina comincia sotto l'orologio (inset-top = 0);
-  // solo "black-translucent" la farebbe finire sotto.
+  // di iOS è opaca e la pagina comincia sotto l'orologio (inset-top = 0).
   viewportFit: "cover",
   // La tastiera software copre il layout senza accorciarlo; si accorcia solo
   // la parte visibile (visualViewport). È quello che fa sempre iOS, che

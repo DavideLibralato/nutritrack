@@ -166,9 +166,10 @@ export default function BarraAnnulla({
   );
 }
 
-// Icona nel cerchio a sinistra, 26 px. Colori solo da token: `text-background`
-// fa la spunta "bianca" (il colore di fondo dell'app) sul cerchio accento;
-// le icone neutre sono del colore del testo su --linea.
+// Icona nel cerchio a sinistra, 26 px. Colori solo da token: la spunta
+// "bianca" (`text-on-strong`) sul cerchio `bg-accent-strong`, che resta
+// verde scuro anche al buio; le icone neutre sono del colore del testo su
+// --linea.
 function Icona({ tipo }: { tipo: IconaBarra }) {
   const successo = tipo === "spunta";
   const tratto = {
@@ -185,7 +186,7 @@ function Icona({ tipo }: { tipo: IconaBarra }) {
     <span
       aria-hidden
       className={`grid size-[26px] shrink-0 place-items-center rounded-full ${
-        successo ? "bg-accent text-background" : "bg-[var(--linea)] text-foreground"
+        successo ? "bg-accent-strong text-on-strong" : "bg-[var(--linea)] text-foreground"
       }`}
     >
       {tipo === "spunta" && (

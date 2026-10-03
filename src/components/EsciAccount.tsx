@@ -190,7 +190,7 @@ export default function EsciAccount({
             <button
               type="button"
               onClick={esci}
-              className={`flex-1 rounded-lg bg-warning p-2 font-medium text-background ${CLASSE_FOCUS}`}
+              className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong ${CLASSE_FOCUS}`}
             >
               Esci lo stesso
             </button>

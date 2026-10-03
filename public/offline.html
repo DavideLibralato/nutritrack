@@ -10,8 +10,12 @@
       da Next: i colori sono le stesse variabili di src/app/globals.css,
       ricopiate qui perché questa pagina non carica il CSS dell'app. Se
       cambia la palette, va aggiornata anche qui (e il numero delle cache
-      in sw.js, perché il file è salvato all'installazione).
+      in sw.js, perché il file è salvato all'installazione). Solo i token
+      che servono a questa pagina, con gli stessi valori, in chiaro e in
+      scuro: lo controlla src/app/temaScuro.test.ts.
     -->
+    <meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1b1815" media="(prefers-color-scheme: dark)" />
     <style>
       :root {
         --background: #faf7f2;
@@ -19,6 +23,20 @@
         --linea: #e7e0d2;
         --tenue: #8a8271;
         --accento: #3f7d4c;
+        --accento-pieno: var(--accento);
+        --su-pieno: var(--background);
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background: #1b1815;
+          --foreground: #f2ede4;
+          --linea: #3a342d;
+          --tenue: #a39a8b;
+          --accento: #7bb887;
+          --accento-pieno: #3f7d4c;
+          --su-pieno: #ffffff;
+        }
       }
       body {
         margin: 0;
@@ -48,8 +66,8 @@
       button {
         font: inherit;
         font-weight: 600;
-        color: var(--background);
-        background: var(--accento);
+        color: var(--su-pieno);
+        background: var(--accento-pieno);
         border: 0;
         border-radius: 0.5rem;
         padding: 0.75rem 1.5rem;

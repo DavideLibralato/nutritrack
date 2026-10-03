@@ -1061,7 +1061,7 @@ Confermate dai mockup, con una correzione.
   contenuto e centrata, al massimo quanto lo schermo meno 32 px. Se il testo
   va a capo diventa un rettangolo molto arrotondato, perché il raggio è fisso.
   Da sinistra:
-  - **icona in un cerchio di 26 px**: spunta su fondo accento per
+  - **icona in un cerchio di 26 px**: spunta su fondo `--accento-pieno` per
     Aggiunto, Salvato e Ripristinato; su fondo `--linea` la freccia ↶
     (Annullato), il cestino (Eliminato) o la "i" (avvisi, errori, il
     messaggio della stella);
@@ -1114,14 +1114,55 @@ Da verificare in tema scuro: che l'arancio "sopra l'obiettivo" resti distinguibi
 e che il verde d'accento non risulti fluorescente su fondo nero. Non si aggiusta
 a occhio in chiaro e si spera.
 
-**Stato: il tema scuro NON è costruito.** Esiste solo il tema chiaro:
-`src/app/globals.css` ha un unico `:root` con i colori chiari, nessun blocco
-scuro, nessun selettore in Profilo, niente in `localStorage`. Il vincolo qui
-sopra invece è rispettato (verificato il 2026-09-26: nessun colore scritto
-a mano nei componenti), quindi il giorno che si fa bastano i valori scuri
-delle stesse variabili, più il selettore. Fuori dalle variabili CSS, e da
-rivedere quel giorno: `themeColor` in `src/app/layout.tsx`, i colori di
-`public/manifest.json` e quelli ricopiati in `public/offline.html`.
+**Stato (3/10): passo 1 fatto, l'app segue il tema del telefono.** Il
+selettore Chiaro / Scuro / Sistema in Profilo, con `localStorage`, è il
+passo 2 e non è costruito: oggi vale sempre "Sistema".
+
+- **Palette "Caldo"**, il gemello scuro di quella chiara. Tutti i valori
+  scuri stanno in un solo blocco `@media (prefers-color-scheme: dark)` in
+  `src/app/globals.css`: sfondo `#1b1815`, testo `#f2ede4`, linea
+  `#3a342d`, tenue `#a39a8b`, accento `#7bb887`, avviso `#e8916f`.
+  Contrasti: tenue su sfondo 6,4:1, accento su sfondo 7,6:1, avviso su
+  sfondo 7,3:1. L'arancio resta distinguibile dal verde e il verde non è
+  fluorescente; la prova finale si fa sul telefono.
+- **Token aggiunti per il tema scuro.** In chiaro valgono quanto quelli di
+  base, quindi in chiaro non cambia nessun pixel (verificato con un
+  confronto pixel per pixel con main):
+  - `--superficie` (`bg-surface`): pillola, barra dei messaggi, sheet,
+    barra Salva. Al buio `#26221e`, un po' più chiara dello sfondo,
+    altrimenti questi elementi spariscono;
+  - `--accento-pieno` / `--avviso-pieno` (`bg-accent-strong` /
+    `bg-warning-strong`): il riempimento dei bottoni con testo sopra. Al
+    buio restano `#3f7d4c` e `#b5533c`, perché il bianco sopra il verde e
+    l'arancio chiari del tema scuro non si legge (sull'arancio 2,4:1);
+  - `--su-pieno` (`text-on-strong`): il testo sopra quei riempimenti. In
+    chiaro è il colore dello sfondo, come prima; al buio è bianco, 4,9:1;
+  - `--velo` (`bg-veil`): lo sfondo dietro gli sheet aperti. Prima era
+    `bg-foreground/40`, che al buio avrebbe sbiancato la pagina invece di
+    scurirla; al buio è nero al 60%.
+
+  `--accento` resta per tutto ciò che non ha testo sopra: anello, icone,
+  voce attiva, "Annulla", testi verdi, barra macro raggiunta.
+- **Ogni token di colore del chiaro deve avere il suo valore scuro**, anche
+  i derivati (`--vetro`, `--capsula-attiva`, `--ombra-fluttuante`,
+  `--linea-tempo`). Lo controlla il test `src/app/temaScuro.test.ts`, che
+  verifica anche che `public/offline.html` abbia gli stessi valori.
+- **`color-scheme: light dark`** su `:root`: select, calendario delle date
+  e scrollbar diventano scuri anche loro.
+- **Fuori dalle variabili CSS:**
+  - `themeColor` in `layout.tsx` ne ha uno per tema, con `media`
+    (`#faf7f2` / `#1b1815`);
+  - `manifest.json` ha un valore solo, quindi resta chiaro: `#faf7f2` per
+    sfondo e `theme_color`. Su Android chi è in scuro vede un lampo chiaro
+    all'avvio;
+  - `offline.html` ha il suo blocco scuro.
+- **Barra di stato dell'app installata: resta `statusBarStyle:
+  "default"`.** iOS la fa opaca, la colora secondo il tema del sistema e la
+  pagina comincia sotto. Con "black-translucent" l'orologio sarebbe sempre
+  bianco, quindi invisibile in chiaro.
+- **Selezione del testo e campi compilati in automatico**: lasciati ai
+  colori del browser. Il solito trucco per ricolorare i campi compilati in
+  automatico (`box-shadow` inset) cancellerebbe l'anello di focus.
 
 ### Le barre macro (corretto rispetto al mockup)
 
@@ -1735,7 +1776,7 @@ dalla lingua). Da rivedere quando l'app si apre agli amici.
 
 ## 11. Stato attuale
 
-Aggiornato al 2 ottobre 2026. È la fotografia di oggi; la storia, commit
+Aggiornato al 3 ottobre 2026. È la fotografia di oggi; la storia, commit
 per commit, sta in `CHANGELOG.md`.
 
 ### Fatto
@@ -1837,14 +1878,19 @@ e dall'app installata). Dito a sinistra giorno dopo, a destra giorno prima,
 elastico oltre oggi; la lista riparte dall'alto a ogni cambio di giorno
 (sezione 3, "Swipe per cambiare giorno").
 
-**Test.** 244 test permanenti in 25 file (Vitest), tutti verdi al 2/10.
+**Tema scuro, passo 1** (3/10, da provare sul telefono). L'app segue la
+modalità chiara/scura del sistema, palette "Caldo"; in chiaro nessun pixel
+è cambiato (sezione 7, "Tema chiaro / scuro / sistema").
+
+**Test.** 247 test permanenti in 26 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
-- **Tema scuro** (sezione 7): esiste solo il tema chiaro
+- **Selettore del tema in Profilo** (Chiaro / Scuro / Sistema, passo 2
+  del tema scuro, sezione 7): oggi l'app segue sempre il telefono
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti dal Profilo (rinominare, aggiungere,
@@ -1856,6 +1902,13 @@ elastico oltre oggi; la lista riparte dall'alto a ogni cambio di giorno
 
 ### Difetti e verifiche aperti
 
+- **Tema scuro da provare sul telefono** (3/10). Nel browser si possono
+  vedere solo le pagine senza login. Restano da guardare al buio:
+  - Oggi, Aggiungi e Profilo;
+  - gli sheet con il velo;
+  - pillola e barra dei messaggi sulla superficie;
+  - la barra dell'orologio nell'app installata;
+  - i campi compilati in automatico nel login.
 - **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
   dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
   il 25/9)

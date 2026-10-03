@@ -322,7 +322,7 @@ export default function CreaAlimentoForm({
                 type="button"
                 onClick={handleElimina}
                 disabled={inCorso}
-                className={`flex-1 rounded-lg bg-warning p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+                className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
               >
                 {inCorso ? "Elimino..." : "Sì, elimina"}
               </button>
@@ -340,7 +340,7 @@ export default function CreaAlimentoForm({
               <button
                 type="submit"
                 disabled={inCorso || !salvabile}
-                className={`flex-1 rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+                className={`flex-1 rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
               >
                 {inCorso ? "Salvataggio..." : "Salva"}
               </button>
@@ -351,7 +351,7 @@ export default function CreaAlimentoForm({
         <button
           type="submit"
           disabled={inCorso || !salvabile}
-          className={`w-full rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+          className={`w-full rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
         >
           {inCorso ? "Salvataggio..." : "Crea e scegli la quantità"}
         </button>

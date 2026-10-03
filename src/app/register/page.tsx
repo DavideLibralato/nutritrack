@@ -113,7 +113,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={inCorso}
-          className={`w-full rounded-lg bg-accent p-2 text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+          className={`w-full rounded-lg bg-accent-strong p-2 text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
         >
           {inCorso ? "Attendere..." : "Crea account"}
         </button>

@@ -936,7 +936,7 @@ function OggiContenuto() {
           type="button"
           onClick={() => router.push(`/aggiungi?giorno=${giorno}`)}
           style={{ boxShadow: "var(--ombra-fluttuante)" }}
-          className={`pointer-events-auto mx-auto flex h-[var(--aggiungi-altezza)] items-center rounded-full bg-accent px-10 font-medium text-background ${CLASSE_FOCUS}`}
+          className={`pointer-events-auto mx-auto flex h-[var(--aggiungi-altezza)] items-center rounded-full bg-accent-strong px-10 font-medium text-on-strong ${CLASSE_FOCUS}`}
         >
           + Aggiungi
         </button>

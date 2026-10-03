@@ -13,6 +13,23 @@
   --accento: #3f7d4c;
   --avviso: #b5533c;
 
+  /* Token aggiunti per il tema scuro: in chiaro valgono quanto quelli
+     sopra (nessun pixel cambia), al buio hanno un valore proprio.
+     --superficie: gli elementi staccati dal fondo (pillola, barra dei
+     messaggi, sheet, barra Salva). Al buio un po' più chiara dello sfondo,
+     altrimenti spariscono.
+     --accento-pieno / --avviso-pieno: il riempimento dei bottoni con il
+     testo sopra ("+ Aggiungi", Salva, conferme, Elimina). Al buio restano
+     il verde e il rosso di oggi: il bianco sopra il verde e l'arancio
+     chiari del tema scuro non si leggerebbe.
+     --su-pieno: il testo sopra quei riempimenti.
+     --velo: lo sfondo scuro dietro gli sheet aperti. */
+  --superficie: var(--background);
+  --accento-pieno: var(--accento);
+  --avviso-pieno: var(--avviso);
+  --su-pieno: var(--background);
+  --velo: color-mix(in srgb, var(--foreground) 40%, transparent);
+
   /* Colori derivati dai token qui sopra, mai scritti a mano nei componenti.
      --capsula-attiva: lo sfondo dietro la voce attiva della tab bar; per
      provare un'alternativa basta cambiare questa riga.
@@ -23,10 +40,46 @@
      --linea-tempo: la linea sul bordo basso della BarraAnnulla che si
      accorcia mentre passa il tempo (classe .linea-tempo qui sotto). */
   --capsula-attiva: color-mix(in srgb, var(--accento) 12%, transparent);
-  --vetro: color-mix(in srgb, var(--background) 75%, transparent);
+  --vetro: color-mix(in srgb, var(--superficie) 75%, transparent);
   --ombra-fluttuante: 0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
   --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
 
+  /* select, calendario delle date, scrollbar e campi riempiti in
+     automatico dal browser seguono anche loro il tema del sistema. */
+  color-scheme: light dark;
+}
+
+/* TEMA SCURO, palette "Caldo" (gemello scuro di quella chiara). Tutti i
+   valori scuri stanno qui e solo qui. Ogni token di colore del blocco
+   sopra deve avere il suo valore in questo blocco, anche i derivati: lo
+   controlla src/app/temaScuro.test.ts, così un token nuovo dimenticato si
+   scopre subito. Per ora segue solo il telefono (prefers-color-scheme);
+   il selettore in Profilo è il passo 2 (PUNTO_DI_PARTENZA.md sezione 7).
+   Contrasti: --tenue su sfondo 6,4:1, bianco su --accento-pieno 4,9:1,
+   --accento su sfondo 7,6:1, --avviso su sfondo 7,3:1. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1b1815;
+    --foreground: #f2ede4;
+    --linea: #3a342d;
+    --tenue: #a39a8b;
+    --accento: #7bb887;
+    --avviso: #e8916f;
+
+    --superficie: #26221e;
+    --accento-pieno: #3f7d4c;
+    --avviso-pieno: #b5533c;
+    --su-pieno: #ffffff;
+    --velo: color-mix(in srgb, #000000 60%, transparent);
+
+    --capsula-attiva: color-mix(in srgb, var(--accento) 16%, transparent);
+    --vetro: color-mix(in srgb, var(--superficie) 75%, transparent);
+    --ombra-fluttuante: 0 4px 16px color-mix(in srgb, #000000 45%, transparent);
+    --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
+  }
+}
+
+:root {
   /* La tab bar è una pillola staccata dal fondo (BarraNavigazione,
      PUNTO_DI_PARTENZA.md sezione 3, "Layout delle pagine con la tab bar").
      Unico posto dove stanno questi numeri.
@@ -71,7 +124,7 @@ body:has([data-pulsante-aggiungi]) {
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .vetro {
-    background: var(--background);
+    background: var(--superficie);
   }
 }
 
@@ -117,6 +170,11 @@ body:has([data-pulsante-aggiungi]) {
   --color-muted: var(--tenue);
   --color-accent: var(--accento);
   --color-warning: var(--avviso);
+  --color-surface: var(--superficie);
+  --color-accent-strong: var(--accento-pieno);
+  --color-warning-strong: var(--avviso-pieno);
+  --color-on-strong: var(--su-pieno);
+  --color-veil: var(--velo);
   /* --font-sans e' il font di testo di default di Tailwind (font-sans),
      --font-display e' il nuovo font per titoli e numeri (classe font-display). */
   --font-sans: var(--font-body);

@@ -421,7 +421,7 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
                 type="button"
                 onClick={salva}
                 disabled={!modificato || !valido || inCorso}
-                className={`flex-1 rounded-lg bg-accent p-2 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+                className={`flex-1 rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
               >
                 {inCorso ? "Salvataggio..." : "Salva"}
               </button>

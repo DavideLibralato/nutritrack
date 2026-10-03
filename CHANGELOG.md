@@ -5,6 +5,42 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Tema scuro, passo 1: l'app segue il telefono
+
+Branch `feature/tema-scuro`. Palette "Caldo" in un solo blocco
+`@media (prefers-color-scheme: dark)` di `globals.css`. Il selettore in
+Profilo è il passo 2.
+
+Token nuovi:
+- `--superficie`: pillola, barra dei messaggi, sheet, barra Salva;
+- `--accento-pieno` e `--avviso-pieno`: bottoni con testo sopra;
+- `--su-pieno`: il testo su quei bottoni;
+- `--velo`: lo sfondo dietro gli sheet.
+
+In chiaro valgono quanto prima. Altre modifiche:
+- `themeColor` uno per tema;
+- `theme_color` del manifest `#faf7f2`;
+- `color-scheme: light dark`;
+- `offline.html` con il blocco scuro, cache statici in `sw.js` passata
+  a v3;
+- `statusBarStyle` resta "default", corretto solo il commento.
+
+Trovati nell'inventario e corretti prima che si vedessero:
+- il testo dei bottoni era `text-background`, che al buio sarebbe stato
+  quasi nero sul verde;
+- il velo `bg-foreground/40` avrebbe sbiancato la pagina;
+- il bianco sui bottoni arancio sarebbe stato a 2,4:1.
+
+Test: 3 nuovi in `temaScuro.test.ts`. Ogni token chiaro ha il suo valore
+scuro e `offline.html` ha gli stessi valori dell'app; ho verificato che il
+test fallisce togliendo un token. 247 test in tutto.
+
+Provato in Chrome con la modalità scura emulata, a 390 px, su login,
+registrazione e `offline.html`. In chiaro: 0 pixel diversi da main.
+
+Resta da provare sul telefono tutto ciò che sta dietro il login, e la
+barra dell'orologio nell'app installata.
+
 ## 2026-10-02 — Swipe provato su iPhone, unito a main
 
 Lo swipe per cambiare giorno (`ec8f4f0`) è stato provato su iPhone, da

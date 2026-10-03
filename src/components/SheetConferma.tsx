@@ -54,7 +54,7 @@ export default function SheetConferma({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-foreground/40" onClick={chiudi} aria-hidden />
+      <div className="fixed inset-0 z-50 bg-veil" onClick={chiudi} aria-hidden />
       <div
         style={{ top: areaVisibile.top, height: areaVisibile.height }}
         className="fixed inset-x-0 z-50 flex items-end justify-center"
@@ -64,7 +64,7 @@ export default function SheetConferma({
           role="alertdialog"
           aria-modal="true"
           aria-label={titolo}
-          className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
           <h2 className="font-display text-xl font-bold">{titolo}</h2>
@@ -86,7 +86,7 @@ export default function SheetConferma({
               type="button"
               onClick={onSi}
               disabled={inCorso}
-              className={`flex-1 rounded-lg p-3 font-medium text-background disabled:opacity-50 ${distruttiva ? "bg-warning" : "bg-accent"} ${CLASSE_FOCUS}`}
+              className={`flex-1 rounded-lg p-3 font-medium text-on-strong disabled:opacity-50 ${distruttiva ? "bg-warning-strong" : "bg-accent-strong"} ${CLASSE_FOCUS}`}
             >
               {inCorso ? "Attendi..." : etichettaSi}
             </button>

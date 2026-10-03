@@ -111,7 +111,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={caricamento}
-          className={`w-full rounded-lg bg-accent p-2 text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+          className={`w-full rounded-lg bg-accent-strong p-2 text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
         >
           {caricamento ? "Attendere..." : "Accedi"}
         </button>

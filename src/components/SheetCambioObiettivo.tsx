@@ -75,7 +75,7 @@ export default function SheetCambioObiettivo({
   return (
     <>
       <div
-        className="fixed inset-0 z-50 bg-foreground/40"
+        className="fixed inset-0 z-50 bg-veil"
         onClick={inCorso ? undefined : onAnnulla}
         aria-hidden
       />
@@ -88,7 +88,7 @@ export default function SheetCambioObiettivo({
           role="dialog"
           aria-modal="true"
           aria-label="Com'è cambiato l'obiettivo?"
-          className="max-h-full w-full max-w-md overflow-y-auto rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          className="max-h-full w-full max-w-md overflow-y-auto rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
           <h2 className="font-display text-xl font-bold">Com&apos;è cambiato l&apos;obiettivo?</h2>
@@ -161,7 +161,7 @@ export default function SheetCambioObiettivo({
               type="button"
               onClick={conferma}
               disabled={!confermabile || inCorso}
-              className={`flex-1 rounded-lg bg-accent p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+              className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
             >
               {inCorso ? "Salvo..." : "Salva"}
             </button>

@@ -142,7 +142,7 @@ export default function SheetQuantita({
           lui. Verificato a mano: tocco sopra il pannello (zona scura normale)
           e tocco nella striscia sotto (fra pannello e tastiera) chiudono
           entrambi lo sheet. */}
-      <div className="fixed inset-0 z-50 bg-foreground/40" onClick={onAnnulla} aria-hidden />
+      <div className="fixed inset-0 z-50 bg-veil" onClick={onAnnulla} aria-hidden />
       <div
         style={{ top: areaVisibile.top, height: areaVisibile.height }}
         className="fixed inset-x-0 z-50 flex items-end justify-center"
@@ -152,7 +152,7 @@ export default function SheetQuantita({
           role="dialog"
           aria-modal="true"
           aria-label={`Quantità di ${alimento.nome}`}
-          className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
         {!mostraSelettorePasto && (
@@ -270,7 +270,7 @@ export default function SheetQuantita({
               type="button"
               onClick={() => onElimina?.()}
               disabled={inCorso}
-              className={`flex-1 rounded-lg bg-warning p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+              className={`flex-1 rounded-lg bg-warning-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
             >
               {inCorso ? "Elimino..." : "Sì, elimina"}
             </button>
@@ -279,7 +279,7 @@ export default function SheetQuantita({
               type="button"
               onClick={conferma}
               disabled={!valido || inCorso}
-              className={`flex-1 rounded-lg bg-accent p-3 font-medium text-background disabled:opacity-50 ${CLASSE_FOCUS}`}
+              className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
             >
               {modifica
                 ? inCorso

@@ -181,8 +181,8 @@ export default function RicaricaDatiAccount({
             <button
               type="button"
               onClick={() => conferma(stato.modifiche)}
-              className={`flex-1 rounded-lg p-2 font-medium text-background ${
-                conPerdita ? "bg-warning" : "bg-accent"
+              className={`flex-1 rounded-lg p-2 font-medium text-on-strong ${
+                conPerdita ? "bg-warning-strong" : "bg-accent-strong"
               } ${CLASSE_FOCUS}`}
             >
               {conPerdita ? "Ricarica lo stesso" : "Sì, ricarica"}

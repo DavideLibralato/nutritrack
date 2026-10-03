@@ -25,7 +25,8 @@ const { PAGINE_APP, scegliStrategia, chiavePagina, estraiRisorseStatiche, rispos
 // Si cambia il numero SOLO se cambia la forma di ciò che è salvato (o
 // offline.html): i file statici hanno già il nome versionato, e le pagine
 // si riscrivono da sole a ogni visita online.
-const CACHE_STATICI = "nutritrack-statici-v2";
+// v3 (3/10/2026): offline.html con i colori del tema scuro.
+const CACHE_STATICI = "nutritrack-statici-v3";
 const CACHE_PAGINE = "nutritrack-pagine-v2";
 const PAGINA_OFFLINE = "/offline.html";
 
