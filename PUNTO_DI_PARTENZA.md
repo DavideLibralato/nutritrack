@@ -1982,8 +1982,9 @@ nativi; la barra dell'orologio è in tinta con la pagina). L'app segue la
 modalità chiara/scura del sistema, palette "Caldo"; in chiaro nessun pixel
 è cambiato (sezione 7, "Tema chiaro / scuro / sistema").
 
-**Impostazioni, passo 1** (3/10, branch `impostazioni`, da provare su
-iPhone). La tab Profilo è diventata Impostazioni (ingranaggio): elenco a
+**Impostazioni, passo 1** (3/10, provato su iPhone da Safari e dall'app
+installata, in chiaro e in scuro: guardiano, redirect, offline in modalità
+aereo). La tab Profilo è diventata Impostazioni (ingranaggio): elenco a
 gruppi con scheda dell'account, Sincronizzazione ("Ricarica i dati"),
 Informazioni (versione e commit) ed Esci; il vecchio Profilo spostato intero
 in `/impostazioni/profilo`, con l'email in sola lettura; guardiano delle
@@ -2014,10 +2015,6 @@ modifiche non salvate su "‹ Impostazioni" e tab bar; `/profilo` rimanda a
 
 ### Difetti e verifiche aperti
 
-- **Impostazioni passo 1 da provare su iPhone** (3/10), anche offline in
-  modalità aereo: elenco e sotto-pagine, "Esci senza salvare?" da
-  "‹ Impostazioni" e dalla tab bar, Ricarica ed Esci nelle posizioni nuove,
-  un segnalibro a `/profilo`
 - **Tema scuro: campi compilati in automatico non ancora guardati al
   buio** (3/10). Il resto è provato su iPhone; se i colori del browser
   stonano, si interviene (sezione 7)

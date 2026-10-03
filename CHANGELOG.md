@@ -5,6 +5,15 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Impostazioni passo 1 provato su iPhone, unito a main
+
+Il passo 1 di Impostazioni (`e9f940f`) è stato provato su iPhone, da
+Safari e dall'app installata, in chiaro e in scuro, e funziona tutto:
+elenco e sotto-pagine, guardiano delle modifiche non salvate, redirect da
+`/profilo`, offline in modalità aereo. Unito a main con fast-forward,
+senza commit di merge; branch `impostazioni` cancellato, in locale e su
+GitHub.
+
 ## 2026-10-03 — Impostazioni, passo 1: la tab Profilo diventa Impostazioni
 
 Branch `impostazioni`. Primo dei sei passi decisi sull'analisi
