@@ -22,6 +22,8 @@ importScripts("/sw-strategia.js");
 // cambia anche il file sw.js stesso, così il telefono lo vede come nuovo.
 // 3/10/2026, passo "obiettivi": /impostazioni/obiettivi in PAGINE_APP.
 // 3/10/2026, passo "peso": /impostazioni/peso in PAGINE_APP.
+// 3/10/2026, passo "tema": /impostazioni/aspetto in PAGINE_APP e
+// offline.html che segue la scelta di Aspetto (CACHE_STATICI v4).
 const {
   PAGINE_APP,
   pagineDaTogliere,
@@ -37,7 +39,8 @@ const {
 // offline.html): i file statici hanno già il nome versionato, e le pagine
 // si riscrivono da sole a ogni visita online.
 // v3 (3/10/2026): offline.html con i colori del tema scuro.
-const CACHE_STATICI = "nutritrack-statici-v3";
+// v4 (3/10/2026): offline.html segue la scelta di Impostazioni > Aspetto.
+const CACHE_STATICI = "nutritrack-statici-v4";
 const CACHE_PAGINE = "nutritrack-pagine-v2";
 const PAGINA_OFFLINE = "/offline.html";
 

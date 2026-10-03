@@ -5,9 +5,8 @@
 // come le impostazioni dell'iPhone, da cui si entra nelle sotto-pagine.
 //
 // Ci sono solo le righe che funzionano (sezione 3: un comando che non fa
-// niente sembra rotto). Aspetto arriva con il suo passo; Pasti e orari,
-// Preferiti e lo stato della sincronizzazione restano fuori finché non
-// esistono.
+// niente sembra rotto). Pasti e orari, Preferiti e lo stato della
+// sincronizzazione restano fuori finché non esistono.
 //
 // La riga Obiettivi mostra a destra le calorie del periodo valido oggi
 // (testoRigaObiettivi, con il suo test): "2500 kcal", oppure "2500 · 2950
@@ -15,6 +14,8 @@
 // La riga Peso mostra l'ultima pesata ("85 kg", "78,4 kg") o "Da
 // registrare" (testoRigaPeso, con il suo test). Tutte e due non mostrano
 // niente finché i dati non sono arrivati da Dexie.
+// La riga Aspetto mostra la scelta del tema salvata su questo dispositivo
+// ("Chiaro", "Scuro", "Sistema"), niente finché il browser non l'ha letta.
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -32,6 +33,8 @@ import { periodoInCorso } from "@/lib/totaliDiario";
 import { oggiLocale } from "@/lib/dataGiorno";
 import { testoRigaObiettivi } from "@/lib/profilo/rigaObiettivi";
 import { testoRigaPeso } from "@/lib/profilo/testiPeso";
+import { useSceltaTema } from "@/lib/useSceltaTema";
+import type { SceltaTema } from "@/lib/tema";
 import SchedaAccount from "@/components/SchedaAccount";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
@@ -40,6 +43,7 @@ import EsciAccount from "@/components/EsciAccount";
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
   const nome = useNomeUtente();
+  const sceltaTema = useSceltaTema();
 
   const profilo = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -103,6 +107,12 @@ export default function ImpostazioniPage() {
 
       <GruppoImpostazioni titolo="App">
         <RigaImpostazioni
+          etichetta="Aspetto"
+          icona={<IconaAspetto />}
+          valore={sceltaTema ? NOMI_TEMA[sceltaTema] : undefined}
+          href="/impostazioni/aspetto"
+        />
+        <RigaImpostazioni
           etichetta="Sincronizzazione"
           icona={<IconaSincronizzazione />}
           href="/impostazioni/sincronizzazione"
@@ -122,6 +132,12 @@ export default function ImpostazioniPage() {
     </main>
   );
 }
+
+const NOMI_TEMA: Record<SceltaTema, string> = {
+  chiaro: "Chiaro",
+  scuro: "Scuro",
+  sistema: "Sistema",
+};
 
 // Icone dei quadratini, disegno del mockup. `currentColor`: prendono
 // l'accento dal quadratino (RigaImpostazioni).
@@ -152,6 +168,15 @@ function IconaPeso() {
       <rect x="4" y="4" width="16" height="16" rx="4" />
       <path d="M9 10a3 3 0 016 0" />
       <path d="M12 10l1.2-1.6" />
+    </svg>
+  );
+}
+
+function IconaAspetto() {
+  return (
+    <svg {...TRATTO}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
     </svg>
   );
 }

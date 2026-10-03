@@ -1,21 +1,47 @@
 @import "tailwindcss";
 
-:root {
-  /* Palette "Opzione A — minimal caratteristico": bianco/nero caldo invece
-     del bianco/nero puro. Un solo colore d'accento, il verde (sezione 7 di
-     PUNTO_DI_PARTENZA.md): azione principale, stato attivo, anello calorie.
-     Il terracotta resta, ma con un significato diverso e solo suo: segnala
-     quando un obiettivo viene superato, mai come colore decorativo. */
-  --background: #faf7f2;
-  --foreground: #1f1b16;
-  --linea: #e7e0d2;
-  --tenue: #8a8271;
-  --accento: #3f7d4c;
-  --avviso: #b5533c;
+/* TEMA CHIARO E SCURO (PUNTO_DI_PARTENZA.md sezione 7).
 
-  /* Token aggiunti per il tema scuro: in chiaro valgono quanto quelli
-     sopra, al buio hanno un valore proprio. Eccezione: --superficie.
-     --superficie: gli elementi staccati dal fondo (pillola, barra dei
+   Ogni colore è scritto una volta sola, con i suoi due valori uno accanto
+   all'altro:
+       --background: var(--se-chiaro, #faf7f2) var(--se-scuro, #1b1815);
+   Si legge "se chiaro #faf7f2, se scuro #1b1815". Funziona così:
+   --se-chiaro e --se-scuro sono due interruttori, impostati più sotto.
+   Quello del tema in uso vale `initial` (= "non definito"), e var() al
+   posto di una variabile non definita mette il valore dopo la virgola.
+   L'altro vale uno spazio, e var() mette lo spazio. Risultato al buio:
+   " #1b1815" — lo spazio in più non conta.
+   (Perché non light-dark(), la funzione CSS fatta apposta: c'è solo da
+   iOS 17.5, e la build non la traduce per i telefoni più vecchi.)
+
+   Un colore uguale nei due temi (--vetro, --linea-tempo) non ha gli
+   interruttori: deriva da token che li hanno già. Un colore scritto per
+   esteso (#..., rgb...) senza i due interruttori si vedrebbe uguale al
+   buio: lo controlla src/app/temaScuro.test.ts.
+
+   `[data-tema]` oltre a `:root`: le variabili si calcolano sull'elemento
+   dove sono scritte. Così un elemento con data-tema="scuro" dentro una
+   pagina chiara (le anteprime della pagina Aspetto) ricalcola i colori
+   con i suoi interruttori, e dentro di lui le classi normali (bg-surface,
+   text-foreground...) danno i colori scuri. */
+:root,
+[data-tema] {
+  /* Palette "Opzione A — minimal caratteristico": bianco/nero caldo invece
+     del bianco/nero puro; al buio la palette "Caldo", il suo gemello. Un
+     solo colore d'accento, il verde (sezione 7): azione principale, stato
+     attivo, anello calorie. Il terracotta resta, ma con un significato
+     diverso e solo suo: segnala quando un obiettivo viene superato, mai
+     come colore decorativo.
+     Contrasti al buio: --tenue su sfondo 6,4:1, bianco su --accento-pieno
+     4,9:1, --accento su sfondo 7,6:1, --avviso su sfondo 7,3:1. */
+  --background: var(--se-chiaro, #faf7f2) var(--se-scuro, #1b1815);
+  --foreground: var(--se-chiaro, #1f1b16) var(--se-scuro, #f2ede4);
+  --linea: var(--se-chiaro, #e7e0d2) var(--se-scuro, #3a342d);
+  --tenue: var(--se-chiaro, #8a8271) var(--se-scuro, #a39a8b);
+  --accento: var(--se-chiaro, #3f7d4c) var(--se-scuro, #7bb887);
+  --avviso: var(--se-chiaro, #b5533c) var(--se-scuro, #e8916f);
+
+  /* --superficie: gli elementi staccati dal fondo (pillola, barra dei
      messaggi, sheet, barra Salva, gruppi e scheda dell'account di
      Impostazioni). In chiaro bianca, dal 3/10 (passo "superficie",
      decisione D in PUNTO_DI_PARTENZA.md sezione 3): i riquadri bianchi
@@ -23,16 +49,19 @@
      vedevano solo dal bordo. Al buio un po' più chiara dello sfondo,
      altrimenti spariscono.
      --accento-pieno / --avviso-pieno: il riempimento dei bottoni con il
-     testo sopra ("+ Aggiungi", Salva, conferme, Elimina). Al buio restano
-     il verde e il rosso di oggi: il bianco sopra il verde e l'arancio
-     chiari del tema scuro non si leggerebbe.
+     testo sopra ("+ Aggiungi", Salva, conferme, Elimina). In chiaro sono
+     l'accento e l'avviso; al buio restano il verde e il rosso del chiaro:
+     il bianco sopra il verde e l'arancio chiari del tema scuro non si
+     leggerebbe.
      --su-pieno: il testo sopra quei riempimenti.
      --velo: lo sfondo scuro dietro gli sheet aperti. */
-  --superficie: #ffffff;
-  --accento-pieno: var(--accento);
-  --avviso-pieno: var(--avviso);
-  --su-pieno: var(--background);
-  --velo: color-mix(in srgb, var(--foreground) 40%, transparent);
+  --superficie: var(--se-chiaro, #ffffff) var(--se-scuro, #26221e);
+  --accento-pieno: var(--se-chiaro, var(--accento)) var(--se-scuro, #3f7d4c);
+  --avviso-pieno: var(--se-chiaro, var(--avviso)) var(--se-scuro, #b5533c);
+  --su-pieno: var(--se-chiaro, var(--background)) var(--se-scuro, #ffffff);
+  --velo:
+    var(--se-chiaro, color-mix(in srgb, var(--foreground) 40%, transparent))
+    var(--se-scuro, color-mix(in srgb, #000000 60%, transparent));
 
   /* Colori derivati dai token qui sopra, mai scritti a mano nei componenti.
      --capsula-attiva: lo sfondo dietro la voce attiva della tab bar; per
@@ -51,52 +80,51 @@
      peggiore (vetro sopra lo sfondo crema), 5,0:1 sul bianco. È una
      miscela e non un colore fisso, così segue anche il colore principale
      del passo "accento". Al buio non serve: l'accento chiaro fa già 5,7:1. */
-  --capsula-attiva: color-mix(in srgb, var(--accento) 12%, transparent);
-  --testo-capsula: color-mix(in srgb, var(--accento) 90%, #000000);
+  --capsula-attiva:
+    var(--se-chiaro, color-mix(in srgb, var(--accento) 12%, transparent))
+    var(--se-scuro, color-mix(in srgb, var(--accento) 16%, transparent));
+  --testo-capsula:
+    var(--se-chiaro, color-mix(in srgb, var(--accento) 90%, #000000))
+    var(--se-scuro, var(--accento));
   /* --segmento-attivo: la scheda scelta di un selettore a segmenti
      (SelettoreSegmenti: Normale | Allenamento, Dimagrire / Mantenere /
      Massa). Deve essere PIÙ CHIARA della capsula grigia intorno, come
      sull'iPhone: in chiaro è la superficie bianca; al buio la superficie
      sarebbe più scura della capsula, quindi ha un valore suo. */
-  --segmento-attivo: var(--superficie);
+  --segmento-attivo: var(--se-chiaro, var(--superficie)) var(--se-scuro, #4a433a);
   --vetro: color-mix(in srgb, var(--superficie) 75%, transparent);
-  --ombra-fluttuante: 0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
+  --ombra-fluttuante: 0 4px 16px
+    var(--se-chiaro, color-mix(in srgb, var(--foreground) 12%, transparent))
+    var(--se-scuro, color-mix(in srgb, #000000 45%, transparent));
   --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
-
-  /* select, calendario delle date, scrollbar e campi riempiti in
-     automatico dal browser seguono anche loro il tema del sistema. */
-  color-scheme: light dark;
 }
 
-/* TEMA SCURO, palette "Caldo" (gemello scuro di quella chiara). Tutti i
-   valori scuri stanno qui e solo qui. Ogni token di colore del blocco
-   sopra deve avere il suo valore in questo blocco, anche i derivati: lo
-   controlla src/app/temaScuro.test.ts, così un token nuovo dimenticato si
-   scopre subito. Per ora segue solo il telefono (prefers-color-scheme);
-   il selettore in Profilo è il passo 2 (PUNTO_DI_PARTENZA.md sezione 7).
-   Contrasti: --tenue su sfondo 6,4:1, bianco su --accento-pieno 4,9:1,
-   --accento su sfondo 7,6:1, --avviso su sfondo 7,3:1. */
+/* GLI INTERRUTTORI: quale tema è acceso.
+   - data-tema su <html> lo scrive lo script in <head> (SCRIPT_TEMA in
+     src/lib/tema.ts) prima che la pagina si disegni, secondo la scelta in
+     Impostazioni > Aspetto. Le anteprime di quella pagina lo usano anche
+     su elementi singoli.
+   - Rete di sicurezza: se l'attributo manca (lo script non è partito),
+     decide il tema del telefono, come prima di Aspetto.
+   color-scheme dice al browser quale tema usare per ciò che disegna da
+   solo (select, calendario delle date, scrollbar, campi riempiti in
+   automatico): sempre lo stesso del tema in uso. */
+:root,
+[data-tema="chiaro"] {
+  --se-chiaro: initial;
+  --se-scuro: ;
+  color-scheme: light;
+}
+[data-tema="scuro"] {
+  --se-chiaro: ;
+  --se-scuro: initial;
+  color-scheme: dark;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1b1815;
-    --foreground: #f2ede4;
-    --linea: #3a342d;
-    --tenue: #a39a8b;
-    --accento: #7bb887;
-    --avviso: #e8916f;
-
-    --superficie: #26221e;
-    --accento-pieno: #3f7d4c;
-    --avviso-pieno: #b5533c;
-    --su-pieno: #ffffff;
-    --velo: color-mix(in srgb, #000000 60%, transparent);
-
-    --capsula-attiva: color-mix(in srgb, var(--accento) 16%, transparent);
-    --testo-capsula: var(--accento);
-    --segmento-attivo: #4a433a;
-    --vetro: color-mix(in srgb, var(--superficie) 75%, transparent);
-    --ombra-fluttuante: 0 4px 16px color-mix(in srgb, #000000 45%, transparent);
-    --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
+  :root:not([data-tema]) {
+    --se-chiaro: ;
+    --se-scuro: initial;
+    color-scheme: dark;
   }
 }
 

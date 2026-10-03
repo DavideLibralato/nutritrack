@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import RegistraServiceWorker from "@/components/RegistraServiceWorker";
 import Sincronizzazione from "@/components/Sincronizzazione";
+import { COLORI_BARRA, SCRIPT_TEMA } from "@/lib/tema";
 
 // Font per titoli e numeri: piu caratteristico del generico Geist/Arial usato finora.
 const fontIntestazioni = Bricolage_Grotesque({
@@ -36,15 +37,10 @@ export const metadata: Metadata = {
   },
 };
 
+// Il colore della barra di Safari/Chrome (theme-color) non sta qui ma nei
+// <meta> scritti in RootLayout, accanto allo script del tema, così il loro
+// ordine in <head> è sicuro.
 export const viewport: Viewport = {
-  // Colore della barra di Safari/Chrome e dell'anteprima nel multitasking:
-  // in tinta con lo sfondo della pagina, uno per tema. Sono --background
-  // chiaro e scuro di globals.css, ricopiati qui perché il <meta> non legge
-  // le variabili CSS.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf7f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#1b1815" },
-  ],
   width: "device-width",
   initialScale: 1,
   // Senza "cover" iOS restituisce 0 per ogni env(safe-area-inset-*): in
@@ -69,10 +65,37 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // suppressHydrationWarning: lo script del tema aggiunge data-tema a
+    // <html> prima che arrivi React, che confronterebbe l'<html> della
+    // pagina con il suo e segnalerebbe l'attributo in più come un errore.
+    // Così lo accetta. Vale solo per gli attributi di <html>, non per ciò
+    // che c'è dentro.
     <html
       lang="it"
       className={`${fontIntestazioni.variable} ${fontTesto.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Colore della barra di Safari/Chrome e dell'anteprima nel
+            multitasking, in tinta con lo sfondo: uno per tema del telefono
+            (media). Sono la rete di sicurezza se lo script non parte: lo
+            script mette davanti a questi un suo <meta> con il colore del
+            tema in uso, che vince perché viene prima. */}
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content={COLORI_BARRA.chiaro}
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content={COLORI_BARRA.scuro}
+        />
+        {/* Lo script del tema (src/lib/tema.ts): in linea e sincrono, il
+            browser lo esegue appena lo legge, prima di disegnare la pagina.
+            La pagina nasce già col tema giusto, senza lampi. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         <RegistraServiceWorker />

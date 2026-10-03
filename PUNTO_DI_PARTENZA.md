@@ -456,17 +456,17 @@ un comando che non fa niente sembra rotto):
   nome, "78,4 kg · 180 cm"; porta a **Profilo**;
 - gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
   kcal" con i giorni differenziati accesi), Pasti e orari, Peso;
-- gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale),
-  Preferiti e pasti salvati, Sincronizzazione (qui andrà l'indicatore);
+- gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
+  a destra "Chiaro", "Scuro" o "Sistema"), Preferiti e pasti salvati,
+  Sincronizzazione (qui andrà l'indicatore);
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
   `next.config.ts`; in locale "sviluppo");
 - **Esci** in fondo, in arancio, con la conferma di sempre.
 
 **Rotte.** `/impostazioni`, `/impostazioni/profilo`,
-`/impostazioni/obiettivi`, `/impostazioni/peso`,
-`/impostazioni/sincronizzazione`, `/impostazioni/informazioni`; poi
-`/impostazioni/aspetto`.
+`/impostazioni/obiettivi`, `/impostazioni/peso`, `/impostazioni/aspetto`,
+`/impostazioni/sincronizzazione`, `/impostazioni/informazioni`.
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
 layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
 "torna indietro": aperta da un indirizzo diretto, o ricaricata offline, la
@@ -512,7 +512,7 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 3. `obiettivi` — pagina Obiettivi; Profilo resta con i dati personali
    *(fatto 3/10, branch `obiettivi`)*
 4. `peso` — pagina Peso *(fatto 3/10, branch `peso`)*
-5. `tema` — Aspetto: Chiaro / Scuro / Sistema
+5. `tema` — Aspetto: Chiaro / Scuro / Sistema *(fatto 3/10, branch `tema`)*
 6. `accento` — colore principale
 
 Dopo, come lavori a sé: Pasti e orari, Preferiti e pasti salvati,
@@ -588,6 +588,23 @@ più. La pesata del giorno si cerca rileggendo Dexie dentro la funzione, non
 da uno stato React che può essere indietro (stessa regola di
 `salvaProfilo`). Test in `src/lib/repository/misurazioni.test.ts`.
 
+### Aspetto (dal 3/10, passo "tema")
+
+In Impostazioni > Aspetto (`/impostazioni/aspetto`), con "‹ Impostazioni".
+Gruppo **Tema**: tre anteprime affiancate, Chiaro / Scuro / Sistema, come
+nel mockup; "Sistema" è metà chiara e metà scura. La scelta si applica
+**subito** al tocco: niente Salva e niente guardiano. Sotto, la nota:
+"Con “Sistema” l’app segue la modalità chiara o scura dell’iPhone, anche
+quando cambia da sola la sera." e "Nell’app aggiunta alla schermata Home,
+la barra in alto con l’ora segue sempre la modalità dell’iPhone, non
+questa scelta." Come funziona e i limiti: sezione 7, "Tema chiaro / scuro /
+sistema". Il colore principale arriva col passo 6.
+
+Le anteprime non hanno colori propri: sono pezzi di pagina con
+`data-tema="chiaro"` o `"scuro"` (`SelettoreTema`), e dentro di loro
+`globals.css` ricalcola i token per quel tema. Sono veri radio button:
+da tastiera le frecce passano da una scelta all'altra.
+
 ### Profilo
 
 In Impostazioni > Profilo (`/impostazioni/profilo`), stile a gruppi con i
@@ -614,8 +631,7 @@ sono in Obiettivi, la pesata in Peso.
   questo dispositivo (`scope: "local"`), e non offline: senza rete non si
   esce, con un messaggio, mai "a metà". I dati locali restano (§9.6,
   cancellazione al logout rimandata)
-- **Tema**: Chiaro / Scuro / Sistema — passo "tema" di Impostazioni (pagina
-  Aspetto); non va mostrato finché non esiste
+- **Tema**: non sta in Profilo ma in Impostazioni > Aspetto (sopra)
 
 #### Un solo Salva (deciso il 2026-09-26)
 
@@ -1289,12 +1305,63 @@ Da verificare in tema scuro: che l'arancio "sopra l'obiettivo" resti distinguibi
 e che il verde d'accento non risulti fluorescente su fondo nero. Non si aggiusta
 a occhio in chiaro e si spera.
 
-**Stato (3/10): passo 1 fatto, l'app segue il tema del telefono.** Il
-selettore Chiaro / Scuro / Sistema in Profilo, con `localStorage`, è il
-passo 2 e non è costruito: oggi vale sempre "Sistema".
+**Stato (3/10): fatti tutti e due i passi.** Passo 1, l'app segue il tema
+del telefono; passo 2 (passo "tema" di Impostazioni), la scelta Chiaro /
+Scuro / Sistema in Impostazioni > Aspetto, predefinito Sistema.
+
+**Come funziona la scelta** (`src/lib/tema.ts`):
+
+- **Dove sta**: `localStorage`, chiave `nutritrack:tema`, valori `chiaro`
+  | `scuro` | `sistema`. Ogni lettura e scrittura è in try/catch: senza
+  `localStorage` (Safari privato) l'app fa come "Sistema", senza errori.
+- **Chi la applica**: uno script piccolissimo in linea dentro `<head>`
+  (`layout.tsx`), che il browser esegue prima di disegnare la pagina: niente
+  lampo del tema sbagliato. Scrive `data-tema="chiaro|scuro"` su `<html>`
+  e il colore della barra, e lo rifà quando cambia il tema del telefono,
+  quando la pagina Aspetto salva (evento `nutritrack:tema`) e quando
+  un'altra scheda cambia la scelta (evento `storage`). `<html>` ha
+  `suppressHydrationWarning`: React non segnala l'attributo aggiunto dallo
+  script.
+- **Una sola copia della logica**: la decisione è la funzione pura
+  `temaEffettivo(scelta, telefonoScuro)`; lo script non è scritto a mano,
+  è il testo di `temaEffettivo` e `avviaTema` (`toString()`).
+  **Regola: `temaEffettivo` e `avviaTema` devono restare autonome, niente
+  import e niente funzioni o costanti di fuori**: nel testo copiato in
+  `<head>` il resto del modulo non esiste e lo script si romperebbe. Lo
+  scopre `src/lib/tema.test.ts`, che esegue in una pagina finta proprio la
+  stringa `SCRIPT_TEMA`. `offline.html` (fuori da Next) ha una copia dello
+  script: lo stesso test la fa girare sugli stessi casi dell'originale.
+- **Colore della barra** (`theme-color`): in `<head>` ci sono due `<meta>`,
+  uno per tema del telefono (`media`), che sono la rete di sicurezza. Lo
+  script mette davanti un suo `<meta>` senza `media`, con il colore del
+  tema in uso: il browser usa il primo che vale. I due della pagina non si
+  toccano: React li riconosce dagli attributi e, con un `content` cambiato,
+  ne aggiungeva una copia (visto il 3/10).
+- **CSS, una sola copia dei valori**: ogni colore è scritto una volta, con i
+  due valori uno accanto all'altro,
+  `--background: var(--se-chiaro, #faf7f2) var(--se-scuro, #1b1815)`.
+  **Il trucco**: un interruttore "acceso" vale `initial` (= non definito),
+  quindi `var()` mette il valore dopo la virgola; "spento" vale uno spazio,
+  e `var()` mette lo spazio. Non `light-dark()`, la funzione CSS fatta
+  apposta: c'è solo da iOS 17.5 e la build non la traduce per i telefoni
+  più vecchi. Gli interruttori si accendono con `[data-tema="chiaro"]` o
+  `[data-tema="scuro"]` e, **senza attributo** (script non partito), con
+  `@media (prefers-color-scheme: dark)`, come prima di Aspetto.
+
+**Due limiti da sapere:**
+
+- **Nell'app installata la barra in alto con l'ora segue il tema del
+  telefono**, non la scelta: con `statusBarStyle: "default"` (sotto) iOS la
+  colora da solo e una pagina web non la può cambiare. Con "Scuro" su un
+  iPhone in chiaro: barra chiara sopra una pagina scura. In Safari invece la
+  barra segue `theme-color`, quindi la scelta. Scritto nella nota della
+  pagina Aspetto.
+- **Safari e l'app installata hanno scelte separate**: su iPhone hanno
+  ciascuno il suo `localStorage`. Scegliere "Scuro" in Safari non cambia
+  l'app sulla Home, e viceversa.
 
 - **Palette "Caldo"**, il gemello scuro di quella chiara. Tutti i valori
-  scuri stanno in un solo blocco `@media (prefers-color-scheme: dark)` in
+  scuri stanno accanto ai chiari, nel blocco `:root, [data-tema]` di
   `src/app/globals.css`: sfondo `#1b1815`, testo `#f2ede4`, linea
   `#3a342d`, tenue `#a39a8b`, accento `#7bb887`, avviso `#e8916f`.
   Contrasti: tenue su sfondo 6,4:1, accento su sfondo 7,6:1, avviso su
@@ -1349,20 +1416,21 @@ passo 2 e non è costruito: oggi vale sempre "Sistema".
     caselle crema dentro il riquadro bianco (crema su bianco 1,07:1, più il
     bordo). Si leggono come caselle da riempire, come i campi grigi
     dell'iPhone: lasciati così.
-- **Ogni token di colore del chiaro deve avere il suo valore scuro**, anche
-  i derivati (`--vetro`, `--capsula-attiva`, `--testo-capsula`,
-  `--segmento-attivo`,
-  `--ombra-fluttuante`, `--linea-tempo`). Lo controlla il test `src/app/temaScuro.test.ts`, che
-  verifica anche che `public/offline.html` abbia gli stessi valori.
-- **`color-scheme: light dark`** su `:root`: select, calendario delle date
-  e scrollbar diventano scuri anche loro.
+- **Ogni colore scritto per esteso ha i due valori** (chiaro e scuro); uno
+  senza interruttori deve derivare da altri token (`--vetro`,
+  `--linea-tempo`). Lo controlla il test `src/app/temaScuro.test.ts`, che
+  verifica anche gli interruttori nei tre casi, che il colore della barra
+  sia lo sfondo e che `public/offline.html` abbia gli stessi valori.
+- **`color-scheme`** segue il tema in uso (`light` o `dark`, negli stessi
+  blocchi degli interruttori): select, calendario delle date e scrollbar
+  hanno lo stesso tema della pagina.
 - **Fuori dalle variabili CSS:**
-  - `themeColor` in `layout.tsx` ne ha uno per tema, con `media`
-    (`#faf7f2` / `#1b1815`);
+  - `theme-color`: `COLORI_BARRA` in `src/lib/tema.ts` (`#faf7f2` /
+    `#1b1815`), usato dai `<meta>` di `layout.tsx` e dallo script;
   - `manifest.json` ha un valore solo, quindi resta chiaro: `#faf7f2` per
     sfondo e `theme_color`. Su Android chi è in scuro vede un lampo chiaro
     all'avvio;
-  - `offline.html` ha il suo blocco scuro.
+  - `offline.html` ha i suoi colori e lo script copiati (sopra).
 - **Barra di stato dell'app installata: resta `statusBarStyle:
   "default"`.** iOS la fa opaca, la colora secondo il tema del sistema e la
   pagina comincia sotto. Provato su iPhone il 3/10: in chiaro e in scuro
@@ -2140,17 +2208,14 @@ peso", uscito da Profilo; riga Peso nell'elenco; "Calcola proposta" in
 Obiettivi rimanda a Peso; regola della pesata corretta (stesso valore in un
 giorno nuovo ora si scrive) (sezione 3, "Peso").
 
-**Test.** 269 test permanenti in 30 file (Vitest), tutti verdi al 3/10.
+**Test.** 284 test permanenti in 31 file (Vitest), tutti verdi al 3/10.
 
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
-- **Selettore del tema** (Chiaro / Scuro / Sistema, passo 2 del tema scuro,
-  sezione 7): sarà la pagina Impostazioni > Aspetto (passo "tema"); oggi
-  l'app segue sempre il telefono
-- **Impostazioni, passi 5–6** (sezione 3, "Impostazioni"): tema, colore
+- **Impostazioni, passo 6** (sezione 3, "Impostazioni"): colore
   principale
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)

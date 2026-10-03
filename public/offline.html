@@ -11,31 +11,74 @@
       ricopiate qui perché questa pagina non carica il CSS dell'app. Se
       cambia la palette, va aggiornata anche qui (e il numero delle cache
       in sw.js, perché il file è salvato all'installazione). Solo i token
-      che servono a questa pagina, con gli stessi valori, in chiaro e in
-      scuro: lo controlla src/app/temaScuro.test.ts.
+      che servono a questa pagina, con gli stessi valori e gli stessi
+      interruttori del tema: lo controlla src/app/temaScuro.test.ts.
+
+      Lo script qui sotto è la copia di quello che src/app/layout.tsx mette
+      in <head> (SCRIPT_TEMA in src/lib/tema.ts): segue la scelta di
+      Impostazioni > Aspetto. src/lib/tema.test.ts fa girare l'originale e
+      questa copia sugli stessi casi.
     -->
     <meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1b1815" media="(prefers-color-scheme: dark)" />
+    <script>
+      (function () {
+        function temaEffettivo(scelta, sistemaScuro) {
+          if (scelta === "chiaro" || scelta === "scuro") return scelta;
+          return sistemaScuro ? "scuro" : "chiaro";
+        }
+        var chiave = "nutritrack:tema";
+        var colori = { chiaro: "#faf7f2", scuro: "#1b1815" };
+        var sistema = window.matchMedia("(prefers-color-scheme: dark)");
+        var barra = document.createElement("meta");
+        barra.setAttribute("name", "theme-color");
+        document.head.prepend(barra);
+        function leggi() {
+          try {
+            return window.localStorage.getItem(chiave);
+          } catch (e) {
+            return null;
+          }
+        }
+        function applica() {
+          var tema = temaEffettivo(leggi(), sistema.matches);
+          document.documentElement.setAttribute("data-tema", tema);
+          barra.setAttribute("content", colori[tema]);
+        }
+        applica();
+        sistema.addEventListener("change", applica);
+        window.addEventListener("storage", function (e) {
+          if (e.key === chiave) applica();
+        });
+      })();
+    </script>
     <style>
-      :root {
-        --background: #faf7f2;
-        --foreground: #1f1b16;
-        --linea: #e7e0d2;
-        --tenue: #8a8271;
-        --accento: #3f7d4c;
-        --accento-pieno: var(--accento);
-        --su-pieno: var(--background);
-        color-scheme: light dark;
+      :root,
+      [data-tema] {
+        --background: var(--se-chiaro, #faf7f2) var(--se-scuro, #1b1815);
+        --foreground: var(--se-chiaro, #1f1b16) var(--se-scuro, #f2ede4);
+        --linea: var(--se-chiaro, #e7e0d2) var(--se-scuro, #3a342d);
+        --tenue: var(--se-chiaro, #8a8271) var(--se-scuro, #a39a8b);
+        --accento: var(--se-chiaro, #3f7d4c) var(--se-scuro, #7bb887);
+        --accento-pieno: var(--se-chiaro, var(--accento)) var(--se-scuro, #3f7d4c);
+        --su-pieno: var(--se-chiaro, var(--background)) var(--se-scuro, #ffffff);
+      }
+      :root,
+      [data-tema="chiaro"] {
+        --se-chiaro: initial;
+        --se-scuro: ;
+        color-scheme: light;
+      }
+      [data-tema="scuro"] {
+        --se-chiaro: ;
+        --se-scuro: initial;
+        color-scheme: dark;
       }
       @media (prefers-color-scheme: dark) {
-        :root {
-          --background: #1b1815;
-          --foreground: #f2ede4;
-          --linea: #3a342d;
-          --tenue: #a39a8b;
-          --accento: #7bb887;
-          --accento-pieno: #3f7d4c;
-          --su-pieno: #ffffff;
+        :root:not([data-tema]) {
+          --se-chiaro: ;
+          --se-scuro: initial;
+          color-scheme: dark;
         }
       }
       body {

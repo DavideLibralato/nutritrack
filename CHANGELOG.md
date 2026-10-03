@@ -5,6 +5,38 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-03 — Impostazioni, passo 5: la pagina Aspetto (tema)
+
+Branch `tema`.
+
+- Pagina `/impostazioni/aspetto`: Chiaro / Scuro / Sistema con tre
+  anteprime come nel mockup, applicata subito al tocco (niente Salva né
+  guardiano), con la nota sulla barra dell'ora nell'app installata.
+  Elenco: riga Aspetto sopra Sincronizzazione, con la scelta a destra.
+- Scelta in `localStorage` (`nutritrack:tema`, predefinito `sistema`),
+  sempre in try/catch. Uno script in linea in `<head>` scrive
+  `data-tema` su `<html>` prima del disegno e aggiorna `theme-color`; il
+  suo testo è generato dalla funzione pura `temaEffettivo` (con test),
+  quindi non c'è una seconda copia da tenere allineata. Regola: le due
+  funzioni copiate restano autonome, niente import. Il test esegue proprio
+  la stringa `SCRIPT_TEMA` in jsdom: con una funzione esterna in
+  `temaEffettivo`, per prova, 4 casi diventano rossi.
+- CSS: ogni colore scritto una volta con i due valori e gli interruttori
+  `--se-chiaro` / `--se-scuro`; senza `data-tema` decide ancora il
+  telefono. `color-scheme` segue il tema in uso. `temaScuro.test.ts`
+  riscritto per la forma nuova.
+- `offline.html` con gli stessi colori e la copia dello script, provata dal
+  test sugli stessi casi dell'originale; `CACHE_STATICI` v4.
+- Service worker: `/impostazioni/aspetto` in `PAGINE_APP`.
+- Aggiunto `@types/jsdom` (solo tipi, dev): serve al test che fa girare lo
+  script in una pagina finta.
+
+**Bug trovato e corretto prima del commit:** lo script riscriveva il
+`content` dei due `<meta name="theme-color">` della pagina; React, prendendo
+in mano la pagina, non li riconosceva più e ne aggiungeva un terzo. Ora lo
+script aggiunge un suo `<meta>` in testa e quelli della pagina restano
+intatti.
+
 ## 2026-10-03 — Peso provato su iPhone, unito a main
 
 Il passo 4 di Impostazioni (`edb1b83`) è stato provato su iPhone. Con
