@@ -47,3 +47,55 @@ export function bersaglioSotto(
   if (!sotto || sotto.id === pastoPartenzaId) return null;
   return sotto.id;
 }
+
+// --- Scorrimento automatico (deciso il 6/10, al posto della decisione 2
+// "niente scorrimento automatico": con molti pasti, quelli fuori schermo
+// non si raggiungevano) ---
+//
+// In alto e in basso nella zona dei bersagli c'è una fascia sensibile alta
+// ZONA_SCORRIMENTO_PX: con il dito lì dentro la lista scorre da sola verso
+// quel lato. Quella in basso sta SOPRA "+ Aggiungi" e la pillola, perché la
+// zona dei bersagli finisce dove cominciano loro. Più il dito è vicino al
+// bordo, più si va veloci, fino a VELOCITA_MASSIMA_PX_S; oltre il bordo
+// (sopra la testata, sopra le barre) si resta alla massima. Vale anche con
+// "Riduci movimento": è una funzione, non un effetto.
+
+export const ZONA_SCORRIMENTO_PX = 64;
+export const VELOCITA_MASSIMA_PX_S = 800;
+// Un fotogramma lento (l'app che torna dal background) non deve far saltare
+// la lista: il tempo di un passo conta al massimo questo.
+export const PASSO_MASSIMO_MS = 50;
+
+// Velocità di scorrimento in px al secondo: negativa verso l'alto, positiva
+// verso il basso, 0 fuori dalle fasce sensibili. Cresce in modo lineare da
+// 0 (al limite interno della fascia) alla massima (sul bordo).
+export function velocitaScorrimento(y: number, zona: Rettangolo): number {
+  const inAlto = zona.top + ZONA_SCORRIMENTO_PX - y;
+  if (inAlto > 0) return -VELOCITA_MASSIMA_PX_S * Math.min(1, inAlto / ZONA_SCORRIMENTO_PX);
+  const inBasso = y - (zona.bottom - ZONA_SCORRIMENTO_PX);
+  if (inBasso > 0) return VELOCITA_MASSIMA_PX_S * Math.min(1, inBasso / ZONA_SCORRIMENTO_PX);
+  return 0;
+}
+
+// Il nuovo scrollTop dopo `dtMs` alla velocità data, fermo a fine corsa
+// (0 in alto, `scrollMassimo` in basso).
+export function prossimoScrollTop(
+  scrollTop: number,
+  velocita: number,
+  dtMs: number,
+  scrollMassimo: number
+): number {
+  const passo = (velocita * Math.min(dtMs, PASSO_MASSIMO_MS)) / 1000;
+  return Math.max(0, Math.min(scrollMassimo, scrollTop + passo));
+}
+
+// I pasti sono misurati una volta, all'inizio del trascinamento. Se poi la
+// lista scorre di `scorso` px verso il basso, sullo schermo stanno tutti
+// `scorso` px più in alto.
+export function pastiDopoScorrimento(pasti: PastoSulloSchermo[], scorso: number): PastoSulloSchermo[] {
+  if (scorso === 0) return pasti;
+  return pasti.map((p) => ({
+    id: p.id,
+    rettangolo: { ...p.rettangolo, top: p.rettangolo.top - scorso, bottom: p.rettangolo.bottom - scorso },
+  }));
+}

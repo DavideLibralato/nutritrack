@@ -315,8 +315,12 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
   async function prepara() {
     const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
     const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    // Cena è più in basso, in parte sotto la fine della lista visibile:
+    // ci si arriva solo con lo scorrimento automatico.
+    const cena = await repositoryPasti.crea({ user_id: utenteTest, nome: "Cena", ora_inizio: "19:30", ordine: 2 });
     rettangoli[colazione.id] = { top: 100, bottom: 200 };
     rettangoli[pranzo.id] = { top: 200, bottom: 300 };
+    rettangoli[cena.id] = { top: 640, bottom: 900 };
     const comune = {
       user_id: utenteTest,
       alimento_id: "alimento-yogurt",
@@ -354,7 +358,7 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
     const lista = riga.closest("ul")!.parentElement!.closest("ul")!;
     const firme = async () =>
       (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
-    return { riga, lista, pranzo, firme };
+    return { riga, lista, pranzo, cena, firme };
   }
 
   function puntatore(tipo: string, el: Element, x: number, y: number) {
@@ -430,5 +434,29 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
     // si aspetta un po' prima di dire che non c'è.
     await expect(screen.findByRole("dialog", undefined, { timeout: 500 })).rejects.toThrow();
     expect(await firme()).toEqual(prima);
+  });
+
+  it("dito fermo nella fascia bassa: la lista scorre da sola e il pasto sotto il dito cambia", async () => {
+    const { riga, lista, cena } = await prepara();
+    // jsdom non calcola le altezze: contenuto di 2000 px in una lista di 600.
+    Object.defineProperty(lista, "scrollHeight", { configurable: true, value: 2000 });
+    Object.defineProperty(lista, "clientHeight", { configurable: true, value: 600 });
+    const elCena = document.querySelector(`[data-pasto-id="${cena.id}"]`)!;
+
+    await iniziaTrascinamento(riga, lista);
+    // y = 620: dentro la fascia bassa (la zona finisce a 650), fra Pranzo
+    // (fino a 300) e Cena (da 640). Sotto il dito non c'è nessun pasto.
+    puntatore("pointermove", lista, 100, 620);
+    expect(elCena.hasAttribute("data-bersaglio-attivo")).toBe(false);
+
+    // Il dito non si muove più: è la lista che scorre e porta Cena sotto.
+    await waitFor(() => expect(elCena.hasAttribute("data-bersaglio-attivo")).toBe(true), {
+      timeout: 3000,
+    });
+    expect(lista.scrollTop).toBeGreaterThan(0);
+
+    // Rilascio lì: Cena è vuota, niente doppioni, lo yogurt si sposta.
+    puntatore("pointerup", lista, 100, 620);
+    await screen.findByText("Spostato:");
   });
 });

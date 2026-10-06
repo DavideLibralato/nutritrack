@@ -26,10 +26,25 @@
 // Dopo un rilascio, il click che il browser può mandare dove si è alzato il
 // dito (per esempio sopra "+ Aggiungi", fuori dalla lista) viene fermato
 // per SCADENZA_BLOCCO_CLICK_MS: nessuno sheet o pagina si apre per errore.
+//
+// Scorrimento automatico (deciso il 6/10): con il dito nelle fasce sensibili
+// in alto o in basso della lista, la lista scorre da sola
+// (velocitaScorrimento in decisioneTrascinamento.ts). Lo fa un ciclo
+// requestAnimationFrame — una funzione richiamata a ogni fotogramma dello
+// schermo — che si ferma quando il dito esce dalla fascia o la lista è a
+// fine corsa. La lista ha overflow hidden durante il gesto (il dito non la
+// fa scorrere), ma scrivere scrollTop da codice funziona lo stesso. I pasti
+// restano quelli misurati all'inizio, spostati di quanto la lista ha
+// scorso; a ogni fotogramma il pasto sotto il dito si ricalcola, anche a
+// dito fermo. Vale anche con "Riduci movimento": è una funzione, non un
+// effetto.
 
 import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   bersaglioSotto,
+  pastiDopoScorrimento,
+  prossimoScrollTop,
+  velocitaScorrimento,
   zonaBersagli,
   type PastoSulloSchermo,
   type Rettangolo,
@@ -86,13 +101,25 @@ export function useTrascinaInPasto({ rifLista, rifFasciaAggiungi, pastoDi, onRil
   // Tutto quello che cambia a ogni movimento sta in ref, non nello stato.
   const rifCopia = useRef<HTMLElement | null>(null);
   const rifCorrente = useRef<{
+    lista: HTMLElement;
     origine: { x: number; y: number };
+    // I pasti come erano all'inizio, con lo scrollTop di allora.
     pasti: PastoSulloSchermo[];
+    scrollIniziale: number;
     zona: Rettangolo;
     partenza: string | null;
+    // Dove è il dito, e lo spostamento della copia.
+    x: number;
+    y: number;
     dx: number;
     dy: number;
     bersaglio: string | null;
+    // Scorrimento automatico: il fotogramma prenotato, il tempo del
+    // precedente, e lo scrollTop con i decimali (il browser lo arrotonda:
+    // a bassa velocità un passo sotto il pixel si perderebbe ogni volta).
+    fotogramma: number | null;
+    tempoPrecedente: number | null;
+    scrollPreciso: number;
   } | null>(null);
   // Le opzioni più recenti (le funzioni della pagina cambiano a ogni render).
   const rifOpzioni = useRef({ pastoDi, onRilascio });
@@ -111,7 +138,61 @@ export function useTrascinaInPasto({ rifLista, rifFasciaAggiungi, pastoDi, onRil
     scriviPosizione();
   }
 
+  function fermaScorrimento() {
+    const c = rifCorrente.current;
+    if (c?.fotogramma != null) cancelAnimationFrame(c.fotogramma);
+    if (c) c.fotogramma = null;
+  }
+
+  // Quanto ha scorso la lista dall'inizio del trascinamento.
+  function scorso(c: NonNullable<typeof rifCorrente.current>): number {
+    return c.lista.scrollTop - c.scrollIniziale;
+  }
+
+  function aggiornaBersaglio() {
+    const c = rifCorrente.current;
+    if (!c) return;
+    const sotto = bersaglioSotto(
+      c.x,
+      c.y,
+      pastiDopoScorrimento(c.pasti, scorso(c)),
+      c.partenza,
+      c.zona,
+    );
+    if (sotto !== c.bersaglio) {
+      c.bersaglio = sotto;
+      setBersaglio(sotto);
+    }
+  }
+
+  // Un fotogramma dello scorrimento automatico.
+  function passoScorrimento(tempo: number) {
+    const c = rifCorrente.current;
+    if (!c) return;
+    c.fotogramma = null;
+    const velocita = velocitaScorrimento(c.y, c.zona);
+    if (velocita === 0) return; // il dito è uscito dalla fascia
+    const dt = c.tempoPrecedente === null ? 16 : tempo - c.tempoPrecedente;
+    c.tempoPrecedente = tempo;
+    const massimo = c.lista.scrollHeight - c.lista.clientHeight;
+    const nuovo = prossimoScrollTop(c.scrollPreciso, velocita, dt, Math.max(0, massimo));
+    if (nuovo === c.scrollPreciso) return; // fine corsa
+    c.scrollPreciso = nuovo;
+    c.lista.scrollTop = nuovo;
+    aggiornaBersaglio();
+    c.fotogramma = requestAnimationFrame(passoScorrimento);
+  }
+
+  function avviaScorrimento() {
+    const c = rifCorrente.current;
+    if (!c || c.fotogramma !== null || velocitaScorrimento(c.y, c.zona) === 0) return;
+    c.tempoPrecedente = null;
+    c.scrollPreciso = c.lista.scrollTop;
+    c.fotogramma = requestAnimationFrame(passoScorrimento);
+  }
+
   function chiudi() {
+    fermaScorrimento();
     rifCorrente.current = null;
     setTrascinamento(null);
     setBersaglio(null);
@@ -120,8 +201,9 @@ export function useTrascinaInPasto({ rifLista, rifFasciaAggiungi, pastoDi, onRil
   function inizio(...[riga, origine, x, y]: Parameters<AscoltatoriTrascinamento["inizio"]>) {
     const lista = rifLista.current;
     if (!lista) return;
-    // I pasti si misurano una volta: durante il trascinamento la lista
-    // non scorre (overflow hidden e touchmove bloccati dal gesto).
+    // I pasti si misurano una volta: il dito non fa scorrere la lista
+    // (overflow hidden e touchmove bloccati dal gesto), e quando la fa
+    // scorrere lo scorrimento automatico si sa di quanto.
     const pasti = [...lista.querySelectorAll<HTMLElement>("[data-pasto-id]")].map((el) => ({
       id: el.dataset.pastoId!,
       rettangolo: rettangolo(el),
@@ -131,13 +213,20 @@ export function useTrascinaInPasto({ rifLista, rifFasciaAggiungi, pastoDi, onRil
     const partenza = rifOpzioni.current.pastoDi(riga);
     const r = riga.elemento.getBoundingClientRect();
     rifCorrente.current = {
+      lista,
       origine,
       pasti,
+      scrollIniziale: lista.scrollTop,
       zona: zonaBersagli(rettangolo(lista), limiteBasso),
       partenza,
+      x,
+      y,
       dx: x - origine.x,
       dy: y - origine.y,
       bersaglio: null,
+      fotogramma: null,
+      tempoPrecedente: null,
+      scrollPreciso: lista.scrollTop,
     };
     setTrascinamento({
       riga: { tipo: riga.tipo, id: riga.id },
@@ -150,39 +239,43 @@ export function useTrascinaInPasto({ rifLista, rifFasciaAggiungi, pastoDi, onRil
   function movimento(x: number, y: number) {
     const c = rifCorrente.current;
     if (!c) return;
+    c.x = x;
+    c.y = y;
     c.dx = x - c.origine.x;
     c.dy = y - c.origine.y;
     scriviPosizione();
-    const sotto = bersaglioSotto(x, y, c.pasti, c.partenza, c.zona);
-    if (sotto !== c.bersaglio) {
-      c.bersaglio = sotto;
-      setBersaglio(sotto);
-    }
+    aggiornaBersaglio();
+    avviaScorrimento();
   }
 
   function fine(...[riga, x, y, interrotto]: Parameters<AscoltatoriTrascinamento["fine"]>) {
     const c = rifCorrente.current;
     if (!c) return;
+    fermaScorrimento();
     bloccaClickFantasma();
-    const destinazione = interrotto ? null : bersaglioSotto(x, y, c.pasti, c.partenza, c.zona);
+    const destinazione = interrotto
+      ? null
+      : bersaglioSotto(x, y, pastiDopoScorrimento(c.pasti, scorso(c)), c.partenza, c.zona);
     if (destinazione) {
       chiudi();
       rifOpzioni.current.onRilascio(riga, destinazione);
       return;
     }
-    // Niente bersaglio: la copia torna verso la riga e sparisce.
+    // Niente bersaglio: la copia torna verso la riga e sparisce. Se la
+    // lista ha scorso, la riga sullo schermo si è spostata con lei.
     setBersaglio(null);
+    const rientro = `translate(0px, ${-scorso(c)}px)`;
     const copia = rifCopia.current;
     if (!copia || movimentoRidotto() || typeof copia.animate !== "function") {
       chiudi();
       return;
     }
-    copia.style.transform = "translate(0px, 0px)";
+    copia.style.transform = rientro;
     copia
-      .animate(
-        [{ transform: `translate(${c.dx}px, ${c.dy}px)` }, { transform: "translate(0px, 0px)" }],
-        { duration: DURATA_RITORNO_COPIA_MS, easing: "ease-out" },
-      )
+      .animate([{ transform: `translate(${c.dx}px, ${c.dy}px)` }, { transform: rientro }], {
+        duration: DURATA_RITORNO_COPIA_MS,
+        easing: "ease-out",
+      })
       .finished.catch(() => {})
       .finally(chiudi);
   }

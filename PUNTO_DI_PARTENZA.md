@@ -337,9 +337,11 @@ lì l'Annulla non c'è o è diverso.
 **Sposta** (C dal menu, D trascinando): sul trascinamento tutti i pasti
 sono bersagli (bordo tratteggiato), quello sotto il dito si evidenzia, il
 pasto di partenza si spegne solo trascinando un pasto intero. Rilascio
-fuori da un pasto, o sul pasto di partenza: niente. Senza scorrimento
-automatico vicino ai bordi: per un pasto fuori schermo c'è Sposta dal
-menu, che apre l'elenco dei pasti del giorno meno quello di partenza.
+fuori da un pasto, o sul pasto di partenza: niente. **Scorrimento
+automatico vicino ai bordi** (cambiato il 6/10 dall'uso: la decisione 2
+del piano diceva "niente scorrimento automatico", ma con molti pasti
+quelli fuori schermo non si raggiungevano). Resta anche Sposta dal menu,
+che apre l'elenco dei pasti del giorno meno quello di partenza.
 
 Il trascinamento, costruito col passo D (`src/lib/trascinaInPasto.ts`,
 decisioni pure in `decisioneTrascinamento.ts`):
@@ -358,9 +360,28 @@ decisioni pure in `decisioneTrascinamento.ts`):
   - tutti i pasti tranne quello di partenza hanno il bordo tratteggiato,
     anche quelli chiusi;
   - quello sotto il dito ha sfondo e bordo in accento;
-  - il bordo è un `outline` fuori dal riquadro, così niente si sposta.
-- **Dove vale il rilascio:** i pasti si misurano all'inizio, perché
-  durante il trascinamento la lista non scorre. Vale solo la parte
+  - bordo e sfondo sono un riquadro disegnato dietro al contenuto
+    (`::before`), così niente si sposta. In verticale sta dentro il
+    pasto, rientrato di 4 px: fra due pasti vicini restano 8 px e i bordi
+    non si toccano. Ai lati sporge di 8 px nel margine della lista, perché
+    il testo arriva al bordo del pasto. Fino al 6/10 era un `outline`
+    appena fuori dal riquadro, e fra due pasti vicini si sovrapponeva
+    (controllo in `src/app/bordiBersagli.test.ts`).
+- **Scorrimento automatico:**
+  - in alto e in basso nella parte visibile della lista c'è una fascia di
+    64 px; quella in basso sta sopra "+ Aggiungi" e la pillola;
+  - con il dito lì dentro la lista scorre da sola: più il dito è vicino al
+    bordo, più va veloce, fino a 800 px al secondo, e oltre il bordo resta
+    alla massima;
+  - si ferma quando il dito esce dalla fascia o la lista è a fine corsa;
+  - mentre scorre, il pasto sotto il dito si ricalcola anche a dito fermo;
+  - vale anche con "Riduci movimento": è una funzione, non un effetto.
+  Le regole sono funzioni pure in `decisioneTrascinamento.ts`
+  (`velocitaScorrimento`, `prossimoScrollTop`); il ciclo a ogni
+  fotogramma (`requestAnimationFrame`) è in `trascinaInPasto.ts`.
+- **Dove vale il rilascio:** i pasti si misurano all'inizio. Il dito non fa
+  scorrere la lista, e lo scorrimento automatico sposta i pasti misurati
+  di quanto ha scorso. Vale solo la parte
   visibile della lista, tagliata in basso dove cominciano "+ Aggiungi" e
   la pillola; un pasto scorso sotto la testata o sotto le barre non è un
   bersaglio.

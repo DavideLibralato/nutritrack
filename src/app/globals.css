@@ -306,10 +306,20 @@ body:has([data-pulsante-aggiungi]) {
    - ogni pasto che può ricevere la riga ha il bordo tratteggiato
      (data-bersaglio), quello sotto il dito sfondo e bordo in accento
      (data-bersaglio-attivo).
-   Il bordo è un `outline` disegnato appena fuori dal riquadro: non occupa
-   spazio, quindi niente si sposta mentre si trascina (i pasti sono stati
-   misurati all'inizio). Lo spazio per disegnarlo c'è: la lista ha 16 px di
-   margine ai lati. */
+   Bordo e sfondo sono un riquadro disegnato da un pseudo-elemento (::before)
+   dietro al contenuto del pasto, non un bordo vero: non occupa spazio,
+   quindi niente si sposta mentre si trascina (i pasti sono misurati
+   all'inizio). In verticale sta DENTRO il riquadro del pasto, staccato di
+   4 px: fra due pasti vicini restano 8 px e i bordi non si toccano mai
+   (prima era un outline appena fuori, e fra due pasti si sovrapponevano).
+   Ai lati sporge di 8 px, nel margine di 16 px della lista: il testo del
+   pasto arriva al bordo del suo riquadro, e un bordo tutto dentro gli
+   passerebbe sopra. Ai lati non ci sono altri pasti da toccare.
+   `isolation: isolate` tiene il riquadro (z-index -1) sopra lo sfondo della
+   pagina ma sotto il testo del pasto; solo durante il trascinamento, così
+   fuori non cambia come si sovrappongono le righe (l'ombra di una riga
+   sollevata). Il controllo che resti dentro in
+   verticale è in src/app/bordiBersagli.test.ts. */
 .riga-tieni-premuto[data-trascinato],
 .pasto-trascinamento[data-trascinato] {
   opacity: 0.35;
@@ -321,12 +331,20 @@ body:has([data-pulsante-aggiungi]) {
   transform: none;
 }
 .pasto-trascinamento[data-bersaglio] {
-  border-radius: 0.75rem;
-  outline: 1.5px dashed var(--linea);
-  outline-offset: 4px;
+  position: relative;
+  isolation: isolate;
 }
-.pasto-trascinamento[data-bersaglio-attivo] {
-  outline: 2px solid var(--accento);
+.pasto-trascinamento[data-bersaglio]::before {
+  content: "";
+  position: absolute;
+  inset: 4px -8px;
+  z-index: -1;
+  border: 1.5px dashed var(--linea);
+  border-radius: 0.75rem;
+  pointer-events: none;
+}
+.pasto-trascinamento[data-bersaglio-attivo]::before {
+  border: 2px solid var(--accento);
   background: var(--capsula-attiva);
 }
 

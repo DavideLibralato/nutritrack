@@ -5,6 +5,38 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Trascinamento: scorrimento automatico e bordi dentro i pasti
+
+Branch `trascina`. Due ritocchi dopo la prova del passo D su iPhone, che
+funzionava.
+
+- **Scorrimento automatico** durante il trascinamento. Cambia la decisione
+  2 del 6/10: con molti pasti, quelli fuori schermo non si raggiungevano.
+  - In alto e in basso nella lista visibile c'è una fascia di 64 px;
+    quella in basso sta sopra "+ Aggiungi" e la pillola.
+  - Più il dito è vicino al bordo, più si va veloci, fino a 800 px/s; ci
+    si ferma fuori dalla fascia o a fine corsa.
+  - Il pasto sotto il dito si ricalcola mentre la lista scorre, anche a
+    dito fermo.
+  - Vale anche con "Riduci movimento".
+  - Un fotogramma lento (l'app che torna dal background) conta al massimo
+    50 ms, così la lista non salta.
+- **Bordi dei pasti bersaglio:** prima erano un outline appena fuori dal
+  riquadro, e fra due pasti vicini si sovrapponevano (Colazione e Spuntino
+  mattina). Ora sono un riquadro disegnato dietro al contenuto: in
+  verticale sta dentro il pasto, a 4 px dal bordo; ai lati sporge di 8 px
+  nel margine della lista, perché il testo arriva al bordo del pasto. Lo
+  stesso per l'evidenziazione del pasto sotto il dito. Niente si sposta.
+- **Test:**
+  - 6 sulle funzioni pure dello scorrimento: fasce, velocità crescente e
+    massima, fine corsa, fotogramma lento, bersaglio che cambia mentre la
+    lista scorre;
+  - 1 sulla pagina: dito fermo nella fascia bassa, la lista scorre, il
+    pasto sotto il dito cambia e il rilascio sposta lo yogurt;
+  - 2 sul CSS dei bordi (niente outline, riquadro che rientra in
+    verticale), perché jsdom non disegna.
+- **Verifica dei test:** 10 rotture apposta, tutte prese.
+
 ## 2026-10-06 — Trascinare un alimento o un pasto su un altro pasto (passo D)
 
 Branch `trascina`, partito da `sposta-menu`. Il passo C è stato provato su
