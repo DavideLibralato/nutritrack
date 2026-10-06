@@ -243,8 +243,10 @@ Design chiuso, provato su mockup interattivi e su iPhone. Si costruisce in
 cinque passi, un branch ciascuno: **A** il gesto (`tieni-premuto`), **B**
 menu + Elimina + Annulla generale (`menu-elimina`), **C** Sposta dal menu
 + foglio doppioni (`sposta-menu`), **D** trascinamento (`trascina`), **E**
-Duplica (`duplica`). A e B arrivano su main insieme (A da solo ha un
-segnaposto al posto del menu); da C in poi ogni passo va su main da solo.
+Duplica (`duplica`). Ogni passo parte dal branch del precedente, e
+**tutti i passi arrivano su main insieme alla fine**, dopo un giro di
+prove completo (deciso il 6/10, al posto di "A e B insieme, poi un passo
+alla volta"). Main non si tocca nel frattempo senza dirlo prima.
 
 **Il gesto** (passo A, `src/lib/tieniPremuto.ts`, decisioni pure in
 `decisioneTieniPremuto.ts`). Su un alimento o sul nome di un pasto con
@@ -316,8 +318,9 @@ di lasciare il gesto fermo (test in `tieniPremuto.test.tsx`).
 Voci: Sposta (sempre), Duplica (sul pasto solo se ha alimenti: oggi
 sempre, visto che il pasto vuoto non ha il gesto), Elimina ("Elimina
 tutto il pasto" sul pasto: cancella le voci, non la fascia). **Ogni voce
-compare solo quando funziona**: col passo B c'è solo Elimina, Sposta
-arriva col passo C, Duplica con l'E. Voci spente sembrerebbero rotte.
+compare solo quando funziona**: col passo B c'era solo Elimina; dal
+passo C c'è Sposta, sopra Elimina; Duplica arriva col passo E. Voci
+spente sembrerebbero rotte.
 
 **Elimina** (B): nessuna conferma prima, "Annulla" dopo (come
 l'inserimento, punto 10.2). Le voci si rileggono da Dexie al tocco.
@@ -351,6 +354,37 @@ anche più righe dello stesso alimento. Annulla o tocco fuori annullano
 tutto: si scrive solo alla conferma, e il piano si ricalcola sulle righe
 rilette da Dexie.
 
+Costruito col passo C:
+- **Una scelta per alimento** (mockup approvato il 5/10, "Opzione A,
+  completa"). Ogni alimento in comune ha il suo blocco nel foglio
+  (`SheetDoppioni`):
+  - il nome, e sotto le quantità ("Pranzo 100 g · Cena 50 g": prima la
+    destinazione, poi quello che arriva);
+  - la sua griglia 2×2 con Somma già scelta, che mostra il totale
+    ("Somma (150 g)");
+  - con "Scrivi quantità", il campo "Quantità __ g" sotto il blocco;
+  - una riga con l'esito: "→ Una riga da 150 g", "→ Due righe: 100 g e
+    50 g" ("→ 3 righe separate" se le righe erano già di più), "→ Una riga
+    da 120 g (scritta a mano)", "→ Resta in Cena, non si sposta". L'ultima,
+    e il pulsante "Non spostarlo" quando è scelto, nel colore d'avviso.
+
+  Con più di un alimento, sotto il titolo compare "Scegli cosa fare per
+  ciascuno."; con uno solo il foglio è lo stesso, con un blocco.
+  "Per salvare mancano: …" sta sotto il bottone, con i nomi degli alimenti
+  il cui campo è vuoto. (Nella prima versione del passo C le scelte erano
+  una per tutto il foglio: interpretazione mia, corretta il 6/10.)
+- **Quale riga resta** con Somma o Scrivi: la più vecchia (`creato_il`,
+  poi `id`) fra quelle di destinazione. I grammi sommati restano a due
+  decimali.
+- **Alla conferma** si rileggono le righe (`spostaNelPasto` in
+  `src/lib/repository/vociDiario.ts`). Se gli alimenti in doppione non
+  sono più quelli che l'utente ha visto (un altro dispositivo nel
+  frattempo), non si scrive niente e il foglio si riapre con l'elenco
+  nuovo e un avviso.
+- **Annulla**: le scritture passano dalla fotografia del passo B, quindi
+  "Annulla" riporta anche i grammi sommati o scritti a mano. Se non si è
+  scritto niente (tutto escluso) la barra non ha "Annulla".
+
 **Duplica** (E): giorno (campo data, massimo oggi, controllato anche nel
 codice; parte dal giorno mostrato) e pasto (parte da quello d'origine).
 L'originale non si tocca mai. Le copie: stessi `alimento_id`, quantità e
@@ -367,6 +401,19 @@ alimento: "«Nome» resta in «Pasto», non spostato" (mai "Spostato");
 pasto intero: "Spostato: «Pasto A» → «Pasto B»", con "(tranne «Nome»,
 rimasto in «Pasto A»)" se ci sono esclusioni; tutti esclusi: "Nessuno
 spostamento: …". Duplica ed Elimina con lo stesso principio.
+
+Cosa si accorcia nella barra (`src/lib/diario/testiSpostamento.ts`):
+- restano sempre interi il verbo, le parole che danno il senso ("→",
+  "tranne", "resta in", "non spostato", "Nessuno spostamento") e i numeri;
+- i nomi dei pasti si accorciano con "…" oltre 16 caratteri: di solito
+  sono brevi, è solo una cintura;
+- i nomi degli alimenti sono la parte lunga:
+  - nei messaggi brevi ("Spostato: Yogurt → Pranzo") l'alimento sta nel
+    campo che la barra tronca su una riga, e il pasto d'arrivo resta
+    visibile;
+  - nelle frasi con esclusioni la barra va a capo, e ogni alimento si
+    accorcia oltre 22 caratteri;
+  - oltre due esclusi si scrive "«Yogurt», «Mela» e altri 2".
 
 **Annulla solo in avanti** (B, il pezzo da testare di più). La discesa
 fa vincere sempre una cancellazione arrivata dal server (sezione 9.2):

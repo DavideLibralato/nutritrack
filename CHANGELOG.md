@@ -5,6 +5,46 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Sposta dal menu, con il foglio dei doppioni (passo C)
+
+Branch `sposta-menu`, partito da `menu-elimina`. La correzione del menu
+(tocco fuori) è stata provata su iPhone, tutto bene. Deciso oggi: niente
+merge intermedi, i passi A–E arrivano su main tutti insieme alla fine.
+
+- **Menu:** voce "Sposta" (alimento e pasto), sopra Elimina. Apre
+  l'elenco dei pasti del giorno, escluso quello di partenza.
+- **Doppioni:** stesso alimento del catalogo nel pasto di destinazione.
+  - Una scelta per alimento, come nel mockup approvato il 5/10. Ogni
+    alimento ha il suo blocco: quantità ("Pranzo 100 g · Cena 50 g"), la
+    sua griglia 2×2 (Somma già scelta e col totale, Tieni separati, Scrivi
+    quantità col campo, Non spostarlo) e la riga di esito ("→ Una riga da
+    150 g"…).
+  - "Per salvare mancano: …" sotto il bottone.
+  - La prima versione aveva una scelta sola per tutto il foglio: era una
+    mia interpretazione, corretta prima del commit.
+  - Annulla o tocco fuori: niente scritto.
+- **Alla conferma** si rileggono le righe da Dexie. Se nel frattempo i
+  doppioni sono cambiati, non si scrive niente e il foglio si riapre con
+  un avviso. Le scritture passano dalla fotografia del passo B: "Annulla"
+  riporta anche i grammi sommati o scritti a mano.
+- **Messaggi:** i 5 casi della specifica, mai "Spostato" se non si è mosso
+  niente. Nella barra si accorciano con "…" i nomi degli alimenti (oltre
+  22 caratteri, o troncati dalla barra) e dei pasti (oltre 16); verbo,
+  parole di senso e numeri restano interi.
+- **Test:**
+  - 13 sul piano (le 8 regole e i dettagli) e 11 sui testi, comprese le
+    righe di esito;
+  - 2 sullo spostamento in Dexie: Somma poi Annulla, e doppioni cambiati
+    prima della conferma;
+  - 3 sulla pagina Oggi:
+    - due doppioni con due scelte diverse (Somma e Non spostarlo), poi
+      Annulla; fallisce se la stessa scelta si applica a tutti;
+    - Scrivi quantità vuoto;
+    - foglio chiuso senza scritture.
+- **Verifica dei test:** ogni regola è stata rotta apposta (18 rotture).
+  Una è passata lo stesso, perché il test dell'arrotondamento usava 80,1 +
+  19,2, che in JavaScript fa esattamente 99,3; ora usa 10,1 + 20,2.
+
 ## 2026-10-06 — Correzione: dopo un tocco fuori dal menu la lista si bloccava
 
 Branch `menu-elimina`. Le prove su iPhone del passo B sono ok (1–9),

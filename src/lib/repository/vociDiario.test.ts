@@ -19,6 +19,7 @@ import {
   eliminaVoci,
   fotografiaInserimento,
   idVoceRicreata,
+  spostaNelPasto,
 } from "./vociDiario";
 import { repositoryVociDiario } from "./index";
 import { db } from "../db/database";
@@ -285,5 +286,76 @@ describe("elimina e annulla", () => {
 
     const vive = await repositoryVociDiario.ottieniTutti(userId);
     expect(perNome(vive).map(contenutoVisibile)).toEqual(perNome(voci).map(contenutoVisibile));
+  });
+});
+
+describe("sposta e annulla", () => {
+  // Il diario come lo vede l'utente: per ogni pasto, alimento e grammi.
+  async function diario(userId: string) {
+    const vive = await repositoryVociDiario.ottieniTutti(userId);
+    return vive.map((v) => `${v.pasto_id}: ${v.nome_alimento} ${v.quantita_g} g`).sort();
+  }
+
+  it("Somma, poi Annulla: tutto com'era, compresi i grammi sommati", async () => {
+    const userId = crypto.randomUUID();
+    await creaVoce(userId, "Yogurt", { pastoId: "colazione", quantita: 125 });
+    await creaVoce(userId, "Pane", { pastoId: "colazione", quantita: 50 });
+    const yogurtPranzo = await creaVoce(userId, "Yogurt", { pastoId: "pranzo", quantita: 100 });
+    const prima = await diario(userId);
+
+    const origine = { tipo: "pasto" as const, pastoId: "colazione" };
+    const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+    // Con un doppione e senza scelte non si scrive niente.
+    expect(primo.esito).toBe("doppioni");
+    expect(await diario(userId)).toEqual(prima);
+    if (primo.esito !== "doppioni") return;
+
+    const esito = await spostaNelPasto({
+      userId,
+      data: GIORNO,
+      origine,
+      pastoDestinazioneId: "pranzo",
+      scelte: { "alimento-Yogurt": { tipo: "somma" } },
+      doppioniVisti: primo.doppioni,
+    });
+    expect(esito.esito).toBe("fatto");
+    expect(await diario(userId)).toEqual(["pranzo: Pane 50 g", "pranzo: Yogurt 225 g"]);
+    if (esito.esito !== "fatto") return;
+
+    await annullaOperazione(esito.fotografia);
+
+    expect(await diario(userId)).toEqual(prima);
+    // La riga di destinazione è la stessa di prima, tornata a 100 g.
+    expect((await db.voci_diario.get(yogurtPranzo.id))?.quantita_g).toBe(100);
+  });
+
+  it("i doppioni sono cambiati prima della conferma: niente scritto, si richiedono le scelte", async () => {
+    const userId = crypto.randomUUID();
+    await creaVoce(userId, "Yogurt", { pastoId: "colazione", quantita: 125 });
+    await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
+    await creaVoce(userId, "Yogurt", { pastoId: "pranzo", quantita: 100 });
+    const origine = { tipo: "pasto" as const, pastoId: "colazione" };
+    const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+
+    // Nel frattempo (un altro dispositivo) a pranzo compare anche una mela.
+    await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 80 });
+    const prima = await diario(userId);
+
+    const esito = await spostaNelPasto({
+      userId,
+      data: GIORNO,
+      origine,
+      pastoDestinazioneId: "pranzo",
+      scelte: { "alimento-Yogurt": { tipo: "somma" } },
+      doppioniVisti: primo.doppioni,
+    });
+
+    expect(esito.esito).toBe("doppioni");
+    // Quali, non in che ordine: l'ordine segue quello delle righe in Dexie.
+    if (esito.esito === "doppioni") {
+      expect(esito.doppioni.map((d) => d.nome).sort()).toEqual(["Mela", "Yogurt"]);
+    }
+    expect(await diario(userId)).toEqual(prima);
   });
 });

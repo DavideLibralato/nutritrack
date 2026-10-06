@@ -8,7 +8,7 @@
 // che si può rompere in silenzio è il collegamento fra i due.
 
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import OggiPage from "./page";
 import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
 import { idVoceRicreata } from "@/lib/repository/vociDiario";
@@ -208,5 +208,98 @@ describe("Oggi: menu del tieni-premuto chiuso con un tocco fuori", () => {
     expect(touchmoveBloccato(riga)).toBe(false);
     await tieniPremuto(riga, 2);
     puntatore("pointerup", lista, 2);
+  });
+});
+
+// Il giro completo di "Sposta" dal menu, sulla pagina vera: menu → scelta del
+// pasto → foglio dei doppioni → barra → Annulla. I test delle regole
+// (pianoSpostamento) e dei testi non vedono il collegamento fra i pezzi:
+// qui si controlla che sia quello giusto. Due doppioni con due scelte
+// diverse: le scelte sono una PER ALIMENTO (mockup del 5/10), e un foglio
+// che applicasse la stessa scelta a tutti farebbe fallire il test.
+describe("Oggi: Sposta dal menu con due doppioni", () => {
+  async function prepara() {
+    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    const voce = (nome: string, pastoId: string, quantita_g: number) =>
+      repositoryVociDiario.crea({
+        user_id: utenteTest,
+        alimento_id: `alimento-${nome}`,
+        pasto_id: pastoId,
+        gruppo_id: null,
+        quantita_g,
+        data: oggiLocale(),
+        creato_il: "2026-10-06T08:00:00.000Z",
+        consumato_alle: null,
+        nome_alimento: nome,
+        kcal_100g: 60,
+        proteine_100g: 4,
+        carboidrati_100g: 5,
+        grassi_100g: 2,
+      });
+    await voce("Yogurt", colazione.id, 125);
+    await voce("Mela", colazione.id, 150);
+    await voce("Yogurt", pranzo.id, 100);
+    await voce("Mela", pranzo.id, 80);
+    const diario = async () =>
+      (await repositoryVociDiario.ottieniTutti(utenteTest))
+        .map((v) => `${v.pasto_id === pranzo.id ? "Pranzo" : "Colazione"} ${v.nome_alimento} ${v.quantita_g}`)
+        .sort();
+
+    render(<OggiPage />);
+    // Il menu da tasto destro / tastiera, sul nome del pasto: niente timer.
+    const titolo = (await screen.findAllByText("Colazione")).find((el) => el.closest("[data-tieni-premuto]"))!;
+    fireEvent.contextMenu(titolo.closest("button")!);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sposta" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Pranzo" }));
+    await screen.findByText("2 alimenti ci sono già in «Pranzo»");
+    return { diario };
+  }
+
+  it("Somma sullo yogurt, Non spostarlo sulla mela; Annulla riporta tutto com'era", async () => {
+    const { diario } = await prepara();
+    const prima = await diario();
+
+    const yogurt = screen.getByRole("group", { name: "Yogurt" });
+    const mela = screen.getByRole("group", { name: "Mela" });
+    expect(within(yogurt).getByRole("radio", { name: "Somma (225 g)" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(within(mela).getByRole("radio", { name: "Non spostarlo" }));
+    within(mela).getByText("→ Resta in Colazione, non si sposta");
+    within(yogurt).getByText("→ Una riga da 225 g");
+    expect(await diario()).toEqual(prima); // finché non si conferma, niente
+
+    fireEvent.click(screen.getByRole("button", { name: "Sposta" }));
+
+    await screen.findByText("Spostato: «Colazione» → «Pranzo» (tranne «Mela», rimasto in «Colazione»).");
+    await waitFor(async () =>
+      expect(await diario()).toEqual(["Colazione Mela 150", "Pranzo Mela 80", "Pranzo Yogurt 225"])
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual(prima);
+  });
+
+  it("Scrivi quantità vuoto: bottone spento e «Per salvare mancano» col nome", async () => {
+    await prepara();
+    fireEvent.click(within(screen.getByRole("group", { name: "Mela" })).getByRole("radio", { name: "Scrivi quantità" }));
+    expect((screen.getByRole("button", { name: "Sposta" }) as HTMLButtonElement).disabled).toBe(true);
+    screen.getByText("Per salvare mancano: Mela.");
+    fireEvent.change(screen.getByLabelText("Quantità"), { target: { value: "120" } });
+    expect((screen.getByRole("button", { name: "Sposta" }) as HTMLButtonElement).disabled).toBe(false);
+    within(screen.getByRole("group", { name: "Mela" })).getByText("→ Una riga da 120 g (scritta a mano)");
+  });
+
+  it("chiudere il foglio dei doppioni non scrive niente", async () => {
+    await prepara();
+    const prima = (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
+
+    // Tocco fuori: lo sfondo scurito.
+    fireEvent.click(screen.getByRole("dialog").parentElement!);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    const dopo = (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
+    expect(dopo).toEqual(prima);
+    expect(screen.queryByText(/Spostato/)).toBeNull();
   });
 });

@@ -34,6 +34,15 @@
 import { v5 as uuidv5 } from "uuid";
 import { repositoryVociDiario } from "./index";
 import type { VoceDiario } from "../db/tipi";
+import {
+  pianoSpostamento,
+  stessiDoppioni,
+  trovaDoppioni,
+  type Doppione,
+  type PianoSpostamento,
+  type SceltaDoppione,
+  type Scrittura,
+} from "../diario/pianoSpostamento";
 
 export interface FotografiaVoci {
   // Le righe come erano PRIMA dell'operazione (copie intere), per quelle
@@ -128,7 +137,97 @@ export async function eliminaPastoDelGiorno(
   data: string,
   pastoId: string
 ): Promise<FotografiaVoci> {
-  const voci = await repositoryVociDiario.ottieniTutti(userId);
-  const ids = voci.filter((v) => v.data === data && v.pasto_id === pastoId).map((v) => v.id);
+  const ids = (await vociDelPasto(userId, data, pastoId)).map((v) => v.id);
   return eliminaVoci(ids);
+}
+
+// Le voci vive di un pasto in un giorno, lette da Dexie adesso.
+async function vociDelPasto(userId: string, data: string, pastoId: string): Promise<VoceDiario[]> {
+  const voci = await repositoryVociDiario.ottieniTutti(userId);
+  return voci.filter((v) => v.data === data && v.pasto_id === pastoId);
+}
+
+// Applica un elenco di scritture (aggiorna / elimina) e ne restituisce la
+// fotografia. Ogni riga si rilegge prima di scriverla: se nel frattempo è
+// sparita o è stata cancellata, l'operazione si ferma. In ogni caso di
+// errore le scritture già fatte si annullano subito: o tutto, o niente.
+export async function applicaScritture(scritture: Scrittura[]): Promise<FotografiaVoci> {
+  const foto: FotografiaVoci = { prima: [], idCreate: [] };
+  const fotografate = new Set<string>();
+  try {
+    for (const s of scritture) {
+      const voce = await repositoryVociDiario.ottieniPerId(s.id);
+      if (!voce || voce.deleted_at !== null) {
+        throw new Error(`La voce ${s.id} non c'è più: operazione interrotta`);
+      }
+      // La copia di com'era PRIMA della prima scrittura su questa riga.
+      if (!fotografate.has(s.id)) {
+        foto.prima.push(voce);
+        fotografate.add(s.id);
+      }
+      if (s.tipo === "aggiorna") await repositoryVociDiario.aggiorna(s.id, s.modifiche);
+      else await repositoryVociDiario.elimina(s.id);
+    }
+  } catch (errore) {
+    await annullaOperazione(foto).catch(() => {});
+    throw errore;
+  }
+  return foto;
+}
+
+// Da dove parte uno spostamento: una voce sola o tutto un pasto.
+export type OrigineSpostamento =
+  | { tipo: "voce"; id: string }
+  | { tipo: "pasto"; pastoId: string };
+
+export type EsitoSpostaNelPasto =
+  // Servono (di nuovo) le scelte per i doppioni: la prima volta, o perché
+  // nel frattempo gli alimenti in doppione sono cambiati. Niente scritto.
+  | { esito: "doppioni"; doppioni: Doppione[] }
+  // Fatto: il piano applicato e la sua fotografia (vuota se non si è
+  // scritto niente, per esempio tutto escluso con "Non spostarlo").
+  | { esito: "fatto"; piano: PianoSpostamento; fotografia: FotografiaVoci };
+
+// Sposta (sezione 3, "Tieni premuto"). Le righe si rileggono da Dexie qui,
+// al momento della conferma, non si prendono da quelle che la pagina
+// mostrava. Se ci sono doppioni e le scelte non ci sono ancora, o sono
+// state fatte per un elenco di doppioni diverso da quello di adesso, non si
+// scrive niente e si restituiscono i doppioni da chiedere.
+export async function spostaNelPasto({
+  userId,
+  data,
+  origine,
+  pastoDestinazioneId,
+  scelte,
+  doppioniVisti,
+}: {
+  userId: string;
+  data: string;
+  origine: OrigineSpostamento;
+  pastoDestinazioneId: string;
+  scelte?: Record<string, SceltaDoppione>;
+  doppioniVisti?: Doppione[];
+}): Promise<EsitoSpostaNelPasto> {
+  let partenza: VoceDiario[];
+  if (origine.tipo === "voce") {
+    const voce = await repositoryVociDiario.ottieniPerId(origine.id);
+    partenza = voce && voce.deleted_at === null ? [voce] : [];
+  } else {
+    partenza = await vociDelPasto(userId, data, origine.pastoId);
+  }
+  const destinazione = await vociDelPasto(userId, data, pastoDestinazioneId);
+
+  const doppioni = trovaDoppioni(partenza, destinazione);
+  if (doppioni.length > 0 && (!scelte || !doppioniVisti || !stessiDoppioni(doppioni, doppioniVisti))) {
+    return { esito: "doppioni", doppioni };
+  }
+
+  const piano = pianoSpostamento({
+    partenza,
+    destinazione,
+    pastoDestinazioneId,
+    scelte: scelte ?? {},
+  });
+  const fotografia = await applicaScritture(piano.scritture);
+  return { esito: "fatto", piano, fotografia };
 }

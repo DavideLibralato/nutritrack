@@ -64,6 +64,10 @@ import AnelloCalorie from "@/components/AnelloCalorie";
 import BarraMacro from "@/components/BarraMacro";
 import SheetQuantita from "@/components/SheetQuantita";
 import SheetNome from "@/components/SheetNome";
+import SheetScegliPasto from "@/components/SheetScegliPasto";
+import SheetDoppioni from "@/components/SheetDoppioni";
+import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
+import { accorcia, MASSIMO_ALIMENTO, MASSIMO_PASTO, messaggioSpostamento } from "@/lib/diario/testiSpostamento";
 import { daVoce } from "@/lib/inserimento/alimentoPerSheet";
 import {
   pastoGiaSalvato,
@@ -89,6 +93,8 @@ import {
   eliminaPastoDelGiorno,
   eliminaVoci,
   fotografiaInserimento,
+  spostaNelPasto,
+  type OrigineSpostamento,
   type FotografiaVoci,
 } from "@/lib/repository/vociDiario";
 import MenuContestuale from "@/components/MenuContestuale";
@@ -366,7 +372,25 @@ function OggiContenuto() {
   const rifFasciaAggiungi = useRef<HTMLDivElement>(null);
 
   // Swipe e tieni-premuto: spenti con uno sheet o il menu aperti.
-  const gestiAttivi = voceInModifica === null && pastoDaSalvare === null && menu === null;
+  // "Sposta" dal menu (sezione 3, "Tieni premuto"): cosa si sposta e a che
+  // punto si è. Senza destinazione si sceglie il pasto (SheetScegliPasto);
+  // con `doppioni` è aperto il foglio dei doppioni (SheetDoppioni). Niente
+  // si scrive finché non si conferma: chiudere uno dei due fogli butta via
+  // tutto.
+  const [spostamento, setSpostamento] = useState<{
+    origine: OrigineSpostamento;
+    // Il nome dell'alimento o del pasto che si sposta, per i titoli.
+    nome: string;
+    pastoPartenzaId: string | null;
+    pastoDestinazioneId: string | null;
+    doppioni: Doppione[] | null;
+    avviso: string | null;
+    inCorso: boolean;
+    errore: string | null;
+  } | null>(null);
+
+  const gestiAttivi =
+    voceInModifica === null && pastoDaSalvare === null && menu === null && spostamento === null;
 
   // Swipe per cambiare giorno (sezione 3, "Swipe per cambiare giorno"): si
   // attiva sul pannello del giorno (anello, macro e lista), non sulla testata
@@ -550,6 +574,73 @@ function OggiContenuto() {
   // Niente conferma prima, come per l'inserimento: c'è "Annulla" dopo
   // (punto 10.2). Cancellato niente (già sparito nel frattempo) → niente
   // barra.
+  // "Sposta" dal menu: apre l'elenco dei pasti.
+  function apriSposta(tipo: TipoRiga, id: string) {
+    const vuoto = { pastoDestinazioneId: null, doppioni: null, avviso: null, inCorso: false, errore: null };
+    if (tipo === "voce") {
+      const voce = vociGiorno.find((v) => v.id === id);
+      if (!voce) return;
+      setSpostamento({ ...vuoto, origine: { tipo: "voce", id }, nome: voce.nome_alimento, pastoPartenzaId: voce.pasto_id });
+    } else {
+      const pasto = pasti?.find((p) => p.id === id);
+      if (!pasto) return;
+      setSpostamento({ ...vuoto, origine: { tipo: "pasto", pastoId: id }, nome: pasto.nome, pastoPartenzaId: id });
+    }
+  }
+
+  // Scelto il pasto (e, se servono, le scelte per i doppioni): rilegge le
+  // righe da Dexie e sposta (spostaNelPasto). Se ci sono doppioni da
+  // decidere, o nel frattempo sono cambiati, apre il foglio invece di
+  // scrivere. Alla fine la barra dice cosa è successo davvero, con
+  // "Annulla" solo se si è scritto qualcosa.
+  async function eseguiSpostamento(pastoDestinazioneId: string, scelte?: Record<string, SceltaDoppione>) {
+    if (!userId || !spostamento) return;
+    const s = spostamento;
+    setSpostamento({ ...s, pastoDestinazioneId, inCorso: true, errore: null });
+    try {
+      const esito = await spostaNelPasto({
+        userId,
+        data: giorno,
+        origine: s.origine,
+        pastoDestinazioneId,
+        scelte,
+        doppioniVisti: s.doppioni ?? undefined,
+      });
+      if (esito.esito === "doppioni") {
+        setSpostamento({
+          ...s,
+          pastoDestinazioneId,
+          doppioni: esito.doppioni,
+          avviso: s.doppioni ? "Nel frattempo l'elenco è cambiato: controlla e conferma di nuovo." : null,
+          inCorso: false,
+          errore: null,
+        });
+        return;
+      }
+      setSpostamento(null);
+      const { piano, fotografia } = esito;
+      // Niente da spostare (la voce è sparita nel frattempo): niente barra.
+      if (piano.spostati.length === 0 && piano.esclusi.length === 0) return;
+      const nomePasto = (pastoId: string | null) => pasti?.find((p) => p.id === pastoId)?.nome ?? "";
+      const scritto = fotografia.prima.length > 0 || fotografia.idCreate.length > 0;
+      setBarra({
+        id: crypto.randomUUID(),
+        ...messaggioSpostamento({
+          tipo: s.origine.tipo,
+          nomeAlimento: s.origine.tipo === "voce" ? s.nome : undefined,
+          pastoPartenza: nomePasto(s.pastoPartenzaId),
+          pastoDestinazione: nomePasto(pastoDestinazioneId),
+          spostati: piano.spostati.length,
+          esclusi: piano.esclusi,
+        }),
+        fotografia: scritto ? fotografia : undefined,
+      });
+    } catch {
+      // applicaScritture ha già rimesso a posto quello che aveva scritto.
+      setSpostamento({ ...s, pastoDestinazioneId, inCorso: false, errore: "Operazione non riuscita. Riprova." });
+    }
+  }
+
   async function eliminaDalMenu(tipo: TipoRiga, id: string) {
     if (!userId) return;
     try {
@@ -1079,12 +1170,54 @@ function OggiContenuto() {
           fuocoAllaPrimaVoce={menu.fuocoAllaPrimaVoce}
           voci={[
             {
+              etichetta: "Sposta",
+              onSeleziona: () => apriSposta(menu.tipo, menu.id),
+            },
+            {
               etichetta: menu.tipo === "pasto" ? "Elimina tutto il pasto" : "Elimina",
               distruttiva: true,
               onSeleziona: () => void eliminaDalMenu(menu.tipo, menu.id),
             },
           ]}
           onChiudi={chiudiMenu}
+        />
+      )}
+
+      {spostamento && spostamento.doppioni === null && (
+        <SheetScegliPasto
+          titolo={`Sposta «${accorcia(spostamento.nome, MASSIMO_ALIMENTO)}» in…`}
+          pasti={pasti.filter((p) => p.id !== spostamento.pastoPartenzaId)}
+          inCorso={spostamento.inCorso}
+          errore={spostamento.errore}
+          onScegli={(pastoId) => void eseguiSpostamento(pastoId)}
+          onAnnulla={() => setSpostamento(null)}
+        />
+      )}
+
+      {spostamento && spostamento.doppioni !== null && spostamento.pastoDestinazioneId && (
+        <SheetDoppioni
+          titolo={
+            spostamento.doppioni.length === 1
+              ? `«${accorcia(spostamento.doppioni[0].nome, MASSIMO_ALIMENTO)}» c'è già in «${accorcia(
+                  pasti.find((p) => p.id === spostamento.pastoDestinazioneId)?.nome ?? "",
+                  MASSIMO_PASTO
+                )}»`
+              : `${spostamento.doppioni.length} alimenti ci sono già in «${accorcia(
+                  pasti.find((p) => p.id === spostamento.pastoDestinazioneId)?.nome ?? "",
+                  MASSIMO_PASTO
+                )}»`
+          }
+          doppioni={spostamento.doppioni}
+          nomeDestinazione={pasti.find((p) => p.id === spostamento.pastoDestinazioneId)?.nome ?? ""}
+          nomePartenza={pasti.find((p) => p.id === spostamento.pastoPartenzaId)?.nome ?? ""}
+          etichettaEscludi="Non spostarlo"
+          esitoEscludi={`Resta in ${pasti.find((p) => p.id === spostamento.pastoPartenzaId)?.nome ?? ""}, non si sposta`}
+          etichettaConferma="Sposta"
+          avviso={spostamento.avviso}
+          inCorso={spostamento.inCorso}
+          errore={spostamento.errore}
+          onAnnulla={() => setSpostamento(null)}
+          onConferma={(scelte) => void eseguiSpostamento(spostamento.pastoDestinazioneId!, scelte)}
         />
       )}
 
