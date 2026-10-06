@@ -237,6 +237,104 @@ Nessuna libreria: Pointer Events nell'hook `useSwipeGiorno`
 (`src/lib/swipeGiorno.ts`). Le decisioni sono funzioni pure, testate in
 `decisioneSwipe.test.ts`.
 
+#### Tieni premuto: sposta, duplica, elimina (deciso il 6/10)
+
+Design chiuso, provato su mockup interattivi e su iPhone. Si costruisce in
+cinque passi, un branch ciascuno: **A** il gesto (`tieni-premuto`), **B**
+menu + Elimina + Annulla generale (`menu-elimina`), **C** Sposta dal menu
++ foglio doppioni (`sposta-menu`), **D** trascinamento (`trascina`), **E**
+Duplica (`duplica`). A e B arrivano su main insieme (A da solo ha un
+segnaposto al posto del menu); da C in poi ogni passo va su main da solo.
+
+**Il gesto** (passo A, `src/lib/tieniPremuto.ts`, decisioni pure in
+`decisioneTieniPremuto.ts`). Su un alimento o sul nome di un pasto con
+alimenti:
+
+- 450 ms di pressione ferma sollevano la riga (fondo pieno, ombra, leggero
+  ingrandimento). Se prima il dito si muove di più di 8 px (distanza, non i
+  due assi separati) il gesto si annulla e torna scroll o swipe. 8 px sta
+  sotto i 10 px a cui lo swipe del giorno decide la direzione: i due gesti
+  non si contendono mai lo stesso movimento
+- dal sollevamento, una finestra di 160 ms decide il ramo: il dito si
+  muove di più di 8 px (misurati da dove era al sollevamento) →
+  **trascinamento**; resta fermo per tutta la finestra, o si alza →
+  **menu**. Deciso il menu, un movimento successivo non conta più
+- dal sollevamento il dito è del gesto: lo swipe del giorno lo lascia
+  andare (`puntatoriRivendicati.ts`), la lista non scorre
+  (`preventDefault` sul `touchmove` e `overflow-y: hidden`, come lo swipe),
+  e il click che segue non apre lo sheet né chiude il pasto
+- Pointer Events, quindi vale anche col mouse (tasto principale).
+  `contextmenu` (tasto destro, Maiusc+F10, tasto Menu, tieni-premuto
+  nativo di Android) apre il menu direttamente, ma **non** se c'è un gesto
+  col dito in corso o finito da meno di 400 ms (alcuni Chrome lo mandano a
+  dito alzato): su Android il menu non si apre due volte. Il menu del
+  browser sulle righe è sempre soppresso
+- su ogni riga: `-webkit-touch-callout: none`, `-webkit-user-select: none`,
+  `user-select: none` (senza, Safari su iPhone apre il menu di selezione
+  del testo). `touch-action` resta `pan-y`, non `none`: con `none` la lista
+  non scorrerebbe più partendo da una riga, cioè quasi mai (punto 1 del
+  piano, da confermare su iPhone)
+- `prefers-reduced-motion`: niente ingrandimento né animazioni, il gesto
+  vale
+- **pasto vuoto**: niente gesto (tutte le voci del menu sarebbero vuote)
+- il tap resta com'è: sheet quantità sull'alimento, apri/chiudi sul pasto
+
+**Il menu** (B): ancorato alla riga, un tocco fuori lo chiude senza fare
+niente. Sposta (sempre), Duplica (sul pasto solo se ha alimenti: oggi
+sempre, visto che il pasto vuoto non ha il gesto), Elimina ("Elimina
+tutto il pasto" sul pasto: cancella le voci, non la fascia).
+
+**Sposta** (C dal menu, D trascinando): sul trascinamento tutti i pasti
+sono bersagli (bordo tratteggiato), quello sotto il dito si evidenzia, il
+pasto di partenza si spegne solo trascinando un pasto intero. Rilascio
+fuori da un pasto, o sul pasto di partenza: niente. Senza scorrimento
+automatico vicino ai bordi: per un pasto fuori schermo c'è Sposta dal
+menu, che apre l'elenco dei pasti del giorno meno quello di partenza.
+
+**Doppioni** (C, riusato da E): stesso `alimento_id`, mai il nome; le voci
+con `alimento_id` nullo non sono mai doppioni. Foglio con una riga per
+alimento (quantità esistente = somma delle righe di destinazione, in
+arrivo = somma di quelle di partenza) e quattro scelte: **Somma**
+(predefinita, una riga sola; resta la riga di destinazione con i **suoi**
+valori copiati, anche se quelli della partenza erano diversi per una
+correzione del catalogo), **Tieni separati**, **Scrivi quantità** (una
+riga sola col numero scritto; campo vuoto → "Per salvare mancano: …"),
+**Non spostarlo / Non duplicarlo**. Somma e Scrivi riducono a una riga
+anche più righe dello stesso alimento. Annulla o tocco fuori annullano
+tutto: si scrive solo alla conferma, e il piano si ricalcola sulle righe
+rilette da Dexie.
+
+**Duplica** (E): giorno (campo data, massimo oggi, controllato anche nel
+codice; parte dal giorno mostrato) e pasto (parte da quello d'origine).
+L'originale non si tocca mai. Le copie: stessi `alimento_id`, quantità e
+valori della voce originale (anche se l'alimento è stato cancellato dal
+catalogo: è "ripeti quello che ho mangiato"), `creato_il` adesso,
+`consumato_alle` come in /aggiungi, un `gruppo_id` nuovo comune se è un
+pasto intero. Su un giorno senza voci, con i giorni differenziati,
+`garantisciGiornoPerPrimaVoce` come in /aggiungi (la trappola, sopra). Se
+il giorno è diverso da quello mostrato, la barra ha anche "Vedi".
+
+**Messaggi** (barra BarraAnnulla, mai una nuova): dicono cosa è successo
+davvero. Per Sposta: "Spostato: «Nome» → «Pasto»"; escluso l'unico
+alimento: "«Nome» resta in «Pasto», non spostato" (mai "Spostato");
+pasto intero: "Spostato: «Pasto A» → «Pasto B»", con "(tranne «Nome»,
+rimasto in «Pasto A»)" se ci sono esclusioni; tutti esclusi: "Nessuno
+spostamento: …". Duplica ed Elimina con lo stesso principio.
+
+**Annulla solo in avanti** (B, il pezzo da testare di più). La discesa
+fa vincere sempre una cancellazione arrivata dal server (sezione 9.2):
+rimettere `deleted_at = null` su una riga la cui cancellazione è già
+partita può farla sparire di nuovo alla discesa seguente. Quindi
+l'Annulla di queste operazioni scrive solo in avanti: le righe cancellate
+si **ricreano** (id nuovo, stesso contenuto, compresi `creato_il` e
+`gruppo_id`), quelle modificate tornano ai valori di prima, quelle create
+si cancellano. Nessuno punta all'id di una voce, quindi cambiarlo non
+rompe niente. Se una scrittura fallisce a metà operazione, si applica
+subito lo stesso annullo alle righe già toccate.
+
+Nessuna migration e nessuna nuova tabella: sono tutte scritture sui campi
+già esistenti di `voci_diario`.
+
 ### Aggiungi alimento (la pagina su cui si gioca il prodotto)
 
 Si apre a tutto schermo con freccia indietro e, come titolo, **il nome del pasto**

@@ -31,6 +31,11 @@
 //   orizzontale (è il modo che iOS rispetta per fermare uno scroll), più
 //   `overflow-y: hidden` sull'area che scorre finché il dito non si alza,
 //   come seconda cintura. `hidden` non azzera la posizione dello scroll.
+//
+// Tieni premuto (tieniPremuto.ts): quando una riga della lista si solleva,
+// il dito è "rivendicato" da quel gesto e lo swipe lo lascia andare. Non
+// può aver già deciso "orizzontale": il tieni-premuto si annulla a 8 px, lo
+// swipe decide a 10.
 
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { flushSync } from "react-dom";
@@ -49,6 +54,7 @@ import {
   type EsitoSwipe,
 } from "./decisioneSwipe";
 import { oggiLocale } from "./dataGiorno";
+import { puntatoreRivendicato } from "./puntatoriRivendicati";
 
 export type VersoGiorno = Exclude<EsitoSwipe, "ritorno">;
 
@@ -171,6 +177,11 @@ export function useSwipeGiorno(opzioni: OpzioniSwipe) {
 
     function suPointerMove(e: PointerEvent) {
       if (!gesto || e.pointerId !== gesto.id) return;
+      if (gesto.direzione === null && puntatoreRivendicato(e.pointerId)) {
+        // Il dito è del tieni-premuto: questo gesto non c'è più.
+        gesto = null;
+        return;
+      }
       const dx = e.clientX - gesto.x0;
       if (gesto.direzione === null) {
         gesto.direzione = decidiDirezione(dx, e.clientY - gesto.y0);

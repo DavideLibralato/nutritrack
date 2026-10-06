@@ -26,7 +26,7 @@
 // passato). Per leggere ?giorno= serve useSearchParams, che va avvolto in
 // <Suspense> (come nella pagina di login).
 
-import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
@@ -87,6 +87,7 @@ import { annullaInserimento } from "@/lib/repository/vociDiario";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { useSwipeGiorno } from "@/lib/swipeGiorno";
+import { useTieniPremuto, type RigaPremuta } from "@/lib/tieniPremuto";
 
 // Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
 // elenco fisso (sezione 3), quindi non c'è una tabella di etichette da
@@ -340,6 +341,47 @@ function OggiContenuto() {
       setGiorno((g) => (verso === "successivo" ? giornoSuccessivo(g) : giornoPrecedente(g))),
     rifScorrimento: rifLista,
   });
+
+  // Tieni premuto su un alimento o sul nome di un pasto (sezione 3, "Tieni
+  // premuto: sposta, duplica, elimina"). Spento con uno sheet aperto.
+  //
+  // SEGNAPOSTO del passo A: per ora i due rami mostrano solo un messaggio
+  // nella barra, per provare il gesto. Il menu vero arriva al passo B, il
+  // trascinamento vero al passo D.
+  function nomeRigaPremuta(riga: RigaPremuta): string {
+    if (riga.tipo === "pasto") return pasti?.find((p) => p.id === riga.id)?.nome ?? "";
+    return vociTutte?.find((v) => v.id === riga.id)?.nome_alimento ?? "";
+  }
+  const rifTieniPremuto = useTieniPremuto({
+    attivo: voceInModifica === null && pastoDaSalvare === null,
+    onMenu: (riga) =>
+      setBarra({
+        id: crypto.randomUUID(),
+        testo: "Prova gesto, menu:",
+        nome: nomeRigaPremuta(riga),
+      }),
+    onLasciato: (riga) =>
+      setBarra({
+        id: crypto.randomUUID(),
+        testo: "Prova gesto, trascinato:",
+        nome: nomeRigaPremuta(riga),
+      }),
+  });
+  // La lista ha due ref: l'oggetto che usa lo swipe (rifScorrimento) e la
+  // callback del tieni-premuto. Questa le unisce; useCallback la tiene
+  // identica fra un render e l'altro, altrimenti React staccherebbe e
+  // riattaccherebbe gli ascoltatori a ogni render, a metà di un gesto.
+  const refLista = useCallback(
+    (nodo: HTMLUListElement | null) => {
+      rifLista.current = nodo;
+      const stacca = rifTieniPremuto(nodo);
+      return () => {
+        rifLista.current = null;
+        stacca?.();
+      };
+    },
+    [rifTieniPremuto]
+  );
 
   // A ogni cambio di giorno (swipe, frecce, "Oggi", calendario) la lista
   // riparte dall'alto, non dalla posizione del giorno prima. Layout effect:
@@ -809,7 +851,7 @@ function OggiContenuto() {
             scorre per conto suo, e il browser controlla touch-action fino a
             lei. */}
         <ul
-          ref={rifLista}
+          ref={refLista}
           className="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(var(--ingombro-oggi)+1rem)]"
         >
           {pasti.length === 0 ? (
@@ -837,7 +879,9 @@ function OggiContenuto() {
                         type="button"
                         onClick={() => toggleCollasso(pasto.id)}
                         aria-expanded={!collassato}
-                        className={`flex min-w-0 items-baseline gap-1.5 text-left text-lg ${CLASSE_FOCUS}`}
+                        data-tieni-premuto="pasto"
+                        data-id={pasto.id}
+                        className={`riga-tieni-premuto flex min-w-0 items-baseline gap-1.5 rounded text-left text-lg ${CLASSE_FOCUS}`}
                       >
                         <CaretPasto aperto={!collassato} />
                         <span className="truncate">{pasto.nome}</span>
@@ -879,7 +923,9 @@ function OggiContenuto() {
                           <button
                             type="button"
                             onClick={() => apriModifica(voce)}
-                            className={`flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
+                            data-tieni-premuto="voce"
+                            data-id={voce.id}
+                            className={`riga-tieni-premuto flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
                           >
                             <span className="min-w-0 truncate">{voce.nome_alimento}</span>
                             <span className="shrink-0">

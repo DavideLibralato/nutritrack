@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Tieni premuto in Oggi: il gesto a due rami (passo A)
+
+Branch `tieni-premuto`. Primo dei cinque passi di "Tieni premuto: sposta,
+duplica, elimina" (specifica e decisioni in `PUNTO_DI_PARTENZA.md`,
+sezione 3). Arriva su main insieme al passo B (`menu-elimina`), perché qui
+il menu è ancora un segnaposto.
+
+- **Gesto** su alimento e nome del pasto (non sul pasto vuoto): 450 ms
+  fermo solleva la riga, poi 160 ms decidono fra trascinamento (il dito si
+  muove oltre 8 px) e menu (fermo, o rilasciato). Per ora i due rami
+  mostrano solo un messaggio di prova nella barra.
+- **Convivenza con lo swipe**: 8 px stanno sotto i 10 a cui lo swipe
+  decide; dal sollevamento il dito è "rivendicato" e lo swipe lo lascia.
+  `touch-action` resta `pan-y` (con `none` la lista non scorrerebbe dalle
+  righe), da confermare su iPhone.
+- **contextmenu** (tasto destro, tastiera, Android) apre il menu, ma non
+  durante un gesto né nei 400 ms dopo: trovato rileggendo il codice che
+  alcuni Chrome lo mandano a dito alzato, e il menu si sarebbe aperto due
+  volte. Non provato su Android.
+- Regole pure in `decisioneTieniPremuto.ts`, 20 test, verificati
+  rompendo apposta la logica. Il vincolo "tolleranza sotto la soglia dello
+  swipe" è un test, non un controllo nel codice dell'app.
+
 ## 2026-10-03 — Colore principale e barra provati su iPhone, uniti a main
 
 I due commit del branch `accento` (`1f433a7` colore principale,

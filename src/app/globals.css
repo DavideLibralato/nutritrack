@@ -261,6 +261,41 @@ body:has([data-pulsante-aggiungi]) {
   }
 }
 
+/* Righe di Oggi che si possono tenere premute (alimenti e nome del pasto,
+   src/lib/tieniPremuto.ts). Senza -webkit-touch-callout e -webkit-user-select
+   Safari su iPhone apre il suo menu di selezione del testo sulla pressione
+   prolungata, al posto del nostro gesto (provato su iPhone reale).
+   touch-action resta quello della lista (pan-y): lo scroll partendo da una
+   riga deve continuare a funzionare.
+   Sollevata (data-sollevato, scritto dall'hook senza ridisegnare la pagina):
+   fondo pieno, ombra e un leggero ingrandimento. Il bordo di 6 px nel colore
+   della superficie fa da margine attorno al testo senza spostare niente. */
+.riga-tieni-premuto {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition:
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+.riga-tieni-premuto[data-sollevato] {
+  position: relative;
+  z-index: 10;
+  background: var(--superficie);
+  box-shadow:
+    0 0 0 6px var(--superficie),
+    var(--ombra-fluttuante);
+  transform: scale(1.02);
+}
+@media (prefers-reduced-motion: reduce) {
+  .riga-tieni-premuto {
+    transition: none;
+  }
+  .riga-tieni-premuto[data-sollevato] {
+    transform: none;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
