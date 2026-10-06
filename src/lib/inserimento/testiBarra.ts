@@ -49,8 +49,17 @@ export function messaggioAggiunto(
   return { testo: "Aggiunto:", nome, coda: `(${numeroAlimenti} ${parola})`, icona: "spunta" };
 }
 
-export function messaggioEliminato(nome: string): MessaggioBarra {
-  return { testo: "Eliminato:", nome, icona: "elimina" };
+// `numeroAlimenti`: null per una cosa sola (un alimento del catalogo in
+// /aggiungi, una voce in Oggi), il numero di voci cancellate per "Elimina
+// tutto il pasto" in Oggi — stessa forma di messaggioAggiunto per un pasto
+// salvato: "Eliminato: Pranzo (3 alimenti)".
+export function messaggioEliminato(
+  nome: string,
+  numeroAlimenti: number | null = null
+): MessaggioBarra {
+  if (numeroAlimenti === null) return { testo: "Eliminato:", nome, icona: "elimina" };
+  const parola = numeroAlimenti === 1 ? "alimento" : "alimenti";
+  return { testo: "Eliminato:", nome, coda: `(${numeroAlimenti} ${parola})`, icona: "elimina" };
 }
 
 export function messaggioRipristinato(nome: string): MessaggioBarra {

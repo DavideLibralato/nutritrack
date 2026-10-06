@@ -5,6 +5,34 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Menu contestuale, Elimina e Annulla generale (passo B)
+
+Branch `menu-elimina`, partito da `tieni-premuto`. I due branch arrivano su
+main insieme. Il passo A è stato provato su iPhone il 6/10, tutto bene,
+compreso lo scroll partendo da una riga con `touch-action: pan-y`.
+
+- **Menu contestuale**: si apre sotto la riga o sopra, mai sotto
+  "+ Aggiungi" e la pillola. Per ora ha solo "Elimina" ("Elimina tutto il
+  pasto" sul pasto): Sposta e Duplica compaiono quando funzionano. Tolti i
+  segnaposto "Prova gesto" del passo A; il trascinamento per ora non fa
+  niente.
+- **Elimina** con "Annulla": "Eliminato: Mela", "Eliminato: Pranzo (3
+  alimenti)". Anche "Elimina" nello sheet quantità ora mostra la stessa
+  barra con "Annulla"; prima cancellava senza modo di tornare indietro.
+  Tolta la sua conferma "No / Sì, elimina": come dal menu, un tocco
+  elimina e Annulla rimedia.
+- **Annulla generale** (fotografia, scrittura solo in avanti): le righe
+  cancellate si ricreano con un id nuovo, deterministico. Rimettere
+  `deleted_at = null` le avrebbe fatte sparire di nuovo se la
+  cancellazione era già sul server. "Aggiunto — Annulla" passa alla stessa
+  fotografia, comportamento invariato (i suoi 4 test restano).
+- Evitato in partenza: il click del dito che ha aperto il menu, alzandosi,
+  poteva chiuderlo subito o eseguire "Elimina". Sfondo e voci rispondono
+  solo a un tocco cominciato dopo l'apertura.
+- Test nuovi: 7 sull'Annulla, 5 sulla posizione del menu, 1 sul testo, 1
+  sulla pagina Oggi (Elimina dallo sheet → Annulla → voce identica).
+  Ognuno verificato rompendo apposta la logica.
+
 ## 2026-10-06 — Tieni premuto in Oggi: il gesto a due rami (passo A)
 
 Branch `tieni-premuto`. Primo dei cinque passi di "Tieni premuto: sposta,

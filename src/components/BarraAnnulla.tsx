@@ -6,6 +6,8 @@
 // - /aggiungi, dopo la cancellazione di un alimento, con "Annulla" (regola
 //   "Alimenti cancellati" in PUNTO_DI_PARTENZA.md, punto 4);
 // - Oggi, dopo ogni inserimento nel diario, con "Annulla" (punto 10.2);
+// - Oggi, dopo "Elimina" dal menu del tieni-premuto, con "Annulla"
+//   (sezione 3, "Tieni premuto");
 // - Profilo, "Salvato." dopo un salvataggio riuscito, senza azione;
 // - Oggi, al tocco della stella su un pasto il cui contenuto è già salvato
 //   (punto 3), senza azione.

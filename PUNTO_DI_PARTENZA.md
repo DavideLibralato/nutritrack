@@ -273,16 +273,39 @@ alimenti:
   `user-select: none` (senza, Safari su iPhone apre il menu di selezione
   del testo). `touch-action` resta `pan-y`, non `none`: con `none` la lista
   non scorrerebbe più partendo da una riga, cioè quasi mai (punto 1 del
-  piano, da confermare su iPhone)
+  piano; provato su iPhone il 6/10: lo scroll da una riga funziona, con lo
+  slancio)
 - `prefers-reduced-motion`: niente ingrandimento né animazioni, il gesto
   vale
 - **pasto vuoto**: niente gesto (tutte le voci del menu sarebbero vuote)
 - il tap resta com'è: sheet quantità sull'alimento, apri/chiudi sul pasto
 
-**Il menu** (B): ancorato alla riga, un tocco fuori lo chiude senza fare
-niente. Sposta (sempre), Duplica (sul pasto solo se ha alimenti: oggi
+**Il menu** (B, `src/components/MenuContestuale.tsx`): ancorato alla
+riga, che resta staccata finché il menu è aperto. Si apre sotto la riga
+se ci sta, altrimenti sopra; mai sotto "+ Aggiungi" e la pillola, mai
+fuori schermo, mai sopra la riga (calcolo in `posizioneMenu.ts`, con
+test). Un tocco fuori o Esc lo chiudono senza fare niente; anche Tab,
+come i menu di sistema. Fuoco alla prima voce, frecce su/giù, alla
+chiusura torna alla riga. Swipe e tieni-premuto spenti finché è aperto.
+Il click del dito che ha aperto il menu (che si alza dopo) non conta:
+sfondo e voci rispondono solo a un tocco cominciato dopo l'apertura.
+Voci: Sposta (sempre), Duplica (sul pasto solo se ha alimenti: oggi
 sempre, visto che il pasto vuoto non ha il gesto), Elimina ("Elimina
-tutto il pasto" sul pasto: cancella le voci, non la fascia).
+tutto il pasto" sul pasto: cancella le voci, non la fascia). **Ogni voce
+compare solo quando funziona**: col passo B c'è solo Elimina, Sposta
+arriva col passo C, Duplica con l'E. Voci spente sembrerebbero rotte.
+
+**Elimina** (B): nessuna conferma prima, "Annulla" dopo (come
+l'inserimento, punto 10.2). Le voci si rileggono da Dexie al tocco.
+Messaggio: "Eliminato: Mela" per un alimento, "Eliminato: Pranzo (3
+alimenti)" per il pasto intero, la stessa forma di "Aggiunto" per un
+pasto salvato. Anche "Elimina" nello sheet quantità passa da qui: stessa
+fotografia, stessa barra con "Annulla", e come dal menu **nessuna
+conferma**: fino al passo B lo sheet chiedeva "No / Sì, elimina" e poi
+non aveva modo di tornare indietro; ora un tocco elimina e "Annulla"
+rimedia (test sulla pagina in `src/app/(app)/page.test.tsx`). Le altre
+conferme "Sì, elimina" (alimento del catalogo, pasto salvato) restano:
+lì l'Annulla non c'è o è diverso.
 
 **Sposta** (C dal menu, D trascinando): sul trascinamento tutti i pasti
 sono bersagli (bordo tratteggiato), quello sotto il dito si evidenzia, il
@@ -331,6 +354,16 @@ si **ricreano** (id nuovo, stesso contenuto, compresi `creato_il` e
 si cancellano. Nessuno punta all'id di una voce, quindi cambiarlo non
 rompe niente. Se una scrittura fallisce a metà operazione, si applica
 subito lo stesso annullo alle righe già toccate.
+Costruito col passo B in `src/lib/repository/vociDiario.ts`: ogni
+operazione restituisce una **fotografia** (le righe com'erano prima, per
+quelle modificate o cancellate, e gli id di quelle create), e
+`annullaOperazione` la riporta indietro. Anche l'"Aggiunto — Annulla"
+passa da qui: la sua fotografia ha solo righe create, e il comportamento
+è quello di prima. L'id di una riga ricreata è un UUID v5 calcolato
+dall'id originale: annullare due volte, o riprovare dopo un guasto, la
+trova già ricreata e non ne crea una seconda. Test in
+`vociDiario.test.ts`, compreso il caso della cancellazione già arrivata
+sul server.
 
 Nessuna migration e nessuna nuova tabella: sono tutte scritture sui campi
 già esistenti di `voci_diario`.

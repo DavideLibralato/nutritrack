@@ -68,7 +68,6 @@ export default function SheetQuantita({
   const [grammi, setGrammi] = useState(
     String(grammiIniziali ?? alimento.porzione_default_g)
   );
-  const [confermaElim, setConfermaElim] = useState(false);
   const rifInput = useRef<HTMLInputElement>(null);
   // Ancorato al VISUAL viewport, non al layout viewport: su iOS la tastiera
   // riduce solo il primo, altrimenti lo sheet a volte finisce sotto la
@@ -78,9 +77,11 @@ export default function SheetQuantita({
   const mostraSelettorePasto =
     !!pasti && pasti.length > 0 && pastoSelezionatoId != null && !!onCambiaPasto;
 
-  // In modifica il pulsante di sinistra diventa "Elimina" (che poi chiede
-  // conferma nella stessa riga). In creazione la voce non esiste ancora,
-  // quindi resta "Annulla".
+  // In modifica il pulsante di sinistra diventa "Elimina", che cancella
+  // subito: niente conferma, perché dopo c'è la barra con "Annulla" (in
+  // Oggi, come Elimina dal menu contestuale; PUNTO_DI_PARTENZA.md, sezione
+  // 3, "Tieni premuto"). In creazione la voce non esiste ancora, quindi
+  // resta "Annulla".
   const modificaConElimina = modifica && !!onElimina;
 
   // All'apertura: fuoco sul campo e testo selezionato, così un valore
@@ -233,7 +234,6 @@ export default function SheetQuantita({
             forma e posizione:
             - creazione:            [Annulla]      [Aggiungi]
             - modifica:             [Elimina]      [Salva]
-            - modifica, conferma:   [No]           [Sì, elimina]
             In modifica "Annulla" è ridondante — per annullare si tocca fuori
             dallo sheet. */}
         <div className="mt-5 flex gap-3">
@@ -245,19 +245,10 @@ export default function SheetQuantita({
             >
               Annulla
             </button>
-          ) : confermaElim ? (
-            <button
-              type="button"
-              onClick={() => setConfermaElim(false)}
-              disabled={inCorso}
-              className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              No
-            </button>
           ) : (
             <button
               type="button"
-              onClick={() => setConfermaElim(true)}
+              onClick={() => onElimina?.()}
               disabled={inCorso}
               className={`flex-1 rounded-lg border border-warning p-3 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
             >
@@ -265,31 +256,20 @@ export default function SheetQuantita({
             </button>
           )}
 
-          {modificaConElimina && confermaElim ? (
-            <button
-              type="button"
-              onClick={() => onElimina?.()}
-              disabled={inCorso}
-              className={`flex-1 rounded-lg bg-warning-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              {inCorso ? "Elimino..." : "Sì, elimina"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={conferma}
-              disabled={!valido || inCorso}
-              className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              {modifica
-                ? inCorso
-                  ? "Salvo..."
-                  : "Salva"
-                : inCorso
-                  ? "Aggiungo..."
-                  : "Aggiungi"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={conferma}
+            disabled={!valido || inCorso}
+            className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+          >
+            {modifica
+              ? inCorso
+                ? "Salvo..."
+                : "Salva"
+              : inCorso
+                ? "Aggiungo..."
+                : "Aggiungi"}
+          </button>
         </div>
       </div>
       </div>

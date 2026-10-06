@@ -30,6 +30,16 @@ describe("testi della barra", () => {
     expect(messaggioAggiunto("Solo caffè", 1).coda).toBe("(1 alimento)");
   });
 
+  it("eliminazione di un pasto intero in Oggi: il numero di alimenti nella coda", () => {
+    expect(messaggioEliminato("Pranzo", 3)).toEqual({
+      testo: "Eliminato:",
+      nome: "Pranzo",
+      coda: "(3 alimenti)",
+      icona: "elimina",
+    });
+    expect(messaggioEliminato("Pranzo", 1).coda).toBe("(1 alimento)");
+  });
+
   it("eliminazione, ripristino, annullamento e salvataggio, ognuno con la sua icona", () => {
     expect(messaggioEliminato("Mela")).toEqual({
       testo: "Eliminato:",

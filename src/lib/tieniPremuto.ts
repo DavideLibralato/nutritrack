@@ -66,7 +66,8 @@ interface OpzioniTieniPremuto {
   // oppure è arrivato un `contextmenu` senza gesti in corso.
   onMenu: (riga: RigaPremuta) => void;
   // Fine di un trascinamento: il dito si è alzato in (x, y).
-  onLasciato: (riga: RigaPremuta, x: number, y: number) => void;
+  // Facoltativa: finché non c'è (passi A–C) il trascinamento non fa niente.
+  onLasciato?: (riga: RigaPremuta, x: number, y: number) => void;
 }
 
 interface Gesto {
@@ -183,7 +184,7 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
       blocco.trascinamentoConcluso(e.timeStamp);
       fineUltimoSollevato = e.timeStamp;
       if (!annullato && g.stato.fase === "lasciato") {
-        rifOpzioni.current.onLasciato(g.riga, e.clientX, e.clientY);
+        rifOpzioni.current.onLasciato?.(g.riga, e.clientX, e.clientY);
       }
     }
 

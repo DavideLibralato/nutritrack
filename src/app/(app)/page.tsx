@@ -80,14 +80,22 @@ import BarraAnnulla from "@/components/BarraAnnulla";
 import { prendiInserimento } from "@/lib/inserimento/ultimoInserimento";
 import {
   messaggioAggiunto,
+  messaggioEliminato,
   MESSAGGIO_ANNULLATO,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
-import { annullaInserimento } from "@/lib/repository/vociDiario";
+import {
+  annullaOperazione,
+  eliminaPastoDelGiorno,
+  eliminaVoci,
+  fotografiaInserimento,
+  type FotografiaVoci,
+} from "@/lib/repository/vociDiario";
+import MenuContestuale from "@/components/MenuContestuale";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { useSwipeGiorno } from "@/lib/swipeGiorno";
-import { useTieniPremuto, type RigaPremuta } from "@/lib/tieniPremuto";
+import { useTieniPremuto, type TipoRiga } from "@/lib/tieniPremuto";
 
 // Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
 // elenco fisso (sezione 3), quindi non c'è una tabella di etichette da
@@ -287,11 +295,15 @@ function OggiContenuto() {
   // messaggio nuovo sostituisce il precedente e `id` (la `key`) fa ripartire
   // il timer. La usano:
   // - ogni inserimento nel diario fatto in /aggiungi, con "Annulla"
-  //   (`idVociDaAnnullare`, punto 10.2);
+  //   (punto 10.2);
+  // - Elimina dal menu contestuale, con "Annulla" (sezione 3, "Tieni
+  //   premuto");
   // - il tocco della stella su un pasto il cui contenuto valido è già
   //   salvato, senza azione.
+  // `fotografia`: com'erano le voci prima dell'operazione
+  // (src/lib/repository/vociDiario.ts). Se c'è, la barra ha "Annulla".
   const [barra, setBarra] = useState<
-    (MessaggioBarra & { id: string; idVociDaAnnullare?: string[] }) | null
+    (MessaggioBarra & { id: string; fotografia?: FotografiaVoci }) | null
   >(null);
 
   // L'inserimento appena fatto in /aggiungi, che ci ha riportati qui
@@ -307,64 +319,70 @@ function OggiContenuto() {
     setBarra({
       id: crypto.randomUUID(),
       ...messaggioAggiunto(inserimento.nome, inserimento.numeroAlimenti),
-      idVociDaAnnullare: inserimento.idVoci,
+      fotografia: fotografiaInserimento(inserimento.idVoci),
     });
   }, []);
 
-  // "Annulla" nella barra: cancellazione logica delle voci appena scritte
-  // (annullaInserimento, che le rilegge da Dexie e passa dal repository,
-  // quindi anche dall'outbox). La barra si toglie PRIMA di scrivere, così
-  // un secondo tocco ravvicinato non lancia un secondo annullamento.
-  async function annullaUltimoInserimento() {
-    const idVoci = barra?.idVociDaAnnullare;
-    if (!idVoci) return;
+  // "Annulla" nella barra: riporta le voci a com'erano prima
+  // dell'operazione (annullaOperazione, che le rilegge da Dexie e passa dal
+  // repository, quindi anche dall'outbox; scrive solo in avanti). La barra
+  // si toglie PRIMA di scrivere, così un secondo tocco ravvicinato non
+  // lancia un secondo annullamento.
+  async function annullaUltimaOperazione() {
+    const fotografia = barra?.fotografia;
+    if (!fotografia) return;
     const precedente = barra;
     setBarra(null);
     try {
-      await annullaInserimento(idVoci);
+      await annullaOperazione(fotografia);
       setBarra({ id: crypto.randomUUID(), ...MESSAGGIO_ANNULLATO });
     } catch {
-      // Si ripropone l'Annulla: le voci già cancellate vengono saltate,
-      // quindi riprovare dopo un guasto a metà converge.
+      // Si ripropone l'Annulla: quello che è già stato rimesso a posto
+      // viene saltato, quindi riprovare dopo un guasto a metà converge.
       setBarra({ ...precedente, id: crypto.randomUUID() });
     }
   }
 
+  // Menu contestuale (sezione 3, "Tieni premuto"): la riga a cui è
+  // ancorato. `ancora` è il suo rettangolo sullo schermo all'apertura,
+  // `limiteBasso` dove comincia la fascia di "+ Aggiungi" e della pillola.
+  const [menu, setMenu] = useState<{
+    tipo: TipoRiga;
+    id: string;
+    ancora: DOMRect;
+    limiteBasso: number;
+    elemento: HTMLElement;
+  } | null>(null);
+  const rifFasciaAggiungi = useRef<HTMLDivElement>(null);
+
+  // Swipe e tieni-premuto: spenti con uno sheet o il menu aperti.
+  const gestiAttivi = voceInModifica === null && pastoDaSalvare === null && menu === null;
+
   // Swipe per cambiare giorno (sezione 3, "Swipe per cambiare giorno"): si
   // attiva sul pannello del giorno (anello, macro e lista), non sulla testata
-  // con la data. Spento con uno sheet aperto.
+  // con la data.
   const rifLista = useRef<HTMLUListElement>(null);
   const rifPannello = useSwipeGiorno({
     giorno,
-    attivo: voceInModifica === null && pastoDaSalvare === null,
+    attivo: gestiAttivi,
     onCambia: (verso) =>
       setGiorno((g) => (verso === "successivo" ? giornoSuccessivo(g) : giornoPrecedente(g))),
     rifScorrimento: rifLista,
   });
 
   // Tieni premuto su un alimento o sul nome di un pasto (sezione 3, "Tieni
-  // premuto: sposta, duplica, elimina"). Spento con uno sheet aperto.
-  //
-  // SEGNAPOSTO del passo A: per ora i due rami mostrano solo un messaggio
-  // nella barra, per provare il gesto. Il menu vero arriva al passo B, il
-  // trascinamento vero al passo D.
-  function nomeRigaPremuta(riga: RigaPremuta): string {
-    if (riga.tipo === "pasto") return pasti?.find((p) => p.id === riga.id)?.nome ?? "";
-    return vociTutte?.find((v) => v.id === riga.id)?.nome_alimento ?? "";
-  }
+  // premuto: sposta, duplica, elimina"): il ramo "menu" apre il menu
+  // contestuale. Il ramo "trascina" per ora non fa niente (passo D).
   const rifTieniPremuto = useTieniPremuto({
-    attivo: voceInModifica === null && pastoDaSalvare === null,
+    attivo: gestiAttivi,
     onMenu: (riga) =>
-      setBarra({
-        id: crypto.randomUUID(),
-        testo: "Prova gesto, menu:",
-        nome: nomeRigaPremuta(riga),
-      }),
-    onLasciato: (riga) =>
-      setBarra({
-        id: crypto.randomUUID(),
-        testo: "Prova gesto, trascinato:",
-        nome: nomeRigaPremuta(riga),
+      setMenu({
+        tipo: riga.tipo,
+        id: riga.id,
+        ancora: riga.elemento.getBoundingClientRect(),
+        limiteBasso:
+          rifFasciaAggiungi.current?.getBoundingClientRect().top ?? window.innerHeight,
+        elemento: riga.elemento,
       }),
   });
   // La lista ha due ref: l'oggetto che usa lo swipe (rifScorrimento) e la
@@ -515,6 +533,48 @@ function OggiContenuto() {
     rigaCalorie = `${consumateKcal} di ${targetKcal} kcal`;
   }
 
+  // "Elimina" / "Elimina tutto il pasto" dal menu contestuale (sezione 3,
+  // "Tieni premuto"). Le voci si rileggono da Dexie al momento del tocco:
+  // quello che si cancella è lo stato vero, non quello dell'ultimo render.
+  // Niente conferma prima, come per l'inserimento: c'è "Annulla" dopo
+  // (punto 10.2). Cancellato niente (già sparito nel frattempo) → niente
+  // barra.
+  async function eliminaDalMenu(tipo: TipoRiga, id: string) {
+    if (!userId) return;
+    try {
+      if (tipo === "voce") {
+        await eliminaUnaVoce(id);
+      } else {
+        const nomePasto = pasti?.find((p) => p.id === id)?.nome ?? "";
+        const fotografia = await eliminaPastoDelGiorno(userId, giorno, id);
+        if (fotografia.prima.length === 0) return;
+        setBarra({
+          id: crypto.randomUUID(),
+          ...messaggioEliminato(nomePasto, fotografia.prima.length),
+          fotografia,
+        });
+      }
+    } catch {
+      // eliminaVoci ha già rimesso a posto le voci cancellate prima del
+      // guasto: non è successo niente.
+      setBarra({ id: crypto.randomUUID(), testo: "Operazione non riuscita. Riprova." });
+    }
+  }
+
+  // Elimina un alimento dal diario e mostra "Eliminato: Mela" con
+  // "Annulla" (la fotografia di vociDiario.ts). Una sola strada per il menu
+  // contestuale e per lo sheet quantità, così le due non divergono. Rilancia
+  // l'errore: ognuno dei due lo mostra a modo suo.
+  async function eliminaUnaVoce(id: string) {
+    const fotografia = await eliminaVoci([id]);
+    if (fotografia.prima.length === 0) return;
+    setBarra({
+      id: crypto.randomUUID(),
+      ...messaggioEliminato(fotografia.prima[0].nome_alimento),
+      fotografia,
+    });
+  }
+
   function apriModifica(voce: VoceDiario) {
     setVoceInModifica(voce);
     setPastoModificaId(voce.pasto_id ?? pasti?.[0]?.id ?? "");
@@ -547,8 +607,9 @@ function OggiContenuto() {
     setSalvataggioVoce("in-corso");
     try {
       // Cancellazione logica (scrive deleted_at): la useLiveQuery toglie
-      // subito la voce dalla lista.
-      await repositoryVociDiario.elimina(voceInModifica.id);
+      // subito la voce dalla lista. Stessa barra con "Annulla" di Elimina
+      // dal menu contestuale.
+      await eliminaUnaVoce(voceInModifica.id);
       chiudiModifica();
     } catch {
       setSalvataggioVoce("errore");
@@ -880,6 +941,7 @@ function OggiContenuto() {
                         onClick={() => toggleCollasso(pasto.id)}
                         aria-expanded={!collassato}
                         data-tieni-premuto="pasto"
+                        data-menu-aperto={menu?.id === pasto.id ? "" : undefined}
                         data-id={pasto.id}
                         className={`riga-tieni-premuto flex min-w-0 items-baseline gap-1.5 rounded text-left text-lg ${CLASSE_FOCUS}`}
                       >
@@ -924,6 +986,7 @@ function OggiContenuto() {
                             type="button"
                             onClick={() => apriModifica(voce)}
                             data-tieni-premuto="voce"
+                            data-menu-aperto={menu?.id === voce.id ? "" : undefined}
                             data-id={voce.id}
                             className={`riga-tieni-premuto flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
                           >
@@ -952,6 +1015,7 @@ function OggiContenuto() {
           coprire anche il bottone (regola :has in globals.css). Si nasconde
           mentre un campo ha il fuoco, come la pillola. */}
       <div
+        ref={rifFasciaAggiungi}
         data-pulsante-aggiungi
         data-nascondi-mentre-scrivi
         className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-30 mx-auto max-w-md"
@@ -970,8 +1034,8 @@ function OggiContenuto() {
             icona={barra.icona}
             durataMs={barra.durataMs}
             azione={
-              barra.idVociDaAnnullare
-                ? { etichetta: "Annulla", onClick: annullaUltimoInserimento }
+              barra.fotografia
+                ? { etichetta: "Annulla", onClick: annullaUltimaOperazione }
                 : undefined
             }
             sopra
@@ -987,6 +1051,30 @@ function OggiContenuto() {
           + Aggiungi
         </button>
       </div>
+
+      {/* Menu contestuale del tieni-premuto (sezione 3). Per ora solo
+          Elimina: Sposta e Duplica compaiono quando funzionano (passi C ed
+          E), voci spente sembrerebbero rotte. */}
+      {menu && (
+        <MenuContestuale
+          etichetta={`Azioni per ${
+            menu.tipo === "pasto"
+              ? (pasti.find((p) => p.id === menu.id)?.nome ?? "il pasto")
+              : (vociGiorno.find((v) => v.id === menu.id)?.nome_alimento ?? "l'alimento")
+          }`}
+          ancora={menu.ancora}
+          limiteBasso={menu.limiteBasso}
+          elementoOrigine={menu.elemento}
+          voci={[
+            {
+              etichetta: menu.tipo === "pasto" ? "Elimina tutto il pasto" : "Elimina",
+              distruttiva: true,
+              onSeleziona: () => void eliminaDalMenu(menu.tipo, menu.id),
+            },
+          ]}
+          onChiudi={() => setMenu(null)}
+        />
+      )}
 
       {voceInModifica && (
         <SheetQuantita

@@ -269,7 +269,9 @@ body:has([data-pulsante-aggiungi]) {
    riga deve continuare a funzionare.
    Sollevata (data-sollevato, scritto dall'hook senza ridisegnare la pagina):
    fondo pieno, ombra e un leggero ingrandimento. Il bordo di 6 px nel colore
-   della superficie fa da margine attorno al testo senza spostare niente. */
+   della superficie fa da margine attorno al testo senza spostare niente.
+   Con il menu contestuale aperto (data-menu-aperto, da React) la riga resta
+   staccata allo stesso modo, così si vede a cosa si riferisce il menu. */
 .riga-tieni-premuto {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -278,7 +280,8 @@ body:has([data-pulsante-aggiungi]) {
     transform 120ms ease-out,
     box-shadow 120ms ease-out;
 }
-.riga-tieni-premuto[data-sollevato] {
+.riga-tieni-premuto[data-sollevato],
+.riga-tieni-premuto[data-menu-aperto] {
   position: relative;
   z-index: 10;
   background: var(--superficie);
@@ -291,7 +294,8 @@ body:has([data-pulsante-aggiungi]) {
   .riga-tieni-premuto {
     transition: none;
   }
-  .riga-tieni-premuto[data-sollevato] {
+  .riga-tieni-premuto[data-sollevato],
+  .riga-tieni-premuto[data-menu-aperto] {
     transform: none;
   }
 }
