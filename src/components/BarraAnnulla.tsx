@@ -20,10 +20,15 @@
 // - `icona`, in un cerchio: spunta su fondo accento (andato a buon fine),
 //   freccia ↶ (annullato), cestino (eliminato) o "i" (tutto il resto, il
 //   predefinito) su fondo neutro. Tipi e scelta in testiBarra.ts;
-// - il testo: `testo` (il verbo), `nome` in evidenza e troncato con "…" su
-//   una riga sola, `coda` (il dettaglio) sempre visibile. Senza `nome`,
-//   `testo` va a capo se serve (i messaggi lunghi e rari, come gli avvisi
-//   del ripristino);
+// - il testo: `testo` (il verbo), `nome` in evidenza, `coda` (il dettaglio),
+//   una frase sola con spazi veri fra le parti. Se non sta su una riga va
+//   a capo; il nome si accorcia con "…" solo se da solo è più lungo di una
+//   riga intera, e verbo e dettaglio restano sempre interi. Fino al 6/10 le
+//   tre parti stavano su una riga che non andava mai a capo, e solo il nome
+//   poteva restringersi: con "Vedi" e "Annulla" accanto il nome spariva del
+//   tutto e la coda finiva sotto i pulsanti, tagliata ("Duplicato:  in
+//   Pranzo di lun 5"). In più le parti erano separate solo da spazio
+//   grafico, e uno screen reader leggeva "Duplicato:Melain Pranzo";
 // - l'azione, in colore accento dentro una capsula (--capsula-attiva), con
 //   il testo in --testo-capsula: l'accento appena più scuro, per il contrasto.
 //   L'area toccabile è alta 44 px anche se la capsula si vede più piccola.
@@ -161,15 +166,21 @@ export default function BarraAnnulla({
         }`}
       >
         <Icona tipo={icona} />
-        {nome === undefined ? (
-          <p className="min-w-0 py-1.5 leading-snug">{testo}</p>
-        ) : (
-          <p className="flex min-w-0 gap-1 whitespace-nowrap">
-            <span className="shrink-0">{testo}</span>
-            <span className="min-w-0 truncate font-medium">{nome}</span>
-            {coda && <span className="shrink-0">{coda}</span>}
-          </p>
-        )}
+        {/* Il testo prende lo spazio che resta: i pulsanti (shrink-0) non si
+            restringono mai, quindi il testo non ci finisce mai sotto. Il nome
+            è inline-block largo al massimo quanto il testo: se non sta sulla
+            riga va sulla successiva, e solo se da solo è più lungo di una
+            riga si accorcia con "…". */}
+        <p className="min-w-0 py-1.5 leading-snug [overflow-wrap:anywhere]">
+          {testo}
+          {nome !== undefined && (
+            <>
+              {" "}
+              <span className="inline-block max-w-full truncate align-bottom font-medium">{nome}</span>
+            </>
+          )}
+          {coda && <>{` ${coda}`}</>}
+        </p>
         {azioneSecondaria && (
           <button
             type="button"

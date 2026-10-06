@@ -5,6 +5,47 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Correzioni dopo le prove del passo E: barra e campo data
+
+Branch `duplica`. Tre problemi visti su iPhone, con gli screenshot.
+
+- **Nome che spariva nella barra** ("Duplicato:  in Pranzo di lun 5").
+  - Il nome non era vuoto: nella pagina c'era. Il testo della barra stava
+    su una riga che non andava mai a capo, e solo il nome poteva
+    restringersi: con "Vedi" e "Annulla" accanto si riduceva a larghezza
+    zero.
+  - La stessa causa tagliava la coda, che finiva sotto i pulsanti (il
+    problema 2).
+  - In più le parti erano separate solo da spazio grafico: uno screen
+    reader leggeva "Duplicato:Melain Pranzo".
+  - Ora il testo è una frase con spazi veri, che va a capo. Il nome si
+    accorcia con "…" solo se da solo è più lungo di una riga, e i
+    pulsanti non si restringono mai.
+  - Controllati tutti i messaggi di Sposta e Duplica, per alimento e per
+    pasto intero: stessa causa, stessa correzione.
+- **Foglio Duplica più largo dello schermo:** Safari dà al campo data una
+  larghezza minima sua. Ora:
+  - tutti i campi data hanno `min-width: 0` e `max-width: 100%`;
+  - quelli a tutta larghezza (Duplica, cambio di obiettivo) tolgono anche
+    il controllo nativo;
+  - il foglio Duplica non scorre più in orizzontale.
+  Gli altri campi data dell'app: la data di nascita in Profilo e il
+  calendario nascosto di Oggi tengono il loro aspetto.
+- **Test:**
+  - la pagina Oggi controlla il testo intero della barra, nome compreso,
+    in 5 casi: Elimina, Sposta di un alimento, Sposta di un pasto,
+    Duplica di un alimento e di un pasto su ieri. Due test sono nuovi;
+  - 3 test sulla disposizione della barra e 4 sui campi data, che
+    controllano le regole perché jsdom non misura i pixel.
+- **Verifica dei test:**
+  - con la barra com'era falliscono 7 test;
+  - con il nome tolto dal messaggio fallisce il test di Duplica;
+  - con ognuna delle 4 regole dei campi data tolta fallisce il test
+    corrispondente.
+  - Un test della disposizione (pulsanti fuori dal testo e che non si
+    restringono) passa anche col codice di prima: quella parte era già
+    giusta, ed è lì per tenerla così.
+
 ## 2026-10-06 — Duplica, con giorno e pasto (passo E)
 
 Branch `duplica`, partito da `trascina`. Il passo D, con lo scorrimento

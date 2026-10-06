@@ -439,6 +439,20 @@ Costruito col passo C:
   "Annulla" riporta anche i grammi sommati o scritti a mano. Se non si è
   scritto niente (tutto escluso) la barra non ha "Annulla".
 
+**Campi data** (`<input type="date">`, regola del 6/10): Safari su iPhone dà
+al campo data una larghezza minima sua, che ignora `width: 100%`, e il
+campo Giorno di Duplica allargava il foglio oltre lo schermo. In
+`globals.css`:
+- tutti i campi data hanno `min-width: 0` e `max-width: 100%`;
+- quelli a tutta larghezza (classe `campo-data`: Duplica, cambio di
+  obiettivo) tolgono anche il controllo nativo (`appearance: none`), con il
+  valore a sinistra e l'altezza di una riga;
+- la data di nascita in Profilo e il calendario nascosto di Oggi tengono
+  il loro aspetto;
+- il foglio Duplica non scorre mai in orizzontale.
+
+Controllo in `src/app/campiData.test.ts`.
+
 **Duplica** (E): giorno (campo data, massimo oggi, controllato anche nel
 codice; parte dal giorno mostrato) e pasto (parte da quello d'origine).
 L'originale non si tocca mai. Le copie: stessi `alimento_id`, quantità e
@@ -501,8 +515,9 @@ Cosa si accorcia nella barra (`src/lib/diario/testiSpostamento.ts`):
   sono brevi, è solo una cintura;
 - i nomi degli alimenti sono la parte lunga:
   - nei messaggi brevi ("Spostato: Yogurt → Pranzo") l'alimento sta nel
-    campo che la barra tronca su una riga, e il pasto d'arrivo resta
-    visibile;
+    campo `nome` della barra: se la frase non sta su una riga la barra va
+    a capo, e il nome si accorcia con "…" solo se da solo è più lungo di
+    una riga. Il pasto d'arrivo e il giorno restano sempre interi;
   - nelle frasi con esclusioni la barra va a capo, e ogni alimento si
     accorcia oltre 22 caratteri;
   - oltre due esclusi si scrive "«Yogurt», «Mela» e altri 2".
@@ -681,8 +696,9 @@ sheet, il "+" rapido su Recenti/Preferiti, e il "+" di un pasto salvato. Tutti
 e tre tornano a Oggi, e lì compare la barra in basso "Aggiunto: Pane", oppure
 "Aggiunto: Colazione tipo (3 alimenti)" per un pasto salvato, con
 "Annulla" per qualche secondo. Il verbo sta prima del nome, così non ci
-sono problemi di genere ("Mela aggiunto"). Il nome si tronca con "…" su una
-riga sola. Lo stesso formato vale per "Eliminato: Mela" e "Ripristinato:
+sono problemi di genere ("Mela aggiunto"). Se la frase non sta su una
+riga va a capo; il nome si accorcia con "…" solo se da solo è più lungo
+di una riga. Lo stesso formato vale per "Eliminato: Mela" e "Ripristinato:
 Mela" in /aggiungi. Com'è fatta la barra (vetro, icona, linea del tempo) è
 descritto nella sezione 7.
 
@@ -1574,10 +1590,20 @@ Confermate dai mockup, con una correzione.
     (Annullato), il cestino (Eliminato) o la "i" (avvisi, errori, il
     messaggio della stella);
   - **testo**: il verbo normale e il nome in medium (non bold: qui valgono
-    regular e medium), troncato con "…"; il dettaglio, per esempio
-    "(3 alimenti)", resta sempre visibile;
+    regular e medium); il dettaglio, per esempio "(3 alimenti)", resta
+    sempre visibile. È una frase sola con spazi veri fra le parti (lo
+    screen reader la legge intera). Se non sta su una riga va a capo; il
+    nome si accorcia con "…" solo se da solo è più lungo di una riga.
+    Fino al 6/10 il testo stava su una riga che non andava mai a capo e
+    solo il nome poteva restringersi: con "Vedi" e "Annulla" accanto il
+    nome spariva del tutto e il dettaglio finiva sotto i pulsanti,
+    tagliato ("Duplicato:  in Pranzo di lun 5"). Controllo in
+    `BarraAnnulla.test.tsx`;
+  - **"Vedi"** (solo dopo una Duplica su un altro giorno): testo in
+    `--testo-capsula`, senza capsula, prima di "Annulla";
   - **"Annulla"**: accento, in una capsula `--capsula-attiva`, con un'area
-    toccabile di 44 px.
+    toccabile di 44 px. I pulsanti non si restringono mai: il testo non ci
+    finisce sotto.
 
   Sul bordo basso una linea di 2 px (`--linea-tempo`) si accorcia per tutta
   la durata. Con `prefers-reduced-motion` la linea non c'è.

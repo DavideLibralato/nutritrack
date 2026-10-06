@@ -139,3 +139,51 @@ describe("BarraAnnulla", () => {
     expect(barra.style.getPropertyValue("--durata-barra")).toBe("8000ms");
   });
 });
+
+// Bug del 6/10 su iPhone, con "Vedi" e "Annulla" nella barra: il testo
+// stava su una riga che non andava mai a capo e solo il nome poteva
+// restringersi. Il nome spariva (larghezza zero) e la coda finiva sotto i
+// pulsanti, tagliata: "Duplicato:  in Pranzo di lun 5". jsdom non misura i
+// pixel, quindi qui si controlla come è fatta la barra: frase intera con
+// spazi veri, che può andare a capo; nome accorciato solo oltre la
+// larghezza del testo; pulsanti fuori dal testo, che non si restringono.
+describe("BarraAnnulla: testo lungo con due pulsanti", () => {
+  function barraLunga() {
+    render(
+      <BarraAnnulla
+        testo="Duplicato:"
+        nome="Yogurt greco intero biologico"
+        coda="in Pranzo di lun 5 ott"
+        azione={{ etichetta: "Annulla", onClick: () => {} }}
+        azioneSecondaria={{ etichetta: "Vedi", onClick: () => {} }}
+        onChiudi={() => {}}
+      />
+    );
+    return screen.getByRole("status").querySelector("p")!;
+  }
+
+  it("la frase è intera, con gli spazi veri fra le parti (anche per lo screen reader)", () => {
+    expect(barraLunga().textContent).toBe("Duplicato: Yogurt greco intero biologico in Pranzo di lun 5 ott");
+  });
+
+  it("il testo può andare a capo e il nome non può restringersi a zero", () => {
+    const testo = barraLunga();
+    expect(testo.className).not.toMatch(/whitespace-nowrap|\bflex\b/);
+    const nome = testo.querySelector("span")!;
+    expect(nome.textContent).toBe("Yogurt greco intero biologico");
+    // inline-block largo al massimo quanto il testo: va a capo intero, e si
+    // accorcia con "…" solo se da solo è più lungo di una riga.
+    expect(nome.className).toMatch(/\binline-block\b/);
+    expect(nome.className).toMatch(/\bmax-w-full\b/);
+    expect(nome.className).toMatch(/\btruncate\b/);
+  });
+
+  it("«Vedi» e «Annulla» stanno fuori dal testo e non si restringono", () => {
+    const testo = barraLunga();
+    for (const nomePulsante of ["Vedi", "Annulla"]) {
+      const pulsante = screen.getByRole("button", { name: nomePulsante });
+      expect(testo.contains(pulsante)).toBe(false);
+      expect(pulsante.className).toMatch(/\bshrink-0\b/);
+    }
+  });
+});

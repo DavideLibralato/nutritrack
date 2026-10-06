@@ -12,6 +12,9 @@
 //    un altro giorno"), modificabile.
 // "Duplica" resta spento finché uno dei due manca o la data non va bene.
 // Annulla, tocco fuori o Esc: niente. Struttura come SheetScegliPasto.
+// Largo al massimo quanto lo schermo: il campo data ha la classe
+// .campo-data (globals.css, il motivo è lì) e il pannello non scorre mai in
+// orizzontale, così niente può sporgere oltre il bordo.
 
 import { useEffect, useState } from "react";
 import { useAreaVisibile } from "@/lib/areaVisibile";
@@ -72,7 +75,7 @@ export default function SheetDuplica({
           role="dialog"
           aria-modal="true"
           aria-label={titolo}
-          className="flex max-h-full w-full max-w-md flex-col overflow-y-auto rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          className="flex max-h-full w-full max-w-md min-w-0 flex-col overflow-x-hidden overflow-y-auto rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
           <h2 className="font-display text-xl font-bold">{titolo}</h2>
@@ -86,7 +89,7 @@ export default function SheetDuplica({
             max={oggi}
             value={data}
             onChange={(e) => setData(e.target.value)}
-            className={`mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
+            className={`campo-data mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
           />
           {data !== "" && !dataValida && (
             <p className="mt-1 text-sm text-warning">Scegli oggi o un giorno passato.</p>

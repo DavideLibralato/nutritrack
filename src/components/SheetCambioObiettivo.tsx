@@ -121,7 +121,7 @@ export default function SheetCambioObiettivo({
                   min={limiti.min}
                   max={limiti.max}
                   onChange={(e) => setValidoDal(e.target.value)}
-                  className={`w-full rounded-lg border border-border bg-background p-2 text-base ${CLASSE_FOCUS}`}
+                  className={`campo-data w-full rounded-lg border border-border bg-background p-2 text-base ${CLASSE_FOCUS}`}
                 />
                 <p className={`mt-1 text-sm ${dataValida ? "text-muted" : "text-warning"}`}>
                   {limiti.min === limiti.max

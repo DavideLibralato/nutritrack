@@ -300,6 +300,34 @@ body:has([data-pulsante-aggiungi]) {
   }
 }
 
+/* Campi data (<input type="date">). Safari su iPhone dà al campo data una
+   larghezza minima sua, che ignora width: 100%: nel foglio Duplica il
+   campo usciva a destra e allargava il foglio oltre lo schermo (6/10).
+   - Per tutti: niente larghezza minima propria, mai più largo del
+     contenitore. Non cambia l'aspetto.
+   - .campo-data, per i campi a tutta larghezza (foglio Duplica, cambio di
+     obiettivo): anche appearance: none, che toglie il controllo nativo con
+     la sua larghezza. Con appearance: none Safari centra il valore e,
+     a campo vuoto, lo schiaccia a altezza zero: si rimette a sinistra e
+     con l'altezza di una riga. La data di nascita in Profilo (piccola, a
+     destra in una riga) e il calendario nascosto di Oggi tengono il loro
+     aspetto. Controllo in src/app/campiData.test.ts. */
+input[type="date"] {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+input[type="date"].campo-data {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+}
+input[type="date"].campo-data::-webkit-date-and-time-value {
+  min-height: 1.5em;
+  text-align: left;
+}
+
 /* Trascinamento in Oggi (src/lib/trascinaInPasto.ts):
    - la riga trascinata resta al suo posto, spenta (data-trascinato): un
      alimento, oppure tutto il pasto se si trascina un pasto intero;

@@ -48,6 +48,15 @@ vi.mock("@/lib/supabase/client", () => ({
 // non parte: si smonta a mano.
 afterEach(cleanup);
 
+// Il testo intero della barra in basso, come lo legge chi la guarda (e lo
+// screen reader): verbo, nome e dettaglio con i loro spazi, senza i
+// pulsanti. Prima del 6/10 le parti erano separate solo da spazio grafico.
+async function testoBarra(atteso: string) {
+  await waitFor(() =>
+    expect(screen.getByRole("status").querySelector("p")?.textContent).toBe(atteso)
+  );
+}
+
 function contenutoVisibile(v: VoceDiario) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id, updated_at, deleted_at, ...resto } = v;
@@ -87,7 +96,7 @@ describe("Oggi: Elimina dallo sheet quantità", () => {
     expect(screen.queryByRole("button", { name: "Sì, elimina" })).toBeNull();
 
     // La barra, come per Elimina dal menu.
-    await screen.findByText("Eliminato:");
+    await testoBarra("Eliminato: Pane");
     await waitFor(async () => {
       expect(await repositoryVociDiario.ottieniTutti(utenteTest)).toHaveLength(0);
     });
@@ -465,7 +474,7 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
 
     // Rilascio lì: Cena è vuota, niente doppioni, lo yogurt si sposta.
     puntatore("pointerup", lista, 100, 620);
-    await screen.findByText("Spostato:");
+    await testoBarra("Spostato: Yogurt → Cena");
   });
 });
 
@@ -503,7 +512,7 @@ describe("Oggi: Duplica su un altro giorno", () => {
     fireEvent.change(within(foglio).getByLabelText("Giorno"), { target: { value: ieri } });
     fireEvent.click(within(foglio).getByRole("button", { name: "Duplica" }));
 
-    await screen.findByText(`in Pranzo di ${formattaGiornoCorto(ieri)}`);
+    await testoBarra(`Duplicato: Mela in Pranzo di ${formattaGiornoCorto(ieri)}`);
     await waitFor(async () => expect(await diario()).toEqual([`${ieri} Mela`, `${oggi} Mela`]));
 
     fireEvent.click(screen.getByRole("button", { name: "Vedi" }));
@@ -517,5 +526,51 @@ describe("Oggi: Duplica su un altro giorno", () => {
     fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
     await screen.findByText("Annullato.");
     expect(await diario()).toEqual([`${oggi} Mela`]);
+  });
+});
+
+// I messaggi del pasto intero, sulla pagina vera: il testo della barra con
+// tutti i nomi (bug del 6/10: il nome spariva e la coda veniva tagliata).
+describe("Oggi: messaggi di Sposta e Duplica per un pasto intero", () => {
+  async function prepara() {
+    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    await repositoryVociDiario.crea({
+      user_id: utenteTest,
+      alimento_id: "alimento-pane",
+      pasto_id: colazione.id,
+      gruppo_id: null,
+      quantita_g: 50,
+      data: oggiLocale(),
+      creato_il: "2026-10-06T08:00:00.000Z",
+      consumato_alle: null,
+      nome_alimento: "Pane",
+      kcal_100g: 250,
+      proteine_100g: 8,
+      carboidrati_100g: 50,
+      grassi_100g: 1,
+    });
+    render(<OggiPage />);
+    const titolo = (await screen.findAllByText("Colazione")).find((el) => el.closest("[data-tieni-premuto]"))!;
+    fireEvent.contextMenu(titolo.closest("button")!);
+    return { pranzo };
+  }
+
+  it("Sposta: «Spostato: Colazione → Pranzo»", async () => {
+    await prepara();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sposta" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Pranzo" }));
+    await testoBarra("Spostato: Colazione → Pranzo");
+  });
+
+  it("Duplica su ieri: «Duplicato: Colazione in Pranzo di …»", async () => {
+    const { pranzo } = await prepara();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Duplica" }));
+    const foglio = await screen.findByRole("dialog", { name: "Duplica «Colazione»" });
+    const ieri = giornoPrecedente(oggiLocale());
+    fireEvent.change(within(foglio).getByLabelText("Giorno"), { target: { value: ieri } });
+    fireEvent.change(within(foglio).getByLabelText("Pasto"), { target: { value: pranzo.id } });
+    fireEvent.click(within(foglio).getByRole("button", { name: "Duplica" }));
+    await testoBarra(`Duplicato: Colazione in Pranzo di ${formattaGiornoCorto(ieri)}`);
   });
 });
