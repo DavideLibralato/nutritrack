@@ -66,9 +66,24 @@ interface OpzioniTieniPremuto {
   // oppure è arrivato un `contextmenu` senza gesti in corso
   // (`daContextmenu`: tasto destro o tastiera, il fuoco può andare al menu).
   onMenu: (riga: RigaPremuta, daContextmenu: boolean) => void;
-  // Fine di un trascinamento: il dito si è alzato in (x, y).
-  // Facoltativa: finché non c'è (passi A–C) il trascinamento non fa niente.
-  onLasciato?: (riga: RigaPremuta, x: number, y: number) => void;
+  // Il ramo "trascina" (passo D). Facoltativo: senza, il trascinamento non
+  // fa niente.
+  onTrascinamento?: AscoltatoriTrascinamento;
+}
+
+export interface AscoltatoriTrascinamento {
+  // Il dito ha cominciato a trascinare. `origine`: dove era il dito quando
+  // la riga si è sollevata (da lì si misura lo spostamento della copia);
+  // (x, y): dove è adesso.
+  inizio: (riga: RigaPremuta, origine: { x: number; y: number }, x: number, y: number) => void;
+  // Ogni movimento del dito durante il trascinamento. Arriva a ogni
+  // pointermove: chi la riceve non deve ridisegnare la pagina ogni volta.
+  movimento: (x: number, y: number) => void;
+  // Fine. `interrotto`: il dito non si è alzato normalmente (pointercancel
+  // del sistema — una chiamata, l'app in background —, un gesto rimasto
+  // aperto chiuso dal tocco dopo, la lista smontata): vale come rilascio
+  // fuori, niente si scrive.
+  fine: (riga: RigaPremuta, x: number, y: number, interrotto: boolean) => void;
 }
 
 interface Gesto {
@@ -131,6 +146,11 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
     // se era stato preso, resta preso finché non si alza.
     function chiudiGesto(g: Gesto) {
       if (gesto === g) gesto = null;
+      // Chiuso a metà trascinamento (non con un rilascio, che passa da
+      // "lasciato"): il trascinamento è interrotto.
+      if (g.stato.fase === "trascina") {
+        rifOpzioni.current.onTrascinamento?.fine(g.riga, g.stato.x, g.stato.y, true);
+      }
       if (g.timer !== null) clearTimeout(g.timer);
       g.timer = null;
       g.riga.elemento.removeAttribute("data-sollevato");
@@ -179,9 +199,18 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
           chiudiGesto(g);
           rifOpzioni.current.onMenu(g.riga, false);
           return;
+        case "trascina":
+          rifOpzioni.current.onTrascinamento?.inizio(
+            g.riga,
+            { x: nuovo.xSollevato, y: nuovo.ySollevato },
+            x,
+            y
+          );
+          programma(g);
+          return;
         case "lasciato":
           chiudiGesto(g);
-          rifOpzioni.current.onLasciato?.(g.riga, x, y);
+          rifOpzioni.current.onTrascinamento?.fine(g.riga, x, y, false);
           return;
         case "annullato":
           chiudiGesto(g);
@@ -239,6 +268,9 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
       const g = gesto;
       if (!g || e.pointerId !== g.id) return;
       applica(g, aggiornaMovimento(g.stato, e.clientX, e.clientY, performance.now()), e.clientX, e.clientY);
+      if (gesto === g && g.stato.fase === "trascina") {
+        rifOpzioni.current.onTrascinamento?.movimento(e.clientX, e.clientY);
+      }
     }
 
     function fine(e: PointerEvent, annullato: boolean) {

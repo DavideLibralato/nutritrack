@@ -5,6 +5,45 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Trascinare un alimento o un pasto su un altro pasto (passo D)
+
+Branch `trascina`, partito da `sposta-menu`. Il passo C è stato provato su
+iPhone, tutto bene.
+
+- **Copia che segue il dito**, non la riga vera. La lista dei pasti è un
+  contenitore con `overflow-y: auto`, che taglia in ogni direzione; i
+  riquadri dei pasti invece non tagliano niente. La copia sta in un
+  portale su `document.body`, `position: fixed`, mossa con `transform`
+  scritto sull'elemento. Per un pasto intero è compatta ("Pranzo · 3
+  alimenti").
+- **Durante il trascinamento:**
+  - l'originale resta spento (la riga, oppure tutto il pasto);
+  - gli altri pasti hanno il bordo tratteggiato, anche quelli chiusi;
+  - quello sotto il dito è in accento;
+  - lista ferma, swipe spento.
+- **Rilascio:**
+  - su un altro pasto: il flusso di Sposta (foglio dei doppioni, messaggio,
+    Annulla);
+  - altrove, sul pasto di partenza, sopra "+ Aggiungi" o la pillola,
+    oppure gesto interrotto dal sistema: niente si scrive, e la copia
+    torna indietro (con "Riduci movimento" sparisce subito);
+  - dopo il rilascio un click fantasma viene fermato in tutta la pagina.
+- **Riorganizzazione:**
+  - l'hook del gesto passa da `onLasciato` (mai usato) a inizio /
+    movimento / fine del trascinamento;
+  - `movimentoRidotto()` è in un modulo suo, condiviso con lo swipe;
+  - lo stato di uno spostamento è un tipo (`StatoSpostamento`), passato
+    come parametro, così menu e trascinamento usano la stessa funzione.
+- **Test:**
+  - 6 sulle decisioni pure (pasto sotto il dito, partenza esclusa, fuori,
+    sopra le barre, parte scorsa sotto la testata, confine fra due pasti);
+  - 3 sulla pagina (rilascio su un doppione apre il foglio, rilascio
+    fuori, gesto interrotto): nessuno dei tre deve scrivere niente.
+- **Verifica dei test:** 9 rotture apposta, tutte prese. Una in principio
+  passava lo stesso: il test controllava "nessun foglio" subito dopo il
+  rilascio, ma un foglio aperto per errore arriva dopo una lettura da
+  Dexie. Ora il test aspetta mezzo secondo prima di dirlo.
+
 ## 2026-10-06 — Sposta dal menu, con il foglio dei doppioni (passo C)
 
 Branch `sposta-menu`, partito da `menu-elimina`. La correzione del menu

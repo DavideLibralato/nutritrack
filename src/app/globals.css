@@ -300,6 +300,36 @@ body:has([data-pulsante-aggiungi]) {
   }
 }
 
+/* Trascinamento in Oggi (src/lib/trascinaInPasto.ts):
+   - la riga trascinata resta al suo posto, spenta (data-trascinato): un
+     alimento, oppure tutto il pasto se si trascina un pasto intero;
+   - ogni pasto che può ricevere la riga ha il bordo tratteggiato
+     (data-bersaglio), quello sotto il dito sfondo e bordo in accento
+     (data-bersaglio-attivo).
+   Il bordo è un `outline` disegnato appena fuori dal riquadro: non occupa
+   spazio, quindi niente si sposta mentre si trascina (i pasti sono stati
+   misurati all'inizio). Lo spazio per disegnarlo c'è: la lista ha 16 px di
+   margine ai lati. */
+.riga-tieni-premuto[data-trascinato],
+.pasto-trascinamento[data-trascinato] {
+  opacity: 0.35;
+}
+/* Mentre la copia segue il dito, l'originale non sembra più sollevato. */
+.riga-tieni-premuto[data-trascinato][data-sollevato] {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.pasto-trascinamento[data-bersaglio] {
+  border-radius: 0.75rem;
+  outline: 1.5px dashed var(--linea);
+  outline-offset: 4px;
+}
+.pasto-trascinamento[data-bersaglio-attivo] {
+  outline: 2px solid var(--accento);
+  background: var(--capsula-attiva);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

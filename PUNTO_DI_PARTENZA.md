@@ -341,6 +341,39 @@ fuori da un pasto, o sul pasto di partenza: niente. Senza scorrimento
 automatico vicino ai bordi: per un pasto fuori schermo c'è Sposta dal
 menu, che apre l'elenco dei pasti del giorno meno quello di partenza.
 
+Il trascinamento, costruito col passo D (`src/lib/trascinaInPasto.ts`,
+decisioni pure in `decisioneTrascinamento.ts`):
+- **A seguire il dito è una copia della riga** (`CopiaTrascinata`), in
+  un portale su `document.body` con `position: fixed`, mossa scrivendo
+  `transform` direttamente sull'elemento. Non la riga vera: i riquadri
+  dei pasti non tagliano niente, ma la lista intera è un contenitore con
+  `overflow-y: auto`, che per le regole CSS taglia in ogni direzione, e
+  la riga sparirebbe appena esce dalla lista. Lo stato React cambia solo
+  all'inizio, alla fine e quando cambia il pasto sotto il dito.
+- **La copia:** per un alimento nome e "80 g · 200 kcal", larga quanto la
+  riga; per un pasto intero è compatta, "Pranzo · 3 alimenti".
+- **L'originale** resta al suo posto, spento: la riga dell'alimento,
+  oppure tutto il pasto se si trascina il pasto intero.
+- **I bersagli:**
+  - tutti i pasti tranne quello di partenza hanno il bordo tratteggiato,
+    anche quelli chiusi;
+  - quello sotto il dito ha sfondo e bordo in accento;
+  - il bordo è un `outline` fuori dal riquadro, così niente si sposta.
+- **Dove vale il rilascio:** i pasti si misurano all'inizio, perché
+  durante il trascinamento la lista non scorre. Vale solo la parte
+  visibile della lista, tagliata in basso dove cominciano "+ Aggiungi" e
+  la pillola; un pasto scorso sotto la testata o sotto le barre non è un
+  bersaglio.
+- **Rilascio su un altro pasto:** lo stesso spostamento di Sposta dal menu,
+  con il foglio dei doppioni se serve, il messaggio e Annulla. Il foglio
+  dei pasti non si apre.
+- **Rilascio altrove, o gesto interrotto dal sistema** (`pointercancel`:
+  una chiamata, l'app in background): niente si scrive, e la copia torna
+  verso la riga e sparisce. Con "Riduci movimento" sparisce subito.
+- **Dopo ogni rilascio** un click che arriva entro 400 ms viene fermato in
+  tutta la pagina: nessuno sheet e nessun "+ Aggiungi" si apre per
+  errore.
+
 **Doppioni** (C, riusato da E): stesso `alimento_id`, mai il nome; le voci
 con `alimento_id` nullo non sono mai doppioni. Foglio con una riga per
 alimento (quantità esistente = somma delle righe di destinazione, in

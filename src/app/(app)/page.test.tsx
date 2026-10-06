@@ -303,3 +303,132 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
     expect(screen.queryByText(/Spostato/)).toBeNull();
   });
 });
+
+// Il trascinamento (passo D) sulla pagina vera. jsdom non calcola il layout
+// (ogni elemento è largo e alto 0): i rettangoli dei pasti, della lista e
+// della fascia di "+ Aggiungi" li diamo noi. Colazione da y 100 a 200,
+// Pranzo da 200 a 300, lista visibile da 50 a 650, "+ Aggiungi" da 700.
+describe("Oggi: trascinare un alimento su un altro pasto", () => {
+  const rettangoli: Record<string, { top: number; bottom: number }> = {};
+  afterEach(() => vi.restoreAllMocks());
+
+  async function prepara() {
+    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    rettangoli[colazione.id] = { top: 100, bottom: 200 };
+    rettangoli[pranzo.id] = { top: 200, bottom: 300 };
+    const comune = {
+      user_id: utenteTest,
+      alimento_id: "alimento-yogurt",
+      gruppo_id: null,
+      data: oggiLocale(),
+      creato_il: "2026-10-06T08:00:00.000Z",
+      consumato_alle: null,
+      nome_alimento: "Yogurt",
+      kcal_100g: 60,
+      proteine_100g: 4,
+      carboidrati_100g: 5,
+      grassi_100g: 2,
+    };
+    await repositoryVociDiario.crea({ ...comune, pasto_id: colazione.id, quantita_g: 125 });
+    await repositoryVociDiario.crea({ ...comune, pasto_id: pranzo.id, quantita_g: 100 });
+
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const r = (top: number, bottom: number) =>
+        ({ top, bottom, left: 16, right: 374, width: 358, height: bottom - top, x: 16, y: top }) as DOMRect;
+      const el = this as HTMLElement;
+      if (el.dataset.pastoId && rettangoli[el.dataset.pastoId]) {
+        const { top, bottom } = rettangoli[el.dataset.pastoId];
+        return r(top, bottom);
+      }
+      if (el.hasAttribute("data-pulsante-aggiungi")) return r(700, 800);
+      if (el.tagName === "UL" && el.querySelector(":scope > [data-pasto-id]")) return r(50, 650);
+      return r(0, 0);
+    });
+
+    render(<OggiPage />);
+    const righe = await screen.findAllByText("Yogurt");
+    const riga = righe.map((el) => el.closest("button")!).find((b) =>
+      b.closest(`[data-pasto-id="${colazione.id}"]`)
+    )!;
+    const lista = riga.closest("ul")!.parentElement!.closest("ul")!;
+    const firme = async () =>
+      (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
+    return { riga, lista, pranzo, firme };
+  }
+
+  function puntatore(tipo: string, el: Element, x: number, y: number) {
+    fireEvent(
+      el,
+      new PointerEvent(tipo, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 5,
+        isPrimary: true,
+        pointerType: "touch",
+        button: 0,
+        clientX: x,
+        clientY: y,
+      })
+    );
+  }
+
+  // Tieni premuto finché la riga si solleva, poi muovi subito: ramo
+  // "trascina" (dentro la finestra di 160 ms).
+  async function iniziaTrascinamento(riga: Element, lista: Element) {
+    puntatore("pointerdown", riga, 100, 150);
+    await waitFor(() => expect(riga.hasAttribute("data-sollevato")).toBe(true), {
+      interval: 5,
+      timeout: 3000,
+    });
+    puntatore("pointermove", lista, 100, 170);
+  }
+
+  it("rilascio su un pasto con lo stesso alimento: si apre il foglio dei doppioni", async () => {
+    const { riga, lista, pranzo, firme } = await prepara();
+    const prima = await firme();
+
+    await iniziaTrascinamento(riga, lista);
+    puntatore("pointermove", lista, 100, 250);
+    // Il pasto sotto il dito è evidenziato.
+    await waitFor(() =>
+      expect(document.querySelector(`[data-pasto-id="${pranzo.id}"]`)!.hasAttribute("data-bersaglio-attivo")).toBe(
+        true
+      )
+    );
+    puntatore("pointerup", lista, 100, 250);
+
+    await screen.findByText("«Yogurt» c'è già in «Pranzo»");
+    expect(await firme()).toEqual(prima); // il foglio non ha scritto niente
+  });
+
+  it("rilascio fuori da un pasto (sopra la zona di + Aggiungi): niente si scrive", async () => {
+    const { riga, lista, firme } = await prepara();
+    const prima = await firme();
+
+    await iniziaTrascinamento(riga, lista);
+    puntatore("pointermove", lista, 100, 720);
+    puntatore("pointerup", lista, 100, 720);
+
+    await waitFor(() => expect(document.querySelector("[data-bersaglio]")).toBeNull());
+    // Un foglio aperto per errore arriverebbe dopo una lettura da Dexie:
+    // si aspetta un po' prima di dire che non c'è.
+    await expect(screen.findByRole("dialog", undefined, { timeout: 500 })).rejects.toThrow();
+    expect(await firme()).toEqual(prima);
+  });
+
+  it("gesto interrotto dal sistema sopra un pasto valido: niente si scrive", async () => {
+    const { riga, lista, firme } = await prepara();
+    const prima = await firme();
+
+    await iniziaTrascinamento(riga, lista);
+    puntatore("pointermove", lista, 100, 250);
+    puntatore("pointercancel", lista, 100, 250);
+
+    await waitFor(() => expect(document.querySelector("[data-bersaglio]")).toBeNull());
+    // Un foglio aperto per errore arriverebbe dopo una lettura da Dexie:
+    // si aspetta un po' prima di dire che non c'è.
+    await expect(screen.findByRole("dialog", undefined, { timeout: 500 })).rejects.toThrow();
+    expect(await firme()).toEqual(prima);
+  });
+});

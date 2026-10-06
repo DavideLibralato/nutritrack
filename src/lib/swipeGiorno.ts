@@ -55,6 +55,7 @@ import {
 } from "./decisioneSwipe";
 import { oggiLocale } from "./dataGiorno";
 import { puntatoreRivendicato } from "./puntatoriRivendicati";
+import { movimentoRidotto } from "./movimentoRidotto";
 
 export type VersoGiorno = Exclude<EsitoSwipe, "ritorno">;
 
@@ -93,10 +94,6 @@ function tastieraAperta(): boolean {
   if (!(el instanceof HTMLElement)) return false;
   if (el.isContentEditable || el instanceof HTMLTextAreaElement) return true;
   return el instanceof HTMLInputElement && TIPI_CON_TASTIERA.has(el.type);
-}
-
-function movimentoRidotto(): boolean {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
 // Porta il pannello da `da` ad `a` (px) in `durata` ms. Lo stile finale si

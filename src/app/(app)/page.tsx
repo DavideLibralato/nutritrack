@@ -102,6 +102,25 @@ import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { useSwipeGiorno } from "@/lib/swipeGiorno";
 import { useTieniPremuto, type TipoRiga } from "@/lib/tieniPremuto";
+import { useTrascinaInPasto } from "@/lib/trascinaInPasto";
+import CopiaTrascinata from "@/components/CopiaTrascinata";
+
+// "Sposta" (sezione 3, "Tieni premuto"): cosa si sposta e a che punto si è.
+// `sceltaPasto`: si sta scegliendo il pasto nel foglio (Sposta dal menu); col
+// trascinamento la destinazione la dà il rilascio, e il foglio dei pasti non
+// si apre mai. Con `doppioni` è aperto il foglio dei doppioni.
+interface StatoSpostamento {
+  origine: OrigineSpostamento;
+  // Il nome dell'alimento o del pasto che si sposta, per i titoli.
+  nome: string;
+  sceltaPasto: boolean;
+  pastoPartenzaId: string | null;
+  pastoDestinazioneId: string | null;
+  doppioni: Doppione[] | null;
+  avviso: string | null;
+  inCorso: boolean;
+  errore: string | null;
+}
 
 // Etichetta della pastiglia: "normale" -> "Normale". I tipi non sono un
 // elenco fisso (sezione 3), quindi non c'è una tabella di etichette da
@@ -377,25 +396,38 @@ function OggiContenuto() {
   // con `doppioni` è aperto il foglio dei doppioni (SheetDoppioni). Niente
   // si scrive finché non si conferma: chiudere uno dei due fogli butta via
   // tutto.
-  const [spostamento, setSpostamento] = useState<{
-    origine: OrigineSpostamento;
-    // Il nome dell'alimento o del pasto che si sposta, per i titoli.
-    nome: string;
-    pastoPartenzaId: string | null;
-    pastoDestinazioneId: string | null;
-    doppioni: Doppione[] | null;
-    avviso: string | null;
-    inCorso: boolean;
-    errore: string | null;
-  } | null>(null);
+  const [spostamento, setSpostamento] = useState<StatoSpostamento | null>(null);
+
+  // Trascinare un alimento o un pasto su un altro pasto (sezione 3, "Tieni
+  // premuto", passo D): la copia che segue il dito, il pasto sotto il dito,
+  // e al rilascio lo stesso spostamento di "Sposta" dal menu.
+  const rifLista = useRef<HTMLUListElement>(null);
+  const {
+    trascinamento,
+    bersaglio,
+    rifElementoCopia,
+    ascoltatori: ascoltatoriTrascinamento,
+  } = useTrascinaInPasto({
+    rifLista,
+    rifFasciaAggiungi,
+    pastoDi: (riga) =>
+      riga.tipo === "pasto" ? riga.id : (vociTutte?.find((v) => v.id === riga.id)?.pasto_id ?? null),
+    onRilascio: (riga, pastoDestinazioneId) => {
+      const s = nuovoSpostamento(riga.tipo, riga.id, false);
+      if (s) void eseguiSpostamento(s, pastoDestinazioneId);
+    },
+  });
 
   const gestiAttivi =
-    voceInModifica === null && pastoDaSalvare === null && menu === null && spostamento === null;
+    voceInModifica === null &&
+    pastoDaSalvare === null &&
+    menu === null &&
+    spostamento === null &&
+    trascinamento === null;
 
   // Swipe per cambiare giorno (sezione 3, "Swipe per cambiare giorno"): si
   // attiva sul pannello del giorno (anello, macro e lista), non sulla testata
   // con la data.
-  const rifLista = useRef<HTMLUListElement>(null);
   const rifPannello = useSwipeGiorno({
     giorno,
     attivo: gestiAttivi,
@@ -419,6 +451,7 @@ function OggiContenuto() {
           rifFasciaAggiungi.current?.getBoundingClientRect().top ?? window.innerHeight,
         elemento: riga.elemento,
       }),
+    onTrascinamento: ascoltatoriTrascinamento,
   });
   // La lista ha due ref: l'oggetto che usa lo swipe (rifScorrimento) e la
   // callback del tieni-premuto. Questa le unisce; useCallback la tiene
@@ -568,24 +601,41 @@ function OggiContenuto() {
     rigaCalorie = `${consumateKcal} di ${targetKcal} kcal`;
   }
 
-  // "Elimina" / "Elimina tutto il pasto" dal menu contestuale (sezione 3,
-  // "Tieni premuto"). Le voci si rileggono da Dexie al momento del tocco:
-  // quello che si cancella è lo stato vero, non quello dell'ultimo render.
-  // Niente conferma prima, come per l'inserimento: c'è "Annulla" dopo
-  // (punto 10.2). Cancellato niente (già sparito nel frattempo) → niente
-  // barra.
-  // "Sposta" dal menu: apre l'elenco dei pasti.
-  function apriSposta(tipo: TipoRiga, id: string) {
-    const vuoto = { pastoDestinazioneId: null, doppioni: null, avviso: null, inCorso: false, errore: null };
+  // Lo stato iniziale di uno spostamento di una riga (alimento o pasto);
+  // null se la riga non c'è più. `sceltaPasto`: dal menu si sceglie il pasto
+  // nel foglio; trascinando il pasto è già deciso dal rilascio.
+  function nuovoSpostamento(tipo: TipoRiga, id: string, sceltaPasto: boolean): StatoSpostamento | null {
+    const vuoto = { sceltaPasto, pastoDestinazioneId: null, doppioni: null, avviso: null, inCorso: false, errore: null };
     if (tipo === "voce") {
       const voce = vociGiorno.find((v) => v.id === id);
-      if (!voce) return;
-      setSpostamento({ ...vuoto, origine: { tipo: "voce", id }, nome: voce.nome_alimento, pastoPartenzaId: voce.pasto_id });
-    } else {
-      const pasto = pasti?.find((p) => p.id === id);
-      if (!pasto) return;
-      setSpostamento({ ...vuoto, origine: { tipo: "pasto", pastoId: id }, nome: pasto.nome, pastoPartenzaId: id });
+      if (!voce) return null;
+      return { ...vuoto, origine: { tipo: "voce", id }, nome: voce.nome_alimento, pastoPartenzaId: voce.pasto_id };
     }
+    const pasto = pasti?.find((p) => p.id === id);
+    if (!pasto) return null;
+    return { ...vuoto, origine: { tipo: "pasto", pastoId: id }, nome: pasto.nome, pastoPartenzaId: id };
+  }
+
+  // Cosa scrive la copia che segue il dito: per un alimento nome e
+  // "80 g · 200 kcal", come la riga; per un pasto intero, compatta, nome e
+  // numero di alimenti ("Pranzo · 3 alimenti").
+  function descriviCopia(tipo: TipoRiga, id: string): { titolo: string; dettaglio?: string } {
+    if (tipo === "voce") {
+      const voce = vociGiorno.find((v) => v.id === id);
+      if (!voce) return { titolo: "" };
+      return {
+        titolo: voce.nome_alimento,
+        dettaglio: `${voce.quantita_g} g · ${Math.round(totaleVoce(voce).kcal)} kcal`,
+      };
+    }
+    const nome = pasti?.find((p) => p.id === id)?.nome ?? "";
+    const n = vociGiorno.filter((v) => v.pasto_id === id).length;
+    return { titolo: `${nome} · ${n} ${n === 1 ? "alimento" : "alimenti"}` };
+  }
+
+  // "Sposta" dal menu: apre l'elenco dei pasti.
+  function apriSposta(tipo: TipoRiga, id: string) {
+    setSpostamento(nuovoSpostamento(tipo, id, true));
   }
 
   // Scelto il pasto (e, se servono, le scelte per i doppioni): rilegge le
@@ -593,9 +643,12 @@ function OggiContenuto() {
   // decidere, o nel frattempo sono cambiati, apre il foglio invece di
   // scrivere. Alla fine la barra dice cosa è successo davvero, con
   // "Annulla" solo se si è scritto qualcosa.
-  async function eseguiSpostamento(pastoDestinazioneId: string, scelte?: Record<string, SceltaDoppione>) {
-    if (!userId || !spostamento) return;
-    const s = spostamento;
+  async function eseguiSpostamento(
+    s: StatoSpostamento,
+    pastoDestinazioneId: string,
+    scelte?: Record<string, SceltaDoppione>
+  ) {
+    if (!userId) return;
     setSpostamento({ ...s, pastoDestinazioneId, inCorso: true, errore: null });
     try {
       const esito = await spostaNelPasto({
@@ -641,6 +694,12 @@ function OggiContenuto() {
     }
   }
 
+  // "Elimina" / "Elimina tutto il pasto" dal menu contestuale (sezione 3,
+  // "Tieni premuto"). Le voci si rileggono da Dexie al momento del tocco:
+  // quello che si cancella è lo stato vero, non quello dell'ultimo render.
+  // Niente conferma prima, come per l'inserimento: c'è "Annulla" dopo
+  // (punto 10.2). Cancellato niente (già sparito nel frattempo) → niente
+  // barra.
   async function eliminaDalMenu(tipo: TipoRiga, id: string) {
     if (!userId) return;
     try {
@@ -1029,7 +1088,26 @@ function OggiContenuto() {
               // alimenti+quantità di oggi coincidono con un pasto già salvato.
               const giaSalvato = pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci);
               return (
-                <li key={pasto.id} className="border-b border-border py-4">
+                <li
+                  key={pasto.id}
+                  // Trascinamento (passo D): ogni pasto è misurato come
+                  // bersaglio (data-pasto-id). Mentre si trascina, tutti i
+                  // pasti tranne quello di partenza hanno il bordo
+                  // tratteggiato, quello sotto il dito è evidenziato; il
+                  // pasto di partenza si spegne solo trascinando un pasto
+                  // intero (globals.css, .pasto-trascinamento).
+                  data-pasto-id={pasto.id}
+                  data-bersaglio={
+                    trascinamento && trascinamento.pastoPartenzaId !== pasto.id ? "" : undefined
+                  }
+                  data-bersaglio-attivo={bersaglio === pasto.id ? "" : undefined}
+                  data-trascinato={
+                    trascinamento?.riga.tipo === "pasto" && trascinamento.riga.id === pasto.id
+                      ? ""
+                      : undefined
+                  }
+                  className="pasto-trascinamento border-b border-border py-4"
+                >
                   {/* Voce 3: se il pasto ha degli alimenti, la riga del titolo è
                       un pulsante che ne nasconde/mostra la lista. Il pasto vuoto
                       resta una riga non interattiva (non c'è niente da
@@ -1089,6 +1167,7 @@ function OggiContenuto() {
                             onClick={() => apriModifica(voce)}
                             data-tieni-premuto="voce"
                             data-menu-aperto={menu?.id === voce.id ? "" : undefined}
+                            data-trascinato={trascinamento?.riga.id === voce.id ? "" : undefined}
                             data-id={voce.id}
                             className={`riga-tieni-premuto flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
                           >
@@ -1157,6 +1236,15 @@ function OggiContenuto() {
       {/* Menu contestuale del tieni-premuto (sezione 3). Per ora solo
           Elimina: Sposta e Duplica compaiono quando funzionano (passi C ed
           E), voci spente sembrerebbero rotte. */}
+      {trascinamento && (
+        <CopiaTrascinata
+          rettangolo={trascinamento.rettangolo}
+          compatta={trascinamento.riga.tipo === "pasto"}
+          rifElemento={rifElementoCopia}
+          {...descriviCopia(trascinamento.riga.tipo, trascinamento.riga.id)}
+        />
+      )}
+
       {menu && (
         <MenuContestuale
           etichetta={`Azioni per ${
@@ -1183,13 +1271,13 @@ function OggiContenuto() {
         />
       )}
 
-      {spostamento && spostamento.doppioni === null && (
+      {spostamento && spostamento.sceltaPasto && spostamento.doppioni === null && (
         <SheetScegliPasto
           titolo={`Sposta «${accorcia(spostamento.nome, MASSIMO_ALIMENTO)}» in…`}
           pasti={pasti.filter((p) => p.id !== spostamento.pastoPartenzaId)}
           inCorso={spostamento.inCorso}
           errore={spostamento.errore}
-          onScegli={(pastoId) => void eseguiSpostamento(pastoId)}
+          onScegli={(pastoId) => void eseguiSpostamento(spostamento, pastoId)}
           onAnnulla={() => setSpostamento(null)}
         />
       )}
@@ -1217,7 +1305,7 @@ function OggiContenuto() {
           inCorso={spostamento.inCorso}
           errore={spostamento.errore}
           onAnnulla={() => setSpostamento(null)}
-          onConferma={(scelte) => void eseguiSpostamento(spostamento.pastoDestinazioneId!, scelte)}
+          onConferma={(scelte) => void eseguiSpostamento(spostamento, spostamento.pastoDestinazioneId!, scelte)}
         />
       )}
 
