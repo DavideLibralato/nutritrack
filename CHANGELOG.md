@@ -5,6 +5,56 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Duplica, con giorno e pasto (passo E)
+
+Branch `duplica`, partito da `trascina`. Il passo D, con lo scorrimento
+automatico e i bordi, è stato provato su iPhone, tutto bene.
+
+- **Menu:** voce "Duplica" fra Sposta ed Elimina; sul pasto solo se ha
+  alimenti.
+- **Foglio:**
+  - giorno: campo data con massimo oggi, parte dal giorno guardato, e la
+    data si ricontrolla nel codice contro `oggiLocale`, non UTC;
+  - pasto: parte da quello d'origine;
+  - Duplica resta spento finché manca uno dei due.
+- **Regola nuova:** le righe che si duplicano non sono mai doppioni di se
+  stesse. La Mela duplicata nel suo stesso pasto diventa una seconda riga,
+  senza foglio dei doppioni. Il foglio si apre solo per un'ALTRA riga
+  dello stesso alimento, e Somma o Scrivi quantità toccano quella, mai
+  l'originale.
+- **Copie:** stessi `alimento_id` e valori della voce originale; un
+  `gruppo_id` nuovo per un pasto intero; `creato_il` adesso;
+  `consumato_alle` come in /aggiungi. Il giorno di destinazione si
+  classifica (`garantisciGiornoPerPrimaVoce`). Annulla toglie le copie e
+  rimette com'erano le righe sommate o scritte a mano.
+- **Messaggi:** "Duplicato: Mela in Pranzo", con "di lun 5 ott" se il
+  giorno è diverso. Se tutto è escluso, "Nessuna copia: …", senza
+  "Duplicato" e senza Annulla.
+- **Barra:** un secondo tasto facoltativo, "Vedi", solo per un giorno
+  diverso. Porta a quel giorno; la barra resta con Annulla per il tempo
+  che le resta, e "Vedi" sparisce.
+- **Test:**
+  - 12 sul piano: l'originale mai toccato con nessuna delle 4 scelte; la
+    stessa riga non è doppione di se stessa; com'è fatta la copia;
+  - 4 su date e giorno corto (compresa mezzanotte passata);
+  - 4 sul foglio (massimo dopo mezzanotte, data futura digitata a mano);
+  - 4 sui messaggi;
+  - 4 su Dexie (giorno classificato e Annulla che toglie solo le copie,
+    stessa riga nello stesso pasto, Somma su un'altra riga, giorno futuro
+    rifiutato);
+  - 1 sulla pagina: Duplica su ieri, "Vedi", Annulla.
+- **Verifica dei test:** 16 rotture apposta, tutte prese.
+  - Fuso orario dei test fissato a `Europe/Rome` in `vitest.config.mts`:
+    i test sulla mezzanotte ora dimostrano qualcosa su qualsiasi computer.
+    Verificato con la shell in UTC: `dataScrivibile` in UTC viene preso.
+    Senza il fuso fissato, la stessa rottura passava inosservata.
+  - Contrasto di "Vedi" (`--testo-capsula` sul vetro, senza capsula)
+    aggiunto a `contrasti.test.ts`: da 5,74:1 (verde, chiaro) in su, per
+    tutti i colori in chiaro e in scuro.
+  - Trovato strada facendo: il blocco dei click dopo un trascinamento
+    restava acceso fra un test e l'altro e si mangiava il primo click del
+    test dopo. I test di trascinamento ora aspettano che scada.
+
 ## 2026-10-06 — Trascinamento: scorrimento automatico e bordi dentro i pasti
 
 Branch `trascina`. Due ritocchi dopo la prova del passo D su iPhone, che

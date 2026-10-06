@@ -27,6 +27,9 @@
 // - l'azione, in colore accento dentro una capsula (--capsula-attiva), con
 //   il testo in --testo-capsula: l'accento appena più scuro, per il contrasto.
 //   L'area toccabile è alta 44 px anche se la capsula si vede più piccola.
+//   Prima dell'azione può esserci un'azione secondaria (`azioneSecondaria`,
+//   oggi "Vedi" dopo una Duplica su un altro giorno), solo testo in colore
+//   accento, senza capsula: si vede che quella principale è l'altra.
 // Sul bordo basso, una linea sottile (.linea-tempo in globals.css) si
 // accorcia in `durataMs`: mostra quanto manca prima che la barra sparisca.
 //
@@ -78,6 +81,7 @@ interface Props {
   coda?: string;
   icona?: IconaBarra;
   azione?: { etichetta: string; onClick: () => void };
+  azioneSecondaria?: { etichetta: string; onClick: () => void };
   durataMs?: number;
   onChiudi: () => void;
   sopra?: boolean;
@@ -90,6 +94,7 @@ export default function BarraAnnulla({
   coda,
   icona = "info",
   azione,
+  azioneSecondaria,
   // Le durate stanno in testiBarra.ts: con "Annulla" un po' di più, per il
   // tempo di decidere.
   durataMs = azione ? DURATE_BARRA.conAzione : DURATE_BARRA.senzaAzione,
@@ -152,7 +157,7 @@ export default function BarraAnnulla({
           } as CSSProperties
         }
         className={`vetro pointer-events-auto relative mx-auto flex min-h-[3.25rem] w-fit max-w-[min(28rem,100%)] items-center gap-2.5 overflow-hidden rounded-[1.625rem] border border-border py-1 pl-3 text-sm text-foreground ${
-          azione ? "pr-1" : "pr-4"
+          azione || azioneSecondaria ? "pr-1" : "pr-4"
         }`}
       >
         <Icona tipo={icona} />
@@ -164,6 +169,15 @@ export default function BarraAnnulla({
             <span className="min-w-0 truncate font-medium">{nome}</span>
             {coda && <span className="shrink-0">{coda}</span>}
           </p>
+        )}
+        {azioneSecondaria && (
+          <button
+            type="button"
+            onClick={azioneSecondaria.onClick}
+            className={`flex min-h-11 shrink-0 items-center rounded-full px-2 font-medium text-[var(--testo-capsula)] ${CLASSE_FOCUS}`}
+          >
+            {azioneSecondaria.etichetta}
+          </button>
         )}
         {azione && (
           // L'area toccabile è tutto il pulsante, alto 44 px; la capsula

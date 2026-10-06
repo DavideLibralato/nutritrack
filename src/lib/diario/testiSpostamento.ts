@@ -129,3 +129,54 @@ export function testoEsitoDoppione(
       return `→ ${testoEscluso}`;
   }
 }
+
+export interface EsitoDuplicazione {
+  tipo: "voce" | "pasto";
+  nomeAlimento?: string;
+  pastoPartenza: string;
+  pastoDestinazione: string;
+  // Il giorno di destinazione in breve ("lun 5 ott"), solo se è diverso da
+  // quello che si sta guardando; null altrimenti.
+  giornoDiverso: string | null;
+  // Quanti alimenti duplicati davvero (con una copia o sommati).
+  duplicati: number;
+  // Nomi degli alimenti non duplicati ("Non duplicarlo").
+  esclusi: string[];
+}
+
+// I messaggi dopo "Duplica", con lo stesso principio di Sposta: se non si
+// è copiato niente (tutto escluso con "Non duplicarlo") la parola
+// "Duplicato" non compare, e la barra non ha "Annulla" (lo decide chi
+// chiama: non c'è niente da annullare). Escluso vuol dire che quell'alimento
+// c'era già nel pasto di destinazione: è l'unico caso in cui si può
+// escludere, e la frase lo dice.
+// - "Duplicato: Mela in Pranzo" (+ " di lun 5 ott" se il giorno è diverso)
+// - "Duplicato: Colazione in Pranzo"
+// - "Duplicato: «Colazione» in «Pranzo» (tranne «Mela», che c'era già)."
+// - "Nessuna copia: «Mela» c'è già in «Pranzo»."
+export function messaggioDuplicazione(e: EsitoDuplicazione): MessaggioBarra {
+  const di = e.giornoDiverso ? ` di ${e.giornoDiverso}` : "";
+  const plurale = new Set(e.esclusi).size > 1;
+
+  if (e.duplicati === 0) {
+    const chi = e.tipo === "voce" ? alimento(e.nomeAlimento ?? e.esclusi[0] ?? "") : elencoAlimenti(e.esclusi);
+    return {
+      testo: `Nessuna copia: ${chi} ${plurale ? "ci sono" : "c'è"} già in ${pasto(e.pastoDestinazione)}${di}.`,
+      icona: "info",
+    };
+  }
+  if (e.tipo === "pasto" && e.esclusi.length > 0) {
+    return {
+      testo:
+        `Duplicato: ${pasto(e.pastoPartenza)} in ${pasto(e.pastoDestinazione)}${di} ` +
+        `(tranne ${elencoAlimenti(e.esclusi)}, che ${plurale ? "c'erano" : "c'era"} già).`,
+      icona: "spunta",
+    };
+  }
+  return {
+    testo: "Duplicato:",
+    nome: e.tipo === "voce" ? (e.nomeAlimento ?? "") : e.pastoPartenza,
+    coda: `in ${accorcia(e.pastoDestinazione, MASSIMO_PASTO)}${di}`,
+    icona: "spunta",
+  };
+}

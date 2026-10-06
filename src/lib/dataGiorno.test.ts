@@ -6,6 +6,8 @@ import {
   eOggi,
   eFuturo,
   giornoSettimanaDi,
+  dataScrivibile,
+  formattaGiornoCorto,
 } from "./dataGiorno";
 
 describe("oggiLocale", () => {
@@ -74,5 +76,32 @@ describe("giornoSettimanaDi", () => {
   it("attraversa il cambio di mese e di anno", () => {
     expect(giornoSettimanaDi("2026-03-01")).toBe("domenica");
     expect(giornoSettimanaDi("2026-01-01")).toBe("giovedi");
+  });
+});
+
+describe("dataScrivibile (Duplica su un altro giorno)", () => {
+  const adesso = new Date(2026, 9, 6, 15, 0, 0); // 6 ottobre, pomeriggio
+
+  it("oggi e i giorni passati sì, domani no", () => {
+    expect(dataScrivibile("2026-10-06", adesso)).toBe(true);
+    expect(dataScrivibile("2025-12-31", adesso)).toBe(true);
+    expect(dataScrivibile("2026-10-07", adesso)).toBe(false);
+  });
+
+  it("mezzanotte passata: il giorno nuovo è già scrivibile (orologio locale, non UTC)", () => {
+    // 00:30 del 7 ottobre a Roma è ancora il 6 ottobre in UTC.
+    const dopoMezzanotte = new Date(2026, 9, 7, 0, 30, 0);
+    expect(dataScrivibile("2026-10-07", dopoMezzanotte)).toBe(true);
+    expect(dataScrivibile("2026-10-08", dopoMezzanotte)).toBe(false);
+  });
+
+  it("vuota, malformata o inesistente: no", () => {
+    expect(dataScrivibile("", adesso)).toBe(false);
+    expect(dataScrivibile("6/10/2026", adesso)).toBe(false);
+    expect(dataScrivibile("2026-02-30", adesso)).toBe(false);
+  });
+
+  it("formattaGiornoCorto: «lun 5 ott»", () => {
+    expect(formattaGiornoCorto("2026-10-05")).toBe("lun 5 ott");
   });
 });

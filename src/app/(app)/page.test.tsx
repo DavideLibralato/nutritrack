@@ -12,7 +12,8 @@ import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-li
 import OggiPage from "./page";
 import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
 import { idVoceRicreata } from "@/lib/repository/vociDiario";
-import { oggiLocale } from "@/lib/dataGiorno";
+import { SCADENZA_BLOCCO_CLICK_MS } from "@/lib/decisioneSwipe";
+import { formattaGiornoCorto, giornoPrecedente, oggiLocale } from "@/lib/dataGiorno";
 import type { VoceDiario } from "@/lib/db/tipi";
 
 // Un utente nuovo per ogni test: il database finto è lo stesso per tutto il
@@ -310,7 +311,14 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
 // Pranzo da 200 a 300, lista visibile da 50 a 650, "+ Aggiungi" da 700.
 describe("Oggi: trascinare un alimento su un altro pasto", () => {
   const rettangoli: Record<string, { top: number; bottom: number }> = {};
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    // Ogni rilascio ferma il click seguente per SCADENZA_BLOCCO_CLICK_MS su
+    // tutta la pagina (bloccaClickFantasma): voluto nell'app, ma il blocco
+    // sta su window e sopravvive alla pulizia, e si mangerebbe il primo
+    // click del test dopo. Si aspetta che scada.
+    await new Promise((r) => setTimeout(r, SCADENZA_BLOCCO_CLICK_MS + 50));
+  });
 
   async function prepara() {
     const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
@@ -458,5 +466,56 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
     // Rilascio lì: Cena è vuota, niente doppioni, lo yogurt si sposta.
     puntatore("pointerup", lista, 100, 620);
     await screen.findByText("Spostato:");
+  });
+});
+
+// Duplica su un altro giorno, sulla pagina vera (passo E): il messaggio dice
+// il giorno, la barra ha "Vedi". Dopo "Vedi" si guarda quel giorno, la barra
+// resta con "Annulla" ancora valido e "Vedi" sparisce; Annulla toglie solo
+// la copia.
+describe("Oggi: Duplica su un altro giorno", () => {
+  it("«di …» nel messaggio, Vedi porta là, Annulla toglie solo la copia", async () => {
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const oggi = oggiLocale();
+    const ieri = giornoPrecedente(oggi);
+    await repositoryVociDiario.crea({
+      user_id: utenteTest,
+      alimento_id: "alimento-mela",
+      pasto_id: pranzo.id,
+      gruppo_id: null,
+      quantita_g: 150,
+      data: oggi,
+      creato_il: "2026-10-06T12:00:00.000Z",
+      consumato_alle: null,
+      nome_alimento: "Mela",
+      kcal_100g: 52,
+      proteine_100g: 0.3,
+      carboidrati_100g: 14,
+      grassi_100g: 0.2,
+    });
+    const diario = async () =>
+      (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => `${v.data} ${v.nome_alimento}`).sort();
+
+    render(<OggiPage />);
+    fireEvent.contextMenu((await screen.findByText("Mela")).closest("button")!);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Duplica" }));
+    const foglio = await screen.findByRole("dialog", { name: "Duplica «Mela»" });
+    fireEvent.change(within(foglio).getByLabelText("Giorno"), { target: { value: ieri } });
+    fireEvent.click(within(foglio).getByRole("button", { name: "Duplica" }));
+
+    await screen.findByText(`in Pranzo di ${formattaGiornoCorto(ieri)}`);
+    await waitFor(async () => expect(await diario()).toEqual([`${ieri} Mela`, `${oggi} Mela`]));
+
+    fireEvent.click(screen.getByRole("button", { name: "Vedi" }));
+    // Si guarda ieri: la copia è lì, la barra c'è ancora, "Vedi" no.
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Vedi" })).toBeNull());
+    await waitFor(() =>
+      expect(document.querySelector('[data-tieni-premuto="voce"]')?.textContent).toContain("Mela")
+    );
+    expect(screen.getByRole("button", { name: "Annulla" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual([`${oggi} Mela`]);
   });
 });

@@ -46,7 +46,9 @@ export interface Doppione {
 
 export type Scrittura =
   | { tipo: "aggiorna"; id: string; modifiche: Partial<Pick<VoceDiario, "pasto_id" | "quantita_g">> }
-  | { tipo: "elimina"; id: string };
+  | { tipo: "elimina"; id: string }
+  // Una riga nuova (Duplica, src/lib/diario/pianoDuplica.ts).
+  | { tipo: "crea"; dati: Omit<VoceDiario, "id" | "updated_at" | "deleted_at"> };
 
 export interface PianoSpostamento {
   scritture: Scrittura[];
@@ -63,7 +65,7 @@ export function arrotondaGrammi(g: number): number {
   return Math.round(g * 100) / 100;
 }
 
-function sommaGrammi(voci: VoceDiario[]): number {
+export function sommaGrammi(voci: VoceDiario[]): number {
   return arrotondaGrammi(voci.reduce((t, v) => t + v.quantita_g, 0));
 }
 
@@ -86,7 +88,7 @@ function perAlimento(voci: VoceDiario[]): Map<string, VoceDiario[]> {
 // La riga di destinazione che resta, quando un doppione si riduce a una
 // riga sola: la più vecchia (creato_il, poi id), così la scelta non dipende
 // dall'ordine in cui Dexie restituisce le righe.
-function rigaCheResta(voci: VoceDiario[]): VoceDiario {
+export function rigaCheResta(voci: VoceDiario[]): VoceDiario {
   return [...voci].sort(
     (a, b) => a.creato_il.localeCompare(b.creato_il) || a.id.localeCompare(b.id)
   )[0];

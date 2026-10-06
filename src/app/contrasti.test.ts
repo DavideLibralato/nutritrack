@@ -112,6 +112,9 @@ function coppie(p: Paletta, tema: Tema, accento: string): [string, number][] {
     ["--accento su superficie", contrasto(c("--accento"), superficie)],
     ["--su-pieno su --accento-pieno", contrasto(sopra(c("--su-pieno"), c("--accento-pieno")), c("--accento-pieno"))],
     ["--testo-capsula sulla capsula sopra il vetro", contrasto(sopra(c("--testo-capsula"), capsula), capsula)],
+    // "Vedi" nella BarraAnnulla (Duplica su un altro giorno): solo testo,
+    // senza capsula, direttamente sul vetro della barra.
+    ["--testo-capsula sul vetro (Vedi)", contrasto(sopra(c("--testo-capsula"), vetro), vetro)],
     ["--tenue su sfondo", contrasto(c("--tenue"), sfondo)],
     ["--tenue su superficie", contrasto(c("--tenue"), superficie)],
   ];

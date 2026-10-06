@@ -85,6 +85,23 @@ export function eFuturo(iso: string, adesso: Date = new Date()): boolean {
   return iso > oggiLocale(adesso);
 }
 
+// "lun 5 ott": il giorno in breve, dentro una frase (il messaggio di
+// Duplica su un altro giorno, "Duplicato: Mela in Pranzo di lun 5 ott").
+export function formattaGiornoCorto(iso: string): string {
+  return daISO(iso).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+}
+
+// Una data scritta o scelta dall'utente su cui si può registrare: un
+// giorno vero "YYYY-MM-DD" (non "2026-02-30") e non nel futuro rispetto a
+// oggiLocale — l'orologio locale, non UTC: all'una di notte il giorno nuovo
+// è già scrivibile. Un campo data col `max` non basta: alcuni browser
+// lasciano digitare una data oltre il massimo.
+export function dataScrivibile(iso: string, adesso: Date = new Date()): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  if (oggiLocale(daISO(iso)) !== iso) return false;
+  return !eFuturo(iso, adesso);
+}
+
 // "HH:mm" dell'orologio locale. Serve alla proposta del pasto in base
 // all'ora quando si inserisce nel giorno corrente (sezione "I pasti").
 export function oraCorrente(d: Date = new Date()): string {

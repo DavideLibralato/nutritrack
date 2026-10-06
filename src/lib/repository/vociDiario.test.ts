@@ -20,11 +20,13 @@ import {
   fotografiaInserimento,
   idVoceRicreata,
   spostaNelPasto,
+  duplicaNelPasto,
 } from "./vociDiario";
 import { repositoryVociDiario } from "./index";
 import { db } from "../db/database";
 import { scaricaTabella } from "../sync/discesa";
-import type { VoceDiario } from "../db/tipi";
+import type { Profilo, VoceDiario } from "../db/tipi";
+import { idGiorno } from "./giorni";
 
 // Rete assente, come negli altri test dei repository: si esercita solo la
 // parte locale (tabella + outbox). Il test sulla discesa sostituisce questa
@@ -357,5 +359,122 @@ describe("sposta e annulla", () => {
       expect(esito.doppioni.map((d) => d.nome).sort()).toEqual(["Mela", "Yogurt"]);
     }
     expect(await diario(userId)).toEqual(prima);
+  });
+});
+
+describe("duplica e annulla", () => {
+  // Il "giorno" dei test è il 2 ottobre: si duplica sul 1° (ieri) o sul 2.
+  const ADESSO = new Date(2026, 9, 2, 13, 0, 0);
+  const IERI = "2026-10-01";
+
+  function profiloDifferenziato(userId: string): Profilo {
+    return {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      updated_at: "2026-09-01T10:00:00.000Z",
+      deleted_at: null,
+      nome: null,
+      sesso: "non_indicato",
+      data_nascita: null,
+      altezza_cm: null,
+      livello_attivita: "sedentario",
+      differenzia_giorni: true,
+      giorni_allenamento_default: null,
+    };
+  }
+
+  async function diario(userId: string) {
+    const vive = await repositoryVociDiario.ottieniTutti(userId);
+    return vive.map((v) => `${v.data} ${v.pasto_id}: ${v.nome_alimento} ${v.quantita_g} g`).sort();
+  }
+
+  it("su un altro giorno senza voci: il giorno si classifica, Annulla toglie solo le copie", async () => {
+    const userId = crypto.randomUUID();
+    await creaVoce(userId, "Pane", { pastoId: "colazione", quantita: 50 });
+    await creaVoce(userId, "Burro", { pastoId: "colazione", quantita: 10 });
+    const prima = await diario(userId);
+    expect(await db.giorni.get(idGiorno(userId, IERI))).toBeUndefined();
+
+    const esito = await duplicaNelPasto({
+      userId,
+      dataPartenza: GIORNO,
+      origine: { tipo: "pasto", pastoId: "colazione" },
+      dataDestinazione: IERI,
+      pastoDestinazioneId: "colazione",
+      profilo: profiloDifferenziato(userId),
+      adesso: ADESSO,
+    });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    expect(await diario(userId)).toEqual(
+      [...prima, `${IERI} colazione: Burro 10 g`, `${IERI} colazione: Pane 50 g`].sort()
+    );
+    // Il giorno di destinazione è stato classificato (decisione 8).
+    expect((await db.giorni.get(idGiorno(userId, IERI)))?.deleted_at).toBeNull();
+
+    await annullaOperazione(esito.fotografia);
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("la Mela nel suo stesso pasto e giorno: una seconda riga, senza foglio dei doppioni", async () => {
+    const userId = crypto.randomUUID();
+    const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 150 });
+
+    const esito = await duplicaNelPasto({
+      userId,
+      dataPartenza: GIORNO,
+      origine: { tipo: "voce", id: mela.id },
+      dataDestinazione: GIORNO,
+      pastoDestinazioneId: "pranzo",
+      profilo: null,
+      adesso: ADESSO,
+    });
+
+    expect(esito.esito).toBe("fatto");
+    expect(await diario(userId)).toEqual([
+      `${GIORNO} pranzo: Mela 150 g`,
+      `${GIORNO} pranzo: Mela 150 g`,
+    ]);
+    // L'originale è quello di prima, intatto.
+    expect(await db.voci_diario.get(mela.id)).toEqual(mela);
+  });
+
+  it("Somma su un'altra riga: Annulla la rimette com'era, l'originale non è mai cambiato", async () => {
+    const userId = crypto.randomUUID();
+    const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
+    const altra = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+    const origine = { tipo: "voce" as const, id: mela.id };
+    const base = { userId, dataPartenza: GIORNO, origine, dataDestinazione: GIORNO, pastoDestinazioneId: "pranzo", profilo: null, adesso: ADESSO };
+
+    const primo = await duplicaNelPasto(base);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+    const esito = await duplicaNelPasto({
+      ...base,
+      scelte: { "alimento-Mela": { tipo: "somma" } },
+      doppioniVisti: primo.doppioni,
+    });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    expect((await db.voci_diario.get(altra.id))?.quantita_g).toBe(250);
+    expect(await db.voci_diario.get(mela.id)).toEqual(mela);
+
+    await annullaOperazione(esito.fotografia);
+    expect((await db.voci_diario.get(altra.id))?.quantita_g).toBe(100);
+    expect(await db.voci_diario.get(mela.id)).toEqual(mela);
+  });
+
+  it("un giorno futuro si rifiuta, senza scrivere niente", async () => {
+    const userId = crypto.randomUUID();
+    const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 150 });
+    await expect(
+      duplicaNelPasto({
+        userId,
+        dataPartenza: GIORNO,
+        origine: { tipo: "voce", id: mela.id },
+        dataDestinazione: "2026-10-03",
+        pastoDestinazioneId: "pranzo",
+        profilo: null,
+        adesso: ADESSO,
+      })
+    ).rejects.toThrow();
+    expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(1);
   });
 });

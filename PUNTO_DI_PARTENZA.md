@@ -319,7 +319,7 @@ Voci: Sposta (sempre), Duplica (sul pasto solo se ha alimenti: oggi
 sempre, visto che il pasto vuoto non ha il gesto), Elimina ("Elimina
 tutto il pasto" sul pasto: cancella le voci, non la fascia). **Ogni voce
 compare solo quando funziona**: col passo B c'era solo Elimina; dal
-passo C c'è Sposta, sopra Elimina; Duplica arriva col passo E. Voci
+passo C c'è Sposta, sopra Elimina; dal passo E Duplica, fra le due. Voci
 spente sembrerebbero rotte.
 
 **Elimina** (B): nessuna conferma prima, "Annulla" dopo (come
@@ -448,6 +448,44 @@ catalogo: è "ripeti quello che ho mangiato"), `creato_il` adesso,
 pasto intero. Su un giorno senza voci, con i giorni differenziati,
 `garantisciGiornoPerPrimaVoce` come in /aggiungi (la trappola, sopra). Se
 il giorno è diverso da quello mostrato, la barra ha anche "Vedi".
+
+Costruito col passo E (`SheetDuplica`, regole pure in
+`src/lib/diario/pianoDuplica.ts`, scritture in `duplicaNelPasto` di
+`src/lib/repository/vociDiario.ts`):
+- **Le righe che si duplicano non sono MAI doppioni di se stesse**
+  (regola del 6/10). Duplicare la Mela nel suo stesso pasto e giorno crea
+  una seconda riga Mela, senza foglio dei doppioni: altrimenti "Somma"
+  modificherebbe l'originale. Il foglio si apre solo se nel pasto di
+  destinazione c'è un'ALTRA riga dello stesso alimento. Lì vale tutto come
+  in Sposta (una scelta per alimento, quarta scelta "Non duplicarlo"), e
+  Somma o Scrivi quantità modificano quell'altra riga, mai l'originale.
+- **La data:**
+  - si ricontrolla nel foglio e di nuovo prima di scrivere
+    (`dataScrivibile` in `dataGiorno.ts`): un giorno vero, non nel
+    futuro rispetto a `oggiLocale`;
+  - alle 00:30 il giorno nuovo è già scrivibile, anche se in UTC è ancora
+    ieri.
+- **`consumato_alle`:** l'ora attuale solo se il giorno è oggi, altrimenti
+  vuoto, come in /aggiungi.
+- **Il giorno di destinazione si classifica** solo se nasce almeno una
+  copia; "Annulla" non toglie quella riga di `giorni`, come in /aggiungi.
+- **Messaggi**, con lo stesso principio di Sposta:
+  - "Duplicato: Mela in Pranzo", e "Duplicato: Colazione in Pranzo" per un
+    pasto intero;
+  - "… di lun 5 ott" se il giorno è diverso da quello che si guarda;
+  - "(tranne «Mela», che c'era già)" se ci sono esclusioni;
+  - tutto escluso: "Nessuna copia: «Mela» c'è già in «Pranzo»", senza la
+    parola "Duplicato" e senza Annulla.
+- **"Vedi"** è un secondo tasto della barra, solo testo accanto ad
+  "Annulla", e c'è solo quando il giorno è diverso. Porta a quel giorno.
+  La barra resta, con il tempo che le restava e "Annulla" ancora valido;
+  "Vedi" sparisce, perché quel giorno ora è sullo schermo. Colore
+  `--testo-capsula` direttamente sul vetro: il contrasto è controllato in
+  `contrasti.test.ts`, da 5,74:1 in su per tutti i colori, in chiaro e in
+  scuro.
+- **Il fuso orario dei test** è fissato a `Europe/Rome`
+  (`vitest.config.mts`): i test sulla mezzanotte valgono su qualsiasi
+  computer, anche su uno impostato su UTC.
 
 **Messaggi** (barra BarraAnnulla, mai una nuova): dicono cosa è successo
 davvero. Per Sposta: "Spostato: «Nome» → «Pasto»"; escluso l'unico

@@ -10,6 +10,7 @@ import {
   MASSIMO_PASTO,
   messaggioSpostamento,
   testoEsitoDoppione,
+  messaggioDuplicazione,
 } from "./testiSpostamento";
 
 const base = { pastoPartenza: "Colazione", pastoDestinazione: "Pranzo" };
@@ -99,5 +100,43 @@ describe("testoEsitoDoppione — la riga sotto ogni alimento del foglio", () => 
 
   it("Scrivi quantità col campo ancora vuoto", () => {
     expect(testoEsitoDoppione(d, "scrivi", null, "")).toBe("→ Una riga con la quantità che scrivi");
+  });
+});
+
+describe("messaggioDuplicazione", () => {
+  const base = { pastoPartenza: "Colazione", pastoDestinazione: "Pranzo", giornoDiverso: null, esclusi: [] };
+
+  it("alimento e pasto intero, stesso giorno: niente «di …»", () => {
+    expect(messaggioDuplicazione({ ...base, tipo: "voce", nomeAlimento: "Mela", duplicati: 1 })).toEqual({
+      testo: "Duplicato:",
+      nome: "Mela",
+      coda: "in Pranzo",
+      icona: "spunta",
+    });
+    expect(frase(messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 3 }))).toBe(
+      "Duplicato: Colazione in Pranzo"
+    );
+  });
+
+  it("giorno diverso: «di lun 5 ott»", () => {
+    const m = messaggioDuplicazione({ ...base, tipo: "voce", nomeAlimento: "Mela", duplicati: 1, giornoDiverso: "lun 5 ott" });
+    expect(frase(m)).toBe("Duplicato: Mela in Pranzo di lun 5 ott");
+  });
+
+  it("pasto intero con esclusioni: (tranne …), singolare e plurale", () => {
+    const uno = messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 2, esclusi: ["Mela"] });
+    expect(frase(uno)).toBe("Duplicato: «Colazione» in «Pranzo» (tranne «Mela», che c'era già).");
+    const due = messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 1, esclusi: ["Mela", "Pane"], giornoDiverso: "lun 5 ott" });
+    expect(frase(due)).toBe(
+      "Duplicato: «Colazione» in «Pranzo» di lun 5 ott (tranne «Mela» e «Pane», che c'erano già)."
+    );
+  });
+
+  it("tutto escluso: niente parola «Duplicato»", () => {
+    const voce = messaggioDuplicazione({ ...base, tipo: "voce", nomeAlimento: "Mela", duplicati: 0, esclusi: ["Mela"] });
+    expect(frase(voce)).toBe("Nessuna copia: «Mela» c'è già in «Pranzo».");
+    const pasto = messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 0, esclusi: ["Mela", "Pane"] });
+    expect(frase(pasto)).toBe("Nessuna copia: «Mela» e «Pane» ci sono già in «Pranzo».");
+    expect(frase(voce) + frase(pasto)).not.toMatch(/Duplicato/);
   });
 });

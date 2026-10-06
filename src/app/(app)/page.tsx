@@ -55,6 +55,7 @@ import {
   formattaGiornoSettimana,
   formattaGiornoMese,
   formattaDataEstesa,
+  formattaGiornoCorto,
   eFuturo,
   oggiLocale,
 } from "@/lib/dataGiorno";
@@ -66,8 +67,15 @@ import SheetQuantita from "@/components/SheetQuantita";
 import SheetNome from "@/components/SheetNome";
 import SheetScegliPasto from "@/components/SheetScegliPasto";
 import SheetDoppioni from "@/components/SheetDoppioni";
+import SheetDuplica from "@/components/SheetDuplica";
 import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
-import { accorcia, MASSIMO_ALIMENTO, MASSIMO_PASTO, messaggioSpostamento } from "@/lib/diario/testiSpostamento";
+import {
+  accorcia,
+  MASSIMO_ALIMENTO,
+  MASSIMO_PASTO,
+  messaggioDuplicazione,
+  messaggioSpostamento,
+} from "@/lib/diario/testiSpostamento";
 import { daVoce } from "@/lib/inserimento/alimentoPerSheet";
 import {
   pastoGiaSalvato,
@@ -94,6 +102,7 @@ import {
   eliminaVoci,
   fotografiaInserimento,
   spostaNelPasto,
+  duplicaNelPasto,
   type OrigineSpostamento,
   type FotografiaVoci,
 } from "@/lib/repository/vociDiario";
@@ -115,6 +124,22 @@ interface StatoSpostamento {
   nome: string;
   sceltaPasto: boolean;
   pastoPartenzaId: string | null;
+  pastoDestinazioneId: string | null;
+  doppioni: Doppione[] | null;
+  avviso: string | null;
+  inCorso: boolean;
+  errore: string | null;
+}
+
+// "Duplica" (sezione 3, "Tieni premuto", passo E): cosa si duplica, da
+// quale giorno, e — scelti nel foglio — giorno e pasto di destinazione. Con
+// `doppioni` è aperto il foglio dei doppioni.
+interface StatoDuplicazione {
+  origine: OrigineSpostamento;
+  nome: string;
+  pastoPartenzaId: string | null;
+  dataPartenza: string;
+  dataDestinazione: string | null;
   pastoDestinazioneId: string | null;
   doppioni: Doppione[] | null;
   avviso: string | null;
@@ -328,7 +353,13 @@ function OggiContenuto() {
   // `fotografia`: com'erano le voci prima dell'operazione
   // (src/lib/repository/vociDiario.ts). Se c'è, la barra ha "Annulla".
   const [barra, setBarra] = useState<
-    (MessaggioBarra & { id: string; fotografia?: FotografiaVoci }) | null
+    | (MessaggioBarra & {
+        id: string;
+        fotografia?: FotografiaVoci;
+        // Duplica su un altro giorno: il giorno che "Vedi" mostra.
+        vediGiorno?: string;
+      })
+    | null
   >(null);
 
   // L'inserimento appena fatto in /aggiungi, che ci ha riportati qui
@@ -397,6 +428,7 @@ function OggiContenuto() {
   // si scrive finché non si conferma: chiudere uno dei due fogli butta via
   // tutto.
   const [spostamento, setSpostamento] = useState<StatoSpostamento | null>(null);
+  const [duplicazione, setDuplicazione] = useState<StatoDuplicazione | null>(null);
 
   // Trascinare un alimento o un pasto su un altro pasto (sezione 3, "Tieni
   // premuto", passo D): la copia che segue il dito, il pasto sotto il dito,
@@ -423,6 +455,7 @@ function OggiContenuto() {
     pastoDaSalvare === null &&
     menu === null &&
     spostamento === null &&
+    duplicazione === null &&
     trascinamento === null;
 
   // Swipe per cambiare giorno (sezione 3, "Swipe per cambiare giorno"): si
@@ -631,6 +664,107 @@ function OggiContenuto() {
     const nome = pasti?.find((p) => p.id === id)?.nome ?? "";
     const n = vociGiorno.filter((v) => v.pasto_id === id).length;
     return { titolo: `${nome} · ${n} ${n === 1 ? "alimento" : "alimenti"}` };
+  }
+
+  // "Duplica" dal menu: apre il foglio con giorno e pasto. Un pasto senza
+  // alimenti non ha niente da duplicare.
+  function apriDuplica(tipo: TipoRiga, id: string) {
+    const s = nuovoSpostamento(tipo, id, false);
+    if (!s) return;
+    if (tipo === "pasto" && !vociGiorno.some((v) => v.pasto_id === id)) return;
+    setDuplicazione({
+      origine: s.origine,
+      nome: s.nome,
+      pastoPartenzaId: s.pastoPartenzaId,
+      dataPartenza: giorno,
+      dataDestinazione: null,
+      pastoDestinazioneId: null,
+      doppioni: null,
+      avviso: null,
+      inCorso: false,
+      errore: null,
+    });
+  }
+
+  // Scelti giorno e pasto (e, se servono, le scelte per i doppioni):
+  // duplicaNelPasto rilegge le righe e copia. Come per Sposta, se ci sono
+  // doppioni da decidere apre il foglio invece di scrivere. Se il giorno è
+  // diverso da quello che si sta guardando, il messaggio lo dice e la barra
+  // ha anche "Vedi".
+  async function eseguiDuplicazione(
+    d: StatoDuplicazione,
+    dataDestinazione: string,
+    pastoDestinazioneId: string,
+    scelte?: Record<string, SceltaDoppione>
+  ) {
+    if (!userId || profilo === undefined) return;
+    setDuplicazione({ ...d, dataDestinazione, pastoDestinazioneId, inCorso: true, errore: null });
+    try {
+      const esito = await duplicaNelPasto({
+        userId,
+        dataPartenza: d.dataPartenza,
+        origine: d.origine,
+        dataDestinazione,
+        pastoDestinazioneId,
+        profilo,
+        scelte,
+        doppioniVisti: d.doppioni ?? undefined,
+      });
+      if (esito.esito === "doppioni") {
+        setDuplicazione({
+          ...d,
+          dataDestinazione,
+          pastoDestinazioneId,
+          doppioni: esito.doppioni,
+          avviso: d.doppioni ? "Nel frattempo l'elenco è cambiato: controlla e conferma di nuovo." : null,
+          inCorso: false,
+          errore: null,
+        });
+        return;
+      }
+      setDuplicazione(null);
+      const { piano, fotografia } = esito;
+      if (piano.duplicati.length === 0 && piano.esclusi.length === 0) return;
+      const nomePasto = (pastoId: string | null) => pasti?.find((p) => p.id === pastoId)?.nome ?? "";
+      const altroGiorno = dataDestinazione !== giorno;
+      const scritto = fotografia.prima.length > 0 || fotografia.idCreate.length > 0;
+      setBarra({
+        id: crypto.randomUUID(),
+        ...messaggioDuplicazione({
+          tipo: d.origine.tipo,
+          nomeAlimento: d.origine.tipo === "voce" ? d.nome : undefined,
+          pastoPartenza: nomePasto(d.pastoPartenzaId),
+          pastoDestinazione: nomePasto(pastoDestinazioneId),
+          giornoDiverso: altroGiorno ? formattaGiornoCorto(dataDestinazione) : null,
+          duplicati: piano.duplicati.length,
+          esclusi: piano.esclusi,
+        }),
+        fotografia: scritto ? fotografia : undefined,
+        vediGiorno: altroGiorno && scritto ? dataDestinazione : undefined,
+      });
+    } catch {
+      setDuplicazione({
+        ...d,
+        dataDestinazione,
+        pastoDestinazioneId,
+        inCorso: false,
+        errore: "Operazione non riuscita. Riprova.",
+      });
+    }
+  }
+
+  // Il titolo del foglio dei doppioni per Duplica: come per Sposta, più il
+  // giorno se è diverso da quello che si sta guardando.
+  function titoloDoppioniDuplica(d: StatoDuplicazione): string {
+    const dest = accorcia(pasti?.find((p) => p.id === d.pastoDestinazioneId)?.nome ?? "", MASSIMO_PASTO);
+    const di =
+      d.dataDestinazione && d.dataDestinazione !== giorno
+        ? ` di ${formattaGiornoCorto(d.dataDestinazione)}`
+        : "";
+    const doppioni = d.doppioni ?? [];
+    return doppioni.length === 1
+      ? `«${accorcia(doppioni[0].nome, MASSIMO_ALIMENTO)}» c'è già in «${dest}»${di}`
+      : `${doppioni.length} alimenti ci sono già in «${dest}»${di}`;
   }
 
   // "Sposta" dal menu: apre l'elenco dei pasti.
@@ -1219,6 +1353,15 @@ function OggiContenuto() {
                 ? { etichetta: "Annulla", onClick: annullaUltimaOperazione }
                 : undefined
             }
+            // "Vedi" porta al giorno della Duplica. La barra resta (stessa
+            // key, il tempo continua da dove era) con "Annulla" ancora
+            // valido; "Vedi" sparisce, perché quel giorno ora è sullo
+            // schermo.
+            azioneSecondaria={
+              barra.vediGiorno && barra.vediGiorno !== giorno
+                ? { etichetta: "Vedi", onClick: () => setGiorno(barra.vediGiorno!) }
+                : undefined
+            }
             sopra
             onChiudi={() => setBarra(null)}
           />
@@ -1261,6 +1404,10 @@ function OggiContenuto() {
               etichetta: "Sposta",
               onSeleziona: () => apriSposta(menu.tipo, menu.id),
             },
+            // Duplica: sempre sull'alimento, sul pasto solo se ha alimenti.
+            ...(menu.tipo === "voce" || vociGiorno.some((v) => v.pasto_id === menu.id)
+              ? [{ etichetta: "Duplica", onSeleziona: () => apriDuplica(menu.tipo, menu.id) }]
+              : []),
             {
               etichetta: menu.tipo === "pasto" ? "Elimina tutto il pasto" : "Elimina",
               distruttiva: true,
@@ -1270,6 +1417,46 @@ function OggiContenuto() {
           onChiudi={chiudiMenu}
         />
       )}
+
+      {duplicazione && duplicazione.doppioni === null && (
+        <SheetDuplica
+          titolo={`Duplica «${accorcia(duplicazione.nome, MASSIMO_ALIMENTO)}»`}
+          giornoIniziale={duplicazione.dataPartenza}
+          pasti={pasti}
+          pastoIniziale={duplicazione.pastoPartenzaId}
+          inCorso={duplicazione.inCorso}
+          errore={duplicazione.errore}
+          onAnnulla={() => setDuplicazione(null)}
+          onConferma={(data, pastoId) => void eseguiDuplicazione(duplicazione, data, pastoId)}
+        />
+      )}
+
+      {duplicazione &&
+        duplicazione.doppioni !== null &&
+        duplicazione.dataDestinazione &&
+        duplicazione.pastoDestinazioneId && (
+          <SheetDoppioni
+            titolo={titoloDoppioniDuplica(duplicazione)}
+            doppioni={duplicazione.doppioni}
+            nomeDestinazione={pasti.find((p) => p.id === duplicazione.pastoDestinazioneId)?.nome ?? ""}
+            nomePartenza={pasti.find((p) => p.id === duplicazione.pastoPartenzaId)?.nome ?? ""}
+            etichettaEscludi="Non duplicarlo"
+            esitoEscludi="Non si duplica"
+            etichettaConferma="Duplica"
+            avviso={duplicazione.avviso}
+            inCorso={duplicazione.inCorso}
+            errore={duplicazione.errore}
+            onAnnulla={() => setDuplicazione(null)}
+            onConferma={(scelte) =>
+              void eseguiDuplicazione(
+                duplicazione,
+                duplicazione.dataDestinazione!,
+                duplicazione.pastoDestinazioneId!,
+                scelte
+              )
+            }
+          />
+        )}
 
       {spostamento && spostamento.sceltaPasto && spostamento.doppioni === null && (
         <SheetScegliPasto

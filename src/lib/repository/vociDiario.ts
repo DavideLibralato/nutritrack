@@ -33,7 +33,10 @@
 
 import { v5 as uuidv5 } from "uuid";
 import { repositoryVociDiario } from "./index";
-import type { VoceDiario } from "../db/tipi";
+import type { Profilo, VoceDiario } from "../db/tipi";
+import { dataScrivibile, oggiLocale } from "../dataGiorno";
+import { garantisciGiornoPerPrimaVoce } from "./giorni";
+import { doppioniDuplica, pianoDuplica, type PianoDuplica } from "../diario/pianoDuplica";
 import {
   pianoSpostamento,
   stessiDoppioni,
@@ -147,15 +150,22 @@ async function vociDelPasto(userId: string, data: string, pastoId: string): Prom
   return voci.filter((v) => v.data === data && v.pasto_id === pastoId);
 }
 
-// Applica un elenco di scritture (aggiorna / elimina) e ne restituisce la
-// fotografia. Ogni riga si rilegge prima di scriverla: se nel frattempo è
-// sparita o è stata cancellata, l'operazione si ferma. In ogni caso di
-// errore le scritture già fatte si annullano subito: o tutto, o niente.
+// Applica un elenco di scritture (crea / aggiorna / elimina) e ne
+// restituisce la fotografia: le righe create vanno in `idCreate`, quelle
+// toccate in `prima` com'erano. Ogni riga esistente si rilegge prima di
+// scriverla: se nel frattempo è sparita o è stata cancellata, l'operazione
+// si ferma. In ogni caso di errore le scritture già fatte si annullano
+// subito: o tutto, o niente.
 export async function applicaScritture(scritture: Scrittura[]): Promise<FotografiaVoci> {
   const foto: FotografiaVoci = { prima: [], idCreate: [] };
   const fotografate = new Set<string>();
   try {
     for (const s of scritture) {
+      if (s.tipo === "crea") {
+        const nuova = await repositoryVociDiario.crea(s.dati);
+        foto.idCreate.push(nuova.id);
+        continue;
+      }
       const voce = await repositoryVociDiario.ottieniPerId(s.id);
       if (!voce || voce.deleted_at !== null) {
         throw new Error(`La voce ${s.id} non c'è più: operazione interrotta`);
@@ -228,6 +238,77 @@ export async function spostaNelPasto({
     pastoDestinazioneId,
     scelte: scelte ?? {},
   });
+  const fotografia = await applicaScritture(piano.scritture);
+  return { esito: "fatto", piano, fotografia };
+}
+
+export type EsitoDuplicaNelPasto =
+  // Come per Sposta: servono (di nuovo) le scelte per i doppioni.
+  | { esito: "doppioni"; doppioni: Doppione[] }
+  | { esito: "fatto"; piano: PianoDuplica; fotografia: FotografiaVoci };
+
+// Duplica (sezione 3, "Tieni premuto", passo E): copia un alimento o un
+// pasto intero di `dataPartenza` nel pasto e giorno scelti. Le righe si
+// rileggono da Dexie qui, al momento della conferma; le regole sono in
+// src/lib/diario/pianoDuplica.ts (l'originale non si tocca mai, e non è mai
+// doppione di se stesso). Se nasce almeno una copia, il giorno di
+// destinazione si classifica come per il primo inserimento in /aggiungi
+// (garantisciGiornoPerPrimaVoce, decisione 8): non fa niente se il giorno
+// è già scritto o se i giorni differenziati sono spenti. Come in /aggiungi,
+// "Annulla" non toglie quella riga di `giorni`.
+export async function duplicaNelPasto({
+  userId,
+  dataPartenza,
+  origine,
+  dataDestinazione,
+  pastoDestinazioneId,
+  profilo,
+  scelte,
+  doppioniVisti,
+  adesso = new Date(),
+}: {
+  userId: string;
+  dataPartenza: string;
+  origine: OrigineSpostamento;
+  dataDestinazione: string;
+  pastoDestinazioneId: string;
+  profilo: Profilo | null;
+  scelte?: Record<string, SceltaDoppione>;
+  doppioniVisti?: Doppione[];
+  adesso?: Date;
+}): Promise<EsitoDuplicaNelPasto> {
+  // Anche qui, non solo nel foglio: nessuna copia nel futuro.
+  if (!dataScrivibile(dataDestinazione, adesso)) {
+    throw new Error(`Giorno non valido per Duplica: ${dataDestinazione}`);
+  }
+
+  let originali: VoceDiario[];
+  if (origine.tipo === "voce") {
+    const voce = await repositoryVociDiario.ottieniPerId(origine.id);
+    originali = voce && voce.deleted_at === null ? [voce] : [];
+  } else {
+    originali = await vociDelPasto(userId, dataPartenza, origine.pastoId);
+  }
+  const destinazione = await vociDelPasto(userId, dataDestinazione, pastoDestinazioneId);
+
+  const doppioni = doppioniDuplica(originali, destinazione);
+  if (doppioni.length > 0 && (!scelte || !doppioniVisti || !stessiDoppioni(doppioni, doppioniVisti))) {
+    return { esito: "doppioni", doppioni };
+  }
+
+  const piano = pianoDuplica({
+    originali,
+    destinazione,
+    dataDestinazione,
+    pastoDestinazioneId,
+    scelte: scelte ?? {},
+    adesso: adesso.toISOString(),
+    oggi: oggiLocale(adesso),
+    gruppoId: origine.tipo === "pasto" ? crypto.randomUUID() : null,
+  });
+  if (piano.scritture.some((s) => s.tipo === "crea")) {
+    await garantisciGiornoPerPrimaVoce(userId, dataDestinazione, profilo);
+  }
   const fotografia = await applicaScritture(piano.scritture);
   return { esito: "fatto", piano, fotografia };
 }
