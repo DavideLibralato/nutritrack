@@ -2662,7 +2662,16 @@ scuro in chiaro; test permanente dei contrasti per ogni colore e tema
 (sezione 3, "Aspetto"; sezione 7, "Colore principale"). Con questo passo
 la pagina Impostazioni è completa per questo giro.
 
-**Test.** 308 test permanenti in 33 file (Vitest), tutti verdi al 3/10.
+**Tieni premuto in Oggi: sposta, duplica, elimina** (passi A–E con le
+loro correzioni, provati insieme su iPhone il 6/10 sull'anteprima del
+branch `duplica` e uniti a main lo stesso giorno). Provato tutto: il
+gesto a due rami; menu ed Elimina con Annulla, anche dopo la sync; Sposta
+con i doppioni (una scelta per alimento); trascinamento con scorrimento
+automatico; Duplica con giorno, pasto e "Vedi". Nello stesso giro anche
+inserimento, Impostazioni, tema scuro e offline, senza regressioni.
+Com'è fatto: sezione 3, "Tieni premuto: sposta, duplica, elimina".
+
+**Test.** 432 test permanenti in 44 file (Vitest), tutti verdi al 6/10.
 
 ### Non ancora costruito
 

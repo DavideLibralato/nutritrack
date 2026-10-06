@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Tieni premuto (passi A–E) provato su iPhone, unito a main
+
+Giro di prove completo su iPhone, sull'anteprima del branch `duplica`,
+che contiene tutti i passi A→E con le loro correzioni. Tutto ok:
+- il gesto a due rami;
+- menu ed Elimina con Annulla, anche dopo la sync;
+- Sposta con i doppioni;
+- trascinamento con scorrimento automatico;
+- Duplica con "Vedi";
+- e, nello stesso giro, inserimento, Impostazioni, tema scuro e offline.
+
+Uniti a main con fast-forward da `e591e41`, senza commit di merge. Erano
+8 commit, da `41d0ef1` (passo A) a `c79bdb6` (correzioni del passo E),
+più questa voce. Branch `tieni-premuto`, `menu-elimina`, `sposta-menu`,
+`trascina` e `duplica` cancellati, in locale e su GitHub. 432 test verdi
+in 44 file.
+
 ## 2026-10-06 — Correzioni dopo le prove del passo E: barra e campo data
 
 Branch `duplica`. Tre problemi visti su iPhone, con gli screenshot.
