@@ -151,7 +151,16 @@ export function useSwipeGiorno(opzioni: OpzioniSwipe) {
     }
 
     function suPointerDown(e: PointerEvent) {
-      if (gesto) return; // secondo dito: si ignora
+      if (gesto) {
+        if (!e.isPrimary) return; // secondo dito: si ignora
+        // Un primo dito nuovo vuol dire che nessun altro è giù: il gesto di
+        // prima è finito anche se la sua fine non è mai arrivata (Safari, bug
+        // del 6/10 col menu del tieni-premuto). Senza, il gesto rimasto
+        // aperto spegnerebbe lo swipe per sempre.
+        gesto = null;
+        sbloccaScorrimento();
+        if (!inAnimazione) el!.style.transform = "";
+      }
       blocco.inizioGesto();
       const { attivo, giorno } = rifOpzioni.current;
       if (

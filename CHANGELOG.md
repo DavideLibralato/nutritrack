@@ -5,6 +5,39 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-06 — Correzione: dopo un tocco fuori dal menu la lista si bloccava
+
+Branch `menu-elimina`. Le prove su iPhone del passo B sono ok (1–9),
+tranne questo bug: tieni premuto, si apre il menu, tocco fuori per
+chiuderlo. Da lì la lista non scorreva più e il tieni-premuto non
+riapriva il menu, fino a ricaricare la pagina.
+
+- **Causa:** il menu compare sotto il dito ancora appoggiato, e la fine di
+  quel tocco può non arrivare alla lista. Il gesto restava "aperto": ogni
+  `touchmove` bloccato, lista con `overflow-y: hidden`, ogni tocco nuovo
+  scartato come "secondo dito". In jsdom, con la fine del tocco
+  consegnata, tutto si chiudeva bene: il blocco nasce solo quando la fine
+  manca. Resta non spiegato dal codice perché con "Elimina" non
+  succedesse. L'unica differenza nostra era il fuoco che tornava sulla
+  riga, tolto anche quello.
+- **Correzione:**
+  - il gesto finisce appena si decide il menu;
+  - una sola chiusura del menu, `chiudiMenu`, rilascia anche il dito;
+  - un nuovo dito primario chiude un gesto rimasto aperto, nel
+    tieni-premuto e nello swipe;
+  - il fuoco si sposta solo per un menu aperto da tastiera o tasto destro.
+- **Secondo bug, trovato da un test che falliva a caso:** un timer
+  scattato 0,2–0,3 ms prima della scadenza lasciava il gesto fermo, cioè
+  la riga non si sollevava o il menu non si apriva finché il dito non si
+  alzava. Ora il timer si riprogramma.
+- **Test:**
+  - 2 sulla pagina Oggi (tocco fuori, senza e con la fine del tocco): col
+    codice di prima il primo fallisce;
+  - 3 sull'hook, con orologio finto (gesto vecchio chiuso da un dito
+    nuovo, secondo dito ignorato, timer in anticipo);
+  - ognuno verificato rompendo apposta la correzione;
+  - il file della pagina è passato 10 volte di fila senza errori.
+
 ## 2026-10-06 — Menu contestuale, Elimina e Annulla generale (passo B)
 
 Branch `menu-elimina`, partito da `tieni-premuto`. I due branch arrivano su

@@ -352,7 +352,17 @@ function OggiContenuto() {
     ancora: DOMRect;
     limiteBasso: number;
     elemento: HTMLElement;
+    fuocoAllaPrimaVoce: boolean;
   } | null>(null);
+  // L'unica chiusura del menu: tocco fuori (anche sulla riga stessa, che sta
+  // sotto lo sfondo), Esc, Tab ed Elimina passano tutti da qui, tramite
+  // onChiudi di MenuContestuale. Il gesto non ha niente da rimettere a
+  // posto: l'hook lo chiude da solo nel momento in cui decide il menu
+  // (tieniPremuto.ts).
+  function chiudiMenu() {
+    setMenu(null);
+    azzeraTieniPremuto();
+  }
   const rifFasciaAggiungi = useRef<HTMLDivElement>(null);
 
   // Swipe e tieni-premuto: spenti con uno sheet o il menu aperti.
@@ -373,10 +383,11 @@ function OggiContenuto() {
   // Tieni premuto su un alimento o sul nome di un pasto (sezione 3, "Tieni
   // premuto: sposta, duplica, elimina"): il ramo "menu" apre il menu
   // contestuale. Il ramo "trascina" per ora non fa niente (passo D).
-  const rifTieniPremuto = useTieniPremuto({
+  const { rif: rifTieniPremuto, azzera: azzeraTieniPremuto } = useTieniPremuto({
     attivo: gestiAttivi,
-    onMenu: (riga) =>
+    onMenu: (riga, daContextmenu) =>
       setMenu({
+        fuocoAllaPrimaVoce: daContextmenu,
         tipo: riga.tipo,
         id: riga.id,
         ancora: riga.elemento.getBoundingClientRect(),
@@ -1065,6 +1076,7 @@ function OggiContenuto() {
           ancora={menu.ancora}
           limiteBasso={menu.limiteBasso}
           elementoOrigine={menu.elemento}
+          fuocoAllaPrimaVoce={menu.fuocoAllaPrimaVoce}
           voci={[
             {
               etichetta: menu.tipo === "pasto" ? "Elimina tutto il pasto" : "Elimina",
@@ -1072,7 +1084,7 @@ function OggiContenuto() {
               onSeleziona: () => void eliminaDalMenu(menu.tipo, menu.id),
             },
           ]}
-          onChiudi={() => setMenu(null)}
+          onChiudi={chiudiMenu}
         />
       )}
 

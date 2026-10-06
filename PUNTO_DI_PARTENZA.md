@@ -285,10 +285,34 @@ riga, che resta staccata finché il menu è aperto. Si apre sotto la riga
 se ci sta, altrimenti sopra; mai sotto "+ Aggiungi" e la pillola, mai
 fuori schermo, mai sopra la riga (calcolo in `posizioneMenu.ts`, con
 test). Un tocco fuori o Esc lo chiudono senza fare niente; anche Tab,
-come i menu di sistema. Fuoco alla prima voce, frecce su/giù, alla
-chiusura torna alla riga. Swipe e tieni-premuto spenti finché è aperto.
+come i menu di sistema. Tutte le uscite (tocco fuori, anche sulla riga
+stessa che sta sotto lo sfondo; Esc; Tab; una voce) passano da una sola
+chiusura (`chiudiMenu` in Oggi), che chiude anche il gesto e rilascia il
+dito che ha aperto il menu (`azzera` di `useTieniPremuto`). Fuoco: alla
+prima voce, con frecce su/giù, solo se il menu è stato aperto da tastiera
+o tasto destro; alla chiusura torna alla riga solo se si è chiuso da
+tastiera. Col dito il fuoco non si sposta: cambiare cose sotto un dito
+ancora appoggiato è quello che Safari gestisce male (bug del 6/10, sotto).
+Swipe e tieni-premuto spenti finché è aperto.
 Il click del dito che ha aperto il menu (che si alza dopo) non conta:
 sfondo e voci rispondono solo a un tocco cominciato dopo l'apertura.
+
+*Bug del 6/10, trovato su iPhone:* dopo aver chiuso il menu con un tocco
+fuori, la lista non scorreva più e il tieni-premuto non ripartiva, fino a
+ricaricare. Il menu compare sotto il dito ancora appoggiato, e la fine di
+quel tocco può non arrivare alla lista: il gesto restava "aperto"
+(touchmove bloccati, `overflow-y: hidden`, ogni tocco nuovo scartato come
+secondo dito). Ora:
+- il gesto finisce nel momento in cui si decide il menu;
+- la chiusura del menu rilascia il dito;
+- in ogni caso un nuovo dito *primario* chiude un gesto rimasto aperto,
+  sia nel tieni-premuto sia nello swipe: se è primario, nessun altro dito
+  è giù.
+
+Riprodotto in un test sulla pagina (`page.test.tsx`), che col codice di
+prima fallisce. Trovato nello stesso giro: un timer che scatta una
+frazione di millisecondo prima della scadenza ora si riprogramma, invece
+di lasciare il gesto fermo (test in `tieniPremuto.test.tsx`).
 Voci: Sposta (sempre), Duplica (sul pasto solo se ha alimenti: oggi
 sempre, visto che il pasto vuoto non ha il gesto), Elimina ("Elimina
 tutto il pasto" sul pasto: cancella le voci, non la fascia). **Ogni voce

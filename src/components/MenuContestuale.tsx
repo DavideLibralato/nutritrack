@@ -25,9 +25,18 @@
 // l'apertura (`rifToccoNuovo`, acceso da un pointerdown qui dentro). Il
 // click da tastiera (Invio/Spazio: `detail === 0`) vale sempre.
 //
-// Fuoco: alla prima voce all'apertura, frecce su/giù fra le voci; alla
-// chiusura torna alla riga da cui è partito (`elementoOrigine`), se c'è
-// ancora. Su un tocco, con :focus-visible, l'anello non si vede.
+// Chiusura: TUTTE le uscite (tocco fuori, tocco sulla riga stessa — che sta
+// sotto lo sfondo, quindi è un tocco fuori —, Esc, Tab, una voce) passano
+// da `chiudi`, una volta sola: chiama onChiudi e decide il fuoco.
+//
+// Fuoco: solo se il menu è stato aperto da tastiera o tasto destro
+// (`fuocoAllaPrimaVoce`) va alla prima voce, e frecce su/giù si muovono fra
+// le voci. Aperto col dito no: spostare il fuoco mentre il dito è ancora
+// appoggiato è proprio il tipo di cambiamento sotto il dito che Safari
+// gestisce male (bug del 6/10). Alla chiusura il fuoco torna alla riga
+// (`elementoOrigine`) solo se si è chiuso da tastiera: col dito non serve,
+// e una riga col fuoco era l'unica differenza fra "tocco fuori" (bloccato)
+// ed "Elimina" (che funzionava).
 
 import {
   useEffect,
@@ -56,6 +65,8 @@ interface Props {
   limiteBasso: number;
   voci: VoceMenu[];
   elementoOrigine?: HTMLElement | null;
+  // Aperto da tastiera o tasto destro: il fuoco va subito alla prima voce.
+  fuocoAllaPrimaVoce?: boolean;
   onChiudi: () => void;
 }
 
@@ -65,6 +76,7 @@ export default function MenuContestuale({
   limiteBasso,
   voci,
   elementoOrigine,
+  fuocoAllaPrimaVoce = false,
   onChiudi,
 }: Props) {
   const rifMenu = useRef<HTMLDivElement>(null);
@@ -85,28 +97,39 @@ export default function MenuContestuale({
     );
   }, [ancora, limiteBasso]);
 
-  // Fuoco alla prima voce quando il menu è al suo posto; alla chiusura,
-  // di nuovo alla riga.
-  useEffect(() => {
-    if (!posizione) return;
-    rifMenu.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus({ preventScroll: true });
-  }, [posizione]);
-  useEffect(() => {
-    return () => {
-      if (elementoOrigine?.isConnected) elementoOrigine.focus({ preventScroll: true });
-    };
-  }, [elementoOrigine]);
-
-  // onChiudi in un ref: l'ascoltatore di Esc si attacca una volta sola.
+  // La sola strada per chiudere. `rifChiuso`: un secondo evento nello
+  // stesso istante (Esc e click insieme) non chiama onChiudi due volte.
+  // onChiudi ed elementoOrigine in ref: l'ascoltatore di Esc si attacca una
+  // volta sola e legge sempre i valori più recenti.
+  const rifChiuso = useRef(false);
   const rifOnChiudi = useRef(onChiudi);
+  const rifOrigine = useRef(elementoOrigine);
   useEffect(() => {
     rifOnChiudi.current = onChiudi;
-  }, [onChiudi]);
+    rifOrigine.current = elementoOrigine;
+  });
+  function chiudi(daTastiera: boolean) {
+    if (rifChiuso.current) return;
+    rifChiuso.current = true;
+    rifOnChiudi.current();
+    const origine = rifOrigine.current;
+    if (daTastiera && origine?.isConnected) origine.focus({ preventScroll: true });
+  }
+  const rifChiudi = useRef(chiudi);
+  useEffect(() => {
+    rifChiudi.current = chiudi;
+  });
+
+  useEffect(() => {
+    if (!posizione || !fuocoAllaPrimaVoce) return;
+    rifMenu.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus({ preventScroll: true });
+  }, [posizione, fuocoAllaPrimaVoce]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape" || e.key === "Tab") {
         e.preventDefault();
-        rifOnChiudi.current();
+        rifChiudi.current(true);
       }
     }
     document.addEventListener("keydown", onKey);
@@ -133,7 +156,7 @@ export default function MenuContestuale({
         rifToccoNuovo.current = true;
       }}
       onClick={(e) => {
-        if (toccoValido(e)) onChiudi();
+        if (toccoValido(e)) chiudi(e.detail === 0);
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -158,7 +181,7 @@ export default function MenuContestuale({
             role="menuitem"
             onClick={(e) => {
               if (!toccoValido(e)) return;
-              onChiudi();
+              chiudi(e.detail === 0);
               voce.onSeleziona();
             }}
             className={`flex min-h-11 w-full items-center px-4 text-left ${voce.distruttiva ? "text-warning" : ""} ${CLASSE_FOCUS}`}
