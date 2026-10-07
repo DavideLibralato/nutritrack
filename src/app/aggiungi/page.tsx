@@ -15,7 +15,7 @@
 // riporta all'Oggi del giorno giusto (anche un giorno passato). Va avvolto
 // in <Suspense>, come nella pagina di login.
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
@@ -27,7 +27,7 @@ import {
   repositoryComposizioniVoci,
   repositoryProfili,
 } from "@/lib/repository";
-import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
+import { usePastiIniziali } from "@/lib/usePastiIniziali";
 import { garantisciGiornoPerPrimaVoce } from "@/lib/repository/giorni";
 import {
   catalogoLocale,
@@ -48,6 +48,7 @@ import { eFuturo, oraCorrente, oggiLocale } from "@/lib/dataGiorno";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
 import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
+import ServeConnessione from "@/components/ServeConnessione";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
@@ -159,19 +160,11 @@ function AggiungiContenuto() {
     return righe[0] ?? null;
   }, [userId]);
 
-  // Rete di sicurezza: se per qualsiasi motivo l'utente non ha pasti, li crea
-  // (idempotente, stessa funzione usata da Oggi). Una volta sola per utente
-  // per montaggio (rifTentatoSeed, non `pasti` nelle dipendenze) — vedi il
-  // commento gemello in src/app/(app)/page.tsx per il bug che questo evita:
-  // `pasti` è stato React reattivo, può restare "non ancora arrivato" più a
-  // lungo del previsto dopo un refresh, garantisciPastiPredefiniti rilegge
-  // Dexie per conto suo.
-  const rifTentatoSeed = useRef<string | null>(null);
-  useEffect(() => {
-    if (!userId || rifTentatoSeed.current === userId) return;
-    rifTentatoSeed.current = userId;
-    garantisciPastiPredefiniti(userId).catch(() => {});
-  }, [userId]);
+  // Come in Oggi: se l'utente non ha ancora pasti (Aggiungi aperta per prima,
+  // per esempio riaprendo l'app installata su questa pagina), il seed parte
+  // anche da qui. Senza pasti non si può registrare niente: la pagina mostra
+  // "Preparo i tuoi pasti…" o "Serve la connessione" (più sotto).
+  const { stato: statoPastiIniziali, riprova: riprovaPastiIniziali } = usePastiIniziali(userId);
 
   // Proposta del pasto: se stai registrando adesso, in base all'ora (prima
   // del primo pasto, il primo pasto stesso); sui giorni passati il primo
@@ -252,6 +245,39 @@ function AggiungiContenuto() {
     profilo === undefined
   ) {
     return <SchermataCaricamento />;
+  }
+
+  // Nessun pasto: niente titolo da scegliere e niente da registrare. Lo
+  // stesso riquadro di Oggi, con "Riprova", invece di un rimando: chi arriva
+  // qui (da "+ Aggiungi" o riaprendo l'app su questa pagina) vede subito
+  // cosa manca e cosa fare, senza un passaggio in più. Prima la pagina si
+  // apriva normale e toccare un alimento non faceva niente, in silenzio.
+  if (pasti.length === 0) {
+    return (
+      <main
+        style={{ top: areaVisibile.top, height: areaVisibile.height }}
+        className="fixed inset-x-0 mx-auto flex w-full max-w-md flex-col overflow-hidden bg-background"
+      >
+        <header className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Indietro"
+            className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
+          >
+            <ChevronSinistra />
+          </button>
+          <h1 className="font-display text-2xl font-bold">Aggiungi</h1>
+        </header>
+        <div className="px-4 pt-4">
+          {statoPastiIniziali === "lettura-fallita" ? (
+            <ServeConnessione onRiprova={riprovaPastiIniziali} />
+          ) : (
+            <p className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</p>
+          )}
+        </div>
+      </main>
+    );
   }
 
   const risultati = cercaPerNome(catalogo, query);

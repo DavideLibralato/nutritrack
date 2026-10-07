@@ -2180,11 +2180,7 @@ namespace fisso e immutabile — se cambiasse, ogni dispositivo esistente
 ricalcolerebbe id diversi dagli stessi che ha già sul server). Due
 dispositivi che seminano il set predefinito senza essersi mai sincronizzati
 producono le stesse righe: `upsert()` le tratta come un aggiornamento della
-stessa riga, mai come un doppione. `garantisciPastiPredefiniti` non "semina
-una volta": controlla i 5 nomi **uno per uno** (non un controllo aggregato
-"l'utente ha già un pasto?") e ricrea solo quelli mancanti — un pasto perso
-per un bug viene auto-riparato, uno cancellato deliberatamente (riga
-presente con `deleted_at`) non viene mai resuscitato dal seed stesso.
+stessa riga, mai come un doppione.
 
 Conseguenza: l'indice unico `pasti_user_nome_idx` (che impediva due pasti
 con lo stesso nome per utente) è stato **rimosso** — proteggeva solo
@@ -2193,30 +2189,57 @@ punta a `pasto_id`) al costo di poter bloccare in silenzio la coda outbox su
 una violazione di vincolo. Con l'id deterministico il doppione che
 giustificava l'indice non può più verificarsi per i pasti predefiniti.
 
-**Rischio accettato — seed su dispositivo nuovo con discesa fallita.** Se un
-dispositivo apre l'app per la prima volta a locale vuoto (fuori dal percorso
-di registrazione, che sa già che il server è vuoto) e la discesa iniziale
-fallisce (offline, permessi, bug) **proprio mentre** uno dei 5 pasti
-predefiniti era stato cancellato sul server, quel dispositivo non ha modo di
-saperlo e lo ricrea: il pasto torna a esistere. Non è più un doppione (l'id
-resta lo stesso, quindi al successivo sync riuscito la riga si allinea da
-sola), è la resurrezione di una cancellazione — comunque preferibile al
-doppione irrisolvibile del vecchio schema a id casuali. Rischio ristretto
-all'intersezione di tre condizioni (dispositivo che non ha mai visto quella
-riga, discesa fallita in quel momento, pasto predefinito già cancellato),
-non eliminabile senza un meccanismo sproporzionato al danno (valutato e
-scartato: un seed "provvisorio" che trattiene la salita fino a conferma del
-server propaga il blocco a ogni voce di diario che referenzia quei pasti via
-foreign key, e la riconciliazione per nome si rompe se l'utente rinomina un
-pasto predefinito prima di riconnettersi).
+**Seed dei pasti predefiniti: solo con il server vuoto** (deciso il
+2026-10-07, `garantisciPastiPredefiniti` in `src/lib/repository/pasti.ts`).
+I 5 pasti si creano solo quando l'app ha **visto** che l'utente non ne ha:
+1. se Dexie ha già righe in `pasti` per quell'utente, vive o cancellate,
+   non si scrive niente e non si legge il server (ogni apertura dopo la
+   prima, anche offline);
+2. altrimenti si contano le righe dell'utente su Supabase, **comprese le
+   cancellate** (`contaRigheSulServer` in `discesa.ts`). Il conteggio non
+   è incrementale: la discesa dal cursore restituisce 0 righe anche a un
+   server pieno, quindi "0 righe scaricate" non vuol dire "server vuoto";
+3. conteggio fallito (rete, sessione rifiutata: `anon` non ha `SELECT`,
+   quindi è un errore e non uno zero) → **non si crea niente, mai**;
+4. zero righe → si creano i 5, con gli id deterministici;
+5. almeno una riga, anche solo cancellata → non si crea niente: si
+   toglie il cursore dei pasti (con Dexie vuota non ha senso) e si
+   scaricano le righe del server.
 
-**Difetto aperto, segnalato il 2026-09-25 e non ancora corretto.** Lo stesso
-meccanismo scatta anche su un dispositivo che NON è nuovo: se la discesa dei
-pasti fallisce, `garantisciPastiPredefiniti` crea le righe mancanti con
-`repositoryPasti.crea`, che manda al server `deleted_at` null — un pasto
-predefinito cancellato apposta, e mai scaricato su quel dispositivo, torna
-in vita anche sul server. Il ripristino dei dati locali non fa seed, quindi
-non lo peggiora; va chiuso come lavoro a sé.
+Non c'è un percorso di registrazione a parte: dopo `signUp` la Server
+Action rimanda a Oggi, e il seed è questo stesso. Per un utente appena
+registrato il server è vuoto e la registrazione richiede la rete, quindi
+il punto 4 scatta subito.
+
+**Cosa chiude.** Prima il seed creava le righe che mancavano *in Dexie*, e
+`crea()` le mandava intere al server con i valori predefiniti e
+`deleted_at` null: su un dispositivo vuoto con la discesa fallita (iPhone
+nuovo, Safari in navigazione privata, dati del sito cancellati) **un pasto
+cancellato tornava vivo** (difetto segnalato il 2026-09-25) e **un pasto
+rinominato riprendeva il nome di fabbrica** su tutti i dispositivi
+(trovato il 2026-10-07). Con la gestione dei pasti in mano all'utente
+(Impostazioni > Pasti e orari) non sarebbe più stato un caso raro.
+
+**Cosa costa.** Al primo avvio su un dispositivo vuoto, senza rete, i pasti
+non ci sono: Oggi e Aggiungi mostrano "Serve la connessione" con
+"Riprova" (`ServeConnessione`), e l'app riprova da sola all'evento
+`online` del browser (`usePastiIniziali`). "Preparo i tuoi pasti…" resta
+solo mentre la lettura è in corso. Una volta scaricati i pasti, l'app
+funziona offline come prima. Il seed non ripara più un pasto predefinito
+sparito per un bug: lo farebbe alla cieca, con lo stesso rischio.
+
+**Limite noto, non gestito.** Un utente con righe in `pasti` sul server ma
+nessuna viva (oggi nessuna schermata lo permette) non riceve i
+predefiniti: dopo lo scarico Dexie ha solo righe cancellate, e Oggi resta
+su "Preparo i tuoi pasti…". Va chiuso dalla pagina Pasti e orari, che non
+deve lasciar eliminare l'ultimo pasto.
+
+Strade scartate, da non riproporre: un seed "provvisorio" che trattiene la
+salita fino a conferma del server (il blocco si propaga a ogni voce di
+diario che punta a quei pasti) e la riconciliazione per nome (si rompe se
+l'utente rinomina un pasto predefinito). Un segno sul profilo "pasti già
+creati" non aggiunge niente: arriva con la stessa discesa che può fallire,
+e il profilo nasce solo al primo Salva.
 
 ### 9.3 Precisione — sempre al grammo
 
@@ -2671,7 +2694,7 @@ automatico; Duplica con giorno, pasto e "Vedi". Nello stesso giro anche
 inserimento, Impostazioni, tema scuro e offline, senza regressioni.
 Com'è fatto: sezione 3, "Tieni premuto: sposta, duplica, elimina".
 
-**Test.** 432 test permanenti in 44 file (Vitest), tutti verdi al 6/10.
+**Test.** 440 test permanenti in 45 file (Vitest), tutti verdi al 7/10.
 
 ### Non ancora costruito
 
@@ -2693,9 +2716,10 @@ Com'è fatto: sezione 3, "Tieni premuto: sposta, duplica, elimina".
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
   comparire con la data nuova. Il resto del passo 4 è provato; questo
   caso lo copre già il test (`misurazioni.test.ts`)
-- **Seed dei pasti predefiniti che resuscita una cancellazione** anche su un
-  dispositivo non nuovo, se la discesa dei pasti fallisce (§9.2, segnalato
-  il 25/9)
+- **Seed dei pasti predefiniti solo con il server vuoto** (7/10, §9.2):
+  chiude la resurrezione di un pasto cancellato e la rinomina annullata.
+  Coperto dai test (`pasti.test.ts` per il seed, `primoAvvioSenzaRete.test.tsx`
+  per la schermata "Serve la connessione"), **da provare su iPhone**
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale

@@ -179,6 +179,37 @@ export async function* pagineDaSupabase<T extends RigaBase>(
   }
 }
 
+// Quante righe ha l'utente su Supabase in una tabella, contando anche
+// quelle cancellate (deleted_at valorizzato). NON incrementale: ignora il
+// cursore, quindi risponde "quante righe esistono" e non "quante ne sono
+// cambiate dall'ultimo scarico" — per scaricaTabella un dispositivo già
+// allineato riceve 0 righe anche con il server pieno. La usa il seed dei
+// pasti predefiniti (src/lib/repository/pasti.ts) per sapere se il server
+// è davvero vuoto.
+//
+// `head: true` chiede a PostgREST solo il conteggio, senza le righe.
+// Qualunque errore (rete, sessione rifiutata: il ruolo `anon` non ha il
+// permesso di SELECT, quindi senza utente la risposta è un errore e non
+// "0") diventa un'eccezione: un conteggio che non si è potuto fare non
+// deve mai sembrare uno zero.
+export async function contaRigheSulServer(
+  userId: string,
+  nomeTabella: NomeTabella
+): Promise<number> {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from(nomeTabella)
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (count === null) {
+    throw new Error(`Conteggio di "${nomeTabella}" non disponibile.`);
+  }
+  return count;
+}
+
 // Scarica una singola tabella per l'utente indicato, in modo incrementale
 // (dal cursore). `opzioni.includiCondivisi`: vedi TABELLE_DISCESA.
 export async function scaricaTabella<T extends RigaBase>(

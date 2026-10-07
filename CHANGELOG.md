@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-07 — Seed dei pasti predefiniti solo con il server vuoto
+
+Branch `seed-pasti`. Passo 1 di "Pasti e orari".
+
+- I 5 pasti predefiniti si creano solo se la lettura dal server riesce e
+  il server non ha nessuna riga in `pasti` per l'utente, nemmeno
+  cancellata. Il conteggio non è incrementale (`contaRigheSulServer`):
+  con il cursore già avanti la discesa riceve 0 righe anche a server pieno.
+- Bug chiusi: un pasto cancellato che resuscitava (aperto dal 25/9) e un
+  pasto rinominato che tornava al nome di fabbrica (trovato oggi). Tutti e
+  due solo su un dispositivo vuoto con la lettura fallita.
+- Costo: al primo avvio senza rete Oggi e Aggiungi mostrano "Serve la
+  connessione" con "Riprova", e riprovano da sole quando torna la rete.
+  Prima c'era "Preparo i tuoi pasti…" all'infinito.
+- Limite noto, non gestito: un utente con sul server solo pasti cancellati
+  resta su "Preparo i tuoi pasti…".
+- 440 test verdi in 45 file. Da provare su iPhone.
+
 ## 2026-10-06 — Tieni premuto (passi A–E) provato su iPhone, unito a main
 
 Giro di prove completo su iPhone, sull'anteprima del branch `duplica`,

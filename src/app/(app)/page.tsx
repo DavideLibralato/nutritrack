@@ -40,7 +40,7 @@ import {
   repositoryProfili,
   repositoryGiorni,
 } from "@/lib/repository";
-import { garantisciPastiPredefiniti } from "@/lib/repository/pasti";
+import { usePastiIniziali } from "@/lib/usePastiIniziali";
 import { targetPerTipo, targetEffettivo } from "@/lib/repository/obiettiviTarget";
 import { tipoGiornoEffettivo, scriviTipoGiornoScelto } from "@/lib/repository/giorni";
 import {
@@ -66,6 +66,7 @@ import BarraMacro from "@/components/BarraMacro";
 import SheetQuantita from "@/components/SheetQuantita";
 import SheetNome from "@/components/SheetNome";
 import SheetScegliPasto from "@/components/SheetScegliPasto";
+import ServeConnessione from "@/components/ServeConnessione";
 import SheetDoppioni from "@/components/SheetDoppioni";
 import SheetDuplica from "@/components/SheetDuplica";
 import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
@@ -190,11 +191,6 @@ function OggiContenuto() {
   // <button> vero: tap o Invio/Spazio aprono il calendario.
   const rifData = useRef<HTMLInputElement>(null);
 
-  // Ricorda per quale userId è già stato tentato il seed dei pasti
-  // predefiniti in questo montaggio, indipendentemente da come si evolve
-  // `pasti` (vedi l'effetto più sotto).
-  const rifTentatoSeed = useRef<string | null>(null);
-
   function apriCalendario() {
     const el = rifData.current;
     if (!el) return;
@@ -267,20 +263,12 @@ function OggiContenuto() {
     return catalogoLocale(userId);
   }, [userId]);
 
-  // Se l'utente non ha ancora nessun pasto (registrazione fatta prima che
-  // esistesse questa logica, o primo avvio), crea il set predefinito dei 5
-  // pasti. Una volta sola per utente per montaggio (rifTentatoSeed, non
-  // `pasti` nelle dipendenze): garantisciPastiPredefiniti decide da sola,
-  // rileggendo Dexie, se serve seminare — non dal `pasti` qui sopra, che è
-  // stato React reattivo e può restare "non ancora arrivato" più a lungo di
-  // quanto ci si aspetterebbe dopo un refresh (bug reale: un secondo
-  // refresh ravvicinato aveva rifatto il seed da capo). La useLiveQuery
-  // sopra si aggiorna comunque da sola appena i pasti sono in Dexie.
-  useEffect(() => {
-    if (!userId || rifTentatoSeed.current === userId) return;
-    rifTentatoSeed.current = userId;
-    garantisciPastiPredefiniti(userId).catch(() => {});
-  }, [userId]);
+  // Primo avvio: i 5 pasti predefiniti si creano solo se il server è vuoto
+  // (usePastiIniziali, garantisciPastiPredefiniti). Finché l'utente non ha
+  // nessun pasto, `statoPastiIniziali` dice se si sta ancora leggendo o se
+  // la lettura è fallita ("Serve la connessione"). La useLiveQuery sopra si
+  // aggiorna da sola appena i pasti sono in Dexie.
+  const { stato: statoPastiIniziali, riprova: riprovaPastiIniziali } = usePastiIniziali(userId);
 
   // Diagnostica per il ripiego "manca il target del tipo scritto" (sezione
   // 4, "obiettivi_target"): un caso atteso (es. un periodo creato prima del
@@ -1211,7 +1199,13 @@ function OggiContenuto() {
           className="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(var(--ingombro-oggi)+1rem)]"
         >
           {pasti.length === 0 ? (
-            <li className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</li>
+            statoPastiIniziali === "lettura-fallita" ? (
+              <li className="pt-2">
+                <ServeConnessione onRiprova={riprovaPastiIniziali} />
+              </li>
+            ) : (
+              <li className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</li>
+            )
           ) : (
             pasti.map((pasto) => {
               const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);

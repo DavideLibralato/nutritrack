@@ -3,12 +3,13 @@
 // Il set predefinito dei 5 pasti (PUNTO_DI_PARTENZA.md, sezione "I pasti")
 // va creato "alla registrazione", ma la registrazione è una Server Action e
 // i pasti vivono in Dexie, che esiste solo nel browser (local-first, sezione
-// 9.2). Quindi il set si crea lato client alla prima apertura dell'app, se
-// manca.
+// 9.2). Quindi il set si crea lato client alla prima apertura dell'app,
+// solo dopo aver visto che sul server non c'è niente
+// (garantisciPastiPredefiniti).
 
 import { v5 as uuidv5 } from "uuid";
 import { repositoryPasti } from "./index";
-import { scaricaTabella } from "../sync/discesa";
+import { contaRigheSulServer, scaricaTabella } from "../sync/discesa";
 import { db } from "../db/database";
 import type { Pasto } from "../db/tipi";
 
@@ -42,76 +43,115 @@ const NAMESPACE_PASTI_PREDEFINITI = "5c62c189-1488-4f70-ae19-9a93f4cb8488";
 
 // L'id va sempre calcolato dal NOME CANONICO in PASTI_PREDEFINITI, mai dal
 // nome attuale di una riga già esistente. Se l'utente rinomina "Cena" in
-// "Dinner", l'id resta quello calcolato su "Cena": è quello che
-// garantisciPastiPredefiniti userà per ritrovare la riga (e non ricrearla).
-// Ricalcolarlo dal nome corrente romperebbe l'aggancio in silenzio — la
-// funzione non troverebbe più "Cena" sotto il vecchio id e ne creerebbe una
-// seconda con l'id derivato da "Dinner".
+// "Dinner", l'id resta quello calcolato su "Cena": due dispositivi che
+// seminano lo stesso set devono produrre gli stessi id, qualunque cosa sia
+// successa dopo ai nomi.
 export function idPastoPredefinito(userId: string, nomeCanonico: string): string {
   return uuidv5(`${userId}:${nomeCanonico}`, NAMESPACE_PASTI_PREDEFINITI);
 }
 
-// Guardia contro la doppia esecuzione concorrente: due chiamate che partono
-// mentre la prima sta ancora scrivendo.
-const seedInCorso = new Set<string>();
+// Come è andata garantisciPastiPredefiniti. Chi la chiama (usePastiIniziali)
+// ne ha bisogno per scegliere cosa mostrare quando l'utente non ha ancora
+// nessun pasto: "Preparo i tuoi pasti…" mentre la lettura è in corso,
+// "Serve la connessione" se è fallita.
+export type EsitoPastiPredefiniti =
+  // Dexie aveva già righe in `pasti` per questo utente: niente da fare.
+  | "gia-in-locale"
+  // Server vuoto (lettura riuscita): creati i 5 predefiniti.
+  | "creati"
+  // Il server aveva righe: scaricate, nessuna creata.
+  | "scaricati"
+  // Lettura dal server non riuscita: nessuna creazione.
+  | "lettura-fallita";
 
-// Bug reale trovato controllando Supabase: 10 pasti invece di 5, causato da
-// un controllo aggregato ("l'utente ha già un pasto?") che una race
-// condition con lo stato React di useLiveQuery aggirava. Quella race è
-// chiusa (la funzione rilegge Dexie direttamente, non riceve più `pasti`
-// dal chiamante) — ma il controllo aggregato aveva un secondo limite,
-// indipendente dalla race: un pasto perso per strada (una riga sparita per
-// un bug altrove, o mai arrivata da un altro dispositivo) non veniva mai
-// ricreato, perché gli altri quattro bastavano a far tornare il controllo
-// "non serve seminare".
+// Una sola esecuzione per utente alla volta: chi chiama mentre la prima
+// è ancora in corso riceve la stessa promessa, quindi lo stesso esito
+// (Oggi e Aggiungi aperti uno dopo l'altro, un doppio montaggio, un
+// "Riprova" toccato due volte).
+const seedInCorso = new Map<string, Promise<EsitoPastiPredefiniti>>();
+
+// Il set predefinito si crea SOLO se il server è vuoto, e lo si sa solo
+// leggendolo (PUNTO_DI_PARTENZA.md, sezione 9.2, "Seed dei pasti
+// predefiniti"). In ordine:
 //
-// Ora il controllo è per-id, non aggregato: per ciascuno dei 5 nomi
-// predefiniti, calcola l'id deterministico (idPastoPredefinito) e verifica
-// SOLO quella riga specifica — se esiste già (viva o cancellata) non la
-// tocca, se manca la crea. La funzione non "semina una volta": garantisce
-// che i 5 esistano, ogni volta che viene chiamata — quello che il nome
-// promette. Una riga con deleted_at valorizzato conta come "esiste": non
-// ricrea un pasto che l'utente ha cancellato deliberatamente, PURCHÉ questo
-// dispositivo sappia già che è stato cancellato — cioè l'abbia già in Dexie,
-// da quando l'ha cancellato lui stesso o da una discesa riuscita in
-// precedenza. Il residuo: un dispositivo che non ha MAI visto quella riga
-// (nuovo, o Dexie svuotata) e la cui discesa di best-effort qui sotto
-// fallisce (offline, errore) non ha modo di sapere che era stata cancellata
-// altrove, e la ricrea. Rischio ristretto — nuovo dispositivo insieme a
-// discesa fallita insieme a un pasto predefinito già cancellato — ma va
-// scritto, non dato per eliminato: PUNTO_DI_PARTENZA.md, sezione 9.2.
+// 1. Dexie ha già righe in `pasti` per questo utente, vive o cancellate:
+//    non si scrive niente. È il caso di ogni apertura dopo la prima, e
+//    funziona offline.
+// 2. Dexie è vuota: si contano le righe dell'utente sul server, comprese le
+//    cancellate (contaRigheSulServer, NON incrementale: la discesa
+//    incrementale restituisce 0 righe anche a un server pieno, se il
+//    cursore è già avanti).
+//    - conteggio fallito → niente, mai: senza sapere cosa c'è sul server,
+//      creare vorrebbe dire rischiare di sovrascrivere un pasto rinominato
+//      o resuscitarne uno cancellato (sotto, "perché");
+//    - zero righe → si creano i 5 predefiniti, con gli id deterministici;
+//    - almeno una riga, anche cancellata → niente si crea: si scaricano
+//      quelle del server.
 //
-// Prima del controllo, un tentativo di discesa best-effort della sola
-// tabella pasti: se il server ha già la riga (creata da un altro
-// dispositivo, o da questo stesso account in precedenza), la discesa la
-// scrive in Dexie prima che il controllo per-id la trovi — evitando una
-// creazione locale che upsert() dovrebbe poi solo confermare. Se la
-// discesa fallisce (offline, errore) il controllo prosegue comunque sullo
-// stato locale che c'è: con id deterministico non è più una scelta fra
-// "semina" e "non seminare in attesa di conferma" (quel dilemma esisteva
-// solo perché gli id casuali potevano collidere) — qui seminare è sempre
-// sicuro, nel peggiore dei casi upsert() aggiorna una riga che il server
-// aveva già, mai un doppione.
-export async function garantisciPastiPredefiniti(userId: string): Promise<void> {
-  if (seedInCorso.has(userId)) return;
+// Perché non "crea se in Dexie manca": crea() manda al server la riga
+// intera con i valori predefiniti e deleted_at null, e l'upsert la
+// sovrascrive. Un dispositivo vuoto con la discesa fallita resuscitava un
+// pasto predefinito cancellato (difetto del 2026-09-25) e annullava la
+// rinomina di uno rinominato ("Pranzo 1" tornava "Pranzo", trovato il
+// 2026-10-07). Il prezzo: al primo avvio senza rete i pasti non ci sono,
+// e Oggi mostra "Serve la connessione" (ServeConnessione).
+//
+// L'id resta deterministico (idPastoPredefinito): due dispositivi nuovi che
+// trovano il server vuoto nello stesso momento producono le stesse righe.
+export function garantisciPastiPredefiniti(
+  userId: string
+): Promise<EsitoPastiPredefiniti> {
+  const inCorso = seedInCorso.get(userId);
+  if (inCorso) return inCorso;
 
-  seedInCorso.add(userId);
-  try {
-    await scaricaTabella(userId, db.pasti, "pasti").catch((errore) => {
-      console.error(
-        "garantisciPastiPredefiniti: discesa dei pasti fallita, procedo sullo stato locale.",
-        errore
-      );
-    });
-
-    for (const pasto of PASTI_PREDEFINITI) {
-      const id = idPastoPredefinito(userId, pasto.nome);
-      const esistente = await repositoryPasti.ottieniPerId(id);
-      if (esistente) continue;
-
-      await repositoryPasti.crea({ user_id: userId, ...pasto }, id);
-    }
-  } finally {
+  const esecuzione = seminaSeServerVuoto(userId).finally(() => {
     seedInCorso.delete(userId);
+  });
+  seedInCorso.set(userId, esecuzione);
+  return esecuzione;
+}
+
+async function seminaSeServerVuoto(userId: string): Promise<EsitoPastiPredefiniti> {
+  if (await haPastiInLocale(userId)) return "gia-in-locale";
+
+  let righeSulServer: number;
+  try {
+    righeSulServer = await contaRigheSulServer(userId, "pasti");
+  } catch (errore) {
+    console.error(
+      "garantisciPastiPredefiniti: lettura dei pasti dal server fallita, non creo niente.",
+      errore
+    );
+    return "lettura-fallita";
   }
+
+  if (righeSulServer === 0) {
+    // Nel frattempo una discesa (o un'altra scheda) può averli già scritti.
+    if (await haPastiInLocale(userId)) return "gia-in-locale";
+    for (const pasto of PASTI_PREDEFINITI) {
+      await repositoryPasti.crea(
+        { user_id: userId, ...pasto },
+        idPastoPredefinito(userId, pasto.nome)
+      );
+    }
+    return "creati";
+  }
+
+  // Il server ha dei pasti e Dexie nessuno: un cursore dei pasti rimasto
+  // da prima non ha più senso (farebbe scaricare 0 righe e Oggi resterebbe
+  // ad aspettare), quindi si toglie e lo scarico riparte da zero. Si tocca
+  // solo il cursore: Dexie non ha pasti da sovrascrivere.
+  try {
+    await db.sync_cursori.delete(`pasti:${userId}`);
+    await scaricaTabella(userId, db.pasti, "pasti");
+  } catch (errore) {
+    console.error("garantisciPastiPredefiniti: scarico dei pasti fallito.", errore);
+    return "lettura-fallita";
+  }
+  return "scaricati";
+}
+
+// Righe di `pasti` di questo utente in Dexie, vive o cancellate.
+async function haPastiInLocale(userId: string): Promise<boolean> {
+  return (await db.pasti.where("user_id").equals(userId).count()) > 0;
 }
