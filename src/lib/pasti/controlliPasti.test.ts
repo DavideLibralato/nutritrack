@@ -14,6 +14,11 @@ import {
   normalizzaNome,
   periodiInComune,
   prossimoOrdine,
+  ERRORE_GIORNI_SENZA_PASTI,
+  ERRORE_UNICO_PASTO,
+  iniziaOggiODopo,
+  periodoCoperto,
+  regoleElimina,
 } from "./controlliPasti";
 import type { Pasto } from "../db/tipi";
 
@@ -153,5 +158,83 @@ describe("prossimoOrdine", () => {
   it("il più alto più uno, cancellate comprese; 0 senza righe", () => {
     expect(prossimoOrdine([])).toBe(0);
     expect(prossimoOrdine([{ ordine: 4 }, { ordine: 7 }, { ordine: 2 }])).toBe(8);
+  });
+});
+
+// Passo 4, Elimina pasto: nessun giorno deve restare senza pasti, nemmeno
+// nel passato (da un giorno senza pasti non si registra niente).
+describe("periodoCoperto", () => {
+  const sempre = pasto("sempre", "Colazione", "06:00");
+  const finoAll8 = pasto("vecchio", "Pranzo", "12:30", { valido_al: "2026-10-08" });
+  const dal9 = pasto("nuovo", "Pranzo 1", "12:30", { valido_dal: "2026-10-09" });
+  const dal10 = pasto("dopo", "Cena", "19:30", { valido_dal: "2026-10-10" });
+
+  it("un pasto da sempre e per sempre copre qualunque periodo", () => {
+    expect(periodoCoperto(SEMPRE, [sempre])).toBe(true);
+    expect(periodoCoperto({ dal: OGGI, al: null }, [sempre])).toBe(true);
+  });
+
+  it("nessun altro pasto: non coperto", () => {
+    expect(periodoCoperto(SEMPRE, [])).toBe(false);
+  });
+
+  it("due pasti che si danno il cambio senza buchi coprono tutto", () => {
+    expect(periodoCoperto(SEMPRE, [finoAll8, dal9])).toBe(true);
+  });
+
+  it("un buco di un giorno (fino all'8, poi dal 10): non coperto", () => {
+    expect(periodoCoperto(SEMPRE, [finoAll8, dal10])).toBe(false);
+    expect(periodoCoperto({ dal: "2026-10-01", al: "2026-10-08" }, [finoAll8, dal10])).toBe(true);
+    expect(periodoCoperto({ dal: "2026-10-09", al: "2026-10-09" }, [finoAll8, dal10])).toBe(false);
+  });
+
+  it("un pasto che comincia più tardi non copre i giorni prima", () => {
+    expect(periodoCoperto(SEMPRE, [dal9])).toBe(false);
+    expect(periodoCoperto({ dal: "2026-10-09", al: null }, [dal9])).toBe(true);
+  });
+
+  it("un pasto cancellato non copre niente", () => {
+    expect(periodoCoperto(SEMPRE, [{ ...sempre, deleted_at: "2026-10-01T00:00:00.000Z" }])).toBe(false);
+  });
+});
+
+describe("iniziaOggiODopo", () => {
+  it("vero solo se valido_dal è oggi o dopo", () => {
+    expect(iniziaOggiODopo({ valido_dal: OGGI }, OGGI)).toBe(true);
+    expect(iniziaOggiODopo({ valido_dal: "2026-10-12" }, OGGI)).toBe(true);
+    expect(iniziaOggiODopo({ valido_dal: "2026-10-08" }, OGGI)).toBe(false);
+    expect(iniziaOggiODopo({ valido_dal: null }, OGGI)).toBe(false);
+    expect(iniziaOggiODopo({}, OGGI)).toBe(false);
+  });
+});
+
+describe("regoleElimina", () => {
+  const colazione = pasto("colazione", "Colazione", "06:00");
+  const pranzo = pasto("pranzo", "Pranzo", "12:30");
+
+  it("con un altro pasto da sempre: tutto permesso, con la domanda", () => {
+    expect(regoleElimina(pranzo, [colazione, pranzo], OGGI)).toEqual({
+      motivoSpento: null, senzaDomanda: false, motivoPassatiSpento: null,
+    });
+  });
+
+  it("l'unico pasto valido oggi: pulsante spento", () => {
+    const vecchio = pasto("vecchio", "Colazione", "06:00", { valido_al: "2026-10-08" });
+    expect(regoleElimina(pranzo, [vecchio, pranzo], OGGI).motivoSpento).toBe(ERRORE_UNICO_PASTO);
+    expect(regoleElimina(pranzo, [pranzo], OGGI).motivoSpento).toBe(ERRORE_UNICO_PASTO);
+  });
+
+  it("oggi c'è un altro pasto, ma nei giorni passati no: solo 'Anche nei giorni passati' è spento", () => {
+    const natoOggi = pasto("brunch", "Brunch", "11:00", { valido_dal: OGGI });
+    expect(regoleElimina(pranzo, [natoOggi, pranzo], OGGI)).toEqual({
+      motivoSpento: null, senzaDomanda: false, motivoPassatiSpento: ERRORE_GIORNI_SENZA_PASTI,
+    });
+  });
+
+  it("un pasto nato oggi si elimina senza domanda", () => {
+    const natoOggi = pasto("brunch", "Brunch", "11:00", { valido_dal: OGGI });
+    expect(regoleElimina(natoOggi, [colazione, natoOggi], OGGI)).toEqual({
+      motivoSpento: null, senzaDomanda: true, motivoPassatiSpento: null,
+    });
   });
 });

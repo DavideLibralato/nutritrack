@@ -25,7 +25,9 @@
 
 import { db } from "../db/database";
 import type { Pasto, VoceDiario } from "../db/tipi";
-import { giornoPrecedente } from "../dataGiorno";
+import { v5 as uuidv5 } from "uuid";
+import { giornoPrecedente, oggiLocale } from "../dataGiorno";
+import { totaleVoce } from "../totaliDiario";
 import { pastoValidoIl } from "../pasti/validitaPasti";
 import {
   domandaPerNome,
@@ -35,10 +37,12 @@ import {
   normalizzaOra,
   periodoDi,
   prossimoOrdine,
+  regoleElimina,
   type Periodo,
 } from "../pasti/controlliPasti";
 import { repositoryPasti, repositoryVociDiario } from "./index";
 import { tuttiIPasti } from "./pasti";
+import { annullaOperazione } from "./vociDiario";
 
 export interface FotografiaPasti {
   // Le righe di `pasti` come erano PRIMA (copie intere).
@@ -50,7 +54,14 @@ export interface FotografiaPasti {
   // elenco fisso: così torna indietro anche una voce aggiunta nel
   // frattempo al pasto nuovo (da un'altra scheda o un altro dispositivo).
   vociDaRiportare: { daPastoId: string; aPastoId: string; data: string } | null;
+  // Solo per Elimina pasto (passo 4): il pasto com'era, come è stato
+  // eliminato, e le voci eliminate com'erano (copie intere).
+  eliminazione?: { pasto: Pasto; modo: ModoElimina; voci: VoceDiario[] };
 }
+
+// "tutto": anche nei giorni passati (e il pasto che comincia oggi o dopo);
+// "oggi": da oggi, i giorni passati restano.
+export type ModoElimina = "tutto" | "oggi";
 
 // Un controllo non superato al momento della scrittura. `campo` dice sotto
 // quale campo dello sheet mostrare il messaggio.
@@ -254,7 +265,11 @@ export type EsitoAnnullaPasti =
   // Un pasto creato dall'operazione ha nel frattempo delle voci che
   // l'Annulla non riporterebbe altrove: cancellarlo le lascerebbe sotto
   // "Non più in uso". Non si scrive niente.
-  | "pasto-con-voci";
+  | "pasto-con-voci"
+  // Solo per Elimina pasto: rimettere il pasto si scontrerebbe con un
+  // pasto nato nel frattempo (stesso nome o stessa ora), o il pasto non
+  // c'è più. Non si scrive niente; `messaggio` va nella barra.
+  | { conflitto: string };
 
 // Annulla, in una transazione:
 // 1. le voci da riportare (solo "da oggi") tornano sul pasto vecchio;
@@ -262,8 +277,10 @@ export type EsitoAnnullaPasti =
 // 3. i pasti modificati tornano ai valori di prima, ma solo se sono ancora
 //    vivi: una riga cancellata nel frattempo resta cancellata.
 // Prima di scrivere si controlla il caso "pasto-con-voci": se c'è, niente.
+// L'Annulla di Elimina pasto ha regole sue (annullaEliminazione, sotto).
 export async function annullaModificaPasti(foto: FotografiaPasti): Promise<EsitoAnnullaPasti> {
   return db.transaction("rw", [db.pasti, db.voci_diario, db.outbox], async () => {
+    if (foto.eliminazione) return annullaEliminazione(foto.eliminazione);
     const r = foto.vociDaRiportare;
     const daRiportare = r ? await vociVive(r.daPastoId, r.data) : [];
     const idRiportate = new Set(daRiportare.map((v) => v.id));
@@ -300,4 +317,161 @@ export async function annullaModificaPasti(foto: FotografiaPasti): Promise<Esito
     }
     return scritte > 0 ? "annullato" : "gia-annullato";
   });
+}
+
+// ---------------------------------------------------------------------------
+// Elimina pasto (passo 4, PUNTO_DI_PARTENZA.md sezione 3, "Pasti e orari").
+//
+// Le voci del pasto si ELIMINANO, non si spostano (decisione del 9/10):
+// - "tutto" (anche nei giorni passati, e il pasto che comincia oggi o
+//   dopo): deleted_at sul pasto e su tutte le sue voci vive;
+// - "oggi": valido_al = ieri sul pasto, deleted_at sulle sue voci vive di
+//   oggi. I giorni passati non si toccano.
+// La tabella `giorni` non si tocca mai.
+
+// Quante voci, in quanti giorni, per quante kcal: i numeri della conferma
+// e della barra. Le kcal con totaleVoce, la stessa funzione dei totali di
+// Oggi: le voci hanno i valori copiati, niente da ricalcolare.
+export interface RiepilogoVoci {
+  voci: number;
+  giorni: number;
+  kcal: number;
+}
+
+export function riepilogoVoci(voci: VoceDiario[]): RiepilogoVoci {
+  return {
+    voci: voci.length,
+    giorni: new Set(voci.map((v) => v.data)).size,
+    kcal: voci.reduce((somma, v) => somma + totaleVoce(v).kcal, 0),
+  };
+}
+
+// Le voci che un'eliminazione cancellerebbe, lette da Dexie adesso.
+export async function vociDaEliminare(pastoId: string, modo: ModoElimina, oggi: string): Promise<VoceDiario[]> {
+  return vociVive(pastoId, modo === "oggi" ? oggi : undefined);
+}
+
+export type EsitoEliminaPasto =
+  // Le voci vive non sono più quelle confermate (una sync ne ha portata una
+  // nuova, o ne ha cancellata una): niente scritto. La pagina rimostra la
+  // conferma con questi numeri.
+  | { esito: "cambiate"; idVoci: string[]; riepilogo: RiepilogoVoci }
+  | { esito: "fatto"; fotografia: FotografiaPasti; riepilogo: RiepilogoVoci };
+
+// `idVociConfermate`: le voci che l'utente ha visto nella conferma (vuoto
+// se non c'era conferma perché non c'erano voci). Tutto in una transazione:
+// pasto, voci e coda outbox, o niente.
+export async function eliminaPasto({
+  id,
+  modo,
+  oggi,
+  idVociConfermate,
+}: {
+  id: string;
+  modo: ModoElimina;
+  oggi: string;
+  idVociConfermate: string[];
+}): Promise<EsitoEliminaPasto> {
+  return db.transaction("rw", [db.pasti, db.voci_diario, db.outbox], async () => {
+    const pasto = await pastoVivo(id);
+    const regole = regoleElimina(pasto, await tuttiIPasti(pasto.user_id ?? ""), oggi);
+    if (regole.motivoSpento) throw new Error(`Elimina ${id}: ${regole.motivoSpento}`);
+    if (modo === "tutto" && regole.motivoPassatiSpento) throw new Error(`Elimina ${id}: ${regole.motivoPassatiSpento}`);
+    if (modo === "oggi" && regole.senzaDomanda) {
+      throw new Error(`Il pasto ${id} comincia oggi: si elimina del tutto, non da oggi`);
+    }
+
+    const voci = await vociDaEliminare(pasto.id, modo, oggi);
+    const riepilogo = riepilogoVoci(voci);
+    const confermate = new Set(idVociConfermate);
+    if (voci.length !== confermate.size || voci.some((v) => !confermate.has(v.id))) {
+      return { esito: "cambiate", idVoci: voci.map((v) => v.id), riepilogo };
+    }
+
+    for (const voce of voci) await repositoryVociDiario.elimina(voce.id);
+    if (modo === "tutto") {
+      await repositoryPasti.elimina(pasto.id);
+    } else {
+      await repositoryPasti.aggiorna(pasto.id, { valido_dal: pasto.valido_dal ?? null, valido_al: giornoPrecedente(oggi) });
+    }
+
+    return {
+      esito: "fatto",
+      riepilogo,
+      fotografia: { pastiPrima: [], idPastiCreati: [], vociDaRiportare: null, eliminazione: { pasto, modo, voci } },
+    };
+  });
+}
+
+// Namespace fisso per l'id del pasto RICREATO dall'Annulla di "Elimina
+// pasto · anche nei giorni passati" (UUID v5 dall'id del pasto eliminato).
+// Generato una volta a caso: non deve coincidere con quelli dei pasti
+// predefiniti, dei giorni o delle voci ricreate. Deterministico, così un
+// Annulla ripetuto (o riprovato dopo un guasto) trova il pasto già
+// ricreato invece di farne un secondo.
+const NAMESPACE_RIPRISTINO_PASTI = "35031c14-156b-4219-8091-1d6e853e448a";
+
+export function idPastoRicreato(idOriginale: string): string {
+  return uuidv5(idOriginale, NAMESPACE_RIPRISTINO_PASTI);
+}
+
+// "Alle 12:30 inizia già Brunch." → "Non annullato: alle 12:30 inizia già Brunch."
+function nonAnnullato(motivo: string): { conflitto: string } {
+  return { conflitto: `Non annullato: ${motivo.charAt(0).toLowerCase()}${motivo.slice(1)}` };
+}
+
+// L'Annulla di Elimina pasto, dentro la transazione di annullaModificaPasti.
+// Mai una riga rimessa in vita:
+// - "tutto": il pasto si RICREA con un id nuovo (idPastoRicreato) e gli
+//   stessi nome, ora, ordine e date; le voci si ricreano come nel diario
+//   (annullaOperazione, id v5), ma sul pasto nuovo;
+// - "oggi": il pasto è ancora vivo, gli si rimette valido_al com'era; le
+//   voci di oggi si ricreano sullo stesso pasto.
+// Prima di scrivere si rifanno i controlli di nome e ora sul periodo che il
+// pasto riavrà: un pasto nato nel frattempo con lo stesso nome o la stessa
+// ora fa rispondere "conflitto", senza scrivere niente.
+async function annullaEliminazione(el: NonNullable<FotografiaPasti["eliminazione"]>): Promise<EsitoAnnullaPasti> {
+  const { pasto, modo, voci } = el;
+  const righe = await tuttiIPasti(pasto.user_id ?? "");
+  const fotoVoci = { prima: voci, idCreate: [] };
+
+  if (modo === "tutto") {
+    const idNuovo = idPastoRicreato(pasto.id);
+    let scritte = 0;
+    if (!(await repositoryPasti.ottieniPerId(idNuovo))) {
+      const periodo = periodoDi(pasto);
+      const motivo =
+        (erroreNome(pasto.nome, periodo, righe, [pasto.id]) ? `c'è già un pasto chiamato «${pasto.nome}».` : null) ??
+        erroreOra(pasto.ora_inizio, periodo, righe, [pasto.id], oggiLocale());
+      if (motivo) return nonAnnullato(motivo);
+      await repositoryPasti.crea(
+        {
+          user_id: pasto.user_id,
+          nome: pasto.nome,
+          ora_inizio: pasto.ora_inizio,
+          ordine: pasto.ordine,
+          ...dateEsplicite(pasto),
+        },
+        idNuovo
+      );
+      scritte++;
+    }
+    scritte += await annullaOperazione(fotoVoci, { pastoSostituito: { da: pasto.id, a: idNuovo } });
+    return scritte > 0 ? "annullato" : "gia-annullato";
+  }
+
+  const attuale = await repositoryPasti.ottieniPerId(pasto.id);
+  if (!attuale || attuale.deleted_at !== null) return nonAnnullato(`«${pasto.nome}» non c'è più.`);
+  let scritte = 0;
+  if ((attuale.valido_al ?? null) !== (pasto.valido_al ?? null)) {
+    const periodo = periodoDi(pasto);
+    const motivo =
+      (erroreNome(attuale.nome, periodo, righe, [pasto.id]) ? `c'è già un pasto chiamato «${attuale.nome}».` : null) ??
+      erroreOra(attuale.ora_inizio, periodo, righe, [pasto.id], oggiLocale());
+    if (motivo) return nonAnnullato(motivo);
+    await repositoryPasti.aggiorna(pasto.id, { ...dateEsplicite(pasto) });
+    scritte++;
+  }
+  scritte += await annullaOperazione(fotoVoci);
+  return scritte > 0 ? "annullato" : "gia-annullato";
 }

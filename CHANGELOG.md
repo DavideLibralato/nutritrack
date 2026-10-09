@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Elimina pasto, passo 4b: regole, scritture e Annulla
+
+Branch `elimina-pasto`. Secondo commit del passo 4: solo `lib`, nessuna
+schermata ancora.
+
+- `controlliPasti.ts`: `periodoCoperto` (ogni giorno di un periodo ha
+  almeno un altro pasto vivo) e `regoleElimina`: pulsante spento se da
+  oggi qualche giorno resterebbe senza pasti ("È l'unico pasto…"),
+  "Anche nei giorni passati" spento se resterebbe un buco nel passato,
+  nessuna domanda per un pasto che comincia oggi o dopo
+  (`iniziaOggiODopo`, ora usata anche dalla rinomina).
+- `modifichePasti.ts`: `eliminaPasto` in una transazione. "Tutto":
+  `deleted_at` sul pasto e su tutte le sue voci vive; "oggi": pasto chiuso
+  ieri e voci vive di oggi cancellate; `giorni` intatta. Se le voci non
+  sono più quelle confermate risponde "cambiate" senza scrivere.
+  Riepilogo voci / giorni / kcal con `totaleVoce`.
+- Annulla: "tutto" ricrea il pasto con id v5 dall'id vecchio e le voci
+  su di lui (`annullaOperazione` con il nuovo `pastoSostituito`); "oggi"
+  rimette la data di fine e ricrea le voci di oggi. Rifà i controlli di
+  nome e ora: in conflitto non scrive niente e dice perché. Mai una riga
+  rimessa in vita.
+- Test permanenti, tutti provati a vuoto (13 rotture da copia): 558 test
+  verdi in 53 file.
+
 ## 2026-10-09 — Sincronizzazione: un giro per volta
 
 Branch `elimina-pasto`. Primo commit del passo 4 di "Pasti e orari"

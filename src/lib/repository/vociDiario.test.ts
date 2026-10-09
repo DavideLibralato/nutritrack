@@ -548,3 +548,29 @@ describe("duplica: il pasto di destinazione deve esistere quel giorno", () => {
     expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(2);
   });
 });
+
+// Elimina pasto (passo 4): l'Annulla ricrea le voci eliminate sul pasto
+// RICREATO, non sotto quello cancellato. Senza l'opzione, niente cambia.
+describe("annullaOperazione con pastoSostituito", () => {
+  it("le voci ricreate del pasto 'da' nascono sul pasto 'a'; le altre restano dov'erano", async () => {
+    const userId = crypto.randomUUID();
+    const pasta = await creaVoce(userId, "Pasta", { pastoId: "pranzo-vecchio" });
+    const caffe = await creaVoce(userId, "Caffè", { pastoId: "colazione" });
+    const foto = await eliminaVoci([pasta.id, caffe.id]);
+
+    await annullaOperazione(foto, { pastoSostituito: { da: "pranzo-vecchio", a: "pranzo-nuovo" } });
+
+    expect((await db.voci_diario.get(idVoceRicreata(pasta.id)))?.pasto_id).toBe("pranzo-nuovo");
+    expect((await db.voci_diario.get(idVoceRicreata(caffe.id)))?.pasto_id).toBe("colazione");
+  });
+
+  it("senza l'opzione, la voce ricreata torna sul suo pasto di prima", async () => {
+    const userId = crypto.randomUUID();
+    const pasta = await creaVoce(userId, "Pasta", { pastoId: "pranzo-vecchio" });
+    const foto = await eliminaVoci([pasta.id]);
+
+    await annullaOperazione(foto);
+
+    expect((await db.voci_diario.get(idVoceRicreata(pasta.id)))?.pasto_id).toBe("pranzo-vecchio");
+  });
+});

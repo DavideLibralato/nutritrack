@@ -8,20 +8,31 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { db } from "../db/database";
 import type { Pasto, VoceDiario } from "../db/tipi";
 import { repositoryPasti, repositoryVociDiario } from "./index";
+import { idVoceRicreata } from "./vociDiario";
+import { ordinaOutbox } from "../sync/outbox";
 import {
   aggiungiPasto,
   annullaModificaPasti,
   correggiPasto,
+  eliminaPasto,
   ErroreControlloPasto,
+  idPastoRicreato,
   rinominaDaOggi,
 } from "./modifichePasti";
+
+// Conta i tentativi di invio: con una sincronizzazione per volta, anche
+// un'operazione con molte righe ne fa pochi (passo 4).
+const invii = { conteggio: 0 };
 
 // Server sempre irraggiungibile: le scritture restano nella coda outbox,
 // dove i test le guardano.
 vi.mock("../supabase/client", () => ({
   createClient: () => ({
     from: () => ({
-      upsert: async () => ({ error: { message: "offline" } }),
+      upsert: async () => {
+        invii.conteggio++;
+        return { error: { message: "offline" } };
+      },
     }),
   }),
 }));
@@ -236,5 +247,205 @@ describe("annullaModificaPasti", () => {
     const pranzo = await pastoIn("pranzo");
     expect(pranzo.deleted_at).not.toBeNull();
     expect(pranzo.nome).toBe("Pranzo 1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Passo 4, Elimina pasto. Nel beforeEach Pranzo ha due voci vive oggi, una
+// ieri e una già cancellata oggi; Cena c'è da sempre, quindi Pranzo non è
+// l'unico pasto. Ogni voce: 100 g a 52 kcal/100 g.
+
+async function vivo(id: string): Promise<boolean> {
+  const v = await db.voci_diario.get(id);
+  return !!v && v.deleted_at === null;
+}
+
+const IDS_TUTTE = ["v-ieri", "v-oggi-1", "v-oggi-2"];
+const IDS_OGGI = ["v-oggi-1", "v-oggi-2"];
+
+describe("eliminaPasto", () => {
+  beforeEach(() => {
+    invii.conteggio = 0;
+  });
+
+  it("anche nei giorni passati: pasto e tutte le sue voci vive cancellati, giorni intatta", async () => {
+    await db.giorni.put({
+      id: "g1", user_id: USER, data: IERI, tipo_giorno: "allenamento",
+      updated_at: "2026-10-01T00:00:00.000Z", deleted_at: null,
+    });
+    const cancellataPrima = await db.voci_diario.get("v-oggi-cancellata");
+
+    const esito = await eliminaPasto({ id: "pranzo", modo: "tutto", oggi: OGGI, idVociConfermate: IDS_TUTTE });
+
+    expect(esito.esito).toBe("fatto");
+    expect(esito.riepilogo).toEqual({ voci: 3, giorni: 2, kcal: 156 });
+    expect((await pastoIn("pranzo")).deleted_at).not.toBeNull();
+    for (const id of IDS_TUTTE) expect(await vivo(id)).toBe(false);
+    expect(await db.voci_diario.get("v-oggi-cancellata")).toEqual(cancellataPrima);
+    expect((await db.giorni.get("g1"))?.deleted_at).toBeNull();
+    expect((await pastoIn("cena")).deleted_at).toBeNull();
+  });
+
+  it("da oggi: il pasto si chiude ieri, solo le voci di oggi si cancellano", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_OGGI });
+
+    expect(esito.riepilogo).toEqual({ voci: 2, giorni: 1, kcal: 104 });
+    expect(await pastoIn("pranzo")).toMatchObject({ deleted_at: null, valido_dal: null, valido_al: IERI });
+    expect(await vivo("v-oggi-1")).toBe(false);
+    expect(await vivo("v-oggi-2")).toBe(false);
+    expect(await vivo("v-ieri")).toBe(true);
+  });
+
+  it("voci diverse da quelle confermate: niente scritto, i numeri nuovi tornano indietro", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "tutto", oggi: OGGI, idVociConfermate: IDS_OGGI });
+
+    expect(esito).toMatchObject({ esito: "cambiate", riepilogo: { voci: 3, giorni: 2 } });
+    expect((await pastoIn("pranzo")).deleted_at).toBeNull();
+    for (const id of IDS_TUTTE) expect(await vivo(id)).toBe(true);
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("tutto o niente: un guasto a metà non lascia voci cancellate né voci in coda", async () => {
+    let chiamate = 0;
+    const originale = repositoryVociDiario.elimina;
+    vi.spyOn(repositoryVociDiario, "elimina").mockImplementation(async (id) => {
+      chiamate++;
+      if (chiamate === 2) throw new Error("guasto a metà");
+      return originale(id);
+    });
+
+    await expect(
+      eliminaPasto({ id: "pranzo", modo: "tutto", oggi: OGGI, idVociConfermate: IDS_TUTTE })
+    ).rejects.toThrow("guasto a metà");
+
+    for (const id of IDS_TUTTE) expect(await vivo(id)).toBe(true);
+    expect((await pastoIn("pranzo")).deleted_at).toBeNull();
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("un pasto nato oggi si elimina solo del tutto", async () => {
+    await db.pasti.put(riga("brunch", "Brunch", "11:00", { valido_dal: OGGI, valido_al: null }));
+    await expect(eliminaPasto({ id: "brunch", modo: "oggi", oggi: OGGI, idVociConfermate: [] })).rejects.toThrow();
+    const esito = await eliminaPasto({ id: "brunch", modo: "tutto", oggi: OGGI, idVociConfermate: [] });
+    expect(esito.esito).toBe("fatto");
+    expect((await pastoIn("brunch")).deleted_at).not.toBeNull();
+  });
+
+  it("l'ultimo pasto non si elimina, in nessun modo", async () => {
+    await db.pasti.put({ ...CENA, deleted_at: "2026-10-01T00:00:00.000Z" });
+    for (const modo of ["tutto", "oggi"] as const) {
+      await expect(
+        eliminaPasto({ id: "pranzo", modo, oggi: OGGI, idVociConfermate: modo === "tutto" ? IDS_TUTTE : IDS_OGGI })
+      ).rejects.toThrow("È l'unico pasto");
+    }
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("anche nei giorni passati è rifiutato se un giorno passato resterebbe senza pasti", async () => {
+    await db.pasti.put({ ...CENA, valido_dal: OGGI });
+    await expect(
+      eliminaPasto({ id: "pranzo", modo: "tutto", oggi: OGGI, idVociConfermate: IDS_TUTTE })
+    ).rejects.toThrow("Alcuni giorni passati");
+    const daOggi = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_OGGI });
+    expect(daOggi.esito).toBe("fatto");
+  });
+
+  it("molte righe in una volta: una sola sincronizzazione, non una per riga", async () => {
+    const tante = Array.from({ length: 12 }, (_, i) => voce(`v-extra-${i}`, "pranzo", IERI));
+    await db.voci_diario.bulkPut(tante);
+
+    await eliminaPasto({
+      id: "pranzo", modo: "tutto", oggi: OGGI,
+      idVociConfermate: [...IDS_TUTTE, ...tante.map((v) => v.id)],
+    });
+    await new Promise((r) => setTimeout(r, 100));
+
+    // 16 righe in coda. Il server finto rifiuta tutto, e ogni giro si
+    // ferma al primo rifiuto: un giro = un invio. Con un giro per riga
+    // sarebbero 16; con un giro per volta, il giro e quello prenotato.
+    expect(await db.outbox.count()).toBe(16);
+    expect(invii.conteggio).toBeLessThanOrEqual(2);
+  });
+});
+
+describe("annulla di eliminaPasto", () => {
+  it("anche nei giorni passati: il pasto rinasce con un id nuovo, le voci rinascono su di lui", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "tutto", oggi: OGGI, idVociConfermate: IDS_TUTTE });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    await db.outbox.clear();
+
+    expect(await annullaModificaPasti(esito.fotografia)).toBe("annullato");
+
+    const nuovo = await pastoIn(idPastoRicreato("pranzo"));
+    expect(nuovo).toMatchObject({
+      nome: "Pranzo", ora_inizio: "12:30:00", ordine: 2, valido_dal: null, valido_al: null, deleted_at: null,
+    });
+    expect((await pastoIn("pranzo")).deleted_at).not.toBeNull();
+    for (const id of IDS_TUTTE) {
+      const ricreata = await db.voci_diario.get(idVoceRicreata(id));
+      expect(ricreata).toMatchObject({ pasto_id: nuovo.id, deleted_at: null });
+      expect(ricreata?.data).toBe((await db.voci_diario.get(id))?.data);
+      expect(await vivo(id)).toBe(false);
+    }
+
+    // In coda il pasto parte prima delle sue voci (ordinaOutbox).
+    const coda = ordinaOutbox(await db.outbox.toArray()).map((v) => v.tabella);
+    expect(coda[0]).toBe("pasti");
+    expect(coda.slice(1).every((t) => t === "voci_diario")).toBe(true);
+
+    expect(await annullaModificaPasti(esito.fotografia)).toBe("gia-annullato");
+    expect(await db.pasti.count()).toBe(3);
+  });
+
+  it("da oggi: il pasto si riapre e le voci di oggi rinascono sullo stesso pasto", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_OGGI });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+
+    expect(await annullaModificaPasti(esito.fotografia)).toBe("annullato");
+
+    expect(await pastoIn("pranzo")).toMatchObject({ deleted_at: null, valido_dal: null, valido_al: null });
+    for (const id of IDS_OGGI) {
+      expect((await db.voci_diario.get(idVoceRicreata(id)))?.pasto_id).toBe("pranzo");
+    }
+    expect(await vivo("v-ieri")).toBe(true);
+    expect(await annullaModificaPasti(esito.fotografia)).toBe("gia-annullato");
+  });
+
+  it("conflitto di nome: un pasto con lo stesso nome nato nel frattempo, niente scritto", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "tutto", oggi: OGGI, idVociConfermate: IDS_TUTTE });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    await db.pasti.put(riga("altro", "pranzo", "13:00", { valido_dal: null, valido_al: null }));
+    await db.outbox.clear();
+
+    expect(await annullaModificaPasti(esito.fotografia)).toEqual({
+      conflitto: "Non annullato: c'è già un pasto chiamato «Pranzo».",
+    });
+    expect(await db.pasti.get(idPastoRicreato("pranzo"))).toBeUndefined();
+    expect(await db.voci_diario.get(idVoceRicreata("v-ieri"))).toBeUndefined();
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("conflitto d'ora, anche da oggi: niente scritto", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_OGGI });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    await db.pasti.put(riga("brunch", "Brunch", "12:30", { valido_dal: OGGI, valido_al: null }));
+    await db.outbox.clear();
+
+    expect(await annullaModificaPasti(esito.fotografia)).toEqual({
+      conflitto: "Non annullato: alle 12:30 inizia già Brunch.",
+    });
+    expect((await pastoIn("pranzo")).valido_al).toBe(IERI);
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("da oggi, ma il pasto è stato cancellato nel frattempo: non lo rimette in vita", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_OGGI });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    await repositoryPasti.elimina("pranzo");
+
+    expect(await annullaModificaPasti(esito.fotografia)).toEqual({
+      conflitto: "Non annullato: «Pranzo» non c'è più.",
+    });
+    expect((await pastoIn("pranzo")).deleted_at).not.toBeNull();
   });
 });

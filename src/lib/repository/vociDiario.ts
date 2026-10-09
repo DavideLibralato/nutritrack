@@ -84,7 +84,17 @@ function stessoContenuto(a: VoceDiario, b: VoceDiario): boolean {
 
 // Annulla l'operazione della fotografia. Restituisce quante righe ha
 // riscritto davvero (0 se era già tutto annullato).
-export async function annullaOperazione(foto: FotografiaVoci): Promise<number> {
+//
+// `pastoSostituito` (dal 9/10, Elimina pasto "anche nei giorni passati"):
+// le voci RICREATE che stavano sul pasto `da` nascono sul pasto `a`. Il
+// pasto eliminato non torna in vita (stessa regola delle voci): l'Annulla
+// ne crea uno nuovo, e le voci devono andare lì, non sotto un pasto
+// cancellato. Tocca solo le voci ricreate; una voce ancora viva torna ai
+// suoi valori di prima com'era.
+export async function annullaOperazione(
+  foto: FotografiaVoci,
+  { pastoSostituito }: { pastoSostituito?: { da: string; a: string } } = {}
+): Promise<number> {
   let scritte = 0;
 
   for (const id of foto.idCreate) {
@@ -107,7 +117,9 @@ export async function annullaOperazione(foto: FotografiaVoci): Promise<number> {
     // fatto da un Annulla precedente.
     const idNuovo = idVoceRicreata(prima.id);
     if (await repositoryVociDiario.ottieniPerId(idNuovo)) continue;
-    await repositoryVociDiario.crea(contenuto(prima), idNuovo);
+    const dati = contenuto(prima);
+    if (pastoSostituito && dati.pasto_id === pastoSostituito.da) dati.pasto_id = pastoSostituito.a;
+    await repositoryVociDiario.crea(dati, idNuovo);
     scritte++;
   }
 
