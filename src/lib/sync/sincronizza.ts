@@ -33,7 +33,47 @@ export interface RisultatoSincronizzazione {
 // successo nel caso reale che ha fatto scoprire il problema.
 const SOGLIA_SOSPENSIONE = 5;
 
-export async function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
+// Una sincronizzazione per volta (dal 9/10/2026). Prima ogni chiamata
+// faceva un giro suo: una scrittura dentro una transazione con 14 righe
+// (un pasto e le sue 13 voci) faceva partire 14 giri, che aspettavano
+// tutti la fine della transazione e poi lavoravano in parallelo, ognuno
+// mandando tutta la coda: circa 196 invii invece di 14. Nessun dato perso
+// (riscrivere una riga è innocuo), ma rete e batteria sprecate, e giri che
+// si pestavano i piedi sugli stessi tentativi.
+//
+// Ora:
+// - nessun giro in corso → ne parte uno;
+// - un giro in corso → la chiamata non ne apre un altro, ma ne prenota UNO
+//   dopo, condiviso da tutte le chiamate arrivate nel frattempo. Serve
+//   perché il giro in corso può aver già letto la coda prima delle loro
+//   voci; chi aspetta (Esci, che vuole la coda vuota prima di uscire)
+//   riceve la fine del giro prenotato, quello che le ha viste.
+// Vale per tutti gli inneschi, perché passano tutti da qui: ogni scrittura
+// (repository.ts), l'avvio, l'evento `online` e il ritorno in primo piano
+// (orchestratore.ts, via sincronizzaBidirezionale), "Sincronizza ora",
+// Esci e il ripristino dei dati.
+let giroInCorso: Promise<RisultatoSincronizzazione> | null = null;
+let giroPrenotato: Promise<RisultatoSincronizzazione> | null = null;
+
+export function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
+  if (!giroInCorso) {
+    giroInCorso = unGiro().finally(() => {
+      giroInCorso = null;
+    });
+    return giroInCorso;
+  }
+  if (!giroPrenotato) {
+    giroPrenotato = giroInCorso
+      .catch(() => undefined)
+      .then(() => {
+        giroPrenotato = null;
+        return sincronizzaOutbox();
+      });
+  }
+  return giroPrenotato;
+}
+
+async function unGiro(): Promise<RisultatoSincronizzazione> {
   const supabase = createClient();
   // Le voci già accantonate (vedi sotto) restano in Dexie ma escluse da ogni
   // passata: altrimenti tornerebbero a bloccare l'ordine ogni volta.

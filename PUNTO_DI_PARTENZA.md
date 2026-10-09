@@ -2096,6 +2096,14 @@ Come, in concreto:
     Dexie** (tutto o niente): la sync che ogni scrittura fa partire esce
     dalla transazione (`Dexie.ignoreTransaction`) e legge la coda solo
     dopo il commit
+  - **una sincronizzazione per volta** (dal 9/10): se un giro è in corso,
+    una chiamata nuova non ne apre un altro ma ne prenota **uno** dopo,
+    condiviso da tutte quelle arrivate nel frattempo (il giro in corso può
+    aver letto la coda prima delle loro voci). Vale per ogni innesco,
+    perché passano tutti da `sincronizzaOutbox`: le scritture, l'avvio,
+    `online`, il ritorno in primo piano, "Sincronizza ora", Esci, il
+    ripristino. Prima ogni chiamata faceva un giro suo: le 14 scritture di
+    una transazione facevano 14 giri in parallelo, 196 invii invece di 14
 - **discesa**: legge da Supabase le righe cambiate e le scrive in Dexie
   (`src/lib/sync/discesa.ts`) — senza questa metà, Supabase era solo una
   destinazione: un dispositivo nuovo non vedeva mai i dati già presenti sul

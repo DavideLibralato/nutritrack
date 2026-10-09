@@ -5,6 +5,37 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Sincronizzazione: un giro per volta
+
+Branch `elimina-pasto`. Primo commit del passo 4 di "Pasti e orari"
+(Elimina pasto); da utente non cambia niente.
+
+- Difetto trovato preparando il passo: ogni scrittura faceva partire un
+  giro di sincronizzazione suo. Dentro una transazione i giri aspettavano
+  tutti il commit e poi lavoravano in parallelo, ognuno con tutta la
+  coda: 14 scritture (un pasto e 13 voci) = 196 invii invece di 14.
+  Nessun dato perso, ma rete e batteria sprecate. Succedeva già con
+  Duplica di un pasto intero.
+- `sincronizzaOutbox`: se un giro è in corso, la chiamata ne prenota uno
+  solo dopo, condiviso; chi aspetta (Esci) riceve la fine del giro che ha
+  visto le sue voci. Vale anche per `online` e il ritorno in primo piano.
+- Test permanente `sincronizzaUnaPerVolta.test.ts` (14 scritture = 14
+  invii, mai due invii in parallelo, il giro prenotato manda le voci
+  arrivate dopo, `online` in fila), provato a vuoto: togliendo la regola
+  conta 196 invii. Anche dopo un giro fallito (eccezione imprevista o
+  rete caduta) la chiamata dopo e il giro prenotato partono: togliendo il
+  rilascio, il giro prenotato si richiama da solo e il processo muore.
+  532 test verdi in 53 file.
+
+## 2026-10-09 — Pasti e orari unita a main
+
+Provata il 9/10 (voci 3a–3c sotto) e unita a main con fast-forward da
+`66c25f1` ad `abcfcc1`, senza commit di merge: `b99779c` (coda con i
+genitori prima dei figli), `9d77429` (controlli, scritture e Annulla),
+`a2e9b59` (la pagina), `abcfcc1` (i documenti). Branch `pagina-pasti`
+cancellato, in locale e su GitHub. Deploy di produzione riuscito. 525
+test verdi in 52 file.
+
 ## 2026-10-09 — Pasti e orari, passo 3c: la pagina
 
 Branch `pagina-pasti`. Terzo commit del passo 3: la pagina
