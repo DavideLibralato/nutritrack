@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Validità dei pasti, passo 2a: schema e prova degli aggiornamenti Dexie
+
+Branch `validita-pasti`. Passo 2 di "Pasti e orari", primo commit: solo
+schema, nessun cambiamento visibile.
+
+- `pasti` ha due campi nuovi, `valido_dal` e `valido_al` (date, null = da
+  sempre / per sempre). Su Dexie: `version(6)` con gli stessi indici e
+  senza `.upgrade` (campi facoltativi nel tipo). Migration Supabase
+  `pasti_validita` applicata il 9/10 (da Cowork): schema confrontato con
+  `tipi.ts`, advisors invariati.
+- Checklist B.7 eseguita davvero, con un test permanente
+  (`aggiornamentoSchema.test.ts`): database alla `version(3)`, `(4)` e
+  `(5)` con righe in tutte le tabelle, compresa la coda outbox, riaperto
+  dall'app nuova. Righe identiche, indici funzionanti. Era rimandata dal
+  26/9 per la 4 e la 5.
+- Verificato nello stesso test: una seconda scheda rimasta alla versione
+  vecchia non blocca la nuova e continua a funzionare (Dexie la chiude e
+  la riapre da solo).
+
+## 2026-10-09 — Seed dei pasti unito a main
+
+Provato il 9/10 (voce sotto) e unito a main con fast-forward da `aae7ad5`
+a `9f98e29`, senza commit di merge: `dde2bf9` (la correzione) e `9f98e29`
+(i documenti). Branch `seed-pasti` cancellato, in locale e su GitHub.
+Deploy di produzione riuscito. 440 test verdi in 45 file.
+
 ## 2026-10-07 — Seed dei pasti predefiniti solo con il server vuoto
 
 Branch `seed-pasti`. Passo 1 di "Pasti e orari".

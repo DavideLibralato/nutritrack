@@ -29,7 +29,7 @@ import type { CursoreSync } from "../sync/discesa";
 // Dexie può generare da sola (auto-increment) e quindi opzionale in
 // inserimento. Da noi l'id è sempre un uuid già pronto, scritto dal client
 // (sezione 4) — non c'è niente da generare in automatico sul lato Dexie.
-class NutriTrackDatabase extends Dexie {
+export class NutriTrackDatabase extends Dexie {
   profili!: Table<Profilo, string>;
   obiettivi!: Table<Obiettivo, string>;
   obiettivi_target!: Table<ObiettivoTarget, string>;
@@ -50,8 +50,12 @@ class NutriTrackDatabase extends Dexie {
   // sincronizzata a sua volta.
   sync_cursori!: Table<CursoreSync, string>;
 
-  constructor() {
-    super("nutritrack");
+  // `nome`: sempre "nutritrack" nell'app. Un altro nome serve solo al test
+  // degli aggiornamenti di schema (aggiornamentoSchema.test.ts), che apre
+  // un database suo alla versione vecchia e lo porta alla nuova con questa
+  // stessa classe.
+  constructor(nome = "nutritrack") {
+    super(nome);
 
     // .stores() dichiara, per ogni tabella, quali campi sono indicizzati:
     // il primo è la chiave primaria, gli altri sono i campi su cui la app
@@ -152,6 +156,32 @@ class NutriTrackDatabase extends Dexie {
     // scarica tutto da zero, lo stesso comportamento di un dispositivo
     // nuovo — nessun caso speciale da gestire.
     this.version(5).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+      sync_cursori: "id, tabella, user_id",
+    });
+
+    // version(6): due campi nuovi su pasti, valido_dal e valido_al ("YYYY-MM-DD",
+    // null = da sempre / per sempre — PUNTO_DI_PARTENZA.md, sezione 4,
+    // "pasti"). Non indicizzati (i pasti di un utente sono pochi, il filtro
+    // per giorno si fa in memoria), quindi .stores() è identico a version(5):
+    // cambia la forma delle righe, non gli indici, come in version(3).
+    // Nessun .upgrade() (regola B.4): nel tipo Pasto i due campi sono
+    // facoltativi (`?`), quindi TypeScript obbliga ogni lettura ad avere un
+    // ripiego, e un pasto salvato prima di questa versione, senza i due
+    // campi, vale da sempre e per sempre — lo stesso significato di null.
+    // Verificato da aggiornamentoSchema.test.ts (regola B.7).
+    this.version(6).stores({
       profili: "id, user_id, deleted_at",
       obiettivi: "id, user_id, valido_dal, deleted_at",
       obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
