@@ -10,10 +10,10 @@
 // solo controllando Supabase a mano, mesi dopo. Bug di logica sottile
 // (CLAUDE.md, sezione test): resta come test permanente.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { db } from "../db/database";
 import { sincronizzaOutbox } from "./sincronizza";
-import type { VoceOutbox } from "./outbox";
+import { accodaMutazione, ordinaOutbox, type VoceOutbox } from "./outbox";
 
 const upsertMock = vi.fn();
 
@@ -145,5 +145,83 @@ describe("sincronizzaOutbox — voci che non passeranno mai", () => {
     expect(upsertMock).not.toHaveBeenCalled();
     expect(risultato).toEqual({ inviate: 0, fallite: 0, sospese: 0 });
     expect(await db.outbox.count()).toBe(1); // resta, solo ignorata
+  });
+});
+
+// Difetto trovato il 9/10/2026 (PUNTO_DI_PARTENZA.md, sezione 9.2, "L'ordine
+// della coda"): riscrivere una riga già in coda le dà un creato_il nuovo,
+// quindi un genitore modificato DOPO i suoi figli finiva dietro di loro. Il
+// server rifiutava il figlio (foreign key), la coda si fermava e dopo 5
+// giri il figlio veniva accantonato: mai arrivato. Qui il server finto
+// rifiuta una voce di diario il cui pasto non ha ancora ricevuto, come fa
+// Postgres con voci_diario.pasto_id → pasti.id.
+describe("sincronizzaOutbox — i genitori partono prima dei figli", () => {
+  const pastiSulServer = new Set<string>();
+
+  beforeEach(async () => {
+    upsertMock.mockReset();
+    pastiSulServer.clear();
+    await db.outbox.clear();
+    upsertMock.mockImplementation(async (tabella: string, dati: { id: string; pasto_id?: string }) => {
+      if (tabella === "pasti") {
+        pastiSulServer.add(dati.id);
+        return { error: null };
+      }
+      if (tabella === "voci_diario" && dati.pasto_id && !pastiSulServer.has(dati.pasto_id)) {
+        return { error: { message: 'violates foreign key constraint "voci_diario_pasto_id_fkey"' } };
+      }
+      return { error: null };
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("un pasto modificato dopo la voce che lo usa parte lo stesso per primo", async () => {
+    const base = { user_id: "u1", deleted_at: null, updated_at: "2026-10-09T10:00:00.000Z" };
+    const pasto = { ...base, id: "p-nuovo", nome: "Pranzo 1", ora_inizio: "12:30", ordine: 2 };
+    const voceDiario = { ...base, id: "v1", pasto_id: "p-nuovo" };
+
+    // La sequenza vera, offline: pasto nuovo, voce spostata su di lui, poi
+    // l'ora del pasto corretta. La terza scrittura sostituisce la voce del
+    // pasto in coda, con un creato_il successivo a quello della voce.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T10:00:00.000Z"));
+    await accodaMutazione("pasti", pasto);
+    vi.setSystemTime(new Date("2026-10-09T10:00:01.000Z"));
+    await accodaMutazione("voci_diario", voceDiario);
+    vi.setSystemTime(new Date("2026-10-09T10:00:02.000Z"));
+    const pastoCorretto = { ...pasto, ora_inizio: "13:00" };
+    await accodaMutazione("pasti", pastoCorretto);
+    vi.useRealTimers();
+
+    const risultato = await sincronizzaOutbox();
+
+    expect(upsertMock.mock.calls.map((c) => c[0])).toEqual(["pasti", "voci_diario"]);
+    expect(risultato).toEqual({ inviate: 2, fallite: 0, sospese: 0 });
+    expect(await db.outbox.count()).toBe(0);
+  });
+});
+
+describe("ordinaOutbox", () => {
+  it("prima per livello della tabella, poi creato_il, poi id", () => {
+    const voci = [
+      voce({ id: "composizioni_voci:c1", tabella: "composizioni_voci", creato_il: "2026-10-09T08:00:00.000Z" }),
+      voce({ id: "voci_diario:b", tabella: "voci_diario", creato_il: "2026-10-09T09:00:00.000Z" }),
+      voce({ id: "composizioni:k1", tabella: "composizioni", creato_il: "2026-10-09T12:00:00.000Z" }),
+      voce({ id: "voci_diario:a", tabella: "voci_diario", creato_il: "2026-10-09T09:00:00.000Z" }),
+      voce({ id: "alimenti:x", tabella: "alimenti", creato_il: "2026-10-09T11:00:00.000Z" }),
+      voce({ id: "misurazioni:m", tabella: "misurazioni", creato_il: "2026-10-09T10:00:00.000Z" }),
+    ];
+
+    expect(ordinaOutbox(voci).map((v) => v.id)).toEqual([
+      "misurazioni:m",
+      "alimenti:x",
+      "voci_diario:a",
+      "voci_diario:b",
+      "composizioni:k1",
+      "composizioni_voci:c1",
+    ]);
   });
 });

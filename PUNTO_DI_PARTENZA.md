@@ -2018,6 +2018,23 @@ Come, in concreto:
 - **outbox (salita)**: ogni mutazione entra in una coda locale, che si svuota
   verso Supabase quando la rete torna (`src/lib/sync/outbox.ts`,
   `sincronizza.ts`)
+  - **l'ordine della coda** (dal 9/10): prima i genitori, poi i figli,
+    secondo le foreign key del server (`ordinaOutbox`). Livello 0:
+    `profili`, `obiettivi`, `pasti`, `alimenti`, `giorni`, `misurazioni`;
+    livello 1: `obiettivi_target`, `voci_diario`, `composizioni`,
+    `preferiti`; livello 2: `composizioni_voci`. Dentro lo stesso livello,
+    `creato_il`. Fino all'8/10 era solo `creato_il`, ma riscrivere una
+    riga già in coda le dà un `creato_il` nuovo: un genitore corretto dopo
+    i suoi figli (un alimento creato offline, registrato, poi corretto)
+    partiva dopo di loro, il server rifiutava il figlio, la coda si
+    fermava e dopo 5 giri il figlio veniva accantonato, mai arrivato.
+    Mandare un genitore "troppo presto" non rompe niente: ogni riga vince
+    da sola e le cancellazioni sono logiche. Una tabella nuova deve avere
+    il suo livello, altrimenti TypeScript non compila
+  - le scritture del repository si possono fare **dentro una transazione
+    Dexie** (tutto o niente): la sync che ogni scrittura fa partire esce
+    dalla transazione (`Dexie.ignoreTransaction`) e legge la coda solo
+    dopo il commit
 - **discesa**: legge da Supabase le righe cambiate e le scrive in Dexie
   (`src/lib/sync/discesa.ts`) — senza questa metà, Supabase era solo una
   destinazione: un dispositivo nuovo non vedeva mai i dati già presenti sul
@@ -2637,8 +2654,9 @@ configurazione Vercel mantenute, codice della v0 consultabile sul tag
 
 **Punto 0 — local-first** (sezione 9.2). Dexie è a `version(6)`: le 11
 tabelle più `outbox` e `sync_cursori`. Repository unico per ogni scrittura;
-salita dall'outbox che si ferma al primo errore e accantona una voce dopo 5
-tentativi falliti; discesa incrementale e paginata; `orchestratore.ts`
+salita dall'outbox con i genitori prima dei figli (dal 9/10), che si ferma
+al primo errore e accantona una voce dopo 5 tentativi falliti; scritture
+del repository possibili dentro una transazione Dexie; discesa incrementale e paginata; `orchestratore.ts`
 (discesa prima della salita, tre inneschi); id deterministici per i pasti
 predefiniti e per le righe di `giorni`; "Ricarica i dati dal tuo account"
 in Profilo; service worker scritto a mano per l'uso offline; utente

@@ -16,6 +16,7 @@
 
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
+import { ordinaOutbox } from "./outbox";
 
 export interface RisultatoSincronizzazione {
   inviate: number;
@@ -36,9 +37,9 @@ export async function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
   const supabase = createClient();
   // Le voci già accantonate (vedi sotto) restano in Dexie ma escluse da ogni
   // passata: altrimenti tornerebbero a bloccare l'ordine ogni volta.
-  const voci = (await db.outbox.orderBy("creato_il").toArray()).filter(
-    (v) => !v.sospesa_il
-  );
+  // L'ordine è quello di ordinaOutbox (outbox.ts): genitori prima dei
+  // figli, poi creato_il.
+  const voci = ordinaOutbox(await db.outbox.toArray()).filter((v) => !v.sospesa_il);
 
   let inviate = 0;
   let fallite = 0;
@@ -46,8 +47,8 @@ export async function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
 
   // In sequenza, non in parallelo: se due voci toccano righe collegate
   // (es. un obiettivo e il suo target, o un pasto e le sue voci di diario),
-  // mandarle nell'ordine in cui sono state create evita di invertire
-  // l'ordine delle scritture sul server.
+  // mandarle nell'ordine di ordinaOutbox fa arrivare sempre il genitore
+  // prima del figlio.
   //
   // Se una voce fallisce e non ha ancora raggiunto la soglia, ci si ferma
   // qui: non si tenta la successiva nella stessa passata. `continue`

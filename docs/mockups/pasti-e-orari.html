@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pasti e orari</title>
+</head>
+<body>
+<style>
+/* Layout: telefono interattivo a sinistra, note a destra; sotto, il telefono del primo avvio senza rete */
+:root{
+  --bg:#f6f1e8; --surface:#ffffff; --fg:#2a2520; --muted:#78705f;
+  --line:#e7e0d2; --accent:#3f7d4c; --accent-strong:#3f7d4c; --warn:#b65b2e;
+  --soft:#efe9dd;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1815; --surface:#26221e; --fg:#f2ede4; --muted:#a39a8b;
+    --line:#3a342d; --accent:#7bb887; --accent-strong:#3f7d4c; --warn:#e8916f;
+    --soft:#2f2a25; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1815; --surface:#26221e; --fg:#f2ede4; --muted:#a39a8b;
+  --line:#3a342d; --accent:#7bb887; --accent-strong:#3f7d4c; --warn:#e8916f;
+  --soft:#2f2a25; color-scheme:dark;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Segoe UI,Roboto,sans-serif;
+  padding-inline:18px; padding-block:28px; max-width:960px; margin:0 auto;
+}
+h1{font-size:1.4rem; font-weight:800; letter-spacing:-.01em; margin:0 0 4px; text-wrap:balance}
+.lede{color:var(--muted); font-size:.92rem; line-height:1.55; margin:0 0 20px; max-width:68ch}
+.lede b{color:var(--fg)}
+
+.toolbar{display:flex; flex-direction:column; gap:10px; margin:0 0 24px; padding:12px; background:var(--surface); border:1px solid var(--line); border-radius:16px}
+.tb-riga{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.tb-riga > span{font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:700; min-width:118px}
+.seg{display:flex; gap:2px; background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:2px; flex-wrap:wrap}
+.seg button{border:0; background:transparent; color:var(--muted); font-size:.82rem; font-weight:600; padding:6px 13px; border-radius:999px; cursor:pointer; font-family:inherit}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--fg); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.ghost-btn{border:1px solid var(--line); background:var(--surface); color:var(--fg); font-family:inherit; font-size:.8rem; font-weight:600; padding:7px 13px; border-radius:999px; cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.main-grid{display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start}
+
+.phone{
+  width:360px; max-width:100%; flex:none; border-radius:30px; background:var(--m-bg,var(--bg));
+  color:var(--m-fg,var(--fg));
+  border:1px solid var(--line); box-shadow:0 18px 40px -16px rgba(0,0,0,.35);
+  overflow:hidden; position:relative; isolation:isolate; min-height:640px;
+}
+.phone.piccolo{min-height:520px}
+.ph-head{padding:16px 18px 6px}
+.indietro{font-size:.84rem; font-weight:600; color:var(--m-accent,var(--accent)); margin:0 0 10px}
+.ph-titolo{font-size:1.25rem; font-weight:800; letter-spacing:-.01em; margin:0}
+.ph-intro{font-size:.76rem; color:var(--m-muted,var(--muted)); line-height:1.45; margin:6px 0 0}
+.corpo{padding:8px 16px 96px}
+
+.gruppo-et{font-size:.7rem; font-weight:700; color:var(--m-muted,var(--muted)); text-transform:uppercase; letter-spacing:.06em; margin:16px 6px 7px}
+.gruppo{background:var(--m-surface,var(--surface)); border-radius:16px; overflow:hidden}
+.riga{display:flex; align-items:center; gap:10px; width:100%; border:0; background:transparent; color:inherit; font-family:inherit; text-align:left; padding:13px 14px; cursor:pointer; border-bottom:1px solid var(--m-line,var(--line))}
+.riga:last-child{border-bottom:0}
+.riga .nome{flex:1; min-width:0; font-size:.9rem; font-weight:600}
+.riga .ora{font-size:.86rem; color:var(--m-muted,var(--muted)); font-variant-numeric:tabular-nums}
+.riga .chev{color:var(--m-muted,var(--muted)); font-size:1rem; opacity:.6}
+.riga.statica{cursor:default}
+
+/* proposta Fasce */
+.fascia{display:grid; grid-template-columns:52px 1fr auto; gap:0 12px; align-items:center}
+.fascia .t{font-size:.92rem; font-weight:700; font-variant-numeric:tabular-nums}
+.fascia .info{min-width:0}
+.fascia .info .nome{display:block; font-size:.9rem; font-weight:600}
+.fascia .info .fino{display:block; font-size:.72rem; color:var(--m-muted,var(--muted)); margin-top:2px; font-variant-numeric:tabular-nums}
+
+.badge{display:inline-block; font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:2px 6px; border-radius:6px; background:color-mix(in srgb, var(--m-accent,var(--accent)) 18%, transparent); color:var(--m-accent,var(--accent)); margin-left:6px; vertical-align:2px}
+.prima{font-size:.72rem; color:var(--m-muted,var(--muted)); display:block; margin-top:2px}
+
+.agg-btn{display:flex; align-items:center; gap:8px; width:100%; margin-top:10px; border:1.5px dashed var(--m-line,var(--line)); background:transparent; color:var(--m-accent,var(--accent)); font-family:inherit; font-size:.88rem; font-weight:700; padding:12px 14px; border-radius:14px; cursor:pointer}
+
+.cambio{display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--m-line,var(--line))}
+.cambio:last-child{border-bottom:0}
+.cambio .txt{flex:1; min-width:0; font-size:.84rem; line-height:1.35}
+.cambio .txt small{display:block; color:var(--m-muted,var(--muted)); font-size:.72rem}
+.link-btn{border:0; background:transparent; color:var(--m-accent,var(--accent)); font-family:inherit; font-size:.8rem; font-weight:700; cursor:pointer; padding:4px 2px; flex:none}
+.link-btn.warn{color:var(--m-warn,var(--warn))}
+
+.schede{display:flex; gap:6px; overflow-x:auto; margin:4px 0 2px; padding-bottom:2px}
+.scheda{flex:none; border:1.5px solid var(--m-line,var(--line)); background:transparent; color:var(--m-fg,var(--fg)); font-family:inherit; font-size:.78rem; font-weight:700; padding:7px 12px; border-radius:999px; cursor:pointer}
+.scheda.on{border-color:var(--m-accent-strong,var(--accent-strong)); background:color-mix(in srgb, var(--m-accent-strong,var(--accent-strong)) 14%, transparent)}
+.nota-scheda{font-size:.74rem; color:var(--m-muted,var(--muted)); margin:8px 6px 0; line-height:1.4}
+.tolti{margin-top:10px; font-size:.78rem; color:var(--m-muted,var(--muted)); padding:0 6px; line-height:1.5}
+.tolti s{color:var(--m-fg,var(--fg))}
+
+/* toast */
+.toast{
+  position:absolute; left:14px; right:14px; bottom:14px; z-index:30;
+  background:color-mix(in srgb, var(--m-surface,var(--surface)) 88%, transparent);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--m-line,var(--line)); border-radius:16px;
+  padding:11px 13px; display:flex; align-items:center; gap:9px; box-shadow:0 10px 24px -14px rgba(0,0,0,.4);
+  transform:translateY(140%); transition:transform .22s ease;
+}
+.toast.show{transform:translateY(0)}
+.toast .ic{width:22px; height:22px; border-radius:50%; background:var(--m-accent-strong,var(--accent-strong)); flex:none; display:flex; align-items:center; justify-content:center}
+.toast .ic.warn{background:var(--m-warn,var(--warn))}
+.toast .ic svg{width:12px; height:12px; stroke:#fff; fill:none; stroke-width:3}
+.toast .tt{font-size:.8rem; font-weight:600; flex:1; min-width:0; line-height:1.35}
+
+/* sheet */
+.sheet-overlay{position:absolute; inset:0; z-index:40; background:rgba(0,0,0,.3); display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .18s}
+.sheet-overlay.show{opacity:1; pointer-events:auto}
+.sheet{width:100%; max-height:92%; overflow-y:auto; background:var(--m-surface,var(--surface)); color:var(--m-fg,var(--fg)); border-radius:22px 22px 0 0; padding:10px 18px 18px; transform:translateY(14px); transition:transform .18s}
+.sheet-overlay.show .sheet{transform:translateY(0)}
+.maniglia{width:34px; height:4px; border-radius:99px; background:var(--m-line,var(--line)); margin:0 auto 14px}
+.sheet h3{font-size:1rem; font-weight:800; margin:0 0 4px; line-height:1.3}
+.sheet p.sub{font-size:.78rem; color:var(--m-muted,var(--muted)); line-height:1.45; margin:0 0 14px}
+.campo{margin-bottom:12px}
+.campo label{font-size:.74rem; font-weight:700; color:var(--m-muted,var(--muted)); display:block; margin-bottom:6px}
+.campo input{width:100%; border:1.5px solid var(--m-line,var(--line)); border-radius:12px; padding:10px 12px; font-family:inherit; font-size:.92rem; background:var(--m-bg,var(--bg)); color:var(--m-fg,var(--fg)); -webkit-appearance:none; appearance:none; min-height:44px}
+.campo input:focus{outline:none; border-color:var(--m-accent-strong,var(--accent-strong))}
+.campo .prima{margin-top:5px}
+.errore{font-size:.76rem; color:var(--m-warn,var(--warn)); font-weight:600; margin:5px 0 0}
+.opz{display:block; width:100%; text-align:left; border:1.5px solid var(--m-line,var(--line)); background:transparent; color:var(--m-fg,var(--fg)); border-radius:14px; font-family:inherit; padding:12px 14px; margin-bottom:8px; cursor:pointer}
+.opz .o-t{display:block; font-size:.9rem; font-weight:700}
+.opz .o-s{display:block; font-size:.76rem; color:var(--m-muted,var(--muted)); margin-top:3px; line-height:1.4}
+.opz.sel{border-color:var(--m-accent-strong,var(--accent-strong)); background:color-mix(in srgb, var(--m-accent-strong,var(--accent-strong)) 12%, transparent)}
+.opz-data{margin:-2px 0 10px 0}
+.avviso{border-radius:14px; padding:12px 14px; background:color-mix(in srgb, var(--m-warn,var(--warn)) 12%, transparent); font-size:.82rem; line-height:1.5; margin-bottom:6px}
+.avviso b{font-variant-numeric:tabular-nums}
+.btn-p{width:100%; margin-top:8px; border:0; border-radius:14px; background:var(--m-accent-strong,var(--accent-strong)); color:#fff; font-weight:700; font-size:.9rem; padding:12px; font-family:inherit; cursor:pointer}
+.btn-p.warn{background:var(--m-warn,var(--warn))}
+.btn-p:disabled{opacity:.4; cursor:default}
+.btn-s{width:100%; margin-top:8px; border:1px solid var(--m-line,var(--line)); background:transparent; color:var(--m-muted,var(--muted)); border-radius:14px; font-weight:600; font-size:.86rem; padding:11px; font-family:inherit; cursor:pointer}
+.btn-elimina{width:100%; margin-top:14px; border:0; background:transparent; color:var(--m-warn,var(--warn)); font-family:inherit; font-size:.88rem; font-weight:700; padding:10px; cursor:pointer}
+.btn-elimina:disabled{color:var(--m-muted,var(--muted)); cursor:default}
+.nota-piccola{font-size:.74rem; color:var(--m-muted,var(--muted)); text-align:center; margin:2px 0 0}
+
+/* primo avvio */
+.oggi-head{padding:18px 18px 4px; text-align:center}
+.oggi-head p{margin:0; font-size:.86rem; font-weight:700}
+.anello{width:150px; height:150px; border-radius:50%; border:12px solid var(--m-line,var(--line)); margin:20px auto 22px; display:flex; align-items:center; justify-content:center; color:var(--m-muted,var(--muted)); font-size:1.4rem; font-weight:800}
+.offline{margin:0 18px; background:var(--m-surface,var(--surface)); border-radius:18px; padding:18px; text-align:center}
+.offline svg{width:30px; height:30px; stroke:var(--m-muted,var(--muted)); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.offline h4{margin:8px 0 6px; font-size:.98rem}
+.offline p{margin:0 0 12px; font-size:.8rem; color:var(--m-muted,var(--muted)); line-height:1.5}
+.confronto{margin:14px 18px 0; font-size:.74rem; color:var(--m-muted,var(--muted)); line-height:1.45; text-align:center}
+
+.side{max-width:420px; flex:1; min-width:260px}
+.side h4{font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:4px 0 8px; font-weight:700}
+.side p{font-size:.88rem; line-height:1.6; margin:0 0 14px}
+.side ol, .side ul{margin:0 0 16px; padding-left:19px; font-size:.86rem; line-height:1.65}
+.side li{margin-bottom:3px}
+.side code{background:var(--surface); border:1px solid var(--line); border-radius:5px; padding:1px 5px; font-size:.82em}
+.sezione2{margin-top:40px}
+.sezione2 h2{font-size:1.05rem; margin:0 0 4px}
+footer{margin-top:36px; padding-top:18px; border-top:1px solid var(--line); font-size:.8rem; color:var(--muted); line-height:1.6; max-width:76ch}
+@media (prefers-reduced-motion: reduce){ .toast,.sheet,.sheet-overlay{transition:none} }
+</style>
+
+<h1>Pasti e orari</h1>
+<p class="lede">Mockup della nuova pagina in <b>Impostazioni › Alimentazione</b>. Oggi nel mockup è
+<b>mercoledì 7 ottobre</b>. Tocca un pasto per rinominarlo, cambiarne l'ora o eliminarlo; aggiungine uno
+dal pulsante in fondo. Ogni modifica al nome, ogni aggiunta e ogni eliminazione chiede <b>da quando
+vale</b>; l'orario vale subito. Prova anche una data futura, per vedere i cambi programmati.</p>
+
+<div class="toolbar">
+  <div class="tb-riga">
+    <span>Elenco</span>
+    <div class="seg" id="seg-elenco">
+      <button data-v="righe" aria-pressed="true">A · Righe</button>
+      <button data-v="fasce" aria-pressed="false">B · Fasce orarie</button>
+    </div>
+  </div>
+  <div class="tb-riga">
+    <span>Cambi in arrivo</span>
+    <div class="seg" id="seg-cambi">
+      <button data-v="elenco" aria-pressed="false">1 · Elenco dei cambi</button>
+      <button data-v="schede" aria-pressed="true">2 · Schede per data</button>
+    </div>
+  </div>
+  <div class="tb-riga">
+    <span>Tema</span>
+    <div class="seg" id="seg-tema">
+      <button data-tema="system" aria-pressed="true">Sistema</button>
+      <button data-tema="light" aria-pressed="false">Chiaro</button>
+      <button data-tema="dark" aria-pressed="false">Scuro</button>
+    </div>
+    <button class="ghost-btn" id="btn-reset">Ricomincia</button>
+  </div>
+</div>
+
+<div class="main-grid" id="app-root">
+  <div class="phone" id="phone">
+    <div class="ph-head">
+      <p class="indietro">‹ Impostazioni</p>
+      <h2 class="ph-titolo">Pasti e orari</h2>
+      <p class="ph-intro">Ogni pasto inizia alla sua ora e dura fino al successivo. Quando registri per oggi,
+      l'app propone il pasto in corso.</p>
+    </div>
+    <div class="corpo" id="corpo"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <div class="ic" id="toast-ic"></div>
+      <div class="tt" id="toast-txt"></div>
+      <button type="button" class="link-btn" id="toast-annulla">Annulla</button>
+    </div>
+    <div class="sheet-overlay" id="overlay">
+      <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <h4>Cosa scegliere</h4>
+    <ul>
+      <li><b>Elenco A o B.</b> A è una lista semplice, come le altre pagine di Impostazioni. B mostra
+      ogni pasto come una fascia della giornata ("fino alle 10:00"): si capisce subito cosa proporrà
+      l'app a una certa ora.</li>
+      <li><b>Cambi in arrivo 1 o 2.</b> Con 1, sotto l'elenco compare "Cambi in arrivo" con un riga per
+      ogni cambio e il suo Annulla. Con 2, in cima compaiono delle schede ("Oggi", "Dal lun 12 ott") e
+      ogni scheda mostra i pasti come saranno quel giorno. Le schede compaiono solo se c'è un cambio
+      programmato.</li>
+    </ul>
+    <h4>Da provare</h4>
+    <ol>
+      <li><b>Rinomina "Pranzo"</b> in "Pranzo 1" e prova le tre scelte: Correggi, Da oggi, Da una data.</li>
+      <li><b>Elimina "Spuntino mattina"</b> scegliendo "Anche nei giorni passati": l'avviso dice quante
+      voci e quanti giorni tocca.</li>
+      <li><b>Elimina "Colazione" da oggi</b>: oggi ha già 2 voci, quindi chiede conferma anche lì.</li>
+      <li><b>Cambia l'ora</b> di un pasto in un'ora già usata (es. Cena alle 12:30): l'errore lo blocca.</li>
+      <li><b>Aggiungi "Spuntino sera"</b> alle 21:30 da lunedì prossimo, poi annullalo dai cambi in arrivo.</li>
+    </ol>
+    <h4>Da confermare</h4>
+    <ul>
+      <li><b>La prima scelta cambia nome secondo l'azione.</b> Per rinominare è "Correggi", come deciso.
+      Per eliminare e aggiungere "Correggi" suonerebbe strano, quindi è "Anche nei giorni passati". Il
+      comportamento è lo stesso.</li>
+      <li><b>Annulla dopo ogni modifica ai pasti</b> (deciso il 7/10), nella barra in basso come nel diario. L'eliminazione di un pasto con voci chiede anche conferma prima.</li>
+      <li><b>Una rinomina programmata si mostra come "Pranzo → Pranzo 1"</b> e si annulla con un tocco.
+      Per farlo l'app deve sapere che le due righe sono lo stesso pasto: col modello C oggi non c'è
+      niente che le colleghi. Ne parliamo al passo 5.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="sezione2">
+  <h2>Primo avvio senza rete</h2>
+  <p class="lede">Compare solo su un telefono o browser vuoto (iPhone nuovo, Safari in navigazione
+  privata) aperto senza internet. Senza rete l'app non può controllare quali pasti hai già, e non li
+  crea più a occhi chiusi.</p>
+  <div class="main-grid">
+    <div class="phone piccolo">
+      <div class="oggi-head"><p>Mercoledì 7 ott</p></div>
+      <div class="anello">—</div>
+      <div class="offline">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M8.5 8.6A6 6 0 0 0 6 13a4 4 0 0 0 1 7.9h10.5"/><path d="M20.4 17.5A4 4 0 0 0 17.5 11 6 6 0 0 0 10 6.2"/></svg>
+        <h4>Serve la connessione</h4>
+        <p>Al primo avvio l'app scarica i tuoi pasti. Collegati a internet: riprova da sola appena torna la rete.</p>
+        <button class="btn-p" type="button">Riprova</button>
+      </div>
+      <p class="confronto">Oggi al suo posto c'è "Preparo i tuoi pasti…", che gira all'infinito.</p>
+    </div>
+    <div class="side">
+      <h4>Perché c'è</h4>
+      <p>È il prezzo della correzione del seed: l'app crea i 5 pasti predefiniti solo dopo aver visto sul
+      server che non ne hai. Una volta scaricati i pasti, l'app funziona offline come oggi. Nell'uso
+      normale questa schermata non si vede mai.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Mockup per <b>nutritrack</b>, nessuna riga di codice. I numeri delle voci sono inventati per la prova.
+  Le modifiche restano solo in questa pagina; "Ricomincia" riporta i 5 pasti predefiniti.
+</footer>
+
+<script>
+var OGGI = '2026-10-07';
+var seq = 1;
+var righe;
+var vistaElenco = 'righe', vistaCambi = 'schede', schedaSel = OGGI;
+
+function iniziali(){
+  return [
+    {id:'col', nome:'Colazione', ora:'06:00', dal:null, al:null, v:{n:38, g:17, kcal:9120, oggi:2, oggiKcal:410}},
+    {id:'spm', nome:'Spuntino mattina', ora:'10:00', dal:null, al:null, v:{n:12, g:10, kcal:1540, oggi:0, oggiKcal:0}},
+    {id:'pra', nome:'Pranzo', ora:'12:30', dal:null, al:null, v:{n:41, g:17, kcal:13870, oggi:0, oggiKcal:0}},
+    {id:'spp', nome:'Spuntino pomeriggio', ora:'16:00', dal:null, al:null, v:{n:9, g:8, kcal:1210, oggi:0, oggiKcal:0}},
+    {id:'cen', nome:'Cena', ora:'19:30', dal:null, al:null, v:{n:32, g:16, kcal:11960, oggi:0, oggiKcal:0}}
+  ];
+}
+righe = iniziali();
+
+/* ---------- date ---------- */
+function piuGiorni(s, n){ var d = new Date(s+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+var GG = ['dom','lun','mar','mer','gio','ven','sab'];
+var MM = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function fmt(s){ var d = new Date(s+'T00:00:00Z'); return GG[d.getUTCDay()]+' '+d.getUTCDate()+' '+MM[d.getUTCMonth()]; }
+function prossimoLunedi(){ var d = new Date(OGGI+'T00:00:00Z'); var add = (8 - d.getUTCDay()) % 7 || 7; return piuGiorni(OGGI, add); }
+function num(n){ return n.toLocaleString('it-IT'); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* ---------- modello C ---------- */
+function validi(D){
+  return righe.filter(function(r){ return (!r.dal || r.dal <= D) && (!r.al || D <= r.al); })
+    .sort(function(a,b){ return a.ora < b.ora ? -1 : a.ora > b.ora ? 1 : 0; });
+}
+function trova(id){ return righe.filter(function(r){ return r.id === id; })[0]; }
+function nuovaRiga(o){ o.id = 'n'+(seq++); o.v = o.v || {n:0,g:0,kcal:0,oggi:0,oggiKcal:0}; righe.push(o); return o; }
+
+function cambiProgrammati(){
+  var lista = [];
+  righe.forEach(function(r){
+    if(r.dal && r.dal > OGGI){
+      if(r.sost){ var vecchia = trova(r.sost); lista.push({data:r.dal, tipo:'rinomina', nuova:r, vecchia:vecchia}); }
+      else lista.push({data:r.dal, tipo:'nuovo', nuova:r});
+    }
+  });
+  righe.forEach(function(r){
+    if(r.al && r.al >= OGGI){
+      var d = piuGiorni(r.al, 1);
+      var coperto = righe.some(function(x){ return x.sost === r.id && x.dal === d; });
+      if(!coperto) lista.push({data:d, tipo:'elimina', vecchia:r});
+    }
+  });
+  lista.sort(function(a,b){ return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
+  return lista;
+}
+function dateProgrammate(){
+  var ds = []; cambiProgrammati().forEach(function(c){ if(ds.indexOf(c.data) === -1) ds.push(c.data); }); return ds;
+}
+function annullaCambio(c){
+  if(c.tipo === 'nuovo'){ righe = righe.filter(function(r){ return r !== c.nuova; }); }
+  else if(c.tipo === 'rinomina'){ righe = righe.filter(function(r){ return r !== c.nuova; }); c.vecchia.al = null; }
+  else if(c.tipo === 'elimina'){ c.vecchia.al = null; }
+  fotografia = null; toast('Cambio annullato', 'ok');
+  render();
+}
+
+/* ---------- render ---------- */
+var corpo = document.getElementById('corpo');
+
+function fino(lista, i){ return i < lista.length - 1 ? 'fino alle '+lista[i+1].ora : 'fino a mezzanotte'; }
+
+function htmlRigaPasto(r, i, lista, opz){
+  var badge = '', prima = '';
+  if(opz && opz.marca){
+    if(opz.marca[r.id] === 'nuovo') badge = '<span class="badge">nuovo</span>';
+    if(opz.marca[r.id] && opz.marca[r.id].rinomina){ badge = '<span class="badge">nome nuovo</span>'; prima = '<span class="prima">prima: '+esc(opz.marca[r.id].rinomina)+'</span>'; }
+  }
+  var statica = opz && opz.statica;
+  var attr = statica ? 'class="riga statica" tabindex="-1"' : 'class="riga" data-id="'+r.id+'"';
+  if(vistaElenco === 'fasce'){
+    return '<button type="button" '+attr.replace('class="riga', 'class="riga fascia')+'>'+
+      '<span class="t">'+r.ora+'</span>'+
+      '<span class="info"><span class="nome">'+esc(r.nome)+badge+'</span><span class="fino">'+fino(lista,i)+'</span>'+prima+'</span>'+
+      (statica ? '<span></span>' : '<span class="chev">›</span>')+'</button>';
+  }
+  return '<button type="button" '+attr+'>'+
+    '<span class="nome">'+esc(r.nome)+badge+prima+'</span><span class="ora">'+r.ora+'</span>'+
+    (statica ? '' : '<span class="chev">›</span>')+'</button>';
+}
+
+function render(){
+  var date = dateProgrammate();
+  if(date.indexOf(schedaSel) === -1) schedaSel = OGGI;
+  var h = '';
+
+  if(vistaCambi === 'schede' && date.length){
+    h += '<div class="schede">';
+    h += '<button type="button" class="scheda'+(schedaSel===OGGI?' on':'')+'" data-scheda="'+OGGI+'">Oggi</button>';
+    date.forEach(function(d){ h += '<button type="button" class="scheda'+(schedaSel===d?' on':'')+'" data-scheda="'+d+'">Dal '+fmt(d)+'</button>'; });
+    h += '</div>';
+  }
+
+  if(vistaCambi === 'schede' && schedaSel !== OGGI){
+    var lista = validi(schedaSel);
+    var cambi = cambiProgrammati().filter(function(c){ return c.data === schedaSel; });
+    var marca = {};
+    cambi.forEach(function(c){
+      if(c.tipo === 'nuovo') marca[c.nuova.id] = 'nuovo';
+      if(c.tipo === 'rinomina') marca[c.nuova.id] = {rinomina:c.vecchia.nome};
+    });
+    h += '<p class="nota-scheda">Così saranno i tuoi pasti da '+fmt(schedaSel)+'. Si modificano dalla scheda Oggi.</p>';
+    h += '<div class="gruppo-et">Dal '+fmt(schedaSel)+'</div><div class="gruppo">';
+    lista.forEach(function(r,i){ h += htmlRigaPasto(r,i,lista,{statica:true, marca:marca}); });
+    h += '</div>';
+    var tolti = cambi.filter(function(c){ return c.tipo === 'elimina'; });
+    if(tolti.length){ h += '<p class="tolti">Non ci sarà più: '+tolti.map(function(c){ return '<s>'+esc(c.vecchia.nome)+'</s>'; }).join(', ')+'</p>'; }
+    h += '<div class="gruppo-et">Cambi di questa data</div><div class="gruppo">';
+    cambi.forEach(function(c, k){ h += htmlCambio(c, k); });
+    h += '</div>';
+    corpo.innerHTML = h; legaEventi(cambi); return;
+  }
+
+  var oggiLista = validi(OGGI);
+  h += '<div class="gruppo-et">'+(vistaCambi === 'schede' && date.length ? 'Oggi, '+fmt(OGGI) : 'I tuoi pasti')+'</div><div class="gruppo">';
+  oggiLista.forEach(function(r,i){ h += htmlRigaPasto(r,i,oggiLista); });
+  h += '</div>';
+  h += '<button type="button" class="agg-btn" id="btn-agg">+ Aggiungi pasto</button>';
+
+  var tuttiCambi = cambiProgrammati();
+  if(vistaCambi === 'elenco' && tuttiCambi.length){
+    var perData = {};
+    tuttiCambi.forEach(function(c){ (perData[c.data] = perData[c.data] || []).push(c); });
+    Object.keys(perData).sort().forEach(function(d){
+      h += '<div class="gruppo-et">In arrivo dal '+fmt(d)+'</div><div class="gruppo">';
+      perData[d].forEach(function(c){ h += htmlCambio(c, tuttiCambi.indexOf(c)); });
+      h += '</div>';
+    });
+  }
+  corpo.innerHTML = h;
+  legaEventi(tuttiCambi);
+}
+
+function htmlCambio(c, k){
+  var t = '';
+  if(c.tipo === 'nuovo') t = 'Nuovo pasto: <b>'+esc(c.nuova.nome)+'</b><small>inizia alle '+c.nuova.ora+'</small>';
+  if(c.tipo === 'rinomina') t = '<b>'+esc(c.vecchia.nome)+'</b> → <b>'+esc(c.nuova.nome)+'</b><small>nome nuovo</small>';
+  if(c.tipo === 'elimina') t = '<b>'+esc(c.vecchia.nome)+'</b> non ci sarà più<small>i giorni prima restano come sono</small>';
+  return '<div class="cambio"><div class="txt">'+t+'</div><button type="button" class="link-btn" data-annulla="'+k+'">Annulla</button></div>';
+}
+
+function legaEventi(cambi){
+  corpo.querySelectorAll('[data-id]').forEach(function(b){ b.onclick = function(){ apriModifica(trova(b.dataset.id)); }; });
+  corpo.querySelectorAll('[data-scheda]').forEach(function(b){ b.onclick = function(){ schedaSel = b.dataset.scheda; render(); }; });
+  corpo.querySelectorAll('[data-annulla]').forEach(function(b){ b.onclick = function(){ annullaCambio(cambi[+b.dataset.annulla]); }; });
+  var agg = document.getElementById('btn-agg'); if(agg) agg.onclick = apriAggiungi;
+}
+
+/* ---------- toast ---------- */
+var toastTimer, fotografia = null;
+function toast(testo, tipo){
+  var el = document.getElementById('toast'), ic = document.getElementById('toast-ic');
+  document.getElementById('toast-txt').textContent = testo;
+  ic.className = 'ic' + (tipo === 'elimina' ? ' warn' : '');
+  ic.innerHTML = tipo === 'elimina' ? '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M5 13l4 4 10-10"/></svg>';
+  el.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); fotografia = null; }, 3200);
+  document.getElementById('toast-annulla').hidden = !fotografia;
+}
+document.getElementById('toast-annulla').onclick = function(){
+  if(!fotografia) return;
+  righe = fotografia; fotografia = null; render();
+  toast('Modifica annullata', 'ok');
+};
+
+/* ---------- sheet ---------- */
+var overlay = document.getElementById('overlay'), sheet = document.getElementById('sheet');
+function apriSheet(html, lega){
+  sheet.innerHTML = '<div class="maniglia"></div>' + html;
+  overlay.classList.add('show');
+  overlay.onclick = function(e){ if(e.target === overlay) chiudi(); };
+  lega(sheet);
+}
+function chiudi(){ overlay.classList.remove('show'); }
+
+function controllaOra(ora, D, escludi){
+  var occupato = validi(D).filter(function(r){ return r !== escludi && r.ora === ora; })[0];
+  return occupato ? 'Alle '+ora+' inizia già '+occupato.nome+'. Scegli un altro orario.' : '';
+}
+function controllaNome(nome, D, escludi){
+  if(!nome) return 'Scrivi un nome.';
+  var uguale = validi(D).some(function(r){ return r !== escludi && r.nome === nome; });
+  return uguale ? 'C\'è già un pasto con questo nome.' : '';
+}
+
+/* Modifica: nome, ora, elimina */
+function apriModifica(r){
+  var unico = validi(OGGI).length === 1;
+  apriSheet(
+    '<h3>'+esc(r.nome)+'</h3><p class="sub">Inizia alle '+r.ora+'. Il nuovo nome chiede da quando vale; il nuovo orario vale subito.</p>'+
+    '<div class="campo"><label for="m-nome">Nome</label><input id="m-nome" value="'+esc(r.nome)+'" autocomplete="off"><p class="errore" id="e-nome"></p></div>'+
+    '<div class="campo"><label for="m-ora">Inizia alle</label><input id="m-ora" type="time" value="'+r.ora+'"><p class="errore" id="e-ora"></p></div>'+
+    '<button type="button" class="btn-p" id="m-salva">Salva</button>'+
+    '<button type="button" class="btn-s" id="m-chiudi">Annulla</button>'+
+    '<button type="button" class="btn-elimina" id="m-elimina"'+(unico?' disabled':'')+'>Elimina pasto</button>'+
+    (unico ? '<p class="nota-piccola">È l\'unico pasto: almeno uno deve restare.</p>' : ''),
+    function(s){
+      s.querySelector('#m-chiudi').onclick = chiudi;
+      s.querySelector('#m-elimina').onclick = function(){ apriDaQuando('elimina', r); };
+      s.querySelector('#m-salva').onclick = function(){
+        var nome = s.querySelector('#m-nome').value.trim();
+        var ora = s.querySelector('#m-ora').value;
+        var eN = nome !== r.nome ? controllaNome(nome, OGGI, r) : '';
+        var eO = ora !== r.ora ? controllaOra(ora, OGGI, r) : '';
+        s.querySelector('#e-nome').textContent = eN; s.querySelector('#e-ora').textContent = eO;
+        if(eN || eO) return;
+        var cambiaOra = ora !== r.ora, cambiaNome = nome !== r.nome;
+        if(!cambiaOra && !cambiaNome){ chiudi(); return; }
+        if(cambiaOra){ fotografia = JSON.parse(JSON.stringify(righe)); trova(r.id).ora = ora; r = trova(r.id); }
+        if(cambiaNome){ render(); apriDaQuando('rinomina', r, {nome:nome, ancheOra:cambiaOra}); return; }
+        chiudi(); render(); toast(r.nome+' ora inizia alle '+ora+'. Vale da subito.', 'ok');
+      };
+    });
+}
+
+function apriAggiungi(){
+  apriSheet(
+    '<h3>Nuovo pasto</h3><p class="sub">Comparirà in Oggi nella sua posizione, in base all\'orario.</p>'+
+    '<div class="campo"><label for="a-nome">Nome</label><input id="a-nome" placeholder="Es. Spuntino sera" autocomplete="off"><p class="errore" id="e-nome"></p></div>'+
+    '<div class="campo"><label for="a-ora">Inizia alle</label><input id="a-ora" type="time" value="21:30"><p class="errore" id="e-ora"></p></div>'+
+    '<button type="button" class="btn-p" id="a-avanti">Continua</button>'+
+    '<button type="button" class="btn-s" id="a-chiudi">Annulla</button>',
+    function(s){
+      s.querySelector('#a-chiudi').onclick = chiudi;
+      s.querySelector('#a-avanti').onclick = function(){
+        var nome = s.querySelector('#a-nome').value.trim(), ora = s.querySelector('#a-ora').value;
+        var eN = controllaNome(nome, OGGI, null), eO = ora ? controllaOra(ora, OGGI, null) : 'Scegli un orario.';
+        s.querySelector('#e-nome').textContent = eN; s.querySelector('#e-ora').textContent = eO;
+        if(eN || eO) return;
+        apriDaQuando('aggiungi', null, {nome:nome, ora:ora});
+      };
+    });
+}
+
+/* La domanda "da quando" */
+function apriDaQuando(azione, r, extra){
+  var titolo, opz;
+  if(azione === 'rinomina'){
+    titolo = '"'+esc(r.nome)+'" diventa "'+esc(extra.nome)+'"';
+    opz = [
+      {k:'tutto', t:'Correggi', s:'Vale anche per i giorni passati: dove c\'era "'+esc(r.nome)+'" leggerai "'+esc(extra.nome)+'".'},
+      {k:'oggi', t:'Da oggi', s:'Fino a ieri resta "'+esc(r.nome)+'".'},
+      {k:'data', t:'Da una data', s:'Per un cambio dieta già deciso. Fino al giorno prima resta "'+esc(r.nome)+'".'}
+    ];
+  } else if(azione === 'elimina'){
+    titolo = 'Eliminare "'+esc(r.nome)+'"?';
+    opz = [
+      {k:'tutto', t:'Anche nei giorni passati', s:'Sparisce ovunque, insieme alle sue voci.'},
+      {k:'oggi', t:'Da oggi', s:'I giorni passati restano come sono.'+(r.v.oggi ? ' Le voci di oggi vengono eliminate.' : '')},
+      {k:'data', t:'Da una data', s:'Resta fino al giorno prima, poi non compare più.'}
+    ];
+  } else {
+    titolo = 'Da quando c\'è "'+esc(extra.nome)+'"?';
+    opz = [
+      {k:'tutto', t:'Anche nei giorni passati', s:'Compare vuoto anche nei giorni già registrati.'},
+      {k:'oggi', t:'Da oggi', s:'I giorni passati restano come sono.'},
+      {k:'data', t:'Da una data', s:'Per un cambio dieta già deciso.'}
+    ];
+  }
+  var scelta = azione === 'rinomina' || azione === 'aggiungi' ? 'oggi' : null;
+  var dataScelta = prossimoLunedi();
+  var domani = piuGiorni(OGGI, 1);
+
+  function etichettaBottone(){
+    if(azione === 'rinomina') return 'Rinomina';
+    if(azione === 'aggiungi') return 'Aggiungi pasto';
+    return voceToccate(scelta) ? 'Continua' : 'Elimina pasto';
+  }
+  function disegna(){
+    var h = '<h3>'+titolo+'</h3><p class="sub">Da quando vale?</p>';
+    opz.forEach(function(o){
+      h += '<button type="button" class="opz'+(scelta===o.k?' sel':'')+'" data-k="'+o.k+'"><span class="o-t">'+o.t+'</span><span class="o-s">'+o.s+'</span></button>';
+      if(o.k === 'data' && scelta === 'data'){
+        h += '<div class="campo opz-data"><label for="dq-data">Dal giorno</label><input id="dq-data" type="date" min="'+domani+'" value="'+dataScelta+'"></div>';
+      }
+    });
+    h += '<button type="button" class="btn-p'+(azione==='elimina'?' warn':'')+'" id="dq-ok"'+(scelta?'':' disabled')+'>'+etichettaBottone()+'</button>';
+    h += '<button type="button" class="btn-s" id="dq-no">Annulla</button>';
+    sheet.innerHTML = '<div class="maniglia"></div>' + h;
+    sheet.querySelectorAll('[data-k]').forEach(function(b){ b.onclick = function(){ scelta = b.dataset.k; disegna(); }; });
+    var inp = sheet.querySelector('#dq-data'); if(inp) inp.onchange = function(){ if(inp.value && inp.value >= domani) dataScelta = inp.value; };
+    sheet.querySelector('#dq-no').onclick = chiudi;
+    sheet.querySelector('#dq-ok').onclick = function(){
+      if(!scelta) return;
+      if(azione === 'elimina' && voceToccate(scelta)){ apriConferma(r, scelta); return; }
+      applica(azione, r, extra, scelta, dataScelta);
+    };
+  }
+  function voceToccate(k){ if(!r) return 0; return k === 'tutto' ? r.v.n : k === 'oggi' ? r.v.oggi : 0; }
+  overlay.classList.add('show');
+  overlay.onclick = function(e){ if(e.target === overlay) chiudi(); };
+  disegna();
+}
+
+function apriConferma(r, scelta){
+  var tutto = scelta === 'tutto';
+  var n = tutto ? r.v.n : r.v.oggi, kcal = tutto ? r.v.kcal : r.v.oggiKcal;
+  var dove = tutto ? 'in <b>'+r.v.g+' giorni</b>' : '<b>oggi</b>';
+  apriSheet(
+    '<h3>Eliminare anche '+n+' voc'+(n===1?'e':'i')+'?</h3>'+
+    '<div class="avviso">"'+esc(r.nome)+'" ha <b>'+n+' voc'+(n===1?'e':'i')+'</b> '+dove+', per <b>'+num(kcal)+' kcal</b>. '+
+    'Verranno eliminate e i totali '+(tutto?'di quei giorni':'di oggi')+' scenderanno.<br><b>Non si può annullare.</b></div>'+
+    '<button type="button" class="btn-p warn" id="c-ok">Elimina pasto e '+n+' voc'+(n===1?'e':'i')+'</button>'+
+    '<button type="button" class="btn-s" id="c-no">Annulla</button>',
+    function(s){
+      s.querySelector('#c-no').onclick = chiudi;
+      s.querySelector('#c-ok').onclick = function(){ applica('elimina', r, null, scelta); };
+    });
+}
+
+function applica(azione, r, extra, scelta, data){
+  fotografia = JSON.parse(JSON.stringify(righe));
+  var ieri = piuGiorni(OGGI, -1);
+  if(azione === 'rinomina'){
+    var vecchio = r.nome;
+    if(scelta === 'tutto'){ r.nome = extra.nome; toast('Rinominato: '+vecchio+' → '+extra.nome+', anche nei giorni passati', 'ok'); }
+    else if(scelta === 'oggi'){
+      r.al = ieri;
+      var nu = nuovaRiga({nome:extra.nome, ora:r.ora, dal:OGGI, al:null, sost:r.id});
+      nu.v = {n:r.v.oggi, g:r.v.oggi?1:0, kcal:r.v.oggiKcal, oggi:r.v.oggi, oggiKcal:r.v.oggiKcal};
+      toast('Rinominato da oggi: '+vecchio+' → '+extra.nome, 'ok');
+    } else {
+      r.al = piuGiorni(data, -1);
+      nuovaRiga({nome:extra.nome, ora:r.ora, dal:data, al:null, sost:r.id});
+      toast('Programmato dal '+fmt(data)+': '+vecchio+' → '+extra.nome, 'ok');
+    }
+  } else if(azione === 'elimina'){
+    if(scelta === 'tutto'){
+      righe = righe.filter(function(x){ return x !== r; });
+      toast('Eliminato: '+r.nome+(r.v.n ? ' e '+r.v.n+' voci' : ''), 'elimina');
+    } else if(scelta === 'oggi'){
+      r.al = ieri;
+      toast('Eliminato da oggi: '+r.nome+(r.v.oggi ? ' e le '+r.v.oggi+' voci di oggi' : ''), 'elimina');
+    } else {
+      r.al = piuGiorni(data, -1);
+      toast('Programmato: '+r.nome+' non ci sarà più dal '+fmt(data), 'ok');
+    }
+  } else {
+    var dal = scelta === 'tutto' ? null : scelta === 'oggi' ? OGGI : data;
+    nuovaRiga({nome:extra.nome, ora:extra.ora, dal:dal, al:null});
+    toast(scelta === 'data' ? 'Programmato dal '+fmt(data)+': '+extra.nome : 'Aggiunto: '+extra.nome+' alle '+extra.ora, 'ok');
+  }
+  chiudi(); render();
+}
+
+/* ---------- barra degli strumenti ---------- */
+function segmento(id, fn){
+  var el = document.getElementById(id);
+  el.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+    fn(b);
+  });
+}
+segmento('seg-elenco', function(b){ vistaElenco = b.dataset.v; render(); });
+segmento('seg-cambi', function(b){ vistaCambi = b.dataset.v; schedaSel = OGGI; render(); });
+segmento('seg-tema', function(b){
+  var v = b.dataset.tema, r = document.documentElement;
+  if(v === 'system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', v);
+});
+document.getElementById('btn-reset').onclick = function(){ righe = iniziali(); schedaSel = OGGI; chiudi(); render(); };
+
+render();
+</script>
+
+</body>
+</html>

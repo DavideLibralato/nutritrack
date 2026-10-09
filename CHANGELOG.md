@@ -5,6 +5,37 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Coda di sincronizzazione: i genitori prima dei figli
+
+Branch `pagina-pasti`. Primo commit del passo 3 di "Pasti e orari"; da
+utente non cambia niente.
+
+- Bug trovato preparando la pagina: la coda partiva in ordine di
+  `creato_il`, ma riscrivere una riga già in coda le dà un `creato_il`
+  nuovo. Un genitore corretto dopo i suoi figli (alimento creato offline,
+  registrato, poi corretto; domani un pasto rinominato "da oggi" e poi
+  ritoccato) partiva dopo di loro: il server rifiutava il figlio per la
+  foreign key, la coda si fermava e dopo 5 giri il figlio veniva
+  accantonato. Non verificabile dal server: le voci accantonate restano
+  solo sul dispositivo (si vedono in Impostazioni > Sincronizzazione).
+- `ordinaOutbox`: prima per livello della tabella (foreign key lette dal
+  server il 9/10), poi `creato_il`, poi id.
+- Le scritture del repository si possono fare dentro una transazione
+  Dexie: la sync che fanno partire esce dalla transazione
+  (`Dexie.ignoreTransaction`). Serve alla rinomina "da oggi".
+- Test permanenti, provati anche a vuoto (falliscono togliendo la
+  correzione): `sincronizza.test.ts` (server finto con la foreign key),
+  `repository.transazione.test.ts`. 478 test verdi in 49 file.
+- Nello stesso commit il mockup `docs/mockups/pasti-e-orari.html`.
+
+## 2026-10-09 — Validità dei pasti unita a main
+
+Provata il 9/10 (voce 2b sotto) e unita a main con fast-forward da
+`9f98e29` a `66c25f1`, senza commit di merge: `c0d5ac4` (schema),
+`d3796d1` (i pasti del giorno in ogni schermata), `66c25f1` (i
+documenti). Branch `validita-pasti` cancellato, in locale e su GitHub.
+Deploy di produzione riuscito. 474 test verdi in 48 file.
+
 ## 2026-10-09 — Validità dei pasti, passo 2b: i pasti del giorno in ogni schermata
 
 Branch `validita-pasti`. Secondo commit del passo 2. Da utente non cambia

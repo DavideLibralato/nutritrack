@@ -17,11 +17,25 @@
 // in entrambi i casi la UI ha già la sua risposta, dal passo locale.
 // SincronizzaOutbox (mount + evento "online") resta la rete di sicurezza
 // per quando questo tentativo immediato non basta.
+//
+// Le scritture si possono fare anche dentro una db.transaction() (dal
+// 9/10/2026; la prima a usarla sarà la rinomina "da oggi" dei pasti): il
+// tentativo di sync parte con Dexie.ignoreTransaction, cioè FUORI dalla
+// transazione. Senza, la catena di promise della sync (che fa chiamate di
+// rete) resterebbe agganciata alla transazione, che IndexedDB chiude
+// appena si aspetta qualcosa che non è IndexedDB: la sync fallirebbe in
+// silenzio. Fuori, la sync legge la coda con una sua transazione, che
+// IndexedDB fa partire solo dopo la fine di quella in corso: vede tutte le
+// scritture, o nessuna se c'è stato un rollback.
 
-import type { Table } from "dexie";
+import Dexie, { type Table } from "dexie";
 import type { NomeTabella, RigaBase } from "../db/tipi";
 import { accodaMutazione } from "../sync/outbox";
 import { sincronizzaOutbox } from "../sync/sincronizza";
+
+function avviaSincronizzazione(): void {
+  Dexie.ignoreTransaction(() => sincronizzaOutbox()).catch(() => {});
+}
 
 export function creaRepository<T extends RigaBase>(
   tabella: Table<T, string>,
@@ -57,7 +71,7 @@ export function creaRepository<T extends RigaBase>(
 
     await tabella.put(riga);
     await accodaMutazione(nomeTabella, riga);
-    sincronizzaOutbox().catch(() => {});
+    avviaSincronizzazione();
 
     return riga;
   }
@@ -76,7 +90,7 @@ export function creaRepository<T extends RigaBase>(
 
     await tabella.put(riga);
     await accodaMutazione(nomeTabella, riga);
-    sincronizzaOutbox().catch(() => {});
+    avviaSincronizzazione();
 
     return riga;
   }
