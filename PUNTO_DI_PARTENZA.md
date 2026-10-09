@@ -2875,11 +2875,18 @@ non riceve voci da nessuna strada e il menu della voce dice "· non più in
 uso"; eliminata la voce, sparisce. Com'è fatto: sezione 3, "I pasti di un
 giorno". Test: `validitaPasti.test.ts`, `aggiornamentoSchema.test.ts`.
 
-**Pasti e orari, passo 3** (9/10, branch `pagina-pasti`, **da provare
-su iPhone**): la pagina per rinominare (Correggi / Da oggi), cambiare
-l'ora e aggiungere un pasto, con Annulla; la guardia in Aggiungi; la coda
-di sincronizzazione con i genitori prima dei figli (sezione 9.2). Com'è
-fatto: sezione 3, "Pasti e orari". Test: `controlliPasti.test.ts`,
+**Pasti e orari, passo 3** (9/10, provato su iPhone il 9/10 in Safari
+privato sull'anteprima del branch `pagina-pasti`, account di prova): la
+pagina per rinominare (Correggi / Da oggi), cambiare l'ora e aggiungere
+un pasto, con Annulla; la guardia in Aggiungi; la coda di
+sincronizzazione con i genitori prima dei figli (sezione 9.2). Tutte le
+11 prove ok: riga in Impostazioni, solo ora, ora occupata, Correggi, Da
+oggi con voci e Annulla, pasto nato oggi senza domanda, Indietro, nomi,
+Aggiungi nei due modi e con il nome di un pasto chiuso, tema scuro. La
+prova offline (rinomina da oggi, poi ora cambiata, poi online) è
+verificata su Supabase: riga vecchia chiusa ieri, riga nuova con la voce
+di oggi, coda vuota, nessuna voce accantonata. Com'è fatto: sezione 3,
+"Pasti e orari". Test: `controlliPasti.test.ts`,
 `modifichePasti.test.ts`, la pagina, `sincronizza.test.ts`,
 `repository.transazione.test.ts`.
 
@@ -2894,8 +2901,8 @@ fatto: sezione 3, "Pasti e orari". Test: `controlliPasti.test.ts`,
   **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari: fatti il
   seed (passo 1), la validità nel tempo (passo 2) e la pagina per
-  rinominare, cambiare l'ora e aggiungere (passo 3, branch `pagina-pasti`,
-  **da provare su iPhone**). Mancano **Elimina** (passo 4) e le **date
+  rinominare, cambiare l'ora e aggiungere (passo 3, provato su iPhone il
+  9/10). Mancano **Elimina** (passo 4) e le **date
   future** (passo 5). E ora del consumo (`consumato_alle`) modificabile
   nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non

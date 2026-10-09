@@ -27,7 +27,15 @@ Branch `pagina-pasti`. Terzo commit del passo 3: la pagina
   test instabile scritto in questo commit: cercava "Annulla" mentre lo
   sheet era ancora aperto e a volte toccava quello dello sheet invece
   di quello della barra. L'app non aveva il problema. 525 test verdi in
-  52 file. Da provare su iPhone.
+  52 file.
+- Provato su iPhone il 9/10 (Safari privato, anteprima, account di
+  prova), tutte le 11 prove ok: riga in Impostazioni, solo ora, ora
+  occupata, Correggi, Da oggi con voci e Annulla, pasto nato oggi senza
+  domanda, Indietro, nomi, Aggiungi nei due modi e con il nome di un
+  pasto chiuso, tema scuro. Prova offline (Cena → Cena 1 da oggi, poi
+  ora cambiata, poi online) verificata su Supabase da Cowork: Cena
+  chiusa all'8/10, Cena 1 dal 9/10 con la voce di oggi, coda vuota,
+  nessuna voce accantonata.
 
 ## 2026-10-09 — Pasti e orari, passo 3b: controlli, scritture e Annulla
 
@@ -77,6 +85,9 @@ utente non cambia niente.
   correzione): `sincronizza.test.ts` (server finto con la foreign key),
   `repository.transazione.test.ts`. 478 test verdi in 49 file.
 - Nello stesso commit il mockup `docs/mockups/pasti-e-orari.html`.
+- Provato su iPhone il 9/10 con la prova offline del passo 3c: pasto
+  rinominato da oggi e poi ritoccato, voce di oggi arrivata sul server
+  dopo il suo pasto, nessuna voce accantonata.
 
 ## 2026-10-09 — Validità dei pasti unita a main
 
