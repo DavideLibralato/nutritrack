@@ -3,7 +3,8 @@
 // La domanda "da quando vale?" di Pasti e orari (PUNTO_DI_PARTENZA.md,
 // sezione 3, "Pasti e orari"; mockup docs/mockups/pasti-e-orari.html):
 // - rinomina: "Correggi" (anche i giorni passati) o "Da oggi";
-// - pasto nuovo: "Anche nei giorni passati" o "Da oggi".
+// - pasto nuovo: "Anche nei giorni passati" o "Da oggi";
+// - elimina pasto (passo 4): "Anche nei giorni passati" o "Da oggi".
 // Come nel mockup, "Da oggi" è già scelto (non riscrive il passato), e il
 // pulsante in basso dice cosa succede ("Rinomina", "Aggiungi pasto").
 //
@@ -38,7 +39,10 @@ export default function SheetDaQuando<K extends string>({
   titolo: string;
   opzioni: OpzioneDaQuando<K>[];
   predefinita: K;
-  testoConferma: string;
+  // Il testo del pulsante, che può dipendere dalla scelta (Elimina pasto:
+  // "Continua" se la scelta tocca delle voci e chiede conferma, "Elimina
+  // pasto" se no, come nel mockup).
+  testoConferma: string | ((scelta: K) => string);
   inCorso: boolean;
   errore: string | null;
   onIndietro: () => void;
@@ -121,7 +125,7 @@ export default function SheetDaQuando<K extends string>({
               disabled={!confermabile}
               className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
             >
-              {inCorso ? "Salvo..." : testoConferma}
+              {inCorso ? "Salvo..." : typeof testoConferma === "function" ? testoConferma(scelta) : testoConferma}
             </button>
           </div>
         </div>

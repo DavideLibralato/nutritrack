@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Elimina pasto, passo 4c: la pagina
+
+Branch `elimina-pasto`. Terzo commit del passo 4: l'interfaccia, sulla
+logica del 4b.
+
+- "Elimina pasto" in fondo allo sheet del pasto: spento con il motivo se
+  è l'unico pasto. Domanda "da quando" (Da oggi già scelto; "Anche nei
+  giorni passati" spento se lascerebbe un buco nel passato; nessuna
+  domanda per un pasto nato oggi). Conferma solo se tocca voci, con voci,
+  giorni e kcal, pulsante rosso, senza "Non si può annullare". Barra
+  "Eliminato: …" con Annulla; un Annulla in conflitto dice perché.
+- `SheetDaQuando`: il testo del pulsante può dipendere dalla scelta
+  ("Continua" se segue la conferma, "Elimina pasto" se no).
+- Difetto trovato da un test instabile (1 volta su 3) e corretto: appena
+  aperto lo sheet, la lettura delle voci era per un attimo quella di
+  prima ("nessuna voce"), e un tocco veloce su Elimina saltava la
+  conferma (i dati erano salvi: la scrittura rispondeva "cambiate", ma
+  compariva un avviso senza senso). Ora la lettura porta l'id del pasto e
+  Elimina resta spento finché non è quella giusta; test deterministico.
+- Documenti: PUNTO §3 "Elimina pasto", §9.2 il limite noto del seed
+  chiuso, §11 con il rischio della riga riportata in vita da un altro
+  telefono fra i difetti aperti.
+- Test della pagina (7 nuovi), provati a vuoto da copia. 565 test verdi
+  in 53 file. Da provare su iPhone.
+
 ## 2026-10-09 — Elimina pasto, passo 4b: regole, scritture e Annulla
 
 Branch `elimina-pasto`. Secondo commit del passo 4: solo `lib`, nessuna

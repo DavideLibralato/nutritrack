@@ -40,26 +40,32 @@ import {
   normalizzaNome,
   normalizzaOra,
   periodoDi,
+  regoleElimina,
   type Periodo,
 } from "@/lib/pasti/controlliPasti";
 import {
   aggiungiPasto,
   annullaModificaPasti,
   correggiPasto,
+  eliminaPasto,
   ErroreControlloPasto,
   rinominaDaOggi,
+  vociDaEliminare,
+  riepilogoVoci,
+  type ModoElimina,
   type FotografiaPasti,
 } from "@/lib/repository/modifichePasti";
 import { oggiLocale } from "@/lib/dataGiorno";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { MESSAGGIO_ANNULLATO, type MessaggioBarra } from "@/lib/inserimento/testiBarra";
-import type { Pasto } from "@/lib/db/tipi";
+import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import SheetPasto, { type ErroriPasto } from "@/components/SheetPasto";
 import SheetDaQuando, { type OpzioneDaQuando } from "@/components/SheetDaQuando";
+import SheetConferma from "@/components/SheetConferma";
 
 const CLASSE_MAIN =
   "mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))]";
@@ -72,8 +78,16 @@ interface Bozza {
   ora: string;
 }
 
+// Per "modifica", oltre ai campi e alla domanda del nome, i due passi di
+// Elimina pasto: la domanda "da quando" e la conferma (solo se tocca voci).
 type StatoSheet =
-  | { tipo: "modifica"; pastoId: string; bozza: Bozza; passo: "campi" | "domanda" }
+  | {
+      tipo: "modifica";
+      pastoId: string;
+      bozza: Bozza;
+      passo: "campi" | "domanda" | "elimina-domanda" | "elimina-conferma";
+      modoElimina?: ModoElimina;
+    }
   | { tipo: "aggiungi"; bozza: Bozza; passo: "campi" | "domanda" };
 
 interface StatoBarra {
@@ -107,6 +121,25 @@ export default function PastiEOrariPage() {
   const [erroreDomanda, setErroreDomanda] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
   const [barra, setBarra] = useState<StatoBarra | null>(null);
+
+  // Le voci vive del pasto aperto, lette dal vivo: sono i numeri della
+  // conferma di Elimina (e la frase "Le voci di oggi vengono eliminate.").
+  // Se una sync ne porta una nuova mentre la conferma è aperta, i numeri
+  // cambiano da soli.
+  //
+  // La lettura porta con sé l'id del pasto: appena si apre uno sheet,
+  // useLiveQuery restituisce per un attimo il risultato della lettura di
+  // prima (nessun pasto aperto, zero voci). Senza questo controllo, un
+  // tocco veloce su Elimina vedeva "nessuna voce" e saltava la conferma
+  // (trovato da un test instabile, 1 volta su 3). Finché la lettura non è
+  // quella del pasto aperto, `vociPasto` è undefined e Elimina è spento.
+  const pastoIdAperto = sheet?.tipo === "modifica" ? sheet.pastoId : null;
+  const letturaVoci = useLiveQuery(
+    async () =>
+      pastoIdAperto ? { pastoId: pastoIdAperto, voci: await vociDaEliminare(pastoIdAperto, "tutto", oggiLocale()) } : null,
+    [pastoIdAperto]
+  );
+  const vociPasto = letturaVoci && letturaVoci.pastoId === pastoIdAperto ? letturaVoci.voci : undefined;
 
   if (!userId || !righe) {
     return (
@@ -276,13 +309,72 @@ export default function PastiEOrariPage() {
     try {
       const esito = await annullaModificaPasti(fotografia);
       mostraBarra(
-        esito === "pasto-con-voci"
-          ? { testo: "Non annullato: il pasto ha già delle voci.", icona: "info" }
-          : MESSAGGIO_ANNULLATO,
+        typeof esito === "object"
+          ? { testo: esito.conflitto, icona: "info" }
+          : esito === "pasto-con-voci"
+            ? { testo: "Non annullato: il pasto ha già delle voci.", icona: "info" }
+            : MESSAGGIO_ANNULLATO,
         null
       );
     } catch {
       mostraBarra({ testo: "Non è stato possibile annullare.", icona: "info" }, null);
+    }
+  }
+
+  // --- Elimina pasto (passo 4) ---------------------------------------------
+  // Pulsante nello sheet → (domanda "da quando", salvo pasto nato oggi) →
+  // (conferma, solo se l'eliminazione tocca voci) → scrittura e barra.
+
+  function avviaElimina() {
+    if (!pastoAperto || sheet?.tipo !== "modifica" || vociPasto === undefined) return;
+    setErroreDomanda(null);
+    if (regoleElimina(pastoAperto, tutte, oggiLocale()).senzaDomanda) {
+      sceltaElimina("tutto");
+      return;
+    }
+    setSheet({ ...sheet, passo: "elimina-domanda" });
+  }
+
+  // Scelto il modo: se tocca voci, la conferma con i numeri; se no, subito.
+  function sceltaElimina(modo: ModoElimina) {
+    if (sheet?.tipo !== "modifica") return;
+    setErroreDomanda(null);
+    const voci = vociDelModo(modo);
+    if (voci.length > 0) {
+      setSheet({ ...sheet, passo: "elimina-conferma", modoElimina: modo });
+      return;
+    }
+    void eseguiElimina(modo, []);
+  }
+
+  function vociDelModo(modo: ModoElimina) {
+    const oggi = oggiLocale();
+    return (vociPasto ?? []).filter((v) => modo === "tutto" || v.data === oggi);
+  }
+
+  // `idVoci`: le voci che l'utente ha appena visto nella conferma. Se nel
+  // frattempo sono cambiate, niente è scritto: la conferma resta aperta,
+  // con i numeri nuovi (letti dal vivo) e un avviso.
+  async function eseguiElimina(modo: ModoElimina, idVoci: string[]) {
+    if (!pastoAperto || sheet?.tipo !== "modifica") return;
+    const pasto = pastoAperto;
+    setInCorso(true);
+    try {
+      const esito = await eliminaPasto({ id: pasto.id, modo, oggi: oggiLocale(), idVociConfermate: idVoci });
+      if (esito.esito === "cambiate") {
+        setSheet({ ...sheet, passo: "elimina-conferma", modoElimina: modo });
+        setErroreDomanda("Nel frattempo le voci sono cambiate: controlla i numeri e conferma di nuovo.");
+        return;
+      }
+      chiudi();
+      mostraBarra(messaggioEliminato(pasto.nome, modo, esito.riepilogo.voci), esito.fotografia);
+    } catch {
+      // Dallo sheet del pasto (pasto nato oggi, senza voci) l'errore va
+      // sotto i campi; dalla domanda o dalla conferma, lì.
+      if (sheet.passo === "campi") setErrori({ generale: ERRORE_SALVATAGGIO });
+      else setErroreDomanda(ERRORE_SALVATAGGIO);
+    } finally {
+      setInCorso(false);
     }
   }
 
@@ -338,6 +430,15 @@ export default function PastiEOrariPage() {
           onCambiaCampo={(campo) => setErrori((e) => ({ ...e, [campo]: null, generale: null }))}
           onAnnulla={chiudi}
           onSalva={salvaCampi}
+          elimina={
+            sheet.tipo === "modifica" && pastoAperto
+              ? {
+                  motivoSpento: regoleElimina(pastoAperto, tutte, oggiLocale()).motivoSpento,
+                  inAttesa: vociPasto === undefined,
+                  onElimina: avviaElimina,
+                }
+              : undefined
+          }
         />
       )}
 
@@ -366,8 +467,105 @@ export default function PastiEOrariPage() {
           onConferma={confermaAggiunta}
         />
       )}
+
+      {sheet?.passo === "elimina-domanda" && sheet.tipo === "modifica" && pastoAperto && (
+        <SheetDaQuando<ModoElimina>
+          titolo={`Eliminare «${pastoAperto.nome}»?`}
+          opzioni={[
+            {
+              chiave: "tutto",
+              titolo: "Anche nei giorni passati",
+              spiegazione: "Sparisce ovunque, insieme alle sue voci.",
+              bloccata: regoleElimina(pastoAperto, tutte, oggiLocale()).motivoPassatiSpento,
+            },
+            {
+              chiave: "oggi",
+              titolo: "Da oggi",
+              spiegazione:
+                "I giorni passati restano come sono." +
+                (vociDelModo("oggi").length > 0 ? " Le voci di oggi vengono eliminate." : ""),
+            },
+          ]}
+          predefinita="oggi"
+          testoConferma={(modo) => (vociDelModo(modo).length > 0 ? "Continua" : "Elimina pasto")}
+          inCorso={inCorso}
+          errore={erroreDomanda}
+          onIndietro={() => setSheet({ ...sheet, passo: "campi" })}
+          onConferma={sceltaElimina}
+        />
+      )}
+
+      {sheet?.passo === "elimina-conferma" && sheet.tipo === "modifica" && pastoAperto && sheet.modoElimina && (
+        <ConfermaElimina
+          nome={pastoAperto.nome}
+          modo={sheet.modoElimina}
+          voci={vociDelModo(sheet.modoElimina)}
+          inCorso={inCorso}
+          errore={erroreDomanda}
+          onNo={chiudi}
+          onSi={(idVoci) => void eseguiElimina(sheet.modoElimina as ModoElimina, idVoci)}
+        />
+      )}
     </main>
   );
+}
+
+// "voce" / "voci", "giorno" / "giorni".
+function voci(n: number): string {
+  return `${n} voc${n === 1 ? "e" : "i"}`;
+}
+
+// La conferma prima di eliminare un pasto con delle voci (mockup, senza
+// "Non si può annullare.": dopo c'è la barra con Annulla). I numeri sono
+// quelli delle voci vive adesso; il Sì manda gli id di queste voci, così
+// la scrittura sa se nel frattempo sono cambiate.
+function ConfermaElimina({
+  nome,
+  modo,
+  voci: righe,
+  inCorso,
+  errore,
+  onNo,
+  onSi,
+}: {
+  nome: string;
+  modo: ModoElimina;
+  voci: VoceDiario[];
+  inCorso: boolean;
+  errore: string | null;
+  onNo: () => void;
+  onSi: (idVoci: string[]) => void;
+}) {
+  const { voci: n, giorni, kcal } = riepilogoVoci(righe);
+  const dove = modo === "tutto" ? `in ${giorni} ${giorni === 1 ? "giorno" : "giorni"}` : "oggi";
+  const quali = modo === "tutto" ? "di quei giorni" : "di oggi";
+  return (
+    <SheetConferma
+      titolo={`Eliminare anche ${voci(n)}?`}
+      testo={`«${nome}» ha ${voci(n)} ${dove}, per ${Math.round(kcal).toLocaleString("it-IT")} kcal. Verranno eliminate e i totali ${quali} scenderanno.`}
+      etichettaNo="Annulla"
+      etichettaSi={`Elimina pasto e ${voci(n)}`}
+      distruttiva
+      inCorso={inCorso}
+      errore={errore}
+      onNo={onNo}
+      onSi={() => onSi(righe.map((v) => v.id))}
+    />
+  );
+}
+
+// "Eliminato: Pranzo (13 voci)", "Eliminato da oggi: Cena (1 voce di
+// oggi)", "Eliminato: Spuntino pomeriggio".
+function messaggioEliminato(nome: string, modo: ModoElimina, numeroVoci: number): MessaggioBarra {
+  if (modo === "oggi") {
+    return {
+      testo: "Eliminato da oggi:",
+      nome,
+      coda: numeroVoci > 0 ? `(${voci(numeroVoci)} di oggi)` : undefined,
+      icona: "elimina",
+    };
+  }
+  return { testo: "Eliminato:", nome, coda: numeroVoci > 0 ? `(${voci(numeroVoci)})` : undefined, icona: "elimina" };
 }
 
 // "Correggi" riscrive anche i giorni passati: se lì il nome nuovo c'è già,

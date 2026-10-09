@@ -1118,8 +1118,8 @@ sulla voce in Oggi → lo sheet quantità, con anche il pasto modificabile.
 "Pranzo 1" e "Pranzo 2", o tre spuntini. Quindi i pasti non sono quattro valori
 fissi nel codice: sono righe di una tabella, che l'utente può rinominare,
 aggiungere, eliminare e riordinare da Impostazioni > Pasti e orari *(dal
-9/10 rinominare, cambiare l'ora e aggiungere: "Pasti e orari" più sotto;
-eliminare arriva al passo 4, le date future al passo 5)*.
+9/10 rinominare, cambiare l'ora, aggiungere ed eliminare: "Pasti e orari"
+più sotto; le date future arrivano al passo 5)*.
 
 Ogni pasto ha **solo un'ora di inizio**, non un intervallo: dura fino all'inizio
 del pasto successivo, e l'ultimo arriva fino a mezzanotte. Un campo invece di
@@ -1195,8 +1195,8 @@ null, o un pasto non ancora scaricato) non hanno una riga in Oggi. Un gruppo
 
 Impostazioni > Alimentazione > **Pasti e orari** (`/impostazioni/pasti`;
 mockup `docs/mockups/pasti-e-orari.html`, elenco "A · Righe"). Passo 3:
-rinominare, cambiare l'ora, aggiungere. **Elimina** è il passo 4, le
-**date future** ("Da una data", schede per data) il passo 5.
+rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
+**date future** ("Da una data", schede per data) sono il passo 5.
 
 - **Elenco**: i pasti che valgono **oggi**, in ordine d'orario, nome a
   sinistra e ora a destra; in fondo "+ Aggiungi pasto". Un pasto chiuso
@@ -1249,6 +1249,48 @@ rinominare, cambiare l'ora, aggiungere. **Elimina** è il passo 4, le
   pasto scelto valga quel giorno (`pastoValidoAdesso`): Pasti e orari in
   un'altra scheda può averlo chiuso.
 - Ogni azione si salva alla conferma: niente guardiano delle modifiche.
+
+**Elimina pasto** (dal 9/10, passo 4). In fondo allo sheet del pasto.
+- **Almeno un pasto in ogni giorno** (`periodoCoperto`, `regoleElimina`
+  in `controlliPasti.ts`). Il pulsante è spento, con il motivo sotto ("È
+  l'unico pasto: almeno uno deve restare."), se da oggi in poi qualche
+  giorno del pasto resterebbe senza pasti; "Anche nei giorni passati" è
+  spento ("Alcuni giorni passati resterebbero senza pasti.") se resterebbe
+  un buco nel passato, per esempio dopo una catena di rinomine. Da un
+  giorno senza pasti non si registra niente.
+- **Domanda "da quando"**: "Anche nei giorni passati" ("Sparisce ovunque,
+  insieme alle sue voci.") o "Da oggi" ("I giorni passati restano come
+  sono." + "Le voci di oggi vengono eliminate." se oggi ne ha), con Da
+  oggi già scelto. Un pasto che comincia oggi o dopo si elimina del tutto,
+  **senza domanda**.
+- **Le voci si eliminano, non si spostano**: "anche nei giorni passati" →
+  `deleted_at` sul pasto e su tutte le sue voci vive; "da oggi" →
+  `valido_al` = ieri sul pasto e `deleted_at` sulle voci vive di oggi. La
+  tabella `giorni` non si tocca. Tutto in una transazione
+  (`eliminaPasto` in `modifichePasti.ts`).
+- **Conferma prima**, solo se l'eliminazione tocca almeno una voce:
+  "Eliminare anche 13 voci?" — "«Pranzo» ha 13 voci in 9 giorni, per
+  8.420 kcal. Verranno eliminate e i totali di quei giorni scenderanno." —
+  pulsante rosso "Elimina pasto e 13 voci". Senza "Non si può annullare"
+  del mockup: dopo c'è la barra con Annulla. Kcal con `totaleVoce` (le voci
+  hanno i valori copiati). La conferma vale per le voci viste: se una sync
+  le cambia prima della scrittura, non si scrive niente e la conferma si
+  ripresenta con i numeri nuovi. Il pulsante resta spento finché le voci
+  del pasto non sono state lette.
+- **Barra**: "Eliminato: Pranzo (13 voci)", "Eliminato da oggi: Cena (1
+  voce di oggi)", "Eliminato: Spuntino pomeriggio".
+- **Annulla**, mai una riga rimessa in vita: "anche nei giorni passati"
+  **ricrea** il pasto con id UUID v5 dall'id vecchio (stessi nome, ora,
+  ordine, date) e le voci su di lui (`annullaOperazione` con
+  `pastoSostituito`); "da oggi" rimette la data di fine e ricrea le voci
+  di oggi sullo stesso pasto. Rifà i controlli di nome e ora: se nel
+  frattempo è nato un pasto con lo stesso nome o la stessa ora, non scrive
+  niente e la barra dice perché ("Non annullato: alle 12:30 inizia già
+  Brunch."). Ripetuto, non crea doppioni (id v5). In coda il pasto
+  ricreato parte prima delle sue voci (sezione 9.2).
+- Una voce aggiunta da un altro telefono non ancora allineato su un pasto
+  eliminato o chiuso resta viva sul server: in Oggi la mostra la rete di
+  sicurezza ("Non più in uso"), da lì la si porta via.
 
 ### Inserimento retroattivo
 
@@ -2393,12 +2435,12 @@ solo mentre la lettura è in corso. Una volta scaricati i pasti, l'app
 funziona offline come prima. Il seed non ripara più un pasto predefinito
 sparito per un bug: lo farebbe alla cieca, con lo stesso rischio.
 
-**Limite noto, non gestito.** Un utente con righe in `pasti` sul server ma
-nessuna viva (oggi nessuna schermata lo permette) non riceve i
-predefiniti: dopo lo scarico Dexie ha solo righe cancellate, e Oggi resta
-su "Nessun pasto in questo giorno." (da un giorno senza pasti validi non si
-registra niente). Va chiuso dalla pagina Pasti e orari, che non deve
-lasciar eliminare l'ultimo pasto.
+**Limite noto, chiuso dal passo 4.** Un utente con righe in `pasti` sul
+server ma nessuna viva non riceverebbe i predefiniti: dopo lo scarico
+Dexie avrebbe solo righe cancellate, e Oggi resterebbe su "Nessun pasto in
+questo giorno.". Dal 9/10 Pasti e orari non lascia eliminare l'ultimo
+pasto, né lasciare senza pasti un giorno passato (sezione 3, "Elimina
+pasto").
 
 Strade scartate, da non riproporre: un seed "provvisorio" che trattiene la
 salita fino a conferma del server (il blocco si propaga a ogni voce di
@@ -2898,7 +2940,16 @@ di oggi, coda vuota, nessuna voce accantonata. Com'è fatto: sezione 3,
 `modifichePasti.test.ts`, la pagina, `sincronizza.test.ts`,
 `repository.transazione.test.ts`.
 
-**Test.** 525 test permanenti in 52 file (Vitest), tutti verdi al 9/10.
+**Elimina pasto, passo 4** (9/10, branch `elimina-pasto`, **da provare
+su iPhone**): "Elimina pasto" nello sheet, con la domanda "da quando", la
+conferma con voci / giorni / kcal se tocca voci, la barra con Annulla che
+ricrea il pasto e le voci; almeno un pasto in ogni giorno; la
+sincronizzazione un giro per volta (sezione 9.2). Com'è fatto: sezione 3,
+"Elimina pasto". Test: `controlliPasti.test.ts`,
+`modifichePasti.test.ts`, `vociDiario.test.ts`, la pagina,
+`sincronizzaUnaPerVolta.test.ts`.
+
+**Test.** 565 test permanenti in 53 file (Vitest), tutti verdi al 9/10.
 
 ### Non ancora costruito
 
@@ -2910,14 +2961,24 @@ di oggi, coda vuota, nessuna voce accantonata. Com'è fatto: sezione 3,
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari: fatti il
   seed (passo 1), la validità nel tempo (passo 2) e la pagina per
   rinominare, cambiare l'ora e aggiungere (passo 3, provato su iPhone il
-  9/10). Mancano **Elimina** (passo 4) e le **date
-  future** (passo 5). E ora del consumo (`consumato_alle`) modificabile
-  nello sheet
+  9/10) ed eliminare (passo 4, branch `elimina-pasto`, **da provare su
+  iPhone**). Mancano le **date future** (passo 5). E ora del consumo
+  (`consumato_alle`) modificabile nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
+
+- **Una riga cancellata può tornare in vita da un altro telefono** (visto
+  il 9/10 preparando Elimina pasto, non introdotto da lì). Se il telefono
+  B, non ancora allineato, modifica offline una riga che il telefono A ha
+  cancellato (per esempio rinomina un pasto eliminato), e la salita di B
+  parte prima della sua discesa (ogni scrittura fa partire solo la
+  salita), l'upsert manda la riga con `deleted_at` null e la rimette in
+  vita sul server. La regola "la cancellazione vince" (sezione 9.2) scatta
+  solo se la discesa arriva prima. Vale per ogni tabella; è raro (serve
+  modificare proprio la riga cancellata). Da affrontare a parte
 
 - **Peso, prova da fare il 4/10** con l'account di prova in Safari:
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve

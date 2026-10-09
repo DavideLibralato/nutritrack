@@ -3,7 +3,10 @@
 // Lo sheet di un pasto in Impostazioni > Pasti e orari (PUNTO_DI_PARTENZA.md,
 // sezione 3, "Pasti e orari"): Nome e "Inizia alle", Annulla e Salva. Serve
 // sia a modificare un pasto (tocco sulla riga) sia ad aggiungerne uno
-// ("+ Aggiungi pasto", campi vuoti). Niente Elimina: arriva al passo 4.
+// ("+ Aggiungi pasto", campi vuoti). Su un pasto esistente, in fondo,
+// "Elimina pasto" (passo 4): spento, con il motivo sotto, se il pasto non
+// si può eliminare (l'unico pasto). Elimina non usa i campi: un nome o
+// un'ora cambiati e non salvati si perdono.
 //
 // Lo sheet non decide niente: al Salva passa nome e ora alla pagina, che
 // fa i controlli (controlliPasti.ts) e restituisce gli errori da mostrare
@@ -34,6 +37,7 @@ export default function SheetPasto({
   onCambiaCampo,
   onAnnulla,
   onSalva,
+  elimina,
 }: {
   titolo: string;
   sottotitolo?: string;
@@ -45,6 +49,9 @@ export default function SheetPasto({
   onCambiaCampo: (campo: "nome" | "ora") => void;
   onAnnulla: () => void;
   onSalva: (nome: string, ora: string) => void;
+  // Solo su un pasto esistente. motivoSpento: perché il pulsante è spento.
+  // inAttesa: le voci del pasto non sono ancora state lette.
+  elimina?: { motivoSpento: string | null; inAttesa?: boolean; onElimina: () => void };
 }) {
   const [nome, setNome] = useState(nomeIniziale);
   const [ora, setOra] = useState(oraIniziale);
@@ -170,6 +177,25 @@ export default function SheetPasto({
               </button>
             </div>
           </form>
+
+          {elimina && (
+            <div className="mt-5 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={elimina.onElimina}
+                disabled={inCorso || !!elimina.motivoSpento || !!elimina.inAttesa}
+                aria-describedby={elimina.motivoSpento ? "pasto-elimina-motivo" : undefined}
+                className={`w-full rounded-lg border border-warning p-3 font-medium text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                Elimina pasto
+              </button>
+              {elimina.motivoSpento && (
+                <p id="pasto-elimina-motivo" className="mt-2 text-center text-sm text-muted">
+                  {elimina.motivoSpento}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>

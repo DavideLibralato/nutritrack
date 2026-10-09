@@ -166,3 +166,118 @@ describe("Pagina Pasti e orari", () => {
     });
   });
 });
+
+// Passo 4, Elimina pasto. Nel beforeEach: Colazione, Pranzo e Cena da
+// sempre (Merenda chiusa ieri); Pranzo ha una voce oggi e una ieri, da 52
+// kcal l'una.
+describe("Pagina Pasti e orari — Elimina pasto", () => {
+  async function eliminaDalloSheet(nome: string) {
+    const sheet = await apriPasto(nome);
+    // Spento finché le voci del pasto non sono lette (inAttesa).
+    const pulsante = within(sheet).getByRole("button", { name: "Elimina pasto" }) as HTMLButtonElement;
+    await waitFor(() => expect(pulsante.disabled).toBe(false));
+    fireEvent.click(pulsante);
+  }
+
+  it("appena aperto lo sheet, Elimina resta spento finché le voci del pasto non sono lette", async () => {
+    const sheet = await apriPasto("Pranzo");
+    const pulsante = within(sheet).getByRole("button", { name: "Elimina pasto" }) as HTMLButtonElement;
+    // Subito: la lettura delle voci non è ancora arrivata. Con "nessuna
+    // lettura = nessuna voce", un tocco qui salterebbe la conferma.
+    expect(pulsante.disabled).toBe(true);
+    await waitFor(() => expect(pulsante.disabled).toBe(false));
+  });
+
+  it("l'unico pasto di oggi: pulsante spento, con il motivo", async () => {
+    await db.pasti.bulkPut([
+      riga("colazione", "Colazione", "06:00", { deleted_at: "2026-10-01T00:00:00.000Z" }),
+      riga("cena", "Cena", "19:30", { deleted_at: "2026-10-01T00:00:00.000Z" }),
+    ]);
+    const sheet = await apriPasto("Pranzo");
+    expect((within(sheet).getByRole("button", { name: "Elimina pasto" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(within(sheet).getByText("È l'unico pasto: almeno uno deve restare.")).toBeTruthy();
+  });
+
+  it("senza voci, da oggi: niente conferma, il pasto si chiude ieri", async () => {
+    await eliminaDalloSheet("Cena");
+    const domanda = await screen.findByRole("dialog", { name: "Eliminare «Cena»?" });
+    expect(within(domanda).getByRole("button", { name: /^Da oggi/ }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(within(domanda).getByRole("button", { name: "Elimina pasto" }));
+
+    await waitFor(async () => expect((await db.pasti.get("cena"))?.valido_al).toBe(IERI));
+    expect(screen.queryByText(/Eliminare anche/)).toBeNull();
+    expect((await screen.findByRole("status")).textContent).toContain("Eliminato da oggi:");
+  });
+
+  it("anche nei giorni passati, con voci: conferma con voci, giorni e kcal, poi Annulla rimette tutto", async () => {
+    await eliminaDalloSheet("Pranzo");
+    const domanda = await screen.findByRole("dialog", { name: "Eliminare «Pranzo»?" });
+    expect(within(domanda).getByText("I giorni passati restano come sono. Le voci di oggi vengono eliminate.")).toBeTruthy();
+    fireEvent.click(within(domanda).getByRole("button", { name: /^Anche nei giorni passati/ }));
+    fireEvent.click(within(domanda).getByRole("button", { name: "Continua" }));
+
+    const conferma = await screen.findByRole("alertdialog", { name: "Eliminare anche 2 voci?" });
+    expect(conferma.textContent).toContain(
+      "«Pranzo» ha 2 voci in 2 giorni, per 104 kcal. Verranno eliminate e i totali di quei giorni scenderanno."
+    );
+    expect(conferma.textContent).not.toContain("Non si può annullare");
+    // Arrivata subito, non dopo un tentativo di scrittura rimandato
+    // indietro da eliminaPasto ("cambiate").
+    expect(conferma.textContent).not.toContain("Nel frattempo");
+    expect(await db.outbox.count()).toBe(0);
+    fireEvent.click(within(conferma).getByRole("button", { name: "Elimina pasto e 2 voci" }));
+
+    await waitFor(async () => expect((await db.pasti.get("pranzo"))?.deleted_at).not.toBeNull());
+    expect((await db.voci_diario.get("v-oggi"))?.deleted_at).not.toBeNull();
+    expect((await db.voci_diario.get("v-ieri"))?.deleted_at).not.toBeNull();
+
+    const barra = await screen.findByRole("status");
+    expect(barra.textContent).toContain("Eliminato:");
+    expect(barra.textContent).toContain("(2 voci)");
+    fireEvent.click(within(barra).getByRole("button", { name: "Annulla" }));
+    await waitFor(async () => {
+      const ricreato = (await db.pasti.toArray()).find((p) => p.nome === "Pranzo" && p.deleted_at === null);
+      expect(ricreato).toBeDefined();
+      expect((await db.voci_diario.toArray()).filter((v) => v.pasto_id === ricreato?.id && v.deleted_at === null)).toHaveLength(2);
+    });
+  });
+
+  it("un pasto nato oggi, senza voci: niente domanda, eliminato del tutto", async () => {
+    await db.pasti.put(riga("brunch", "Brunch", "11:00", { ordine: 5, valido_dal: OGGI }));
+    await eliminaDalloSheet("Brunch");
+
+    await waitFor(async () => expect((await db.pasti.get("brunch"))?.deleted_at).not.toBeNull());
+    expect(screen.queryByText(/Eliminare «Brunch»/)).toBeNull();
+  });
+
+  it("'Anche nei giorni passati' spento se un giorno passato resterebbe senza pasti", async () => {
+    // Colazione e Cena da oggi, Merenda tolta: nei giorni passati resta
+    // solo Pranzo. (La Merenda chiusa ieri coprirebbe il passato.)
+    await db.pasti.bulkPut([
+      riga("colazione", "Colazione", "06:00", { valido_dal: OGGI }),
+      riga("cena", "Cena", "19:30:00", { ordine: 4, valido_dal: OGGI }),
+      riga("merenda", "Merenda", "16:00", { ordine: 3, valido_al: IERI, deleted_at: "2026-10-01T00:00:00.000Z" }),
+    ]);
+    await eliminaDalloSheet("Pranzo");
+    const domanda = await screen.findByRole("dialog", { name: "Eliminare «Pranzo»?" });
+    const passati = within(domanda).getByRole("button", { name: /^Anche nei giorni passati/ }) as HTMLButtonElement;
+    expect(passati.disabled).toBe(true);
+    expect(within(domanda).getByText("Alcuni giorni passati resterebbero senza pasti.")).toBeTruthy();
+  });
+
+  it("Annulla in conflitto: la barra dice perché, niente scritto", async () => {
+    await eliminaDalloSheet("Cena");
+    const domanda = await screen.findByRole("dialog", { name: "Eliminare «Cena»?" });
+    fireEvent.click(within(domanda).getByRole("button", { name: /^Anche nei giorni passati/ }));
+    fireEvent.click(within(domanda).getByRole("button", { name: "Elimina pasto" }));
+    await waitFor(async () => expect((await db.pasti.get("cena"))?.deleted_at).not.toBeNull());
+
+    // Nel frattempo (un altro dispositivo) nasce un'altra "Cena".
+    await db.pasti.put(riga("cena-2", "Cena", "20:00", { ordine: 6 }));
+    const barra = await screen.findByRole("status");
+    fireEvent.click(within(barra).getByRole("button", { name: "Annulla" }));
+
+    expect(await screen.findByText("Non annullato: c'è già un pasto chiamato «Cena».")).toBeTruthy();
+    expect((await db.pasti.toArray()).filter((p) => p.nome === "Cena" && p.deleted_at === null)).toHaveLength(1);
+  });
+});
