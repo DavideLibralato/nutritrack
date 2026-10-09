@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Pasti e orari, passo 3b: controlli, scritture e Annulla
+
+Branch `pagina-pasti`. Secondo commit del passo 3: solo `lib`, nessuna
+schermata ancora.
+
+- `controlliPasti.ts`: nome (spazi tolti, non vuoto, senza distinguere
+  maiuscole) e ora (`HH:mm`) diversi da ogni altro pasto vivo con
+  almeno un giorno in comune, non solo oggi. Se il pasto che occupa
+  l'ora oggi non c'è, il messaggio lo dice ("iniziava già Merenda
+  (fino all'8 ott)"). "Da quando" si chiede solo per un nome nuovo
+  davvero, su un pasto nato prima di oggi.
+- `modifichePasti.ts`: Correggi (anche la sola ora), rinomina da oggi
+  in una transazione Dexie (riga vecchia chiusa ieri, riga nuova da
+  oggi con lo stesso `ordine`, voci vive di oggi spostate), Aggiungi
+  (da sempre o da oggi, `ordine` dopo tutte le righe). Ogni scrittura
+  rifà i controlli e scrive le date in modo esplicito. L'ora si
+  controlla solo se cambia: dati vecchi con due pasti alla stessa ora
+  non bloccano la correzione del nome.
+- Annulla con una fotografia, in una transazione, senza mai rimettere
+  in vita una riga. Da oggi: riporta anche le voci aggiunte nel
+  frattempo al pasto nuovo. Aggiungi: se il pasto ha già voci non
+  cancella niente.
+- Test permanenti (`controlliPasti.test.ts`, `modifichePasti.test.ts`),
+  tutti provati a vuoto rompendo la regola che controllano. 515 test
+  verdi in 51 file.
+
 ## 2026-10-09 — Coda di sincronizzazione: i genitori prima dei figli
 
 Branch `pagina-pasti`. Primo commit del passo 3 di "Pasti e orari"; da
