@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Validità dei pasti, passo 2b: i pasti del giorno in ogni schermata
+
+Branch `validita-pasti`. Secondo commit del passo 2. Da utente non cambia
+niente finché nessuna riga ha le date.
+
+- `validitaPasti.ts`: un pasto vale nel giorno D se non è cancellato e D
+  sta nel suo periodo (confini inclusi). L'ordine segue l'orario
+  (`ora_inizio` sui primi 5 caratteri), poi `ordine`, poi l'id.
+- Ogni schermata usa i pasti del suo giorno: Oggi quello mostrato,
+  Aggiungi quello in cui si registra, sheet e Sposta quello della voce,
+  Duplica quello di destinazione (l'elenco cambia con la data; pasto
+  d'origine assente quel giorno → "Scegli un pasto"). `duplicaNelPasto`
+  rifiuta un pasto che quel giorno non esiste.
+- Rete di sicurezza in Oggi: un pasto fuori periodo o cancellato con voci
+  quel giorno si vede, con "Non più in uso", ma non riceve voci. Nello
+  sheet della voce compare fra le opzioni, così il menu mostra sempre il
+  pasto vero.
+- Un giorno senza pasti validi mostra "Nessun pasto in questo giorno.",
+  non più "Preparo i tuoi pasti…".
+- Corretto un test instabile del passo 1 (`primoAvvioSenzaRete.test.tsx`):
+  l'evento `online` partiva prima che la pagina lo ascoltasse. L'app non
+  aveva il problema.
+- 474 test verdi in 48 file. Da provare su iPhone.
+
 ## 2026-10-09 — Validità dei pasti, passo 2a: schema e prova degli aggiornamenti Dexie
 
 Branch `validita-pasti`. Passo 2 di "Pasti e orari", primo commit: solo

@@ -1142,6 +1142,55 @@ In Oggi si vedono **tutti i pasti, anche quelli vuoti** (con "—"). Nasconderli
 accorcerebbe la pagina, ma farebbe ballare le posizioni: sapere che la Cena sta
 sempre in quel punto vale più dello spazio risparmiato.
 
+**L'ordine segue l'orario** (deciso il 2026-10-07). Lista di Oggi, titolo di
+Aggiungi, fogli di Sposta e Duplica e "primo pasto vuoto" mettono i pasti in
+ordine di `ora_inizio`, confrontata sui primi 5 caratteri ("12:30" e
+"12:30:00" sono la stessa ora, il secondo formato arriva da Postgres). Fra
+due pasti alla stessa ora decide `ordine`, poi l'id. Riordinare vuol dire
+cambiare l'ora. Al passaggio, il 9/10, per tutti e tre gli utenti l'ordine
+per `ordine` e quello per ora coincidevano: nessuno ha visto cambiare niente.
+
+#### I pasti di un giorno (validità, dal 9/10)
+
+Ogni riga di `pasti` ha un periodo, `valido_dal` / `valido_al` (sezione 4),
+**confini inclusi**, null = da sempre / per sempre. **Un pasto vale nel
+giorno D** se non è cancellato e D sta nel suo periodo
+(`src/lib/pasti/validitaPasti.ts`, con i suoi test). Oggi tutte le righe
+hanno le date vuote; le scriverà la pagina Pasti e orari, con la domanda
+"da quando".
+
+Ogni schermata chiede i pasti del **suo** giorno:
+- **Oggi**: il giorno mostrato. Se in quel giorno non vale nessun pasto, la
+  lista dice "Nessun pasto in questo giorno."; "Preparo i tuoi pasti…" e
+  "Serve la connessione" restano per il solo caso in cui l'utente non ha
+  nessuna riga (primo avvio, sezione 9.2);
+- **Aggiungi**: il giorno in cui si registra. Fra quei pasti si propone
+  quello dell'ora (solo se è oggi) o il primo vuoto (giorni passati);
+- **sheet della voce e Sposta**: il giorno della voce;
+- **Duplica**: il **giorno di destinazione**. L'elenco cambia quando cambia
+  la data. Se quel giorno il pasto d'origine non esiste, nessuna
+  preselezione: "Scegli un pasto", e Duplica resta spento finché non si
+  sceglie (copiare nel pasto sbagliato senza accorgersene è peggio di un
+  tocco in più). `duplicaNelPasto` ricontrolla al momento della scrittura;
+- **trascinamento**: i bersagli sono solo i pasti validi a schermo.
+
+**Rete di sicurezza.** In Oggi, nel giorno D, si vedono i pasti validi in D
+**più ogni pasto che ha voci vive in D**, anche se fuori dal suo periodo o
+cancellato. Senza, quelle voci sparirebbero dalla lista ma resterebbero nei
+totali, e i numeri non tornerebbero. Un pasto così:
+- sta al suo posto per orario, con il suo nome e sotto, in piccolo, "Non più
+  in uso";
+- **non riceve voci**: non è una destinazione di Sposta, Duplica e
+  trascinamento. Da lì le voci si possono solo portare via;
+- nello sheet della voce, il menu "Pasto" lo mostra fra le opzioni come
+  "Merenda · non più in uso", accanto ai pasti validi. Il valore del menu è
+  quindi sempre fra le opzioni: senza, il browser ne mostrerebbe un altro
+  mentre "Salva" lascerebbe la voce dov'era.
+
+Rimandato: le voci il cui pasto non c'è proprio sul dispositivo (`pasto_id`
+null, o un pasto non ancora scaricato) non hanno una riga in Oggi. Un gruppo
+"Senza pasto" si farà più avanti; su Supabase il 7/10 non ce n'erano.
+
 ### Inserimento retroattivo
 
 **Si deve poter registrare anche i giorni passati.** Non è un caso limite: è la
@@ -1256,9 +1305,31 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
   stessa riga invece di scontrarsi contro il vincolo
 
 **`pasti`** — le fasce della giornata, **una riga per utente per pasto**
-- `nome` ("Colazione", "Pranzo 1"), `ora_inizio`, `ordine`
+- `nome` ("Colazione", "Pranzo 1"), `ora_inizio`, `ordine`. Dal 9/10 i
+  pasti si ordinano per `ora_inizio`; `ordine` decide solo fra due pasti
+  alla stessa ora (sezione 3, "I pasti")
 - creata alla registrazione con il set predefinito, poi modificabile dall'utente
 - è la tabella che rende possibile "Pranzo 1 / Pranzo 2" senza toccare il codice
+- **`valido_dal`, `valido_al`** (`date`, nullable, nessun default;
+  migration `pasti_validita` applicata il 9/10, advisors invariati): il
+  periodo in cui il pasto esiste, **confini inclusi**. Null vuol dire da
+  sempre / per sempre, ed è il valore di tutte le righe esistenti. Un
+  cambio "da una data" chiude la riga vecchia (`valido_al` = il giorno
+  prima) e ne apre una nuova (`valido_dal` = quel giorno): modello C
+  dell'analisi del 7/10. Su Dexie (`version(6)`) i due campi sono
+  facoltativi: una riga salvata prima non ha la chiave e vale da sempre
+- **chiave assente o null nell'upsert, da verificare prima del passo 3.**
+  Secondo la documentazione di postgrest-js, l'upsert di una riga sola
+  aggiorna solo le colonne presenti: una riga mandata senza le due chiavi
+  (salvata sul dispositivo prima della `version(6)`, o da un'app non
+  ancora aggiornata) lascia intatte le date sul server, mentre una chiave
+  presente con null le azzera. Va provato davvero prima che la pagina Pasti
+  e orari scriva le date
+- **nessun `CHECK` e nessun indice unico**, nemmeno `valido_dal <=
+  valido_al`: un vincolo violato blocca in silenzio la coda outbox (lo
+  stesso motivo per cui il 20/9 è stato tolto `pasti_user_nome_idx`). I
+  controlli stanno nell'app. Una riga con le date invertite non vale in
+  nessun giorno: resta invisibile, salvo i giorni in cui ha voci
 
 **`alimenti`** — il catalogo
 - nome, marca, `barcode`
@@ -2064,21 +2135,29 @@ Come, in concreto:
     (es. OCR con `next/dynamic`), che l'HTML non cita: oggi verrebbero
     salvati solo al primo uso online
 
-**Checklist B.7 (CLAUDE.md) non ancora eseguita empiricamente** per
-`version(4)` (campo `sospesa_il` su outbox) e `version(5)` (tabella
-`sync_cursori`). Verificate il 2026-09-20 **per lettura del codice**, non
-con la prova che la checklist richiede (partire da un IndexedDB popolato
-con lo schema vecchio, applicare la build nuova, controllare le righe dopo
-l'upgrade). Punti controllati: `sincronizza.ts` (filtro `!v.sospesa_il`) e
-`discesa.ts` (`!voceInSospeso.sospesa_il`) — entrambi trattano un campo
-mancante (`undefined`, riga scritta prima che il campo esistesse) come
-"non sospesa", coerente col fallback previsto; nessun altro punto in `src/`
-legge `sospesa_il`. `sync_cursori` è una tabella nuova che parte vuota,
-ogni lettura passa da un controllo di esistenza (`cursore?.` o
-`cursore ? ... : null`), mai un accesso diretto. Nessun punto trovato che
-legga uno dei due valori senza fallback — ma è un argomento da lettura del
-codice, non la prova empirica: aggiornare questa nota quando viene
-eseguita davvero.
+**Checklist B.7 (CLAUDE.md): un test permanente, non una prova sul
+telefono** (dal 2026-10-09, `src/lib/db/aggiornamentoSchema.test.ts`).
+Sul telefono la prova non si può fare: anteprima e produzione sono
+indirizzi diversi, con database diversi. Il test apre un IndexedDB
+(quello finto di `fake-indexeddb`, con le stesse regole) alla
+`version(3)`, `(4)` e `(5)`, con lo schema di allora copiato fisso e righe
+realistiche in tutte le tabelle, compresa la coda outbox (anche senza
+`sospesa_il`, com'era prima della 4). Poi lo riapre con la classe vera
+dell'app e controlla che le righe ci siano tutte, identiche, che gli
+indici funzionino e che i campi nati dopo si leggano con il loro ripiego.
+Copre quindi anche la 4 e la 5, verificate prima solo leggendo il codice.
+A ogni versione nuova si aggiunge lo schema di quella precedente al test.
+
+**Due schede aperte durante un aggiornamento** (solo da computer: su
+iPhone Safari e l'app installata hanno memorie separate). La scheda
+nuova apre la versione nuova; IndexedDB chiede a quella vecchia di
+chiudersi, e Dexie (4.4.5) lo fa da solo, con un avviso in console. La
+vecchia non si rompe: alla prima operazione si riapre alla versione che
+trova e continua a leggere e scrivere, con il suo codice vecchio, finché
+non si ricarica. Funziona finché gli indici della versione nuova
+contengono quelli della vecchia. Nessuno deve aggiungere un ascoltatore
+di `versionchange` che impedisca la chiusura: la scheda nuova resterebbe
+bloccata. Coperto dallo stesso test.
 
 #### Ripristino dei dati locali (deciso il 2026-09-25)
 
@@ -2231,8 +2310,9 @@ sparito per un bug: lo farebbe alla cieca, con lo stesso rischio.
 **Limite noto, non gestito.** Un utente con righe in `pasti` sul server ma
 nessuna viva (oggi nessuna schermata lo permette) non riceve i
 predefiniti: dopo lo scarico Dexie ha solo righe cancellate, e Oggi resta
-su "Preparo i tuoi pasti…". Va chiuso dalla pagina Pasti e orari, che non
-deve lasciar eliminare l'ultimo pasto.
+su "Nessun pasto in questo giorno." (da un giorno senza pasti validi non si
+registra niente). Va chiuso dalla pagina Pasti e orari, che non deve
+lasciar eliminare l'ultimo pasto.
 
 Strade scartate, da non riproporre: un seed "provvisorio" che trattiene la
 salita fino a conferma del server (il blocco si propaga a ogni voce di
@@ -2555,7 +2635,7 @@ pubblico.
 configurazione Vercel mantenute, codice della v0 consultabile sul tag
 `v0-vecchia-app`.
 
-**Punto 0 — local-first** (sezione 9.2). Dexie è a `version(5)`: le 11
+**Punto 0 — local-first** (sezione 9.2). Dexie è a `version(6)`: le 11
 tabelle più `outbox` e `sync_cursori`. Repository unico per ogni scrittura;
 salita dall'outbox che si ferma al primo errore e accantona una voce dopo 5
 tentativi falliti; discesa incrementale e paginata; `orchestratore.ts`
@@ -2705,7 +2785,7 @@ installata con l'account vero (anche in modalità aereo), "Ricarica i dati
 dal tuo account". Test: `pasti.test.ts` per il seed,
 `primoAvvioSenzaRete.test.tsx` per la schermata.
 
-**Test.** 440 test permanenti in 45 file (Vitest), tutti verdi al 7/10.
+**Test.** 474 test permanenti in 48 file (Vitest), tutti verdi al 9/10.
 
 ### Non ancora costruito
 
@@ -2715,8 +2795,11 @@ dal tuo account". Test: `pasti.test.ts` per il seed,
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
-  riordinare: sezione 3, "I pasti") e ora del consumo (`consumato_alle`)
-  modificabile nello sheet
+  eliminare, cambiare l'ora, con "da quando": sezione 3, "I pasti"). Fatte
+  le basi: il seed (passo 1) e la validità nel tempo con la rete di
+  sicurezza (passo 2, branch `validita-pasti`, **da provare su iPhone**;
+  migration `pasti_validita` applicata il 9/10). Manca la pagina. E ora
+  del consumo (`consumato_alle`) modificabile nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
@@ -2727,9 +2810,6 @@ dal tuo account". Test: `pasti.test.ts` per il seed,
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
   comparire con la data nuova. Il resto del passo 4 è provato; questo
   caso lo copre già il test (`misurazioni.test.ts`)
-- **Checklist B.7 non eseguita empiricamente** per `version(4)` e
-  `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
-  lo schema locale
 - **Cancellando un utente, le sue righe in `alimenti` non vengono
   cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
   non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e

@@ -574,3 +574,89 @@ describe("Oggi: messaggi di Sposta e Duplica per un pasto intero", () => {
     await testoBarra(`Duplicato: Colazione in Pranzo di ${formattaGiornoCorto(ieri)}`);
   });
 });
+
+// Rete di sicurezza (sezione 3, "I pasti"): un pasto che quel giorno non
+// vale più (chiuso prima, o cancellato) ma ha ancora voci si mostra lo
+// stesso, con "Non più in uso", così ogni voce che conta nei totali ha la
+// sua riga. Non riceve voci: non è un bersaglio del trascinamento né una
+// destinazione di Sposta.
+describe("Oggi: pasti non più in uso con voci in quel giorno", () => {
+  async function prepara() {
+    const ieri = giornoPrecedente(oggiLocale());
+    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    // Chiusa ieri: oggi non vale più.
+    const merenda = await repositoryPasti.crea({
+      user_id: utenteTest, nome: "Merenda", ora_inizio: "16:00", ordine: 2, valido_al: ieri,
+    });
+    // Chiusa ieri, e senza voci oggi: non deve comparire.
+    await repositoryPasti.crea({
+      user_id: utenteTest, nome: "Spuntino sera", ora_inizio: "21:30", ordine: 3, valido_al: ieri,
+    });
+    const voce = (nome: string, pastoId: string) =>
+      repositoryVociDiario.crea({
+        user_id: utenteTest,
+        alimento_id: `alimento-${nome}`,
+        pasto_id: pastoId,
+        gruppo_id: null,
+        quantita_g: 100,
+        data: oggiLocale(),
+        creato_il: "2026-10-09T08:00:00.000Z",
+        consumato_alle: null,
+        nome_alimento: nome,
+        kcal_100g: 100,
+        proteine_100g: 4,
+        carboidrati_100g: 5,
+        grassi_100g: 2,
+      });
+    await voce("Yogurt", colazione.id);
+    await voce("Biscotti", merenda.id);
+    render(<OggiPage />);
+    await screen.findByText("Biscotti");
+    return { colazione, pranzo, merenda };
+  }
+
+  it("si mostra con «Non più in uso», al suo posto per orario; senza voci no", async () => {
+    const { merenda } = await prepara();
+    const titoli = [...document.querySelectorAll("li.pasto-trascinamento")].map(
+      (li) => li.querySelector("span.truncate, span.text-lg")?.textContent
+    );
+    expect(titoli).toEqual(["Colazione", "Pranzo", "Merenda"]);
+    expect(screen.queryByText("Spuntino sera")).toBeNull();
+
+    const liMerenda = screen.getByText("Merenda").closest("li")!;
+    expect(within(liMerenda).getByText("Non più in uso")).toBeTruthy();
+    expect(within(liMerenda).getByText("100 kcal")).toBeTruthy();
+    // Non è un bersaglio del trascinamento.
+    expect(document.querySelector(`[data-pasto-id="${merenda.id}"]`)).toBeNull();
+  });
+
+  it("non è una destinazione di Sposta, ma da lì le voci si portano via", async () => {
+    await prepara();
+    const yogurt = screen.getByText("Yogurt").closest("button")!;
+    fireEvent.contextMenu(yogurt);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sposta" }));
+    const foglio = await screen.findByRole("dialog");
+    expect(within(foglio).queryByRole("button", { name: "Merenda" })).toBeNull();
+    expect(within(foglio).getByRole("button", { name: "Pranzo" })).toBeTruthy();
+    fireEvent.click(within(foglio).getByRole("button", { name: "Annulla" }));
+
+    const biscotti = screen.getByText("Biscotti").closest("button")!;
+    fireEvent.contextMenu(biscotti);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sposta" }));
+    const foglio2 = await screen.findByRole("dialog");
+    expect(within(foglio2).getByRole("button", { name: "Colazione" })).toBeTruthy();
+  });
+
+  it("nello sheet della voce il menu mostra il suo pasto, con l'etichetta, e i pasti di oggi", async () => {
+    await prepara();
+    fireEvent.click(screen.getByText("Biscotti").closest("button")!);
+    const menu = (await screen.findByLabelText("Pasto")) as HTMLSelectElement;
+    expect([...menu.options].map((o) => o.textContent)).toEqual([
+      "Colazione",
+      "Pranzo",
+      "Merenda · non più in uso",
+    ]);
+    expect(menu.selectedOptions[0].textContent).toBe("Merenda · non più in uso");
+  });
+});

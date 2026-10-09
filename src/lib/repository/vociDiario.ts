@@ -32,10 +32,11 @@
 // pastiglia, che vince sempre (sezione 3).
 
 import { v5 as uuidv5 } from "uuid";
-import { repositoryVociDiario } from "./index";
+import { repositoryPasti, repositoryVociDiario } from "./index";
 import type { Profilo, VoceDiario } from "../db/tipi";
 import { dataScrivibile, oggiLocale } from "../dataGiorno";
 import { garantisciGiornoPerPrimaVoce } from "./giorni";
+import { pastoValidoIl } from "../pasti/validitaPasti";
 import { doppioniDuplica, pianoDuplica, type PianoDuplica } from "../diario/pianoDuplica";
 import {
   pianoSpostamento,
@@ -280,6 +281,13 @@ export async function duplicaNelPasto({
   // Anche qui, non solo nel foglio: nessuna copia nel futuro.
   if (!dataScrivibile(dataDestinazione, adesso)) {
     throw new Error(`Giorno non valido per Duplica: ${dataDestinazione}`);
+  }
+  // E nessuna copia in un pasto che quel giorno non esiste (cancellato, o
+  // fuori dal suo periodo): il foglio offre solo i pasti di quel giorno,
+  // ma fra l'apertura e la conferma una sync può averli cambiati.
+  const pastoDestinazione = await repositoryPasti.ottieniPerId(pastoDestinazioneId);
+  if (!pastoDestinazione || !pastoValidoIl(pastoDestinazione, dataDestinazione)) {
+    throw new Error(`Pasto non valido per Duplica il : `);
   }
 
   let originali: VoceDiario[];

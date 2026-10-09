@@ -151,6 +151,15 @@ async function seminaSeServerVuoto(userId: string): Promise<EsitoPastiPredefinit
   return "scaricati";
 }
 
+// Tutte le righe di `pasti` dell'utente, comprese le cancellate: le
+// schermate le passano a pastiValidiIl / pastiDaMostrare
+// (src/lib/pasti/validitaPasti.ts), che scelgono quelle del giorno. Le
+// cancellate servono alla rete di sicurezza di Oggi (un pasto cancellato
+// con voci in quel giorno si mostra lo stesso) e ai nomi nei messaggi.
+export async function tuttiIPasti(userId: string): Promise<Pasto[]> {
+  return db.pasti.where("user_id").equals(userId).toArray();
+}
+
 // Righe di `pasti` di questo utente in Dexie, vive o cancellate.
 async function haPastiInLocale(userId: string): Promise<boolean> {
   return (await db.pasti.where("user_id").equals(userId).count()) > 0;

@@ -20,7 +20,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import {
-  repositoryPasti,
   repositoryVociDiario,
   repositoryPreferiti,
   repositoryComposizioni,
@@ -28,6 +27,8 @@ import {
   repositoryProfili,
 } from "@/lib/repository";
 import { usePastiIniziali } from "@/lib/usePastiIniziali";
+import { tuttiIPasti } from "@/lib/repository/pasti";
+import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
 import { garantisciGiornoPerPrimaVoce } from "@/lib/repository/giorni";
 import {
   catalogoLocale,
@@ -90,10 +91,12 @@ function AggiungiContenuto() {
   const userId = useUtenteId();
   const areaVisibile = useAreaVisibile();
 
-  const pasti = useLiveQuery(async () => {
+  // Tutte le righe di `pasti` dell'utente, comprese le cancellate: quelle
+  // che contano sono `pasti`, più sotto, cioè le valide nel giorno in cui si
+  // registra.
+  const righePasti = useLiveQuery(async () => {
     if (!userId) return undefined;
-    const righe = await repositoryPasti.ottieniTutti(userId);
-    return [...righe].sort((a, b) => a.ordine - b.ordine);
+    return tuttiIPasti(userId);
   }, [userId]);
 
   // L'oggi del calendario, anche all'una di notte (PUNTO_DI_PARTENZA.md,
@@ -105,6 +108,11 @@ function AggiungiContenuto() {
   // o è nel futuro, si ripiega su oggi.
   const giornoParam = searchParams.get("giorno");
   const giorno = giornoParam && !eFuturo(giornoParam) ? giornoParam : oggi;
+
+  // I pasti che esistono nel giorno in cui si registra, in ordine d'orario
+  // (sezione 3, "I pasti"): sono le scelte del titolo, e fra loro si
+  // propone il pasto. Un pasto non più in uso quel giorno non riceve voci.
+  const pasti = righePasti ? pastiValidiIl(righePasti, giorno) : undefined;
 
   // "Sto registrando adesso?" — vero quando il giorno mostrato è oggi. Ne
   // dipendono la proposta del pasto (per orario, non "primo pasto ancora
@@ -253,6 +261,10 @@ function AggiungiContenuto() {
   // cosa manca e cosa fare, senza un passaggio in più. Prima la pagina si
   // apriva normale e toccare un alimento non faceva niente, in silenzio.
   if (pasti.length === 0) {
+    // Nessuna riga in `pasti` = primo avvio (seed in corso o fallito).
+    // Righe sì ma nessuna valida in questo giorno = un giorno prima di
+    // tutti i pasti: non c'è dove registrare.
+    const primoAvvio = righePasti!.length === 0;
     return (
       <main
         style={{ top: areaVisibile.top, height: areaVisibile.height }}
@@ -270,7 +282,9 @@ function AggiungiContenuto() {
           <h1 className="font-display text-2xl font-bold">Aggiungi</h1>
         </header>
         <div className="px-4 pt-4">
-          {statoPastiIniziali === "lettura-fallita" ? (
+          {!primoAvvio ? (
+            <p className="py-8 text-center text-sm text-muted">Nessun pasto in questo giorno.</p>
+          ) : statoPastiIniziali === "lettura-fallita" ? (
             <ServeConnessione onRiprova={riprovaPastiIniziali} />
           ) : (
             <p className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</p>

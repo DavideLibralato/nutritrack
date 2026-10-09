@@ -79,6 +79,21 @@ vi.mock("@/lib/supabase/client", () => ({
 
 afterEach(cleanup);
 
+// Il browser torna online: l'evento si rimanda finché compare `atteso`.
+// La pagina si mette in ascolto di `online` in un effetto, che React fa
+// partire un attimo DOPO aver disegnato "Serve la connessione": un evento
+// mandato in quell'attimo non lo sente nessuno. Sul telefono la rete torna
+// secondi dopo, non in quell'attimo; nel test il riquadro e l'evento sono
+// a pochi microsecondi, e un evento solo rendeva il test instabile.
+async function tornaLaRete(atteso: string) {
+  await waitFor(() => {
+    act(() => {
+      window.dispatchEvent(new Event("online"));
+    });
+    expect(screen.getByText(atteso)).toBeTruthy();
+  });
+}
+
 function reteAccesa() {
   server.conteggio = true;
   server.scarico = true;
@@ -113,12 +128,8 @@ describe("Primo avvio senza rete: Oggi", () => {
     await screen.findByText("Serve la connessione");
 
     reteAccesa();
-    act(() => {
-      window.dispatchEvent(new Event("online"));
-    });
-
     // Server vuoto: i 5 predefiniti creati dal seed.
-    expect(await screen.findByText("Colazione")).toBeTruthy();
+    await tornaLaRete("Colazione");
     expect(screen.queryByText("Serve la connessione")).toBeNull();
   });
 
@@ -142,11 +153,7 @@ describe("Primo avvio senza rete: Oggi", () => {
     expect(screen.queryByText("Preparo i tuoi pasti…")).toBeNull();
 
     server.scarico = true;
-    act(() => {
-      window.dispatchEvent(new Event("online"));
-    });
-
-    expect(await screen.findByText("Pranzo 1")).toBeTruthy();
+    await tornaLaRete("Pranzo 1");
   });
 });
 

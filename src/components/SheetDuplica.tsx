@@ -8,8 +8,13 @@
 //    digitare una data oltre il massimo): la data si ricontrolla con
 //    dataScrivibile, cioè contro oggiLocale (l'orologio locale, non UTC:
 //    all'una di notte il giorno nuovo è già oggi).
-// 2. Pasto: uno dei pasti, parte da quello d'origine ("ripeti questo pasto
-//    un altro giorno"), modificabile.
+// 2. Pasto: uno dei pasti che esistono nel GIORNO SCELTO (pastiValidiIl):
+//    l'elenco cambia con la data. Parte da quello d'origine ("ripeti questo
+//    pasto un altro giorno"), modificabile. Se quel giorno il pasto
+//    d'origine non esiste, nessuna preselezione: "Scegli un pasto", e
+//    Duplica spento finché non si sceglie (decisione del 2026-10-09:
+//    copiare nel pasto sbagliato senza accorgersene è peggio di un tocco
+//    in più). Tornando a un giorno in cui esiste, torna selezionato.
 // "Duplica" resta spento finché uno dei due manca o la data non va bene.
 // Annulla, tocco fuori o Esc: niente. Struttura come SheetScegliPasto.
 // Largo al massimo quanto lo schermo: il campo data ha la classe
@@ -20,11 +25,15 @@ import { useEffect, useState } from "react";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { dataScrivibile, oggiLocale } from "@/lib/dataGiorno";
+import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
+import type { Pasto } from "@/lib/db/tipi";
 
 interface Props {
   titolo: string;
   giornoIniziale: string;
-  pasti: { id: string; nome: string }[];
+  // Tutte le righe di `pasti` dell'utente: quelle del giorno scelto le
+  // sceglie lo sheet.
+  pasti: Pasto[];
   pastoIniziale: string | null;
   inCorso?: boolean;
   errore?: string | null;
@@ -56,7 +65,9 @@ export default function SheetDuplica({
 
   const oggi = oggiLocale();
   const dataValida = dataScrivibile(data);
-  const pastoValido = pasti.some((p) => p.id === pastoId);
+  // Senza una data valida non c'è un giorno di cui mostrare i pasti.
+  const pastiDelGiorno = dataValida ? pastiValidiIl(pasti, data) : [];
+  const pastoValido = pastiDelGiorno.some((p) => p.id === pastoId);
   const puoConfermare = dataValida && pastoValido && !inCorso;
 
   function chiudi() {
@@ -100,12 +111,16 @@ export default function SheetDuplica({
           </label>
           <select
             id="duplica-pasto"
-            value={pastoId}
+            // Il pasto d'origine resta in `pastoId` anche quando il giorno
+            // scelto non ce l'ha: il menu mostra "Scegli un pasto" (un valore
+            // che non è fra le opzioni mostrerebbe un menu vuoto), e tornando a
+            // un giorno in cui esiste torna selezionato.
+            value={pastoValido ? pastoId : ""}
             onChange={(e) => setPastoId(e.target.value)}
             className={`mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
           >
             {!pastoValido && <option value="">Scegli un pasto</option>}
-            {pasti.map((p) => (
+            {pastiDelGiorno.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nome}
               </option>

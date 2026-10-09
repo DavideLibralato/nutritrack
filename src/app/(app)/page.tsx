@@ -31,7 +31,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import {
-  repositoryPasti,
   repositoryVociDiario,
   repositoryObiettivi,
   repositoryObiettiviTarget,
@@ -41,6 +40,13 @@ import {
   repositoryGiorni,
 } from "@/lib/repository";
 import { usePastiIniziali } from "@/lib/usePastiIniziali";
+import { tuttiIPasti } from "@/lib/repository/pasti";
+import {
+  ETICHETTA_NON_IN_USO,
+  opzioniPastoDellaVoce,
+  pastiDaMostrare,
+  pastiValidiIl,
+} from "@/lib/pasti/validitaPasti";
 import { targetPerTipo, targetEffettivo } from "@/lib/repository/obiettiviTarget";
 import { tipoGiornoEffettivo, scriviTipoGiornoScelto } from "@/lib/repository/giorni";
 import {
@@ -205,11 +211,14 @@ function OggiContenuto() {
     }
   }
 
+  // TUTTE le righe di `pasti` dell'utente, comprese le cancellate e quelle
+  // fuori dal loro periodo: servono a cercare il nome di un pasto per id
+  // (messaggi, menu, fogli) e alla rete di sicurezza. Quali si mostrano e
+  // quali si possono scegliere in un giorno lo dicono pastiDaMostrare e
+  // pastiValidiIl (src/lib/pasti/validitaPasti.ts), più sotto.
   const pasti = useLiveQuery(async () => {
     if (!userId) return undefined;
-    const righe = await repositoryPasti.ottieniTutti(userId);
-    // Le fasce si mostrano nell'ordine scelto dall'utente (campo `ordine`).
-    return [...righe].sort((a, b) => a.ordine - b.ordine);
+    return tuttiIPasti(userId);
   }, [userId]);
 
   // Tutte le voci dell'utente: il filtro per giorno lo fa vociDelGiorno qui
@@ -545,6 +554,18 @@ function OggiContenuto() {
   const totali = sommaTotali(vociGiorno);
   const obiettivo = obiettivoValidoPer(obiettivi, giorno);
 
+  // I pasti del giorno mostrato (sezione 3, "I pasti"):
+  // - `pastiMostrati`: la lista, in ordine d'orario. Quelli validi oggi più
+  //   la rete di sicurezza: un pasto che quel giorno non vale più ma ha
+  //   ancora voci si mostra lo stesso, con "Non più in uso", così ogni voce
+  //   che conta nei totali qui sopra ha la sua riga;
+  // - `pastiSceglibili`: quelli validi quel giorno, gli unici che possono
+  //   ricevere voci (Sposta, trascinamento, il pasto nello sheet). Da un
+  //   pasto "non più in uso" le voci si possono solo portare via.
+  const pastiMostrati = pastiDaMostrare(pasti, vociGiorno, giorno);
+  const pastiSceglibili = pastiValidiIl(pasti, giorno);
+  const eInUso = (pastoId: string) => pastiSceglibili.some((p) => p.id === pastoId);
+
   // Il tipo REALMENTE scritto per questo giorno (o proposto dal pattern se
   // non è mai stato scritto, sezione 3) — è la classificazione vera, non
   // tocca mai la trappola: resta questo anche se manca il target
@@ -860,7 +881,9 @@ function OggiContenuto() {
 
   function apriModifica(voce: VoceDiario) {
     setVoceInModifica(voce);
-    setPastoModificaId(voce.pasto_id ?? pasti?.[0]?.id ?? "");
+    // Una voce senza pasto (non dovrebbe esistere) parte dal primo pasto
+    // valido nel SUO giorno, non dal primo di tutte le righe.
+    setPastoModificaId(voce.pasto_id ?? pastiValidiIl(pasti ?? [], voce.data)[0]?.id ?? "");
     setSalvataggioVoce("inattivo");
   }
 
@@ -1198,6 +1221,10 @@ function OggiContenuto() {
           ref={refLista}
           className="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(var(--ingombro-oggi)+1rem)]"
         >
+          {/* "Nessun pasto" vuol dire nessuna riga in `pasti` per l'utente
+              (primo avvio): solo allora "Preparo…" o "Serve la connessione".
+              Un giorno in cui nessun pasto vale (tutti nati dopo, per
+              esempio) è un'altra cosa, e lo dice. */}
           {pasti.length === 0 ? (
             statoPastiIniziali === "lettura-fallita" ? (
               <li className="pt-2">
@@ -1206,12 +1233,19 @@ function OggiContenuto() {
             ) : (
               <li className="py-8 text-center text-sm text-muted">Preparo i tuoi pasti…</li>
             )
+          ) : pastiMostrati.length === 0 ? (
+            <li className="py-8 text-center text-sm text-muted">Nessun pasto in questo giorno.</li>
           ) : (
-            pasti.map((pasto) => {
+            pastiMostrati.map((pasto) => {
               const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
               const kcalPasto = Math.round(sommaTotali(vociPasto).kcal);
               const haVoci = vociPasto.length > 0;
               const collassato = pastiCollassati.has(pasto.id);
+              // Rete di sicurezza: il pasto quel giorno non vale (fuori dal
+              // suo periodo o cancellato) ma ha voci. Si mostra, con "Non
+              // più in uso", ma non riceve voci: niente data-pasto-id, che è
+              // l'attributo con cui il trascinamento trova i bersagli.
+              const inUso = eInUso(pasto.id);
               // Stella del segnalibro (sezione 3, punto 3): piena finché gli
               // alimenti+quantità di oggi coincidono con un pasto già salvato.
               const giaSalvato = pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci);
@@ -1224,9 +1258,9 @@ function OggiContenuto() {
                   // tratteggiato, quello sotto il dito è evidenziato; il
                   // pasto di partenza si spegne solo trascinando un pasto
                   // intero (globals.css, .pasto-trascinamento).
-                  data-pasto-id={pasto.id}
+                  data-pasto-id={inUso ? pasto.id : undefined}
                   data-bersaglio={
-                    trascinamento && trascinamento.pastoPartenzaId !== pasto.id ? "" : undefined
+                    inUso && trascinamento && trascinamento.pastoPartenzaId !== pasto.id ? "" : undefined
                   }
                   data-bersaglio-attivo={bersaglio === pasto.id ? "" : undefined}
                   data-trascinato={
@@ -1283,6 +1317,8 @@ function OggiContenuto() {
                       <span className="shrink-0 text-lg">—</span>
                     </div>
                   )}
+
+                  {!inUso && <p className="text-xs text-muted">{ETICHETTA_NON_IN_USO}</p>}
 
                   {/* Ogni voce è tappabile: apre lo SheetQuantita in modifica
                       (sezione 5). */}
@@ -1455,7 +1491,7 @@ function OggiContenuto() {
       {spostamento && spostamento.sceltaPasto && spostamento.doppioni === null && (
         <SheetScegliPasto
           titolo={`Sposta «${accorcia(spostamento.nome, MASSIMO_ALIMENTO)}» in…`}
-          pasti={pasti.filter((p) => p.id !== spostamento.pastoPartenzaId)}
+          pasti={pastiSceglibili.filter((p) => p.id !== spostamento.pastoPartenzaId)}
           inCorso={spostamento.inCorso}
           errore={spostamento.errore}
           onScegli={(pastoId) => void eseguiSpostamento(spostamento, pastoId)}
@@ -1496,7 +1532,7 @@ function OggiContenuto() {
           nomePasto={nomePastoInModifica}
           grammiIniziali={voceInModifica.quantita_g}
           modifica
-          pasti={pasti}
+          pasti={opzioniPastoDellaVoce(pasti, voceInModifica)}
           pastoSelezionatoId={pastoModificaId}
           onCambiaPasto={setPastoModificaId}
           inCorso={salvataggioVoce === "in-corso"}

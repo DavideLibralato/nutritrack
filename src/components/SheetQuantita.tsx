@@ -17,7 +17,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { AlimentoPerSheet } from "@/lib/inserimento/alimentoPerSheet";
-import type { Pasto } from "@/lib/db/tipi";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { leggiGrammi } from "@/lib/inserimento/grammi";
@@ -43,7 +42,10 @@ interface Props {
   // Se presenti tutti e tre, lo sheet mostra un selettore di pasto (spostare
   // la voce). In creazione non si passano: il pasto lo sceglie il titolo
   // della pagina /aggiungi, e lo sheet resta identico a com'era.
-  pasti?: Pasto[];
+  // Le opzioni le calcola chi apre lo sheet (opzioniPastoDellaVoce in
+  // src/lib/pasti/validitaPasti.ts): i pasti validi nel giorno della voce,
+  // più il suo pasto attuale se non vale più.
+  pasti?: { id: string; nome: string }[];
   pastoSelezionatoId?: string;
   onCambiaPasto?: (pastoId: string) => void;
   onElimina?: () => void;

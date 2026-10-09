@@ -25,7 +25,7 @@ import {
 import { repositoryVociDiario } from "./index";
 import { db } from "../db/database";
 import { scaricaTabella } from "../sync/discesa";
-import type { Profilo, VoceDiario } from "../db/tipi";
+import type { Pasto, Profilo, VoceDiario } from "../db/tipi";
 import { idGiorno } from "./giorni";
 
 // Rete assente, come negli altri test dei repository: si esercita solo la
@@ -367,6 +367,21 @@ describe("duplica e annulla", () => {
   const ADESSO = new Date(2026, 9, 2, 13, 0, 0);
   const IERI = "2026-10-01";
 
+  // I pasti di destinazione devono esistere in Dexie e valere quel giorno
+  // (duplicaNelPasto lo ricontrolla): qui colazione e pranzo, da sempre.
+  function pastoFinto(id: string, date: Partial<Pasto> = {}): Pasto {
+    return {
+      id, user_id: "condiviso-nei-test", nome: id, ora_inizio: "12:00", ordine: 0,
+      updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null, ...date,
+    };
+  }
+  beforeEach(async () => {
+    await db.pasti.bulkPut([
+      pastoFinto("colazione"),
+      pastoFinto("pranzo"),
+    ]);
+  });
+
   function profiloDifferenziato(userId: string): Profilo {
     return {
       id: crypto.randomUUID(),
@@ -476,5 +491,60 @@ describe("duplica e annulla", () => {
       })
     ).rejects.toThrow();
     expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(1);
+  });
+});
+
+describe("duplica: il pasto di destinazione deve esistere quel giorno", () => {
+  const ADESSO = new Date(2026, 9, 2, 13, 0, 0);
+  const IERI = "2026-10-01";
+
+  beforeEach(async () => {
+    const base = { user_id: "condiviso-nei-test", ora_inizio: "12:00", ordine: 0, updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null };
+    await db.pasti.bulkPut([
+      { ...base, id: "pranzo", nome: "Pranzo" },
+      { ...base, id: "merenda", nome: "Merenda", valido_dal: GIORNO },
+      { ...base, id: "cena-chiusa", nome: "Cena", valido_al: "2026-09-30" },
+      { ...base, id: "spuntino-cancellato", nome: "Spuntino", deleted_at: "2026-09-15T10:00:00.000Z" },
+    ]);
+  });
+
+  for (const [caso, pastoId, data] of [
+    ["un pasto che nasce dopo quel giorno", "merenda", IERI],
+    ["un pasto chiuso prima di quel giorno", "cena-chiusa", IERI],
+    ["un pasto cancellato", "spuntino-cancellato", GIORNO],
+    ["un pasto che non c'è", "pasto-inesistente", GIORNO],
+  ] as const) {
+    it(`${caso}: rifiutato, senza scrivere niente`, async () => {
+      const userId = crypto.randomUUID();
+      const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 150 });
+      await expect(
+        duplicaNelPasto({
+          userId,
+          dataPartenza: GIORNO,
+          origine: { tipo: "voce", id: mela.id },
+          dataDestinazione: data,
+          pastoDestinazioneId: pastoId,
+          profilo: null,
+          adesso: ADESSO,
+        })
+      ).rejects.toThrow("Pasto non valido");
+      expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(1);
+    });
+  }
+
+  it("lo stesso pasto il giorno in cui esiste: la copia si fa", async () => {
+    const userId = crypto.randomUUID();
+    const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 150 });
+    const esito = await duplicaNelPasto({
+      userId,
+      dataPartenza: GIORNO,
+      origine: { tipo: "voce", id: mela.id },
+      dataDestinazione: GIORNO,
+      pastoDestinazioneId: "merenda",
+      profilo: null,
+      adesso: ADESSO,
+    });
+    expect(esito.esito).toBe("fatto");
+    expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(2);
   });
 });
