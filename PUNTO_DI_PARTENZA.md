@@ -2785,6 +2785,17 @@ installata con l'account vero (anche in modalità aereo), "Ricarica i dati
 dal tuo account". Test: `pasti.test.ts` per il seed,
 `primoAvvioSenzaRete.test.tsx` per la schermata.
 
+**Validità dei pasti nel tempo, con la rete di sicurezza** (passo 2,
+9/10, provato su iPhone il 9/10 in Safari privato sull'anteprima del
+branch `validita-pasti`, account di prova). Tutto come prima: Oggi (oggi
+e giorno passato), Aggiungi, sheet, Sposta, trascinamento, Duplica,
+offline. Con un pasto di prova e date scritte via SQL: con `valido_dal` =
+oggi compare oggi e non ieri, e Duplica segue la data; spostato a domani
+con una voce oggi, resta visibile con "Non più in uso", totali coerenti,
+non riceve voci da nessuna strada e il menu della voce dice "· non più in
+uso"; eliminata la voce, sparisce. Com'è fatto: sezione 3, "I pasti di un
+giorno". Test: `validitaPasti.test.ts`, `aggiornamentoSchema.test.ts`.
+
 **Test.** 474 test permanenti in 48 file (Vitest), tutti verdi al 9/10.
 
 ### Non ancora costruito
@@ -2797,8 +2808,7 @@ dal tuo account". Test: `pasti.test.ts` per il seed,
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
   eliminare, cambiare l'ora, con "da quando": sezione 3, "I pasti"). Fatte
   le basi: il seed (passo 1) e la validità nel tempo con la rete di
-  sicurezza (passo 2, branch `validita-pasti`, **da provare su iPhone**;
-  migration `pasti_validita` applicata il 9/10). Manca la pagina. E ora
+  sicurezza (passo 2, provato su iPhone il 9/10; migration `pasti_validita` applicata il 9/10). Manca la pagina. E ora
   del consumo (`consumato_alle`) modificabile nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale

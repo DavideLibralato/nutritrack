@@ -27,7 +27,16 @@ niente finché nessuna riga ha le date.
 - Corretto un test instabile del passo 1 (`primoAvvioSenzaRete.test.tsx`):
   l'evento `online` partiva prima che la pagina lo ascoltasse. L'app non
   aveva il problema.
-- 474 test verdi in 48 file. Da provare su iPhone.
+- 474 test verdi in 48 file.
+- Provato su iPhone il 9/10 (Safari privato, anteprima, account di
+  prova). Tutto come prima: Oggi (oggi e giorno passato), Aggiungi,
+  sheet, Sposta, trascinamento, Duplica, offline. Pasto "Prova validità"
+  con date scritte via SQL: con `valido_dal` = 9/10 compare oggi e non
+  ieri, e in Duplica segue la data; spostato al 10/10 con una voce oggi,
+  resta visibile con "Non più in uso", totali coerenti, non è
+  destinazione di Sposta, Aggiungi, Duplica né trascinamento, il menu
+  della voce dice "· non più in uso"; eliminata la voce, sparisce. Riga
+  poi cancellata in modo logico.
 
 ## 2026-10-09 — Validità dei pasti, passo 2a: schema e prova degli aggiornamenti Dexie
 
