@@ -2694,6 +2694,17 @@ automatico; Duplica con giorno, pasto e "Vedi". Nello stesso giro anche
 inserimento, Impostazioni, tema scuro e offline, senza regressioni.
 Com'è fatto: sezione 3, "Tieni premuto: sposta, duplica, elimina".
 
+**Seed dei pasti predefiniti solo con il server vuoto** (7/10, provato su
+iPhone il 9/10 sull'anteprima del branch `seed-pasti`). Chiude la
+resurrezione di un pasto cancellato e la rinomina annullata (§9.2). Da
+computer, con l'account di prova: IndexedDB cancellato e rete spenta →
+"Serve la connessione"; con la rete di nuovo accesa i pasti arrivano da
+soli; "Riprova" funziona in tutti e due i casi. Su iPhone, tutto come prima
+e il riquadro non compare mai: Safari privato con l'account di prova, app
+installata con l'account vero (anche in modalità aereo), "Ricarica i dati
+dal tuo account". Test: `pasti.test.ts` per il seed,
+`primoAvvioSenzaRete.test.tsx` per la schermata.
+
 **Test.** 440 test permanenti in 45 file (Vitest), tutti verdi al 7/10.
 
 ### Non ancora costruito
@@ -2716,10 +2727,6 @@ Com'è fatto: sezione 3, "Tieni premuto: sposta, duplica, elimina".
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
   comparire con la data nuova. Il resto del passo 4 è provato; questo
   caso lo copre già il test (`misurazioni.test.ts`)
-- **Seed dei pasti predefiniti solo con il server vuoto** (7/10, §9.2):
-  chiude la resurrezione di un pasto cancellato e la rinomina annullata.
-  Coperto dai test (`pasti.test.ts` per il seed, `primoAvvioSenzaRete.test.tsx`
-  per la schermata "Serve la connessione"), **da provare su iPhone**
 - **Checklist B.7 non eseguita empiricamente** per `version(4)` e
   `version(5)` di Dexie (§9.2): va fatta prima del prossimo deploy che tocca
   lo schema locale

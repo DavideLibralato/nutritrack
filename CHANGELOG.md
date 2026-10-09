@@ -21,7 +21,13 @@ Branch `seed-pasti`. Passo 1 di "Pasti e orari".
   Prima c'era "Preparo i tuoi pasti…" all'infinito.
 - Limite noto, non gestito: un utente con sul server solo pasti cancellati
   resta su "Preparo i tuoi pasti…".
-- 440 test verdi in 45 file. Da provare su iPhone.
+- 440 test verdi in 45 file.
+- Provato su iPhone il 9/10, sull'anteprima del branch. Da computer, con
+  l'account di prova: IndexedDB cancellato e rete spenta → "Serve la
+  connessione"; con la rete accesa i pasti arrivano da soli; "Riprova"
+  funziona in tutti e due i casi. Su iPhone (Safari privato con l'account
+  di prova, app installata con l'account vero anche in modalità aereo,
+  "Ricarica i dati") tutto come prima, il riquadro non compare mai.
 
 ## 2026-10-06 — Tieni premuto (passi A–E) provato su iPhone, unito a main
 
