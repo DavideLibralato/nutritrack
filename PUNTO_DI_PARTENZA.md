@@ -2940,12 +2940,18 @@ di oggi, coda vuota, nessuna voce accantonata. Com'è fatto: sezione 3,
 `modifichePasti.test.ts`, la pagina, `sincronizza.test.ts`,
 `repository.transazione.test.ts`.
 
-**Elimina pasto, passo 4** (9/10, branch `elimina-pasto`, **da provare
-su iPhone**): "Elimina pasto" nello sheet, con la domanda "da quando", la
-conferma con voci / giorni / kcal se tocca voci, la barra con Annulla che
-ricrea il pasto e le voci; almeno un pasto in ogni giorno; la
-sincronizzazione un giro per volta (sezione 9.2). Com'è fatto: sezione 3,
-"Elimina pasto". Test: `controlliPasti.test.ts`,
+**Elimina pasto, passo 4** (9/10, provato su iPhone il 9/10 in Safari
+privato sull'anteprima del branch `elimina-pasto`, account di prova):
+"Elimina pasto" nello sheet, con la domanda "da quando", la conferma con
+voci / giorni / kcal se tocca voci, la barra con Annulla che ricrea il
+pasto e le voci; almeno un pasto in ogni giorno; la sincronizzazione un
+giro per volta (sezione 9.2). Provati: da oggi senza voci e con voci
+(conferma con 1 voce), pasti eliminati assenti oggi e presenti ieri in
+Aggiungi, Sposta, Duplica e trascinamento, "Anche nei giorni passati"
+con 13 voci + Annulla, da oggi + Annulla, pasto nato oggi senza domanda
++ Annulla, tema scuro. Su Supabase: pasto ricreato con id v5 e le sue
+voci, anche dopo eliminazione e Annulla fatti offline. Com'è fatto:
+sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
 `modifichePasti.test.ts`, `vociDiario.test.ts`, la pagina,
 `sincronizzaUnaPerVolta.test.ts`.
 
@@ -2961,8 +2967,7 @@ sincronizzazione un giro per volta (sezione 9.2). Com'è fatto: sezione 3,
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari: fatti il
   seed (passo 1), la validità nel tempo (passo 2) e la pagina per
   rinominare, cambiare l'ora e aggiungere (passo 3, provato su iPhone il
-  9/10) ed eliminare (passo 4, branch `elimina-pasto`, **da provare su
-  iPhone**). Mancano le **date future** (passo 5). E ora del consumo
+  9/10) ed eliminare (passo 4, provato su iPhone il 9/10). Mancano le **date future** (passo 5). E ora del consumo
   (`consumato_alle`) modificabile nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale

@@ -28,7 +28,17 @@ logica del 4b.
   chiuso, §11 con il rischio della riga riportata in vita da un altro
   telefono fra i difetti aperti.
 - Test della pagina (7 nuovi), provati a vuoto da copia. 565 test verdi
-  in 53 file. Da provare su iPhone.
+  in 53 file.
+- Provato su iPhone il 9/10 (Safari privato, anteprima, account di
+  prova): da oggi senza voci (Spuntino pomeriggio) e con voci (Cena,
+  conferma con 1 voce); pasti eliminati assenti da Aggiungi, Sposta,
+  Duplica e trascinamento oggi e presenti ieri; "Anche nei giorni
+  passati" su Pranzo (conferma con 13 voci) + Annulla; Colazione da oggi
+  + Annulla; pasto nato oggi senza domanda + Annulla; tema scuro.
+  Verificato su Supabase da Cowork: Pranzo ricreato con id v5 e le sue
+  13 voci; prova offline su Spuntino mattina (eliminato e annullato in
+  modalità aereo) arrivata corretta, pasto vecchio e voce cancellati,
+  pasto ricreato vivo con la sua voce.
 
 ## 2026-10-09 — Elimina pasto, passo 4b: regole, scritture e Annulla
 
@@ -53,6 +63,9 @@ schermata ancora.
   rimessa in vita.
 - Test permanenti, tutti provati a vuoto (13 rotture da copia): 558 test
   verdi in 53 file.
+- Provato su iPhone il 9/10 con le prove del passo 4c: gli Annulla di
+  Pranzo e di Spuntino mattina (anche offline) hanno ricreato sul server
+  il pasto con id v5 e le sue voci.
 
 ## 2026-10-09 — Sincronizzazione: un giro per volta
 
@@ -75,6 +88,8 @@ Branch `elimina-pasto`. Primo commit del passo 4 di "Pasti e orari"
   rete caduta) la chiamata dopo e il giro prenotato partono: togliendo il
   rilascio, il giro prenotato si richiama da solo e il processo muore.
   532 test verdi in 53 file.
+- Provato su iPhone il 9/10 con le prove del passo 4c: Pranzo con 13
+  voci e la prova offline arrivati al server corretti, coda vuota.
 
 ## 2026-10-09 — Pasti e orari unita a main
 
