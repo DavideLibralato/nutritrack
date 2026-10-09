@@ -45,3 +45,19 @@ describe("campi data", () => {
     expect(leggi("src/components/SheetDuplica.tsx")).toMatch(/role="dialog"[\s\S]*?overflow-x-hidden/);
   });
 });
+
+// Lo stesso per i campi ora (Pasti e orari, dal 9/10): Safari dà anche a
+// loro la sua larghezza minima.
+describe("campi ora", () => {
+  it("nessun campo ora ha una larghezza minima propria, e quelli a tutta larghezza tolgono il controllo nativo", () => {
+    expect(regola('input[type="time"]')).toMatch(/min-width:\s*0\s*;/);
+    const corpo = regola('input[type="time"].campo-data');
+    expect(corpo).toMatch(/-webkit-appearance:\s*none\s*;/);
+    expect(corpo).toMatch(/width:\s*100%\s*;/);
+  });
+
+  it("il campo 'Inizia alle' di SheetPasto usa .campo-data", () => {
+    const campo = leggi("src/components/SheetPasto.tsx").match(/type="time"[\s\S]*?className=\{?[`"]([^`"]*)/);
+    expect(campo?.[1]).toMatch(/\bcampo-data\b/);
+  });
+});

@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-09 — Pasti e orari, passo 3c: la pagina
+
+Branch `pagina-pasti`. Terzo commit del passo 3: la pagina
+`/impostazioni/pasti`, che usa la logica del commit 3b.
+
+- Riga "Pasti e orari · 5 pasti" in Impostazioni, fra Obiettivi e Peso;
+  rotta in `PAGINE_APP` del service worker.
+- Elenco dei pasti di oggi; `SheetPasto` (Nome, "Inizia alle", nessuna
+  ora proposta per un pasto nuovo) e `SheetDaQuando` (Da oggi già
+  scelto come nel mockup; una scelta che violerebbe i controlli è spenta
+  con il motivo). Barra con Annulla dopo ogni scrittura.
+- `RigaImpostazioni` accetta `onClick` (riga-pulsante). Campi ora con le
+  stesse regole CSS dei campi data per Safari (`campiData.test.ts`).
+- Aggiungi: prima di scrivere una voce ricontrolla che il pasto valga
+  quel giorno (`pastoValidoAdesso`).
+- Documenti: PUNTO §3 "Pasti e orari", §4 chiuso il dubbio sull'upsert
+  senza chiavi (nessun client vecchio, la pagina scrive sempre le date),
+  §11.
+- Test della pagina (7) e della guardia, provati a vuoto. Corretto un
+  test instabile scritto in questo commit: cercava "Annulla" mentre lo
+  sheet era ancora aperto e a volte toccava quello dello sheet invece
+  di quello della barra. L'app non aveva il problema. 525 test verdi in
+  52 file. Da provare su iPhone.
+
 ## 2026-10-09 — Pasti e orari, passo 3b: controlli, scritture e Annulla
 
 Branch `pagina-pasti`. Secondo commit del passo 3: solo `lib`, nessuna

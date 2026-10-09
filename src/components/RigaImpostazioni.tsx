@@ -1,7 +1,8 @@
 // Una riga di un GruppoImpostazioni: icona in un quadratino (facoltativa),
 // etichetta, valore grigio a destra e freccia ›. Con `href` è un link a una
-// sotto-pagina (tutta la riga è toccabile, alta almeno 52 px); senza, è solo
-// una riga da leggere.
+// sotto-pagina (tutta la riga è toccabile, alta almeno 52 px); con
+// `onClick` è un pulsante, stesso aspetto (Pasti e orari: apre lo sheet del
+// pasto); senza nessuno dei due, è solo una riga da leggere.
 //
 // La linea di separazione fra due righe la disegna globals.css
 // (.riga-impostazioni): parte dal testo, quindi più a destra se la riga ha
@@ -17,11 +18,13 @@ export default function RigaImpostazioni({
   icona,
   valore,
   href,
+  onClick,
 }: {
   etichetta: string;
   icona?: ReactNode;
   valore?: ReactNode;
   href?: string;
+  onClick?: () => void;
 }) {
   const stile = { "--rientro-linea": icona ? "58px" : "16px" } as CSSProperties;
   const contenuto = (
@@ -36,7 +39,7 @@ export default function RigaImpostazioni({
       )}
       <span className="min-w-0 flex-1 truncate">{etichetta}</span>
       {valore != null && <span className="shrink-0 text-[15px] text-muted">{valore}</span>}
-      {href && <FrecciaDestra />}
+      {(href || onClick) && <FrecciaDestra />}
     </>
   );
 
@@ -47,6 +50,13 @@ export default function RigaImpostazioni({
       <Link href={href} style={stile} className={`${classe} ${CLASSE_FOCUS}`}>
         {contenuto}
       </Link>
+    );
+  }
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} style={stile} className={`${classe} w-full text-left ${CLASSE_FOCUS}`}>
+        {contenuto}
+      </button>
     );
   }
   return (

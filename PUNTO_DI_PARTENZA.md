@@ -830,11 +830,11 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 
 **La pagina Impostazioni è completa (passi 1–6, tutti provati su iPhone,
 il 6 il 3/10).** Oggi l'elenco ha: la scheda dell'account (→ Profilo);
-**Alimentazione**: Obiettivi, Peso; **App**: Aspetto, Sincronizzazione;
+**Alimentazione**: Obiettivi, Pasti e orari (dal 9/10, "5 pasti": quanti
+valgono oggi), Peso; **App**: Aspetto, Sincronizzazione;
 **Informazioni**; **Esci**. Restano fuori, come **lavori a sé** e non come
 passi di questa pagina, le righe che mancano rispetto alla struttura
 finale:
-- **Pasti e orari** (gruppo Alimentazione);
 - **Preferiti e pasti salvati** (gruppo App);
 - **l'indicatore di sincronizzazione** (nella riga e nella pagina
   Sincronizzazione).
@@ -1117,9 +1117,9 @@ sulla voce in Oggi → lo sheet quantità, con anche il pasto modificabile.
 **La struttura dei pasti è dell'utente, non dell'app.** Chi segue una dieta ha
 "Pranzo 1" e "Pranzo 2", o tre spuntini. Quindi i pasti non sono quattro valori
 fissi nel codice: sono righe di una tabella, che l'utente può rinominare,
-aggiungere, eliminare e riordinare da Impostazioni > Pasti e orari *(non
-ancora costruito: oggi esiste solo il set predefinito, nessuna schermata per
-modificarlo)*.
+aggiungere, eliminare e riordinare da Impostazioni > Pasti e orari *(dal
+9/10 rinominare, cambiare l'ora e aggiungere: "Pasti e orari" più sotto;
+eliminare arriva al passo 4, le date future al passo 5)*.
 
 Ogni pasto ha **solo un'ora di inizio**, non un intervallo: dura fino all'inizio
 del pasto successivo, e l'ultimo arriva fino a mezzanotte. Un campo invece di
@@ -1155,9 +1155,9 @@ per `ordine` e quello per ora coincidevano: nessuno ha visto cambiare niente.
 Ogni riga di `pasti` ha un periodo, `valido_dal` / `valido_al` (sezione 4),
 **confini inclusi**, null = da sempre / per sempre. **Un pasto vale nel
 giorno D** se non è cancellato e D sta nel suo periodo
-(`src/lib/pasti/validitaPasti.ts`, con i suoi test). Oggi tutte le righe
-hanno le date vuote; le scriverà la pagina Pasti e orari, con la domanda
-"da quando".
+(`src/lib/pasti/validitaPasti.ts`, con i suoi test). Le date le scrive
+la pagina Pasti e orari, con la domanda "da quando" (sotto); le righe
+nate prima hanno le date vuote.
 
 Ogni schermata chiede i pasti del **suo** giorno:
 - **Oggi**: il giorno mostrato. Se in quel giorno non vale nessun pasto, la
@@ -1190,6 +1190,65 @@ totali, e i numeri non tornerebbero. Un pasto così:
 Rimandato: le voci il cui pasto non c'è proprio sul dispositivo (`pasto_id`
 null, o un pasto non ancora scaricato) non hanno una riga in Oggi. Un gruppo
 "Senza pasto" si farà più avanti; su Supabase il 7/10 non ce n'erano.
+
+#### Pasti e orari (dal 9/10, passo 3)
+
+Impostazioni > Alimentazione > **Pasti e orari** (`/impostazioni/pasti`;
+mockup `docs/mockups/pasti-e-orari.html`, elenco "A · Righe"). Passo 3:
+rinominare, cambiare l'ora, aggiungere. **Elimina** è il passo 4, le
+**date future** ("Da una data", schede per data) il passo 5.
+
+- **Elenco**: i pasti che valgono **oggi**, in ordine d'orario, nome a
+  sinistra e ora a destra; in fondo "+ Aggiungi pasto". Un pasto chiuso
+  qui non compare (in Oggi resta visibile con la rete di sicurezza).
+- **Tocco su un pasto** → sheet con Nome e "Inizia alle", Salva e Annulla:
+  - cambia **solo l'ora** → si scrive subito, in ogni giorno del pasto,
+    passati compresi (l'ora non ha storia);
+  - cambia **il nome** → la domanda "da quando vale?": **Correggi** ("Vale
+    anche per i giorni passati") o **Da oggi** ("Fino a ieri resta
+    «Pranzo»"), con Da oggi già scelto (non riscrive il passato). Nome e
+    ora si scrivono **insieme, dopo la risposta**: "Indietro" torna ai
+    campi senza aver scritto niente;
+  - **niente domanda**, si corregge e basta, se cambiano solo maiuscole o
+    spazi ("pranzo" → "Pranzo" è lo stesso nome), o se il pasto è nato
+    oggi (`valido_dal` oggi o dopo): chiuderlo "da oggi" lo lascerebbe
+    senza giorni, come per gli obiettivi.
+- **Da oggi** (modello C, sezione 4), in **una transazione Dexie** (tutto o
+  niente, coda outbox compresa): riga nuova (id nuovo, nome nuovo, stessa
+  ora o quella nuova, stesso `ordine`, `valido_dal` oggi, `valido_al` quello
+  della vecchia), le **voci vive di oggi** passano alla riga nuova (niente
+  pasto nuovo vuoto accanto a un "Non più in uso" con le voci), la riga
+  vecchia si chiude ieri. Che il pasto nuovo arrivi al server prima delle
+  voci lo garantisce l'ordine della coda (sezione 9.2).
+- **+ Aggiungi pasto**: nome e ora (nessuna ora proposta), poi "**Anche nei
+  giorni passati**" (`valido_dal` null: compare vuoto anche nei giorni già
+  registrati) o "**Da oggi**". `ordine` = il più alto fra tutte le righe,
+  cancellate comprese, più uno.
+- **Controlli**, nell'app e non sul server (un vincolo violato bloccherebbe
+  la coda): nome con gli spazi tolti, non vuoto, **senza distinguere
+  maiuscole**; nome e ora diversi da ogni altro pasto vivo che ha **almeno
+  un giorno in comune** (non solo oggi: servirà così com'è al passo 5).
+  Errori sotto il campo ("Alle 12:30 inizia già Pranzo."); se il pasto che
+  occupa l'ora oggi non c'è, lo dice ("iniziava già Merenda (fino all'8
+  ott)"). L'ora si controlla solo se cambia. Nella domanda, una scelta che
+  violerebbe i controlli è spenta con il motivo (es. Correggi con un nome
+  che nei giorni passati c'è già). Le scritture rifanno i controlli: se una
+  sync ha cambiato i pasti nel frattempo, l'errore torna sotto il campo.
+  `src/lib/pasti/controlliPasti.ts`.
+- La pagina **scrive sempre** `valido_dal` e `valido_al` esplicite, anche
+  null, sulle righe che crea o modifica.
+- **Annulla** nella barra in basso, come nel diario, con una fotografia
+  (`src/lib/repository/modifichePasti.ts`); mai una riga rimessa in vita:
+  ora e Correggi rimettono i valori di prima; Da oggi cancella la riga
+  nuova (`deleted_at`), riapre la vecchia e riporta sul pasto vecchio le
+  voci di quel giorno che stanno sul nuovo, anche quelle arrivate nel
+  frattempo; Aggiungi cancella la riga nuova, ma **non** se nel frattempo
+  ha delle voci ("Non annullato: il pasto ha già delle voci."). Arrivato
+  dopo la sync, l'Annulla è una scrittura in avanti come le altre.
+- **Aggiungi alimento** ricontrolla, prima di scrivere una voce, che il
+  pasto scelto valga quel giorno (`pastoValidoAdesso`): Pasti e orari in
+  un'altra scheda può averlo chiuso.
+- Ogni azione si salva alla conferma: niente guardiano delle modifiche.
 
 ### Inserimento retroattivo
 
@@ -1318,13 +1377,15 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
   prima) e ne apre una nuova (`valido_dal` = quel giorno): modello C
   dell'analisi del 7/10. Su Dexie (`version(6)`) i due campi sono
   facoltativi: una riga salvata prima non ha la chiave e vale da sempre
-- **chiave assente o null nell'upsert, da verificare prima del passo 3.**
-  Secondo la documentazione di postgrest-js, l'upsert di una riga sola
-  aggiorna solo le colonne presenti: una riga mandata senza le due chiavi
-  (salvata sul dispositivo prima della `version(6)`, o da un'app non
-  ancora aggiornata) lascia intatte le date sul server, mentre una chiave
-  presente con null le azzera. Va provato davvero prima che la pagina Pasti
-  e orari scriva le date
+- **chiave assente o null nell'upsert: chiuso il 9/10 senza prova su
+  Supabase.** Secondo la documentazione di postgrest-js, l'upsert di una
+  riga sola aggiorna solo le colonne presenti: una riga senza le due chiavi
+  lascerebbe intatte le date sul server, una chiave con null le azzera. Il
+  dubbio riguardava un client vecchio che manda una riga senza chiavi, e
+  oggi non c'è: tutti i telefoni sono alla build `66c25f1`, e la pagina
+  Pasti e orari scrive sempre le due date in modo esplicito, anche null,
+  su ogni riga che crea o modifica. L'unico altro punto che scrive `pasti`
+  è il seed, che parte solo con il server vuoto
 - **nessun `CHECK` e nessun indice unico**, nemmeno `valido_dal <=
   valido_al`: un vincolo violato blocca in silenzio la coda outbox (lo
   stesso motivo per cui il 20/9 è stato tolto `pasti_user_nome_idx`). I
@@ -2814,7 +2875,15 @@ non riceve voci da nessuna strada e il menu della voce dice "· non più in
 uso"; eliminata la voce, sparisce. Com'è fatto: sezione 3, "I pasti di un
 giorno". Test: `validitaPasti.test.ts`, `aggiornamentoSchema.test.ts`.
 
-**Test.** 474 test permanenti in 48 file (Vitest), tutti verdi al 9/10.
+**Pasti e orari, passo 3** (9/10, branch `pagina-pasti`, **da provare
+su iPhone**): la pagina per rinominare (Correggi / Da oggi), cambiare
+l'ora e aggiungere un pasto, con Annulla; la guardia in Aggiungi; la coda
+di sincronizzazione con i genitori prima dei figli (sezione 9.2). Com'è
+fatto: sezione 3, "Pasti e orari". Test: `controlliPasti.test.ts`,
+`modifichePasti.test.ts`, la pagina, `sincronizza.test.ts`,
+`repository.transazione.test.ts`.
+
+**Test.** 525 test permanenti in 52 file (Vitest), tutti verdi al 9/10.
 
 ### Non ancora costruito
 
@@ -2823,11 +2892,12 @@ giorno". Test: `validitaPasti.test.ts`, `aggiornamentoSchema.test.ts`.
   (fase 5)
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
-- Gestione delle fasce dei pasti, Impostazioni > Pasti e orari (rinominare, aggiungere,
-  eliminare, cambiare l'ora, con "da quando": sezione 3, "I pasti"). Fatte
-  le basi: il seed (passo 1) e la validità nel tempo con la rete di
-  sicurezza (passo 2, provato su iPhone il 9/10; migration `pasti_validita` applicata il 9/10). Manca la pagina. E ora
-  del consumo (`consumato_alle`) modificabile nello sheet
+- Gestione delle fasce dei pasti, Impostazioni > Pasti e orari: fatti il
+  seed (passo 1), la validità nel tempo (passo 2) e la pagina per
+  rinominare, cambiare l'ora e aggiungere (passo 3, branch `pagina-pasti`,
+  **da provare su iPhone**). Mancano **Elimina** (passo 4) e le **date
+  future** (passo 5). E ora del consumo (`consumato_alle`) modificabile
+  nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)

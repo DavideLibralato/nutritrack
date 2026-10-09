@@ -328,6 +328,26 @@ input[type="date"].campo-data::-webkit-date-and-time-value {
   text-align: left;
 }
 
+/* Campi ora (<input type="time">, "Inizia alle" in Pasti e orari, dal
+   9/10): Safari li tratta come i campi data, con la stessa larghezza
+   minima. Stesse regole, scritte a parte perché il test le cerca per
+   selettore. */
+input[type="time"] {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+input[type="time"].campo-data {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+}
+input[type="time"].campo-data::-webkit-date-and-time-value {
+  min-height: 1.5em;
+  text-align: left;
+}
+
 /* Trascinamento in Oggi (src/lib/trascinaInPasto.ts):
    - la riga trascinata resta al suo posto, spenta (data-trascinato): un
      alimento, oppure tutto il pasto se si trascina un pasto intero;

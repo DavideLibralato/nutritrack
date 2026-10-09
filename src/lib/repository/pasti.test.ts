@@ -16,6 +16,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   garantisciPastiPredefiniti,
+  pastoValidoAdesso,
   idPastoPredefinito,
   PASTI_PREDEFINITI,
 } from "./pasti";
@@ -332,5 +333,23 @@ describe("garantisciPastiPredefiniti — crea solo con il server vuoto", () => {
     expect(await garantisciPastiPredefiniti(userId)).toBe("gia-in-locale");
 
     expect((await pastiInDexie(userId)).map((p) => p.updated_at)).toEqual(primaScrittura);
+  });
+});
+
+// La guardia di Aggiungi (dal 9/10): nessuna voce in un pasto che quel
+// giorno non esiste, nemmeno se la pagina lo aveva ancora fra le scelte.
+describe("pastoValidoAdesso", () => {
+  it("vero solo per un pasto vivo e valido quel giorno, riletto da Dexie", async () => {
+    const base = { user_id: "u-guardia", updated_at: "2026-10-01T00:00:00.000Z", ordine: 0, ora_inizio: "12:30" };
+    await db.pasti.bulkPut([
+      { ...base, id: "g-vivo", nome: "Pranzo", deleted_at: null, valido_dal: null, valido_al: null },
+      { ...base, id: "g-chiuso", nome: "Merenda", deleted_at: null, valido_dal: null, valido_al: "2026-10-08" },
+      { ...base, id: "g-cancellato", nome: "Cena", deleted_at: "2026-10-01T00:00:00.000Z" },
+    ]);
+    expect(await pastoValidoAdesso("g-vivo", "2026-10-09")).toBe(true);
+    expect(await pastoValidoAdesso("g-chiuso", "2026-10-08")).toBe(true);
+    expect(await pastoValidoAdesso("g-chiuso", "2026-10-09")).toBe(false);
+    expect(await pastoValidoAdesso("g-cancellato", "2026-10-09")).toBe(false);
+    expect(await pastoValidoAdesso("g-mai-esistito", "2026-10-09")).toBe(false);
   });
 });

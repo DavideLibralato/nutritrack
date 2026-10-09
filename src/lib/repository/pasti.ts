@@ -12,6 +12,7 @@ import { repositoryPasti } from "./index";
 import { contaRigheSulServer, scaricaTabella } from "../sync/discesa";
 import { db } from "../db/database";
 import type { Pasto } from "../db/tipi";
+import { pastoValidoIl } from "../pasti/validitaPasti";
 
 export const PASTI_PREDEFINITI: Pick<Pasto, "nome" | "ora_inizio" | "ordine">[] = [
   { nome: "Colazione", ora_inizio: "06:00", ordine: 0 },
@@ -163,4 +164,14 @@ export async function tuttiIPasti(userId: string): Promise<Pasto[]> {
 // Righe di `pasti` di questo utente in Dexie, vive o cancellate.
 async function haPastiInLocale(userId: string): Promise<boolean> {
   return (await db.pasti.where("user_id").equals(userId).count()) > 0;
+}
+
+// Il pasto può ricevere voci nel giorno D? Riletto da Dexie adesso, non
+// preso dallo stato della pagina: fra la scelta e la conferma una sync, o
+// Pasti e orari in un'altra scheda, possono averlo chiuso o cancellato.
+// Lo usa Aggiungi prima di scrivere una voce (duplicaNelPasto fa lo stesso
+// controllo per conto suo).
+export async function pastoValidoAdesso(pastoId: string, giorno: string): Promise<boolean> {
+  const pasto = await db.pasti.get(pastoId);
+  return !!pasto && pastoValidoIl(pasto, giorno);
 }

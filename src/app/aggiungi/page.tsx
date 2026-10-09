@@ -27,7 +27,7 @@ import {
   repositoryProfili,
 } from "@/lib/repository";
 import { usePastiIniziali } from "@/lib/usePastiIniziali";
-import { tuttiIPasti } from "@/lib/repository/pasti";
+import { pastoValidoAdesso, tuttiIPasti } from "@/lib/repository/pasti";
 import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
 import { garantisciGiornoPerPrimaVoce } from "@/lib/repository/giorni";
 import {
@@ -320,6 +320,14 @@ function AggiungiContenuto() {
     gruppoId: string | null = null
   ): Promise<VoceDiario | null> {
     if (!userId || !pastoSelezionatoId || profilo === undefined) return null;
+
+    // Nessuna voce in un pasto che quel giorno non esiste (cancellato, o
+    // chiuso da Pasti e orari): il titolo offre solo i pasti del giorno, ma
+    // il pasto scelto può essere cambiato nel frattempo, da un'altra scheda
+    // o da una sync. Come in duplicaNelPasto: si rilegge da Dexie qui.
+    if (!(await pastoValidoAdesso(pastoSelezionatoId, giorno))) {
+      throw new Error(`Pasto non valido il ${giorno}: ${pastoSelezionatoId}`);
+    }
 
     // Gancio "riceve la prima voce di diario" (sezione 3, regola 1): non fa
     // nulla se il giorno è già scritto o se la differenziazione non è

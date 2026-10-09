@@ -139,10 +139,11 @@ export interface Pasto extends RigaBase {
   // da sempre / per sempre (colonne `date` nullable, sezione 4, "pasti").
   // Facoltativi (`?`), non solo nullable: un pasto salvato sul dispositivo
   // prima di Dexie version(6), o creato senza indicarli (il seed), non ha
-  // proprio la chiave. Leggerli sempre con `?? null`. Attenzione quando si
-  // scrive: una chiave assente nell'upsert dovrebbe lasciare intatto il
-  // valore sul server, una chiave null lo azzera (da verificare con una
-  // prova vera, PUNTO_DI_PARTENZA.md sezione 4).
+  // proprio la chiave. Leggerli sempre con `?? null`. Quando si scrive una
+  // riga, le due chiavi vanno sempre messe, anche null (lo fa
+  // src/lib/repository/modifichePasti.ts): una chiave assente nell'upsert
+  // lascia il valore del server, una null lo azzera (PUNTO_DI_PARTENZA.md
+  // sezione 4, chiuso il 9/10).
   valido_dal?: string | null;
   valido_al?: string | null;
 }

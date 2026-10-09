@@ -26,6 +26,7 @@ importScripts("/sw-strategia.js");
 // offline.html che segue la scelta di Aspetto (CACHE_STATICI v4).
 // 3/10/2026, passo "accento": offline.html segue anche il colore
 // principale e ha il grigio nuovo (CACHE_STATICI v5).
+// 9/10/2026, passo "pasti e orari": /impostazioni/pasti in PAGINE_APP.
 const {
   PAGINE_APP,
   pagineDaTogliere,

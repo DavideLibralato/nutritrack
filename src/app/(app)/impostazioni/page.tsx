@@ -5,14 +5,15 @@
 // come le impostazioni dell'iPhone, da cui si entra nelle sotto-pagine.
 //
 // Ci sono solo le righe che funzionano (sezione 3: un comando che non fa
-// niente sembra rotto). Pasti e orari, Preferiti e lo stato della
-// sincronizzazione restano fuori finché non esistono.
+// niente sembra rotto). Preferiti e lo stato della sincronizzazione
+// restano fuori finché non esistono.
 //
 // La riga Obiettivi mostra a destra le calorie del periodo valido oggi
 // (testoRigaObiettivi, con il suo test): "2500 kcal", oppure "2500 · 2950
 // kcal" con i giorni differenziati accesi, "Da impostare" senza periodo.
 // La riga Peso mostra l'ultima pesata ("85 kg", "78,4 kg") o "Da
-// registrare" (testoRigaPeso, con il suo test). Tutte e due non mostrano
+// registrare" (testoRigaPeso, con il suo test). La riga Pasti e orari
+// mostra quanti pasti valgono oggi ("5 pasti"). Tutte e tre non mostrano
 // niente finché i dati non sono arrivati da Dexie.
 // La riga Aspetto mostra le scelte salvate su questo dispositivo, tema e
 // colore principale ("Sistema · Verde"), niente finché il browser non le ha
@@ -30,6 +31,8 @@ import {
   repositoryObiettiviTarget,
 } from "@/lib/repository";
 import { ultimaMisurazione } from "@/lib/repository/misurazioni";
+import { tuttiIPasti } from "@/lib/repository/pasti";
+import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
 import { periodoInCorso } from "@/lib/totaliDiario";
 import { oggiLocale } from "@/lib/dataGiorno";
 import { testoRigaObiettivi } from "@/lib/profilo/rigaObiettivi";
@@ -82,6 +85,14 @@ export default function ImpostazioniPage() {
 
   const valorePeso = ultimaPesata === undefined ? undefined : testoRigaPeso(ultimaPesata);
 
+  const pasti = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return tuttiIPasti(userId);
+  }, [userId]);
+  const numeroPasti = pasti === undefined ? undefined : pastiValidiIl(pasti, oggiLocale()).length;
+  const valorePasti =
+    numeroPasti === undefined ? undefined : numeroPasti === 1 ? "1 pasto" : `${numeroPasti} pasti`;
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+1.5rem)]">
       <h1 className="mx-1 mt-1.5 font-display text-[34px] font-bold leading-tight">Impostazioni</h1>
@@ -98,6 +109,12 @@ export default function ImpostazioniPage() {
           icona={<IconaObiettivi />}
           valore={valoreObiettivi}
           href="/impostazioni/obiettivi"
+        />
+        <RigaImpostazioni
+          etichetta="Pasti e orari"
+          icona={<IconaPasti />}
+          valore={valorePasti}
+          href="/impostazioni/pasti"
         />
         <RigaImpostazioni
           etichetta="Peso"
@@ -164,6 +181,15 @@ function IconaObiettivi() {
       <circle cx="12" cy="12" r="8" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="12" cy="12" r=".6" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconaPasti() {
+  return (
+    <svg {...TRATTO}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4l3 2" />
     </svg>
   );
 }
