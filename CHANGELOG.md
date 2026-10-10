@@ -5,6 +5,39 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Reimposta password: il link funziona alla prima apertura
+
+Branch `reset-password`. Bug: aprendo il link dell'email compariva "Link
+non valido", e solo ricaricando il modulo. Causa: il client Supabase
+(singleton, `detectSessionInUrl`) scambia da solo il `?code=` appena
+nasce; la pagina lo scambiava una seconda volta, trovava il code
+verifier già usato e cancellato, e mostrava l'errore anche se l'accesso
+era riuscito. Ora la pagina legge l'esito con `initialize()` e mostra il
+modulo solo se la sessione è nata da quel link: la libreria toglie
+`?code=` dall'indirizzo solo dopo uno scambio riuscito. Una sessione già
+aperta di un altro account (per esempio quello di prova in Safari) dà
+errore, come prima: la password non può finire sull'account sbagliato.
+Testi invariati (il caso "altro browser" usa ancora il messaggio di
+oggi). Test permanente `reimpostaPassword.test.tsx`: client Supabase
+vero, rete finta che fa fallire il test per ogni richiesta non prevista,
+6 casi; 5 rotture di prova prese, ripristino dalla copia. 718 test verdi
+in 64 file. Da provare nel browser.
+
+## 2026-10-10 — Indicatore di sincronizzazione unito a main
+
+Provato il 10/10 (voce sotto) e unito a main con fast-forward da
+`6b99c32` a `8f3e7ea`, senza commit di merge: `7ae114b` (voce di merge
+di `pasti-date`), `3924d81` (nessun tentativo consumato senza rete o con
+401), `a7f06fb` (richieste annullate dopo 30 s), `dd30a0d` (lo stato
+della sincronizzazione), `0fae28d` (`ultimo_status`, Dexie version(8)),
+`3758281` (la pagina Sincronizzazione), `0d0fe97` (la riga in
+Impostazioni), `816d081` (il pallino sulla tab), `8f3e7ea` (i documenti,
+provato su iPhone il 10/10). Branch `sync-stato` cancellato, in locale e
+su GitHub. Deploy di produzione riuscito. 712 test verdi in 63 file.
+Voce scritta con il primo commit del branch successivo
+(`reset-password`), per non fare un commit su main solo per il
+changelog.
+
 ## 2026-10-10 — Indicatore di sincronizzazione provato su iPhone
 
 Branch `sync-stato`. Provato su iPhone il 10/10 in Safari sull'anteprima,

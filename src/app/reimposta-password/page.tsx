@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AuthPKCECodeVerifierMissingError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
@@ -30,8 +31,15 @@ function ReimpostaPasswordForm() {
   const [caricamento, setCaricamento] = useState(false);
 
   // Il link dell'email porta qui con ?code=..., che va scambiato con una
-  // sessione vera prima di poter cambiare la password (flusso PKCE, lo
-  // stesso che usa il resto dell'app tramite @supabase/ssr).
+  // sessione vera prima di poter cambiare la password (flusso PKCE).
+  //
+  // Lo scambio NON lo facciamo noi: lo fa da solo il client Supabase appena
+  // nasce (detectSessionInUrl, acceso da @supabase/ssr), se nel browser c'è
+  // il "code verifier" salvato quando è stato chiesto il link. Il client è
+  // uno solo per tutta la pagina e può nascere prima di questo componente
+  // (useUtenteId nel layout radice). Fino al 10/10/2026 lo scambiavamo una
+  // seconda volta qui: il verifier era già stato usato e cancellato, e la
+  // pagina mostrava "Link non valido" anche se l'accesso era riuscito.
   useEffect(() => {
     const code = searchParams.get("code");
     const supabase = createClient();
@@ -51,10 +59,29 @@ function ReimpostaPasswordForm() {
       return;
     }
 
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+    // initialize() non rifà il lavoro: restituisce l'esito dell'avvio già
+    // partito, scambio compreso.
+    supabase.auth.initialize().then(({ error }) => {
       if (error) {
+        // Il server ha rifiutato il codice (scaduto o già usato).
         setStatoSessione("errore");
         setErroreSessione(traduciErroreAuth(error.message));
+        return;
+      }
+      // Il modulo compare SOLO se la sessione è nata da questo link. Il
+      // segno: la libreria toglie ?code= dall'indirizzo solo dopo averlo
+      // scambiato con successo. Se è ancora lì lo scambio non è avvenuto
+      // (verifier assente: link aperto in un altro browser, o chiesto
+      // dall'app installata su iPhone e aperto in Safari). Una sessione già
+      // aperta in questo browser può essere di un altro account: cambiarle
+      // la password sarebbe cambiarla all'account sbagliato.
+      // searchParams non aiuta: Next non si accorge della modifica della
+      // libreria e continua a vedere il codice.
+      if (new URL(window.location.href).searchParams.has("code")) {
+        setStatoSessione("errore");
+        setErroreSessione(
+          traduciErroreAuth(new AuthPKCECodeVerifierMissingError().message)
+        );
         return;
       }
       setStatoSessione("pronto");
