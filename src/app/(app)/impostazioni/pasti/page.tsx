@@ -123,7 +123,8 @@ export default function PastiEOrariPage() {
   const [barra, setBarra] = useState<StatoBarra | null>(null);
 
   // Le voci vive del pasto aperto, lette dal vivo: sono i numeri della
-  // conferma di Elimina (e la frase "Le voci di oggi vengono eliminate.").
+  // conferma di Elimina (e la frase "Le voci di oggi vengono eliminate.",
+  // o "da oggi in poi" se ce ne sono anche nei giorni futuri).
   // Se una sync ne porta una nuova mentre la conferma è aperta, i numeri
   // cambiano da soli.
   //
@@ -347,9 +348,12 @@ export default function PastiEOrariPage() {
     void eseguiElimina(modo, []);
   }
 
+  // "Da oggi" vuol dire da oggi in poi: anche le voci dei giorni futuri già
+  // pianificati (il diario arriva fino a oggi + 7). Stesso filtro di
+  // vociDaEliminare in modifichePasti.ts.
   function vociDelModo(modo: ModoElimina) {
     const oggi = oggiLocale();
-    return (vociPasto ?? []).filter((v) => modo === "tutto" || v.data === oggi);
+    return (vociPasto ?? []).filter((v) => modo === "tutto" || v.data >= oggi);
   }
 
   // `idVoci`: le voci che l'utente ha appena visto nella conferma. Se nel
@@ -367,7 +371,11 @@ export default function PastiEOrariPage() {
         return;
       }
       chiudi();
-      mostraBarra(messaggioEliminato(pasto.nome, modo, esito.riepilogo.voci), esito.fotografia);
+      const eliminate = esito.fotografia.eliminazione?.voci ?? [];
+      mostraBarra(
+        messaggioEliminato(pasto.nome, modo, esito.riepilogo.voci, soloDiOggi(eliminate, oggiLocale())),
+        esito.fotografia
+      );
     } catch {
       // Dallo sheet del pasto (pasto nato oggi, senza voci) l'errore va
       // sotto i campi; dalla domanda o dalla conferma, lì.
@@ -483,7 +491,11 @@ export default function PastiEOrariPage() {
               titolo: "Da oggi",
               spiegazione:
                 "I giorni passati restano come sono." +
-                (vociDelModo("oggi").length > 0 ? " Le voci di oggi vengono eliminate." : ""),
+                (vociDelModo("oggi").length === 0
+                  ? ""
+                  : soloDiOggi(vociDelModo("oggi"), oggiLocale())
+                    ? " Le voci di oggi vengono eliminate."
+                    : " Le voci da oggi in poi vengono eliminate."),
             },
           ]}
           predefinita="oggi"
@@ -500,6 +512,7 @@ export default function PastiEOrariPage() {
           nome={pastoAperto.nome}
           modo={sheet.modoElimina}
           voci={vociDelModo(sheet.modoElimina)}
+          oggi={oggiLocale()}
           inCorso={inCorso}
           errore={erroreDomanda}
           onNo={chiudi}
@@ -515,6 +528,17 @@ function voci(n: number): string {
   return `${n} voc${n === 1 ? "e" : "i"}`;
 }
 
+function giorni(n: number): string {
+  return `${n} giorn${n === 1 ? "o" : "i"}`;
+}
+
+// Le voci di "Da oggi" stanno tutte su oggi? Allora i testi dicono "di
+// oggi", come prima del diario fino a 7 giorni; se ce n'è anche una nei
+// giorni futuri dicono "da oggi in poi".
+function soloDiOggi(righe: VoceDiario[], oggi: string): boolean {
+  return righe.every((v) => v.data === oggi);
+}
+
 // La conferma prima di eliminare un pasto con delle voci (mockup, senza
 // "Non si può annullare.": dopo c'è la barra con Annulla). I numeri sono
 // quelli delle voci vive adesso; il Sì manda gli id di queste voci, così
@@ -523,6 +547,7 @@ function ConfermaElimina({
   nome,
   modo,
   voci: righe,
+  oggi,
   inCorso,
   errore,
   onNo,
@@ -531,14 +556,19 @@ function ConfermaElimina({
   nome: string;
   modo: ModoElimina;
   voci: VoceDiario[];
+  oggi: string;
   inCorso: boolean;
   errore: string | null;
   onNo: () => void;
   onSi: (idVoci: string[]) => void;
 }) {
-  const { voci: n, giorni, kcal } = riepilogoVoci(righe);
-  const dove = modo === "tutto" ? `in ${giorni} ${giorni === 1 ? "giorno" : "giorni"}` : "oggi";
-  const quali = modo === "tutto" ? "di quei giorni" : "di oggi";
+  const { voci: n, giorni: g, kcal } = riepilogoVoci(righe);
+  // "ha 13 voci in 9 giorni" (anche nei giorni passati), "ha 1 voce oggi"
+  // (da oggi, tutte di oggi), "ha 5 voci in 3 giorni, da oggi in poi" (da
+  // oggi, con giorni futuri pianificati).
+  const soloOggi = modo === "oggi" && soloDiOggi(righe, oggi);
+  const dove = soloOggi ? "oggi" : modo === "oggi" ? `in ${giorni(g)}, da oggi in poi` : `in ${giorni(g)}`;
+  const quali = soloOggi ? "di oggi" : "di quei giorni";
   return (
     <SheetConferma
       titolo={`Eliminare anche ${voci(n)}?`}
@@ -555,13 +585,14 @@ function ConfermaElimina({
 }
 
 // "Eliminato: Pranzo (13 voci)", "Eliminato da oggi: Cena (1 voce di
-// oggi)", "Eliminato: Spuntino pomeriggio".
-function messaggioEliminato(nome: string, modo: ModoElimina, numeroVoci: number): MessaggioBarra {
+// oggi)", "Eliminato da oggi: Cena (5 voci da oggi in poi)", "Eliminato:
+// Spuntino pomeriggio".
+function messaggioEliminato(nome: string, modo: ModoElimina, numeroVoci: number, soloOggi: boolean): MessaggioBarra {
   if (modo === "oggi") {
     return {
       testo: "Eliminato da oggi:",
       nome,
-      coda: numeroVoci > 0 ? `(${voci(numeroVoci)} di oggi)` : undefined,
+      coda: numeroVoci > 0 ? `(${voci(numeroVoci)} ${soloOggi ? "di oggi" : "da oggi in poi"})` : undefined,
       icona: "elimina",
     };
   }

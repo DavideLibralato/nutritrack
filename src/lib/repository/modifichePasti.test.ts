@@ -1,6 +1,6 @@
 // Le scritture di Pasti e orari e i loro Annulla (PUNTO_DI_PARTENZA.md,
 // sezione 3, "Pasti e orari"): test permanenti. La rinomina "da oggi"
-// tocca tre cose insieme (due righe di `pasti` e le voci di oggi): un
+// tocca tre cose insieme (due righe di `pasti` e le voci da oggi in poi): un
 // guasto a metà, o un Annulla che dimentica una voce, lascerebbe voci
 // sotto un pasto "Non più in uso" senza che nessuno se ne accorga.
 
@@ -447,5 +447,79 @@ describe("annulla di eliminaPasto", () => {
       conflitto: "Non annullato: «Pranzo» non c'è più.",
     });
     expect((await pastoIn("pranzo")).deleted_at).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Diario fino a oggi + 7 (decisione del 10/10): "da oggi" vuol dire da oggi
+// in poi. Oltre alle voci del beforeEach, Pranzo ne ha una domani, una fra
+// tre giorni e una cancellata domani. Senza questo, rinominare o eliminare
+// "da oggi" lascerebbe le voci pianificate su un pasto chiuso ("Non più in
+// uso") o vive dopo l'eliminazione.
+
+const DOMANI = "2026-10-10";
+const TRA_TRE = "2026-10-12";
+const IDS_DA_OGGI = ["v-domani", "v-oggi-1", "v-oggi-2", "v-tra-tre"];
+
+describe("da oggi, con voci nei giorni futuri", () => {
+  beforeEach(async () => {
+    await db.voci_diario.bulkPut([
+      voce("v-domani", "pranzo", DOMANI),
+      voce("v-tra-tre", "pranzo", TRA_TRE),
+      voce("v-domani-cancellata", "pranzo", DOMANI, { deleted_at: "2026-10-09T08:00:00.000Z" }),
+    ]);
+  });
+
+  it("rinomina: le voci da oggi in poi passano al pasto nuovo, quelle di ieri no", async () => {
+    const esito = await rinominaDaOggi({ id: "pranzo", nome: "Pranzo 1", ora: "12:30", oggi: OGGI });
+
+    for (const id of IDS_DA_OGGI) {
+      expect((await db.voci_diario.get(id))?.pasto_id).toBe(esito.pastoNuovo.id);
+    }
+    expect((await db.voci_diario.get("v-ieri"))?.pasto_id).toBe("pranzo");
+    expect((await db.voci_diario.get("v-domani-cancellata"))?.pasto_id).toBe("pranzo");
+    expect(esito.vociSpostate).toBe(4);
+  });
+
+  it("annulla della rinomina: tornano anche le voci future, compresa una aggiunta dopo", async () => {
+    const { fotografia, pastoNuovo } = await rinominaDaOggi({ id: "pranzo", nome: "Pranzo 1", ora: "12:30", oggi: OGGI });
+    // Pianificata dopo la rinomina, fra cinque giorni, sul pasto nuovo.
+    await db.voci_diario.put(voce("v-tra-cinque", pastoNuovo.id, "2026-10-14"));
+
+    expect(await annullaModificaPasti(fotografia)).toBe("annullato");
+
+    expect((await pastoIn(pastoNuovo.id)).deleted_at).not.toBeNull();
+    for (const id of [...IDS_DA_OGGI, "v-tra-cinque", "v-ieri"]) {
+      expect((await db.voci_diario.get(id))?.pasto_id).toBe("pranzo");
+    }
+  });
+
+  it("elimina: cancella le voci da oggi in poi, la conferma le conta tutte", async () => {
+    // La conferma vista con le sole voci di oggi non basta: niente scritto.
+    const vecchia = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_OGGI });
+    expect(vecchia).toMatchObject({ esito: "cambiate", riepilogo: { voci: 4, giorni: 3, kcal: 208 } });
+    if (vecchia.esito !== "cambiate") throw new Error("attese cambiate");
+    expect([...vecchia.idVoci].sort()).toEqual(IDS_DA_OGGI);
+    for (const id of IDS_DA_OGGI) expect(await vivo(id)).toBe(true);
+
+    const esito = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_DA_OGGI });
+    expect(esito.esito).toBe("fatto");
+    for (const id of IDS_DA_OGGI) expect(await vivo(id)).toBe(false);
+    expect(await vivo("v-ieri")).toBe(true);
+    expect(await pastoIn("pranzo")).toMatchObject({ deleted_at: null, valido_al: IERI });
+  });
+
+  it("annulla dell'eliminazione: rinascono anche le voci future, nei loro giorni", async () => {
+    const esito = await eliminaPasto({ id: "pranzo", modo: "oggi", oggi: OGGI, idVociConfermate: IDS_DA_OGGI });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+
+    expect(await annullaModificaPasti(esito.fotografia)).toBe("annullato");
+
+    expect((await pastoIn("pranzo")).valido_al).toBeNull();
+    for (const id of IDS_DA_OGGI) {
+      const ricreata = await db.voci_diario.get(idVoceRicreata(id));
+      expect(ricreata).toMatchObject({ pasto_id: "pranzo", deleted_at: null });
+      expect(ricreata?.data).toBe((await db.voci_diario.get(id))?.data);
+    }
   });
 });

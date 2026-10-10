@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Diario fino a 7 giorni, 2: Elimina e Rinomina "da oggi"
+
+Branch `diario-futuro`. Con le voci nei giorni futuri, "da oggi" in Pasti
+e orari vuol dire da oggi in poi.
+
+- Rinomina "da oggi": passano al pasto nuovo anche le voci dei giorni
+  futuri, non solo quelle di oggi; il suo Annulla le riporta tutte
+  (`vociDaRiportare` ora ha `dal` invece di `data`: vive solo in memoria,
+  nella barra, verificato prima di cambiarlo).
+- Elimina "da oggi": cancella anche le voci future; conferma, barra e
+  Annulla le contano e le ricreano, ciascuna nel suo giorno. Testi: "di
+  oggi" se sono tutte di oggi, "da oggi in poi" se ce ne sono di future
+  ("ha 3 voci in 3 giorni, da oggi in poi, per 156 kcal").
+- Chiuso il difetto aperto dal commit 1 (PUNTO §11). Documenti: PUNTO §3
+  "Pasti e orari" ed "Elimina pasto".
+- Test nuovi (4 in `modifichePasti`, 2 nella pagina), provati a vuoto
+  rompendo il codice da una copia. 581 test verdi in 53 file.
+
 ## 2026-10-10 — Diario fino a 7 giorni, 1: navigazione e inserimento
 
 Branch `diario-futuro`. Decisione del 10/10: il diario accetta anche i

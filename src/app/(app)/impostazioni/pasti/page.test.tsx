@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent, cleanup, within } from "@testing-li
 import PastiEOrariPage from "./page";
 import { db } from "@/lib/db/database";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
-import { giornoPrecedente, oggiLocale } from "@/lib/dataGiorno";
+import { giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
 
 // La pagina Pasti e orari (passo 3, PUNTO_DI_PARTENZA.md sezione 3, "Pasti
 // e orari"): qui si controlla che la pagina scelga giusto quando chiedere
@@ -279,5 +279,52 @@ describe("Pagina Pasti e orari — Elimina pasto", () => {
 
     expect(await screen.findByText("Non annullato: c'è già un pasto chiamato «Cena».")).toBeTruthy();
     expect((await db.pasti.toArray()).filter((p) => p.nome === "Cena" && p.deleted_at === null)).toHaveLength(1);
+  });
+
+  it("da oggi, con voci solo oggi: i testi dicono «di oggi»", async () => {
+    await eliminaDalloSheet("Pranzo");
+    const domanda = await screen.findByRole("dialog", { name: "Eliminare «Pranzo»?" });
+    fireEvent.click(within(domanda).getByRole("button", { name: "Continua" }));
+
+    const conferma = await screen.findByRole("alertdialog", { name: "Eliminare anche 1 voce?" });
+    expect(conferma.textContent).toContain(
+      "«Pranzo» ha 1 voce oggi, per 52 kcal. Verranno eliminate e i totali di oggi scenderanno."
+    );
+    fireEvent.click(within(conferma).getByRole("button", { name: "Elimina pasto e 1 voce" }));
+
+    const barra = await screen.findByRole("status");
+    await waitFor(() => expect(barra.textContent).toContain("(1 voce di oggi)"));
+  });
+
+  it("da oggi, con voci nei giorni futuri: le conta, le elimina, e Annulla le rimette", async () => {
+    // Diario fino a oggi + 7: il Pranzo ha anche due voci pianificate.
+    const domani = giornoSuccessivo(OGGI);
+    const traTre = giornoSuccessivo(giornoSuccessivo(domani));
+    await db.voci_diario.bulkPut([voce("v-domani", "pranzo", domani), voce("v-tra-tre", "pranzo", traTre)]);
+
+    await eliminaDalloSheet("Pranzo");
+    const domanda = await screen.findByRole("dialog", { name: "Eliminare «Pranzo»?" });
+    expect(within(domanda).getByText("I giorni passati restano come sono. Le voci da oggi in poi vengono eliminate.")).toBeTruthy();
+    fireEvent.click(within(domanda).getByRole("button", { name: "Continua" }));
+
+    const conferma = await screen.findByRole("alertdialog", { name: "Eliminare anche 3 voci?" });
+    expect(conferma.textContent).toContain(
+      "«Pranzo» ha 3 voci in 3 giorni, da oggi in poi, per 156 kcal. Verranno eliminate e i totali di quei giorni scenderanno."
+    );
+    fireEvent.click(within(conferma).getByRole("button", { name: "Elimina pasto e 3 voci" }));
+
+    await waitFor(async () => expect((await db.pasti.get("pranzo"))?.valido_al).toBe(IERI));
+    for (const id of ["v-oggi", "v-domani", "v-tra-tre"]) {
+      expect((await db.voci_diario.get(id))?.deleted_at).not.toBeNull();
+    }
+    expect((await db.voci_diario.get("v-ieri"))?.deleted_at).toBeNull();
+
+    const barra = await screen.findByRole("status");
+    expect(barra.textContent).toContain("(3 voci da oggi in poi)");
+    fireEvent.click(within(barra).getByRole("button", { name: "Annulla" }));
+    await waitFor(async () => {
+      const vive = (await db.voci_diario.toArray()).filter((v) => v.pasto_id === "pranzo" && v.deleted_at === null);
+      expect(vive.map((v) => v.data).sort()).toEqual([IERI, OGGI, domani, traTre]);
+    });
   });
 });

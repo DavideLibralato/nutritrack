@@ -3,8 +3,8 @@
 // - correggiPasto: nome e/o ora sulla stessa riga, quindi in ogni giorno
 //   del pasto, passati compresi. È anche il cambio della sola ora;
 // - rinominaDaOggi: il modello C (sezione 4, "pasti"). La riga vecchia si
-//   chiude ieri, ne nasce una nuova da oggi, e le voci di oggi passano a
-//   quella nuova;
+//   chiude ieri, ne nasce una nuova da oggi, e le voci da oggi in poi
+//   (il diario arriva fino a oggi + 7) passano a quella nuova;
 // - aggiungiPasto: una riga nuova, da sempre o da oggi.
 //
 // Ogni funzione rilegge le righe da Dexie e rifà i controlli
@@ -49,11 +49,13 @@ export interface FotografiaPasti {
   pastiPrima: Pasto[];
   // Le righe di `pasti` create dall'operazione.
   idPastiCreati: string[];
-  // Solo per "da oggi": le voci di `data` che stanno su `daPastoId` tornano
-  // su `aPastoId`. Si rileggono al momento dell'Annulla, non si prende un
-  // elenco fisso: così torna indietro anche una voce aggiunta nel
-  // frattempo al pasto nuovo (da un'altra scheda o un altro dispositivo).
-  vociDaRiportare: { daPastoId: string; aPastoId: string; data: string } | null;
+  // Solo per "da oggi": le voci dal giorno `dal` in poi che stanno su
+  // `daPastoId` tornano su `aPastoId`. Si rileggono al momento
+  // dell'Annulla, non si prende un elenco fisso: così torna indietro anche
+  // una voce aggiunta nel frattempo al pasto nuovo (da un'altra scheda o
+  // un altro dispositivo), in qualunque giorno. Vive solo in memoria, nella
+  // barra dell'Annulla: non si salva da nessuna parte.
+  vociDaRiportare: { daPastoId: string; aPastoId: string; dal: string } | null;
   // Solo per Elimina pasto (passo 4): il pasto com'era, come è stato
   // eliminato, e le voci eliminate com'erano (copie intere).
   eliminazione?: { pasto: Pasto; modo: ModoElimina; voci: VoceDiario[] };
@@ -135,8 +137,9 @@ export interface EsitoRinominaDaOggi {
 // 1. riga nuova: nome nuovo, ora (nuova o di prima), stesso `ordine`,
 //    valido_dal = oggi, valido_al = quello della vecchia (oggi sempre null;
 //    al passo 5 una fine già fissata passa alla riga che la prosegue);
-// 2. le voci vive di oggi del pasto vecchio passano a quello nuovo, così il
-//    pasto nuovo non nasce vuoto accanto a un doppione "Non più in uso";
+// 2. le voci vive del pasto vecchio da oggi in poi passano a quello nuovo,
+//    così il pasto nuovo non nasce vuoto accanto a un doppione "Non più in
+//    uso" — né oggi, né nei giorni futuri già pianificati;
 // 3. la riga vecchia si chiude ieri, con l'ora nuova se è cambiata (l'ora
 //    vale in ogni giorno del pasto, come nel cambio della sola ora).
 // L'ordine con cui queste righe arrivano al server non dipende da qui: la
@@ -181,8 +184,8 @@ export async function rinominaDaOggi({
       valido_al: vecchio.valido_al ?? null,
     });
 
-    const vociDiOggi = await vociVive(vecchio.id, oggi);
-    for (const voce of vociDiOggi) {
+    const vociDaOggi = await vociVive(vecchio.id, oggi);
+    for (const voce of vociDaOggi) {
       await repositoryVociDiario.aggiorna(voce.id, { pasto_id: pastoNuovo.id });
     }
 
@@ -196,10 +199,10 @@ export async function rinominaDaOggi({
       fotografia: {
         pastiPrima: [vecchio],
         idPastiCreati: [pastoNuovo.id],
-        vociDaRiportare: { daPastoId: pastoNuovo.id, aPastoId: vecchio.id, data: oggi },
+        vociDaRiportare: { daPastoId: pastoNuovo.id, aPastoId: vecchio.id, dal: oggi },
       },
       pastoNuovo,
-      vociSpostate: vociDiOggi.length,
+      vociSpostate: vociDaOggi.length,
     };
   });
 }
@@ -238,12 +241,14 @@ export async function aggiungiPasto({
   };
 }
 
-// Le voci vive di un pasto; con `data`, solo quelle di quel giorno.
-async function vociVive(pastoId: string, data?: string): Promise<VoceDiario[]> {
+// Le voci vive di un pasto; con `dal`, solo quelle da quel giorno in poi.
+// "In poi", non "di quel giorno": il diario arriva fino a oggi + 7, e una
+// modifica "da oggi" vale anche per i giorni già pianificati.
+async function vociVive(pastoId: string, dal?: string): Promise<VoceDiario[]> {
   return db.voci_diario
     .where("pasto_id")
     .equals(pastoId)
-    .filter((v) => v.deleted_at === null && (data === undefined || v.data === data))
+    .filter((v) => v.deleted_at === null && (dal === undefined || v.data >= dal))
     .toArray();
 }
 
@@ -282,7 +287,7 @@ export async function annullaModificaPasti(foto: FotografiaPasti): Promise<Esito
   return db.transaction("rw", [db.pasti, db.voci_diario, db.outbox], async () => {
     if (foto.eliminazione) return annullaEliminazione(foto.eliminazione);
     const r = foto.vociDaRiportare;
-    const daRiportare = r ? await vociVive(r.daPastoId, r.data) : [];
+    const daRiportare = r ? await vociVive(r.daPastoId, r.dal) : [];
     const idRiportate = new Set(daRiportare.map((v) => v.id));
 
     for (const id of foto.idPastiCreati) {
@@ -325,8 +330,9 @@ export async function annullaModificaPasti(foto: FotografiaPasti): Promise<Esito
 // Le voci del pasto si ELIMINANO, non si spostano (decisione del 9/10):
 // - "tutto" (anche nei giorni passati, e il pasto che comincia oggi o
 //   dopo): deleted_at sul pasto e su tutte le sue voci vive;
-// - "oggi": valido_al = ieri sul pasto, deleted_at sulle sue voci vive di
-//   oggi. I giorni passati non si toccano.
+// - "oggi": valido_al = ieri sul pasto, deleted_at sulle sue voci vive da
+//   oggi in poi (anche i giorni futuri già pianificati: il diario arriva
+//   fino a oggi + 7). I giorni passati non si toccano.
 // La tabella `giorni` non si tocca mai.
 
 // Quante voci, in quanti giorni, per quante kcal: i numeri della conferma
@@ -346,7 +352,8 @@ export function riepilogoVoci(voci: VoceDiario[]): RiepilogoVoci {
   };
 }
 
-// Le voci che un'eliminazione cancellerebbe, lette da Dexie adesso.
+// Le voci che un'eliminazione cancellerebbe, lette da Dexie adesso: tutte,
+// o da oggi in poi.
 export async function vociDaEliminare(pastoId: string, modo: ModoElimina, oggi: string): Promise<VoceDiario[]> {
   return vociVive(pastoId, modo === "oggi" ? oggi : undefined);
 }
@@ -426,7 +433,7 @@ function nonAnnullato(motivo: string): { conflitto: string } {
 //   stessi nome, ora, ordine e date; le voci si ricreano come nel diario
 //   (annullaOperazione, id v5), ma sul pasto nuovo;
 // - "oggi": il pasto è ancora vivo, gli si rimette valido_al com'era; le
-//   voci di oggi si ricreano sullo stesso pasto.
+//   voci da oggi in poi si ricreano sullo stesso pasto.
 // Prima di scrivere si rifanno i controlli di nome e ora sul periodo che il
 // pasto riavrà: un pasto nato nel frattempo con lo stesso nome o la stessa
 // ora fa rispondere "conflitto", senza scrivere niente.

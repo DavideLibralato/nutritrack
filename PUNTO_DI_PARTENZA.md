@@ -1218,9 +1218,10 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
 - **Da oggi** (modello C, sezione 4), in **una transazione Dexie** (tutto o
   niente, coda outbox compresa): riga nuova (id nuovo, nome nuovo, stessa
   ora o quella nuova, stesso `ordine`, `valido_dal` oggi, `valido_al` quello
-  della vecchia), le **voci vive di oggi** passano alla riga nuova (niente
-  pasto nuovo vuoto accanto a un "Non più in uso" con le voci), la riga
-  vecchia si chiude ieri. Che il pasto nuovo arrivi al server prima delle
+  della vecchia), le **voci vive da oggi in poi** passano alla riga nuova,
+  comprese quelle dei giorni futuri già pianificati (niente pasto nuovo
+  vuoto accanto a un "Non più in uso" con le voci), la riga vecchia si
+  chiude ieri. Che il pasto nuovo arrivi al server prima delle
   voci lo garantisce l'ordine della coda (sezione 9.2).
 - **+ Aggiungi pasto**: nome e ora (nessuna ora proposta), poi "**Anche nei
   giorni passati**" (`valido_dal` null: compare vuoto anche nei giorni già
@@ -1243,8 +1244,8 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
   (`src/lib/repository/modifichePasti.ts`); mai una riga rimessa in vita:
   ora e Correggi rimettono i valori di prima; Da oggi cancella la riga
   nuova (`deleted_at`), riapre la vecchia e riporta sul pasto vecchio le
-  voci di quel giorno che stanno sul nuovo, anche quelle arrivate nel
-  frattempo; Aggiungi cancella la riga nuova, ma **non** se nel frattempo
+  voci da quel giorno in poi che stanno sul nuovo, anche quelle arrivate
+  nel frattempo (la fotografia vive solo in memoria, nella barra); Aggiungi cancella la riga nuova, ma **non** se nel frattempo
   ha delle voci ("Non annullato: il pasto ha già delle voci."). Arrivato
   dopo la sync, l'Annulla è una scrittura in avanti come le altre.
 - **Aggiungi alimento** ricontrolla, prima di scrivere una voce, che il
@@ -1262,30 +1263,35 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
   giorno senza pasti non si registra niente.
 - **Domanda "da quando"**: "Anche nei giorni passati" ("Sparisce ovunque,
   insieme alle sue voci.") o "Da oggi" ("I giorni passati restano come
-  sono." + "Le voci di oggi vengono eliminate." se oggi ne ha), con Da
-  oggi già scelto. Un pasto che comincia oggi o dopo si elimina del tutto,
+  sono." + "Le voci di oggi vengono eliminate." se ha voci solo oggi, "Le
+  voci da oggi in poi vengono eliminate." se ne ha anche nei giorni
+  futuri), con Da oggi già scelto. Un pasto che comincia oggi o dopo si elimina del tutto,
   **senza domanda**.
 - **Le voci si eliminano, non si spostano**: "anche nei giorni passati" →
   `deleted_at` sul pasto e su tutte le sue voci vive; "da oggi" →
-  `valido_al` = ieri sul pasto e `deleted_at` sulle voci vive di oggi. La
+  `valido_al` = ieri sul pasto e `deleted_at` sulle voci vive da oggi in
+  poi (anche i giorni futuri: il diario arriva a oggi + 7). La
   tabella `giorni` non si tocca. Tutto in una transazione
   (`eliminaPasto` in `modifichePasti.ts`).
 - **Conferma prima**, solo se l'eliminazione tocca almeno una voce:
   "Eliminare anche 13 voci?" — "«Pranzo» ha 13 voci in 9 giorni, per
   8.420 kcal. Verranno eliminate e i totali di quei giorni scenderanno." —
-  pulsante rosso "Elimina pasto e 13 voci". Senza "Non si può annullare"
+  pulsante rosso "Elimina pasto e 13 voci". Da oggi: "ha 1 voce oggi … i
+  totali di oggi" se sono tutte di oggi, "ha 3 voci in 3 giorni, da oggi in
+  poi, per … i totali di quei giorni" se ce ne sono nei giorni futuri. Senza "Non si può annullare"
   del mockup: dopo c'è la barra con Annulla. Kcal con `totaleVoce` (le voci
   hanno i valori copiati). La conferma vale per le voci viste: se una sync
   le cambia prima della scrittura, non si scrive niente e la conferma si
   ripresenta con i numeri nuovi. Il pulsante resta spento finché le voci
   del pasto non sono state lette.
 - **Barra**: "Eliminato: Pranzo (13 voci)", "Eliminato da oggi: Cena (1
-  voce di oggi)", "Eliminato: Spuntino pomeriggio".
+  voce di oggi)", "Eliminato da oggi: Cena (3 voci da oggi in poi)",
+  "Eliminato: Spuntino pomeriggio".
 - **Annulla**, mai una riga rimessa in vita: "anche nei giorni passati"
   **ricrea** il pasto con id UUID v5 dall'id vecchio (stessi nome, ora,
   ordine, date) e le voci su di lui (`annullaOperazione` con
   `pastoSostituito`); "da oggi" rimette la data di fine e ricrea le voci
-  di oggi sullo stesso pasto. Rifà i controlli di nome e ora: se nel
+  da oggi in poi sullo stesso pasto, ciascuna nel suo giorno. Rifà i controlli di nome e ora: se nel
   frattempo è nato un pasto con lo stesso nome o la stessa ora, non scrive
   niente e la barra dice perché ("Non annullato: alle 12:30 inizia già
   Brunch."). Ripetuto, non crea doppioni (id v5). In coda il pasto
@@ -2979,7 +2985,7 @@ sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
 `modifichePasti.test.ts`, `vociDiario.test.ts`, la pagina,
 `sincronizzaUnaPerVolta.test.ts`.
 
-**Test.** 575 test permanenti in 53 file (Vitest), tutti verdi al 10/10.
+**Test.** 581 test permanenti in 53 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
@@ -2998,13 +3004,6 @@ sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
-
-- **Elimina e Rinomina "da oggi" non toccano ancora le voci dei giorni
-  futuri** (10/10, aperto dal diario fino a 7 giorni). Eliminare un pasto
-  "da oggi" cancella solo le voci di oggi; rinominarlo "da oggi" sposta sul
-  pasto nuovo solo quelle di oggi. Le voci di domani in poi restano sul
-  pasto chiuso, e in Oggi compaiono come "Non più in uso". Si sistema nel
-  prossimo commit dello stesso branch, prima dell'unione a main
 
 - **Una riga cancellata può tornare in vita da un altro telefono** (visto
   il 9/10 preparando Elimina pasto, non introdotto da lì). Se il telefono
