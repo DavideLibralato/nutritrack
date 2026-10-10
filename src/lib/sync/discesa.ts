@@ -13,6 +13,7 @@
 import type { Table } from "dexie";
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
+import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
 import type { NomeTabella, RigaBase } from "../db/tipi";
 
 export interface CursoreSync {
@@ -166,7 +167,14 @@ export async function* pagineDaSupabase<T extends RigaBase>(
     }
     query = query.range(scarico, scarico + DIMENSIONE_PAGINA - 1);
 
-    const { data, error } = await query;
+    // Ogni pagina con il suo tempo massimo (tempoMassimo.ts): una pagina
+    // senza risposta diventa un errore come gli altri, quindi la tabella
+    // fallisce, il cursore non avanza e il giro può finire.
+    const risposta = await conTempoMassimo(query);
+    if (risposta === SCADUTA) {
+      throw new Error(MESSAGGIO_SCADUTA);
+    }
+    const { data, error } = risposta;
     if (error) {
       throw new Error(error.message);
     }
@@ -188,7 +196,8 @@ export async function* pagineDaSupabase<T extends RigaBase>(
 // è davvero vuoto.
 //
 // `head: true` chiede a PostgREST solo il conteggio, senza le righe.
-// Qualunque errore (rete, sessione rifiutata: il ruolo `anon` non ha il
+// Qualunque errore (rete, nessuna risposta entro il tempo massimo, sessione
+// rifiutata: il ruolo `anon` non ha il
 // permesso di SELECT, quindi senza utente la risposta è un errore e non
 // "0") diventa un'eccezione: un conteggio che non si è potuto fare non
 // deve mai sembrare uno zero.
@@ -197,10 +206,13 @@ export async function contaRigheSulServer(
   nomeTabella: NomeTabella
 ): Promise<number> {
   const supabase = createClient();
-  const { count, error } = await supabase
-    .from(nomeTabella)
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
+  const risposta = await conTempoMassimo(
+    supabase.from(nomeTabella).select("id", { count: "exact", head: true }).eq("user_id", userId)
+  );
+  if (risposta === SCADUTA) {
+    throw new Error(MESSAGGIO_SCADUTA);
+  }
+  const { count, error } = risposta;
   if (error) {
     throw new Error(error.message);
   }

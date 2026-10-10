@@ -2347,6 +2347,34 @@ Come, in concreto:
     Rischio accettato: un guasto permanente che arriva come status 0
     ferma la coda senza accantonare; non si perde niente, e l'indicatore
     di sincronizzazione lo mostrerà come un'attesa che dura
+- **un tempo massimo per ogni richiesta** (dal 10/10): dopo 30 secondi
+  senza risposta la richiesta viene **annullata**. Prima non c'era: su
+  iPhone, con l'app in background a metà di una richiesta, la fetch può
+  non rispondere più, il giro restava "in corso" per sempre e ogni giro
+  nuovo si prenotava dietro di lui.
+  - **dove**: nella fetch del client Supabase del browser
+    (`src/lib/supabase/fetchConScadenza.ts`, passata a `createClient` con
+    `global.fetch`), quindi per ogni richiesta, compresi accesso ed Esci.
+    Per la libreria un annullamento è una fetch fallita: status 0, cioè
+    rete assente, nessun tentativo contato. In discesa la pagina fallisce
+    e la tabella non sposta il cursore
+  - **annullare, non abbandonare**: una richiesta solo abbandonata può
+    arrivare al server dopo. Un invio "100 g" appeso scade, l'utente
+    corregge in 150 g, il giro dopo manda 150 g, poi arriva il vecchio e
+    riscrive 100 g: le tabelle hanno solo il trigger `set_updated_at`,
+    vince l'ultima scrittura che arriva. Server a 100 g, telefono a 150 g,
+    coda vuota. Rischio residuo in sezione 11
+  - **con un `AbortController`, non `AbortSignal.timeout()`**: quello
+    annulla con un errore "TimeoutError", e la libreria ripete da sola le
+    letture fallite che non sono un "AbortError" (fino a tre volte, ognuna
+    con altri 30 secondi)
+  - **rete di sicurezza**: `conTempoMassimo` (`src/lib/sync/tempoMassimo.ts`)
+    fa correre ogni richiesta della sync contro un timer di 35 secondi,
+    per il caso in cui l'annullamento non chiuda la richiesta. Di norma
+    non scatta mai
+  - trenta secondi e non meno perché una pagina della discesa può avere
+    500 righe: un limite stretto farebbe fallire a ripetizione la prima
+    discesa di un dispositivo nuovo su una rete lenta
 - **discesa**: legge da Supabase le righe cambiate e le scrive in Dexie
   (`src/lib/sync/discesa.ts`) — senza questa metà, Supabase era solo una
   destinazione: un dispositivo nuovo non vedeva mai i dati già presenti sul
@@ -2964,11 +2992,12 @@ pubblico.
 configurazione Vercel mantenute, codice della v0 consultabile sul tag
 `v0-vecchia-app`.
 
-**Punto 0 — local-first** (sezione 9.2). Dexie è a `version(6)`: le 11
+**Punto 0 — local-first** (sezione 9.2). Dexie è a `version(7)`: le 11
 tabelle più `outbox` e `sync_cursori`. Repository unico per ogni scrittura;
 salita dall'outbox con i genitori prima dei figli (dal 9/10), che si ferma
 al primo errore e accantona una voce dopo 5 rifiuti del server (rete
-assente e sessione scaduta non contano, dal 10/10); scritture
+assente e sessione scaduta non contano, dal 10/10); ogni richiesta
+annullata dopo 30 secondi senza risposta (dal 10/10); scritture
 del repository possibili dentro una transazione Dexie; discesa incrementale e paginata; `orchestratore.ts`
 (discesa prima della salita, tre inneschi); id deterministici per i pasti
 predefiniti e per le righe di `giorni`; "Ricarica i dati dal tuo account"
@@ -3229,6 +3258,22 @@ la pagina.
   formato), lasciando il controllo vero alla scelta nella domanda, dove
   c'è già (`cambioDaUnaData`, `erroreAggiuntaData`, e le scritture che lo
   rifanno)
+
+- **Un invio scaduto può ancora arrivare tardi** (10/10, rischio residuo
+  del tempo massimo, sezione 9.2). Dopo 30 secondi la richiesta viene
+  annullata e il browser chiude la connessione, ma se la richiesta era già
+  partita del tutto (inviata al server) e si è bloccata solo la risposta,
+  il server può averla già ricevuta, o riceverla dopo. Se nel frattempo
+  l'utente ha corretto la stessa riga e la correzione è arrivata prima,
+  il valore vecchio la riscrive: il server resta indietro, il telefono
+  mostra il valore giusto, la coda è vuota, nessun errore. Stessa cosa se
+  vince la rete di sicurezza (`conTempoMassimo`, 35 secondi) perché
+  l'annullamento non ha chiuso la richiesta. Raro: servono una richiesta
+  bloccata dopo l'invio e una correzione della stessa riga entro il giro
+  dopo. Il rimedio vero sarebbe sul server (riconoscere e rifiutare una
+  scrittura più vecchia di quella già salvata; oggi non si può dal solo
+  `updated_at`, che il trigger riscrive con l'ora del server), da valutare
+  a parte
 
 - **Una riga cancellata può tornare in vita da un altro telefono** (visto
   il 9/10 preparando Elimina pasto, non introdotto da lì). Se il telefono

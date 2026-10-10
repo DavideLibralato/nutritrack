@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { db } from "../db/database";
 import { sincronizzaOutbox } from "./sincronizza";
 import { accodaMutazione, ordinaOutbox, type VoceOutbox } from "./outbox";
+import { MESSAGGIO_SCADUTA, TEMPO_MASSIMO_RICHIESTA_MS } from "./tempoMassimo";
 
 const upsertMock = vi.fn();
 
@@ -326,5 +327,64 @@ describe("sincronizzaOutbox — richieste che non arrivano al server", () => {
     await sincronizzaOutbox();
     expect(await sincronizzaOutbox()).toEqual({ inviate: 2, fallite: 0, sospese: 0 });
     expect(await db.outbox.count()).toBe(0);
+  });
+});
+
+// Difetto trovato il 10/10/2026 (D2 dell'analisi dell'indicatore): le
+// richieste non avevano un tempo massimo. Su iPhone, con l'app che va in
+// background a metà di un invio, la fetch può non rispondere più: il giro
+// restava "in corso" per sempre, ogni giro nuovo si prenotava dietro di
+// lui e la coda non partiva più fino alla chiusura dell'app.
+describe("sincronizzaOutbox — un invio che non risponde mai", () => {
+  beforeEach(async () => {
+    upsertMock.mockReset();
+    await db.outbox.clear();
+    await db.outbox.put(
+      voce({ id: "pasti:p1", tabella: "pasti", creato_il: "2026-10-10T09:00:00.000Z" })
+    );
+    // Solo i timer: Date e il resto restano veri, Dexie lavora normalmente.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("allo scadere del tempo massimo il giro finisce come rete assente, e quello dopo manda la coda", async () => {
+    let segnalaPartito: () => void = () => {};
+    const partito = new Promise<void>((r) => (segnalaPartito = r));
+    upsertMock.mockImplementationOnce(() => {
+      segnalaPartito();
+      return new Promise(() => {}); // nessuna risposta, mai
+    });
+    upsertMock.mockResolvedValue({ error: null, status: 201 });
+
+    const giro = sincronizzaOutbox();
+    const prenotato = sincronizzaOutbox(); // arrivato durante il giro appeso
+    await partito;
+    await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_RICHIESTA_MS);
+
+    expect(await giro).toEqual({ inviate: 0, fallite: 1, sospese: 0 });
+    // Il giro prenotato parte da solo dopo quello scaduto e manda la voce.
+    expect(await prenotato).toEqual({ inviate: 1, fallite: 0, sospese: 0 });
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("la voce scaduta non consuma tentativi e tiene il motivo", async () => {
+    let segnalaPartito: () => void = () => {};
+    const partito = new Promise<void>((r) => (segnalaPartito = r));
+    upsertMock.mockImplementation(() => {
+      segnalaPartito();
+      return new Promise(() => {});
+    });
+
+    const giro = sincronizzaOutbox();
+    await partito;
+    await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_RICHIESTA_MS);
+    await giro;
+
+    const pasto = await db.outbox.get("pasti:p1");
+    expect(pasto?.tentativi).toBe(0);
+    expect(pasto?.ultimo_errore).toBe(MESSAGGIO_SCADUTA);
   });
 });

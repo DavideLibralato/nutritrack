@@ -23,10 +23,11 @@
 //    istanti — sbaglia in modo silenzioso quando i due coincidono al
 //    millisecondo.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { db } from "../db/database";
 import { scaricaTabella, DIMENSIONE_PAGINA, millisecondiDi } from "./discesa";
 import type { Pasto } from "../db/tipi";
+import { MESSAGGIO_SCADUTA, TEMPO_MASSIMO_RICHIESTA_MS } from "./tempoMassimo";
 
 interface RisultatoQuery {
   data: unknown[] | null;
@@ -449,5 +450,45 @@ describe("scaricaTabella — alimenti include le righe condivise", () => {
 
     expect(chiamate.or).toEqual([`user_id.is.null,user_id.eq.${userId}`]);
     expect(chiamate.eq).toBeUndefined();
+  });
+});
+
+// D2 dell'analisi dell'indicatore (10/10/2026): una pagina senza risposta
+// (fetch sospesa con l'app in background su iPhone) teneva la discesa
+// appesa per sempre, e con lei il giro intero (orchestratore.ts: la salita
+// parte solo dopo la discesa). Ora ogni pagina ha un tempo massimo.
+describe("scaricaTabella — una pagina che non risponde mai", () => {
+  beforeEach(async () => {
+    fromMock.mockReset();
+    await db.sync_cursori.clear();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("allo scadere fallisce con un errore, tiene le pagine già scritte e non sposta il cursore", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const pagina1 = generaPagina(DIMENSIONE_PAGINA, userId, Date.parse("2026-10-10T08:00:00.000Z"));
+
+    let segnalaPartita: () => void = () => {};
+    const partita = new Promise<void>((r) => (segnalaPartita = r));
+    // Modificato sul posto, non copiato: i metodi della catena (range...)
+    // restituiscono l'oggetto originale, che deve essere quello appeso.
+    const paginaAppesa = creaBuilderFinto({ data: [], error: null }, {});
+    paginaAppesa.then = () => segnalaPartita(); // non chiama mai `risolvi`
+    fromMock
+      .mockReturnValueOnce(creaBuilderFinto({ data: pagina1, error: null }, {}))
+      .mockReturnValueOnce(paginaAppesa);
+
+    const scarico = scaricaTabella(userId, db.pasti, "pasti");
+    const esito = expect(scarico).rejects.toThrow(MESSAGGIO_SCADUTA);
+    await partita;
+    await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_RICHIESTA_MS);
+    await esito;
+
+    expect(await db.pasti.where("user_id").equals(userId).count()).toBe(DIMENSIONE_PAGINA);
+    expect(await db.sync_cursori.get(`pasti:${userId}`)).toBeUndefined();
   });
 });

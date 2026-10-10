@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Sincronizzazione: un tempo massimo per ogni richiesta
+
+Branch `sync-stato`. Secondo commit dell'indicatore, da solo perché cambia
+la sync di tutta l'app. Difetto D2 dell'analisi: le richieste non avevano
+un limite, e su iPhone una fetch rimasta appesa con l'app in background
+teneva il giro "in corso" per sempre, con ogni giro nuovo prenotato dietro.
+Ora ogni richiesta del client Supabase del browser viene **annullata**
+dopo 30 secondi (`fetchConScadenza.ts`, nuovo, passato a `createClient`
+con `global.fetch`): per la libreria è status 0, quindi rete assente e
+nessun tentativo contato; in discesa la tabella non sposta il cursore.
+Annullare e non solo abbandonare (osservazione di Davide): una richiesta
+abbandonata può arrivare dopo una correzione e riscriverla col valore
+vecchio, e le tabelle hanno solo il trigger `set_updated_at` (verificato
+in produzione). Con un `AbortController` e non `AbortSignal.timeout()`:
+quello annulla con "TimeoutError", e la libreria ripete da sola le letture
+fallite che non sono un "AbortError". Come rete di sicurezza resta
+`conTempoMassimo` (`src/lib/sync/tempoMassimo.ts`, 35 secondi), una corsa
+contro un timer intorno a ogni richiesta della sync. Test: sette in
+`fetchConScadenza.test.ts`, tre col client Supabase vero e una fetch
+appesa (invio e lettura tornano status 0 senza ripetizioni; la sync non
+consuma tentativi), più due in `sincronizza.test.ts` e uno in
+`discesa.test.ts` per la rete di sicurezza. Rotture di prova prese
+(client senza la fetch: 3 rossi; "TimeoutError" al posto di "AbortError":
+4; segnale di chi chiama ignorato: 2; senza la corsa: 3; solo discesa: 1;
+solo salita: 2), ripristino dalla copia. 664 test verdi in 56 file.
+Documenti: PUNTO §9.2, §11 (il rischio residuo: una richiesta già partita
+del tutto prima di bloccarsi può ancora arrivare tardi; e Dexie, che
+risultava ancora a `version(6)`, è a 7).
+
 ## 2026-10-10 — Sincronizzazione: offline non si accantona più niente
 
 Branch `sync-stato`. Primo commit dell'indicatore di sincronizzazione, da

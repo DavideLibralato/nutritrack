@@ -17,6 +17,7 @@
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
 import { ordinaOutbox } from "./outbox";
+import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
 
 export interface RisultatoSincronizzazione {
   inviate: number;
@@ -39,7 +40,8 @@ const SOGLIA_SOSPENSIONE = 5;
 // contava ogni fallimento: offline ogni scrittura fa un giro, ogni giro
 // fallisce sulla prima voce, e dopo 5 scritture quella voce veniva
 // accantonata senza che il server l'avesse mai vista.
-// - 0: la richiesta non è arrivata (niente rete, rete caduta a metà);
+// - 0: la richiesta non è arrivata (niente rete, rete caduta a metà,
+//   nessuna risposta entro il tempo massimo di tempoMassimo.ts);
 // - 401: la sessione non è valida (token scaduto, utente uscito). La riga
 //   non c'entra: rientrato l'utente, passa;
 // - qualunque altro errore: il server ha letto la riga e l'ha rifiutata
@@ -146,9 +148,16 @@ async function unGiro(): Promise<RisultatoSincronizzazione> {
     let messaggioErrore: string | null = null;
     let status: number | null = null;
     try {
-      const risposta = await supabase.from(voce.tabella).upsert(voce.dati);
-      messaggioErrore = risposta.error?.message ?? null;
-      status = risposta.status;
+      const risposta = await conTempoMassimo(supabase.from(voce.tabella).upsert(voce.dati));
+      if (risposta === SCADUTA) {
+        // Nessuna risposta entro il tempo massimo (tempoMassimo.ts): come
+        // una richiesta non arrivata, status 0. Niente tentativo contato.
+        messaggioErrore = MESSAGGIO_SCADUTA;
+        status = 0;
+      } else {
+        messaggioErrore = risposta.error?.message ?? null;
+        status = risposta.status;
+      }
     } catch (eccezione) {
       messaggioErrore = eccezione instanceof Error ? eccezione.message : "Errore di rete.";
     }
