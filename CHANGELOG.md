@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Pasti e orari, passo 5b: la colonna del segno (migration da sola)
+
+Branch `pasti-date`. Il segno sulle voci cancellate da "Elimina pasto da
+una data", perché l'Annulla dalla scheda possa rimetterle (decisione di
+Davide del 10/10).
+
+- `supabase/migrations/voci_eliminata_dal_cambio.sql`: `alter table
+  public.voci_diario add column eliminata_dal_cambio uuid;` più il
+  commento della colonna. Solo additiva, nullable, senza default, vincoli
+  né indici; RLS invariata. Primo file di migration nel repo (le
+  precedenti esistono solo su Supabase). **Non ancora applicata**: serve
+  l'ok di Davide, e va applicata prima del commit 5c.
+- `tipi.ts`: `VoceDiario.eliminata_dal_cambio?: string | null`.
+- Dexie `version(7)`, stessi indici della 6, senza `.upgrade()` (campo
+  facoltativo). `aggiornamentoSchema.test.ts`: partenza anche dalla 6,
+  voci vecchie senza la chiave, campo nuovo scritto e riletto, due schede
+  alla 6 e alla 7. Provato a vuoto rompendo `database.ts` da una copia (3
+  rotture). 610 test verdi in 55 file.
+- Nessun codice scrive ancora la colonna: il commit è innocuo anche senza
+  la migration.
+
 ## 2026-10-10 — Pasti e orari, passo 5a: i cambi programmati, logica pura
 
 Branch `pasti-date`. Primo commit del passo 5 (date future e cambi

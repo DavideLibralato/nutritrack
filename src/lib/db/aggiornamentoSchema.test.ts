@@ -20,8 +20,8 @@
 // regola B.1, questo test non la vede per forza: Dexie corregge da solo
 // gli indici che non coincidono, con un avviso in console.)
 //
-// Quando nasce una version(7): si aggiunge qui SCHEMA_V6 (copia della 6
-// com'è oggi), le sue righe se la forma cambia, e il 6 nel ciclo dei test.
+// Quando nasce una version(8): si aggiunge qui SCHEMA_V7 (copia della 7
+// com'è oggi), le sue righe se la forma cambia, e il 7 nel ciclo dei test.
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import Dexie from "dexie";
@@ -62,8 +62,12 @@ const SCHEMA_V4 = SCHEMA_V3;
 // version(5): in più la tabella dei cursori della discesa.
 const SCHEMA_V5: Record<string, string> = { ...SCHEMA_V3, sync_cursori: "id, tabella, user_id" };
 
-const SCHEMI: Record<number, Record<string, string>> = { 3: SCHEMA_V3, 4: SCHEMA_V4, 5: SCHEMA_V5 };
-const ULTIMA_VERSIONE = 6;
+// version(6): stessi indici della 5 (campi nuovi valido_dal / valido_al sui
+// pasti).
+const SCHEMA_V6 = SCHEMA_V5;
+
+const SCHEMI: Record<number, Record<string, string>> = { 3: SCHEMA_V3, 4: SCHEMA_V4, 5: SCHEMA_V5, 6: SCHEMA_V6 };
+const ULTIMA_VERSIONE = 7;
 
 // --- Righe realistiche, come le aveva un telefono a quella versione ----------
 
@@ -97,13 +101,17 @@ function righe(versione: number): Record<string, Riga[]> {
     data: "2026-09-19", tipo_giorno: "allenamento",
   };
   // Un pasto senza valido_dal / valido_al: com'erano tutti prima della 6.
+  // Dalla 6 Pasti e orari scrive le due date sempre, anche null.
   const pranzo: Pasto = {
     id: "pasto-pranzo", user_id: U, updated_at: DAL_SERVER, deleted_at: null,
     nome: "Pranzo", ora_inizio: "12:30:00", ordine: 2,
+    ...(versione >= 6 ? { valido_dal: null, valido_al: null } : {}),
   };
+  // Dalla 6, una riga chiusa da "Elimina da oggi": il periodo deve restare.
   const cenaCancellata: Pasto = {
     id: "pasto-cena", user_id: U, updated_at: ADESSO, deleted_at: ADESSO,
     nome: "Cena", ora_inizio: "19:30", ordine: 4,
+    ...(versione >= 6 ? { valido_dal: "2026-09-01", valido_al: "2026-09-18" } : {}),
   };
   const alimento: Alimento = {
     id: "a-1", user_id: U, updated_at: ADESSO, deleted_at: null,
@@ -212,7 +220,7 @@ function nomeNuovo() {
 // --- I test ------------------------------------------------------------------
 
 describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
-  for (const da of [3, 4, 5]) {
+  for (const da of [3, 4, 5, 6]) {
     it(`dalla version(${da}) all'ultima: tutte le righe, identiche, con gli indici che funzionano`, async () => {
       const nome = nomeNuovo();
       const { vecchio, contenuto } = await databaseVecchio(nome, da);
@@ -243,25 +251,37 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
 
       // La forma: i campi nati dopo non ci sono, e il ripiego li legge
       // come previsto — un pasto senza date vale da sempre e per sempre,
-      // una voce outbox senza sospesa_il non è accantonata.
+      // una voce outbox senza sospesa_il non è accantonata, una voce senza
+      // eliminata_dal_cambio non è stata cancellata da un cambio.
       const pranzo = await nuovo.pasti.get("pasto-pranzo");
       expect(pranzo).toBeDefined();
       expect(pranzo!.valido_dal ?? null).toBeNull();
       expect(pranzo!.valido_al ?? null).toBeNull();
       const inAttesa = await nuovo.outbox.get("voci_diario:v-1");
       expect(Boolean(inAttesa!.sospesa_il)).toBe(false);
+      const voce = await nuovo.voci_diario.get("v-1");
+      expect("eliminata_dal_cambio" in voce!).toBe(false);
+      expect(voce!.eliminata_dal_cambio ?? null).toBeNull();
+      // Le date dei pasti scritte alla 6 restano quelle.
+      if (da >= 6) {
+        expect(await nuovo.pasti.get("pasto-cena")).toMatchObject({ valido_dal: "2026-09-01", valido_al: "2026-09-18" });
+      }
+
+      // Il campo nuovo si scrive e si rilegge sulla riga vecchia.
+      await nuovo.voci_diario.update("v-2", { deleted_at: ADESSO, eliminata_dal_cambio: "c-1" });
+      expect(await nuovo.voci_diario.get("v-2")).toMatchObject({ deleted_at: ADESSO, eliminata_dal_cambio: "c-1" });
     });
   }
 
-  it("la version(6) apre anche con una seconda scheda ancora aperta alla version(5), che continua a funzionare", async () => {
+  it("la version(7) apre anche con una seconda scheda ancora aperta alla version(6), che continua a funzionare", async () => {
     // Due schede dello stesso browser: quella vecchia ha ancora in memoria il
-    // codice di prima (version(5)), quella nuova apre con la 6. IndexedDB
+    // codice di prima (version(6)), quella nuova apre con la 7. IndexedDB
     // chiede alla vecchia di chiudersi ("versionchange"): se non lo
     // facesse, la nuova resterebbe bloccata. Dexie la chiude da solo, con
     // un avviso in console, e la riapre alla prima operazione.
     const avvisi = vi.spyOn(console, "warn").mockImplementation(() => {});
     const nome = nomeNuovo();
-    const { vecchio: schedaVecchia } = await databaseVecchio(nome, 5);
+    const { vecchio: schedaVecchia } = await databaseVecchio(nome, 6);
 
     const schedaNuova = new NutriTrackDatabase(nome);
     aperti.push(schedaNuova);
@@ -269,13 +289,13 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
     // limite di tempo trasforma il blocco in un errore leggibile.
     await Promise.race([
       schedaNuova.open(),
-      new Promise((_, rifiuta) => setTimeout(() => rifiuta(new Error("version(6) bloccata")), 2000)),
+      new Promise((_, rifiuta) => setTimeout(() => rifiuta(new Error("version(7) bloccata")), 2000)),
     ]);
     expect(schedaNuova.verno).toBe(ULTIMA_VERSIONE);
     expect(avvisi).toHaveBeenCalledWith(expect.stringContaining("Another connection wants to upgrade"));
 
     // La scheda vecchia legge e scrive ancora: Dexie la riapre alla
-    // versione che trova (gli indici sono gli stessi della 5).
+    // versione che trova (gli indici sono gli stessi della 6).
     expect(await schedaVecchia.table("pasti").count()).toBe(2);
     await schedaVecchia.table("misurazioni").put({
       id: "m-dalla-scheda-vecchia", user_id: U, updated_at: ADESSO, deleted_at: null,

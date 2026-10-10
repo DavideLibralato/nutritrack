@@ -190,6 +190,19 @@ export interface VoceDiario extends RigaBase {
   proteine_100g: number;
   carboidrati_100g: number;
   grassi_100g: number;
+
+  // Il segno di una voce cancellata da "Elimina pasto da una data" (o "da
+  // oggi"): l'id del cambio, idCambio() in src/lib/pasti/cambiProgrammati.ts.
+  // L'Annulla dalla scheda "Non ci sarà più" ritrova così le voci da
+  // ricreare; null (o assente) per le voci vive e per quelle cancellate in
+  // ogni altro modo, che non tornano mai (PUNTO_DI_PARTENZA.md, sezione 4,
+  // `voci_diario`). Colonna `uuid` nullable su Supabase, migration
+  // `voci_eliminata_dal_cambio`. Facoltativo (`?`), non solo nullable: una
+  // voce salvata sul dispositivo prima di Dexie version(7), o scritta senza
+  // indicarlo, non ha la chiave; leggerlo sempre con `?? null`. Va scritto
+  // solo dopo che la migration è sul server: la sync manda la riga intera,
+  // e una colonna che il server non ha fa fallire l'invio.
+  eliminata_dal_cambio?: string | null;
 }
 
 export type TipoComposizione = "pasto_salvato" | "ricetta";

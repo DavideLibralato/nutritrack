@@ -196,6 +196,33 @@ export class NutriTrackDatabase extends Dexie {
       outbox: "id, tabella, creato_il",
       sync_cursori: "id, tabella, user_id",
     });
+
+    // version(7): campo nuovo su voci_diario, eliminata_dal_cambio (uuid o
+    // null: il segno di una voce cancellata da "Elimina pasto da una data",
+    // PUNTO_DI_PARTENZA.md, sezione 4, `voci_diario`). Non indicizzato:
+    // l'Annulla dalla scheda cerca le voci col segno fra quelle del filo del
+    // pasto, già indicizzate per pasto_id, in memoria. Quindi .stores() è
+    // identico a version(6): cambia la forma delle righe, non gli indici,
+    // come in version(3) e version(6). Nessun .upgrade() (regola B.4): nel
+    // tipo VoceDiario il campo è facoltativo (`?`), quindi ogni lettura ha
+    // un ripiego, e una voce salvata prima di questa versione, senza il
+    // campo, vale "non cancellata da un cambio" — lo stesso significato di
+    // null. Verificato da aggiornamentoSchema.test.ts (regola B.7).
+    this.version(7).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+      sync_cursori: "id, tabella, user_id",
+    });
   }
 }
 

@@ -1598,8 +1598,13 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 - **copia dei valori nutrizionali al momento dell'inserimento**: se un alimento
   viene corretto nel catalogo, la storia passata non deve cambiare
 - **`eliminata_dal_cambio`** (`uuid`, nullable, nessun default, nessun
-  vincolo né indice; **in arrivo col passo 5, migration non ancora
-  applicata**): il SEGNO di una voce cancellata da "Elimina pasto da una
+  vincolo né indice; migration `voci_eliminata_dal_cambio`, testo in
+  `supabase/migrations/voci_eliminata_dal_cambio.sql`, **non ancora
+  applicata**: va in produzione prima di qualunque build, anteprime
+  comprese, che scrive la colonna, perché la sync manda la riga intera e
+  una colonna che il server non ha fa fallire l'invio. Su Dexie
+  `version(7)`, stessi indici della 6: il campo è facoltativo, una voce
+  salvata prima non ha la chiave e vale null): il SEGNO di una voce cancellata da "Elimina pasto da una
   data" (o "da oggi", che è la stessa operazione). Vale l'id del cambio,
   `idCambio(riga di pasti chiusa, data)` in `cambiProgrammati.ts`: UUID v5
   calcolato da riga e data, non salvato altrove. Null per le voci vive e
@@ -3117,7 +3122,7 @@ ricrea il pasto e le voci future. **Da provare** il giorno che cambia
 `modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
 le pagine Oggi, Aggiungi e Pasti e orari.
 
-**Test.** 609 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
+**Test.** 610 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
