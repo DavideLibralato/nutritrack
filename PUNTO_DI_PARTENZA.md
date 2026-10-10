@@ -771,7 +771,9 @@ un comando che non fa niente sembra rotto):
 - gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
   a destra tema e colore, "Sistema · Verde"), Preferiti e pasti salvati,
   Sincronizzazione (la pagina con l'indicatore dal 10/10, sezione 9.2; a
-  destra della riga lo stato in breve, da fare);
+  destra della riga lo stato in breve con un pallino colorato: "Tutto
+  salvato", "In corso…", "2 in attesa", "Errore", "Accedi di nuovo", "Da
+  controllare");
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
   `next.config.ts`; in locale "sviluppo");
@@ -839,8 +841,8 @@ valgono oggi), Peso; **App**: Aspetto, Sincronizzazione;
 passi di questa pagina, le righe che mancano rispetto alla struttura
 finale:
 - **Preferiti e pasti salvati** (gruppo App);
-- **l'indicatore di sincronizzazione** (nella riga e nella pagina
-  Sincronizzazione).
+- ~~l'indicatore di sincronizzazione~~: pagina e riga fatte il 10/10
+  (sezione 9.2, "L'indicatore"); manca il pallino sulla tab.
 
 ### Obiettivi (dal 3/10, passo "obiettivi")
 
@@ -2567,8 +2569,15 @@ pura con i test):
 
 Un errore resta a schermo mentre parte il giro dopo: sparisce quando un
 giro finisce bene. **Pallino** sulla tab: stati 1–3, il 3 dal secondo giro
-fallito di fila (da fare, con la riga nell'elenco: "2 · Pallino + testo"
-del mockup).
+fallito di fila (da fare).
+
+**La riga nell'elenco** di Impostazioni (dal 10/10, mockup "2 · Pallino +
+testo"): a destra di "Sincronizzazione" un pallino colorato e lo stato in
+breve (`rigaSincronizzazione`, `ValoreRigaSincronizzazione`). "Tutto
+salvato" e "In corso…" in grigio come gli altri valori, con il pallino
+verde (che pulsa in corso, fermo per chi ha chiesto meno movimento); "2 in
+attesa" in ocra; "Errore", "Accedi di nuovo", "Da controllare" in arancio.
+Stesso hook della pagina, quindi stesso stato.
 
 **La pagina** (dal 10/10, mockup approvato
 `docs/mockups/sincronizzazione.html`, "A · Riquadro"):
@@ -3320,8 +3329,8 @@ la pagina.
   arriva mai all'utente, la UI conferma dal passo locale. In corso sul
   branch `sync-stato` (sezione 9.2, "L'indicatore"): fatti la sync che non
   consuma tentativi senza rete, il tempo massimo delle richieste, lo
-  stato con le sue priorità, il mockup e la pagina (da provare su
-  iPhone); mancano la riga nell'elenco e il pallino sulla tab
+  stato con le sue priorità, il mockup, la pagina e la riga nell'elenco
+  (da provare su iPhone); manca il pallino sulla tab
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti

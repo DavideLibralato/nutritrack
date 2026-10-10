@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Sincronizzazione: lo stato nella riga di Impostazioni
+
+Branch `sync-stato`. Mockup "2 · Pallino + testo": a destra della riga
+Sincronizzazione un pallino colorato e lo stato in breve ("Tutto
+salvato", "In corso…", "2 in attesa", "Errore", "Accedi di nuovo", "Da
+controllare"), in grigio, ocra o arancio. `rigaSincronizzazione` (pura) e
+`ValoreRigaSincronizzazione`; l'elenco usa lo stesso hook della pagina.
+`RigaImpostazioni` invariato. Test: 3 sulla funzione, 3 sull'elenco vero
+(primo test della pagina Impostazioni); 7 rotture di prova prese,
+ripristino dalla copia. 707 test verdi in 62 file. Documenti: PUNTO §3,
+§9.2, §11.
+
 ## 2026-10-10 — Sincronizzazione: la pagina con l'indicatore
 
 Branch `sync-stato`. La pagina Impostazioni > Sincronizzazione dal mockup

@@ -5,8 +5,7 @@
 // come le impostazioni dell'iPhone, da cui si entra nelle sotto-pagine.
 //
 // Ci sono solo le righe che funzionano (sezione 3: un comando che non fa
-// niente sembra rotto). Preferiti e lo stato della sincronizzazione
-// restano fuori finché non esistono.
+// niente sembra rotto). Preferiti resta fuori finché non esiste.
 //
 // La riga Obiettivi mostra a destra le calorie del periodo valido oggi
 // (testoRigaObiettivi, con il suo test): "2500 kcal", oppure "2500 · 2950
@@ -18,6 +17,11 @@
 // La riga Aspetto mostra le scelte salvate su questo dispositivo, tema e
 // colore principale ("Sistema · Verde"), niente finché il browser non le ha
 // lette.
+// La riga Sincronizzazione mostra lo stato in breve, con un pallino
+// colorato (dal 10/10, mockup docs/mockups/sincronizzazione.html, "2 ·
+// Pallino + testo"): "Tutto salvato", "In corso…", "2 in attesa", "Errore",
+// "Accedi di nuovo", "Da controllare" (rigaSincronizzazione, con il suo
+// test). Niente finché la coda non è arrivata da Dexie.
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -43,6 +47,9 @@ import SchedaAccount from "@/components/SchedaAccount";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
 import EsciAccount from "@/components/EsciAccount";
+import ValoreRigaSincronizzazione from "@/components/ValoreRigaSincronizzazione";
+import { useStatoSincronizzazione } from "@/lib/sync/useStatoSincronizzazione";
+import { rigaSincronizzazione } from "@/lib/sync/rigaSincronizzazione";
 
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
@@ -93,6 +100,8 @@ export default function ImpostazioniPage() {
   const valorePasti =
     numeroPasti === undefined ? undefined : numeroPasti === 1 ? "1 pasto" : `${numeroPasti} pasti`;
 
+  const { stato: statoSincronizzazione } = useStatoSincronizzazione(userId);
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+1.5rem)]">
       <h1 className="mx-1 mt-1.5 font-display text-[34px] font-bold leading-tight">Impostazioni</h1>
@@ -138,6 +147,11 @@ export default function ImpostazioniPage() {
         <RigaImpostazioni
           etichetta="Sincronizzazione"
           icona={<IconaSincronizzazione />}
+          valore={
+            statoSincronizzazione && (
+              <ValoreRigaSincronizzazione riga={rigaSincronizzazione(statoSincronizzazione)} />
+            )
+          }
           href="/impostazioni/sincronizzazione"
         />
       </GruppoImpostazioni>
