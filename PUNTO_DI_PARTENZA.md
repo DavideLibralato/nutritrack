@@ -842,7 +842,8 @@ passi di questa pagina, le righe che mancano rispetto alla struttura
 finale:
 - **Preferiti e pasti salvati** (gruppo App);
 - ~~l'indicatore di sincronizzazione~~: pagina, riga e pallino sulla tab
-  fatti il 10/10 (sezione 9.2, "L'indicatore"), da provare su iPhone.
+  fatti il 10/10 (sezione 9.2, "L'indicatore"), provati su iPhone il 10/10
+  (sezione 11, "Fatto").
 
 ### Obiettivi (dal 3/10, passo "obiettivi")
 
@@ -3318,7 +3319,31 @@ sezione 3, "Pasti e orari", "Date future e cambi programmati". Test:
 `aggiornamentoSchema.test.ts`, `dataGiorno.test.ts`, `campiData.test.ts`,
 la pagina.
 
-**Test.** 649 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
+**Indicatore di sincronizzazione** (10/10, provato su iPhone il 10/10 in
+Safari sull'anteprima del branch `sync-stato`, build `816d081`, account
+di prova; verificato su Supabase). Prima la sync: senza rete e con la
+sessione scaduta la coda non consuma tentativi; ogni richiesta annullata
+dopo 30 secondi; lo status dell'ultimo invio fallito sulle voci (Dexie
+`version(8)`). Poi l'indicatore: la pagina Sincronizzazione con il
+riquadro dello stato, "Sincronizza ora", "Non salvate online"; lo stato in
+breve nella riga di Impostazioni; il pallino sulla tab. Provati:
+aggiornamento di Dexie alla `version(8)` senza perdere voci; "Tutto
+salvato" nella pagina e nella riga (pallino verde), nessun pallino sulla
+tab; in modalità aereo 6 voci registrate, "6 in attesa" in ocra con "in
+attesa dalle …", nessun pallino, **nessuna voce accantonata** (la prova
+del difetto corretto: prima dopo 5 scritture offline la prima veniva
+accantonata); tornata la rete, "Sincronizza ora" → "Tutto salvato
+online", le 6 voci arrivate al server nello stesso giro. Non provati a
+mano, coperti dai test: server che rifiuta, accesso scaduto, accantonate,
+pallino sulla tab. Com'è fatto: sezione 9.2 ("L'indicatore", "un tempo
+massimo per ogni richiesta", la regola dei tentativi). Test:
+`sincronizza.test.ts`, `discesa.test.ts`, `fetchConScadenza.test.ts`,
+`statoSincronizzazione.test.ts`, `codaDellUtente.test.ts`,
+`testiSincronizzazione.test.ts`, `rigaSincronizzazione.test.ts`,
+`aggiornamentoSchema.test.ts`, la pagina Sincronizzazione, l'elenco di
+Impostazioni, `BarraNavigazione.test.tsx`.
+
+**Test.** 712 test permanenti in 63 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
@@ -3330,13 +3355,6 @@ la pagina.
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
-- **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
-  arriva mai all'utente, la UI conferma dal passo locale. Costruito sul
-  branch `sync-stato` (sezione 9.2, "L'indicatore"): la sync che non
-  consuma tentativi senza rete, il tempo massimo delle richieste, lo
-  stato con le sue priorità, la pagina, la riga nell'elenco e il pallino
-  sulla tab. **Da provare su iPhone** (Davide, account di prova,
-  anteprima) prima del merge
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
@@ -3421,4 +3439,6 @@ la pagina.
 1. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)
-2. **Dopo la settimana:** l'indicatore di sincronizzazione in app
+2. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
+   fatto e provato su iPhone il 10/10, prima della settimana (sopra,
+   "Fatto")

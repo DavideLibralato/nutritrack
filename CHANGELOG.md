@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Indicatore di sincronizzazione provato su iPhone
+
+Branch `sync-stato`. Provato su iPhone il 10/10 in Safari sull'anteprima,
+build `816d081`, account di prova, tutto verificato su Supabase:
+aggiornamento di Dexie alla `version(8)` senza perdita di voci; "Tutto
+salvato" nella pagina e nella riga (pallino verde), nessun pallino sulla
+tab; in modalità aereo 6 voci registrate, "6 in attesa" in ocra con "in
+attesa dalle …", nessun pallino, nessuna voce accantonata (la prova di
+D1); tornata la rete, "Sincronizza ora" → "Tutto salvato online", le 6
+voci arrivate al server nello stesso giro. Non provati a mano, coperti
+dai test: server che rifiuta, accesso scaduto, accantonate, pallino sulla
+tab. Nessun bug trovato. Nota: il primo deploy di anteprima era fallito
+con "Git information retrieval failed" (problema di Vercel, non del
+codice), risolto con Redeploy. Documenti: PUNTO §3 e §11 (l'indicatore
+passa in "Fatto"; test 712 in 63 file).
+
 ## 2026-10-10 — Sincronizzazione: il pallino sulla tab Impostazioni
 
 Branch `sync-stato`. Ultimo pezzo dell'indicatore: un pallino arancio
