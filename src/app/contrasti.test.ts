@@ -117,6 +117,11 @@ function coppie(p: Paletta, tema: Tema, accento: string): [string, number][] {
     ["--testo-capsula sul vetro (Vedi)", contrasto(sopra(c("--testo-capsula"), vetro), vetro)],
     ["--tenue su sfondo", contrasto(c("--tenue"), sfondo)],
     ["--tenue su superficie", contrasto(c("--tenue"), superficie)],
+    // Indicatore di sincronizzazione (dal 10/10): titolo e "da quando" in
+    // ocra o arancio, sul riquadro e, nella riga di Impostazioni, sul gruppo.
+    ["--attesa su superficie", contrasto(c("--attesa"), superficie)],
+    ["--attesa su sfondo", contrasto(c("--attesa"), sfondo)],
+    ["--avviso su superficie", contrasto(c("--avviso"), superficie)],
   ];
 }
 

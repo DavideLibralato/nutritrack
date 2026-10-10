@@ -30,6 +30,7 @@ import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { modificheNonInviate, type ModificheNonInviate } from "@/lib/sync/ripristino";
 import { sincronizzaOutbox } from "@/lib/sync/sincronizza";
+import { azzeraStatoGiri } from "@/lib/sync/statoSincronizzazione";
 import { descriviGruppo } from "./RicaricaDatiAccount";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { svuotaPagineSalvate } from "@/lib/serviceWorker";
@@ -101,7 +102,16 @@ function useOnline(): boolean {
   );
 }
 
-export default function EsciAccount({ userId }: { userId: string }) {
+// `etichetta`: il testo del pulsante. "Esci" in fondo all'elenco; "Esci e
+// rientra" in Impostazioni > Sincronizzazione con la sessione scaduta
+// (dal 10/10), stesso percorso e stessa conferma.
+export default function EsciAccount({
+  userId,
+  etichetta = "Esci",
+}: {
+  userId: string;
+  etichetta?: string;
+}) {
   const router = useRouter();
   const [stato, setStato] = useState<Stato>({ fase: "inattivo" });
   // Solo per disattivare il pulsante quando il browser sa già di essere
@@ -155,6 +165,11 @@ export default function EsciAccount({ userId }: { userId: string }) {
     //    l'app si riaprirebbe come se si fosse ancora dentro.
     await svuotaPagineSalvate().catch(() => {});
 
+    // 5. Via lo stato della sincronizzazione in memoria (esiti dei giri,
+    //    errori, da quando): è dell'utente appena uscito, e chi entra dopo
+    //    su questo dispositivo non deve vederlo.
+    azzeraStatoGiri();
+
     // Navigazione interna (non window.location): non fa scattare l'avviso
     // "modifiche non salvate" della pagina, già confermato qui sopra.
     router.replace("/login");
@@ -193,7 +208,7 @@ export default function EsciAccount({ userId }: { userId: string }) {
             disabled={occupato || !online}
             className={`flex min-h-[52px] w-full items-center justify-center px-4 text-base font-medium text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
           >
-            {stato.fase === "controllo" ? "Controllo..." : stato.fase === "uscita" ? "Esco..." : "Esci"}
+            {stato.fase === "controllo" ? "Controllo..." : stato.fase === "uscita" ? "Esco..." : etichetta}
           </button>
         )}
       </GruppoImpostazioni>

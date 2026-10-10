@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Indicatore di sincronizzazione</title>
+<style>
+/* Layout: barra delle scelte in alto; due telefoni affiancati (elenco Impostazioni con la tab bar, pagina Sincronizzazione); note sotto */
+:root{
+  --bg:#f6f1e8; --surface:#ffffff; --fg:#2a2520; --muted:#78705f;
+  --line:#e7e0d2; --accent:#3f7d4c; --accent-strong:#3f7d4c; --warn:#b65b2e; --info:#8a6d1f;
+  --soft:#efe9dd;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1815; --surface:#26221e; --fg:#f2ede4; --muted:#a39a8b;
+    --line:#3a342d; --accent:#7bb887; --accent-strong:#3f7d4c; --warn:#e8916f; --info:#d9b764;
+    --soft:#2f2a25; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1815; --surface:#26221e; --fg:#f2ede4; --muted:#a39a8b;
+  --line:#3a342d; --accent:#7bb887; --accent-strong:#3f7d4c; --warn:#e8916f; --info:#d9b764;
+  --soft:#2f2a25; color-scheme:dark;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Segoe UI,Roboto,sans-serif;
+  padding-inline:18px; padding-block:28px; max-width:960px; margin:0 auto;
+}
+h1{font-size:1.4rem; font-weight:800; letter-spacing:-.01em; margin:0 0 4px; text-wrap:balance}
+.lede{color:var(--muted); font-size:.92rem; line-height:1.55; margin:0 0 20px; max-width:68ch}
+.lede b{color:var(--fg)}
+
+.toolbar{display:flex; flex-direction:column; gap:10px; margin:0 0 24px; padding:12px; background:var(--surface); border:1px solid var(--line); border-radius:16px}
+.tb-riga{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.tb-riga > span{font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:700; min-width:118px}
+.seg{display:flex; gap:2px; background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:2px; flex-wrap:wrap}
+.seg button{border:0; background:transparent; color:var(--muted); font-size:.8rem; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--fg); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+button:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.main-grid{display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start}
+.colonna{display:flex; flex-direction:column; gap:8px; max-width:100%}
+.didascalia{font-size:.74rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin:0 4px}
+
+.phone{
+  width:340px; max-width:100%; flex:none; border-radius:30px; background:var(--bg); color:var(--fg);
+  border:1px solid var(--line); box-shadow:0 18px 40px -16px rgba(0,0,0,.35);
+  overflow:hidden; position:relative; isolation:isolate; min-height:640px;
+}
+.ph-head{padding:16px 18px 6px}
+.indietro{font-size:.84rem; font-weight:600; color:var(--accent); margin:0 0 10px}
+.ph-titolo{font-size:1.25rem; font-weight:800; letter-spacing:-.01em; margin:0}
+.corpo{padding:8px 16px 110px}
+
+.gruppo-et{font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:16px 6px 7px}
+.gruppo{background:var(--surface); border-radius:16px; overflow:hidden}
+.riga{display:flex; align-items:center; gap:10px; width:100%; border:0; background:transparent; color:inherit; font-family:inherit; text-align:left; padding:13px 14px; border-bottom:1px solid var(--line)}
+.riga:last-child{border-bottom:0}
+.riga .nome{flex:1; min-width:0; font-size:.9rem; font-weight:600}
+.riga .val{font-size:.84rem; color:var(--muted); display:flex; align-items:center; gap:6px; white-space:nowrap}
+.riga .val.warn{color:var(--warn); font-weight:700}
+.riga .val.info{color:var(--info); font-weight:700}
+.riga .chev{color:var(--muted); font-size:1rem; opacity:.6}
+.riga.evid{background:color-mix(in srgb, var(--accent) 7%, transparent)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none; background:var(--muted)}
+.dot.ok{background:var(--accent)}
+.dot.warn{background:var(--warn)}
+.dot.info{background:var(--info)}
+.dot.giro{background:var(--accent); animation:pulsa 1.1s ease-in-out infinite}
+@keyframes pulsa{50%{opacity:.25}}
+@media (prefers-reduced-motion: reduce){.dot.giro, .spinner{animation:none}}
+
+.account{display:flex; align-items:center; gap:12px; background:var(--surface); border-radius:16px; padding:14px; margin-top:6px}
+.iniziali{width:42px; height:42px; border-radius:50%; background:color-mix(in srgb, var(--accent) 22%, transparent); color:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:800}
+.account b{display:block; font-size:.92rem}
+.account small{color:var(--muted); font-size:.76rem}
+
+/* tab bar a pillola */
+.tabbar{position:absolute; left:50%; bottom:16px; transform:translateX(-50%); display:flex; gap:4px; padding:6px;
+  background:color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--line); border-radius:999px; box-shadow:0 10px 24px -14px rgba(0,0,0,.4)}
+.tab{position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; padding:7px 14px; border-radius:999px; font-size:.64rem; font-weight:700; color:var(--muted)}
+.tab.on{background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent)}
+.tab svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.pallino{position:absolute; top:5px; right:13px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--surface)}
+
+/* pagina sincronizzazione */
+.stato-card{background:var(--surface); border-radius:18px; padding:18px 16px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; margin-top:6px}
+.icona{width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--tono) 16%, transparent); color:var(--tono)}
+.icona svg{width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.stato-card h2{font-size:1.02rem; font-weight:800; margin:6px 0 0; text-wrap:balance}
+.stato-card p{font-size:.8rem; color:var(--muted); margin:0; line-height:1.45; max-width:34ch}
+.quando{font-size:.74rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.spinner{width:22px; height:22px; border:2.5px solid color-mix(in srgb, var(--accent) 25%, transparent); border-top-color:var(--accent); border-radius:50%; animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+.stato-riga{display:flex; gap:12px; align-items:flex-start; padding:14px; background:var(--surface); border-radius:16px; margin-top:6px}
+.stato-riga .icona{width:34px; height:34px; flex:none}
+.stato-riga .icona svg{width:18px; height:18px}
+.stato-riga h2{font-size:.92rem; font-weight:800; margin:0}
+.stato-riga p{font-size:.78rem; color:var(--muted); margin:3px 0 0; line-height:1.45}
+
+.btn-p{width:100%; margin-top:12px; border:0; border-radius:14px; background:var(--accent-strong); color:#fff; font-weight:700; font-size:.9rem; padding:12px; font-family:inherit; cursor:pointer}
+.btn-p:disabled{opacity:.4; cursor:default}
+.btn-s{width:100%; margin-top:8px; border:1px solid var(--line); background:var(--surface); color:var(--fg); border-radius:14px; font-weight:700; font-size:.86rem; padding:11px; font-family:inherit; cursor:pointer}
+
+.acc{background:var(--surface); border-radius:16px; padding:4px 14px 12px}
+.acc .riga{padding:11px 0; cursor:default}
+.acc .riga .nome{font-size:.84rem}
+.acc .riga small{display:block; color:var(--muted); font-weight:500; font-size:.72rem; margin-top:2px}
+details{margin-top:6px}
+summary{font-size:.8rem; font-weight:700; color:var(--accent); cursor:pointer; padding:8px 0; list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ "; }
+details[open] summary::before{content:"▾ "}
+.tecnico{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.68rem; color:var(--muted); line-height:1.45; background:var(--bg); border-radius:10px; padding:8px 10px; margin:4px 0 8px; overflow-wrap:anywhere}
+
+.ricarica{font-size:.84rem; color:var(--warn); font-weight:700}
+
+.toast{
+  position:absolute; left:14px; right:14px; bottom:84px; z-index:30;
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--line); border-radius:16px;
+  padding:11px 13px; font-size:.8rem; font-weight:600; box-shadow:0 10px 24px -14px rgba(0,0,0,.4);
+  transform:translateY(40px); opacity:0; transition:transform .22s ease, opacity .22s;
+}
+.toast.show{transform:translateY(0); opacity:1}
+
+.note{margin-top:28px; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px}
+.nota{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px}
+.nota h3{font-size:.86rem; margin:0 0 6px}
+.nota p, .nota li{font-size:.82rem; color:var(--muted); line-height:1.55; margin:0}
+.nota ul{margin:0; padding-left:18px}
+.nota b{color:var(--fg)}
+</style>
+</head>
+<body>
+
+
+<h1>Indicatore di sincronizzazione</h1>
+<p class="lede">Mockup per nutritrack, passo 4–6 di <b>sync-stato</b>. Scelte di Davide del 10/10: <b>pagina A · Riquadro</b> e <b>riga 2 · Pallino + testo</b>. In alto scegli lo <b>stato</b> da simulare e le due varianti: come appare lo stato nella <b>pagina</b> e come appare la <b>riga</b> nell'elenco di Impostazioni. Il pallino sulla tab compare solo per gli errori veri. I pulsanti funzionano.</p>
+
+<div class="toolbar" role="group" aria-label="Scelte del mockup">
+  <div class="tb-riga"><span>Stato</span>
+    <div class="seg" id="segStato">
+      <button data-v="ok" aria-pressed="true">Tutto salvato</button>
+      <button data-v="corso" aria-pressed="false">In corso</button>
+      <button data-v="attesa" aria-pressed="false">In attesa</button>
+      <button data-v="server" aria-pressed="false">Il server rifiuta</button>
+      <button data-v="sessione" aria-pressed="false">Accesso scaduto</button>
+      <button data-v="accantonate" aria-pressed="false">Accantonate</button>
+    </div>
+  </div>
+  <div class="tb-riga"><span>Pagina</span>
+    <div class="seg" id="segPagina">
+      <button data-v="A" aria-pressed="true">A · Riquadro (scelta)</button>
+      <button data-v="B" aria-pressed="false">B · Riga compatta</button>
+    </div>
+  </div>
+  <div class="tb-riga"><span>Riga elenco</span>
+    <div class="seg" id="segRiga">
+      <button data-v="1" aria-pressed="false">1 · Solo testo</button>
+      <button data-v="2" aria-pressed="true">2 · Pallino + testo (scelta)</button>
+    </div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="colonna">
+    <p class="didascalia">Impostazioni</p>
+    <div class="phone" id="telElenco">
+      <div class="ph-head"><p class="ph-titolo">Impostazioni</p></div>
+      <div class="corpo">
+        <div class="account"><div class="iniziali">DL</div><div><b>Davide</b><small>Profilo e account</small></div></div>
+        <p class="gruppo-et">Alimentazione</p>
+        <div class="gruppo">
+          <div class="riga"><span class="nome">Obiettivi</span><span class="val">Massa</span><span class="chev">›</span></div>
+          <div class="riga"><span class="nome">Pasti e orari</span><span class="val">5 pasti</span><span class="chev">›</span></div>
+          <div class="riga"><span class="nome">Peso</span><span class="val">78,4 kg</span><span class="chev">›</span></div>
+        </div>
+        <p class="gruppo-et">App</p>
+        <div class="gruppo">
+          <div class="riga"><span class="nome">Tema</span><span class="val">Scuro</span><span class="chev">›</span></div>
+          <div class="riga evid"><span class="nome">Sincronizzazione</span><span class="val" id="valRiga"></span><span class="chev">›</span></div>
+          <div class="riga"><span class="nome">Informazioni</span><span class="val">Build 6b99c32</span><span class="chev">›</span></div>
+        </div>
+      </div>
+      <nav class="tabbar" aria-label="Tab bar (indicativa)">
+        <span class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/></svg>Oggi</span>
+        <span class="tab"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-6"/></svg>Statistiche</span>
+        <span class="tab on" id="tabImp"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>Impostazioni<span class="pallino" id="pallino" hidden></span></span>
+      </nav>
+    </div>
+  </div>
+
+  <div class="colonna">
+    <p class="didascalia">Impostazioni › Sincronizzazione</p>
+    <div class="phone" id="telPagina">
+      <div class="ph-head"><p class="indietro">‹ Impostazioni</p><p class="ph-titolo">Sincronizzazione</p></div>
+      <div class="corpo">
+        <div id="statoBox"></div>
+        <button class="btn-p" id="btnOra">Sincronizza ora</button>
+
+        <div id="accBox" hidden>
+          <p class="gruppo-et">Non salvate online</p>
+          <div class="acc">
+            <div class="riga"><span class="nome">Voce del diario<small>Pranzo · gio 8 ott, 13:10</small></span></div>
+            <div class="riga"><span class="nome">Voce del diario<small>Cena · gio 8 ott, 20:41</small></span></div>
+            <div class="riga"><span class="nome">Pasto<small>«Merenda» · ven 9 ott, 17:02</small></span></div>
+            <details>
+              <summary>Dettagli tecnici</summary>
+              <p class="tecnico">voci_diario · 5 tentativi · 403 · new row violates row-level security policy for table "voci_diario"</p>
+              <p class="tecnico">voci_diario · 5 tentativi · 409 · insert or update on table "voci_diario" violates foreign key constraint "voci_diario_pasto_id_fkey"</p>
+              <p class="tecnico">pasti · 5 tentativi · 400 · invalid input syntax for type time: "25:00"</p>
+            </details>
+            <button class="btn-s" id="btnRiprova">Riprova a salvarle</button>
+          </div>
+        </div>
+
+        <p class="gruppo-et">Dati</p>
+        <div class="gruppo">
+          <div class="riga"><span class="nome ricarica">Ricarica i dati dal tuo account</span><span class="chev">›</span></div>
+        </div>
+      </div>
+      <div class="toast" id="toast" role="status"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <div class="nota">
+    <h3>Quando si accende il pallino</h3>
+    <ul>
+      <li><b>Sì</b>: modifiche accantonate, accesso scaduto, server che rifiuta (dal secondo giro fallito di fila).</li>
+      <li><b>No</b>: senza rete, in corso, tutto salvato.</li>
+      <li>Si spegne da solo quando un giro finisce bene.</li>
+    </ul>
+  </div>
+  <div class="nota">
+    <h3>Colori</h3>
+    <p>Verde = a posto o in corso. <b>Ocra</b> = in attesa, senza rete: niente di sbagliato, solo da sapere. <b>Arancio</b> = serve attenzione (gli stessi tre stati del pallino).</p>
+  </div>
+  <div class="nota">
+    <h3>Testo tecnico</h3>
+    <p>Solo per le modifiche accantonate, dentro <b>Dettagli tecnici</b> chiuso. Serve a te per non aprire Supabase; un familiare non lo vede se non lo apre. Gli esempi qui sono inventati.</p>
+  </div>
+</div>
+
+<script>
+const I = {
+  check:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  nube:'<svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.2 9.1 4.5 4.5 0 0 0 7 18z"/><path d="M3 3l18 18"/></svg>',
+  alert:'<svg viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>',
+  chiave:'<svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg>',
+  pausa:'<svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M4.6 7.5l2.6 1.5M16.8 15l2.6 1.5M4.6 16.5l2.6-1.5M16.8 9l2.6-1.5"/></svg>'
+};
+const STATI = {
+  ok:{tono:'--accent', icona:'check', titolo:'Tutto salvato online', testo:'Le modifiche di questo telefono sono anche sul server.', quando:'Controllato alle 14:32', riga:'Tutto salvato', rigaTono:'', dot:'ok', pallino:false},
+  corso:{tono:'--accent', icona:'spin', titolo:'Sincronizzazione in corso…', testo:'Sto inviando 2 modifiche.', quando:'', riga:'In corso…', rigaTono:'', dot:'giro', pallino:false},
+  attesa:{tono:'--info', icona:'nube', titolo:'2 modifiche in attesa', testo:'Partono da sole quando torna la rete.', quando:'In attesa dalle 14:02', riga:'2 in attesa', rigaTono:'info', dot:'info', pallino:false},
+  server:{tono:'--warn', icona:'alert', titolo:'Non riesco a salvare 2 modifiche online', testo:'Il server le rifiuta. Riprovo da solo a ogni apertura.', quando:'Dalle 14:02', riga:'Errore', rigaTono:'warn', dot:'warn', pallino:true},
+  sessione:{tono:'--warn', icona:'chiave', titolo:'Accesso scaduto', testo:'Le modifiche restano su questo telefono. Esci e rientra per salvarle online.', quando:'2 modifiche in attesa dalle 14:02', riga:'Accedi di nuovo', rigaTono:'warn', dot:'warn', pallino:true},
+  accantonate:{tono:'--warn', icona:'alert', titolo:'3 modifiche non salvate online', testo:'L’app ha smesso di riprovare dopo 5 rifiuti del server.', quando:'Diario (2), Pasti (1)', riga:'Da controllare', rigaTono:'warn', dot:'warn', pallino:true}
+};
+let stato='ok', pagina='A', rigaV='2', timer=null;
+
+function seg(id, cb){
+  const el=document.getElementById(id);
+  el.addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+    cb(b.dataset.v); disegna();
+  });
+}
+function premi(id, v){document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed', x.dataset.v===v?'true':'false'))}
+seg('segStato', v=>{clearTimeout(timer); stato=v});
+seg('segPagina', v=>pagina=v);
+seg('segRiga', v=>rigaV=v);
+
+function icona(s){
+  if(s.icona==='spin') return '<div class="icona" style="--tono:var(--accent)"><span class="spinner"></span></div>';
+  return '<div class="icona" style="--tono:var('+s.tono+')">'+I[s.icona]+'</div>';
+}
+function disegna(){
+  const s=STATI[stato];
+  const box=document.getElementById('statoBox');
+  if(pagina==='A'){
+    box.innerHTML='<div class="stato-card">'+icona(s)+'<h2>'+s.titolo+'</h2><p>'+s.testo+'</p>'+(s.quando?'<span class="quando">'+s.quando+'</span>':'')+'</div>';
+  } else {
+    box.innerHTML='<div class="stato-riga">'+icona(s)+'<div><h2>'+s.titolo+'</h2><p>'+s.testo+(s.quando?' · '+s.quando:'')+'</p></div></div>';
+  }
+  const val=document.getElementById('valRiga');
+  val.className='val'+(s.rigaTono?' '+s.rigaTono:'');
+  val.innerHTML=(rigaV==='2'?'<span class="dot '+s.dot+'"></span>':'')+s.riga;
+  document.getElementById('pallino').hidden=!s.pallino;
+  document.getElementById('accBox').hidden=stato!=='accantonate';
+  const b=document.getElementById('btnOra');
+  b.disabled=stato==='corso';
+  b.textContent=stato==='sessione'?'Esci e rientra':'Sincronizza ora';
+}
+function toast(t){const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2500)}
+function simulaGiro(fine){
+  stato='corso'; premi('segStato','corso'); disegna();
+  timer=setTimeout(()=>{stato='ok'; premi('segStato','ok'); disegna(); toast(fine)},1600);
+}
+document.getElementById('btnOra').addEventListener('click',()=>{
+  if(stato==='sessione'){toast('Qui si aprirebbe Esci.'); return}
+  if(stato==='attesa'){toast('Ancora senza rete: le modifiche restano in attesa.'); return}
+  simulaGiro('Tutto salvato online.');
+});
+document.getElementById('btnRiprova').addEventListener('click',()=>simulaGiro('3 modifiche salvate online.'));
+disegna();
+</script>
+
+</body>
+</html>

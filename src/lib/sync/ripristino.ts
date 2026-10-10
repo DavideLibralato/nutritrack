@@ -59,7 +59,7 @@ import type { VoceOutbox } from "./outbox";
 
 // Come si chiamano i tipi di dato nella conferma: parole dell'utente, non
 // nomi di tabella.
-const ETICHETTE: Record<NomeTabella, string> = {
+export const ETICHETTE: Record<NomeTabella, string> = {
   voci_diario: "diario",
   alimenti: "alimenti",
   composizioni: "pasti salvati",

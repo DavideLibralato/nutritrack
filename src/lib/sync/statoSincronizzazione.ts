@@ -120,6 +120,20 @@ export function leggiStatoGiri(): StatoGiri {
   return stato;
 }
 
+// Lo stato durante il disegno della pagina sul server (Next.js), dove
+// window e localStorage non ci sono: sempre lo stesso oggetto, come vuole
+// useSyncExternalStore. Nel browser React passa poi a leggiStatoGiri.
+const STATO_LATO_SERVER: StatoGiri = {
+  salita: VERSO_VUOTO,
+  discesa: { ...VERSO_VUOTO, tabelleNonScaricate: [] },
+  inCorsoDal: null,
+  ultimoSuccesso: null,
+};
+
+export function leggiStatoGiriLatoServer(): StatoGiri {
+  return STATO_LATO_SERVER;
+}
+
 export function iscriviStatoGiri(ascoltatore: () => void): () => void {
   ascoltatori.add(ascoltatore);
   return () => {

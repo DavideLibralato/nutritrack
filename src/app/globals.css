@@ -46,6 +46,11 @@
   --tenue: var(--se-chiaro, #78705f) var(--se-scuro, #a39a8b);
   --accento: var(--se-chiaro, var(--accento-chiaro)) var(--se-scuro, var(--accento-scuro));
   --avviso: var(--se-chiaro, #b5533c) var(--se-scuro, #e8916f);
+  /* --attesa: l'ocra dell'indicatore di sincronizzazione per "modifiche in
+     attesa" (senza rete): niente di sbagliato, solo da sapere. Fra il verde
+     di "tutto a posto" e l'arancio di "serve attenzione". Dal 10/10, mockup
+     docs/mockups/sincronizzazione.html. */
+  --attesa: var(--se-chiaro, #8a6d1f) var(--se-scuro, #d9b764);
 
   /* --superficie: gli elementi staccati dal fondo (pillola, barra dei
      messaggi, sheet, barra Salva, gruppi e scheda dell'account di
@@ -403,6 +408,7 @@ input[type="time"].campo-data::-webkit-date-and-time-value {
   --color-muted: var(--tenue);
   --color-accent: var(--accento);
   --color-warning: var(--avviso);
+  --color-pending: var(--attesa);
   --color-surface: var(--superficie);
   --color-accent-strong: var(--accento-pieno);
   --color-warning-strong: var(--avviso-pieno);

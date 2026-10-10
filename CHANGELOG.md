@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Sincronizzazione: la pagina con l'indicatore
+
+Branch `sync-stato`. La pagina Impostazioni > Sincronizzazione dal mockup
+approvato (`docs/mockups/sincronizzazione.html`, aggiunto con questo
+commit; scelta "A · Riquadro").
+- Riquadro dello stato (`RiquadroStatoSincronizzazione`) con i testi dei
+  sei stati (`testiSincronizzazione.ts`: "dalle 14:02", "da ieri alle…",
+  "Controllato alle…"); colori dai token, con l'ocra nuovo `--attesa`
+  (`text-pending`, chiaro e scuro) per "in attesa".
+- `useStatoSincronizzazione`: coda dell'utente da Dexie (`useLiveQuery`),
+  giri dalla memoria (`useSyncExternalStore`), e un timer che ridisegna la
+  pagina quando un giro supera il secondo ("in corso").
+- "Sincronizza ora", spento durante un giro; con la sessione scaduta
+  "Esci e rientra" (`EsciAccount` con l'etichetta nuova). Esci azzera lo
+  stato dei giri.
+- "Non salvate online" (`ModificheAccantonate`): elenco in parole
+  dell'utente, "Dettagli tecnici" chiuso, "Riprova a salvarle"
+  (`riprovaAccantonate` in `codaDellUtente.ts`, solo le voci di
+  quell'utente). Rispetto al mockup, una voce di diario mostra anche
+  l'alimento ("Yogurt magro, Pranzo").
+Test: 8 sulla pagina (sei stati, Sincronizza ora, Riprova), 3 in
+`codaDellUtente.test.ts`, 5 in `testiSincronizzazione.test.ts`, contrasti
+dell'ocra e dell'arancio. 17 rotture di prova, ogni test nuovo rosso
+almeno una volta, ripristino dalla copia. 701 test verdi in 60 file. Non
+ancora provata su iPhone. Documenti: PUNTO §3, §7, §9.2, §11.
+
 ## 2026-10-10 — Sincronizzazione: lo status dell'ultimo invio fallito (Dexie version 8)
 
 Branch `sync-stato`. Commit a sé prima della pagina, perché tocca la sync

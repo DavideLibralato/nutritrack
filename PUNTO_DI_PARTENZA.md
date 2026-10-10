@@ -770,7 +770,8 @@ un comando che non fa niente sembra rotto):
   kcal" con i giorni differenziati accesi), Pasti e orari, Peso;
 - gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
   a destra tema e colore, "Sistema · Verde"), Preferiti e pasti salvati,
-  Sincronizzazione (qui andrà l'indicatore);
+  Sincronizzazione (la pagina con l'indicatore dal 10/10, sezione 9.2; a
+  destra della riga lo stato in breve, da fare);
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
   `next.config.ts`; in locale "sviluppo");
@@ -2110,7 +2111,14 @@ principale").
   dell'app e `manifest.json` (icona scura con "NT" bianco, sfondo crema:
   non contengono il verde) e `theme-color`, che è lo sfondo.
 - **L'arancio** "superato" (`--avviso`) non cambia con il colore
-  principale: resta il solo segnale di obiettivo superato.
+  principale: segnala un obiettivo superato e, come già nei messaggi
+  d'errore, gli stati della sincronizzazione che chiedono attenzione
+  (sessione scaduta, server che rifiuta, modifiche accantonate).
+- **L'ocra** `--attesa` (`text-pending`, dal 10/10): `#8a6d1f` in chiaro,
+  `#d9b764` al buio. Solo per "modifiche in attesa" nell'indicatore di
+  sincronizzazione: niente di sbagliato, solo da sapere (mockup
+  `docs/mockups/sincronizzazione.html`). Non cambia con il colore
+  principale; contrasto controllato da `contrasti.test.ts`.
 
 **Grigio `--tenue`**: in chiaro da `#8a8271` a **`#78705f`** dal passo
 "accento" (prima era sotto 4,5:1, vedi i contrasti sotto). Al buio resta
@@ -2559,10 +2567,35 @@ pura con i test):
 
 Un errore resta a schermo mentre parte il giro dopo: sparisce quando un
 giro finisce bene. **Pallino** sulla tab: stati 1–3, il 3 dal secondo giro
-fallito di fila. Azioni (da fare): "Sincronizza ora"; per le accantonate
-"Riprova" e un elenco con il testo tecnico dell'errore dentro "Dettagli",
-chiuso di default. Niente "Scarta": c'è già "Ricarica i dati dal tuo
-account". Aspetto: mockup prima del codice.
+fallito di fila (da fare, con la riga nell'elenco: "2 · Pallino + testo"
+del mockup).
+
+**La pagina** (dal 10/10, mockup approvato
+`docs/mockups/sincronizzazione.html`, "A · Riquadro"):
+- in cima il **riquadro dello stato** (`RiquadroStatoSincronizzazione`):
+  icona in un cerchio, titolo, testo e la riga "da quando" / "controllato
+  alle" ("dalle 14:02", "da ieri alle 14:02", "da gio 8 ott alle 14:02").
+  Testi in `testiSincronizzazione.ts`. Colori dai token: verde tutto a
+  posto e in corso, ocra (`--attesa`, sezione 7) in attesa, arancio per
+  sessione, errore e accantonate. "In corso" compare da solo dopo un
+  secondo: l'hook `useStatoSincronizzazione` programma un timer per quel
+  momento;
+- **"Sincronizza ora"** (discesa e salita), spento mentre un giro è in
+  corso. Con la sessione scaduta al suo posto c'è **"Esci e rientra"**: è
+  Esci (`EsciAccount` con un'altra etichetta), con la sua conferma. Esci
+  ora azzera anche lo stato dei giri in memoria;
+- con modifiche accantonate, il gruppo **"Non salvate online"**
+  (`ModificheAccantonate`): che cosa, quale e quando, in parole
+  dell'utente; **"Dettagli tecnici" chiuso di default** (tabella,
+  tentativi, status, errore: in futuro l'app potrebbe usarla qualcuno in
+  famiglia); **"Riprova a salvarle"** (`riprovaAccantonate`: rimette in
+  coda come nuove solo le voci di quell'utente, poi un giro). Niente
+  "Scarta": c'è già "Ricarica i dati dal tuo account";
+- in fondo, com'era, "Ricarica i dati dal tuo account".
+
+Solo le voci dell'utente entrano nei conteggi e nell'elenco
+(`codaDellUtente.ts`): su un dispositivo condiviso la coda può contenere
+anche quelle di un altro (i dati locali non si cancellano all'uscita, 9.6).
 
 #### Ripristino dei dati locali (deciso il 2026-09-25)
 
@@ -3286,9 +3319,9 @@ la pagina.
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale. In corso sul
   branch `sync-stato` (sezione 9.2, "L'indicatore"): fatti la sync che non
-  consuma tentativi senza rete, il tempo massimo delle richieste e lo
-  stato con le sue priorità; mancano il mockup, la pagina, la riga e il
-  pallino
+  consuma tentativi senza rete, il tempo massimo delle richieste, lo
+  stato con le sue priorità, il mockup e la pagina (da provare su
+  iPhone); mancano la riga nell'elenco e il pallino sulla tab
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
