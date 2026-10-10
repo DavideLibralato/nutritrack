@@ -120,6 +120,15 @@ export function dataScrivibile(iso: string, adesso: Date = new Date()): boolean 
   return iso <= ultimoGiornoDiario(adesso);
 }
 
+// Quanti millisecondi mancano alla prossima mezzanotte locale: quando il
+// giorno del calendario cambia (useGiornoCorrente). La mezzanotte si
+// costruisce con anno, mese e giorno, non sommando 24 h: nei giorni del
+// cambio d'ora (23 o 25 ore) resta comunque la mezzanotte vera.
+export function msAllaMezzanotte(adesso: Date = new Date()): number {
+  const mezzanotte = new Date(adesso.getFullYear(), adesso.getMonth(), adesso.getDate() + 1, 0, 0, 0);
+  return mezzanotte.getTime() - adesso.getTime();
+}
+
 // "HH:mm" dell'orologio locale. Serve alla proposta del pasto in base
 // all'ora quando si inserisce nel giorno corrente (sezione "I pasti").
 export function oraCorrente(d: Date = new Date()): string {

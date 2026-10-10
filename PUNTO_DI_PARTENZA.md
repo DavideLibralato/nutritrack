@@ -1319,6 +1319,21 @@ sera in cui recuperi la giornata, o il rientro dopo un weekend senza telefono.
   il limite si ripiega su oggi) e Duplica (`dataScrivibile`, ricontrollata
   prima di scrivere). Riguarda **solo le voci del diario**: non le date dei
   pasti in Pasti e orari, non il peso
+- **Quando il giorno cambia, Oggi va sul nuovo oggi** (deciso il 10/10),
+  qualunque giorno stesse mostrando: a mezzanotte con l'app aperta, o
+  riaprendola il giorno dopo (su iPhone l'app installata torna dal
+  multitasking senza ricaricarsi). `useGiornoCorrente`
+  (`src/lib/useGiornoCorrente.ts`): un timer fino alla mezzanotte locale e
+  il ritorno in primo piano (`visibilitychange`), perché in background
+  iOS sospende i timer. **Un foglio aperto si chiude e il salto è subito**
+  (sheet della voce, "Salva come pasto", menu, Sposta, Duplica; quello che
+  si stava scrivendo si perde, come toccando fuori): Sposta, Duplica ed
+  "Elimina tutto il pasto" leggono il giorno mostrato alla conferma, e un
+  foglio rimasto aperto sopra il giorno nuovo le farebbe agire sulle voci
+  di un altro giorno. Solo un trascinamento in corso si lascia finire
+  (dura finché il dito è giù, e il rilascio agisce sul giorno da cui è
+  partito): il salto viene subito dopo. All'apertura da zero la pagina
+  parte già da oggi
 - **I giorni futuri non hanno un segno "pianificato"** (deciso il 10/10):
   bastano la data in alto e il pulsante "Oggi". La riga sotto la data è
   quella dei giorni passati ("X di Y kcal"); "Rimangono X kcal" resta solo
@@ -2985,7 +3000,7 @@ sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
 `modifichePasti.test.ts`, `vociDiario.test.ts`, la pagina,
 `sincronizzaUnaPerVolta.test.ts`.
 
-**Test.** 581 test permanenti in 53 file (Vitest), tutti verdi al 10/10.
+**Test.** 590 test permanenti in 54 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 

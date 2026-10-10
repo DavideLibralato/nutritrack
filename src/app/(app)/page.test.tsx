@@ -8,7 +8,7 @@
 // che si può rompere in silenzio è il collegamento fra i due.
 
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import OggiPage from "./page";
 import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
 import { idVoceRicreata } from "@/lib/repository/vociDiario";
@@ -722,5 +722,95 @@ describe("Oggi: navigazione fino a oggi + 7", () => {
     giornoMostrato(oggiLocale());
     fireEvent.change(calendario, { target: { value: traGiorni(3) } });
     giornoMostrato(traGiorni(3));
+  });
+});
+
+describe("Oggi: il giorno cambia mentre la pagina è aperta", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function visibilita(stato: "visible" | "hidden") {
+    Object.defineProperty(document, "visibilityState", { value: stato, configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }
+
+  function giornoMostrato(iso: string) {
+    return screen.getByRole("button", { name: `Cambia data, ${formattaDataEstesa(iso)}` });
+  }
+
+  // Sabato 10/10 alle 22, guardando giovedì 8 (o un altro giorno).
+  async function apri(giorno: string) {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 10, 22, 0, 0));
+    parametri = new URLSearchParams({ giorno });
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    await repositoryVociDiario.crea({
+      user_id: utenteTest, alimento_id: "alimento-mela", pasto_id: pranzo.id, gruppo_id: null,
+      quantita_g: 150, data: giorno, creato_il: "2026-10-10T08:00:00.000Z", consumato_alle: null,
+      nome_alimento: "Mela", kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.2,
+    });
+    render(<OggiPage />);
+    await screen.findByText("Mela");
+    giornoMostrato(giorno);
+  }
+
+  it("riaperta il giorno dopo: va sul nuovo oggi, da un giorno passato", async () => {
+    await apri("2026-10-08");
+    act(() => visibilita("hidden"));
+    vi.setSystemTime(new Date(2026, 9, 11, 7, 30, 0));
+    act(() => visibilita("visible"));
+
+    await waitFor(() => giornoMostrato("2026-10-11"));
+    // È oggi: niente pulsante "Oggi".
+    expect(screen.queryByRole("button", { name: "Oggi" })).toBeNull();
+  });
+
+  it("anche da un giorno futuro", async () => {
+    await apri("2026-10-14");
+    vi.setSystemTime(new Date(2026, 9, 11, 7, 30, 0));
+    act(() => visibilita("visible"));
+    await waitFor(() => giornoMostrato("2026-10-11"));
+  });
+
+  it("con lo sheet di una voce aperto: lo chiude e salta subito", async () => {
+    await apri("2026-10-08");
+    fireEvent.click(screen.getByText("Mela").closest("button")!);
+    await screen.findByLabelText("Pasto");
+
+    vi.setSystemTime(new Date(2026, 9, 11, 7, 30, 0));
+    act(() => visibilita("visible"));
+
+    await waitFor(() => giornoMostrato("2026-10-11"));
+    expect(screen.queryByLabelText("Pasto")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("con il foglio di Sposta aperto: lo chiude e salta, e la voce di giovedì non si muove", async () => {
+    await apri("2026-10-08");
+    fireEvent.contextMenu(screen.getByText("Mela").closest("button")!);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Sposta" }));
+    await screen.findByRole("dialog");
+
+    vi.setSystemTime(new Date(2026, 9, 11, 7, 30, 0));
+    act(() => visibilita("visible"));
+
+    await waitFor(() => giornoMostrato("2026-10-11"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // Niente è stato scritto: la Mela è ancora giovedì, nel suo pasto.
+    const voci = await repositoryVociDiario.ottieniTutti(utenteTest);
+    expect(voci.map((v) => v.data)).toEqual(["2026-10-08"]);
+  });
+
+  it("con il menu del tieni-premuto aperto: lo chiude e salta", async () => {
+    await apri("2026-10-08");
+    fireEvent.contextMenu(screen.getByText("Mela").closest("button")!);
+    await screen.findByRole("menu");
+
+    vi.setSystemTime(new Date(2026, 9, 11, 7, 30, 0));
+    act(() => visibilita("visible"));
+
+    await waitFor(() => giornoMostrato("2026-10-11"));
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 });

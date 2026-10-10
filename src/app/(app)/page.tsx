@@ -40,6 +40,7 @@ import {
   repositoryGiorni,
 } from "@/lib/repository";
 import { usePastiIniziali } from "@/lib/usePastiIniziali";
+import { useGiornoCorrente } from "@/lib/useGiornoCorrente";
 import { tuttiIPasti } from "@/lib/repository/pasti";
 import {
   ETICHETTA_NON_IN_USO,
@@ -190,6 +191,14 @@ function OggiContenuto() {
     const param = searchParams.get("giorno");
     return param && dataScrivibile(param) ? param : oggiLocale();
   });
+
+  // L'oggi del calendario, che si aggiorna da solo a mezzanotte e al
+  // ritorno in primo piano (useGiornoCorrente). `giornoCorrenteVisto` è
+  // l'oggi su cui la pagina si è già regolata: quando i due non coincidono
+  // il giorno è cambiato, e la pagina salta al nuovo oggi (più sotto, dopo
+  // gestiAttivi).
+  const giornoCorrente = useGiornoCorrente();
+  const [giornoCorrenteVisto, setGiornoCorrenteVisto] = useState(giornoCorrente);
 
   // Il calendario si apre da codice con showPicker() sull'input date, non
   // sovrapponendo un input invisibile al testo: quel trucco lasciava
@@ -456,6 +465,30 @@ function OggiContenuto() {
     duplicazione === null &&
     trascinamento === null;
 
+  // Il giorno del calendario è cambiato (mezzanotte, o l'app riaperta il
+  // giorno dopo): la pagina va subito sul nuovo oggi, qualunque giorno
+  // stesse mostrando (decisione del 10/10). Prima chiude ogni foglio aperto
+  // (sheet della voce, "Salva come pasto", menu, Sposta, Duplica): Sposta,
+  // Duplica ed "Elimina tutto il pasto" leggono `giorno` alla conferma, e
+  // un foglio rimasto aperto sopra il giorno nuovo farebbe agire la conferma
+  // sulle voci di un altro giorno. Quello che si stava scrivendo nel foglio
+  // si perde, come toccando fuori. Unica attesa: un trascinamento in corso
+  // (dura finché il dito è giù, e il rilascio agisce sul giorno da cui è
+  // partito); finito quello, il salto avviene qui.
+  // Stato aggiornato durante il render (come il pasto proposto in
+  // /aggiungi): React ridisegna subito, senza mostrare il giorno vecchio. Il
+  // gesto del tieni-premuto si azzera in un effetto, dopo useTieniPremuto:
+  // non è uno stato di React.
+  if (giornoCorrenteVisto !== giornoCorrente && trascinamento === null) {
+    setGiornoCorrenteVisto(giornoCorrente);
+    setVoceInModifica(null);
+    setPastoDaSalvare(null);
+    setMenu(null);
+    setSpostamento(null);
+    setDuplicazione(null);
+    setGiorno(giornoCorrente);
+  }
+
   // Swipe per cambiare giorno (sezione 3, "Swipe per cambiare giorno"): si
   // attiva sul pannello del giorno (anello, macro e lista), non sulla testata
   // con la data.
@@ -484,6 +517,12 @@ function OggiContenuto() {
       }),
     onTrascinamento: ascoltatoriTrascinamento,
   });
+  // Dopo il salto al nuovo oggi (sopra), che chiude anche il menu: il dito
+  // che l'aveva aperto è finito, come in chiudiMenu. Al primo montaggio
+  // non c'è nessun gesto da azzerare, e azzerare non fa niente.
+  useEffect(() => {
+    azzeraTieniPremuto();
+  }, [giornoCorrenteVisto, azzeraTieniPremuto]);
   // La lista ha due ref: l'oggetto che usa lo swipe (rifScorrimento) e la
   // callback del tieni-premuto. Questa le unisce; useCallback la tiene
   // identica fra un render e l'altro, altrimenti React staccherebbe e
@@ -544,10 +583,10 @@ function OggiContenuto() {
 
   // Da qui in giù `pasti`, `vociTutte` e `obiettivi` ci sono di sicuro.
 
-  // L'oggi del calendario: il giorno a cui riporta il pulsante "Oggi" e
-  // l'unico con "Rimangono X kcal". Il limite in avanti è un'altra cosa:
-  // oggi + 7 (ultimoGiornoDiario), lo stesso di dataScrivibile.
-  const giornoCorrente = oggiLocale();
+  // L'oggi del calendario (giornoCorrente, sopra): il giorno a cui riporta
+  // il pulsante "Oggi" e l'unico con "Rimangono X kcal". Il limite in avanti
+  // è un'altra cosa: oggi + 7 (ultimoGiornoDiario), lo stesso di
+  // dataScrivibile.
   const eGiornoCorrente = giorno === giornoCorrente;
   const ultimoGiorno = ultimoGiornoDiario();
 

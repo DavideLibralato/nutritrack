@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Diario fino a 7 giorni, 3: il giorno che cambia
+
+Branch `diario-futuro`. Quando il giorno del calendario cambia, Oggi va
+sul nuovo oggi, qualunque giorno stesse mostrando (decisione del 10/10).
+
+- `useGiornoCorrente` (nuovo hook): l'oggi del calendario che si aggiorna
+  da solo con un timer fino alla mezzanotte locale (`msAllaMezzanotte` in
+  `dataGiorno.ts`) e al ritorno in primo piano (`visibilitychange`: in
+  background iOS sospende i timer). Prima l'app riaperta la mattina dal
+  multitasking restava su ieri, con "Rimangono X kcal" e senza "Oggi".
+- Un foglio aperto (sheet della voce, "Salva come pasto", menu, Sposta,
+  Duplica) si chiude e il salto è subito: Sposta, Duplica ed "Elimina
+  tutto il pasto" leggono il giorno mostrato alla conferma, e un foglio
+  rimasto aperto sopra il giorno nuovo le farebbe agire sulle voci di un
+  altro giorno. Solo un trascinamento in corso si lascia finire.
+- Documenti: PUNTO §3 "Inserimento retroattivo".
+- Test nuovi (4 sul hook con l'orologio finto, mezzanotte e ritorno in
+  primo piano; 5 sulla pagina, compresi sheet, Sposta e menu aperti),
+  provati a vuoto rompendo il codice da una copia. 590 test verdi in 54
+  file.
+
 ## 2026-10-10 — Diario fino a 7 giorni, 2: Elimina e Rinomina "da oggi"
 
 Branch `diario-futuro`. Con le voci nei giorni futuri, "da oggi" in Pasti
