@@ -19,7 +19,7 @@
 
 import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { createBrowserClient } from "@supabase/ssr";
 import { createClient } from "@/lib/supabase/client";
 import ReimpostaPasswordPage from "./page";
@@ -46,6 +46,7 @@ const server = {
   // Il codice d'errore con cui il server rifiuta il link, o null.
   rifiutaCodice: null as keyof typeof RIFIUTI | null,
   scambi: 0,
+  passwordCambiate: [] as string[],
   impreviste: [] as string[],
 };
 
@@ -54,9 +55,12 @@ function base64url(testo: string): string {
 }
 
 // Un token con la forma di un JWT vero: auth-js ne legge la scadenza.
+// L'ora è fissata una volta per il file: il fetch finto riconosce l'utente
+// confrontando il token, che deve venire uguale in ogni momento del test.
+const ORA = Math.floor(Date.now() / 1000);
+
 function token(utente: { id: string }): string {
-  const ora = Math.floor(Date.now() / 1000);
-  const dati = { sub: utente.id, aud: "authenticated", role: "authenticated", iat: ora, exp: ora + 3600 };
+  const dati = { sub: utente.id, aud: "authenticated", role: "authenticated", iat: ORA, exp: ORA + 3600 };
   return `${base64url('{"alg":"HS256","typ":"JWT"}')}.${base64url(JSON.stringify(dati))}.firma`;
 }
 
@@ -78,7 +82,7 @@ function sessione(utente: { id: string; email: string }) {
     refresh_token: `refresh-${utente.id}`,
     token_type: "bearer",
     expires_in: 3600,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    expires_at: ORA + 3600,
     user: utenteSupabase(utente),
   };
 }
@@ -105,10 +109,15 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
 
   if (metodo === "POST" && url === `${AUTH}/token?grant_type=password`) return json(sessione(UTENTE_PROVA));
 
-  if (metodo === "GET" && url === `${AUTH}/user`) {
+  // GET: chi è l'utente. PUT: il salvataggio della password nuova
+  // (updateUser), annotato con l'account su cui finisce.
+  if ((metodo === "GET" || metodo === "PUT") && url === `${AUTH}/user`) {
     const autorizzazione = new Headers(init?.headers).get("Authorization") ?? "";
     for (const utente of [UTENTE_VERO, UTENTE_PROVA]) {
-      if (autorizzazione === `Bearer ${token(utente)}`) return json(utenteSupabase(utente));
+      if (autorizzazione === `Bearer ${token(utente)}`) {
+        if (metodo === "PUT") server.passwordCambiate.push(utente.email);
+        return json(utenteSupabase(utente));
+      }
     }
   }
 
@@ -122,8 +131,10 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
 // libreria toglie ?code= dall'indirizzo (vedi page.tsx).
 let parametriPagina = new URLSearchParams();
 
+const routerFinto = { push: vi.fn(), replace: () => {}, refresh: () => {}, back: () => {} };
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {}, back: () => {} }),
+  useRouter: () => routerFinto,
   useSearchParams: () => parametriPagina,
 }));
 
@@ -218,12 +229,16 @@ beforeEach(() => {
   vi.stubGlobal("BroadcastChannel", undefined);
   server.rifiutaCodice = null;
   server.scambi = 0;
+  server.passwordCambiate = [];
   server.impreviste = [];
+  routerFinto.push.mockClear();
   cancellaCookie();
+  sessionStorage.clear();
 });
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   expect(server.impreviste).toEqual([]);
@@ -236,6 +251,24 @@ const ERRORE = "Link non valido";
 const TESTO_ALTRO_BROWSER =
   "Questo link funziona solo nel browser da cui l'hai chiesto. Richiedine uno nuovo qui sotto, da questo browser. Su iPhone i link delle email si aprono sempre in Safari, anche se hai l'app installata.";
 const TESTO_SCADUTO = "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
+const TESTO_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.";
+
+// L'errore come lo scrive il server di Auth quando rifiuta un link già
+// usato o scaduto (prepErrorRedirectURL in supabase/auth, verify.go): per
+// il flusso PKCE nella query e nell'hash, e nell'hash anche "sb".
+const ERRORE_SERVER =
+  "error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired";
+
+function campoAccount(): HTMLInputElement {
+  return screen.getByLabelText("Account") as HTMLInputElement;
+}
+
+// Lo stesso indirizzo ricaricato nella stessa scheda: pagina e client
+// nuovi; i cookie e sessionStorage restano.
+function ricarica() {
+  cleanup();
+  apriPagina(window.location.pathname + window.location.search + window.location.hash);
+}
 
 describe("/reimposta-password", () => {
   it("verifier presente: compare il modulo, una sola chiamata di scambio", async () => {
@@ -247,6 +280,8 @@ describe("/reimposta-password", () => {
     expect(server.scambi).toBe(1);
     // Lo scambio l'ha fatto la libreria, che ha tolto il codice.
     expect(window.location.search).toBe("");
+    // T7: il modulo dice a quale account si cambia la password.
+    expect(campoAccount().value).toBe(UTENTE_VERO.email);
   });
 
   it("verifier presente e client creato prima della pagina (layout radice): compare il modulo", async () => {
@@ -293,11 +328,99 @@ describe("/reimposta-password", () => {
     }
   );
 
-  it("nessun ?code= e sessione presente (ricaricamento dopo lo scambio): modulo", async () => {
+  // T1–T4. Link già usato o scaduto: il server rimanda qui SENZA ?code=,
+  // con l'errore nell'indirizzo. La prova sull'anteprima del 10/10: con
+  // la sessione dell'account di prova aperta compariva il modulo, e la
+  // password nuova sarebbe finita su quell'account.
+  it("T1 errore nella query e nell'hash, nessuna sessione: testo del link scaduto", async () => {
+    apriPagina(`/reimposta-password?${ERRORE_SERVER}#${ERRORE_SERVER}&sb=`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_SCADUTO)).toBeTruthy();
+    expect(server.scambi).toBe(0);
+  });
+
+  it("T2 errore nella query e nell'hash con un'altra sessione aperta: testo del link scaduto, non il modulo", async () => {
+    await entraConAccountDiProva();
+    apriPagina(`/reimposta-password?${ERRORE_SERVER}#${ERRORE_SERVER}&sb=`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_SCADUTO)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+  });
+
+  it("T3 errore solo nell'hash con un'altra sessione aperta: testo del link scaduto", async () => {
+    await entraConAccountDiProva();
+    apriPagina(`/reimposta-password#${ERRORE_SERVER}&sb=`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_SCADUTO)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+  });
+
+  it("T4 errore solo nella query con un'altra sessione aperta: testo del link scaduto", async () => {
+    await entraConAccountDiProva();
+    apriPagina(`/reimposta-password?${ERRORE_SERVER}`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_SCADUTO)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+  });
+
+  it("T5 ricaricamento dopo uno scambio riuscito, stessa scheda: di nuovo il modulo, con l'email", async () => {
+    await chiediIlLink();
+    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+
+    ricarica();
+
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+    // T7 anche qui.
+    expect(campoAccount().value).toBe(UTENTE_VERO.email);
+  });
+
+  it("T6 senza codice né errore, sessione aperta ma nessuno scambio in questa scheda: errore", async () => {
     await entraConAccountDiProva();
     apriPagina("/reimposta-password");
 
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+  });
+
+  it("T8 dopo il salvataggio della password, indietro o ricaricamento non riaprono il modulo", async () => {
+    await chiediIlLink();
+    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
     expect(await screen.findByText(MODULO)).toBeTruthy();
-    expect(screen.queryByText(ERRORE)).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
+    fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
+    fireEvent.click(screen.getByText("Salva nuova password"));
+    await waitFor(() => expect(routerFinto.push).toHaveBeenCalledWith("/"));
+    expect(server.passwordCambiate).toEqual([UTENTE_VERO.email]);
+
+    ricarica();
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+  });
+
+  it("T9 memoria della scheda non disponibile: il ricaricamento mostra l'errore, non il modulo", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Memoria non disponibile", "SecurityError");
+    });
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("Memoria non disponibile", "SecurityError");
+    });
+    await chiediIlLink();
+    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
+    // Lo scambio del link vale comunque: il modulo compare.
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+
+    ricarica();
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
   });
 });

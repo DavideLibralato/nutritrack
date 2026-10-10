@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Reimposta password: un link già usato non apre più il modulo
+
+Branch `reset-password`. Bug di sicurezza trovato provando l'anteprima
+(`9235095`): riaprendo il link già usato compariva il modulo, con la
+sessione dell'account di prova aperta in Safari; la password nuova
+sarebbe finita su quell'account. Causa: per un link già usato o scaduto
+il server rimanda alla pagina SENZA `?code=`, con l'errore nella query e
+nell'hash (`otp_expired`, verificato nel sorgente di supabase/auth e nei
+log); la pagina non guardava l'esito di `initialize()` e mostrava il
+modulo a qualunque sessione aperta. Ora: errore nell'indirizzo → testo
+del link scaduto, sempre; senza codice né errore (ricaricamento) il
+modulo solo se la sessione è dello stesso utente del "segno" scritto in
+`sessionStorage` dopo lo scambio riuscito in questa scheda
+(`segnoRipristinoPassword.ts`, tolto dopo il salvataggio, letture e
+scritture in try/catch). Scartato il claim `amr`: "recovery" resta per
+tutta la sessione, e c'era proprio su quella della prova. Il modulo
+mostra l'email dell'account (campo in sola lettura,
+`autoComplete="username"`). Test: 15 casi (T1–T9), 7 rotture di prova
+prese, ripristino dalla copia; corretto anche un token finto che
+dipendeva dal secondo corrente. 727 test verdi in 64 file. Da riprovare
+sull'anteprima.
+
 ## 2026-10-10 — Reimposta password: testi chiari e nuovo link anche da loggati
 
 Branch `reset-password`. Due testi distinti sotto "Link non valido":
