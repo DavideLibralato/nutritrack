@@ -1205,7 +1205,8 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
   qui non compare (in Oggi resta visibile con la rete di sicurezza).
 - **Tocco su un pasto** → sheet con Nome e "Inizia alle", Salva e Annulla:
   - cambia **solo l'ora** → si scrive subito, in ogni giorno del pasto,
-    passati compresi (l'ora non ha storia);
+    passati compresi *(dal passo 5 con la domanda "Subito" / "Da una
+    data": "Date future e cambi programmati", sotto)*;
   - cambia **il nome** → la domanda "da quando vale?": **Correggi** ("Vale
     anche per i giorni passati") o **Da oggi** ("Fino a ieri resta
     «Pranzo»"), con Da oggi già scelto (non riscrive il passato). Nome e
@@ -1299,6 +1300,77 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
 - Una voce aggiunta da un altro telefono non ancora allineato su un pasto
   eliminato o chiuso resta viva sul server: in Oggi la mostra la rete di
   sicurezza ("Non più in uso"), da lì la si porta via.
+
+**Date future e cambi programmati** (passo 5, deciso il 10/10, **in
+costruzione** sul branch `pasti-date`: fatta la logica pura,
+`src/lib/pasti/cambiProgrammati.ts`; il resto qui sotto è il progetto).
+Mockup: `docs/mockups/pasti-e-orari.html`, "A · Righe" e "2 · Schede per
+data".
+- **"Da una data"**: terza scelta della domanda "da quando" per
+  rinominare, aggiungere ed eliminare. Solo date future, da domani, **senza
+  limite massimo** (il limite dei 7 giorni riguarda solo le voci del
+  diario), salvo un cambio già programmato su quel pasto: la data arriva al
+  massimo al giorno di quel cambio, se il pasto continua (la stessa data
+  modifica il cambio già programmato), o al suo ultimo giorno, se da lì
+  non c'è più. Oltre, il pasto ha già un altro nome o non esiste. Un pasto
+  nato oggi o dopo resta senza domanda (si corregge, o si elimina del
+  tutto). La data proposta è il prossimo lunedì.
+- **L'orario segue la data, come il nome**: ogni riga del filo (sezione 4,
+  "pasti": `ordine` è il filo) ha il suo orario. Cambiando **solo l'ora**
+  compare la domanda con due scelte: **Subito** (si scrive sulla riga
+  valida oggi, in tutti i suoi giorni, passati compresi, fino al prossimo
+  cambio programmato; le righe future del filo tengono la loro ora) o
+  **Da una data**. Una rinomina "da una data" che cambia anche l'ora
+  porta nome e ora nuovi da quel giorno; fino al giorno prima resta tutto
+  com'era ("Pranzo" alle 12:30 fino al 12, "Pranzo 1" alle 14:30 dal 13).
+  Così farà anche la rinomina "da oggi": la riga vecchia tiene la sua ora
+  *(oggi su main la riga vecchia prende l'ora nuova: cambia col passo 5)*.
+  L'ordine nei giorni passati e futuri segue l'ora delle righe valide quel
+  giorno (`pastiValidiIl`, già così).
+- **Ogni cambio "da D"** è un taglio del filo al giorno D:
+  - rinomina o ora da D: la riga valida il giorno D si chiude a D−1, ne
+    nasce una dello stesso filo da D (fino alla vecchia fine), e le voci
+    da D in poi passano su quella nuova. Se una riga del filo comincia già
+    il giorno D, si corregge quella (la stessa data modifica il cambio);
+  - elimina da D: la riga che contiene D−1 si chiude lì, le righe del
+    filo che cominciano da D in poi si cancellano, e le voci del filo da D
+    in poi si cancellano, con la conferma (voci / giorni / kcal) e il
+    segno `eliminata_dal_cambio` (sezione 4, `voci_diario`). "Da oggi" è
+    lo stesso taglio con D = oggi: anche lui taglia tutto il filo, così
+    una rinomina programmata non fa ricomparire il pasto;
+  - aggiungi da D: una riga nuova con `valido_dal` = D e un `ordine`
+    nuovo. Non tocca voci.
+- **Controlli** come sempre, sul periodo della riga che si scrive:
+  `erroreNome` ed `erroreOra` contro le righe vive con giorni in comune
+  (le righe di uno stesso filo non si sovrappongono mai), messaggio
+  "inizierà … (dal …)", `periodoCoperto` (nessun giorno resta senza pasti).
+- **Schede per data**: se c'è almeno un cambio programmato, in cima
+  compaiono "Oggi" e una scheda "Dal lun 12 ott" per ogni data con cambi,
+  calcolate dalle righe (niente di salvato: quando la data arriva la
+  scheda sparisce da sola, con `useGiornoCorrente`). Una scheda futura
+  mostra i pasti come saranno quel giorno, con "nuovo", "nome nuovo" o
+  "ora nuova" + "prima: …", "Non ci sarà più: …", e i cambi di quella data
+  ("Pranzo → Pranzo 1", "Pranzo 12:30 → 14:30", "Pranzo non ci sarà più —
+  4 voci eliminate, dal 12 al 15 ott") ciascuno con **Annulla**. Le schede
+  future non si modificano: si modifica sempre da "Oggi".
+- **Annulla**: quello della **barra**, subito dopo, usa la fotografia in
+  memoria come oggi (rimette anche le righe del filo tagliate). Quello
+  della **scheda** lavora sulle righe, quindi anche giorni dopo, e rifà i
+  controlli di nome e ora ("Non annullato: …"):
+  - rinomina o ora: la riga vecchia riprende la fine di quella nuova, le
+    voci della nuova tornano sulla vecchia, la nuova si cancella;
+  - elimina: la riga si riapre (senza fine) e **tornano le voci col segno
+    di quel cambio, cercate in tutto il filo** (anche quelle che stavano
+    su una rinomina programmata tagliata), ricreate sulla riga riaperta,
+    anche se il loro giorno è passato; una voce già viva o già ricreata si
+    salta. Non tornano le righe del filo tagliate (nessuna riga rimessa in
+    vita);
+  - nuovo: la riga si cancella, ma non se ha già delle voci.
+- **Due telefoni**: le righe nuove si sommano senza problemi; se tutti e
+  due modificano la stessa riga, vince l'ultima scrittura e possono
+  restare due righe dello stesso filo valide negli stessi giorni (due pasti
+  in Oggi). I controlli stanno nell'app, il server non può impedirlo: si
+  sistema a mano con Elimina.
 
 ### Inserimento retroattivo
 
@@ -1477,6 +1549,23 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
   stesso motivo per cui il 20/9 è stato tolto `pasti_user_nome_idx`). I
   controlli stanno nell'app. Una riga con le date invertite non vale in
   nessun giorno: resta invisibile, salvo i giorni in cui ha voci
+- **`ordine` è il FILO del pasto** (regola del 10/10, passo 5). Per
+  l'utente "Pranzo" è un pasto solo anche quando diventa più righe, una per
+  periodo ("Pranzo" fino al 12, "Pranzo 1" dal 13): le righe di uno stesso
+  filo hanno lo stesso `ordine`. Rinominare o cambiare l'ora "da un giorno"
+  lo copia sulla riga nuova; un pasto aggiunto ne prende uno mai usato
+  (`prossimoOrdine`: il più alto fra tutte le righe, cancellate comprese,
+  più uno). Su `ordine` di una riga esistente **non si scrive mai**. Così i
+  cambi programmati si riconoscono dalle righe senza una colonna in più
+  (`src/lib/pasti/cambiProgrammati.ts`): riga A che finisce il giorno D−1 e
+  riga B dello stesso filo che comincia il giorno D = dal giorno D il
+  pasto cambia (nome o solo ora); nessuna riga che continua = dal giorno D
+  non c'è più; una riga che comincia dopo oggi senza niente prima = pasto
+  nuovo. In produzione il 10/10 era già così per tutti e tre gli utenti.
+  Limite noto: due telefoni offline che aggiungono un pasto insieme
+  possono dare lo stesso `ordine` a due pasti diversi; si confonderebbero
+  solo se uno finisse il giorno prima di quello in cui l'altro comincia (la
+  scheda mostrerebbe una rinomina invece di "elimina + nuovo")
 
 **`alimenti`** — il catalogo
 - nome, marca, `barcode`
@@ -1508,6 +1597,17 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
   l'ora di ieri a cui hai cenato
 - **copia dei valori nutrizionali al momento dell'inserimento**: se un alimento
   viene corretto nel catalogo, la storia passata non deve cambiare
+- **`eliminata_dal_cambio`** (`uuid`, nullable, nessun default, nessun
+  vincolo né indice; **in arrivo col passo 5, migration non ancora
+  applicata**): il SEGNO di una voce cancellata da "Elimina pasto da una
+  data" (o "da oggi", che è la stessa operazione). Vale l'id del cambio,
+  `idCambio(riga di pasti chiusa, data)` in `cambiProgrammati.ts`: UUID v5
+  calcolato da riga e data, non salvato altrove. Null per le voci vive e
+  per quelle cancellate in ogni altro modo, a mano comprese: quelle non
+  tornano mai. Serve all'Annulla dalla scheda "Non ci sarà più", che
+  ritrova le voci con quel segno in **tutto il filo** (stesso `ordine`,
+  righe cancellate comprese: un taglio può aver cancellato anche una
+  rinomina programmata con le sue voci) e le ricrea sulla riga riaperta
 
 **`composizioni`** — un gruppo di alimenti con un nome
 - `nome`, `tipo` (`pasto_salvato` | `ricetta`)
@@ -3017,7 +3117,7 @@ ricrea il pasto e le voci future. **Da provare** il giorno che cambia
 `modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
 le pagine Oggi, Aggiungi e Pasti e orari.
 
-**Test.** 590 test permanenti in 54 file (Vitest), tutti verdi al 10/10.
+**Test.** 609 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
@@ -3029,7 +3129,7 @@ le pagine Oggi, Aggiungi e Pasti e orari.
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari: fatti il
   seed (passo 1), la validità nel tempo (passo 2) e la pagina per
   rinominare, cambiare l'ora e aggiungere (passo 3, provato su iPhone il
-  9/10) ed eliminare (passo 4, provato su iPhone il 9/10). Mancano le **date future** (passo 5). E ora del consumo
+  9/10) ed eliminare (passo 4, provato su iPhone il 9/10). Mancano le **date future** (passo 5, in costruzione sul branch `pasti-date`). E ora del consumo
   (`consumato_alle`) modificabile nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale

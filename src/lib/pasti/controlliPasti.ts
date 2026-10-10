@@ -38,7 +38,7 @@ export function normalizzaNome(nome: string): string {
 
 // Il nome come si confronta: normalizzato e senza maiuscole. "pranzo" e
 // "Pranzo" in Oggi si confonderebbero, quindi contano come lo stesso nome.
-function chiaveNome(nome: string): string {
+export function chiaveNome(nome: string): string {
   return normalizzaNome(nome).toLocaleLowerCase("it");
 }
 

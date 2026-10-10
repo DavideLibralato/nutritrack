@@ -5,6 +5,38 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Pasti e orari, passo 5a: i cambi programmati, logica pura
+
+Branch `pasti-date`. Primo commit del passo 5 (date future e cambi
+programmati in Pasti e orari): le regole per riconoscerli, senza ancora
+scritture né interfaccia.
+
+- `src/lib/pasti/cambiProgrammati.ts`: il filo di un pasto (stesso
+  `ordine`), i cambi programmati riconosciuti dalle righe (rinomina, solo
+  orario, elimina, nuovo), le date delle schede, il contenuto di una
+  scheda ("nuovo", "nome nuovo", "ora nuova" + "prima: …", "Non ci sarà
+  più"), i limiti della data di "Da una data" e l'id di un cambio (UUID v5
+  da riga e data) per il segno sulle voci. `chiaveNome` ora esportata da
+  `controlliPasti.ts`.
+- Documenti: PUNTO §3 "Date future e cambi programmati" (decisioni del
+  10/10, compresa "l'orario segue la data") e §4: `ordine` come filo,
+  `voci_diario.eliminata_dal_cambio` in arrivo (migration non applicata).
+- Test puri (19), provati a vuoto rompendo il codice da una copia (12
+  rotture; una non presa al primo giro ha fatto correggere il test). 609
+  test verdi in 55 file.
+
+## 2026-10-10 — Diario fino a 7 giorni unito a main
+
+Provato il 10/10 (voci 1–3 sotto, il giorno che cambia ancora da provare)
+e unito a main con fast-forward da `11f1a2a` a `5766c89`, senza commit di
+merge: `321abe0` (navigazione e inserimento fino a oggi + 7), `ea89571`
+(Elimina e Rinomina "da oggi" con le voci future), `0ea9d7c`
+(`useGiornoCorrente`, salto al nuovo oggi), `5766c89` (i documenti,
+provato su iPhone il 10/10). Branch `diario-futuro` cancellato, in locale
+e su GitHub. Deploy di produzione riuscito. 590 test verdi in 54 file.
+Voce scritta con il primo commit del branch successivo, per non fare un
+commit su main solo per il changelog.
+
 ## 2026-10-10 — Diario fino a 7 giorni, 3: il giorno che cambia
 
 Branch `diario-futuro`. Quando il giorno del calendario cambia, Oggi va
