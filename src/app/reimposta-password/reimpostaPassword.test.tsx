@@ -21,7 +21,6 @@ import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { createBrowserClient } from "@supabase/ssr";
-import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { createClient } from "@/lib/supabase/client";
 import ReimpostaPasswordPage from "./page";
 
@@ -35,9 +34,17 @@ const UTENTE_PROVA = { id: "22222222-2222-4222-8222-222222222222", email: "prova
 
 // --- La rete finta --------------------------------------------------------
 
+// Come il server rifiuta il codice del link. I testi inglesi sono
+// verosimili ma non documentati: la pagina decide dal codice.
+const RIFIUTI = {
+  flow_state_not_found: "invalid flow state, no valid flow state found",
+  flow_state_expired: "flow state has expired",
+  bad_code_verifier: "code challenge does not match previously saved code verifier",
+} as const;
+
 const server = {
-  // true: il server rifiuta il codice (scaduto o già usato).
-  rifiutaCodice: false,
+  // Il codice d'errore con cui il server rifiuta il link, o null.
+  rifiutaCodice: null as keyof typeof RIFIUTI | null,
   scambi: 0,
   impreviste: [] as string[],
 };
@@ -91,10 +98,7 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
   if (metodo === "POST" && url === `${AUTH}/token?grant_type=pkce`) {
     server.scambi++;
     if (server.rifiutaCodice) {
-      return json(
-        { code: 404, error_code: "flow_state_not_found", msg: "invalid flow state, no valid flow state found" },
-        404
-      );
+      return json({ code: 400, error_code: server.rifiutaCodice, msg: RIFIUTI[server.rifiutaCodice] }, 400);
     }
     if (corpo.auth_code === CODICE_DEL_LINK && corpo.code_verifier) return json(sessione(UTENTE_VERO));
   }
@@ -212,7 +216,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchFinto);
   // Le schede che si parlano: qui ogni caso è un browser a sé.
   vi.stubGlobal("BroadcastChannel", undefined);
-  server.rifiutaCodice = false;
+  server.rifiutaCodice = null;
   server.scambi = 0;
   server.impreviste = [];
   cancellaCookie();
@@ -227,6 +231,11 @@ afterEach(() => {
 
 const MODULO = "Imposta una nuova password";
 const ERRORE = "Link non valido";
+// I testi scritti per intero, non presi da erroriAuth.ts: il test deve
+// accorgersi anche se un caso finisce sul testo dell'altro.
+const TESTO_ALTRO_BROWSER =
+  "Questo link funziona solo nel browser da cui l'hai chiesto. Richiedine uno nuovo qui sotto, da questo browser. Su iPhone i link delle email si aprono sempre in Safari, anche se hai l'app installata.";
+const TESTO_SCADUTO = "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
 
 describe("/reimposta-password", () => {
   it("verifier presente: compare il modulo, una sola chiamata di scambio", async () => {
@@ -248,10 +257,11 @@ describe("/reimposta-password", () => {
     expect(server.scambi).toBe(1);
   });
 
-  it("verifier assente, nessuna sessione: errore", async () => {
+  it("verifier assente, nessuna sessione: errore col testo dell'altro browser", async () => {
     apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
 
     expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_ALTRO_BROWSER)).toBeTruthy();
     expect(screen.queryByText(MODULO)).toBeNull();
     expect(server.scambi).toBe(0);
   });
@@ -261,22 +271,27 @@ describe("/reimposta-password", () => {
     apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
 
     expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_ALTRO_BROWSER)).toBeTruthy();
     expect(screen.queryByText(MODULO)).toBeNull();
     expect(server.scambi).toBe(0);
   });
 
-  it("il server rifiuta il codice (scaduto o già usato): errore tradotto", async () => {
-    server.rifiutaCodice = true;
-    await chiediIlLink();
-    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
+  // bad_code_verifier: il verifier di un'altra richiesta (il link della
+  // prima email dopo averne chiesta una seconda). Il suo testo inglese
+  // contiene "code verifier": dal testo finirebbe sul messaggio sbagliato.
+  it.each(Object.keys(RIFIUTI) as (keyof typeof RIFIUTI)[])(
+    "il server rifiuta il codice (%s): errore col testo del link scaduto",
+    async (codice) => {
+      server.rifiutaCodice = codice;
+      await chiediIlLink();
+      apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
 
-    expect(await screen.findByText(ERRORE)).toBeTruthy();
-    const atteso = traduciErroreAuth("invalid flow state, no valid flow state found");
-    expect(atteso).not.toBe(traduciErroreAuth("messaggio sconosciuto"));
-    expect(screen.getByText(atteso)).toBeTruthy();
-    expect(screen.queryByText(MODULO)).toBeNull();
-    expect(server.scambi).toBe(1);
-  });
+      expect(await screen.findByText(ERRORE)).toBeTruthy();
+      expect(screen.getByText(TESTO_SCADUTO)).toBeTruthy();
+      expect(screen.queryByText(MODULO)).toBeNull();
+      expect(server.scambi).toBe(1);
+    }
+  );
 
   it("nessun ?code= e sessione presente (ricaricamento dopo lo scambio): modulo", async () => {
     await entraConAccountDiProva();

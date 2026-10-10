@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Reimposta password: testi chiari e nuovo link anche da loggati
+
+Branch `reset-password`. Due testi distinti sotto "Link non valido":
+link aperto in un altro browser (verifier assente; spiega che su iPhone
+i link delle email si aprono sempre in Safari) e link scaduto, già usato
+o superato da uno più recente. Il secondo si sceglie dal codice
+dell'errore (`flow_state_not_found`, `flow_state_expired`,
+`bad_code_verifier`), non dal testo inglese: quello di
+`bad_code_verifier` contiene "code verifier" e finiva sul messaggio
+sbagliato (`traduciErroreLinkRipristino` in `erroriAuth.ts`).
+`/password-dimenticata` ora è sempre accessibile: da loggati
+"Richiedi un nuovo link" rimandava alla home, e serviva proprio con
+l'account di prova aperto in Safari. Nessun rischio nuovo: chiedere un
+reset è già possibile a chiunque. Test: 8 casi (i rifiuti del server
+con `it.each`), testi scritti per intero; 3 rotture di prova prese,
+ripristino dalla copia. 720 test verdi in 64 file. Da provare nel
+browser. Aperto: con un errore di rete durante lo scambio la libreria
+cancella il verifier, e ricaricando compare il testo "altro browser".
+
 ## 2026-10-10 — Reimposta password: il link funziona alla prima apertura
 
 Branch `reset-password`. Bug: aprendo il link dell'email compariva "Link

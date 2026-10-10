@@ -33,12 +33,18 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const percorso = request.nextUrl.pathname
-  const rottaSoloOspiti =
-    percorso === '/login' || percorso === '/register' || percorso === '/password-dimenticata'
-  // /reimposta-password è un caso a parte: ci si arriva dal link nell'email
-  // senza essere ancora loggati (la pagina stessa scambia il codice per una
-  // sessione), quindi non va né protetta né rimbalzata se già loggati.
-  const rottaSempreAccessibile = percorso === '/reimposta-password'
+  const rottaSoloOspiti = percorso === '/login' || percorso === '/register'
+  // Le due pagine della password non vanno né protette né rimbalzate se
+  // già loggati:
+  // - /reimposta-password: ci si arriva dal link nell'email senza essere
+  //   ancora loggati (lo scambio del codice lo fa il client Supabase);
+  // - /password-dimenticata: "Richiedi un nuovo link" deve funzionare anche
+  //   con una sessione aperta, per esempio quella dell'account di prova in
+  //   Safari quando il reset dell'account vero va richiesto da lì (dal
+  //   10/10/2026; prima rimandava alla home). Non apre niente di nuovo:
+  //   chiedere un reset per qualunque email è già possibile a chiunque.
+  const rottaSempreAccessibile =
+    percorso === '/reimposta-password' || percorso === '/password-dimenticata'
   // Non c'è più un prefisso "/dashboard": tutta l'app richiede login dal
   // primo giorno (sezione 9.1), quindi è protetto tutto tranne le rotte
   // sopra. Gli asset statici sono già esclusi dal matcher sotto.

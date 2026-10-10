@@ -2,9 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AuthPKCECodeVerifierMissingError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { traduciErroreAuth } from "@/lib/erroriAuth";
+import {
+  LINK_ALTRO_BROWSER,
+  traduciErroreAuth,
+  traduciErroreLinkRipristino,
+} from "@/lib/erroriAuth";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // useSearchParams() richiede una <Suspense> attorno (stesso motivo di /login).
@@ -63,9 +66,9 @@ function ReimpostaPasswordForm() {
     // partito, scambio compreso.
     supabase.auth.initialize().then(({ error }) => {
       if (error) {
-        // Il server ha rifiutato il codice (scaduto o già usato).
+        // Il server ha rifiutato il codice (scaduto o già usato), o la rete.
         setStatoSessione("errore");
-        setErroreSessione(traduciErroreAuth(error.message));
+        setErroreSessione(traduciErroreLinkRipristino(error));
         return;
       }
       // Il modulo compare SOLO se la sessione è nata da questo link. Il
@@ -79,9 +82,7 @@ function ReimpostaPasswordForm() {
       // libreria e continua a vedere il codice.
       if (new URL(window.location.href).searchParams.has("code")) {
         setStatoSessione("errore");
-        setErroreSessione(
-          traduciErroreAuth(new AuthPKCECodeVerifierMissingError().message)
-        );
+        setErroreSessione(LINK_ALTRO_BROWSER);
         return;
       }
       setStatoSessione("pronto");
