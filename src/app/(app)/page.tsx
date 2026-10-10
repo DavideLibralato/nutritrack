@@ -100,7 +100,6 @@ import {
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { prendiInserimento } from "@/lib/inserimento/ultimoInserimento";
 import {
-  messaggioAggiunto,
   messaggioEliminato,
   MESSAGGIO_ANNULLATO,
   type MessaggioBarra,
@@ -109,7 +108,6 @@ import {
   annullaOperazione,
   eliminaPastoDelGiorno,
   eliminaVoci,
-  fotografiaInserimento,
   spostaNelPasto,
   duplicaNelPasto,
   type OrigineSpostamento,
@@ -378,12 +376,15 @@ function OggiContenuto() {
   useEffect(() => {
     const inserimento = prendiInserimento();
     if (!inserimento) return;
+    // Il messaggio e la fotografia arrivano già pronti da /aggiungi: la
+    // fotografia contiene anche le righe a cui si sono sommati dei grammi,
+    // così "Annulla" le riporta com'erano invece di cancellarle. Se non si
+    // è scritto niente (non dovrebbe arrivare qui) niente barra: non c'è
+    // niente da annunciare né da annullare.
+    const { fotografia, messaggio } = inserimento;
+    if (fotografia.prima.length === 0 && fotografia.idCreate.length === 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sincronizzazione con una sorgente esterna (il modulo in memoria), una volta al montaggio
-    setBarra({
-      id: crypto.randomUUID(),
-      ...messaggioAggiunto(inserimento.nome, inserimento.numeroAlimenti),
-      fotografia: fotografiaInserimento(inserimento.idVoci),
-    });
+    setBarra({ id: crypto.randomUUID(), ...messaggio, fotografia });
   }, []);
 
   // "Annulla" nella barra: riporta le voci a com'erano prima

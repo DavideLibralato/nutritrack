@@ -56,10 +56,12 @@ import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
 import type { Alimento, VoceDiario } from "@/lib/db/tipi";
 import { segnaInserimento } from "@/lib/inserimento/ultimoInserimento";
 import {
+  messaggioAggiunto,
   messaggioEliminato,
   messaggioRipristinato,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
+import { fotografiaInserimento } from "@/lib/repository/vociDiario";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // Quanti alimenti mostrare in "Recenti": abbastanza da coprire la rotazione
@@ -369,7 +371,10 @@ function AggiungiContenuto() {
     try {
       const voce = await creaVoce(alimentoScelto, grammi);
       if (voce) {
-        segnaInserimento({ idVoci: [voce.id], nome: alimentoScelto.nome, numeroAlimenti: null });
+        segnaInserimento({
+          fotografia: fotografiaInserimento([voce.id]),
+          messaggio: messaggioAggiunto(alimentoScelto.nome, null),
+        });
       }
       router.replace(`/?giorno=${giorno}`);
     } catch {
@@ -386,7 +391,10 @@ function AggiungiContenuto() {
     try {
       const voce = await creaVoce(alimento, grammi);
       if (voce) {
-        segnaInserimento({ idVoci: [voce.id], nome: alimento.nome, numeroAlimenti: null });
+        segnaInserimento({
+          fotografia: fotografiaInserimento([voce.id]),
+          messaggio: messaggioAggiunto(alimento.nome, null),
+        });
       }
       router.replace(`/?giorno=${giorno}`);
     } catch {
@@ -407,7 +415,10 @@ function AggiungiContenuto() {
       // "Annulla" toglie tutto il pasto insieme: gli id di tutte le voci.
       const idVoci = voci.filter((v): v is VoceDiario => v !== null).map((v) => v.id);
       if (idVoci.length > 0) {
-        segnaInserimento({ idVoci, nome: pasto.nome, numeroAlimenti: idVoci.length });
+        segnaInserimento({
+          fotografia: fotografiaInserimento(idVoci),
+          messaggio: messaggioAggiunto(pasto.nome, idVoci.length),
+        });
       }
       router.replace(`/?giorno=${giorno}`);
     } catch {

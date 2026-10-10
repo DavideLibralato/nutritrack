@@ -9,14 +9,22 @@
 // In memoria apposta, non nell'URL né su disco: un ricaricamento della
 // pagina o il tasto "indietro" non devono far ricomparire la barra di un
 // inserimento vecchio. Un nuovo inserimento sostituisce quello in attesa.
+// Se l'inserimento non arriva (pagina ricaricata, scheda nuova) Oggi non
+// mostra nessuna barra: mai un "Annulla" su qualcosa di sbagliato.
+//
+// Porta la FOTOGRAFIA intera dell'operazione (src/lib/repository/
+// vociDiario.ts), non solo gli id delle righe create: dal 10/10 un
+// inserimento può anche sommare i grammi a una riga che c'era già
+// (doppioni, sezione 3), e "Annulla" deve riportare quella riga ai grammi di
+// prima, non cancellarla. E porta il messaggio già pronto (testiBarra.ts),
+// perché solo /aggiungi sa cosa è successo (aggiunto, sommato, escluso).
+
+import type { FotografiaVoci } from "../repository/vociDiario";
+import type { MessaggioBarra } from "./testiBarra";
 
 export interface UltimoInserimento {
-  // Gli id delle voci create: una per un alimento singolo, tutte quelle del
-  // gruppo per un pasto salvato. "Annulla" cancella esattamente queste.
-  idVoci: string[];
-  nome: string;
-  // null per un alimento singolo; per un pasto salvato, quante voci.
-  numeroAlimenti: number | null;
+  fotografia: FotografiaVoci;
+  messaggio: MessaggioBarra;
 }
 
 let inAttesa: UltimoInserimento | null = null;

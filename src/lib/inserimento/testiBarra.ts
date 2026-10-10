@@ -8,6 +8,9 @@
 // barra mette il nome in evidenza e lo tronca con "…" su una riga sola,
 // lasciando sempre visibili il verbo (`testo`) e il dettaglio (`coda`).
 
+import { accorcia, elencoAlimenti, MASSIMO_ALIMENTO } from "../diario/testiSpostamento";
+import type { PianoInserimento } from "../diario/pianoInserimento";
+
 // L'icona nel cerchio a sinistra della barra (BarraAnnulla):
 // - "spunta": è andato a buon fine (Aggiunto, Salvato, Ripristinato);
 // - "annulla": freccia ↶, un'azione è stata annullata;
@@ -47,6 +50,50 @@ export function messaggioAggiunto(
   if (numeroAlimenti === null) return { testo: "Aggiunto:", nome, icona: "spunta" };
   const parola = numeroAlimenti === 1 ? "alimento" : "alimenti";
   return { testo: "Aggiunto:", nome, coda: `(${numeroAlimenti} ${parola})`, icona: "spunta" };
+}
+
+// Il messaggio dopo un inserimento da /aggiungi con i doppioni (sezione 3,
+// "Doppioni"), dal piano che è stato applicato. Dice cosa è successo
+// DAVVERO, come i messaggi di Sposta e Duplica:
+// - un alimento in una riga nuova (anche "Tieni separati"): "Aggiunto: Mela";
+// - un alimento sommato a quello che c'era: "Sommato: Mela → 150 g";
+// - un alimento con la quantità scritta a mano: "Aggiornato: Mela → 120 g";
+// - un pasto salvato: "Aggiunto: Colazione (3 alimenti)", contando gli
+//   alimenti aggiunti e quelli sommati o scritti;
+// - un pasto salvato con esclusi ("Non aggiungerlo"): "Aggiunto:
+//   «Colazione» (tranne «Mela», che c'era già)." — con più esclusi
+//   l'elenco di Duplica: «Mela» e «Pane», oppure «Mela», «Pane» e altri 2;
+// - niente aggiunto: null, nessuna barra (si resta su /aggiungi). Mai la
+//   parola "Aggiunto" se non è entrato niente.
+// Il nome del pasto salvato, scelto dall'utente come quello di un alimento,
+// nella frase lunga si accorcia come i nomi degli alimenti.
+export function messaggioInserimento(
+  tipo: "alimento" | "pasto-salvato",
+  nome: string,
+  piano: Pick<PianoInserimento, "inseriti" | "esclusi" | "aggiornati">
+): MessaggioBarra | null {
+  if (piano.inseriti.length === 0) return null;
+
+  if (tipo === "alimento") {
+    const aggiornato = piano.aggiornati[0];
+    if (!aggiornato) return messaggioAggiunto(nome, null);
+    const grammi = `${aggiornato.grammi.toLocaleString("it-IT", { maximumFractionDigits: 2 })} g`;
+    return {
+      testo: aggiornato.tipo === "somma" ? "Sommato:" : "Aggiornato:",
+      nome,
+      coda: `→ ${grammi}`,
+      icona: "spunta",
+    };
+  }
+
+  if (piano.esclusi.length === 0) return messaggioAggiunto(nome, piano.inseriti.length);
+  const plurale = new Set(piano.esclusi).size > 1;
+  return {
+    testo:
+      `Aggiunto: «${accorcia(nome, MASSIMO_ALIMENTO)}» ` +
+      `(tranne ${elencoAlimenti(piano.esclusi)}, che ${plurale ? "c'erano" : "c'era"} già).`,
+    icona: "spunta",
+  };
 }
 
 // `numeroAlimenti`: null per una cosa sola (un alimento del catalogo in

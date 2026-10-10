@@ -11,7 +11,10 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { act, render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import OggiPage from "./page";
 import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
-import { idVoceRicreata } from "@/lib/repository/vociDiario";
+import { aggiungiNelPasto, idVoceRicreata } from "@/lib/repository/vociDiario";
+import { segnaInserimento } from "@/lib/inserimento/ultimoInserimento";
+import { messaggioAggiunto, messaggioInserimento } from "@/lib/inserimento/testiBarra";
+import type { SceltaDoppione } from "@/lib/diario/pianoSpostamento";
 import { SCADENZA_BLOCCO_CLICK_MS } from "@/lib/decisioneSwipe";
 import { formattaDataEstesa, formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
 import type { VoceDiario } from "@/lib/db/tipi";
@@ -812,5 +815,116 @@ describe("Oggi: il giorno cambia mentre la pagina è aperta", () => {
 
     await waitFor(() => giornoMostrato("2026-10-11"));
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+});
+
+// Da /aggiungi a Oggi con i doppioni (sezione 3, "Doppioni"): /aggiungi
+// scrive con aggiungiNelPasto e lascia a Oggi fotografia e messaggio
+// (ultimoInserimento.ts). Quello che non deve rompersi in silenzio: dopo
+// una Somma "Annulla" riporta la riga ai grammi di prima e NON la
+// cancella — con la vecchia fotografia di sole righe create l'Annulla non
+// avrebbe toccato niente, lasciando i 150 g sommati.
+describe("Oggi: la barra dopo un inserimento da /aggiungi", () => {
+  // Come la pagina /aggiungi: scrive, poi segna l'inserimento per Oggi.
+  async function aggiungiComeAggiungi(
+    pastoId: string,
+    nome: string,
+    grammi: number,
+    scelte?: Record<string, SceltaDoppione>
+  ) {
+    const base = {
+      userId: utenteTest,
+      data: oggiLocale(),
+      pastoId,
+      alimenti: [
+        {
+          alimento: { id: `alimento-${nome}`, nome, kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.2 },
+          grammi,
+        },
+      ],
+      inGruppo: false,
+      profilo: null,
+    };
+    let esito = await aggiungiNelPasto(base);
+    if (esito.esito === "doppioni") esito = await aggiungiNelPasto({ ...base, scelte, doppioniVisti: esito.doppioni });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    const messaggio = messaggioInserimento("alimento", nome, esito.piano);
+    if (messaggio) segnaInserimento({ fotografia: esito.fotografia, messaggio });
+  }
+
+  async function prepara() {
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const voce = (nome: string, quantita_g: number) =>
+      repositoryVociDiario.crea({
+        user_id: utenteTest,
+        alimento_id: `alimento-${nome}`,
+        pasto_id: pranzo.id,
+        gruppo_id: null,
+        quantita_g,
+        data: oggiLocale(),
+        creato_il: "2026-10-06T08:00:00.000Z",
+        consumato_alle: null,
+        nome_alimento: nome,
+        kcal_100g: 52,
+        proteine_100g: 0.3,
+        carboidrati_100g: 14,
+        grassi_100g: 0.2,
+      });
+    const diario = async () =>
+      (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => `${v.nome_alimento} ${v.quantita_g}`).sort();
+    return { pranzo, voce, diario };
+  }
+
+  it("Somma, poi Annulla: la Mela torna a 100 g, stessa riga, non cancellata", async () => {
+    const { pranzo, voce, diario } = await prepara();
+    const mela = await voce("Mela", 100);
+    await aggiungiComeAggiungi(pranzo.id, "Mela", 50, { "alimento-Mela": { tipo: "somma" } });
+    expect(await diario()).toEqual(["Mela 150"]);
+
+    render(<OggiPage />);
+    await testoBarra("Sommato: Mela → 150 g");
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual(["Mela 100"]);
+    expect(await repositoryVociDiario.ottieniPerId(mela.id)).toMatchObject({ quantita_g: 100, deleted_at: null });
+  });
+
+  it("Scrivi quantità, poi Annulla: la Mela torna a 100 g", async () => {
+    const { pranzo, voce, diario } = await prepara();
+    await voce("Mela", 100);
+    await aggiungiComeAggiungi(pranzo.id, "Mela", 50, { "alimento-Mela": { tipo: "scrivi", grammi: 120 } });
+
+    render(<OggiPage />);
+    await testoBarra("Aggiornato: Mela → 120 g");
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual(["Mela 100"]);
+  });
+
+  it("aggiunta normale, poi Annulla: sparisce solo la riga nuova", async () => {
+    const { pranzo, voce, diario } = await prepara();
+    const pane = await voce("Pane", 80);
+    await aggiungiComeAggiungi(pranzo.id, "Mela", 150);
+    expect(await diario()).toEqual(["Mela 150", "Pane 80"]);
+
+    render(<OggiPage />);
+    await testoBarra("Aggiunto: Mela");
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual(["Pane 80"]);
+    expect(await repositoryVociDiario.ottieniPerId(pane.id)).toEqual(pane);
+  });
+
+  it("un inserimento senza scritture non mostra nessuna barra", async () => {
+    const { voce } = await prepara();
+    await voce("Pane", 80);
+    segnaInserimento({ fotografia: { prima: [], idCreate: [] }, messaggio: messaggioAggiunto("Mela", null) });
+
+    render(<OggiPage />);
+    await screen.findByText("Pane");
+    expect(screen.queryByRole("status")).toBeNull();
   });
 });

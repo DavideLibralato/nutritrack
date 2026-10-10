@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Doppioni in Aggiungi, passo 4: testi della barra e passaggio a Oggi
+
+Branch `doppioni-aggiungi`. `messaggioInserimento` in `testiBarra.ts`:
+"Aggiunto: Mela", "Sommato: Mela → 150 g", "Aggiornato: Mela → 120 g",
+"Aggiunto: Colazione (3 alimenti)" (aggiunti + sommati), "Aggiunto:
+«Colazione» (tranne «Mela», che c'era già)." con più esclusi come in
+Duplica; niente entrato → nessun messaggio. `ultimoInserimento` porta a
+Oggi la fotografia intera e il messaggio (resta in memoria del modulo:
+ricaricando, nessuna barra); Oggi li usa per barra e Annulla, e con una
+fotografia vuota non mostra la barra. Bug evitato: con la fotografia di
+sole righe create, Annulla dopo una Somma lasciava i grammi sommati.
+/aggiungi adattata alla forma nuova senza cambiare comportamento
+(collegamento ai doppioni al passo 5). 11 test nuovi; 7 rotture di prova
+prese, ripristino dalla copia. 766 test verdi in 65 file.
+
 ## 2026-10-10 — Doppioni in Aggiungi, passo 3: aggiungiNelPasto
 
 Branch `doppioni-aggiungi`. `aggiungiNelPasto` in

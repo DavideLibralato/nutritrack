@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   messaggioAggiunto,
+  messaggioInserimento,
   messaggioEliminato,
   messaggioRipristinato,
   MESSAGGIO_ANNULLATO,
@@ -79,10 +80,105 @@ describe("testi della barra", () => {
 
 describe("ultimoInserimento", () => {
   it("si legge una volta sola, e il più recente sostituisce il precedente", () => {
-    segnaInserimento({ idVoci: ["a"], nome: "Pane", numeroAlimenti: null });
-    segnaInserimento({ idVoci: ["b", "c"], nome: "Colazione tipo", numeroAlimenti: 2 });
+    segnaInserimento({ fotografia: { prima: [], idCreate: ["a"] }, messaggio: messaggioAggiunto("Pane", null) });
+    segnaInserimento({
+      fotografia: { prima: [], idCreate: ["b", "c"] },
+      messaggio: messaggioAggiunto("Colazione tipo", 2),
+    });
 
-    expect(prendiInserimento()?.idVoci).toEqual(["b", "c"]);
+    expect(prendiInserimento()?.fotografia.idCreate).toEqual(["b", "c"]);
     expect(prendiInserimento()).toBeNull();
+  });
+});
+
+// I messaggi dopo un inserimento da /aggiungi con i doppioni (sezione 3,
+// "Doppioni"): dicono cosa è successo davvero. Il testo intero, come lo
+// legge chi guarda la barra: verbo, nome e dettaglio separati da spazi.
+describe("messaggioInserimento", () => {
+  const testo = (m: ReturnType<typeof messaggioInserimento>) =>
+    m && [m.testo, m.nome, m.coda].filter(Boolean).join(" ");
+  const piano = (p: Partial<Parameters<typeof messaggioInserimento>[2]> = {}) => ({
+    inseriti: [],
+    esclusi: [],
+    aggiornati: [],
+    ...p,
+  });
+
+  it("niente entrato: nessun messaggio, mai «Aggiunto»", () => {
+    expect(messaggioInserimento("alimento", "Mela", piano({ esclusi: ["Mela"] }))).toBeNull();
+    expect(
+      messaggioInserimento("pasto-salvato", "Colazione", piano({ esclusi: ["Mela", "Pane"] }))
+    ).toBeNull();
+  });
+
+  it("alimento in una riga nuova (anche Tieni separati): «Aggiunto: Mela»", () => {
+    expect(messaggioInserimento("alimento", "Mela", piano({ inseriti: ["Mela"] }))).toEqual({
+      testo: "Aggiunto:",
+      nome: "Mela",
+      icona: "spunta",
+    });
+  });
+
+  it("Somma: «Sommato: Mela → 150 g», con i decimali all'italiana", () => {
+    const m = messaggioInserimento(
+      "alimento",
+      "Mela",
+      piano({ inseriti: ["Mela"], aggiornati: [{ nome: "Mela", grammi: 150, tipo: "somma" }] })
+    );
+    expect(m).toEqual({ testo: "Sommato:", nome: "Mela", coda: "→ 150 g", icona: "spunta" });
+    const decimali = messaggioInserimento(
+      "alimento",
+      "Riso",
+      piano({ inseriti: ["Riso"], aggiornati: [{ nome: "Riso", grammi: 30.3, tipo: "somma" }] })
+    );
+    expect(testo(decimali)).toBe("Sommato: Riso → 30,3 g");
+  });
+
+  it("Scrivi quantità: «Aggiornato: Mela → 120 g»", () => {
+    const m = messaggioInserimento(
+      "alimento",
+      "Mela",
+      piano({ inseriti: ["Mela"], aggiornati: [{ nome: "Mela", grammi: 120, tipo: "scrivi" }] })
+    );
+    expect(testo(m)).toBe("Aggiornato: Mela → 120 g");
+  });
+
+  it("pasto salvato: conta gli alimenti aggiunti e quelli sommati", () => {
+    const m = messaggioInserimento(
+      "pasto-salvato",
+      "Colazione",
+      piano({ inseriti: ["Yogurt", "Pane", "Mela"], aggiornati: [{ nome: "Mela", grammi: 300, tipo: "somma" }] })
+    );
+    expect(testo(m)).toBe("Aggiunto: Colazione (3 alimenti)");
+    expect(testo(messaggioInserimento("pasto-salvato", "Caffè", piano({ inseriti: ["Caffè"] })))).toBe(
+      "Aggiunto: Caffè (1 alimento)"
+    );
+  });
+
+  it("pasto salvato con esclusi: «tranne», al singolare e al plurale", () => {
+    expect(
+      messaggioInserimento("pasto-salvato", "Colazione", piano({ inseriti: ["Pane"], esclusi: ["Mela"] }))?.testo
+    ).toBe("Aggiunto: «Colazione» (tranne «Mela», che c'era già).");
+    expect(
+      messaggioInserimento("pasto-salvato", "Colazione", piano({ inseriti: ["Pane"], esclusi: ["Mela", "Yogurt"] }))
+        ?.testo
+    ).toBe("Aggiunto: «Colazione» (tranne «Mela» e «Yogurt», che c'erano già).");
+    expect(
+      messaggioInserimento(
+        "pasto-salvato",
+        "Colazione",
+        piano({ inseriti: ["Pane"], esclusi: ["Mela", "Yogurt", "Kiwi", "Avena"] })
+      )?.testo
+    ).toBe("Aggiunto: «Colazione» (tranne «Mela», «Yogurt» e altri 2, che c'erano già).");
+  });
+
+  it("nomi lunghi accorciati con «…» nella frase lunga", () => {
+    expect(
+      messaggioInserimento(
+        "pasto-salvato",
+        "Colazione proteica della domenica",
+        piano({ inseriti: ["Pane"], esclusi: ["Yogurt greco intero biologico"] })
+      )?.testo
+    ).toBe("Aggiunto: «Colazione proteica de…» (tranne «Yogurt greco intero b…», che c'era già).");
   });
 });
