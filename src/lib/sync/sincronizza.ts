@@ -18,6 +18,12 @@ import { createClient } from "../supabase/client";
 import { db } from "../db/database";
 import { ordinaOutbox } from "./outbox";
 import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
+import {
+  esitoDaStatus,
+  segnaFineGiro,
+  segnaInizioGiro,
+  type EsitoGiro,
+} from "./statoSincronizzazione";
 
 export interface RisultatoSincronizzazione {
   inviate: number;
@@ -53,8 +59,10 @@ const SOGLIA_SOSPENSIONE = 5;
 // (configurazione sbagliata dell'indirizzo, per esempio) non si accantona
 // mai e ferma la coda. Non si perde niente, e l'indicatore di
 // sincronizzazione lo mostra come attesa che dura.
+// La regola sta in esitoDaStatus (statoSincronizzazione.ts), una sola
+// volta: l'indicatore e il conteggio dei tentativi non possono divergere.
 function rifiutoDelServer(status: number): boolean {
-  return status !== 0 && status !== 401;
+  return esitoDaStatus(status) === "errore";
 }
 
 // Una sincronizzazione per volta (dal 9/10/2026). Prima ogni chiamata
@@ -81,7 +89,7 @@ let giroPrenotato: Promise<RisultatoSincronizzazione> | null = null;
 
 export function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
   if (!giroInCorso) {
-    giroInCorso = unGiro().finally(() => {
+    giroInCorso = unGiroConStato().finally(() => {
       giroInCorso = null;
     });
     return giroInCorso;
@@ -97,7 +105,26 @@ export function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
   return giroPrenotato;
 }
 
-async function unGiro(): Promise<RisultatoSincronizzazione> {
+// Avvisa lo stato dell'indicatore (statoSincronizzazione.ts) a inizio e
+// fine giro. Un'eccezione che unGiro non cattura (createClient che fallisce,
+// Dexie...) chiude il giro come "errore" e poi risale come prima.
+async function unGiroConStato(): Promise<RisultatoSincronizzazione> {
+  segnaInizioGiro("salita");
+  try {
+    const { risultato, esito } = await unGiro();
+    segnaFineGiro("salita", esito, { parlatoColServer: risultato.inviate > 0 });
+    return risultato;
+  } catch (eccezione) {
+    segnaFineGiro("salita", "errore", { parlatoColServer: false });
+    throw eccezione;
+  }
+}
+
+// L'esito dice perché il giro si è fermato prima della fine della coda
+// (rete, sessione, rifiuto del server), oppure "ok" se è arrivato in fondo.
+// Una voce accantonata non lo cambia: il giro prosegue, e le accantonate
+// l'indicatore le conta a parte, da Dexie.
+async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: EsitoGiro }> {
   const supabase = createClient();
   // Le voci già accantonate (vedi sotto) restano in Dexie ma escluse da ogni
   // passata: altrimenti tornerebbero a bloccare l'ordine ogni volta.
@@ -108,6 +135,7 @@ async function unGiro(): Promise<RisultatoSincronizzazione> {
   let inviate = 0;
   let fallite = 0;
   let sospese = 0;
+  let esito: EsitoGiro = "ok";
 
   // In sequenza, non in parallelo: se due voci toccano righe collegate
   // (es. un obiettivo e il suo target, o un pasto e le sue voci di diario),
@@ -166,6 +194,7 @@ async function unGiro(): Promise<RisultatoSincronizzazione> {
       // Il server non ha giudicato la riga (vedi rifiutoDelServer): niente
       // tentativo contato, la coda aspetta il prossimo giro così com'è.
       fallite += 1;
+      esito = esitoDaStatus(status);
       await db.outbox.update(voce.id, { ultimo_errore: messaggioErrore });
       break;
     }
@@ -192,6 +221,7 @@ async function unGiro(): Promise<RisultatoSincronizzazione> {
         continue;
       }
 
+      esito = "errore";
       await db.outbox.update(voce.id, { tentativi, ultimo_errore: messaggioErrore });
       break;
     }
@@ -200,5 +230,5 @@ async function unGiro(): Promise<RisultatoSincronizzazione> {
     await db.outbox.delete(voce.id);
   }
 
-  return { inviate, fallite, sospese };
+  return { risultato: { inviate, fallite, sospese }, esito };
 }

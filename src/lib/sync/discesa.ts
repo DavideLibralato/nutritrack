@@ -14,6 +14,13 @@ import type { Table } from "dexie";
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
 import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
+import {
+  esitoDaStatus,
+  segnaFineGiro,
+  segnaInizioGiro,
+  type EsitoGiro,
+  type TabellaNonScaricata,
+} from "./statoSincronizzazione";
 import type { NomeTabella, RigaBase } from "../db/tipi";
 
 export interface CursoreSync {
@@ -106,6 +113,21 @@ export const TABELLE_DISCESA: {
   { nome: "preferiti", tabella: db.preferiti as unknown as Table<RigaBase, string> },
 ];
 
+// L'errore di una richiesta della discesa, con lo status HTTP della
+// risposta (0 = non arrivata). Serve all'indicatore per distinguere la
+// rete assente, la sessione scaduta e un rifiuto vero (esitoDaStatus in
+// statoSincronizzazione.ts) senza leggere il testo dell'errore. Resta un
+// Error: chi lo cattura come tale (ripristino.ts) non cambia.
+export class ErroreRichiesta extends Error {
+  constructor(
+    messaggio: string,
+    readonly status: number
+  ) {
+    super(messaggio);
+    this.name = "ErroreRichiesta";
+  }
+}
+
 // La lettura da Supabase, pagina per pagina — l'unico posto dove è scritta
 // la paginazione (vedi il lungo commento dentro). La usano la discesa
 // incrementale qui sotto, che scrive ogni pagina in Dexie man mano, e il
@@ -172,11 +194,11 @@ export async function* pagineDaSupabase<T extends RigaBase>(
     // fallisce, il cursore non avanza e il giro può finire.
     const risposta = await conTempoMassimo(query);
     if (risposta === SCADUTA) {
-      throw new Error(MESSAGGIO_SCADUTA);
+      throw new ErroreRichiesta(MESSAGGIO_SCADUTA, 0);
     }
     const { data, error } = risposta;
     if (error) {
-      throw new Error(error.message);
+      throw new ErroreRichiesta(error.message, risposta.status);
     }
 
     const pagina = (data ?? []) as T[];
@@ -210,11 +232,11 @@ export async function contaRigheSulServer(
     supabase.from(nomeTabella).select("id", { count: "exact", head: true }).eq("user_id", userId)
   );
   if (risposta === SCADUTA) {
-    throw new Error(MESSAGGIO_SCADUTA);
+    throw new ErroreRichiesta(MESSAGGIO_SCADUTA, 0);
   }
   const { count, error } = risposta;
   if (error) {
-    throw new Error(error.message);
+    throw new ErroreRichiesta(error.message, risposta.status);
   }
   if (count === null) {
     throw new Error(`Conteggio di "${nomeTabella}" non disponibile.`);
@@ -319,19 +341,40 @@ export async function scaricaTabella<T extends RigaBase>(
 // però loggato con la tabella coinvolta: senza questo, una tabella che
 // fallisce sempre (permessi, colonna sbagliata) scomparirebbe nel
 // Promise.allSettled senza che nessuno se ne accorga.
-export async function scaricaTutto(userId: string): Promise<void> {
+//
+// Dal 10/10/2026 restituisce anche le tabelle non scaricate, con il
+// perché, e avvisa lo stato dell'indicatore (statoSincronizzazione.ts).
+// L'esito del giro è il più grave fra le tabelle fallite: sessione, poi
+// errore, poi rete.
+export async function scaricaTutto(userId: string): Promise<TabellaNonScaricata[]> {
+  segnaInizioGiro("discesa");
   const risultati = await Promise.allSettled(
     TABELLE_DISCESA.map((t) =>
       scaricaTabella(userId, t.tabella, t.nome, { includiCondivisi: t.includiCondivisi })
     )
   );
 
+  const nonScaricate: TabellaNonScaricata[] = [];
   risultati.forEach((risultato, indice) => {
     if (risultato.status === "rejected") {
-      console.error(
-        `Discesa: scarico fallito per "${TABELLE_DISCESA[indice].nome}".`,
-        risultato.reason
-      );
+      const tabella = TABELLE_DISCESA[indice].nome;
+      console.error(`Discesa: scarico fallito per "${tabella}".`, risultato.reason);
+      const status = risultato.reason instanceof ErroreRichiesta ? risultato.reason.status : null;
+      nonScaricate.push({ tabella, esito: esitoDaStatus(status) });
     }
   });
+
+  const esiti = nonScaricate.map((t) => t.esito);
+  const esito: EsitoGiro = esiti.includes("sessione")
+    ? "sessione"
+    : esiti.includes("errore")
+      ? "errore"
+      : esiti.includes("rete")
+        ? "rete"
+        : "ok";
+  segnaFineGiro("discesa", esito, {
+    parlatoColServer: nonScaricate.length < TABELLE_DISCESA.length,
+    tabelleNonScaricate: nonScaricate.map((t) => t.tabella),
+  });
+  return nonScaricate;
 }

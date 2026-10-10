@@ -2516,6 +2516,51 @@ contengono quelli della vecchia. Nessuno deve aggiungere un ascoltatore
 di `versionchange` che impedisca la chiusura: la scheda nuova resterebbe
 bloccata. Coperto dallo stesso test.
 
+#### L'indicatore di sincronizzazione (dal 10/10, branch `sync-stato`)
+
+Perché: per sapere se i dati erano arrivati al server bisognava guardare
+Supabase a mano (il 20/9 una giornata intera; il 6/9 il profilo diceva
+"Salvato." mentre la sync falliva in silenzio). Dove: in Impostazioni >
+Sincronizzazione, in breve a destra della sua riga nell'elenco, e un
+pallino sulla tab Impostazioni per gli errori (decisioni del 10/10).
+
+**Lo stato** (`src/lib/sync/statoSincronizzazione.ts`), da due fonti,
+senza polling:
+- **la coda**, da Dexie (`outbox`): quante modifiche in attesa, da quando
+  (il `creato_il` più vecchio: vale anche dopo un riavvio), quante
+  accantonate. La pagina la legge con `useLiveQuery`;
+- **i giri**, in memoria: per salita e discesa, in corso sì/no, esito
+  dell'ultimo giro (`ok` / `rete` / `sessione` / `errore`, deciso dallo
+  status HTTP con `esitoDaStatus`, la stessa regola dei tentativi), da
+  quando dura l'esito e quanti giri di fila; per la discesa anche le
+  tabelle non scaricate (`scaricaTutto` le restituisce). Lo aggiornano
+  `sincronizza.ts` e `discesa.ts` a inizio e fine giro; la pagina lo legge
+  con `useSyncExternalStore`. Non si salva: all'apertura parte comunque un
+  giro;
+- **l'ora dell'ultimo contatto riuscito** in `localStorage` (una chiave per
+  dispositivo): si aggiorna solo quando un giro ha davvero parlato col
+  server (una salita con la coda vuota non conta).
+
+**Gli stati, uno alla volta, per priorità** (`statoDaMostrare`, funzione
+pura con i test):
+1. **accantonate** — modifiche su cui l'app ha smesso di riprovare;
+2. **sessione scaduta** — un 401, in salita o in discesa;
+3. **errore** — il server rifiuta, o una tabella non si scarica; porta da
+   quando e, per la discesa, quali tabelle;
+4. **in corso** — un giro che dura da almeno un secondo (prima no: un
+   indicatore che lampeggia a ogni tap è rumore);
+5. **in attesa** — N modifiche in coda, **da quando** (decisione del 10/10:
+   un'attesa che dura giorni deve notarsi). Non compare per la voce di una
+   scrittura appena fatta se l'ultimo giro era andato bene;
+6. **sincronizzato** — con l'ora dell'ultimo contatto riuscito.
+
+Un errore resta a schermo mentre parte il giro dopo: sparisce quando un
+giro finisce bene. **Pallino** sulla tab: stati 1–3, il 3 dal secondo giro
+fallito di fila. Azioni (da fare): "Sincronizza ora"; per le accantonate
+"Riprova" e un elenco con il testo tecnico dell'errore dentro "Dettagli",
+chiuso di default. Niente "Scarta": c'è già "Ricarica i dati dal tuo
+account". Aspetto: mockup prima del codice.
+
 #### Ripristino dei dati locali (deciso il 2026-09-25)
 
 Impostazioni → Sincronizzazione → **"Ricarica i dati dal tuo
@@ -3236,7 +3281,11 @@ la pagina.
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
-  arriva mai all'utente, la UI conferma dal passo locale
+  arriva mai all'utente, la UI conferma dal passo locale. In corso sul
+  branch `sync-stato` (sezione 9.2, "L'indicatore"): fatti la sync che non
+  consuma tentativi senza rete, il tempo massimo delle richieste e lo
+  stato con le sue priorità; mancano il mockup, la pagina, la riga e il
+  pallino
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti

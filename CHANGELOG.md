@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Sincronizzazione: lo stato per l'indicatore
+
+Branch `sync-stato`. Terzo commit dell'indicatore, l'ultimo prima del
+mockup; da solo perché tocca i punti d'ingresso della sync (il
+comportamento non cambia: i 664 test di prima passano senza modifiche).
+- `statoSincronizzazione.ts` (nuovo): stato dei giri in memoria per salita
+  e discesa (in corso, esito `ok`/`rete`/`sessione`/`errore`, da quando,
+  giri di fila), che si sostituisce a ogni cambiamento e avvisa chi
+  ascolta (per `useSyncExternalStore`); ora dell'ultimo contatto riuscito
+  in `localStorage`; `esitoDaStatus`, la regola dello status in un posto
+  solo (anche `rifiutoDelServer` la usa).
+- `sincronizza.ts`: ogni giro segna inizio e fine con il suo esito;
+  `discesa.ts`: `ErroreRichiesta` porta lo status, `scaricaTutto`
+  restituisce le tabelle non scaricate e il perché.
+- `statoDaMostrare`, funzione pura: un solo stato per priorità
+  (accantonate, sessione, errore, in corso, in attesa con da quando,
+  sincronizzato) e il pallino (stati 1–3, il 3 dal secondo giro fallito).
+  Rispetto all'analisi: "in corso" passa prima di "in attesa", e la voce
+  di una scrittura appena fatta non fa comparire "in attesa" se l'ultimo
+  giro era andato bene (altrimenti lampeggerebbe a ogni tap).
+19 test nuovi in `statoSincronizzazione.test.ts` (priorità, e salita e
+discesa vere col client finto); sei rotture di prova prese, una per
+regola, ripristino dalla copia. 683 test verdi in 57 file. Documenti: PUNTO
+§9.2 (nuova sottosezione "L'indicatore") e §11.
+
 ## 2026-10-10 — Sincronizzazione: un tempo massimo per ogni richiesta
 
 Branch `sync-stato`. Secondo commit dell'indicatore, da solo perché cambia
