@@ -25,6 +25,10 @@ sul nuovo oggi, qualunque giorno stesse mostrando (decisione del 10/10).
   primo piano; 5 sulla pagina, compresi sheet, Sposta e menu aperti),
   provati a vuoto rompendo il codice da una copia. 590 test verdi in 54
   file.
+- **Non ancora provato su iPhone**: va provato l'11/10 mattina sull'app
+  installata (rientro il giorno dopo, con un foglio aperto che deve
+  chiudersi). Le altre parti del branch sono provate il 10/10 (voci 1 e
+  2 sotto).
 
 ## 2026-10-10 — Diario fino a 7 giorni, 2: Elimina e Rinomina "da oggi"
 
@@ -43,6 +47,11 @@ e orari vuol dire da oggi in poi.
   "Pasti e orari" ed "Elimina pasto".
 - Test nuovi (4 in `modifichePasti`, 2 nella pagina), provati a vuoto
   rompendo il codice da una copia. 581 test verdi in 53 file.
+- Provato su iPhone il 10/10 (Safari, anteprima, account di prova),
+  verificato da Claude su Supabase: Rinomina "da oggi" con e senza
+  Annulla (voci di oggi e di lun 12 spostate sul pasto nuovo, quelle di
+  ieri rimaste sul vecchio); Elimina "da oggi" con la conferma "in N
+  giorni, da oggi in poi" e Annulla che ricrea il pasto e le voci future.
 
 ## 2026-10-10 — Diario fino a 7 giorni, 1: navigazione e inserimento
 
@@ -68,6 +77,11 @@ applica.
 - Test nuovi o riscritti (`dataGiorno`, `SheetDuplica`, `vociDiario`,
   pagine Oggi e Aggiungi), ciascuno provato a vuoto rompendo il codice da
   una copia. 575 test verdi in 53 file.
+- Provato su iPhone il 10/10 (Safari, anteprima, account di prova),
+  verificato da Claude su Supabase: navigazione fino a oggi + 7 (freccia,
+  swipe, calendario); Aggiungi su un giorno futuro (primo pasto vuoto
+  proposto, `consumato_alle` vuoto); Duplica fino a sab 17 ott e spento
+  oltre.
 
 ## 2026-10-09 — Elimina pasto unito a main
 

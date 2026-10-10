@@ -3000,6 +3000,23 @@ sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
 `modifichePasti.test.ts`, `vociDiario.test.ts`, la pagina,
 `sincronizzaUnaPerVolta.test.ts`.
 
+**Diario fino a 7 giorni** (10/10, provato su iPhone il 10/10 in Safari
+sull'anteprima del branch `diario-futuro`, account di prova; verificato su
+Supabase): il diario accetta i giorni futuri fino a oggi + 7; "da oggi"
+in Pasti e orari vuol dire da oggi in poi; Oggi salta al nuovo oggi
+quando il giorno cambia. Provati: navigazione fino a oggi + 7 (freccia,
+swipe, calendario); Aggiungi su un giorno futuro (primo pasto vuoto
+proposto, `consumato_alle` vuoto); Duplica fino a sab 17 ott e spento
+oltre; Rinomina "da oggi" con e senza Annulla (voci di oggi e di lun 12
+spostate sul pasto nuovo, quelle di ieri rimaste sul vecchio); Elimina
+"da oggi" con la conferma "in N giorni, da oggi in poi" e Annulla che
+ricrea il pasto e le voci future. **Da provare** il giorno che cambia
+(sotto, "Difetti e verifiche aperti"). Com'è fatto: sezione 3,
+"Inserimento retroattivo", "Pasti e orari" ed "Elimina pasto". Test:
+`dataGiorno.test.ts`, `useGiornoCorrente.test.tsx`,
+`modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
+le pagine Oggi, Aggiungi e Pasti e orari.
+
 **Test.** 590 test permanenti in 54 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
@@ -3030,6 +3047,13 @@ sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
   solo se la discesa arriva prima. Vale per ogni tabella; è raro (serve
   modificare proprio la riga cancellata). Da affrontare a parte
 
+- **Giorno che cambia, prova da fare l'11/10** sull'app installata (non
+  in Safari: è il caso del multitasking). Lasciare l'app aperta la sera,
+  riaprirla la mattina: deve andare sul nuovo oggi da qualunque giorno
+  stesse mostrando, e un foglio lasciato aperto (sheet della voce, menu,
+  Sposta) deve chiudersi senza scrivere niente. Il resto del diario fino a
+  7 giorni è provato il 10/10; questo caso lo coprono già i test
+  (`useGiornoCorrente.test.tsx`, pagina Oggi)
 - **Peso, prova da fare il 4/10** con l'account di prova in Safari:
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
   comparire con la data nuova. Il resto del passo 4 è provato; questo
