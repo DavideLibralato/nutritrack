@@ -664,6 +664,26 @@ export interface EsitoAnnullaCambio {
   vociRimesse: number;
 }
 
+// Le voci cancellate da un "Elimina da una data" (riga `vecchia`, dal
+// giorno `data`): quelle col segno di quel cambio, sulle righe `idFilo`.
+async function vociSegnate(vecchia: Pasto, data: string, idFilo: string[]): Promise<VoceDiario[]> {
+  const segno = idCambio(vecchia.id, data);
+  return db.voci_diario
+    .where("pasto_id")
+    .anyOf(idFilo)
+    .filter((v) => v.deleted_at !== null && (v.eliminata_dal_cambio ?? null) === segno)
+    .toArray();
+}
+
+// Le stesse voci, per la scheda di quella data ("Pranzo non ci sarà più —
+// 4 voci eliminate"): sono quelle che il suo Annulla rimette. Sola lettura.
+export async function vociEliminateDalCambio(cambio: CambioProgrammato): Promise<VoceDiario[]> {
+  if (cambio.tipo !== "elimina" || !cambio.vecchia) return [];
+  const righe = await tuttiIPasti(cambio.vecchia.user_id ?? "");
+  const idFilo = filoDi(cambio.vecchia, righe, { cancellate: true }).map((r) => r.id);
+  return vociSegnate(cambio.vecchia, cambio.data, idFilo);
+}
+
 function stessoCambio(a: CambioProgrammato, b: CambioProgrammato): boolean {
   return a.tipo === b.tipo && a.data === b.data && a.vecchia?.id === b.vecchia?.id && a.nuova?.id === b.nuova?.id;
 }
@@ -714,13 +734,8 @@ export async function annullaCambioProgrammato({
     const motivo = motivoConflitto(vecchia.nome, vecchia.ora_inizio, { dal: vecchia.valido_dal ?? null, al: fine }, altri);
     if (motivo) return { esito: nonAnnullato(motivo), vociRimesse: 0 };
 
-    const segno = idCambio(vecchia.id, attuale.data);
     const idFilo = filo.map((r) => r.id);
-    const segnate = await db.voci_diario
-      .where("pasto_id")
-      .anyOf(idFilo)
-      .filter((v) => v.deleted_at !== null && (v.eliminata_dal_cambio ?? null) === segno)
-      .toArray();
+    const segnate = await vociSegnate(vecchia, attuale.data, idFilo);
     await repositoryPasti.aggiorna(vecchia.id, { ...dateEsplicite(vecchia), valido_al: fine });
     const pastiSostituiti = Object.fromEntries(idFilo.filter((id) => id !== vecchia.id).map((id) => [id, vecchia.id]));
     const vociRimesse = await annullaOperazione({ prima: segnate, idCreate: [] }, { pastiSostituiti });

@@ -1304,11 +1304,11 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
   eliminato o chiuso resta viva sul server: in Oggi la mostra la rete di
   sicurezza ("Non più in uso"), da lì la si porta via.
 
-**Date future e cambi programmati** (passo 5, deciso il 10/10, **in
-costruzione** sul branch `pasti-date`: fatte la logica pura,
-`src/lib/pasti/cambiProgrammati.ts`, le scritture con i loro Annulla,
-`src/lib/repository/modifichePasti.ts`, e la domanda "da quando" con la
-data nella pagina; mancano le schede per data).
+**Date future e cambi programmati** (passo 5, deciso il 10/10,
+**costruito** sul branch `pasti-date`, da provare su iPhone: la logica
+pura, `src/lib/pasti/cambiProgrammati.ts`, le scritture con i loro
+Annulla, `src/lib/repository/modifichePasti.ts`, la domanda "da quando"
+con la data e le schede per data nella pagina).
 - **Il campo "Dal giorno"** compare sotto "Da una data" quando la si
   sceglie (`SheetDaQuando`, campo `.campo-data` come in Duplica). La data
   la tiene la pagina, che la ricontrolla a ogni cambio
@@ -1366,12 +1366,25 @@ data".
 - **Schede per data**: se c'è almeno un cambio programmato, in cima
   compaiono "Oggi" e una scheda "Dal lun 12 ott" per ogni data con cambi,
   calcolate dalle righe (niente di salvato: quando la data arriva la
-  scheda sparisce da sola, con `useGiornoCorrente`). Una scheda futura
-  mostra i pasti come saranno quel giorno, con "nuovo", "nome nuovo" o
+  scheda sparisce da sola, con `useGiornoCorrente`; se era quella scelta,
+  si torna a "Oggi", come quando si annulla il suo ultimo cambio). Con le
+  schede, l'elenco di oggi ha il titolo "Oggi, sab 10 ott". Una scheda
+  futura (`VistaDataFutura`) mostra la nota "Così saranno i tuoi pasti dal
+  lun 12 ott. Si modificano dalla scheda Oggi.", i pasti come saranno quel
+  giorno (righe da leggere, senza freccia) con "nuovo", "nome nuovo" o
   "ora nuova" + "prima: …", "Non ci sarà più: …", e i cambi di quella data
-  ("Pranzo → Pranzo 1", "Pranzo 12:30 → 14:30", "Pranzo non ci sarà più —
-  4 voci eliminate, dal 12 al 15 ott") ciascuno con **Annulla**. Le schede
-  future non si modificano: si modifica sempre da "Oggi".
+  (`RigaCambio`): "Pranzo → Pranzo 1" (sotto "nome nuovo", o "nome nuovo,
+  alle 14:30"), "Pranzo 12:30 → 14:30" ("ora nuova"), "Nuovo pasto:
+  Merenda" ("inizia alle 16:30"), "Pranzo non ci sarà più" ("4 voci
+  eliminate, dal lun 12 ott al gio 15 ott", "1 voce eliminata, del lun 12
+  ott", o senza voci "i giorni prima restano come sono": le voci col segno
+  di quel cambio, `vociEliminateDalCambio`), ciascuno con **Annulla**.
+  Barra dopo: "Cambio annullato: Pranzo → Pranzo 1", "Cambio annullato:
+  Cena (tornano 3 voci)", senza un altro Annulla (il cambio si
+  riprogramma da "Oggi"); o il motivo ("Non annullato: …", "Il cambio era
+  già annullato."). Le schede future non si modificano: si modifica sempre
+  da "Oggi". Tutta la pagina usa l'oggi di `useGiornoCorrente`, non solo
+  le schede.
 - **Annulla**: quello della **barra**, subito dopo, usa la fotografia in
   memoria come oggi (rimette anche le righe del filo tagliate). Quello
   della **scheda** lavora sulle righe, quindi anche giorni dopo, e rifà i
@@ -1392,6 +1405,8 @@ data".
   restare due righe dello stesso filo valide negli stessi giorni (due pasti
   in Oggi). I controlli stanno nell'app, il server non può impedirlo: si
   sistema a mano con Elimina.
+- **Limite noto** (sezione 11, "Difetti e verifiche aperti"): il Salva dei
+  campi controlla nome e ora con le regole "da oggi", prima della domanda.
 
 ### Inserimento retroattivo
 
@@ -3144,7 +3159,7 @@ ricrea il pasto e le voci future. **Da provare** il giorno che cambia
 `modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
 le pagine Oggi, Aggiungi e Pasti e orari.
 
-**Test.** 644 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
+**Test.** 649 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
@@ -3156,13 +3171,31 @@ le pagine Oggi, Aggiungi e Pasti e orari.
 - Gestione delle fasce dei pasti, Impostazioni > Pasti e orari: fatti il
   seed (passo 1), la validità nel tempo (passo 2) e la pagina per
   rinominare, cambiare l'ora e aggiungere (passo 3, provato su iPhone il
-  9/10) ed eliminare (passo 4, provato su iPhone il 9/10). Mancano le **date future** (passo 5, in costruzione sul branch `pasti-date`). E ora del consumo
+  9/10) ed eliminare (passo 4, provato su iPhone il 9/10). Le **date future** (passo 5) sono costruite sul branch `pasti-date`, da provare su iPhone. E ora del consumo
   (`consumato_alle`) modificabile nello sheet
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
+
+- **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
+  (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi
+  viene prima della domanda "da quando", quindi non sa ancora se si
+  sceglierà "Da una data": il nome si controlla da oggi alla fine della
+  riga, l'ora su tutta la riga (passato compreso), e per un pasto nuovo
+  da oggi in poi. Un nome o un'ora occupati da un altro pasto solo fra oggi
+  e il giorno prima della data scelta bloccano già lì, anche se da quella
+  data andrebbero bene. Esempio: Merenda (16:00) ha "non ci sarà più dal
+  lun 12"; Spuntino → "Merenda", o Cena → 16:00, dal 12 si fermano al Salva
+  con "C'è già un pasto con questo nome." / "Alle 16:00 inizia già
+  Merenda." (verificato il 10/10). Lo stesso per aggiungere dal 12 un
+  pasto di nome "Merenda". Per ora si aspetta che la data arrivi e si
+  cambia "da oggi". Il rimedio: al Salva
+  controllare il periodo più stretto fra le scelte possibili (o solo il
+  formato), lasciando il controllo vero alla scelta nella domanda, dove
+  c'è già (`cambioDaUnaData`, `erroreAggiuntaData`, e le scritture che lo
+  rifanno)
 
 - **Una riga cancellata può tornare in vita da un altro telefono** (visto
   il 9/10 preparando Elimina pasto, non introdotto da lì). Se il telefono

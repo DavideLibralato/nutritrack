@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Pasti e orari, passo 5e: le schede per data
+
+Branch `pasti-date`. L'ultimo pezzo del passo 5.
+
+- `SchedePerData`: "Oggi" e una pastiglia "Dal lun 12 ott" per ogni data
+  con cambi, calcolate dalle righe (`dateProgrammate`). Con le schede,
+  l'elenco di oggi ha il titolo "Oggi, sab 10 ott".
+- `VistaDataFutura`: i pasti di quel giorno con "nuovo" / "nome nuovo" /
+  "ora nuova" + "prima: …", "Non ci sarà più: …", e i cambi della data.
+  `RigaCambio`: il cambio con il suo Annulla (`annullaCambioProgrammato`);
+  per "non ci sarà più" le voci eliminate, lette dal vivo con
+  `vociEliminateDalCambio` (nuova, in `modifichePasti.ts`, che condivide la
+  ricerca col suo Annulla). Barra "Cambio annullato: … (tornano N voci)",
+  senza un altro Annulla.
+- La pagina usa `useGiornoCorrente` al posto di `oggiLocale()`: quando la
+  data arriva la scheda sparisce, e si torna a "Oggi" (anche annullando
+  l'ultimo cambio di una data).
+- Limite lasciato aperto, scritto in PUNTO §11: il Salva dei campi
+  controlla nome e ora con le regole "da oggi", quindi blocca un cambio
+  che andrebbe bene solo "da una data" (verificato con un test
+  temporaneo, poi cancellato).
+- Documenti: PUNTO §3 e §11.
+- Test: 5 nuovi nella pagina (schede assenti, contenuto della scheda,
+  Annulla con le voci rimesse, Annulla in conflitto, data che arriva),
+  provati a vuoto rompendo il codice da una copia (7 rotture, tutte prese).
+  649 test verdi in 55 file.
+
 ## 2026-10-10 — Pasti e orari, passo 5d: la domanda "Da una data"
 
 Branch `pasti-date`. L'interfaccia delle scritture del 5c, senza ancora

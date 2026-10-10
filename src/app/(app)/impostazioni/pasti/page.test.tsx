@@ -4,7 +4,7 @@ import PastiEOrariPage from "./page";
 import { db } from "@/lib/db/database";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
 import { formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale, prossimoLunedi } from "@/lib/dataGiorno";
-import { cambiaDal } from "@/lib/repository/modifichePasti";
+import { aggiungiPasto, cambiaDal, eliminaPasto } from "@/lib/repository/modifichePasti";
 
 // La pagina Pasti e orari (passo 3, PUNTO_DI_PARTENZA.md sezione 3, "Pasti
 // e orari"): qui si controlla che la pagina scelga giusto quando chiedere
@@ -30,7 +30,19 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-afterEach(cleanup);
+// L'oggi della pagina (useGiornoCorrente): il vero, salvo il test che fa
+// arrivare la data di una scheda. Il hook ha i suoi test
+// (useGiornoCorrente.test.tsx); qui serve solo cambiare il giorno.
+const giornoFinto = vi.hoisted(() => ({ valore: null as string | null }));
+vi.mock("@/lib/useGiornoCorrente", async () => {
+  const { oggiLocale: oggiVero } = await import("@/lib/dataGiorno");
+  return { useGiornoCorrente: () => giornoFinto.valore ?? oggiVero() };
+});
+
+afterEach(() => {
+  cleanup();
+  giornoFinto.valore = null;
+});
 
 function riga(id: string, nome: string, ora_inizio: string, altro: Partial<Pasto> = {}): Pasto {
   return {
@@ -471,5 +483,119 @@ describe("Pagina Pasti e orari — Da una data", () => {
 
     await waitFor(async () => expect((await db.pasti.get("brunch"))?.ora_inizio).toBe("11:15"));
     expect(screen.queryByText("Da quando vale?")).toBeNull();
+  });
+});
+
+describe("Pagina Pasti e orari — Schede per data", () => {
+  const DOMANI = giornoSuccessivo(OGGI);
+  const DOPODOMANI = giornoSuccessivo(DOMANI);
+  const TRA_TRE = giornoSuccessivo(DOPODOMANI);
+
+  // La riga di un cambio: il testo accanto al suo Annulla.
+  function rigaCambio(descrizione: string): string {
+    const pulsante = screen.getByRole("button", { name: `Annulla: ${descrizione}` });
+    return pulsante.previousElementSibling?.textContent ?? "";
+  }
+
+  it("senza cambi programmati non ci sono schede", async () => {
+    render(<PastiEOrariPage />);
+    await screen.findByRole("button", { name: /^Colazione/ });
+    expect(screen.queryByRole("group", { name: "Pasti per data" })).toBeNull();
+  });
+
+  it("la scheda di una data mostra i pasti di quel giorno, cosa cambia e i cambi; Oggi resta com'è", async () => {
+    await cambiaDal({ id: "pranzo", nome: "Pranzo 1", ora: "14:30", dal: DOPODOMANI, oggi: OGGI });
+    await cambiaDal({ id: "colazione", nome: "Colazione", ora: "07:00", dal: DOPODOMANI, oggi: OGGI });
+    await aggiungiPasto({ userId: USER_ID, nome: "Spuntino", ora: "16:30", dal: DOPODOMANI, oggi: OGGI });
+    await db.voci_diario.put(voce("v-cena", "cena", TRA_TRE));
+    await eliminaPasto({ id: "cena", modo: "data", oggi: OGGI, dal: DOPODOMANI, idVociConfermate: ["v-cena"] });
+
+    render(<PastiEOrariPage />);
+    const schede = await screen.findByRole("group", { name: "Pasti per data" });
+    const tab = within(schede).getAllByRole("button");
+    expect(tab.map((b) => b.textContent)).toEqual(["Oggi", `Dal ${formattaGiornoCorto(DOPODOMANI)}`]);
+    expect(tab[0].getAttribute("aria-pressed")).toBe("true");
+    // In Oggi, i pasti di oggi come sempre, sotto il titolo con la data.
+    expect(screen.getByText(`Oggi, ${formattaGiornoCorto(OGGI)}`)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Pranzo12:30/ })).toBeTruthy();
+
+    fireEvent.click(tab[1]);
+    expect(
+      await screen.findByText(`Così saranno i tuoi pasti dal ${formattaGiornoCorto(DOPODOMANI)}. Si modificano dalla scheda Oggi.`)
+    ).toBeTruthy();
+    // I pasti di quel giorno, in ordine d'orario e non toccabili.
+    expect(screen.queryByRole("button", { name: /^Pranzo 1/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "+ Aggiungi pasto" })).toBeNull();
+    const pasti = screen.getByText(`Dal ${formattaGiornoCorto(DOPODOMANI)}`, { selector: "h2" }).closest("section")!;
+    expect(pasti.textContent).toBe(
+      "Dal " + formattaGiornoCorto(DOPODOMANI) +
+        "Colazioneora nuovaprima: 06:0007:00" +
+        "Pranzo 1nome nuovoprima: Pranzo14:30" +
+        "Spuntinonuovo16:30" +
+        "Non ci sarà più: Cena"
+    );
+    expect(rigaCambio("Colazione 06:00 → 07:00")).toBe("Colazione 06:00 → 07:00ora nuova");
+    expect(rigaCambio("Pranzo → Pranzo 1")).toBe("Pranzo → Pranzo 1nome nuovo, alle 14:30");
+    expect(rigaCambio("nuovo pasto Spuntino")).toBe("Nuovo pasto: Spuntinoinizia alle 16:30");
+    await waitFor(() =>
+      expect(rigaCambio("Cena non ci sarà più")).toBe(
+        `Cena non ci sarà più1 voce eliminata, del ${formattaGiornoCorto(TRA_TRE)}`
+      )
+    );
+  });
+
+  it("Annulla dalla scheda: l'eliminazione si annulla con le sue voci, e senza altri cambi le schede spariscono", async () => {
+    await db.voci_diario.put(voce("v-cena", "cena", TRA_TRE));
+    await eliminaPasto({ id: "cena", modo: "data", oggi: OGGI, dal: DOPODOMANI, idVociConfermate: ["v-cena"] });
+
+    render(<PastiEOrariPage />);
+    fireEvent.click(await screen.findByRole("button", { name: `Dal ${formattaGiornoCorto(DOPODOMANI)}` }));
+    const annulla = await screen.findByRole("button", { name: "Annulla: Cena non ci sarà più" });
+    await waitFor(() => expect(rigaCambio("Cena non ci sarà più")).toContain("1 voce eliminata"));
+    fireEvent.click(annulla);
+
+    await waitFor(async () => expect((await db.pasti.get("cena"))?.valido_al ?? null).toBeNull());
+    // Ricreata (id nuovo, mai una riga rimessa in vita), sul suo giorno.
+    const vive = (await db.voci_diario.toArray()).filter((v) => v.pasto_id === "cena" && v.deleted_at === null);
+    expect(vive.map((v) => v.data)).toEqual([TRA_TRE]);
+    const barra = await screen.findByRole("status");
+    expect(barra.textContent).toContain("Cambio annullato:");
+    expect(barra.textContent).toContain("(tornano 1 voce)");
+    // La barra non ha un altro Annulla: il cambio si riprogramma da Oggi.
+    expect(within(barra).queryByRole("button", { name: "Annulla" })).toBeNull();
+    // Nessun cambio rimasto: niente schede, si torna a Oggi.
+    await waitFor(() => expect(screen.queryByRole("group", { name: "Pasti per data" })).toBeNull());
+    expect(screen.getByRole("button", { name: /^Cena19:30/ })).toBeTruthy();
+  });
+
+  it("Annulla dalla scheda in conflitto: la barra dice perché, niente scritto", async () => {
+    await cambiaDal({ id: "pranzo", nome: "Pranzo 1", ora: "12:30", dal: DOPODOMANI, oggi: OGGI });
+    // Da tra tre giorni c'è un altro «Pranzo»: la vecchia riga, riaperta
+    // senza fine, si scontrerebbe con lui.
+    await aggiungiPasto({ userId: USER_ID, nome: "Spuntino", ora: "11:00", dal: TRA_TRE, oggi: OGGI });
+    const altro = (await db.pasti.toArray()).find((p) => p.nome === "Spuntino")!;
+    await db.pasti.update(altro.id, { nome: "Pranzo" });
+
+    render(<PastiEOrariPage />);
+    fireEvent.click(await screen.findByRole("button", { name: `Dal ${formattaGiornoCorto(DOPODOMANI)}` }));
+    fireEvent.click(await screen.findByRole("button", { name: "Annulla: Pranzo → Pranzo 1" }));
+
+    const barra = await screen.findByRole("status");
+    expect(barra.textContent).toMatch(/^Non annullato/);
+    expect((await db.pasti.toArray()).some((p) => p.nome === "Pranzo 1" && p.deleted_at === null)).toBe(true);
+  });
+
+  it("quando la data arriva la sua scheda sparisce, e i pasti nuovi sono quelli di Oggi", async () => {
+    await cambiaDal({ id: "pranzo", nome: "Pranzo 1", ora: "12:30", dal: DOMANI, oggi: OGGI });
+    const { rerender } = render(<PastiEOrariPage />);
+    fireEvent.click(await screen.findByRole("button", { name: `Dal ${formattaGiornoCorto(DOMANI)}` }));
+    await screen.findByText(/^Così saranno i tuoi pasti/);
+
+    giornoFinto.valore = DOMANI;
+    rerender(<PastiEOrariPage />);
+
+    expect(screen.queryByRole("group", { name: "Pasti per data" })).toBeNull();
+    expect(screen.queryByText(/^Così saranno i tuoi pasti/)).toBeNull();
+    expect(screen.getByRole("button", { name: /^Pranzo 112:30/ })).toBeTruthy();
   });
 });
