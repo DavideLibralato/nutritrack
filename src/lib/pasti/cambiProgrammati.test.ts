@@ -8,6 +8,8 @@ import { describe, it, expect } from "vitest";
 import type { Pasto } from "../db/tipi";
 import {
   cambiProgrammati,
+  dataProposta,
+  erroreDataDaUnaData,
   dateProgrammate,
   filoDi,
   idCambio,
@@ -218,5 +220,24 @@ describe("limitiDaUnaData", () => {
     expect(limitiDaUnaData(pranzo, [pranzo, pranzo1], OGGI)).toMatchObject({
       min: "2026-10-11", max: "2026-10-11", disponibile: true,
     });
+  });
+});
+
+describe("dataProposta ed erroreDataDaUnaData", () => {
+  const liberi = { min: "2026-10-11", max: null, disponibile: true, cambioSuccessivo: null };
+  const finoAl13 = { ...liberi, max: "2026-10-13" };
+
+  it("propone il prossimo lunedì, o l'ultimo giorno possibile se il lunedì va oltre", () => {
+    expect(dataProposta(liberi, OGGI)).toBe("2026-10-12");
+    expect(dataProposta({ ...liberi, max: "2026-10-11" }, OGGI)).toBe("2026-10-11");
+  });
+
+  it("dentro i limiti nessun errore; fuori, o un giorno che non esiste, il messaggio dice i limiti", () => {
+    expect(erroreDataDaUnaData("2026-10-11", finoAl13)).toBeNull();
+    expect(erroreDataDaUnaData("2026-10-13", finoAl13)).toBeNull();
+    expect(erroreDataDaUnaData("2026-10-14", finoAl13)).toBe("Scegli un giorno fra dom 11 ott e mar 13 ott.");
+    expect(erroreDataDaUnaData("2026-10-10", liberi)).toBe("Scegli un giorno da dom 11 ott in poi.");
+    expect(erroreDataDaUnaData("2026-02-30", liberi)).toBe("Scegli un giorno da dom 11 ott in poi.");
+    expect(erroreDataDaUnaData("", liberi)).not.toBeNull();
   });
 });

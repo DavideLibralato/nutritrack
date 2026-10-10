@@ -35,14 +35,16 @@ describe("campi data", () => {
   });
 
   it("i campi data a tutta larghezza dell'app usano .campo-data", () => {
-    for (const file of ["src/components/SheetDuplica.tsx", "src/components/SheetCambioObiettivo.tsx"]) {
+    for (const file of ["src/components/SheetDuplica.tsx", "src/components/SheetCambioObiettivo.tsx", "src/components/SheetDaQuando.tsx"]) {
       const campo = leggi(file).match(/type="date"[\s\S]*?className=\{?[`"]([^`"]*)/);
       expect(campo?.[1], file).toMatch(/\bcampo-data\b/);
     }
   });
 
-  it("il foglio Duplica non scorre mai in orizzontale", () => {
-    expect(leggi("src/components/SheetDuplica.tsx")).toMatch(/role="dialog"[\s\S]*?overflow-x-hidden/);
+  it("i fogli con un campo data (Duplica, «da quando») non scorrono mai in orizzontale", () => {
+    for (const file of ["src/components/SheetDuplica.tsx", "src/components/SheetDaQuando.tsx"]) {
+      expect(leggi(file), file).toMatch(/role="dialog"[\s\S]*?overflow-x-hidden/);
+    }
   });
 });
 

@@ -3,17 +3,20 @@
 // Impostazioni > Pasti e orari (PUNTO_DI_PARTENZA.md, sezione 3, "Pasti e
 // orari"; mockup in docs/mockups/pasti-e-orari.html, elenco "A · Righe").
 // Passo 3: rinominare, cambiare l'ora, aggiungere. Elimina è il passo 4, le
-// date future il passo 5.
+// date future ("Da una data") il passo 5.
 //
 // L'elenco mostra i pasti che valgono OGGI, in ordine d'orario. Un tocco
 // apre lo sheet del pasto (SheetPasto). Al Salva:
-// - cambia solo l'ora → si scrive subito, in ogni giorno del pasto;
-// - cambia il nome → la domanda "da quando" (SheetDaQuando): Correggi o Da
-//   oggi. Nome e ora si scrivono insieme, dopo la risposta. Niente domanda
-//   se cambiano solo maiuscole o spazi, o se il pasto è nato oggi: si
-//   corregge e basta (domandaPerNome);
-// - "+ Aggiungi pasto": nome e ora, poi "Anche nei giorni passati" o "Da
-//   oggi".
+// - cambia solo l'ora → la domanda "Subito" (in ogni giorno di quella
+//   riga) o "Da una data" (l'orario segue la data, come il nome);
+// - cambia il nome → la domanda "da quando" (SheetDaQuando): Correggi, Da
+//   oggi o Da una data. Nome e ora si scrivono insieme, dopo la risposta.
+//   Niente domanda se cambiano solo maiuscole o spazi, o se il pasto è nato
+//   oggi: si corregge e basta (domandaPerNome);
+// - "+ Aggiungi pasto": nome e ora, poi "Anche nei giorni passati", "Da
+//   oggi" o "Da una data".
+// "Da una data" propone il prossimo lunedì e arriva al massimo al prossimo
+// cambio già programmato del pasto (limitiDaUnaData in cambiProgrammati.ts).
 // Ogni azione si salva alla conferma, quindi la pagina non ha mai modifiche
 // in sospeso: niente guardiano delle modifiche. Dopo ogni scrittura, la
 // barra in basso con "Annulla" (come nel diario).
@@ -32,11 +35,12 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import { tuttiIPasti } from "@/lib/repository/pasti";
-import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
+import { pastiValidiIl, pastoValidoIl } from "@/lib/pasti/validitaPasti";
 import {
   domandaPerNome,
   erroreNome,
   erroreOra,
+  iniziaOggiODopo,
   normalizzaNome,
   normalizzaOra,
   periodoDi,
@@ -44,18 +48,27 @@ import {
   type Periodo,
 } from "@/lib/pasti/controlliPasti";
 import {
+  dataProposta,
+  erroreDataDaUnaData,
+  filoDi,
+  limitiDaUnaData,
+  type LimitiDaUnaData,
+} from "@/lib/pasti/cambiProgrammati";
+import {
   aggiungiPasto,
   annullaModificaPasti,
+  cambiaDal,
   correggiPasto,
   eliminaPasto,
   ErroreControlloPasto,
   rinominaDaOggi,
   vociDaEliminare,
   riepilogoVoci,
+  type EsitoCambiaDal,
   type ModoElimina,
   type FotografiaPasti,
 } from "@/lib/repository/modifichePasti";
-import { oggiLocale } from "@/lib/dataGiorno";
+import { formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { MESSAGGIO_ANNULLATO, type MessaggioBarra } from "@/lib/inserimento/testiBarra";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
@@ -78,17 +91,21 @@ interface Bozza {
   ora: string;
 }
 
-// Per "modifica", oltre ai campi e alla domanda del nome, i due passi di
-// Elimina pasto: la domanda "da quando" e la conferma (solo se tocca voci).
+// Per "modifica", oltre ai campi e alla domanda del nome, la domanda della
+// sola ora ("domanda-ora") e i due passi di Elimina pasto: la domanda "da
+// quando" e la conferma (solo se tocca voci). `data`: il giorno scelto in
+// "Da una data", tenuto qui perché le spiegazioni e i controlli dipendono
+// da lui (SheetDaQuando lo mostra soltanto).
 type StatoSheet =
   | {
       tipo: "modifica";
       pastoId: string;
       bozza: Bozza;
-      passo: "campi" | "domanda" | "elimina-domanda" | "elimina-conferma";
+      passo: "campi" | "domanda" | "domanda-ora" | "elimina-domanda" | "elimina-conferma";
       modoElimina?: ModoElimina;
+      data?: string;
     }
-  | { tipo: "aggiungi"; bozza: Bozza; passo: "campi" | "domanda" };
+  | { tipo: "aggiungi"; bozza: Bozza; passo: "campi" | "domanda"; data?: string };
 
 interface StatoBarra {
   // Cambia a ogni messaggio: la barra riparte da capo (la sua `key`).
@@ -98,8 +115,9 @@ interface StatoBarra {
   fotografia: FotografiaPasti | null;
 }
 
-type SceltaRinomina = "correggi" | "oggi";
-type SceltaAggiunta = "passati" | "oggi";
+type SceltaRinomina = "correggi" | "oggi" | "data";
+type SceltaAggiunta = "passati" | "oggi" | "data";
+type SceltaOra = "subito" | "data";
 
 // Il periodo della riga nuova di "Da oggi": da oggi alla fine del pasto.
 function periodoDaOggi(pasto: Pasto, oggi: string): Periodo {
@@ -155,6 +173,44 @@ export default function PastiEOrariPage() {
   const pastiOggi = pastiValidiIl(tutte, oggiLocale());
   const pastoAperto = sheet?.tipo === "modifica" ? tutte.find((p) => p.id === sheet.pastoId) : undefined;
 
+  // "Da una data" per un pasto: i giorni che si possono scegliere, o null
+  // se non c'è (un pasto nato oggi o dopo resta senza domanda; uno che
+  // finisce oggi non ha giorni futuri).
+  function limitiDi(pasto: Pasto): LimitiDaUnaData | null {
+    const oggi = oggiLocale();
+    if (iniziaOggiODopo(pasto, oggi)) return null;
+    const limiti = limitiDaUnaData(pasto, tutte, oggi);
+    return limiti.disponibile ? limiti : null;
+  }
+
+  // Un pasto nuovo può cominciare da qualunque giorno dopo oggi.
+  function limitiAggiunta(): LimitiDaUnaData {
+    return { min: giornoSuccessivo(oggiLocale()), max: null, disponibile: true, cambioSuccessivo: null };
+  }
+
+  // Il cambio "da una data" del pasto aperto (nome e/o ora), letto prima di
+  // confermare: la riga del filo valida quel giorno (se comincia proprio
+  // quel giorno, è un cambio già programmato e si corregge lei) e cosa non
+  // va. Gli stessi controlli di cambiaDal, che li rifà al momento di
+  // scrivere.
+  function cambioDaUnaData(pasto: Pasto, limiti: LimitiDaUnaData, bozza: Bozza, data: string) {
+    const oggi = oggiLocale();
+    const erroreData = erroreDataDaUnaData(data, limiti);
+    if (erroreData) return { riga: null, errore: erroreData };
+    const riga = filoDi(pasto, tutte).find((r) => pastoValidoIl(r, data)) ?? null;
+    if (!riga) return { riga: null, errore: "Quel giorno il pasto non c'è." };
+    const stessaData = (riga.valido_dal ?? null) === data;
+    const periodo: Periodo = stessaData ? periodoDi(riga) : { dal: data, al: riga.valido_al ?? null };
+    const cambiaNome = normalizzaNome(bozza.nome) !== riga.nome;
+    const cambiaOra = normalizzaOra(bozza.ora) !== normalizzaOra(riga.ora_inizio);
+    const errore =
+      !cambiaNome && !cambiaOra
+        ? `Il ${formattaGiornoCorto(data)} «${riga.nome}» è già così.`
+        : ((cambiaNome ? erroreNome(bozza.nome, periodo, tutte, [riga.id]) : null) ??
+          (cambiaOra ? erroreOra(bozza.ora, periodo, tutte, [riga.id], oggi) : null));
+    return { riga, stessaData, errore };
+  }
+
   function mostraBarra(messaggio: MessaggioBarra, fotografia: FotografiaPasti | null) {
     setBarra((b) => ({ id: (b?.id ?? 0) + 1, messaggio, fotografia }));
   }
@@ -196,7 +252,7 @@ export default function PastiEOrariPage() {
         setSheet((s) => (s ? { ...s, passo: "campi" } : s));
         setErroreDomanda(null);
         setErrori({ [errore.campo]: errore.message });
-      } else if (sheet?.passo === "domanda") {
+      } else if (sheet?.passo === "domanda" || sheet?.passo === "domanda-ora") {
         setErroreDomanda(ERRORE_SALVATAGGIO);
       } else {
         setErrori({ generale: ERRORE_SALVATAGGIO });
@@ -223,7 +279,7 @@ export default function PastiEOrariPage() {
         setErrori(nuoviErrori);
         return;
       }
-      setSheet({ ...sheet, bozza, passo: "domanda" });
+      setSheet({ ...sheet, bozza, passo: "domanda", data: dataProposta(limitiAggiunta(), oggi) });
       return;
     }
 
@@ -249,8 +305,16 @@ export default function PastiEOrariPage() {
       chiudi();
       return;
     }
+    const limiti = limitiDi(pasto);
+    const data = limiti ? dataProposta(limiti, oggi) : undefined;
     if (domanda === "chiedi") {
-      setSheet({ ...sheet, bozza, passo: "domanda" });
+      setSheet({ ...sheet, bozza, passo: "domanda", data });
+      return;
+    }
+    // Solo l'ora (passo 5): "Subito" o "Da una data", se il pasto ha giorni
+    // futuri da scegliere; se no, si scrive subito come prima.
+    if (domanda === "niente" && limiti) {
+      setSheet({ ...sheet, bozza, passo: "domanda-ora", data });
       return;
     }
     void esegui(async () => ({
@@ -276,6 +340,11 @@ export default function PastiEOrariPage() {
       }));
       return;
     }
+    if (scelta === "data" && sheet.data) {
+      const dal = sheet.data;
+      void esegui(async () => messaggioCambio(await cambiaDal({ id: pasto.id, nome, ora, dal, oggi }), dal));
+      return;
+    }
     void esegui(async () => {
       const esito = await rinominaDaOggi({ id: pasto.id, nome, ora, oggi });
       return {
@@ -285,23 +354,52 @@ export default function PastiEOrariPage() {
     });
   }
 
+  // Solo l'ora: "Subito" scrive sulla riga di oggi, in tutti i suoi giorni
+  // (correggiPasto); "Da una data" programma il cambio (cambiaDal).
+  function confermaOra(scelta: SceltaOra) {
+    if (!pastoAperto || sheet?.tipo !== "modifica") return;
+    const pasto = pastoAperto;
+    const { ora } = sheet.bozza;
+    const oggi = oggiLocale();
+    setErroreDomanda(null);
+    if (scelta === "data" && sheet.data) {
+      const dal = sheet.data;
+      void esegui(async () => messaggioCambio(await cambiaDal({ id: pasto.id, nome: pasto.nome, ora, dal, oggi }), dal));
+      return;
+    }
+    void esegui(async () => ({
+      fotografia: await correggiPasto({ id: pasto.id, nome: pasto.nome, ora, oggi }),
+      messaggio: messaggioOra(pasto.nome, ora),
+    }));
+  }
+
   function confermaAggiunta(scelta: SceltaAggiunta) {
     if (sheet?.tipo !== "aggiungi" || !userId) return;
     const { nome, ora } = sheet.bozza;
-    const daOggi = scelta === "oggi";
+    const oggi = oggiLocale();
+    const dal = scelta === "passati" ? null : scelta === "oggi" ? oggi : (sheet.data ?? null);
+    if (scelta === "data" && dal === null) return;
     setErroreDomanda(null);
     void esegui(async () => {
-      const { fotografia, pasto } = await aggiungiPasto({ userId, nome, ora, dal: daOggi ? oggiLocale() : null, oggi: oggiLocale() });
+      const { fotografia, pasto } = await aggiungiPasto({ userId, nome, ora, dal, oggi });
       return {
         fotografia,
-        messaggio: {
-          testo: "Aggiunto:",
-          nome: pasto.nome,
-          coda: daOggi ? `da oggi, alle ${pasto.ora_inizio}.` : `alle ${pasto.ora_inizio}.`,
-          icona: "spunta",
-        },
+        messaggio:
+          scelta === "data" && dal
+            ? { testo: `Programmato dal ${formattaGiornoCorto(dal)}:`, nome: pasto.nome, coda: `alle ${pasto.ora_inizio}.`, icona: "spunta" }
+            : {
+                testo: "Aggiunto:",
+                nome: pasto.nome,
+                coda: scelta === "oggi" ? `da oggi, alle ${pasto.ora_inizio}.` : `alle ${pasto.ora_inizio}.`,
+                icona: "spunta",
+              },
       };
     });
+  }
+
+  // Cambia la data scelta in "Da una data", nello stato della pagina.
+  function cambiaData(data: string) {
+    setSheet((s) => (s ? { ...s, data } : s));
   }
 
   async function annulla() {
@@ -333,7 +431,8 @@ export default function PastiEOrariPage() {
       sceltaElimina("tutto");
       return;
     }
-    setSheet({ ...sheet, passo: "elimina-domanda" });
+    const limiti = limitiDi(pastoAperto);
+    setSheet({ ...sheet, passo: "elimina-domanda", data: limiti ? dataProposta(limiti, oggiLocale()) : undefined });
   }
 
   // Scelto il modo: se tocca voci, la conferma con i numeri; se no, subito.
@@ -349,11 +448,13 @@ export default function PastiEOrariPage() {
   }
 
   // "Da oggi" vuol dire da oggi in poi: anche le voci dei giorni futuri già
-  // pianificati (il diario arriva fino a oggi + 7). Stesso filtro di
-  // vociDaEliminare in modifichePasti.ts.
+  // pianificati (il diario arriva fino a oggi + 7); "da una data", da quel
+  // giorno in poi. Stesso filtro di vociDaEliminare in modifichePasti.ts
+  // (`vociPasto` sono già le voci del pasto e dei suoi cambi programmati).
   function vociDelModo(modo: ModoElimina) {
-    const oggi = oggiLocale();
-    return (vociPasto ?? []).filter((v) => modo === "tutto" || v.data >= oggi);
+    const dal = modo === "tutto" ? null : modo === "oggi" ? oggiLocale() : (sheet?.data ?? null);
+    if (modo === "data" && dal === null) return [];
+    return (vociPasto ?? []).filter((v) => dal === null || v.data >= dal);
   }
 
   // `idVoci`: le voci che l'utente ha appena visto nella conferma. Se nel
@@ -362,9 +463,10 @@ export default function PastiEOrariPage() {
   async function eseguiElimina(modo: ModoElimina, idVoci: string[]) {
     if (!pastoAperto || sheet?.tipo !== "modifica") return;
     const pasto = pastoAperto;
+    const dal = modo === "data" ? sheet.data : undefined;
     setInCorso(true);
     try {
-      const esito = await eliminaPasto({ id: pasto.id, modo, oggi: oggiLocale(), idVociConfermate: idVoci });
+      const esito = await eliminaPasto({ id: pasto.id, modo, oggi: oggiLocale(), dal, idVociConfermate: idVoci });
       if (esito.esito === "cambiate") {
         setSheet({ ...sheet, passo: "elimina-conferma", modoElimina: modo });
         setErroreDomanda("Nel frattempo le voci sono cambiate: controlla i numeri e conferma di nuovo.");
@@ -373,7 +475,7 @@ export default function PastiEOrariPage() {
       chiudi();
       const eliminate = esito.fotografia.eliminazione?.voci ?? [];
       mostraBarra(
-        messaggioEliminato(pasto.nome, modo, esito.riepilogo.voci, soloDiOggi(eliminate, oggiLocale())),
+        messaggioEliminato(pasto.nome, modo, esito.riepilogo.voci, soloDiOggi(eliminate, oggiLocale()), dal ?? null),
         esito.fotografia
       );
     } catch {
@@ -384,6 +486,37 @@ export default function PastiEOrariPage() {
     } finally {
       setInCorso(false);
     }
+  }
+
+  // "Da una data", calcolato a ogni disegno dallo stato (niente di salvato
+  // a parte): i giorni possibili per il pasto aperto, e cosa non va nella
+  // data scelta per il cambio, per il pasto nuovo e per l'eliminazione.
+  const limitiAperto = pastoAperto ? limitiDi(pastoAperto) : null;
+  const cambioAperto =
+    pastoAperto && limitiAperto && sheet?.tipo === "modifica" && sheet.data
+      ? cambioDaUnaData(pastoAperto, limitiAperto, sheet.bozza, sheet.data)
+      : null;
+  const erroreAggiuntaData =
+    sheet?.tipo === "aggiungi" && sheet.data !== undefined
+      ? (erroreDataDaUnaData(sheet.data, limitiAggiunta()) ??
+        erroreNome(sheet.bozza.nome, { dal: sheet.data, al: null }, tutte, []) ??
+        erroreOra(sheet.bozza.ora, { dal: sheet.data, al: null }, tutte, [], oggiLocale()))
+      : null;
+  const erroreEliminaData =
+    limitiAperto && sheet?.data !== undefined ? erroreDataDaUnaData(sheet.data, limitiAperto) : null;
+
+  // Il campo "Dal giorno" di SheetDaQuando: valore e cambi passano dallo
+  // stato della pagina.
+  function campoData<K extends string>(chiave: K, limiti: LimitiDaUnaData, errore: string | null) {
+    return {
+      chiave,
+      min: limiti.min,
+      max: limiti.max,
+      valore: sheet?.data ?? "",
+      onCambia: cambiaData,
+      nota: notaLimite(limiti),
+      errore,
+    };
   }
 
   return (
@@ -428,7 +561,7 @@ export default function PastiEOrariPage() {
           titolo={sheet.tipo === "aggiungi" ? "Nuovo pasto" : (pastoAperto?.nome ?? "")}
           sottotitolo={
             sheet.tipo === "modifica" && pastoAperto
-              ? `Inizia alle ${normalizzaOra(pastoAperto.ora_inizio)}. Il nuovo nome chiede da quando vale; il nuovo orario vale subito.`
+              ? `Inizia alle ${normalizzaOra(pastoAperto.ora_inizio)}. Nome e orario nuovi chiedono da quando valgono.`
               : undefined
           }
           nomeIniziale={sheet.bozza.nome}
@@ -453,9 +586,15 @@ export default function PastiEOrariPage() {
       {sheet?.passo === "domanda" && sheet.tipo === "modifica" && pastoAperto && (
         <SheetDaQuando<SceltaRinomina>
           titolo={`«${pastoAperto.nome}» diventa «${normalizzaNome(sheet.bozza.nome)}»`}
-          opzioni={opzioniRinomina(pastoAperto, sheet.bozza.nome, tutte)}
+          opzioni={[
+            ...opzioniRinomina(pastoAperto, sheet.bozza.nome, tutte),
+            ...(limitiAperto
+              ? [{ chiave: "data" as const, titolo: "Da una data", spiegazione: spiegazioneCambioData(cambioAperto, sheet.data, "nome") }]
+              : []),
+          ]}
           predefinita="oggi"
           testoConferma="Rinomina"
+          data={limitiAperto ? campoData("data", limitiAperto, cambioAperto?.errore ?? null) : undefined}
           inCorso={inCorso}
           errore={erroreDomanda}
           onIndietro={() => setSheet({ ...sheet, passo: "campi" })}
@@ -463,12 +602,44 @@ export default function PastiEOrariPage() {
         />
       )}
 
+      {sheet?.passo === "domanda-ora" && sheet.tipo === "modifica" && pastoAperto && limitiAperto && (
+        <SheetDaQuando<SceltaOra>
+          titolo={`«${pastoAperto.nome}» alle ${normalizzaOra(sheet.bozza.ora)}`}
+          opzioni={[
+            {
+              chiave: "subito",
+              titolo: "Subito",
+              spiegazione: `Vale in tutti i giorni di «${pastoAperto.nome}», anche quelli passati.`,
+            },
+            { chiave: "data", titolo: "Da una data", spiegazione: spiegazioneCambioData(cambioAperto, sheet.data, "ora") },
+          ]}
+          predefinita="subito"
+          testoConferma="Cambia orario"
+          data={campoData("data", limitiAperto, cambioAperto?.errore ?? null)}
+          inCorso={inCorso}
+          errore={erroreDomanda}
+          onIndietro={() => setSheet({ ...sheet, passo: "campi" })}
+          onConferma={confermaOra}
+        />
+      )}
+
       {sheet?.passo === "domanda" && sheet.tipo === "aggiungi" && (
         <SheetDaQuando<SceltaAggiunta>
           titolo={`Da quando c'è «${normalizzaNome(sheet.bozza.nome)}»?`}
-          opzioni={opzioniAggiunta(sheet.bozza, tutte)}
+          opzioni={[
+            ...opzioniAggiunta(sheet.bozza, tutte),
+            {
+              chiave: "data",
+              titolo: "Da una data",
+              spiegazione:
+                sheet.data && !erroreAggiuntaData
+                  ? `Per un cambio dieta già deciso. Compare dal ${formattaGiornoCorto(sheet.data)}.`
+                  : "Per un cambio dieta già deciso.",
+            },
+          ]}
           predefinita="oggi"
           testoConferma="Aggiungi pasto"
+          data={campoData("data", limitiAggiunta(), erroreAggiuntaData)}
           inCorso={inCorso}
           errore={erroreDomanda}
           onIndietro={() => setSheet({ ...sheet, passo: "campi" })}
@@ -497,9 +668,25 @@ export default function PastiEOrariPage() {
                     ? " Le voci di oggi vengono eliminate."
                     : " Le voci da oggi in poi vengono eliminate."),
             },
+            ...(limitiAperto
+              ? [
+                  {
+                    chiave: "data" as const,
+                    titolo: "Da una data",
+                    spiegazione:
+                      sheet.data && !erroreEliminaData
+                        ? `Resta fino a ${formattaGiornoCorto(giornoPrecedente(sheet.data))}, poi non compare più.` +
+                          (vociDelModo("data").length > 0
+                            ? ` Le voci dal ${formattaGiornoCorto(sheet.data)} vengono eliminate.`
+                            : "")
+                        : "Resta fino al giorno prima, poi non compare più.",
+                  },
+                ]
+              : []),
           ]}
           predefinita="oggi"
           testoConferma={(modo) => (vociDelModo(modo).length > 0 ? "Continua" : "Elimina pasto")}
+          data={limitiAperto ? campoData("data", limitiAperto, erroreEliminaData) : undefined}
           inCorso={inCorso}
           errore={erroreDomanda}
           onIndietro={() => setSheet({ ...sheet, passo: "campi" })}
@@ -513,6 +700,7 @@ export default function PastiEOrariPage() {
           modo={sheet.modoElimina}
           voci={vociDelModo(sheet.modoElimina)}
           oggi={oggiLocale()}
+          dal={sheet.modoElimina === "data" ? (sheet.data ?? null) : null}
           inCorso={inCorso}
           errore={erroreDomanda}
           onNo={chiudi}
@@ -548,6 +736,7 @@ function ConfermaElimina({
   modo,
   voci: righe,
   oggi,
+  dal,
   inCorso,
   errore,
   onNo,
@@ -557,6 +746,8 @@ function ConfermaElimina({
   modo: ModoElimina;
   voci: VoceDiario[];
   oggi: string;
+  // Solo per "da una data": il giorno da cui il pasto non c'è più.
+  dal: string | null;
   inCorso: boolean;
   errore: string | null;
   onNo: () => void;
@@ -565,9 +756,16 @@ function ConfermaElimina({
   const { voci: n, giorni: g, kcal } = riepilogoVoci(righe);
   // "ha 13 voci in 9 giorni" (anche nei giorni passati), "ha 1 voce oggi"
   // (da oggi, tutte di oggi), "ha 5 voci in 3 giorni, da oggi in poi" (da
-  // oggi, con giorni futuri pianificati).
+  // oggi, con giorni futuri pianificati), "ha 2 voci in 2 giorni, dal lun
+  // 12 ott" (da una data).
   const soloOggi = modo === "oggi" && soloDiOggi(righe, oggi);
-  const dove = soloOggi ? "oggi" : modo === "oggi" ? `in ${giorni(g)}, da oggi in poi` : `in ${giorni(g)}`;
+  const dove = soloOggi
+    ? "oggi"
+    : modo === "oggi"
+      ? `in ${giorni(g)}, da oggi in poi`
+      : modo === "data" && dal
+        ? `in ${giorni(g)}, dal ${formattaGiornoCorto(dal)}`
+        : `in ${giorni(g)}`;
   const quali = soloOggi ? "di oggi" : "di quei giorni";
   return (
     <SheetConferma
@@ -586,8 +784,23 @@ function ConfermaElimina({
 
 // "Eliminato: Pranzo (13 voci)", "Eliminato da oggi: Cena (1 voce di
 // oggi)", "Eliminato da oggi: Cena (5 voci da oggi in poi)", "Eliminato:
-// Spuntino pomeriggio".
-function messaggioEliminato(nome: string, modo: ModoElimina, numeroVoci: number, soloOggi: boolean): MessaggioBarra {
+// Spuntino pomeriggio", "Programmato: Pranzo non ci sarà più dal lun 12
+// ott (2 voci)".
+function messaggioEliminato(
+  nome: string,
+  modo: ModoElimina,
+  numeroVoci: number,
+  soloOggi: boolean,
+  dal: string | null
+): MessaggioBarra {
+  if (modo === "data" && dal) {
+    return {
+      testo: "Programmato:",
+      nome,
+      coda: `non ci sarà più dal ${formattaGiornoCorto(dal)}${numeroVoci > 0 ? ` (${voci(numeroVoci)})` : ""}.`,
+      icona: "elimina",
+    };
+  }
   if (modo === "oggi") {
     return {
       testo: "Eliminato da oggi:",
@@ -640,4 +853,57 @@ function messaggioCorretto(nome: string, oraNuova: string | null): MessaggioBarr
       : "anche nei giorni passati.",
     icona: "spunta",
   };
+}
+
+// La barra dopo un cambio "da una data" (cambiaDal): "Programmato dal lun
+// 12 ott: Pranzo → Pranzo 1", "Programmato dal lun 12 ott: Pranzo, inizierà
+// alle 14:30.", o "Cambio del lun 12 ott modificato: …" se quel giorno
+// c'era già un cambio programmato (la stessa data lo corregge).
+function messaggioCambio(esito: EsitoCambiaDal, dal: string): { fotografia: FotografiaPasti; messaggio: MessaggioBarra } {
+  const { fotografia, pastoNuovo } = esito;
+  const prima = fotografia.pastiPrima[0];
+  const giorno = formattaGiornoCorto(dal);
+  const ora = normalizzaOra(pastoNuovo.ora_inizio);
+  if (fotografia.idPastiCreati.length === 0) {
+    return { fotografia, messaggio: { testo: `Cambio del ${giorno} modificato:`, nome: pastoNuovo.nome, coda: `alle ${ora}.`, icona: "spunta" } };
+  }
+  const oraCambiata = ora !== normalizzaOra(prima.ora_inizio);
+  if (pastoNuovo.nome === prima.nome) {
+    return { fotografia, messaggio: { testo: `Programmato dal ${giorno}:`, nome: pastoNuovo.nome, coda: `inizierà alle ${ora}.`, icona: "spunta" } };
+  }
+  return {
+    fotografia,
+    messaggio: {
+      testo: `Programmato dal ${giorno}:`,
+      nome: `${prima.nome} → ${pastoNuovo.nome}`,
+      coda: oraCambiata ? `alle ${ora}.` : undefined,
+      icona: "spunta",
+    },
+  };
+}
+
+// La spiegazione di "Da una data" per un cambio di nome o di sola ora,
+// che dipende dal giorno scelto.
+function spiegazioneCambioData(
+  cambio: { riga: Pasto | null; stessaData?: boolean; errore: string | null } | null,
+  data: string | undefined,
+  cosa: "nome" | "ora"
+): string {
+  if (!cambio?.riga || !data) return "Per un cambio dieta già deciso.";
+  const giorno = formattaGiornoCorto(data);
+  if (cambio.stessaData) return `Il ${giorno} c'è già un cambio programmato: lo sostituisce.`;
+  const fino = formattaGiornoCorto(giornoPrecedente(data));
+  return cosa === "nome"
+    ? `Per un cambio dieta già deciso. Fino a ${fino} resta «${cambio.riga.nome}».`
+    : `Fino a ${fino} inizia alle ${normalizzaOra(cambio.riga.ora_inizio)}.`;
+}
+
+// Sotto il campo "Dal giorno": il cambio già programmato che fissa il
+// giorno massimo, o niente.
+function notaLimite(limiti: LimitiDaUnaData): string | null {
+  const c = limiti.cambioSuccessivo;
+  if (!c) return null;
+  const giorno = formattaGiornoCorto(c.data);
+  if (c.tipo === "elimina") return `Dal ${giorno} «${c.vecchia?.nome ?? ""}» non ci sarà più.`;
+  return `Il ${giorno} è già programmato un cambio: scegliendo quel giorno lo modifichi.`;
 }

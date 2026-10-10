@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Pasti e orari, passo 5d: la domanda "Da una data"
+
+Branch `pasti-date`. L'interfaccia delle scritture del 5c, senza ancora
+le schede per data.
+
+- `SheetDaQuando`: un campo "Dal giorno" facoltativo, legato a una delle
+  scelte e controllato dalla pagina (valore, errore sotto il campo che
+  spegne il pulsante, una nota). Classi `.campo-data` e
+  `overflow-x-hidden` come in Duplica (`campiData.test.ts`).
+- Pasti e orari: "Da una data" per rinomina, aggiungi ed elimina; per il
+  **solo orario** ora c'è la domanda "Subito" / "Da una data" (prima si
+  scriveva subito, senza chiedere), salvo pasti senza giorni futuri da
+  scegliere. Data proposta: il prossimo lunedì (`prossimoLunedi`,
+  `dataProposta`); controllo della data e dei limiti
+  (`erroreDataDaUnaData`, `eGiornoVero` in `dataGiorno.ts`). Spiegazioni
+  che seguono la data, conferma di Elimina "dal lun 12 ott", barra
+  "Programmato dal …" o "Cambio del … modificato".
+- Documenti: PUNTO §3.
+- Test: 10 nuovi (pagina, funzioni pure), uno riscritto (solo l'ora ora
+  chiede), provati a vuoto rompendo il codice da una copia (13 rotture;
+  una non partita al primo giro, ripetuta controllando con `diff`). 644
+  test verdi in 55 file.
+
 ## 2026-10-10 — Pasti e orari, passo 5c: le scritture da una data
 
 Branch `pasti-date`. Le scritture dei cambi programmati e i loro Annulla,

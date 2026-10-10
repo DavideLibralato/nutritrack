@@ -10,6 +10,8 @@ import {
   formattaGiornoCorto,
   GIORNI_FUTURI_DIARIO,
   ultimoGiornoDiario,
+  eGiornoVero,
+  prossimoLunedi,
 } from "./dataGiorno";
 
 describe("oggiLocale", () => {
@@ -130,5 +132,21 @@ describe("dataScrivibile (diario: Duplica, Oggi, Aggiungi)", () => {
 
   it("formattaGiornoCorto: «lun 5 ott»", () => {
     expect(formattaGiornoCorto("2026-10-05")).toBe("lun 5 ott");
+  });
+});
+
+describe("prossimoLunedi ed eGiornoVero (Pasti e orari, «Da una data»)", () => {
+  it("il primo lunedì dopo oggi; se oggi è lunedì, quello dopo; anche a cavallo di mese", () => {
+    expect(prossimoLunedi("2026-10-10")).toBe("2026-10-12"); // sabato
+    expect(prossimoLunedi("2026-10-11")).toBe("2026-10-12"); // domenica
+    expect(prossimoLunedi("2026-10-12")).toBe("2026-10-19"); // lunedì
+    expect(prossimoLunedi("2026-10-29")).toBe("2026-11-02");
+  });
+
+  it("un giorno vero: la forma giusta e una data che esiste", () => {
+    expect(eGiornoVero("2026-10-12")).toBe(true);
+    expect(eGiornoVero("2026-02-30")).toBe(false);
+    expect(eGiornoVero("12/10/2026")).toBe(false);
+    expect(eGiornoVero("")).toBe(false);
   });
 });

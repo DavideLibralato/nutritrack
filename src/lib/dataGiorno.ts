@@ -115,9 +115,23 @@ export function formattaGiornoCorto(iso: string): string {
 // notte il limite si è già spostato di un giorno. Un campo data col `max`
 // non basta: alcuni browser lasciano digitare una data oltre il massimo.
 export function dataScrivibile(iso: string, adesso: Date = new Date()): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
-  if (oggiLocale(daISO(iso)) !== iso) return false;
-  return iso <= ultimoGiornoDiario(adesso);
+  return eGiornoVero(iso) && iso <= ultimoGiornoDiario(adesso);
+}
+
+// Un giorno vero "YYYY-MM-DD": la forma giusta e una data che esiste
+// ("2026-02-30" no). Per le date scritte o scelte dall'utente.
+export function eGiornoVero(iso: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso) && oggiLocale(daISO(iso)) === iso;
+}
+
+// Il primo lunedì dopo `oggi` (se oggi è lunedì, quello della settimana
+// dopo): la data proposta da "Da una data" in Pasti e orari, come nel
+// mockup, perché un cambio di dieta di solito parte di lunedì.
+export function prossimoLunedi(oggi: string): string {
+  const d = daISO(oggi);
+  const giorni = (8 - d.getDay()) % 7 || 7;
+  d.setDate(d.getDate() + giorni);
+  return oggiLocale(d);
 }
 
 // Quanti millisecondi mancano alla prossima mezzanotte locale: quando il

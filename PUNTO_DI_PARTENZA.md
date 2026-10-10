@@ -1204,14 +1204,17 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
   sinistra e ora a destra; in fondo "+ Aggiungi pasto". Un pasto chiuso
   qui non compare (in Oggi resta visibile con la rete di sicurezza).
 - **Tocco su un pasto** → sheet con Nome e "Inizia alle", Salva e Annulla:
-  - cambia **solo l'ora** → si scrive subito, in ogni giorno del pasto,
-    passati compresi *(dal passo 5 con la domanda "Subito" / "Da una
-    data": "Date future e cambi programmati", sotto)*;
+  - cambia **solo l'ora** → la domanda (passo 5): **Subito** (già scelto:
+    si scrive sulla riga di oggi, in tutti i suoi giorni, passati
+    compresi) o **Da una data** ("Fino a dom 11 ott inizia alle 12:30.").
+    Senza giorni futuri da scegliere (pasto nato oggi, o che finisce oggi)
+    niente domanda: si scrive subito;
   - cambia **il nome** → la domanda "da quando vale?": **Correggi** ("Vale
-    anche per i giorni passati") o **Da oggi** ("Fino a ieri resta
-    «Pranzo»"), con Da oggi già scelto (non riscrive il passato). Nome e
-    ora si scrivono **insieme, dopo la risposta**: "Indietro" torna ai
-    campi senza aver scritto niente;
+    anche per i giorni passati"), **Da oggi** ("Fino a ieri resta
+    «Pranzo»") o **Da una data** ("Per un cambio dieta già deciso. Fino a
+    dom 11 ott resta «Pranzo»."), con Da oggi già scelto (non riscrive il
+    passato). Nome e ora si scrivono **insieme, dopo la risposta**:
+    "Indietro" torna ai campi senza aver scritto niente;
   - **niente domanda**, si corregge e basta, se cambiano solo maiuscole o
     spazi ("pranzo" → "Pranzo" è lo stesso nome), o se il pasto è nato
     oggi (`valido_dal` oggi o dopo): chiuderlo "da oggi" lo lascerebbe
@@ -1303,9 +1306,23 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
 
 **Date future e cambi programmati** (passo 5, deciso il 10/10, **in
 costruzione** sul branch `pasti-date`: fatte la logica pura,
-`src/lib/pasti/cambiProgrammati.ts`, e le scritture con i loro Annulla,
-`src/lib/repository/modifichePasti.ts`; mancano la domanda "da quando"
-con la data e le schede nella pagina).
+`src/lib/pasti/cambiProgrammati.ts`, le scritture con i loro Annulla,
+`src/lib/repository/modifichePasti.ts`, e la domanda "da quando" con la
+data nella pagina; mancano le schede per data).
+- **Il campo "Dal giorno"** compare sotto "Da una data" quando la si
+  sceglie (`SheetDaQuando`, campo `.campo-data` come in Duplica). La data
+  la tiene la pagina, che la ricontrolla a ogni cambio
+  (`erroreDataDaUnaData`, più i controlli di nome e ora per quel giorno):
+  se non va, il messaggio è sotto il campo ("Scegli un giorno fra dom 11
+  ott e mar 13 ott.") e il pulsante è spento. Sotto il campo c'è anche il
+  cambio già programmato che fissa il massimo ("Il mar 13 ott è già
+  programmato un cambio: scegliendo quel giorno lo modifichi."). Conferma
+  di Elimina: "«Pranzo» ha 2 voci in 2 giorni, dal lun 12 ott, per …".
+  Barra: "Programmato dal lun 12 ott: Pranzo → Pranzo 1" (con "alle 14:30."
+  se cambia anche l'ora), "Programmato dal lun 12 ott: Cena, inizierà alle
+  20:00.", "Programmato dal lun 12 ott: Merenda, alle 16:30.",
+  "Programmato: Pranzo non ci sarà più dal lun 12 ott (2 voci).", "Cambio
+  del lun 12 ott modificato: Pranzo 2, alle 12:30." (stessa data).
 Mockup: `docs/mockups/pasti-e-orari.html`, "A · Righe" e "2 · Schede per
 data".
 - **"Da una data"**: terza scelta della domanda "da quando" per
@@ -3127,7 +3144,7 @@ ricrea il pasto e le voci future. **Da provare** il giorno che cambia
 `modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
 le pagine Oggi, Aggiungi e Pasti e orari.
 
-**Test.** 634 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
+**Test.** 644 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 

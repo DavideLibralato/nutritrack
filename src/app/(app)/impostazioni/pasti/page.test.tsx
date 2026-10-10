@@ -3,7 +3,8 @@ import { render, screen, waitFor, fireEvent, cleanup, within } from "@testing-li
 import PastiEOrariPage from "./page";
 import { db } from "@/lib/db/database";
 import type { Pasto, VoceDiario } from "@/lib/db/tipi";
-import { giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
+import { formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale, prossimoLunedi } from "@/lib/dataGiorno";
+import { cambiaDal } from "@/lib/repository/modifichePasti";
 
 // La pagina Pasti e orari (passo 3, PUNTO_DI_PARTENZA.md sezione 3, "Pasti
 // e orari"): qui si controlla che la pagina scelga giusto quando chiedere
@@ -78,13 +79,18 @@ describe("Pagina Pasti e orari", () => {
     expect(screen.queryByText("Merenda")).toBeNull();
   });
 
-  it("solo l'ora: si scrive subito, senza domanda, e Annulla la rimette", async () => {
+  it("solo l'ora: domanda «Subito» o «Da una data»; Subito si scrive su tutta la riga, e Annulla la rimette", async () => {
     const sheet = await apriPasto("Cena");
     scrivi(sheet, "Inizia alle", "20:00");
     fireEvent.click(within(sheet).getByRole("button", { name: "Salva" }));
 
+    const domanda = await screen.findByRole("dialog", { name: "«Cena» alle 20:00" });
+    expect(within(domanda).getByRole("button", { name: /^Subito/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(domanda).getByRole("button", { name: /^Da una data/ })).toBeTruthy();
+    fireEvent.click(within(domanda).getByRole("button", { name: "Cambia orario" }));
+
     await waitFor(async () => expect((await db.pasti.get("cena"))?.ora_inizio).toBe("20:00"));
-    expect(screen.queryByText("Da quando vale?")).toBeNull();
+    expect((await db.pasti.get("cena"))?.valido_al ?? null).toBeNull();
     // L'"Annulla" della barra, non quello dello sheet: la scrittura in
     // Dexie finisce un attimo prima che lo sheet si chiuda, e cercare il
     // pulsante per nome in quell'attimo trovava quello dello sheet (test
@@ -326,5 +332,144 @@ describe("Pagina Pasti e orari — Elimina pasto", () => {
       const vive = (await db.voci_diario.toArray()).filter((v) => v.pasto_id === "pranzo" && v.deleted_at === null);
       expect(vive.map((v) => v.data).sort()).toEqual([IERI, OGGI, domani, traTre]);
     });
+  });
+});
+
+// Passo 5: "Da una data" nella domanda (PUNTO_DI_PARTENZA.md, sezione 3,
+// "Date future e cambi programmati"). Le date si contano da oggi: il test
+// gira in qualunque giorno.
+describe("Pagina Pasti e orari — Da una data", () => {
+  const DOMANI = giornoSuccessivo(OGGI);
+  const DOPODOMANI = giornoSuccessivo(DOMANI);
+  const TRA_TRE = giornoSuccessivo(DOPODOMANI);
+
+  async function scegliData(domanda: HTMLElement, data: string) {
+    fireEvent.click(within(domanda).getByRole("button", { name: /^Da una data/ }));
+    const campo = within(domanda).getByLabelText("Dal giorno") as HTMLInputElement;
+    fireEvent.change(campo, { target: { value: data } });
+    return campo;
+  }
+
+  it("rinomina: la data proposta è il prossimo lunedì; scelto un giorno, nome e ora nuovi valgono da lì", async () => {
+    const sheet = await apriPasto("Pranzo");
+    scrivi(sheet, "Nome", "Pranzo 1");
+    scrivi(sheet, "Inizia alle", "14:30");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Salva" }));
+    const domanda = await screen.findByRole("dialog", { name: "«Pranzo» diventa «Pranzo 1»" });
+
+    fireEvent.click(within(domanda).getByRole("button", { name: /^Da una data/ }));
+    const campo = within(domanda).getByLabelText("Dal giorno") as HTMLInputElement;
+    expect(campo.value).toBe(prossimoLunedi(OGGI));
+    expect(campo.min).toBe(DOMANI);
+    fireEvent.change(campo, { target: { value: DOPODOMANI } });
+    expect(
+      within(domanda).getByText(`Per un cambio dieta già deciso. Fino a ${formattaGiornoCorto(DOMANI)} resta «Pranzo».`)
+    ).toBeTruthy();
+    fireEvent.click(within(domanda).getByRole("button", { name: "Rinomina" }));
+
+    await waitFor(async () => expect((await db.pasti.get("pranzo"))?.valido_al).toBe(DOMANI));
+    expect((await db.pasti.get("pranzo"))?.ora_inizio).toBe("12:30");
+    const nuovo = (await db.pasti.toArray()).find((p) => p.nome === "Pranzo 1");
+    expect(nuovo).toMatchObject({ valido_dal: DOPODOMANI, valido_al: null, ora_inizio: "14:30", ordine: 2 });
+    const barra = await screen.findByRole("status");
+    expect(barra.textContent).toContain(`Programmato dal ${formattaGiornoCorto(DOPODOMANI)}:`);
+    expect(barra.textContent).toContain("Pranzo → Pranzo 1");
+  });
+
+  it("solo l'ora da una data: fino al giorno prima resta l'ora di prima", async () => {
+    const sheet = await apriPasto("Cena");
+    scrivi(sheet, "Inizia alle", "20:00");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Salva" }));
+    const domanda = await screen.findByRole("dialog", { name: "«Cena» alle 20:00" });
+    await scegliData(domanda, DOPODOMANI);
+    expect(within(domanda).getByText(`Fino a ${formattaGiornoCorto(DOMANI)} inizia alle 19:30.`)).toBeTruthy();
+    fireEvent.click(within(domanda).getByRole("button", { name: "Cambia orario" }));
+
+    await waitFor(async () => expect((await db.pasti.get("cena"))?.valido_al).toBe(DOMANI));
+    expect((await db.pasti.get("cena"))?.ora_inizio).toBe("19:30:00");
+    const nuova = (await db.pasti.toArray()).find((p) => p.nome === "Cena" && p.id !== "cena");
+    expect(nuova).toMatchObject({ valido_dal: DOPODOMANI, ora_inizio: "20:00" });
+    expect((await screen.findByRole("status")).textContent).toContain("inizierà alle 20:00.");
+  });
+
+  it("aggiungi da una data: il pasto compare da quel giorno", async () => {
+    render(<PastiEOrariPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "+ Aggiungi pasto" }));
+    const sheet = screen.getByRole("dialog");
+    scrivi(sheet, "Nome", "Spuntino sera");
+    scrivi(sheet, "Inizia alle", "21:30");
+    fireEvent.click(within(sheet).getByRole("button", { name: /^(Continua|Salva)$/ }));
+    const domanda = await screen.findByRole("dialog", { name: "Da quando c'è «Spuntino sera»?" });
+    await scegliData(domanda, TRA_TRE);
+    fireEvent.click(within(domanda).getByRole("button", { name: "Aggiungi pasto" }));
+
+    await waitFor(async () =>
+      expect((await db.pasti.toArray()).find((p) => p.nome === "Spuntino sera")).toMatchObject({ valido_dal: TRA_TRE })
+    );
+    expect((await screen.findByRole("status")).textContent).toContain(`Programmato dal ${formattaGiornoCorto(TRA_TRE)}:`);
+  });
+
+  it("elimina da una data: le voci da quel giorno in poi nella spiegazione, nella conferma e nella barra", async () => {
+    await db.voci_diario.put(voce("v-futura", "pranzo", TRA_TRE));
+    const sheet = await apriPasto("Pranzo");
+    const pulsante = within(sheet).getByRole("button", { name: "Elimina pasto" }) as HTMLButtonElement;
+    await waitFor(() => expect(pulsante.disabled).toBe(false));
+    fireEvent.click(pulsante);
+    const domanda = await screen.findByRole("dialog", { name: "Eliminare «Pranzo»?" });
+    await scegliData(domanda, DOPODOMANI);
+    expect(
+      within(domanda).getByText(
+        `Resta fino a ${formattaGiornoCorto(DOMANI)}, poi non compare più. Le voci dal ${formattaGiornoCorto(DOPODOMANI)} vengono eliminate.`
+      )
+    ).toBeTruthy();
+    fireEvent.click(within(domanda).getByRole("button", { name: "Continua" }));
+
+    const conferma = await screen.findByRole("alertdialog", { name: "Eliminare anche 1 voce?" });
+    expect(conferma.textContent).toContain(
+      `«Pranzo» ha 1 voce in 1 giorno, dal ${formattaGiornoCorto(DOPODOMANI)}, per 52 kcal.`
+    );
+    fireEvent.click(within(conferma).getByRole("button", { name: "Elimina pasto e 1 voce" }));
+
+    await waitFor(async () => expect((await db.pasti.get("pranzo"))?.valido_al).toBe(DOMANI));
+    expect((await db.voci_diario.get("v-futura"))?.deleted_at).not.toBeNull();
+    expect((await db.voci_diario.get("v-oggi"))?.deleted_at).toBeNull();
+    const barra = await screen.findByRole("status");
+    expect(barra.textContent).toContain(`non ci sarà più dal ${formattaGiornoCorto(DOPODOMANI)} (1 voce).`);
+  });
+
+  it("con un cambio già programmato la data arriva fino a quel giorno: oltre, errore e pulsante spento", async () => {
+    await cambiaDal({ id: "pranzo", nome: "Pranzo 1", ora: "12:30", dal: DOPODOMANI, oggi: OGGI });
+    const sheet = await apriPasto("Pranzo");
+    scrivi(sheet, "Nome", "Pranzo X");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Salva" }));
+    const domanda = await screen.findByRole("dialog", { name: "«Pranzo» diventa «Pranzo X»" });
+    const campo = await scegliData(domanda, TRA_TRE);
+
+    expect(campo.max).toBe(DOPODOMANI);
+    expect(
+      within(domanda).getByText(`Scegli un giorno fra ${formattaGiornoCorto(DOMANI)} e ${formattaGiornoCorto(DOPODOMANI)}.`)
+    ).toBeTruthy();
+    expect(
+      within(domanda).getByText(`Il ${formattaGiornoCorto(DOPODOMANI)} è già programmato un cambio: scegliendo quel giorno lo modifichi.`)
+    ).toBeTruthy();
+    expect((within(domanda).getByRole("button", { name: "Rinomina" }) as HTMLButtonElement).disabled).toBe(true);
+
+    // Lo stesso giorno del cambio: lo sostituisce.
+    fireEvent.change(campo, { target: { value: DOPODOMANI } });
+    expect(within(domanda).getByText(`Il ${formattaGiornoCorto(DOPODOMANI)} c'è già un cambio programmato: lo sostituisce.`)).toBeTruthy();
+    fireEvent.click(within(domanda).getByRole("button", { name: "Rinomina" }));
+    await waitFor(async () => expect((await db.pasti.toArray()).some((p) => p.nome === "Pranzo X")).toBe(true));
+    expect((await db.pasti.toArray()).some((p) => p.nome === "Pranzo 1" && p.deleted_at === null)).toBe(false);
+    expect((await screen.findByRole("status")).textContent).toContain(`Cambio del ${formattaGiornoCorto(DOPODOMANI)} modificato:`);
+  });
+
+  it("un pasto nato oggi: cambiando l'ora nessuna domanda, si scrive subito", async () => {
+    await db.pasti.put(riga("brunch", "Brunch", "11:00", { ordine: 5, valido_dal: OGGI }));
+    const sheet = await apriPasto("Brunch");
+    scrivi(sheet, "Inizia alle", "11:15");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Salva" }));
+
+    await waitFor(async () => expect((await db.pasti.get("brunch"))?.ora_inizio).toBe("11:15"));
+    expect(screen.queryByText("Da quando vale?")).toBeNull();
   });
 });

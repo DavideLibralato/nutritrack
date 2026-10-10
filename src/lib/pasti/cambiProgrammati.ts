@@ -24,7 +24,7 @@
 
 import { v5 as uuidv5 } from "uuid";
 import type { Pasto } from "../db/tipi";
-import { giornoPrecedente, giornoSuccessivo } from "../dataGiorno";
+import { eGiornoVero, formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, prossimoLunedi } from "../dataGiorno";
 import { chiaveNome, normalizzaOra } from "./controlliPasti";
 import { pastiValidiIl } from "./validitaPasti";
 
@@ -183,4 +183,22 @@ export function limitiDaUnaData(pasto: Pasto, righe: Pasto[], oggi: string): Lim
   const continua = cambioSuccessivo !== null && cambioSuccessivo.tipo !== "elimina";
   const max = continua ? dopo : al;
   return { min, max, disponibile: max >= min, cambioSuccessivo };
+}
+
+// La data proposta da "Da una data": il prossimo lunedì (come nel mockup),
+// o l'ultimo giorno possibile se il lunedì va oltre.
+export function dataProposta(limiti: LimitiDaUnaData, oggi: string): string {
+  const lunedi = prossimoLunedi(oggi);
+  return limiti.max !== null && lunedi > limiti.max ? limiti.max : lunedi;
+}
+
+// Cosa non va nella data scelta, o null. Un campo data col `min`/`max` non
+// basta: alcuni browser lasciano digitare un giorno fuori.
+export function erroreDataDaUnaData(data: string, limiti: LimitiDaUnaData): string | null {
+  const dentro =
+    eGiornoVero(data) && data >= limiti.min && (limiti.max === null || data <= limiti.max);
+  if (dentro) return null;
+  return limiti.max === null
+    ? `Scegli un giorno da ${formattaGiornoCorto(limiti.min)} in poi.`
+    : `Scegli un giorno fra ${formattaGiornoCorto(limiti.min)} e ${formattaGiornoCorto(limiti.max)}.`;
 }
