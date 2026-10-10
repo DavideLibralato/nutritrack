@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Sincronizzazione: il pallino sulla tab Impostazioni
+
+Branch `sync-stato`. Ultimo pezzo dell'indicatore: un pallino arancio
+sull'icona della voce Impostazioni, solo per accantonate, accesso scaduto
+e server che rifiuta dal secondo giro fallito di fila; spento senza rete.
+`usePallinoSincronizzazione` (stesso hook della pagina), disegnato in
+`BarraNavigazione`. Difetto trovato dal test e corretto prima del commit:
+il testo per lo screen reader stava prima del nome della voce ("…da
+controllare Impostazioni"); ora viene dopo. 5 test in
+`BarraNavigazione.test.tsx` (primo test della barra); 4 rotture di prova
+prese, ripristino dalla copia. 712 test verdi in 63 file. Da provare su
+iPhone. Documenti: PUNTO §3, §9.2, §11.
+
 ## 2026-10-10 — Sincronizzazione: lo stato nella riga di Impostazioni
 
 Branch `sync-stato`. Mockup "2 · Pallino + testo": a destra della riga

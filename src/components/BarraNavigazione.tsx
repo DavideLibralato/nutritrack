@@ -29,8 +29,13 @@
 // (GuardianoModifiche), toccarle chiede prima "Esci senza salvare?". Vale
 // anche per la voce già attiva: da una sotto-pagina di Impostazioni riporta
 // all'elenco, come su iPhone.
+//
+// Sulla voce Impostazioni, un pallino arancio quando la sincronizzazione
+// chiede attenzione (usePallinoSincronizzazione, dal 10/10): sull'icona,
+// con il suo bordo del colore della pillola per staccarlo dal disegno.
 
 import LinkProtetto from "./LinkProtetto";
+import { usePallinoSincronizzazione } from "@/lib/sync/usePallinoSincronizzazione";
 import { usePathname } from "next/navigation";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
@@ -42,6 +47,7 @@ const VOCI = [
 
 export default function BarraNavigazione() {
   const percorso = usePathname();
+  const pallino = usePallinoSincronizzazione();
 
   return (
     <>
@@ -70,8 +76,22 @@ export default function BarraNavigazione() {
                     attiva ? "bg-[var(--capsula-attiva)] font-medium text-[var(--testo-capsula)]" : "text-muted"
                   } ${CLASSE_FOCUS}`}
                 >
-                  <Icona nome={voce.etichetta} />
+                  <span className="relative">
+                    <Icona nome={voce.etichetta} />
+                    {voce.href === "/impostazioni" && pallino && (
+                      <span
+                        aria-hidden="true"
+                        data-pallino-sincronizzazione
+                        className="absolute -top-0.5 -right-1 size-2.5 rounded-full bg-warning ring-2 ring-surface"
+                      />
+                    )}
+                  </span>
                   {voce.etichetta}
+                  {/* Il pallino si vede soltanto: a uno screen reader la
+                      voce lo dice a parole, dopo il nome. */}
+                  {voce.href === "/impostazioni" && pallino && (
+                    <span className="sr-only">, sincronizzazione da controllare</span>
+                  )}
                 </LinkProtetto>
               </li>
             );

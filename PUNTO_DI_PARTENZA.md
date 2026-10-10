@@ -841,8 +841,8 @@ valgono oggi), Peso; **App**: Aspetto, Sincronizzazione;
 passi di questa pagina, le righe che mancano rispetto alla struttura
 finale:
 - **Preferiti e pasti salvati** (gruppo App);
-- ~~l'indicatore di sincronizzazione~~: pagina e riga fatte il 10/10
-  (sezione 9.2, "L'indicatore"); manca il pallino sulla tab.
+- ~~l'indicatore di sincronizzazione~~: pagina, riga e pallino sulla tab
+  fatti il 10/10 (sezione 9.2, "L'indicatore"), da provare su iPhone.
 
 ### Obiettivi (dal 3/10, passo "obiettivi")
 
@@ -2569,7 +2569,12 @@ pura con i test):
 
 Un errore resta a schermo mentre parte il giro dopo: sparisce quando un
 giro finisce bene. **Pallino** sulla tab: stati 1–3, il 3 dal secondo giro
-fallito di fila (da fare).
+fallito di fila. Arancio, sull'icona della voce Impostazioni, con un
+bordo del colore della pillola (`usePallinoSincronizzazione`, disegnato in
+`BarraNavigazione`). Mai per "senza rete", "in corso" o "tutto salvato";
+si spegne da solo quando un giro finisce bene. Uno screen reader legge la
+voce come "Impostazioni, sincronizzazione da controllare" (testo nascosto
+alla vista, dopo il nome).
 
 **La riga nell'elenco** di Impostazioni (dal 10/10, mockup "2 · Pallino +
 testo"): a destra di "Sincronizzazione" un pallino colorato e lo stato in
@@ -3326,11 +3331,12 @@ la pagina.
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
-  arriva mai all'utente, la UI conferma dal passo locale. In corso sul
-  branch `sync-stato` (sezione 9.2, "L'indicatore"): fatti la sync che non
+  arriva mai all'utente, la UI conferma dal passo locale. Costruito sul
+  branch `sync-stato` (sezione 9.2, "L'indicatore"): la sync che non
   consuma tentativi senza rete, il tempo massimo delle richieste, lo
-  stato con le sue priorità, il mockup, la pagina e la riga nell'elenco
-  (da provare su iPhone); manca il pallino sulla tab
+  stato con le sue priorità, la pagina, la riga nell'elenco e il pallino
+  sulla tab. **Da provare su iPhone** (Davide, account di prova,
+  anteprima) prima del merge
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
