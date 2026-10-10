@@ -85,15 +85,21 @@ function stessoContenuto(a: VoceDiario, b: VoceDiario): boolean {
 // Annulla l'operazione della fotografia. Restituisce quante righe ha
 // riscritto davvero (0 se era già tutto annullato).
 //
-// `pastoSostituito` (dal 9/10, Elimina pasto "anche nei giorni passati"):
-// le voci RICREATE che stavano sul pasto `da` nascono sul pasto `a`. Il
-// pasto eliminato non torna in vita (stessa regola delle voci): l'Annulla
-// ne crea uno nuovo, e le voci devono andare lì, non sotto un pasto
-// cancellato. Tocca solo le voci ricreate; una voce ancora viva torna ai
-// suoi valori di prima com'era.
+// `pastiSostituiti` (dal 9/10, Elimina pasto): id del pasto di prima → id
+// del pasto su cui ricreare. Le voci RICREATE che stavano su un pasto della
+// mappa nascono su quello indicato. Un pasto eliminato non torna in vita
+// (stessa regola delle voci): l'Annulla ne crea uno nuovo, o ne riapre un
+// altro dello stesso filo (passo 5), e le voci devono andare lì, non sotto
+// un pasto cancellato. Tocca solo le voci ricreate; una voce ancora viva
+// torna ai suoi valori di prima com'era.
+//
+// Una voce ricreata nasce SENZA il segno `eliminata_dal_cambio` (passo 5):
+// è una voce nuova e viva. Se lo ereditasse dalla voce cancellata, una
+// cancellazione a mano futura la lascerebbe col segno, e un Annulla dalla
+// scheda la rimetterebbe — mentre una voce cancellata a mano non torna mai.
 export async function annullaOperazione(
   foto: FotografiaVoci,
-  { pastoSostituito }: { pastoSostituito?: { da: string; a: string } } = {}
+  { pastiSostituiti = {} }: { pastiSostituiti?: Record<string, string> } = {}
 ): Promise<number> {
   let scritte = 0;
 
@@ -118,7 +124,8 @@ export async function annullaOperazione(
     const idNuovo = idVoceRicreata(prima.id);
     if (await repositoryVociDiario.ottieniPerId(idNuovo)) continue;
     const dati = contenuto(prima);
-    if (pastoSostituito && dati.pasto_id === pastoSostituito.da) dati.pasto_id = pastoSostituito.a;
+    delete dati.eliminata_dal_cambio;
+    if (dati.pasto_id !== null && pastiSostituiti[dati.pasto_id]) dati.pasto_id = pastiSostituiti[dati.pasto_id];
     await repositoryVociDiario.crea(dati, idNuovo);
     scritte++;
   }

@@ -291,7 +291,7 @@ export default function PastiEOrariPage() {
     const daOggi = scelta === "oggi";
     setErroreDomanda(null);
     void esegui(async () => {
-      const { fotografia, pasto } = await aggiungiPasto({ userId, nome, ora, daOggi, oggi: oggiLocale() });
+      const { fotografia, pasto } = await aggiungiPasto({ userId, nome, ora, dal: daOggi ? oggiLocale() : null, oggi: oggiLocale() });
       return {
         fotografia,
         messaggio: {

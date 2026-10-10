@@ -179,14 +179,41 @@ export interface RegoleElimina {
 }
 
 export function regoleElimina(pasto: Pasto, righe: Pasto[], oggi: string): RegoleElimina {
-  const altri = righe.filter((r) => r.id !== pasto.id);
-  const periodo = periodoDi(pasto);
-  const daOggi: Periodo = { dal: periodo.dal !== null && periodo.dal > oggi ? periodo.dal : oggi, al: periodo.al };
+  // Con i cambi programmati (passo 5) l'eliminazione tocca anche le righe
+  // future del filo: i giorni da coprire arrivano fino alla fine del filo,
+  // e quelle righe non contano fra i pasti che restano.
+  const toccate = righeDaTagliare(pasto, righe, oggi);
+  const ids = new Set(toccate.map((r) => r.id));
+  const altri = righe.filter((r) => !ids.has(r.id));
+  const fine = toccate.some((r) => (r.valido_al ?? null) === null)
+    ? null
+    : toccate.reduce((max, r) => ((r.valido_al as string) > max ? (r.valido_al as string) : max), "");
+  const dal = pasto.valido_dal ?? null;
+  const daOggi: Periodo = { dal: dal !== null && dal > oggi ? dal : oggi, al: fine };
   return {
     motivoSpento: periodoCoperto(daOggi, altri) ? null : ERRORE_UNICO_PASTO,
     senzaDomanda: iniziaOggiODopo(pasto, oggi),
-    motivoPassatiSpento: periodoCoperto(periodo, altri) ? null : ERRORE_GIORNI_SENZA_PASTI,
+    motivoPassatiSpento: periodoCoperto({ dal, al: fine }, altri) ? null : ERRORE_GIORNI_SENZA_PASTI,
   };
+}
+
+// Le righe che un'eliminazione tocca (passo 5): il pasto (la riga valida
+// oggi) e le righe del suo filo che cominciano dopo oggi, cioè i suoi cambi
+// programmati (una rinomina o un'ora nuova da una data). Tagliare il pasto
+// senza di loro lo farebbe ricomparire il giorno del cambio. Il filo è lo
+// stesso `ordine` (sezione 4, "pasti"); le sue righe passate (rinomine già
+// avvenute) non si toccano.
+export function righeDaTagliare(pasto: Pasto, righe: Pasto[], oggi: string): Pasto[] {
+  const future = righe.filter(
+    (r) =>
+      r.deleted_at === null &&
+      r.id !== pasto.id &&
+      r.user_id === pasto.user_id &&
+      r.ordine === pasto.ordine &&
+      (r.valido_dal ?? null) !== null &&
+      (r.valido_dal as string) > oggi
+  );
+  return [pasto, ...future];
 }
 
 // L'`ordine` di un pasto aggiunto: il più alto fra TUTTE le righe

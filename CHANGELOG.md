@@ -5,6 +5,37 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Pasti e orari, passo 5c: le scritture da una data
+
+Branch `pasti-date`. Le scritture dei cambi programmati e i loro Annulla,
+senza ancora interfaccia. Migration `voci_eliminata_dal_cambio` applicata
+il 10/10 da Claude in Cowork prima di questo commit e verificata.
+
+- `cambiaDal` (`modifichePasti.ts`): nome e/o ora da un giorno, oggi o una
+  data. Taglia la riga del filo valida quel giorno e sposta le voci da lì
+  in poi; la stessa data corregge il cambio già programmato. La riga
+  vecchia tiene la sua ora (l'orario segue la data): **cambia la rinomina
+  "da oggi" già su main**, che dava l'ora nuova anche alla riga vecchia.
+  `rinominaDaOggi` ora la chiama con il giorno di oggi.
+- `aggiungiPasto` con `dal` (da sempre, da oggi o da una data).
+- `eliminaPasto` "da una data", e il taglio di tutto il filo anche per "da
+  oggi" e "anche nei giorni passati" (`righeDaTagliare`,
+  `regoleElimina`): **difetto latente chiuso**, un pasto con un cambio
+  programmato sarebbe ricomparso il giorno del cambio. Le voci tagliate da
+  un giorno prendono il segno `eliminata_dal_cambio`.
+- Annulla della barra: ricrea anche le righe del filo tagliate (id v5) con
+  le loro voci. `annullaOperazione` prende una mappa `pastiSostituiti` e
+  ricrea le voci senza il segno.
+- `annullaCambioProgrammato`, l'Annulla dalle schede: nuovo (non se ha
+  voci), rinomina e orario (la vecchia riprende la fine della nuova),
+  elimina (rimette le voci col segno cercandole in tutto il filo, anche
+  quelle di una rinomina programmata tagliata).
+- Documenti: PUNTO §3 e §4 (la migration non è più "in arrivo").
+- Test: 24 nuovi e 2 riscritti (`modifichePasti`, `controlliPasti`,
+  `vociDiario`), compreso il caso di Davide e quello del filo, provati a
+  vuoto rompendo il codice da una copia (15 rotture). 634 test verdi in 55
+  file.
+
 ## 2026-10-10 — Pasti e orari, passo 5b: la colonna del segno (migration da sola)
 
 Branch `pasti-date`. Il segno sulle voci cancellate da "Elimina pasto da

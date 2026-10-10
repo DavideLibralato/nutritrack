@@ -573,17 +573,32 @@ describe("duplica: il pasto di destinazione deve esistere quel giorno", () => {
 
 // Elimina pasto (passo 4): l'Annulla ricrea le voci eliminate sul pasto
 // RICREATO, non sotto quello cancellato. Senza l'opzione, niente cambia.
-describe("annullaOperazione con pastoSostituito", () => {
-  it("le voci ricreate del pasto 'da' nascono sul pasto 'a'; le altre restano dov'erano", async () => {
+describe("annullaOperazione con pastiSostituiti", () => {
+  it("le voci ricreate di un pasto della mappa nascono sul pasto indicato; le altre restano dov'erano", async () => {
     const userId = crypto.randomUUID();
     const pasta = await creaVoce(userId, "Pasta", { pastoId: "pranzo-vecchio" });
+    const pane = await creaVoce(userId, "Pane", { pastoId: "pranzo-dopo" });
     const caffe = await creaVoce(userId, "Caffè", { pastoId: "colazione" });
-    const foto = await eliminaVoci([pasta.id, caffe.id]);
+    const foto = await eliminaVoci([pasta.id, pane.id, caffe.id]);
 
-    await annullaOperazione(foto, { pastoSostituito: { da: "pranzo-vecchio", a: "pranzo-nuovo" } });
+    await annullaOperazione(foto, { pastiSostituiti: { "pranzo-vecchio": "pranzo-nuovo", "pranzo-dopo": "pranzo-nuovo" } });
 
     expect((await db.voci_diario.get(idVoceRicreata(pasta.id)))?.pasto_id).toBe("pranzo-nuovo");
+    expect((await db.voci_diario.get(idVoceRicreata(pane.id)))?.pasto_id).toBe("pranzo-nuovo");
     expect((await db.voci_diario.get(idVoceRicreata(caffe.id)))?.pasto_id).toBe("colazione");
+  });
+
+  it("la voce ricreata nasce senza il segno della cancellazione (passo 5)", async () => {
+    const userId = crypto.randomUUID();
+    const pasta = await creaVoce(userId, "Pasta", { pastoId: "pranzo" });
+    await repositoryVociDiario.aggiorna(pasta.id, { deleted_at: "2026-10-10T08:00:00.000Z", eliminata_dal_cambio: "cambio-1" });
+    const cancellata = (await db.voci_diario.get(pasta.id))!;
+
+    await annullaOperazione({ prima: [cancellata], idCreate: [] });
+
+    const ricreata = await db.voci_diario.get(idVoceRicreata(pasta.id));
+    expect(ricreata).toMatchObject({ deleted_at: null, nome_alimento: "Pasta" });
+    expect("eliminata_dal_cambio" in ricreata!).toBe(false);
   });
 
   it("senza l'opzione, la voce ricreata torna sul suo pasto di prima", async () => {

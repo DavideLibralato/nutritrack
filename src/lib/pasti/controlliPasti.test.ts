@@ -238,3 +238,22 @@ describe("regoleElimina", () => {
     });
   });
 });
+
+// Passo 5: con un cambio programmato l'eliminazione taglia anche la riga
+// futura del filo (stesso `ordine`), quindi i giorni da coprire arrivano
+// fino alla fine del filo, non solo a quella della riga di oggi.
+describe("regoleElimina con un cambio programmato", () => {
+  const pranzo = pasto("pranzo", "Pranzo", "12:30", { ordine: 2, valido_al: "2026-10-11" });
+  const pranzo1 = pasto("pranzo-1", "Pranzo 1", "12:30", { ordine: 2, valido_dal: "2026-10-12" });
+
+  it("un altro pasto che finisce prima della fine del filo non basta", () => {
+    const cena = pasto("cena", "Cena", "19:30", { ordine: 4, valido_al: "2026-10-13" });
+    expect(regoleElimina(pranzo, [pranzo, pranzo1, cena], OGGI).motivoSpento).toBe(ERRORE_UNICO_PASTO);
+  });
+
+  it("un altro pasto che copre tutto il filo sì; la riga futura non conta fra quelli che restano", () => {
+    const cena = pasto("cena", "Cena", "19:30", { ordine: 4 });
+    expect(regoleElimina(pranzo, [pranzo, pranzo1, cena], OGGI).motivoSpento).toBeNull();
+    expect(regoleElimina(pranzo, [pranzo, pranzo1], OGGI).motivoSpento).toBe(ERRORE_UNICO_PASTO);
+  });
+});

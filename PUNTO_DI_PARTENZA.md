@@ -1302,8 +1302,10 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
   sicurezza ("Non più in uso"), da lì la si porta via.
 
 **Date future e cambi programmati** (passo 5, deciso il 10/10, **in
-costruzione** sul branch `pasti-date`: fatta la logica pura,
-`src/lib/pasti/cambiProgrammati.ts`; il resto qui sotto è il progetto).
+costruzione** sul branch `pasti-date`: fatte la logica pura,
+`src/lib/pasti/cambiProgrammati.ts`, e le scritture con i loro Annulla,
+`src/lib/repository/modifichePasti.ts`; mancano la domanda "da quando"
+con la data e le schede nella pagina).
 Mockup: `docs/mockups/pasti-e-orari.html`, "A · Righe" e "2 · Schede per
 data".
 - **"Da una data"**: terza scelta della domanda "da quando" per
@@ -1323,8 +1325,8 @@ data".
   **Da una data**. Una rinomina "da una data" che cambia anche l'ora
   porta nome e ora nuovi da quel giorno; fino al giorno prima resta tutto
   com'era ("Pranzo" alle 12:30 fino al 12, "Pranzo 1" alle 14:30 dal 13).
-  Così farà anche la rinomina "da oggi": la riga vecchia tiene la sua ora
-  *(oggi su main la riga vecchia prende l'ora nuova: cambia col passo 5)*.
+  Così fa anche la rinomina "da oggi": la riga vecchia tiene la sua ora
+  *(fino al passo 5 prendeva anche lei l'ora nuova)*.
   L'ordine nei giorni passati e futuri segue l'ora delle righe valide quel
   giorno (`pastiValidiIl`, già così).
 - **Ogni cambio "da D"** è un taglio del filo al giorno D:
@@ -1361,9 +1363,11 @@ data".
     voci della nuova tornano sulla vecchia, la nuova si cancella;
   - elimina: la riga si riapre (senza fine) e **tornano le voci col segno
     di quel cambio, cercate in tutto il filo** (anche quelle che stavano
-    su una rinomina programmata tagliata), ricreate sulla riga riaperta,
-    anche se il loro giorno è passato; una voce già viva o già ricreata si
-    salta. Non tornano le righe del filo tagliate (nessuna riga rimessa in
+    su una rinomina programmata tagliata), ricreate sulla riga riaperta
+    (sono tutte dal giorno del cambio in poi, quindi ancora future: una
+    scheda esiste solo finché la sua data non arriva), senza il segno; una
+    voce già viva o già ricreata si salta, e una cancellata a mano non ha
+    il segno e non torna. Non tornano le righe del filo tagliate (nessuna riga rimessa in
     vita);
   - nuovo: la riga si cancella, ma non se ha già delle voci.
 - **Due telefoni**: le righe nuove si sommano senza problemi; se tutti e
@@ -1599,13 +1603,14 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
   viene corretto nel catalogo, la storia passata non deve cambiare
 - **`eliminata_dal_cambio`** (`uuid`, nullable, nessun default, nessun
   vincolo né indice; migration `voci_eliminata_dal_cambio`, testo in
-  `supabase/migrations/voci_eliminata_dal_cambio.sql`, **non ancora
-  applicata**: va in produzione prima di qualunque build, anteprime
-  comprese, che scrive la colonna, perché la sync manda la riga intera e
-  una colonna che il server non ha fa fallire l'invio. Su Dexie
-  `version(7)`, stessi indici della 6: il campo è facoltativo, una voce
-  salvata prima non ha la chiave e vale null): il SEGNO di una voce cancellata da "Elimina pasto da una
-  data" (o "da oggi", che è la stessa operazione). Vale l'id del cambio,
+  `supabase/migrations/voci_eliminata_dal_cambio.sql`, applicata il 10/10
+  e verificata: colonna presente col suo commento, RLS attiva, advisors
+  senza avvisi nuovi. Su Dexie `version(7)`, stessi indici della 6: il
+  campo è facoltativo, una voce salvata prima non ha la chiave e vale
+  null): il SEGNO di una voce cancellata da "Elimina pasto da una data" (o
+  "da oggi", che è la stessa operazione). Lo scrive `eliminaPasto`
+  (`src/lib/repository/modifichePasti.ts`) nella stessa scrittura di
+  `deleted_at`; una voce ricreata da un Annulla nasce senza. Vale l'id del cambio,
   `idCambio(riga di pasti chiusa, data)` in `cambiProgrammati.ts`: UUID v5
   calcolato da riga e data, non salvato altrove. Null per le voci vive e
   per quelle cancellate in ogni altro modo, a mano comprese: quelle non
@@ -3122,7 +3127,7 @@ ricrea il pasto e le voci future. **Da provare** il giorno che cambia
 `modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
 le pagine Oggi, Aggiungi e Pasti e orari.
 
-**Test.** 610 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
+**Test.** 634 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
