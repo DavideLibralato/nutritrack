@@ -636,7 +636,7 @@ per la modifica di un pasto salvato. Su Supabase `voci_diario.quantita_g` e
 regole:
 - un numero **maggiore di zero e al massimo 99999,99**. Oltre, Dexie lo
   salverebbe e la sync fallirebbe in silenzio (la voce viene accantonata dopo
-  5 tentativi);
+  5 rifiuti del server);
 - **arrotondato a due decimali prima di scrivere**, come fa il server. Senza,
   Dexie terrebbe 12,345 e il server 12,35. Un valore che arrotondato fa 0
   non vale.
@@ -2332,6 +2332,21 @@ Come, in concreto:
     `online`, il ritorno in primo piano, "Sincronizza ora", Esci, il
     ripristino. Prima ogni chiamata faceva un giro suo: le 14 scritture di
     una transazione facevano 14 giri in parallelo, 196 invii invece di 14
+  - **la coda si ferma al primo errore; una voce si accantona dopo 5
+    rifiuti del server** (`sospesa_il`: resta in Dexie, esclusa dai giri,
+    così non blocca le altre). Conta come rifiuto solo una risposta del
+    server sulla riga, decisa dallo status HTTP e non dal testo
+    dell'errore (dal 10/10): con status 0 (la richiesta non è arrivata:
+    niente rete, rete caduta) o 401 (sessione scaduta) la coda aspetta il
+    giro dopo senza contare tentativi. Un'eccezione durante l'invio invece
+    conta: senza rete Supabase risponde con status 0 e non lancia, quindi
+    un'eccezione è più probabilmente un guasto su quella riga, che se non
+    contasse fermerebbe la coda per sempre. Prima contava ogni fallimento, e
+    offline, dove ogni scrittura fa un giro, dopo 5 scritture la prima
+    voce veniva accantonata senza che il server l'avesse mai vista.
+    Rischio accettato: un guasto permanente che arriva come status 0
+    ferma la coda senza accantonare; non si perde niente, e l'indicatore
+    di sincronizzazione lo mostrerà come un'attesa che dura
 - **discesa**: legge da Supabase le righe cambiate e le scrive in Dexie
   (`src/lib/sync/discesa.ts`) — senza questa metà, Supabase era solo una
   destinazione: un dispositivo nuovo non vedeva mai i dati già presenti sul
@@ -2952,7 +2967,8 @@ configurazione Vercel mantenute, codice della v0 consultabile sul tag
 **Punto 0 — local-first** (sezione 9.2). Dexie è a `version(6)`: le 11
 tabelle più `outbox` e `sync_cursori`. Repository unico per ogni scrittura;
 salita dall'outbox con i genitori prima dei figli (dal 9/10), che si ferma
-al primo errore e accantona una voce dopo 5 tentativi falliti; scritture
+al primo errore e accantona una voce dopo 5 rifiuti del server (rete
+assente e sessione scaduta non contano, dal 10/10); scritture
 del repository possibili dentro una transazione Dexie; discesa incrementale e paginata; `orchestratore.ts`
 (discesa prima della salita, tre inneschi); id deterministici per i pasti
 predefiniti e per le righe di `giorni`; "Ricarica i dati dal tuo account"

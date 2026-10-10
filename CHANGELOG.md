@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Sincronizzazione: offline non si accantona più niente
+
+Branch `sync-stato`. Primo commit dell'indicatore di sincronizzazione, da
+solo perché cambia la sync di tutta l'app. Difetto trovato nell'analisi:
+senza rete Supabase non lancia un'eccezione ma risponde `{ error }` con
+status 0, e il giro lo contava come tentativo. Offline ogni scrittura fa
+un giro, quindi dopo 5 scritture la prima voce in coda veniva accantonata
+senza che il server l'avesse mai vista. Ora conta solo un rifiuto vero del
+server, deciso dallo status HTTP (`rifiutoDelServer` in `sincronizza.ts`):
+con 0 (rete) e 401 (sessione scaduta, decisione di Davide) la coda aspetta
+il giro dopo senza contare tentativi, tenendo `ultimo_errore`.
+Un'eccezione durante l'invio invece conta, come prima (decisione di
+Davide): senza rete Supabase non lancia, quindi un'eccezione è più
+probabilmente un guasto sulla riga, che non contando fermerebbe la coda
+per sempre. Cinque test nuovi in `sincronizza.test.ts`; rotture di prova
+prese (tutto contato: test offline e 401 rossi; solo il 401 contato: 1
+rosso; eccezione come rete: test dell'eccezione rosso), ripristino dalla
+copia. 654 test verdi in 55 file. Documenti: PUNTO §9.2 (la regola) e §3,
+§11.
+
 ## 2026-10-10 — Pasti e orari, passo 5 unito a main
 
 Provato il 10/10 (voce sotto) e unito a main con fast-forward da

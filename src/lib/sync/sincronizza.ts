@@ -26,12 +26,34 @@ export interface RisultatoSincronizzazione {
 
 // Oltre questo numero di tentativi consecutivi falliti, una voce smette di
 // essere ritentata (vedi più sotto perché, e perché non capiva da sola se
-// l'errore era transitorio o no). Cinque perché con tre inneschi (avvio,
+// l'errore era transitorio o no). Contano solo i rifiuti del server
+// (rifiutoDelServer, qui sotto). Cinque perché con tre inneschi (avvio,
 // evento online, ogni scrittura) è già più di una giornata di uso normale
 // prima di arrendersi su una voce — non un numero piccolo scelto a caso, ma
 // nemmeno così alto da lasciarla bloccare la coda per settimane come
 // successo nel caso reale che ha fatto scoprire il problema.
 const SOGLIA_SOSPENSIONE = 5;
+
+// Conta come tentativo solo un rifiuto vero del server, deciso dallo status
+// HTTP (un numero) e non dal testo dell'errore (dal 10/10/2026). Prima
+// contava ogni fallimento: offline ogni scrittura fa un giro, ogni giro
+// fallisce sulla prima voce, e dopo 5 scritture quella voce veniva
+// accantonata senza che il server l'avesse mai vista.
+// - 0: la richiesta non è arrivata (niente rete, rete caduta a metà);
+// - 401: la sessione non è valida (token scaduto, utente uscito). La riga
+//   non c'entra: rientrato l'utente, passa;
+// - qualunque altro errore: il server ha letto la riga e l'ha rifiutata
+//   (vincolo, foreign key, permessi, colonna sconosciuta). Solo qui
+//   riprovare all'infinito non serve, e si contano i tentativi.
+// Un'eccezione lanciata durante l'invio conta anche lei (vedi nel ciclo di
+// unGiro perché).
+// Rischio accettato: un guasto permanente che si presenta come status 0
+// (configurazione sbagliata dell'indirizzo, per esempio) non si accantona
+// mai e ferma la coda. Non si perde niente, e l'indicatore di
+// sincronizzazione lo mostra come attesa che dura.
+function rifiutoDelServer(status: number): boolean {
+  return status !== 0 && status !== 401;
+}
 
 // Una sincronizzazione per volta (dal 9/10/2026). Prima ogni chiamata
 // faceva un giro suo: una scrittura dentro una transazione con 14 righe
@@ -115,16 +137,28 @@ async function unGiro(): Promise<RisultatoSincronizzazione> {
   // oltre SOGLIA_SOSPENSIONE la voce si accantona (vedi sotto) e si prosegue
   // con le altre, invece di continuare a bloccare tutto in eterno.
   for (const voce of voci) {
-    // Senza rete, o con la rete che cade a metà, upsert() può rifiutare la
-    // promise invece di restituire un { error } (fetch fallito). Lo
-    // trattiamo come un fallimento normale della voce, non come un errore
-    // che deve fermare tutte le altre.
+    // Senza rete la libreria non lancia un'eccezione: risponde { error }
+    // con status 0. Un'eccezione è quindi più probabilmente un guasto
+    // legato a questa riga (dati che non si riescono a preparare per
+    // l'invio, per esempio), e conta come tentativo: se non contasse,
+    // quella riga fermerebbe la coda per sempre senza mai accantonarsi.
+    // `status` null = eccezione, nessuna risposta da leggere.
     let messaggioErrore: string | null = null;
+    let status: number | null = null;
     try {
-      const { error } = await supabase.from(voce.tabella).upsert(voce.dati);
-      messaggioErrore = error?.message ?? null;
+      const risposta = await supabase.from(voce.tabella).upsert(voce.dati);
+      messaggioErrore = risposta.error?.message ?? null;
+      status = risposta.status;
     } catch (eccezione) {
       messaggioErrore = eccezione instanceof Error ? eccezione.message : "Errore di rete.";
+    }
+
+    if (messaggioErrore && status !== null && !rifiutoDelServer(status)) {
+      // Il server non ha giudicato la riga (vedi rifiutoDelServer): niente
+      // tentativo contato, la coda aspetta il prossimo giro così com'è.
+      fallite += 1;
+      await db.outbox.update(voce.id, { ultimo_errore: messaggioErrore });
+      break;
     }
 
     if (messaggioErrore) {

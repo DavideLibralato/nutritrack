@@ -225,3 +225,106 @@ describe("ordinaOutbox", () => {
     ]);
   });
 });
+
+// Difetto trovato il 10/10/2026 (analisi dell'indicatore di
+// sincronizzazione): senza rete la libreria Supabase non lancia
+// un'eccezione, risponde { error } con status 0, e il giro lo contava come
+// un tentativo. Offline ogni scrittura fa un giro: dopo 5 scritture la
+// prima voce in coda veniva accantonata senza che il server l'avesse mai
+// vista. Lo stesso con la sessione scaduta (401). Ora conta solo un
+// rifiuto vero del server.
+describe("sincronizzaOutbox — richieste che non arrivano al server", () => {
+  const SENZA_RETE = {
+    error: { message: "TypeError: Failed to fetch" },
+    status: 0,
+  };
+  const SESSIONE_SCADUTA = {
+    error: { message: "JWT expired" },
+    status: 401,
+  };
+
+  beforeEach(async () => {
+    upsertMock.mockReset();
+    await db.outbox.clear();
+    await db.outbox.bulkPut([
+      voce({ id: "pasti:p1", tabella: "pasti", creato_il: "2026-10-10T09:00:00.000Z" }),
+      voce({ id: "misurazioni:m1", tabella: "misurazioni", creato_il: "2026-10-10T09:00:00.001Z" }),
+    ]);
+  });
+
+  it("offline, sei giri non accantonano niente e non contano tentativi", async () => {
+    upsertMock.mockResolvedValue(SENZA_RETE);
+
+    for (let giro = 0; giro < 6; giro++) {
+      expect(await sincronizzaOutbox()).toEqual({ inviate: 0, fallite: 1, sospese: 0 });
+    }
+
+    // Uno per giro: sempre fermo sulla prima voce, mai tentata la seconda.
+    expect(upsertMock).toHaveBeenCalledTimes(6);
+    const pasto = await db.outbox.get("pasti:p1");
+    expect(pasto?.tentativi).toBe(0);
+    expect(pasto?.sospesa_il).toBeNull();
+    expect(pasto?.ultimo_errore).toBe("TypeError: Failed to fetch");
+    expect((await db.outbox.get("misurazioni:m1"))?.tentativi).toBe(0);
+  });
+
+  it("con la sessione scaduta (401) la coda aspetta senza consumare tentativi", async () => {
+    await db.outbox.update("pasti:p1", { tentativi: 4 }); // a un passo dalla soglia
+    upsertMock.mockResolvedValue(SESSIONE_SCADUTA);
+
+    await sincronizzaOutbox();
+    await sincronizzaOutbox();
+
+    const pasto = await db.outbox.get("pasti:p1");
+    expect(pasto?.tentativi).toBe(4);
+    expect(pasto?.sospesa_il).toBeNull();
+    expect(upsertMock).toHaveBeenCalledTimes(2);
+  });
+
+  // Senza rete Supabase risponde con status 0, non lancia: un'eccezione è
+  // più probabilmente un guasto su quella riga. Se non contasse, la riga
+  // fermerebbe la coda per sempre senza mai accantonarsi.
+  it("un'eccezione durante l'invio conta come tentativo, e al quinto accantona", async () => {
+    upsertMock.mockImplementation(async (tabella: string) => {
+      if (tabella === "pasti") throw new Error("riga non serializzabile");
+      return { error: null, status: 201 };
+    });
+
+    await sincronizzaOutbox();
+    const dopoUno = await db.outbox.get("pasti:p1");
+    expect(dopoUno?.tentativi).toBe(1);
+    expect(dopoUno?.sospesa_il).toBeNull();
+    expect(dopoUno?.ultimo_errore).toBe("riga non serializzabile");
+    expect(await db.outbox.get("misurazioni:m1")).toBeDefined(); // coda ferma
+
+    for (let giro = 0; giro < 3; giro++) await sincronizzaOutbox();
+    expect(await sincronizzaOutbox()).toEqual({ inviate: 1, fallite: 1, sospese: 1 });
+
+    const pasto = await db.outbox.get("pasti:p1");
+    expect(pasto?.tentativi).toBe(5);
+    expect(pasto?.sospesa_il).not.toBeNull();
+    expect(await db.outbox.get("misurazioni:m1")).toBeUndefined(); // passata dopo
+  });
+
+  it("un rifiuto vero del server (403) conta ancora, fino ad accantonare", async () => {
+    await db.outbox.update("pasti:p1", { tentativi: 4 });
+    upsertMock
+      .mockResolvedValueOnce({
+        error: { message: "new row violates row-level security policy" },
+        status: 403,
+      })
+      .mockResolvedValueOnce({ error: null, status: 201 });
+
+    expect(await sincronizzaOutbox()).toEqual({ inviate: 1, fallite: 1, sospese: 1 });
+    expect((await db.outbox.get("pasti:p1"))?.sospesa_il).not.toBeNull();
+    expect(await db.outbox.get("misurazioni:m1")).toBeUndefined();
+  });
+
+  it("tornata la rete, la coda parte dalla prima voce come se nulla fosse", async () => {
+    upsertMock.mockResolvedValueOnce(SENZA_RETE).mockResolvedValue({ error: null, status: 201 });
+
+    await sincronizzaOutbox();
+    expect(await sincronizzaOutbox()).toEqual({ inviate: 2, fallite: 0, sospese: 0 });
+    expect(await db.outbox.count()).toBe(0);
+  });
+});
