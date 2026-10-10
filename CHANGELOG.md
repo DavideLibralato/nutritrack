@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Pasti e orari, passo 5 unito a main
+
+Provato il 10/10 (voce sotto) e unito a main con fast-forward da
+`5766c89` a `6b99c32`, senza commit di merge: `d8f8830` (cambi
+programmati, logica pura), `5739e1b` (colonna `eliminata_dal_cambio`,
+migration e Dexie version(7)), `147c7b2` (scritture e Annulla), `c42b30f`
+(la domanda "Da una data"), `4fa5146` (le schede per data), `6b99c32` (i
+documenti, provato su iPhone il 10/10). Branch `pasti-date` cancellato, in
+locale e su GitHub. Deploy di produzione riuscito. 649 test verdi in 55
+file. Voce scritta con il primo commit del branch successivo
+(`sync-stato`), per non fare un commit su main solo per il changelog.
+
 ## 2026-10-10 — Pasti e orari, passo 5 provato su iPhone
 
 Branch `pasti-date`. Provato su iPhone il 10/10 in Safari, account di
