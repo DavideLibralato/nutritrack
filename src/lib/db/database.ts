@@ -223,6 +223,31 @@ export class NutriTrackDatabase extends Dexie {
       outbox: "id, tabella, creato_il",
       sync_cursori: "id, tabella, user_id",
     });
+
+    // version(8): campo nuovo su outbox, ultimo_status (lo status HTTP
+    // dell'ultimo invio fallito, src/lib/sync/outbox.ts), per i "Dettagli
+    // tecnici" delle voci accantonate in Impostazioni > Sincronizzazione.
+    // Non indicizzato: .stores() identico a version(7), cambia la forma
+    // delle righe come in version(3), (6) e (7). Nessun .upgrade() (regola
+    // B.4): nel tipo VoceOutbox il campo è facoltativo (`?`), chi lo legge
+    // ha un ripiego, e una voce salvata prima, senza il campo, vale "status
+    // non noto" — un valore che non si può ricostruire comunque. Verificato
+    // da aggiornamentoSchema.test.ts (regola B.7).
+    this.version(8).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+      sync_cursori: "id, tabella, user_id",
+    });
   }
 }
 

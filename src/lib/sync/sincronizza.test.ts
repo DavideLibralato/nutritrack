@@ -266,6 +266,7 @@ describe("sincronizzaOutbox — richieste che non arrivano al server", () => {
     expect(pasto?.tentativi).toBe(0);
     expect(pasto?.sospesa_il).toBeNull();
     expect(pasto?.ultimo_errore).toBe("TypeError: Failed to fetch");
+    expect(pasto?.ultimo_status).toBe(0);
     expect((await db.outbox.get("misurazioni:m1"))?.tentativi).toBe(0);
   });
 
@@ -296,6 +297,7 @@ describe("sincronizzaOutbox — richieste che non arrivano al server", () => {
     expect(dopoUno?.tentativi).toBe(1);
     expect(dopoUno?.sospesa_il).toBeNull();
     expect(dopoUno?.ultimo_errore).toBe("riga non serializzabile");
+    expect(dopoUno?.ultimo_status).toBeNull(); // eccezione: nessuna risposta
     expect(await db.outbox.get("misurazioni:m1")).toBeDefined(); // coda ferma
 
     for (let giro = 0; giro < 3; giro++) await sincronizzaOutbox();
@@ -317,6 +319,7 @@ describe("sincronizzaOutbox — richieste che non arrivano al server", () => {
       .mockResolvedValueOnce({ error: null, status: 201 });
 
     expect(await sincronizzaOutbox()).toEqual({ inviate: 1, fallite: 1, sospese: 1 });
+    expect(await db.outbox.get("pasti:p1")).toMatchObject({ ultimo_status: 403 });
     expect((await db.outbox.get("pasti:p1"))?.sospesa_il).not.toBeNull();
     expect(await db.outbox.get("misurazioni:m1")).toBeUndefined();
   });

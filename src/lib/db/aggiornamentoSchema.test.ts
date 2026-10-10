@@ -20,8 +20,8 @@
 // regola B.1, questo test non la vede per forza: Dexie corregge da solo
 // gli indici che non coincidono, con un avviso in console.)
 //
-// Quando nasce una version(8): si aggiunge qui SCHEMA_V7 (copia della 7
-// com'è oggi), le sue righe se la forma cambia, e il 7 nel ciclo dei test.
+// Quando nasce una version(9): si aggiunge qui SCHEMA_V8 (copia della 8
+// com'è oggi), le sue righe se la forma cambia, e l'8 nel ciclo dei test.
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import Dexie from "dexie";
@@ -66,8 +66,14 @@ const SCHEMA_V5: Record<string, string> = { ...SCHEMA_V3, sync_cursori: "id, tab
 // pasti).
 const SCHEMA_V6 = SCHEMA_V5;
 
-const SCHEMI: Record<number, Record<string, string>> = { 3: SCHEMA_V3, 4: SCHEMA_V4, 5: SCHEMA_V5, 6: SCHEMA_V6 };
-const ULTIMA_VERSIONE = 7;
+// version(7): stessi indici della 6 (campo nuovo eliminata_dal_cambio
+// sulle voci di diario).
+const SCHEMA_V7 = SCHEMA_V6;
+
+const SCHEMI: Record<number, Record<string, string>> = {
+  3: SCHEMA_V3, 4: SCHEMA_V4, 5: SCHEMA_V5, 6: SCHEMA_V6, 7: SCHEMA_V7,
+};
+const ULTIMA_VERSIONE = 8;
 
 // --- Righe realistiche, come le aveva un telefono a quella versione ----------
 
@@ -129,7 +135,11 @@ function righe(versione: number): Record<string, Riga[]> {
     carboidrati_100g: 4, grassi_100g: 0.2,
   };
   // Una voce su un pasto cancellato: la rete di sicurezza di Oggi la mostra.
-  const voceSuCena: VoceDiario = { ...voce, id: "v-2", pasto_id: "pasto-cena", gruppo_id: "gr-1" };
+  // Dalla 7 una voce cancellata da un cambio programmato ha il suo segno.
+  const voceSuCena: VoceDiario = {
+    ...voce, id: "v-2", pasto_id: "pasto-cena", gruppo_id: "gr-1",
+    ...(versione >= 7 ? { eliminata_dal_cambio: null } : {}),
+  };
   const composizione: Composizione = {
     id: "c-1", user_id: U, updated_at: ADESSO, deleted_at: null,
     nome: "Colazione standard", tipo: "pasto_salvato", alimento_id: null,
@@ -220,7 +230,7 @@ function nomeNuovo() {
 // --- I test ------------------------------------------------------------------
 
 describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
-  for (const da of [3, 4, 5, 6]) {
+  for (const da of [3, 4, 5, 6, 7]) {
     it(`dalla version(${da}) all'ultima: tutte le righe, identiche, con gli indici che funzionano`, async () => {
       const nome = nomeNuovo();
       const { vecchio, contenuto } = await databaseVecchio(nome, da);
@@ -270,18 +280,25 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
       // Il campo nuovo si scrive e si rilegge sulla riga vecchia.
       await nuovo.voci_diario.update("v-2", { deleted_at: ADESSO, eliminata_dal_cambio: "c-1" });
       expect(await nuovo.voci_diario.get("v-2")).toMatchObject({ deleted_at: ADESSO, eliminata_dal_cambio: "c-1" });
+
+      // version(8): una voce outbox di prima non ha ultimo_status, e il
+      // ripiego lo legge "non noto"; si scrive e si rilegge come gli altri.
+      expect("ultimo_status" in inAttesa!).toBe(false);
+      expect(inAttesa!.ultimo_status ?? null).toBeNull();
+      await nuovo.outbox.update("voci_diario:v-1", { ultimo_status: 0, tentativi: 3 });
+      expect(await nuovo.outbox.get("voci_diario:v-1")).toMatchObject({ ultimo_status: 0, tentativi: 3 });
     });
   }
 
-  it("la version(7) apre anche con una seconda scheda ancora aperta alla version(6), che continua a funzionare", async () => {
+  it("la version(8) apre anche con una seconda scheda ancora aperta alla version(7), che continua a funzionare", async () => {
     // Due schede dello stesso browser: quella vecchia ha ancora in memoria il
-    // codice di prima (version(6)), quella nuova apre con la 7. IndexedDB
+    // codice di prima (version(7)), quella nuova apre con la 8. IndexedDB
     // chiede alla vecchia di chiudersi ("versionchange"): se non lo
     // facesse, la nuova resterebbe bloccata. Dexie la chiude da solo, con
     // un avviso in console, e la riapre alla prima operazione.
     const avvisi = vi.spyOn(console, "warn").mockImplementation(() => {});
     const nome = nomeNuovo();
-    const { vecchio: schedaVecchia } = await databaseVecchio(nome, 6);
+    const { vecchio: schedaVecchia } = await databaseVecchio(nome, 7);
 
     const schedaNuova = new NutriTrackDatabase(nome);
     aperti.push(schedaNuova);
@@ -289,13 +306,13 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
     // limite di tempo trasforma il blocco in un errore leggibile.
     await Promise.race([
       schedaNuova.open(),
-      new Promise((_, rifiuta) => setTimeout(() => rifiuta(new Error("version(7) bloccata")), 2000)),
+      new Promise((_, rifiuta) => setTimeout(() => rifiuta(new Error("version(8) bloccata")), 2000)),
     ]);
     expect(schedaNuova.verno).toBe(ULTIMA_VERSIONE);
     expect(avvisi).toHaveBeenCalledWith(expect.stringContaining("Another connection wants to upgrade"));
 
     // La scheda vecchia legge e scrive ancora: Dexie la riapre alla
-    // versione che trova (gli indici sono gli stessi della 6).
+    // versione che trova (gli indici sono gli stessi della 7).
     expect(await schedaVecchia.table("pasti").count()).toBe(2);
     await schedaVecchia.table("misurazioni").put({
       id: "m-dalla-scheda-vecchia", user_id: U, updated_at: ADESSO, deleted_at: null,

@@ -2528,7 +2528,10 @@ pallino sulla tab Impostazioni per gli errori (decisioni del 10/10).
 senza polling:
 - **la coda**, da Dexie (`outbox`): quante modifiche in attesa, da quando
   (il `creato_il` più vecchio: vale anche dopo un riavvio), quante
-  accantonate. La pagina la legge con `useLiveQuery`;
+  accantonate. La pagina la legge con `useLiveQuery`. Ogni voce tiene
+  anche lo status HTTP dell'ultimo invio fallito (`ultimo_status`, dalla
+  `version(8)` di Dexie, facoltativo: le voci di prima non ce l'hanno),
+  per i "Dettagli tecnici" delle accantonate;
 - **i giri**, in memoria: per salita e discesa, in corso sì/no, esito
   dell'ultimo giro (`ok` / `rete` / `sessione` / `errore`, deciso dallo
   status HTTP con `esitoDaStatus`, la stessa regola dei tentativi), da
@@ -3037,7 +3040,7 @@ pubblico.
 configurazione Vercel mantenute, codice della v0 consultabile sul tag
 `v0-vecchia-app`.
 
-**Punto 0 — local-first** (sezione 9.2). Dexie è a `version(7)`: le 11
+**Punto 0 — local-first** (sezione 9.2). Dexie è a `version(8)`: le 11
 tabelle più `outbox` e `sync_cursori`. Repository unico per ogni scrittura;
 salita dall'outbox con i genitori prima dei figli (dal 9/10), che si ferma
 al primo errore e accantona una voce dopo 5 rifiuti del server (rete

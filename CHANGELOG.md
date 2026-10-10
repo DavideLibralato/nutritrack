@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Sincronizzazione: lo status dell'ultimo invio fallito (Dexie version 8)
+
+Branch `sync-stato`. Commit a sé prima della pagina, perché tocca la sync
+e lo schema Dexie: i "Dettagli tecnici" delle voci accantonate (mockup
+approvato) mostrano anche lo status HTTP, che la coda non salvava. Campo
+nuovo `ultimo_status` sulle voci outbox, scritto da `sincronizza.ts` a
+ogni invio fallito (0, 401, 4xx/5xx; null per un'eccezione). Facoltativo:
+`version(8)` con gli stessi indici della 7 e senza `.upgrade()` (regola
+B.4, le voci di prima valgono "status non noto"). `aggiornamentoSchema.test.ts`
+ora parte anche dalla 7 e prova il campo nuovo; tre controlli dello status
+in `sincronizza.test.ts`. Rotture di prova prese (status non salvato
+sull'accantonata: 1 rosso; senza la version(8): 6), ripristino dalla
+copia. 684 test verdi in 57 file. Documenti: PUNTO §9.2, §11.
+
 ## 2026-10-10 — Sincronizzazione: lo stato per l'indicatore
 
 Branch `sync-stato`. Terzo commit dell'indicatore, l'ultimo prima del

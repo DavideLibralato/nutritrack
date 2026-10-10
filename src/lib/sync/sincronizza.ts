@@ -39,7 +39,7 @@ export interface RisultatoSincronizzazione {
 // prima di arrendersi su una voce — non un numero piccolo scelto a caso, ma
 // nemmeno così alto da lasciarla bloccare la coda per settimane come
 // successo nel caso reale che ha fatto scoprire il problema.
-const SOGLIA_SOSPENSIONE = 5;
+export const SOGLIA_SOSPENSIONE = 5;
 
 // Conta come tentativo solo un rifiuto vero del server, deciso dallo status
 // HTTP (un numero) e non dal testo dell'errore (dal 10/10/2026). Prima
@@ -195,7 +195,7 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
       // tentativo contato, la coda aspetta il prossimo giro così com'è.
       fallite += 1;
       esito = esitoDaStatus(status);
-      await db.outbox.update(voce.id, { ultimo_errore: messaggioErrore });
+      await db.outbox.update(voce.id, { ultimo_errore: messaggioErrore, ultimo_status: status });
       break;
     }
 
@@ -212,6 +212,7 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
         await db.outbox.update(voce.id, {
           tentativi,
           ultimo_errore: messaggioErrore,
+          ultimo_status: status,
           sospesa_il: new Date().toISOString(),
         });
         console.error(
@@ -222,7 +223,7 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
       }
 
       esito = "errore";
-      await db.outbox.update(voce.id, { tentativi, ultimo_errore: messaggioErrore });
+      await db.outbox.update(voce.id, { tentativi, ultimo_errore: messaggioErrore, ultimo_status: status });
       break;
     }
 

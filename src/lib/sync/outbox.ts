@@ -31,6 +31,13 @@ export interface VoceOutbox {
   // normale, così una voce irrecuperabile non blocca tutte le altre dietro
   // di lei per sempre.
   sospesa_il: string | null;
+  // Lo status HTTP dell'ultimo invio fallito (0 = non arrivato, 401 =
+  // sessione, 4xx/5xx = rifiuto del server), null se l'ultimo fallimento è
+  // stata un'eccezione o se non ha mai fallito. Dal 10/10/2026, per i
+  // "Dettagli tecnici" delle voci accantonate in Impostazioni >
+  // Sincronizzazione. Facoltativo (`?`): le voci salvate prima della
+  // version(8) di Dexie non ce l'hanno, e chi lo legge ha il suo ripiego.
+  ultimo_status?: number | null;
 }
 
 // Il livello di ogni tabella nelle foreign key del server (lette da
@@ -96,6 +103,7 @@ export async function accodaMutazione(
     tentativi: 0,
     ultimo_errore: null,
     sospesa_il: null,
+    ultimo_status: null,
   };
 
   await db.outbox.put(voce);
