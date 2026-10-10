@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Pasti e orari, passo 5 provato su iPhone
+
+Branch `pasti-date`. Provato su iPhone il 10/10 in Safari, account di
+prova, tutto verificato su Supabase (compreso il segno
+`eliminata_dal_cambio`): rinomina programmata con orario e schede per
+data; stessa data che modifica il cambio programmato; solo orario con
+"Subito" e "Da una data"; aggiungi da una data ("nuovo" nella scheda);
+elimina da una data con conferma (la voce cancellata a mano non torna,
+quella eliminata dal cambio sì, con l'Annulla della scheda); Annulla della
+barra; rinomina "da oggi" con orario (i giorni passati tengono l'ora
+vecchia); limite della data al prossimo cambio programmato. Nessun bug
+trovato. Documenti: PUNTO §3 (passo 5 non più "da provare") e §11.
+
 ## 2026-10-10 — Pasti e orari, passo 5e: le schede per data
 
 Branch `pasti-date`. L'ultimo pezzo del passo 5.

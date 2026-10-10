@@ -1304,11 +1304,11 @@ rinominare, cambiare l'ora, aggiungere; passo 4: **Elimina** (sotto). Le
   eliminato o chiuso resta viva sul server: in Oggi la mostra la rete di
   sicurezza ("Non più in uso"), da lì la si porta via.
 
-**Date future e cambi programmati** (passo 5, deciso il 10/10,
-**costruito** sul branch `pasti-date`, da provare su iPhone: la logica
-pura, `src/lib/pasti/cambiProgrammati.ts`, le scritture con i loro
-Annulla, `src/lib/repository/modifichePasti.ts`, la domanda "da quando"
-con la data e le schede per data nella pagina).
+**Date future e cambi programmati** (passo 5, deciso il 10/10, provato su
+iPhone il 10/10, sezione 11: la logica pura,
+`src/lib/pasti/cambiProgrammati.ts`, le scritture con i loro Annulla,
+`src/lib/repository/modifichePasti.ts`, la domanda "da quando" con la
+data e le schede per data nella pagina).
 - **Il campo "Dal giorno"** compare sotto "Da una data" quando la si
   sceglie (`SheetDaQuando`, campo `.campo-data` come in Duplica). La data
   la tiene la pagina, che la ricontrolla a ogni cambio
@@ -3159,6 +3159,25 @@ ricrea il pasto e le voci future. **Da provare** il giorno che cambia
 `modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
 le pagine Oggi, Aggiungi e Pasti e orari.
 
+**Pasti e orari, passo 5: date future e cambi programmati** (10/10,
+provato su iPhone il 10/10 in Safari sull'anteprima del branch
+`pasti-date`, account di prova; tutto verificato su Supabase, compreso il
+segno `eliminata_dal_cambio`): "Da una data" per rinominare, cambiare
+l'ora, aggiungere ed eliminare, le schede per data con il loro Annulla.
+Provati: rinomina programmata con orario e schede per data; la stessa
+data che modifica il cambio programmato; solo orario con "Subito" e "Da
+una data"; aggiungi da una data ("nuovo" nella scheda); elimina da una
+data con la conferma, e Annulla della scheda che rimette la voce
+eliminata dal cambio ma non quella cancellata a mano; Annulla della
+barra; rinomina "da oggi" con orario (i giorni passati tengono l'ora
+vecchia); data limitata al prossimo cambio programmato. Resta aperto il
+limite del Salva (sotto, "Difetti e verifiche aperti"). Com'è fatto:
+sezione 3, "Pasti e orari", "Date future e cambi programmati". Test:
+`cambiProgrammati.test.ts`, `controlliPasti.test.ts`,
+`modifichePasti.test.ts`, `vociDiario.test.ts`,
+`aggiornamentoSchema.test.ts`, `dataGiorno.test.ts`, `campiData.test.ts`,
+la pagina.
+
 **Test.** 649 test permanenti in 55 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
@@ -3168,11 +3187,9 @@ le pagine Oggi, Aggiungi e Pasti e orari.
   (fase 5)
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
-- Gestione delle fasce dei pasti, Impostazioni > Pasti e orari: fatti il
-  seed (passo 1), la validità nel tempo (passo 2) e la pagina per
-  rinominare, cambiare l'ora e aggiungere (passo 3, provato su iPhone il
-  9/10) ed eliminare (passo 4, provato su iPhone il 9/10). Le **date future** (passo 5) sono costruite sul branch `pasti-date`, da provare su iPhone. E ora del consumo
-  (`consumato_alle`) modificabile nello sheet
+- Ora del consumo (`consumato_alle`) modificabile nello sheet. La
+  gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
+  1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 - **Indicatore di sincronizzazione** in app: oggi un fallimento di sync non
   arriva mai all'utente, la UI conferma dal passo locale
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
