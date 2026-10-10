@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Doppioni in Aggiungi, passo 2: pianoInserimento
+
+Branch `doppioni-aggiungi`. Primo pezzo dei doppioni in /aggiungi (oggi
+aggiungere un alimento già presente nel pasto crea una seconda riga in
+silenzio). Estratto da `pianoDuplica` il cuore comune "righe nuove che
+entrano in un pasto, con i doppioni" (`src/lib/diario/pianoInserimento.ts`,
+funzione pura); `pianoDuplica` ora prepara le copie e delega. Nessun
+cambio di comportamento: test di Duplica e Sposta invariati e verdi.
+`trovaDoppioni`/`sommaGrammi` accettano anche righe non ancora scritte
+(solo tipi). 14 test nuovi; 7 rotture di prova prese (due sui test
+esistenti di Duplica), ripristino dalla copia. 741 test verdi in 65 file.
+
 ## 2026-10-10 — Ripristino della password unito a main
 
 Provato il 10/10 (voce sotto) e unito a main con fast-forward da

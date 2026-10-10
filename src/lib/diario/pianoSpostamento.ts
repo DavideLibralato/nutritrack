@@ -65,18 +65,22 @@ export function arrotondaGrammi(g: number): number {
   return Math.round(g * 100) / 100;
 }
 
-export function sommaGrammi(voci: VoceDiario[]): number {
+// Quello che serve per raggruppare e sommare: va bene sia una riga già
+// salvata sia una riga nuova non ancora scritta (pianoInserimento.ts).
+type RigaPerAlimento = Pick<VoceDiario, "alimento_id" | "quantita_g" | "nome_alimento">;
+
+export function sommaGrammi(voci: RigaPerAlimento[]): number {
   return arrotondaGrammi(voci.reduce((t, v) => t + v.quantita_g, 0));
 }
 
 // Chiave di raggruppamento: l'alimento del catalogo. Le voci senza
 // alimento_id non hanno chiave (null) e non sono mai doppioni.
-function chiave(v: VoceDiario): string | null {
+function chiave(v: RigaPerAlimento): string | null {
   return v.alimento_id;
 }
 
-function perAlimento(voci: VoceDiario[]): Map<string, VoceDiario[]> {
-  const mappa = new Map<string, VoceDiario[]>();
+function perAlimento<T extends RigaPerAlimento>(voci: T[]): Map<string, T[]> {
+  const mappa = new Map<string, T[]>();
   for (const v of voci) {
     const k = chiave(v);
     if (k === null) continue;
@@ -96,7 +100,7 @@ export function rigaCheResta(voci: VoceDiario[]): VoceDiario {
 
 // I doppioni fra le righe che si spostano e quelle della destinazione, nell'
 // ordine in cui gli alimenti compaiono fra le righe che si spostano.
-export function trovaDoppioni(partenza: VoceDiario[], destinazione: VoceDiario[]): Doppione[] {
+export function trovaDoppioni(partenza: RigaPerAlimento[], destinazione: RigaPerAlimento[]): Doppione[] {
   const inDestinazione = perAlimento(destinazione);
   const inArrivo = perAlimento(partenza);
   const doppioni: Doppione[] = [];

@@ -27,17 +27,14 @@
 // /aggiungi (decisione 9): l'ora attuale solo se il giorno è oggi,
 // altrimenti vuoto; gruppo_id nuovo e comune per un pasto intero (sono
 // righe inserite insieme), nessuno per un alimento solo.
+//
+// Le scelte sui doppioni sono quelle di ogni riga nuova che entra in un
+// pasto, scritte una volta sola in pianoInserimento.ts: qui si preparano
+// le copie e si tolgono gli originali dalla destinazione, poi decide lui.
 
 import type { VoceDiario } from "../db/tipi";
-import {
-  arrotondaGrammi,
-  rigaCheResta,
-  sommaGrammi,
-  trovaDoppioni,
-  type Doppione,
-  type SceltaDoppione,
-  type Scrittura,
-} from "./pianoSpostamento";
+import { trovaDoppioni, type Doppione, type SceltaDoppione, type Scrittura } from "./pianoSpostamento";
+import { pianoInserimento, type DatiVoce } from "./pianoInserimento";
 
 export interface PianoDuplica {
   scritture: Scrittura[];
@@ -81,69 +78,23 @@ export function pianoDuplica({
   // Il gruppo comune delle copie di un pasto intero; null per un alimento.
   gruppoId: string | null;
 }): PianoDuplica {
-  const scritture: Scrittura[] = [];
-  const duplicati: string[] = [];
-  const esclusi: string[] = [];
-  const altre = destinazioneSenzaOriginali(originali, destinazione);
-  const giaDecisi = new Set<string>();
-
-  function copia(v: VoceDiario): Scrittura {
+  function copia(v: VoceDiario): DatiVoce {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, updated_at, deleted_at, ...contenuto } = v;
     return {
-      tipo: "crea",
-      dati: {
-        ...contenuto,
-        pasto_id: pastoDestinazioneId,
-        data: dataDestinazione,
-        gruppo_id: gruppoId,
-        creato_il: adesso,
-        consumato_alle: dataDestinazione === oggi ? adesso : null,
-      },
+      ...contenuto,
+      pasto_id: pastoDestinazioneId,
+      data: dataDestinazione,
+      gruppo_id: gruppoId,
+      creato_il: adesso,
+      consumato_alle: dataDestinazione === oggi ? adesso : null,
     };
   }
 
-  for (const voce of originali) {
-    const k = voce.alimento_id;
-    const esistenti = k === null ? [] : altre.filter((v) => v.alimento_id === k);
-
-    if (esistenti.length === 0) {
-      scritture.push(copia(voce));
-      if (k === null || !giaDecisi.has(k)) duplicati.push(voce.nome_alimento);
-      if (k !== null) giaDecisi.add(k);
-      continue;
-    }
-
-    if (giaDecisi.has(k!)) continue;
-    giaDecisi.add(k!);
-    const scelta = scelte[k!];
-    if (!scelta) throw new Error(`Manca la scelta per il doppione ${k}`);
-    const arrivano = originali.filter((v) => v.alimento_id === k);
-
-    switch (scelta.tipo) {
-      case "escludi":
-        esclusi.push(voce.nome_alimento);
-        break;
-      case "separati":
-        for (const v of arrivano) scritture.push(copia(v));
-        duplicati.push(voce.nome_alimento);
-        break;
-      case "somma":
-      case "scrivi": {
-        const resta = rigaCheResta(esistenti);
-        const grammi =
-          scelta.tipo === "somma"
-            ? arrotondaGrammi(sommaGrammi(esistenti) + sommaGrammi(arrivano))
-            : arrotondaGrammi(scelta.grammi);
-        scritture.push({ tipo: "aggiorna", id: resta.id, modifiche: { quantita_g: grammi } });
-        for (const v of esistenti) {
-          if (v.id !== resta.id) scritture.push({ tipo: "elimina", id: v.id });
-        }
-        duplicati.push(voce.nome_alimento);
-        break;
-      }
-    }
-  }
-
-  return { scritture, duplicati, esclusi };
+  const { scritture, inseriti, esclusi } = pianoInserimento({
+    nuove: originali.map(copia),
+    destinazione: destinazioneSenzaOriginali(originali, destinazione),
+    scelte,
+  });
+  return { scritture, duplicati: inseriti, esclusi };
 }
