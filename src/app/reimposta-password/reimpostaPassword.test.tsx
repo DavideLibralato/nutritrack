@@ -131,7 +131,7 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
 // libreria toglie ?code= dall'indirizzo (vedi page.tsx).
 let parametriPagina = new URLSearchParams();
 
-const routerFinto = { push: vi.fn(), replace: () => {}, refresh: () => {}, back: () => {} };
+const routerFinto = { push: vi.fn(), replace: vi.fn(), refresh: () => {}, back: () => {} };
 
 vi.mock("next/navigation", () => ({
   useRouter: () => routerFinto,
@@ -232,6 +232,7 @@ beforeEach(() => {
   server.passwordCambiate = [];
   server.impreviste = [];
   routerFinto.push.mockClear();
+  routerFinto.replace.mockClear();
   cancellaCookie();
   sessionStorage.clear();
 });
@@ -396,7 +397,9 @@ describe("/reimposta-password", () => {
     fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
     fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
     fireEvent.click(screen.getByText("Salva nuova password"));
-    await waitFor(() => expect(routerFinto.push).toHaveBeenCalledWith("/"));
+    // replace: la pagina del reset esce dalla cronologia.
+    await waitFor(() => expect(routerFinto.replace).toHaveBeenCalledWith("/"));
+    expect(routerFinto.push).not.toHaveBeenCalled();
     expect(server.passwordCambiate).toEqual([UTENTE_VERO.email]);
 
     ricarica();

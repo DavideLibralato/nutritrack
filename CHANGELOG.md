@@ -5,6 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Reimposta password: dopo il salvataggio la pagina esce dalla cronologia
+
+Branch `reset-password`. Provato sull'anteprima (`88b22ce`): dopo il
+salvataggio, "indietro" da Oggi mostrava "Link non valido". Corretto
+(il segno era stato tolto) ma strano. Ora `router.replace("/")` invece
+di `router.push("/")`: la pagina del reset esce dalla cronologia; il
+segno tolto resta come seconda difesa. T8 aggiornato (rottura con
+`push` presa, ripristino dalla copia). 727 test verdi in 64 file. Da
+riprovare sull'anteprima.
+
 ## 2026-10-10 — Reimposta password: un link già usato non apre più il modulo
 
 Branch `reset-password`. Bug di sicurezza trovato provando l'anteprima

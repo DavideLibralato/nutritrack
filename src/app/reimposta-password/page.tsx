@@ -142,10 +142,11 @@ function ReimpostaPasswordForm() {
       return;
     }
 
-    // Prima di lasciare la pagina: "indietro" o un ricaricamento in questa
-    // scheda non devono riaprire il modulo.
+    // replace e non push: la pagina del reset esce dalla cronologia, così
+    // "indietro" da Oggi non ci riporta qui. Il segno tolto è la seconda
+    // difesa: un ricaricamento in questa scheda non riapre il modulo.
     togliSegnoRipristino();
-    router.push("/");
+    router.replace("/");
     router.refresh();
   }
 
