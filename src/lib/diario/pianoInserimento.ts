@@ -42,6 +42,10 @@ export interface PianoInserimento {
   inseriti: string[];
   // Nomi degli alimenti lasciati fuori con la quarta scelta.
   esclusi: string[];
+  // Gli alimenti entrati in una riga che c'era già (Somma o Scrivi
+  // quantità), con i grammi che quella riga ha adesso: servono al messaggio
+  // della barra ("Sommato: Mela → 150 g"). Sono anche in `inseriti`.
+  aggiornati: { nome: string; grammi: number; tipo: "somma" | "scrivi" }[];
 }
 
 export function doppioniInserimento(nuove: DatiVoce[], destinazione: VoceDiario[]): Doppione[] {
@@ -60,6 +64,7 @@ export function pianoInserimento({
   const scritture: Scrittura[] = [];
   const inseriti: string[] = [];
   const esclusi: string[] = [];
+  const aggiornati: PianoInserimento["aggiornati"] = [];
   const giaDecisi = new Set<string>();
 
   for (const dati of nuove) {
@@ -100,10 +105,11 @@ export function pianoInserimento({
           if (v.id !== resta.id) scritture.push({ tipo: "elimina", id: v.id });
         }
         inseriti.push(dati.nome_alimento);
+        aggiornati.push({ nome: dati.nome_alimento, grammi, tipo: scelta.tipo });
         break;
       }
     }
   }
 
-  return { scritture, inseriti, esclusi };
+  return { scritture, inseriti, esclusi, aggiornati };
 }

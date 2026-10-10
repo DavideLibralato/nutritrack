@@ -99,6 +99,7 @@ describe("pianoInserimento — le scelte sul doppione", () => {
     const p = piano([arriva], [vecchia], { "alimento-Mela": { tipo: "somma" } });
     expect(p.scritture).toEqual([{ tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 150 } }]);
     expect(p.inseriti).toEqual(["Mela"]);
+    expect(p.aggiornati).toEqual([{ nome: "Mela", grammi: 150, tipo: "somma" }]);
   });
 
   it("Somma con i decimali: due decimali, niente 30,299999…", () => {
@@ -113,6 +114,7 @@ describe("pianoInserimento — le scelte sul doppione", () => {
       "alimento-Mela": { tipo: "scrivi", grammi: 120.456 },
     });
     expect(p.scritture).toEqual([{ tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 120.46 } }]);
+    expect(p.aggiornati).toEqual([{ nome: "Mela", grammi: 120.46, tipo: "scrivi" }]);
   });
 
   it("Tieni separati: la riga nuova si crea accanto, quella di prima non si tocca", () => {
@@ -120,6 +122,7 @@ describe("pianoInserimento — le scelte sul doppione", () => {
     const p = piano([arriva], [esistente("Mela", 100)], { "alimento-Mela": { tipo: "separati" } });
     expect(p.scritture).toEqual([{ tipo: "crea", dati: arriva }]);
     expect(p.inseriti).toEqual(["Mela"]);
+    expect(p.aggiornati).toEqual([]);
   });
 
   it("Non aggiungerlo: nessuna scrittura, e l'alimento è fra gli esclusi", () => {

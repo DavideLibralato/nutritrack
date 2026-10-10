@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Doppioni in Aggiungi, passo 3: aggiungiNelPasto
+
+Branch `doppioni-aggiungi`. `aggiungiNelPasto` in
+`src/lib/repository/vociDiario.ts`, gemella di `duplicaNelPasto`:
+ricontrolla giorno (fino a oggi + 7) e pasto, rilegge da Dexie le righe
+del pasto di destinazione alla conferma, esiti "doppioni" / "cambiati" /
+"fatto". Tutte le scritture in `applicaScritture` (o tutto o niente, anche
+per il pasto salvato, che prima scriveva in parallelo e un guasto a metà
+lasciava metà pasto); giorno classificato solo se nasce una riga.
+"Non aggiungerlo" vale anche se il doppione sparisce prima della conferma
+(Sposta e Duplica invece spostano/copiano: lasciato com'è, da annotare in
+PUNTO §11). `pianoInserimento` restituisce anche `aggiornati` (sommati o
+scritti, con i grammi) per la barra. 14 test nuovi; 10 rotture di prova
+prese, ripristino dalla copia. 755 test verdi in 65 file. La pagina
+/aggiungi non lo usa ancora (passo 5).
+
 ## 2026-10-10 — Doppioni in Aggiungi, passo 2: pianoInserimento
 
 Branch `doppioni-aggiungi`. Primo pezzo dei doppioni in /aggiungi (oggi

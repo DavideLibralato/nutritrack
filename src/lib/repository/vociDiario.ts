@@ -33,11 +33,17 @@
 
 import { v5 as uuidv5 } from "uuid";
 import { repositoryPasti, repositoryVociDiario } from "./index";
-import type { Profilo, VoceDiario } from "../db/tipi";
+import type { Alimento, Profilo, VoceDiario } from "../db/tipi";
 import { dataScrivibile, oggiLocale } from "../dataGiorno";
 import { garantisciGiornoPerPrimaVoce } from "./giorni";
 import { pastoValidoIl } from "../pasti/validitaPasti";
 import { doppioniDuplica, pianoDuplica, type PianoDuplica } from "../diario/pianoDuplica";
+import {
+  doppioniInserimento,
+  pianoInserimento,
+  type DatiVoce,
+  type PianoInserimento,
+} from "../diario/pianoInserimento";
 import {
   pianoSpostamento,
   stessiDoppioni,
@@ -335,6 +341,124 @@ export async function duplicaNelPasto({
   });
   if (piano.scritture.some((s) => s.tipo === "crea")) {
     await garantisciGiornoPerPrimaVoce(userId, dataDestinazione, profilo);
+  }
+  const fotografia = await applicaScritture(piano.scritture);
+  return { esito: "fatto", piano, fotografia };
+}
+
+// Un alimento da aggiungere da /aggiungi: la versione del catalogo da cui
+// si copiano nome e valori (mai un riferimento che possa cambiare dopo,
+// sezione 4) e i grammi.
+export interface AlimentoDaAggiungere {
+  alimento: Pick<Alimento, "id" | "nome" | "kcal_100g" | "proteine_100g" | "carboidrati_100g" | "grassi_100g">;
+  grammi: number;
+}
+
+export type EsitoAggiungiNelPasto =
+  // Ci sono doppioni e le scelte non ci sono ancora: serve il foglio.
+  // Niente scritto.
+  | { esito: "doppioni"; doppioni: Doppione[] }
+  // Le scelte erano state fatte per altri doppioni (nel frattempo il pasto
+  // è cambiato, per esempio da un altro dispositivo): il foglio si riapre
+  // con l'elenco nuovo e un avviso. Niente scritto.
+  | { esito: "cambiati"; doppioni: Doppione[] }
+  // Fatto: il piano applicato e la sua fotografia per "Annulla" (vuota se
+  // non si è scritto niente, cioè tutto escluso con "Non aggiungerlo").
+  | { esito: "fatto"; piano: PianoInserimento; fotografia: FotografiaVoci };
+
+// Aggiunge al diario da /aggiungi (sezione 3, "Doppioni"): un alimento
+// (sheet quantità, "+" di Recenti e Preferiti) o tutti quelli di un pasto
+// salvato insieme. Gemella di duplicaNelPasto:
+// - giorno e pasto si ricontrollano qui, non solo nella pagina: un giorno
+//   vero fino a oggi + 7, un pasto che quel giorno esiste;
+// - le righe del pasto di destinazione si rileggono da Dexie ADESSO, al
+//   momento della conferma, mai dalla lista che la pagina mostrava: così
+//   anche "la stessa Mela due volte di fila" trova la prima;
+// - le scritture passano tutte da applicaScritture: o tutto o niente,
+//   anche per un pasto salvato (prima erano scritture separate in
+//   parallelo, e un guasto a metà lasciava metà pasto nel diario);
+// - il giorno si classifica (garantisciGiornoPerPrimaVoce, la "trappola"
+//   della sezione 3) solo se nasce almeno una riga nuova: una Somma tocca
+//   un giorno che ha già voci.
+//
+// Le righe nuove: valori copiati dal catalogo, creato_il adesso,
+// consumato_alle adesso solo se il giorno è oggi (altrimenti vuoto: meglio
+// niente che un orario inventato), un gruppo_id nuovo e comune per un pasto
+// salvato (`inGruppo`), nessuno per un alimento solo.
+//
+// Se l'utente aveva visto dei doppioni che nel frattempo sono spariti tutti
+// (la riga in doppione cancellata altrove), si aggiunge senza foglio: non
+// c'è più niente da decidere. Tranne "Non aggiungerlo": quell'alimento non
+// si aggiunge MAI, nemmeno se il suo doppione è sparito — un "no" esplicito
+// dell'utente vale più di un cambiamento arrivato da un altro dispositivo
+// (regola del 10/10). Per questo le righe escluse si tolgono qui, prima del
+// piano, e non solo quando sono ancora doppioni. La regola vale solo per
+// Aggiungi: Sposta e Duplica, nello stesso caso, spostano o copiano.
+export async function aggiungiNelPasto({
+  userId,
+  data,
+  pastoId,
+  alimenti,
+  inGruppo,
+  profilo,
+  scelte,
+  doppioniVisti,
+  adesso = new Date(),
+}: {
+  userId: string;
+  data: string;
+  pastoId: string;
+  alimenti: AlimentoDaAggiungere[];
+  inGruppo: boolean;
+  profilo: Profilo | null;
+  scelte?: Record<string, SceltaDoppione>;
+  doppioniVisti?: Doppione[];
+  adesso?: Date;
+}): Promise<EsitoAggiungiNelPasto> {
+  if (!dataScrivibile(data, adesso)) {
+    throw new Error(`Giorno non valido per Aggiungi: ${data}`);
+  }
+  const pasto = await repositoryPasti.ottieniPerId(pastoId);
+  if (!pasto || !pastoValidoIl(pasto, data)) {
+    throw new Error(`Pasto non valido per Aggiungi il ${data}: ${pastoId}`);
+  }
+
+  const istante = adesso.toISOString();
+  const gruppoId = inGruppo ? crypto.randomUUID() : null;
+  const nuove: DatiVoce[] = alimenti.map(({ alimento, grammi }) => ({
+    user_id: userId,
+    alimento_id: alimento.id,
+    pasto_id: pastoId,
+    gruppo_id: gruppoId,
+    quantita_g: grammi,
+    data,
+    creato_il: istante,
+    consumato_alle: data === oggiLocale(adesso) ? istante : null,
+    nome_alimento: alimento.nome,
+    kcal_100g: alimento.kcal_100g,
+    proteine_100g: alimento.proteine_100g,
+    carboidrati_100g: alimento.carboidrati_100g,
+    grassi_100g: alimento.grassi_100g,
+  }));
+  const destinazione = await vociDelPasto(userId, data, pastoId);
+
+  const doppioni = doppioniInserimento(nuove, destinazione);
+  if (doppioni.length > 0) {
+    if (!scelte || !doppioniVisti) return { esito: "doppioni", doppioni };
+    if (!stessiDoppioni(doppioni, doppioniVisti)) return { esito: "cambiati", doppioni };
+  }
+
+  const escluso = (n: DatiVoce) => n.alimento_id !== null && scelte?.[n.alimento_id]?.tipo === "escludi";
+  const nomiEsclusi = [...new Set(nuove.filter(escluso).map((n) => n.nome_alimento))];
+  const piano = pianoInserimento({
+    nuove: nuove.filter((n) => !escluso(n)),
+    destinazione,
+    scelte: scelte ?? {},
+  });
+  // Le escluse non sono arrivate al piano: i loro nomi si rimettono qui.
+  piano.esclusi = nomiEsclusi;
+  if (piano.scritture.some((s) => s.tipo === "crea")) {
+    await garantisciGiornoPerPrimaVoce(userId, data, profilo);
   }
   const fotografia = await applicaScritture(piano.scritture);
   return { esito: "fatto", piano, fotografia };

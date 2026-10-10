@@ -21,6 +21,8 @@ import {
   idVoceRicreata,
   spostaNelPasto,
   duplicaNelPasto,
+  aggiungiNelPasto,
+  type AlimentoDaAggiungere,
 } from "./vociDiario";
 import { repositoryVociDiario } from "./index";
 import { db } from "../db/database";
@@ -609,5 +611,301 @@ describe("annullaOperazione con pastiSostituiti", () => {
     await annullaOperazione(foto);
 
     expect((await db.voci_diario.get(idVoceRicreata(pasta.id)))?.pasto_id).toBe("pranzo-vecchio");
+  });
+});
+
+// Aggiungi da /aggiungi con i doppioni (sezione 3, "Doppioni"): prima
+// aggiungere un alimento già presente nel pasto creava una seconda riga in
+// silenzio. Quello che non deve rompersi: la destinazione si rilegge da
+// Dexie alla conferma, o tutto o niente, "Annulla" riporta anche i grammi
+// sommati o scritti, il giorno si classifica solo se nasce una riga.
+describe("aggiungi nel pasto", () => {
+  // Il "giorno" dei test, il 2 ottobre, è oggi; ieri è il 1°.
+  const ADESSO = new Date(2026, 9, 2, 13, 0, 0);
+  const IERI = "2026-10-01";
+
+  beforeEach(async () => {
+    const base = { user_id: "condiviso-nei-test", ora_inizio: "12:00", ordine: 0, updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null };
+    await db.pasti.bulkPut([
+      { ...base, id: "colazione", nome: "Colazione" },
+      { ...base, id: "pranzo", nome: "Pranzo" },
+    ]);
+  });
+
+  // Lo stesso alimento_id di creaVoce (`alimento-${nome}`).
+  function da(nome: string, grammi: number, kcal = 100): AlimentoDaAggiungere {
+    return {
+      alimento: { id: `alimento-${nome}`, nome, kcal_100g: kcal, proteine_100g: 1, carboidrati_100g: 2, grassi_100g: 3 },
+      grammi,
+    };
+  }
+
+  function aggiungi(
+    userId: string,
+    alimenti: AlimentoDaAggiungere[],
+    altro: Partial<Parameters<typeof aggiungiNelPasto>[0]> = {}
+  ) {
+    return aggiungiNelPasto({
+      userId,
+      data: GIORNO,
+      pastoId: "pranzo",
+      alimenti,
+      inGruppo: alimenti.length > 1,
+      profilo: null,
+      adesso: ADESSO,
+      ...altro,
+    });
+  }
+
+  function profiloDifferenziato(userId: string): Profilo {
+    return {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      updated_at: "2026-09-01T10:00:00.000Z",
+      deleted_at: null,
+      nome: null,
+      sesso: "non_indicato",
+      data_nascita: null,
+      altezza_cm: null,
+      livello_attivita: "sedentario",
+      differenzia_giorni: true,
+      giorni_allenamento_default: null,
+    };
+  }
+
+  async function diario(userId: string) {
+    const vive = await repositoryVociDiario.ottieniTutti(userId);
+    return vive.map((v) => `${v.data} ${v.pasto_id}: ${v.nome_alimento} ${v.quantita_g} g`).sort();
+  }
+
+  it("la stessa Mela due volte di fila: la seconda trova la prima, niente scritto", async () => {
+    const userId = crypto.randomUUID();
+    const primo = await aggiungi(userId, [da("Mela", 150)]);
+    expect(primo.esito).toBe("fatto");
+    const prima = await diario(userId);
+    expect(prima).toEqual([`${GIORNO} pranzo: Mela 150 g`]);
+
+    const secondo = await aggiungi(userId, [da("Mela", 80)]);
+
+    expect(secondo).toEqual({
+      esito: "doppioni",
+      doppioni: [
+        { alimentoId: "alimento-Mela", nome: "Mela", grammiEsistenti: 150, grammiInArrivo: 80, righeEsistenti: 1, righeInArrivo: 1 },
+      ],
+    });
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("una riga compare fra il foglio e la conferma: «cambiati», niente scritto", async () => {
+    const userId = crypto.randomUUID();
+    await creaVoce(userId, "Yogurt", { pastoId: "pranzo", quantita: 100 });
+    const pastoSalvato = [da("Yogurt", 125), da("Mela", 150)];
+    const primo = await aggiungi(userId, pastoSalvato);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+    expect(primo.doppioni.map((d) => d.nome)).toEqual(["Yogurt"]);
+
+    // Nel frattempo (un altro dispositivo) a pranzo compare anche una mela.
+    await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 80 });
+    const prima = await diario(userId);
+
+    const esito = await aggiungi(userId, pastoSalvato, {
+      scelte: { "alimento-Yogurt": { tipo: "somma" } },
+      doppioniVisti: primo.doppioni,
+    });
+
+    expect(esito.esito).toBe("cambiati");
+    if (esito.esito === "cambiati") {
+      expect(esito.doppioni.map((d) => d.nome).sort()).toEqual(["Mela", "Yogurt"]);
+    }
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  describe("il doppione visto è sparito prima della conferma", () => {
+    // La Mela a pranzo, l'unico doppione che l'utente ha visto, viene
+    // cancellata nel frattempo (un altro dispositivo).
+    async function preparaDoppioneSparito(userId: string) {
+      const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+      const pastoSalvato = [da("Mela", 150), da("Pane", 50)];
+      const primo = await aggiungi(userId, pastoSalvato);
+      if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+      expect(primo.doppioni.map((d) => d.nome)).toEqual(["Mela"]);
+      await repositoryVociDiario.elimina(mela.id);
+      return { pastoSalvato, doppioniVisti: primo.doppioni };
+    }
+
+    it("«Non aggiungerlo» vale lo stesso: la Mela non si aggiunge, il Pane sì", async () => {
+      const userId = crypto.randomUUID();
+      const { pastoSalvato, doppioniVisti } = await preparaDoppioneSparito(userId);
+
+      const esito = await aggiungi(userId, pastoSalvato, {
+        scelte: { "alimento-Mela": { tipo: "escludi" } },
+        doppioniVisti,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(await diario(userId)).toEqual([`${GIORNO} pranzo: Pane 50 g`]);
+      expect(esito.piano.inseriti).toEqual(["Pane"]);
+      expect(esito.piano.esclusi).toEqual(["Mela"]);
+    });
+
+    it("con Somma si aggiunge senza foglio: non c'è più niente da sommare", async () => {
+      const userId = crypto.randomUUID();
+      const { pastoSalvato, doppioniVisti } = await preparaDoppioneSparito(userId);
+
+      const esito = await aggiungi(userId, pastoSalvato, {
+        scelte: { "alimento-Mela": { tipo: "somma" } },
+        doppioniVisti,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(await diario(userId)).toEqual([`${GIORNO} pranzo: Mela 150 g`, `${GIORNO} pranzo: Pane 50 g`]);
+      expect(esito.piano.esclusi).toEqual([]);
+    });
+  });
+
+  it("un guasto a metà pasto salvato: niente scritto, nemmeno la Somma già fatta", async () => {
+    const userId = crypto.randomUUID();
+    await creaVoce(userId, "Pane", { pastoId: "pranzo", quantita: 50 });
+    const prima = await diario(userId);
+    const pastoSalvato = [da("Pane", 30), da("Burro", 10), da("Marmellata", 20)];
+    const primo = await aggiungi(userId, pastoSalvato);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+
+    // Le scritture sono: Pane sommato, Burro creato, Marmellata creata. La
+    // seconda creazione si rompe.
+    const originale = repositoryVociDiario.crea;
+    let chiamate = 0;
+    const spia = vi.spyOn(repositoryVociDiario, "crea").mockImplementation(async (dati, id) => {
+      chiamate++;
+      if (chiamate === 2) throw new Error("Guasto finto");
+      return originale(dati, id);
+    });
+
+    await expect(
+      aggiungi(userId, pastoSalvato, {
+        scelte: { "alimento-Pane": { tipo: "somma" } },
+        doppioniVisti: primo.doppioni,
+      })
+    ).rejects.toThrow("Guasto finto");
+    spia.mockRestore();
+
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  for (const [scelta, dopo] of [
+    [{ tipo: "somma" as const }, 150],
+    [{ tipo: "scrivi" as const, grammi: 120 }, 120],
+  ] as const) {
+    it(`${scelta.tipo === "somma" ? "Somma" : "Scrivi quantità"}, poi Annulla: la riga torna ai grammi di prima`, async () => {
+      const userId = crypto.randomUUID();
+      const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+      const primo = await aggiungi(userId, [da("Mela", 50)]);
+      if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+
+      const esito = await aggiungi(userId, [da("Mela", 50)], {
+        scelte: { "alimento-Mela": scelta },
+        doppioniVisti: primo.doppioni,
+      });
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      // Una riga sola, la stessa di prima, con i grammi nuovi.
+      expect(await diario(userId)).toEqual([`${GIORNO} pranzo: Mela ${dopo} g`]);
+      expect((await db.voci_diario.get(mela.id))?.quantita_g).toBe(dopo);
+      expect(esito.piano.aggiornati).toEqual([{ nome: "Mela", grammi: dopo, tipo: scelta.tipo }]);
+
+      await annullaOperazione(esito.fotografia);
+
+      expect(await diario(userId)).toEqual([`${GIORNO} pranzo: Mela 100 g`]);
+      expect(await db.voci_diario.get(mela.id)).toMatchObject({ quantita_g: 100, deleted_at: null });
+    });
+  }
+
+  describe("il giorno si classifica solo se nasce una riga", () => {
+    it("una riga nuova su un giorno senza voci: classificato", async () => {
+      const userId = crypto.randomUUID();
+      const esito = await aggiungi(userId, [da("Mela", 150)], { data: IERI, profilo: profiloDifferenziato(userId) });
+      expect(esito.esito).toBe("fatto");
+      expect((await db.giorni.get(idGiorno(userId, IERI)))?.deleted_at).toBeNull();
+    });
+
+    it("solo una Somma: non classificato", async () => {
+      const userId = crypto.randomUUID();
+      await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+      const profilo = profiloDifferenziato(userId);
+      const primo = await aggiungi(userId, [da("Mela", 50)], { profilo });
+      if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+
+      const esito = await aggiungi(userId, [da("Mela", 50)], {
+        profilo,
+        scelte: { "alimento-Mela": { tipo: "somma" } },
+        doppioniVisti: primo.doppioni,
+      });
+
+      expect(esito.esito).toBe("fatto");
+      expect(await diario(userId)).toEqual([`${GIORNO} pranzo: Mela 150 g`]);
+      expect(await db.giorni.get(idGiorno(userId, GIORNO))).toBeUndefined();
+    });
+
+    it("tutto escluso: niente scritto, fotografia vuota, non classificato", async () => {
+      const userId = crypto.randomUUID();
+      await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+      const prima = await diario(userId);
+      const profilo = profiloDifferenziato(userId);
+      const primo = await aggiungi(userId, [da("Mela", 50)], { profilo });
+      if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+
+      const esito = await aggiungi(userId, [da("Mela", 50)], {
+        profilo,
+        scelte: { "alimento-Mela": { tipo: "escludi" } },
+        doppioniVisti: primo.doppioni,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(esito.piano.esclusi).toEqual(["Mela"]);
+      expect(esito.fotografia).toEqual({ prima: [], idCreate: [] });
+      expect(await diario(userId)).toEqual(prima);
+      expect(await db.giorni.get(idGiorno(userId, GIORNO))).toBeUndefined();
+    });
+  });
+
+  describe("com'è fatta la riga nuova", () => {
+    it("un pasto salvato oggi: valori dal catalogo, ora del consumo adesso, un gruppo nuovo comune", async () => {
+      const userId = crypto.randomUUID();
+      const esito = await aggiungi(userId, [da("Pane", 50, 270), da("Burro", 10, 717)]);
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+
+      const righe = perNome(await repositoryVociDiario.ottieniTutti(userId));
+      expect(righe.map(contenutoVisibile)).toEqual([
+        expect.objectContaining({ nome_alimento: "Burro", alimento_id: "alimento-Burro", quantita_g: 10, kcal_100g: 717 }),
+        expect.objectContaining({ nome_alimento: "Pane", alimento_id: "alimento-Pane", quantita_g: 50, kcal_100g: 270 }),
+      ]);
+      for (const r of righe) {
+        expect(r).toMatchObject({ data: GIORNO, pasto_id: "pranzo", creato_il: ADESSO.toISOString(), consumato_alle: ADESSO.toISOString() });
+      }
+      expect(righe[0].gruppo_id).not.toBeNull();
+      expect(righe[1].gruppo_id).toBe(righe[0].gruppo_id);
+    });
+
+    it("un alimento solo su un altro giorno: niente gruppo, niente ora inventata", async () => {
+      const userId = crypto.randomUUID();
+      await aggiungi(userId, [da("Mela", 150)], { data: IERI, inGruppo: false });
+      const [riga] = await repositoryVociDiario.ottieniTutti(userId);
+      expect(riga).toMatchObject({ data: IERI, gruppo_id: null, consumato_alle: null });
+    });
+  });
+
+  describe("giorno e pasto si ricontrollano prima di scrivere", () => {
+    it("oltre oggi + 7: rifiutato, niente scritto", async () => {
+      const userId = crypto.randomUUID();
+      await expect(aggiungi(userId, [da("Mela", 150)], { data: "2026-10-10" })).rejects.toThrow("Giorno non valido");
+      expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(0);
+    });
+
+    it("un pasto che non c'è: rifiutato, niente scritto", async () => {
+      const userId = crypto.randomUUID();
+      await expect(aggiungi(userId, [da("Mela", 150)], { pastoId: "pasto-inesistente" })).rejects.toThrow(
+        "Pasto non valido"
+      );
+      expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(0);
+    });
   });
 });
