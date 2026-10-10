@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Ripristino della password unito a main
+
+Provato il 10/10 (voce sotto) e unito a main con fast-forward da
+`8f3e7ea` a `da9a9c7`, senza commit di merge: `fe3c7f2` (lo scambio del
+codice non avviene più due volte, e la voce di merge di `sync-stato`),
+`9235095` (testi chiari sul link di ripristino, nuovo link anche da
+loggati), `88b22ce` (un link già usato non apre più il modulo),
+`f5cc5ca` (dopo il salvataggio la pagina esce dalla cronologia),
+`da9a9c7` (i documenti, provato su iPhone il 10/10). Branch
+`reset-password` cancellato, in locale e su GitHub. Deploy di produzione
+riuscito. 727 test verdi in 64 file. Voce scritta con il primo commit
+del branch successivo (`doppioni-aggiungi`), per non fare un commit su
+main solo per il registro.
+
 ## 2026-10-10 — Ripristino della password provato su iPhone
 
 Branch `reset-password`. Provato il 10/10 su iPhone in Safari
