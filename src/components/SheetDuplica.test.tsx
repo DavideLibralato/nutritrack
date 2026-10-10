@@ -1,7 +1,8 @@
-// Il foglio di Duplica non deve permettere giorni futuri (PUNTO_DI_PARTENZA.md,
-// sezione 3, "Tieni premuto", passo E), e "oggi" è quello dell'orologio
-// locale: alle 00:30 il giorno nuovo è già oggi, anche se in UTC è ancora
-// ieri. Un `max` calcolato in UTC lo escluderebbe per un'ora o due ogni notte.
+// Il foglio di Duplica arriva fino a oggi + 7 e non oltre (PUNTO_DI_PARTENZA.md,
+// sezione 3, "Inserimento retroattivo"), e "oggi" è quello dell'orologio
+// locale: alle 00:30 il limite si è già spostato di un giorno, anche se in
+// UTC è ancora ieri. Un `max` calcolato in UTC lo terrebbe indietro per
+// un'ora o due ogni notte.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -63,22 +64,33 @@ describe("SheetDuplica", () => {
     expect(onConferma).toHaveBeenCalledWith("2026-10-06", "colazione");
   });
 
-  it("dopo mezzanotte: il massimo è il giorno nuovo dell'orologio locale", () => {
+  it("dopo mezzanotte: il massimo è oggi + 7 dell'orologio locale", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 7, 0, 30, 0)); // in UTC è ancora il 6
     const { giorno, duplica } = apri();
-    expect(giorno.max).toBe("2026-10-07");
-    fireEvent.change(giorno, { target: { value: "2026-10-07" } });
+    expect(giorno.max).toBe("2026-10-14");
+    fireEvent.change(giorno, { target: { value: "2026-10-14" } });
     expect(duplica.disabled).toBe(false);
   });
 
-  it("un giorno futuro digitato a mano spegne Duplica", () => {
+  it("oggi + 7 si può scegliere", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 6, 15, 0, 0));
     const { giorno, duplica, onConferma } = apri();
-    fireEvent.change(giorno, { target: { value: "2026-10-07" } });
+    expect(giorno.max).toBe("2026-10-13");
+    fireEvent.change(giorno, { target: { value: "2026-10-13" } });
+    expect(duplica.disabled).toBe(false);
+    fireEvent.click(duplica);
+    expect(onConferma).toHaveBeenCalledWith("2026-10-13", "colazione");
+  });
+
+  it("oggi + 8 digitato a mano spegne Duplica, e il messaggio dice il limite", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 6, 15, 0, 0));
+    const { giorno, duplica, onConferma } = apri();
+    fireEvent.change(giorno, { target: { value: "2026-10-14" } });
     expect(duplica.disabled).toBe(true);
-    screen.getByText("Scegli oggi o un giorno passato.");
+    screen.getByText("Scegli un giorno fino a mar 13 ott.");
     fireEvent.click(duplica);
     expect(onConferma).not.toHaveBeenCalled();
   });

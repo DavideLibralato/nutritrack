@@ -2,8 +2,8 @@
 
 // Swipe orizzontale per cambiare giorno in Oggi (PUNTO_DI_PARTENZA.md,
 // sezione 3, "Swipe per cambiare giorno"). Dito verso sinistra = giorno
-// dopo, verso destra = giorno prima; oltre oggi non si va (effetto elastico).
-// Le decisioni (direzione, soglie, bordi, elastico) sono funzioni pure in
+// dopo, verso destra = giorno prima; oltre oggi + 7 non si va (effetto
+// elastico). Le decisioni (direzione, soglie, bordi, elastico) sono funzioni pure in
 // decisioneSwipe.ts; qui c'è solo il collegamento col browser.
 //
 // Uso: `const rifPannello = useSwipeGiorno({...})` e poi
@@ -53,7 +53,7 @@ import {
   type Direzione,
   type EsitoSwipe,
 } from "./decisioneSwipe";
-import { oggiLocale } from "./dataGiorno";
+import { ultimoGiornoDiario } from "./dataGiorno";
 import { puntatoreRivendicato } from "./puntatoriRivendicati";
 import { movimentoRidotto } from "./movimentoRidotto";
 
@@ -61,7 +61,7 @@ export type VersoGiorno = Exclude<EsitoSwipe, "ritorno">;
 
 interface OpzioniSwipe {
   // Il giorno mostrato, "YYYY-MM-DD": serve a sapere se si può andare avanti
-  // (oltre oggi no). Confrontato con oggiLocale() all'inizio di ogni gesto,
+  // (oltre oggi + 7 no). Confrontato con ultimoGiornoDiario() a ogni gesto,
   // così regge anche a cavallo della mezzanotte.
   giorno: string;
   // Falso con uno sheet aperto: il gesto non parte.
@@ -175,7 +175,7 @@ export function useSwipeGiorno(opzioni: OpzioniSwipe) {
         y0: e.clientY,
         direzione: null,
         campioni: [{ t: e.timeStamp, x: e.clientX }],
-        puoAvanti: giorno !== oggiLocale(),
+        puoAvanti: giorno < ultimoGiornoDiario(),
         ridotto: movimentoRidotto(),
         spostamento: 0,
       };

@@ -45,7 +45,7 @@ import {
   ripristinaAlimentoEliminato,
   type TracciaRimozione,
 } from "@/lib/repository/composizioni";
-import { eFuturo, oraCorrente, oggiLocale } from "@/lib/dataGiorno";
+import { dataScrivibile, oraCorrente, oggiLocale } from "@/lib/dataGiorno";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
 import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
@@ -101,13 +101,15 @@ function AggiungiContenuto() {
 
   // L'oggi del calendario, anche all'una di notte (PUNTO_DI_PARTENZA.md,
   // sezione 4, "Il giorno è quello del calendario"). È lo stesso "oggi"
-  // di eFuturo e del limite in avanti di Oggi.
+  // della pagina Oggi.
   const oggi = oggiLocale();
 
   // Il giorno a cui appartiene la voce arriva da Oggi come ?giorno=. Se manca,
-  // o è nel futuro, si ripiega su oggi.
+  // non è un giorno vero o va oltre oggi + 7 (dataScrivibile), si ripiega su
+  // oggi. Un giorno futuro entro il limite va bene: chi prepara il pranzo la
+  // sera prima lo registra già nel giorno giusto.
   const giornoParam = searchParams.get("giorno");
-  const giorno = giornoParam && !eFuturo(giornoParam) ? giornoParam : oggi;
+  const giorno = giornoParam && dataScrivibile(giornoParam) ? giornoParam : oggi;
 
   // I pasti che esistono nel giorno in cui si registra, in ordine d'orario
   // (sezione 3, "I pasti"): sono le scelte del titolo, e fra loro si
@@ -175,8 +177,8 @@ function AggiungiContenuto() {
   const { stato: statoPastiIniziali, riprova: riprovaPastiIniziali } = usePastiIniziali(userId);
 
   // Proposta del pasto: se stai registrando adesso, in base all'ora (prima
-  // del primo pasto, il primo pasto stesso); sui giorni passati il primo
-  // pasto ancora vuoto (sezione "I pasti" / "Inserimento retroattivo").
+  // del primo pasto, il primo pasto stesso); sui giorni passati e futuri il
+  // primo pasto ancora vuoto (sezione "I pasti" / "Inserimento retroattivo").
   let pastoPropostoId: string | null = null;
   if (pasti && pasti.length > 0) {
     if (registroAdesso) {

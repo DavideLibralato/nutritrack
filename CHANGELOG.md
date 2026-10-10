@@ -5,6 +5,42 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Diario fino a 7 giorni, 1: navigazione e inserimento
+
+Branch `diario-futuro`. Decisione del 10/10: il diario accetta anche i
+giorni futuri, fino a oggi + 7 incluso (chi prepara i pranzi in anticipo
+li registra subito nel giorno giusto). Primo commit: il limite e dove si
+applica.
+
+- `GIORNI_FUTURI_DIARIO` e `ultimoGiornoDiario` in `dataGiorno.ts`, una
+  costante sola; `dataScrivibile` arriva fino a lì invece che a oggi.
+- Oggi: freccia avanti, swipe e calendario fino a oggi + 7; `?giorno=`
+  accettato fino al limite. Aggiungi: `?giorno=` futuro accettato, propone
+  il primo pasto vuoto (non l'ora) e lascia `consumato_alle` vuoto, come
+  sui giorni passati. Duplica: `max` e controllo fino al limite, messaggio
+  "Scegli un giorno fino a mar 13 ott.".
+- Difetto corretto (c'era già): il calendario di Oggi accettava una data
+  digitata oltre il `max`; aperto Aggiungi da lì, la voce finiva su oggi
+  senza dirlo. Ora la data fuori limite si ignora.
+- Lasciato aperto, per il prossimo commit dello stesso branch: Elimina e
+  Rinomina "da oggi" toccano solo le voci di oggi, non quelle future
+  (PUNTO §11, "Difetti e verifiche aperti").
+- Documenti: PUNTO §3 "Inserimento retroattivo", Duplica, swipe.
+- Test nuovi o riscritti (`dataGiorno`, `SheetDuplica`, `vociDiario`,
+  pagine Oggi e Aggiungi), ciascuno provato a vuoto rompendo il codice da
+  una copia. 575 test verdi in 53 file.
+
+## 2026-10-09 — Elimina pasto unito a main
+
+Provato il 9/10 (voci sotto: un giro per volta, 4b, 4c) e unito a main con fast-forward da
+`abcfcc1` a `11f1a2a`, senza commit di merge: `1af4a7b` (sincronizzazione
+un giro per volta), `b498ba1` (regole, scritture e Annulla), `0e0fb86`
+(la pagina), `11f1a2a` (i documenti, provato su iPhone il 9/10). Branch
+`elimina-pasto` cancellato, in locale e su GitHub. Deploy di produzione
+riuscito. 565 test verdi in 53 file. Voce scritta il 10/10 con il primo
+commit del branch successivo, per non fare un commit su main solo per il
+changelog.
+
 ## 2026-10-09 — Elimina pasto, passo 4c: la pagina
 
 Branch `elimina-pasto`. Terzo commit del passo 4: l'interfaccia, sulla

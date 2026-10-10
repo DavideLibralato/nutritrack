@@ -13,7 +13,7 @@ import OggiPage from "./page";
 import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
 import { idVoceRicreata } from "@/lib/repository/vociDiario";
 import { SCADENZA_BLOCCO_CLICK_MS } from "@/lib/decisioneSwipe";
-import { formattaGiornoCorto, giornoPrecedente, oggiLocale } from "@/lib/dataGiorno";
+import { formattaDataEstesa, formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
 import type { VoceDiario } from "@/lib/db/tipi";
 
 // Un utente nuovo per ogni test: il database finto è lo stesso per tutto il
@@ -30,9 +30,15 @@ vi.mock("@/lib/supabase/useUtente", () => ({
 }));
 
 // Il router di Next.js fuori dall'app vera non esiste: qui un finto vuoto.
+// `parametri` è il ?giorno= con cui si apre la pagina: vuoto, salvo nei
+// test della navigazione che lo impostano.
+let parametri = new URLSearchParams();
+beforeEach(() => {
+  parametri = new URLSearchParams();
+});
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {} }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => parametri,
 }));
 
 // Rete assente: si esercita solo la parte locale (Dexie + outbox).
@@ -658,5 +664,63 @@ describe("Oggi: pasti non più in uso con voci in quel giorno", () => {
       "Merenda · non più in uso",
     ]);
     expect(menu.selectedOptions[0].textContent).toBe("Merenda · non più in uso");
+  });
+});
+
+describe("Oggi: navigazione fino a oggi + 7", () => {
+  // Il giorno a "n" giorni da oggi, con le funzioni dell'app.
+  function traGiorni(n: number) {
+    let d = oggiLocale();
+    for (let i = 0; i < n; i++) d = giornoSuccessivo(d);
+    return d;
+  }
+
+  async function apri(giorno?: string) {
+    if (giorno) parametri = new URLSearchParams({ giorno });
+    if ((await repositoryPasti.ottieniTutti(utenteTest)).length === 0) {
+      await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    }
+    render(<OggiPage />);
+    await screen.findByText("Pranzo");
+    return {
+      avanti: screen.getByRole("button", { name: "Giorno successivo" }) as HTMLButtonElement,
+      calendario: document.querySelector('input[type="date"]') as HTMLInputElement,
+    };
+  }
+
+  // Il giorno mostrato, dall'etichetta per esteso del titolo-data.
+  function giornoMostrato(iso: string) {
+    return screen.getByRole("button", { name: `Cambia data, ${formattaDataEstesa(iso)}` });
+  }
+
+  it("da oggi si va avanti; a oggi + 7 la freccia si spegne", async () => {
+    const { avanti } = await apri();
+    for (let n = 1; n <= 7; n++) {
+      expect(avanti.disabled).toBe(false);
+      fireEvent.click(avanti);
+      giornoMostrato(traGiorni(n));
+    }
+    expect(avanti.disabled).toBe(true);
+    // Su un giorno futuro c'è il pulsante per tornare a oggi.
+    fireEvent.click(screen.getByRole("button", { name: "Oggi" }));
+    giornoMostrato(oggiLocale());
+  });
+
+  it("?giorno= fino a oggi + 7 apre quel giorno; oltre, oggi", async () => {
+    await apri(traGiorni(7));
+    giornoMostrato(traGiorni(7));
+    cleanup();
+
+    await apri(traGiorni(8));
+    giornoMostrato(oggiLocale());
+  });
+
+  it("il calendario arriva a oggi + 7 e ignora una data oltre, digitata a mano", async () => {
+    const { calendario } = await apri();
+    expect(calendario.max).toBe(traGiorni(7));
+    fireEvent.change(calendario, { target: { value: traGiorni(8) } });
+    giornoMostrato(oggiLocale());
+    fireEvent.change(calendario, { target: { value: traGiorni(3) } });
+    giornoMostrato(traGiorni(3));
   });
 });

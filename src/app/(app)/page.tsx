@@ -62,8 +62,9 @@ import {
   formattaGiornoMese,
   formattaDataEstesa,
   formattaGiornoCorto,
-  eFuturo,
+  dataScrivibile,
   oggiLocale,
+  ultimoGiornoDiario,
 } from "@/lib/dataGiorno";
 import { TIPO_GIORNO_NORMALE } from "@/lib/db/tipi";
 import { catalogoLocale } from "@/lib/repository/alimenti";
@@ -181,13 +182,13 @@ function OggiContenuto() {
   const searchParams = useSearchParams();
 
   // Il giorno visualizzato, "YYYY-MM-DD". Se /aggiungi ci ha rimandato qui con
-  // un ?giorno= (e non è futuro) si parte da quello. Altrimenti si parte
-  // dall'oggi del calendario, anche all'una di notte (PUNTO_DI_PARTENZA.md,
-  // sezione 4, "Il giorno è quello del calendario"): non serve aspettare
-  // i pasti da Dexie per saperlo.
+  // un ?giorno= (un giorno vero, non oltre oggi + 7) si parte da quello.
+  // Altrimenti si parte dall'oggi del calendario, anche all'una di notte
+  // (PUNTO_DI_PARTENZA.md, sezione 4, "Il giorno è quello del calendario"):
+  // non serve aspettare i pasti da Dexie per saperlo.
   const [giorno, setGiorno] = useState<string>(() => {
     const param = searchParams.get("giorno");
-    return param && !eFuturo(param) ? param : oggiLocale();
+    return param && dataScrivibile(param) ? param : oggiLocale();
   });
 
   // Il calendario si apre da codice con showPicker() sull'input date, non
@@ -543,10 +544,12 @@ function OggiContenuto() {
 
   // Da qui in giù `pasti`, `vociTutte` e `obiettivi` ci sono di sicuro.
 
-  // L'oggi del calendario: il giorno a cui riporta il pulsante "Oggi" e oltre
-  // il quale non si naviga in avanti (lo stesso limite di eFuturo).
+  // L'oggi del calendario: il giorno a cui riporta il pulsante "Oggi" e
+  // l'unico con "Rimangono X kcal". Il limite in avanti è un'altra cosa:
+  // oggi + 7 (ultimoGiornoDiario), lo stesso di dataScrivibile.
   const giornoCorrente = oggiLocale();
   const eGiornoCorrente = giorno === giornoCorrente;
+  const ultimoGiorno = ultimoGiornoDiario();
 
   // Derivati: con React Compiler attivo non serve useMemo, il ricalcolo a
   // ogni render è già memoizzato dal compilatore.
@@ -1088,11 +1091,12 @@ function OggiContenuto() {
             </button>
 
             {/* Il titolo-data è un pulsante: aprirlo mostra il calendario
-                nativo (sezione "Inserimento retroattivo"). `max` impedisce di
-                scegliere un giorno oltre quello logico corrente (fra
-                mezzanotte e l'ora del primo pasto è ieri). L'input date resta
-                fuori schermo (sr-only) e serve solo come bersaglio di
-                showPicker().
+                nativo (sezione "Inserimento retroattivo"). `max` è
+                l'ultimo giorno del diario (oggi + 7); siccome alcuni
+                browser lasciano digitare oltre il massimo, onChange
+                ricontrolla con dataScrivibile e ignora una data fuori.
+                L'input date resta fuori schermo (sr-only) e serve solo
+                come bersaglio di showPicker().
                 "Giorno sopra la data": una colonna centrata, sopra il giorno
                 della settimana piccolo, maiuscolo e tenue ("VENERDÌ", nel
                 font del testo), sotto "25 set" alla grandezza e nel font di
@@ -1117,8 +1121,8 @@ function OggiContenuto() {
               ref={rifData}
               type="date"
               value={giorno}
-              max={giornoCorrente}
-              onChange={(e) => e.target.value && setGiorno(e.target.value)}
+              max={ultimoGiorno}
+              onChange={(e) => dataScrivibile(e.target.value) && setGiorno(e.target.value)}
               tabIndex={-1}
               aria-hidden
               className="sr-only"
@@ -1127,7 +1131,7 @@ function OggiContenuto() {
             <button
               type="button"
               onClick={() => setGiorno(giornoSuccessivo(giorno))}
-              disabled={eGiornoCorrente}
+              disabled={giorno >= ultimoGiorno}
               aria-label="Giorno successivo"
               className={`rounded p-1 text-muted disabled:opacity-30 ${CLASSE_FOCUS}`}
             >

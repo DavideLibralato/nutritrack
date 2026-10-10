@@ -3,11 +3,11 @@
 // "Duplica" dal menu contestuale di Oggi (PUNTO_DI_PARTENZA.md, sezione 3,
 // "Tieni premuto", passo E): dove copiare un alimento o un pasto intero.
 // Due campi:
-// 1. Giorno: campo data con `max` = oggi, e parte dal giorno che si sta
-//    guardando. Il `max` da solo non basta (alcuni browser lasciano
-//    digitare una data oltre il massimo): la data si ricontrolla con
-//    dataScrivibile, cioè contro oggiLocale (l'orologio locale, non UTC:
-//    all'una di notte il giorno nuovo è già oggi).
+// 1. Giorno: campo data con `max` = oggi + 7 (ultimoGiornoDiario), e parte
+//    dal giorno che si sta guardando. Il `max` da solo non basta (alcuni
+//    browser lasciano digitare una data oltre il massimo): la data si
+//    ricontrolla con dataScrivibile (l'orologio locale, non UTC: all'una
+//    di notte il limite si è già spostato).
 // 2. Pasto: uno dei pasti che esistono nel GIORNO SCELTO (pastiValidiIl):
 //    l'elenco cambia con la data. Parte da quello d'origine ("ripeti questo
 //    pasto un altro giorno"), modificabile. Se quel giorno il pasto
@@ -24,7 +24,7 @@
 import { useEffect, useState } from "react";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import { dataScrivibile, oggiLocale } from "@/lib/dataGiorno";
+import { dataScrivibile, formattaGiornoCorto, ultimoGiornoDiario } from "@/lib/dataGiorno";
 import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
 import type { Pasto } from "@/lib/db/tipi";
 
@@ -63,7 +63,7 @@ export default function SheetDuplica({
     return () => document.removeEventListener("keydown", onKey);
   }, [onAnnulla, inCorso]);
 
-  const oggi = oggiLocale();
+  const ultimoGiorno = ultimoGiornoDiario();
   const dataValida = dataScrivibile(data);
   // Senza una data valida non c'è un giorno di cui mostrare i pasti.
   const pastiDelGiorno = dataValida ? pastiValidiIl(pasti, data) : [];
@@ -97,13 +97,13 @@ export default function SheetDuplica({
           <input
             id="duplica-giorno"
             type="date"
-            max={oggi}
+            max={ultimoGiorno}
             value={data}
             onChange={(e) => setData(e.target.value)}
             className={`campo-data mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
           />
           {data !== "" && !dataValida && (
-            <p className="mt-1 text-sm text-warning">Scegli oggi o un giorno passato.</p>
+            <p className="mt-1 text-sm text-warning">Scegli un giorno fino a {formattaGiornoCorto(ultimoGiorno)}.</p>
           )}
 
           <label htmlFor="duplica-pasto" className="mt-4 block text-sm font-medium">

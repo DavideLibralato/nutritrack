@@ -363,7 +363,8 @@ describe("sposta e annulla", () => {
 });
 
 describe("duplica e annulla", () => {
-  // Il "giorno" dei test è il 2 ottobre: si duplica sul 1° (ieri) o sul 2.
+  // Il "giorno" dei test è il 2 ottobre: si duplica sul 1° (ieri), sul 2 o
+  // in avanti fino al 9 (oggi + 7).
   const ADESSO = new Date(2026, 9, 2, 13, 0, 0);
   const IERI = "2026-10-01";
 
@@ -476,7 +477,27 @@ describe("duplica e annulla", () => {
     expect(await db.voci_diario.get(mela.id)).toEqual(mela);
   });
 
-  it("un giorno futuro si rifiuta, senza scrivere niente", async () => {
+  it("fino a oggi + 7 si duplica: senza ora del consumo, il giorno si classifica", async () => {
+    const userId = crypto.randomUUID();
+    const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 150 });
+    const tra7 = "2026-10-09";
+
+    const esito = await duplicaNelPasto({
+      userId,
+      dataPartenza: GIORNO,
+      origine: { tipo: "voce", id: mela.id },
+      dataDestinazione: tra7,
+      pastoDestinazioneId: "pranzo",
+      profilo: profiloDifferenziato(userId),
+      adesso: ADESSO,
+    });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    const copia = (await repositoryVociDiario.ottieniTutti(userId)).find((v) => v.data === tra7);
+    expect(copia?.consumato_alle).toBeNull();
+    expect((await db.giorni.get(idGiorno(userId, tra7)))?.deleted_at).toBeNull();
+  });
+
+  it("oltre oggi + 7 si rifiuta, senza scrivere niente", async () => {
     const userId = crypto.randomUUID();
     const mela = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 150 });
     await expect(
@@ -484,13 +505,14 @@ describe("duplica e annulla", () => {
         userId,
         dataPartenza: GIORNO,
         origine: { tipo: "voce", id: mela.id },
-        dataDestinazione: "2026-10-03",
+        dataDestinazione: "2026-10-10",
         pastoDestinazioneId: "pranzo",
-        profilo: null,
+        profilo: profiloDifferenziato(userId),
         adesso: ADESSO,
       })
     ).rejects.toThrow();
     expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(1);
+    expect(await db.giorni.get(idGiorno(userId, "2026-10-10"))).toBeUndefined();
   });
 });
 

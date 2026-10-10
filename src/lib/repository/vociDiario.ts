@@ -290,7 +290,7 @@ export async function duplicaNelPasto({
   doppioniVisti?: Doppione[];
   adesso?: Date;
 }): Promise<EsitoDuplicaNelPasto> {
-  // Anche qui, non solo nel foglio: nessuna copia nel futuro.
+  // Anche qui, non solo nel foglio: nessuna copia oltre oggi + 7.
   if (!dataScrivibile(dataDestinazione, adesso)) {
     throw new Error(`Giorno non valido per Duplica: ${dataDestinazione}`);
   }

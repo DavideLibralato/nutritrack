@@ -79,10 +79,28 @@ export function eOggi(iso: string, adesso: Date = new Date()): boolean {
   return iso === oggiLocale(adesso);
 }
 
-// Il giorno futuro non è mai inseribile né visualizzabile (sezione
-// "Inserimento retroattivo"): la navigazione si ferma a oggi.
+// Un giorno dopo oggi. Non vuol dire "vietato": il diario arriva fino a
+// ultimoGiornoDiario (sotto). Serve dove il futuro conta in sé: medie e
+// grafici contano solo i giorni fino a oggi (sezione "Inserimento
+// retroattivo").
 export function eFuturo(iso: string, adesso: Date = new Date()): boolean {
   return iso > oggiLocale(adesso);
+}
+
+// Quanti giorni dopo oggi si può registrare nel diario (decisione del
+// 10/10: chi prepara il pranzo la sera prima, o la domenica quelli della
+// settimana, lo registra subito nel giorno giusto). Solo le voci del
+// diario: non le date dei pasti, non il peso.
+export const GIORNI_FUTURI_DIARIO = 7;
+
+// L'ultimo giorno del diario: oggi + GIORNI_FUTURI_DIARIO, incluso (come i
+// confini dei periodi e il `max` di un campo data). Oltre, la navigazione
+// di Oggi si ferma e nessuna voce si scrive. Stessa aritmetica di
+// giornoSuccessivo: mezzogiorno locale, niente salti col cambio d'ora.
+export function ultimoGiornoDiario(adesso: Date = new Date()): string {
+  const d = daISO(oggiLocale(adesso));
+  d.setDate(d.getDate() + GIORNI_FUTURI_DIARIO);
+  return oggiLocale(d);
 }
 
 // "lun 5 ott": il giorno in breve, dentro una frase (il messaggio di
@@ -92,14 +110,14 @@ export function formattaGiornoCorto(iso: string): string {
 }
 
 // Una data scritta o scelta dall'utente su cui si può registrare: un
-// giorno vero "YYYY-MM-DD" (non "2026-02-30") e non nel futuro rispetto a
-// oggiLocale — l'orologio locale, non UTC: all'una di notte il giorno nuovo
-// è già scrivibile. Un campo data col `max` non basta: alcuni browser
-// lasciano digitare una data oltre il massimo.
+// giorno vero "YYYY-MM-DD" (non "2026-02-30") e non oltre
+// ultimoGiornoDiario, calcolato con l'orologio locale e non UTC: all'una di
+// notte il limite si è già spostato di un giorno. Un campo data col `max`
+// non basta: alcuni browser lasciano digitare una data oltre il massimo.
 export function dataScrivibile(iso: string, adesso: Date = new Date()): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
   if (oggiLocale(daISO(iso)) !== iso) return false;
-  return !eFuturo(iso, adesso);
+  return iso <= ultimoGiornoDiario(adesso);
 }
 
 // "HH:mm" dell'orologio locale. Serve alla proposta del pasto in base

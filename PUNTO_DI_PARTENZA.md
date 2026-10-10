@@ -205,8 +205,9 @@ prima**. Freccette, calendario e "Oggi" restano come sono.
   lato giusto. Sotto la soglia torna al suo posto. Durante il
   trascinamento il giorno vicino **non** si vede: servirebbe disegnare due
   giorni insieme, rimandato a dopo la prova d'uso
-- **Oltre oggi non si va**: il pannello segue il dito solo per un terzo
-  (elastico) e torna indietro, senza cambiare giorno
+- **Oltre oggi + 7 non si va** (l'ultimo giorno del diario, sezione
+  "Inserimento retroattivo"; fino al 10/10 era oggi): il pannello segue il
+  dito solo per un terzo (elastico) e torna indietro, senza cambiare giorno
 - **Verticale contro orizzontale**: la direzione si decide dopo 10 px e
   non cambia più. È orizzontale solo se lo spostamento orizzontale supera
   1,5 volte quello verticale (al massimo ~34° di inclinazione). Il
@@ -475,10 +476,11 @@ Costruito col passo E (`SheetDuplica`, regole pure in
   Somma o Scrivi quantità modificano quell'altra riga, mai l'originale.
 - **La data:**
   - si ricontrolla nel foglio e di nuovo prima di scrivere
-    (`dataScrivibile` in `dataGiorno.ts`): un giorno vero, non nel
-    futuro rispetto a `oggiLocale`;
-  - alle 00:30 il giorno nuovo è già scrivibile, anche se in UTC è ancora
-    ieri.
+    (`dataScrivibile` in `dataGiorno.ts`): un giorno vero, fino a oggi + 7
+    (dal 10/10, "Inserimento retroattivo"). Oltre, il messaggio dice il
+    limite: "Scegli un giorno fino a mar 13 ott.";
+  - alle 00:30 il limite si è già spostato di un giorno, anche se in UTC è
+    ancora ieri.
 - **`consumato_alle`:** l'ora attuale solo se il giorno è oggi, altrimenti
   vuoto, come in /aggiungi.
 - **Il giorno di destinazione si classifica** solo se nasce almeno una
@@ -1300,12 +1302,33 @@ sera in cui recuperi la giornata, o il rientro dopo un weekend senza telefono.
 - **La data in cima a Oggi è navigabile**: frecce per il giorno prima e dopo,
   tap sulla data per il calendario. Quando non sei su oggi, un modo evidente per
   tornarci
-- **Il giorno futuro non è inseribile.** La navigazione si ferma a oggi: una voce
-  datata domani sporcherebbe medie e grafici senza che nessuno se ne accorga
-- **Sui giorni passati il pasto non si indovina dall'ora** — sarebbe sempre
-  sbagliato. Il pulsante "+ Aggiungi" propone il **primo pasto ancora vuoto** di
-  quella giornata, perché stai completando; se sono tutti pieni, l'ultimo della
-  lista. E come sempre il titolo è toccabile
+- **Il diario arriva fino a 7 giorni da oggi** (deciso il 10/10; prima si
+  fermava a oggi). Chi prepara il pranzo la sera prima, o la domenica quelli
+  di tutta la settimana, registra le quantità subito nel giorno giusto invece
+  che nelle note del telefono. Il limite è **oggi + 7, incluso**, calcolato
+  sull'orologio locale come il resto (alle 00:30 si è già spostato), in una
+  costante sola: `GIORNI_FUTURI_DIARIO` e `ultimoGiornoDiario` in
+  `src/lib/dataGiorno.ts`. Vale per frecce, swipe, calendario (che ignora
+  una data digitata oltre il massimo), `?giorno=` di Oggi e Aggiungi (oltre
+  il limite si ripiega su oggi) e Duplica (`dataScrivibile`, ricontrollata
+  prima di scrivere). Riguarda **solo le voci del diario**: non le date dei
+  pasti in Pasti e orari, non il peso
+- **I giorni futuri non hanno un segno "pianificato"** (deciso il 10/10):
+  bastano la data in alto e il pulsante "Oggi". La riga sotto la data è
+  quella dei giorni passati ("X di Y kcal"); "Rimangono X kcal" resta solo
+  per oggi
+- **Medie e grafici contano solo i giorni fino a oggi** (`eFuturo` in
+  `dataGiorno.ts`): una voce pianificata per domani non deve abbassare la
+  media di una settimana che non è ancora finita
+- **Sui giorni passati e futuri il pasto non si indovina dall'ora** — sarebbe
+  sempre sbagliato. Il pulsante "+ Aggiungi" propone il **primo pasto ancora
+  vuoto** di quella giornata, perché stai completando; se sono tutti pieni,
+  l'ultimo della lista. E come sempre il titolo è toccabile. Sui giorni futuri
+  `consumato_alle` resta vuoto, come sui passati
+- **Un giorno futuro si classifica alla prima voce**, come gli altri (sezione
+  3, "La trappola"): il tipo (normale/allenamento) si fissa quando pianifichi,
+  e se poi cambi la settimana tipo quel giorno resta com'era. Si cambia dalla
+  pastiglia
 - Vale anche per il peso: `misurazioni` ha la sua data, si registra un peso di
   ieri come uno di oggi
 
@@ -2832,7 +2855,8 @@ ripetuti; sezione 7).
 
 **Swipe per cambiare giorno in Oggi** (2/10, provato su iPhone da Safari
 e dall'app installata). Dito a sinistra giorno dopo, a destra giorno prima,
-elastico oltre oggi; la lista riparte dall'alto a ogni cambio di giorno
+elastico oltre l'ultimo giorno del diario (oggi, oggi + 7 dal 10/10); la
+lista riparte dall'alto a ogni cambio di giorno
 (sezione 3, "Swipe per cambiare giorno").
 
 **Tema scuro, passo 1** (3/10, provato su iPhone da Safari e dall'app
@@ -2955,7 +2979,7 @@ sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
 `modifichePasti.test.ts`, `vociDiario.test.ts`, la pagina,
 `sincronizzaUnaPerVolta.test.ts`.
 
-**Test.** 565 test permanenti in 53 file (Vitest), tutti verdi al 9/10.
+**Test.** 575 test permanenti in 53 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
@@ -2974,6 +2998,13 @@ sezione 3, "Elimina pasto". Test: `controlliPasti.test.ts`,
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
+
+- **Elimina e Rinomina "da oggi" non toccano ancora le voci dei giorni
+  futuri** (10/10, aperto dal diario fino a 7 giorni). Eliminare un pasto
+  "da oggi" cancella solo le voci di oggi; rinominarlo "da oggi" sposta sul
+  pasto nuovo solo quelle di oggi. Le voci di domani in poi restano sul
+  pasto chiuso, e in Oggi compaiono come "Non più in uso". Si sistema nel
+  prossimo commit dello stesso branch, prima dell'unione a main
 
 - **Una riga cancellata può tornare in vita da un altro telefono** (visto
   il 9/10 preparando Elimina pasto, non introdotto da lì). Se il telefono
