@@ -2307,6 +2307,54 @@ Conseguenze:
 - l'apertura al pubblico è un'ipotesi tenuta viva dall'architettura, non un
   obiettivo dell'MVP
 
+#### Il ripristino della password (dal 10/10, branch `reset-password`)
+
+`/password-dimenticata` chiede il link (`resetPasswordForEmail`, flusso
+PKCE: il browser salva un "code verifier" nei cookie). Il link
+dell'email passa dal server di Auth e torna a `/reimposta-password`:
+con `?code=` se il link è buono, **senza** `?code=` e con l'errore
+nell'indirizzo (query e hash, `error_code=otp_expired`) se è già usato o
+scaduto. Le regole della pagina:
+
+- **Lo scambio del codice lo fa la libreria, la pagina ne legge solo
+  l'esito.** Il client Supabase è uno solo per pagina e appena nasce
+  scambia da solo il `?code=` (`detectSessionInUrl`), se trova il
+  verifier; dopo lo scambio riuscito toglie `?code=` dall'indirizzo. La
+  pagina chiama `initialize()`, che restituisce l'esito dell'avvio già
+  partito senza rifarlo. Mai `exchangeCodeForSession` a mano: era il
+  bug del 10/10, il secondo scambio trovava il verifier già cancellato.
+- **L'errore nell'indirizzo prima di tutto.** Se `initialize()` dà
+  errore (link già usato o scaduto, server che rifiuta il codice, rete)
+  si mostra l'errore, anche con una sessione aperta nel browser. Il
+  testo si sceglie dal codice dell'errore, non dal testo inglese
+  (`traduciErroreLinkRipristino`): `otp_expired`, `flow_state_*`,
+  `bad_code_verifier` → "link scaduto, già usato o superato".
+- **Una sessione aperta non basta.** Con `?code=` il modulo compare solo
+  se la libreria l'ha tolto dall'indirizzo, cioè se la sessione è nata
+  da quel link; se è ancora lì manca il verifier (altro browser) → testo
+  "funziona solo nel browser da cui l'hai chiesto". Altrimenti una
+  sessione già aperta, per esempio l'account di prova in Safari,
+  riceverebbe la password nuova di un altro account.
+- **Il segno per il ricaricamento.** Dopo lo scambio riuscito la pagina
+  scrive l'id dell'utente in `sessionStorage` (vale per una scheda,
+  sopravvive al ricaricamento: Safari su iPhone ricarica da solo le
+  schede rimaste dietro). Senza codice né errore il modulo ricompare solo
+  se la sessione è di quell'utente. Il segno si toglie dopo il
+  salvataggio, e la pagina esce dalla cronologia (`router.replace`).
+  Senza memoria disponibile non c'è segno → errore (direzione sicura).
+  Scartato il claim `amr`: "recovery" resta per tutta la sessione.
+- **L'email nel modulo.** Campo "Account" in sola lettura con
+  `autoComplete="username"`: si vede a quale account si cambia la
+  password, e il gestore delle password la salva su quell'email.
+- `/password-dimenticata` e `/reimposta-password` sono sempre accessibili
+  (middleware): da loggati non rimandano alla home. Chiedere un reset è
+  già possibile a chiunque.
+
+Codice: `src/app/reimposta-password/page.tsx`, `src/lib/erroriAuth.ts`,
+`src/lib/segnoRipristinoPassword.ts`. Test:
+`reimpostaPassword.test.tsx` (client Supabase vero, rete finta). I
+limiti noti stanno in §11, "Difetti e verifiche aperti".
+
 ### 9.2 Offline — local-first completo
 
 **IndexedDB è la fonte di verità.** La UI legge e scrive sempre in locale;
@@ -3343,7 +3391,22 @@ massimo per ogni richiesta", la regola dei tentativi). Test:
 `aggiornamentoSchema.test.ts`, la pagina Sincronizzazione, l'elenco di
 Impostazioni, `BarraNavigazione.test.tsx`.
 
-**Test.** 712 test permanenti in 63 file (Vitest), tutti verdi al 10/10.
+**Ripristino della password** (10/10, branch `reset-password`, provato
+su iPhone il 10/10 in Safari sull'anteprima, account di prova). Prima il
+link mostrava "Link non valido" alla prima apertura e il modulo solo
+ricaricando; provando la correzione si è visto che un link già usato
+apriva il modulo alla sessione già aperta. Provati: link aperto la prima
+volta → modulo subito, con l'email dell'account; ricaricando prima di
+salvare il modulo resta; salvataggio → Oggi; link già usato
+(`otp_expired`) con la sessione dell'account di prova aperta → testo
+"link scaduto", niente modulo; link chiesto da Chrome sul PC e aperto in
+Safari su iPhone → testo "altro browser", niente modulo, e "Richiedi un
+nuovo link" apre la pagina anche da loggato; dopo il salvataggio
+"indietro" da Oggi non riporta più alla pagina del reset. Com'è fatto:
+sezione 9.1, "Il ripristino della password". Test:
+`reimpostaPassword.test.tsx`.
+
+**Test.** 727 test permanenti in 64 file (Vitest), tutti verdi al 10/10.
 
 ### Non ancora costruito
 
@@ -3358,6 +3421,35 @@ Impostazioni, `BarraNavigazione.test.tsx`.
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
+
+- **Redirect URL su Supabase: solo voci esatte** (Authentication → URL
+  Configuration; regola dal 10/10). Mai un jolly sui sottodomini
+  `vercel.app`: i nomi dei progetti Vercel li sceglie chiunque, e un
+  progetto altrui con un nome adatto (per esempio
+  `nutritrack-x-davide-libralato-personale`) soddisferebbe il jolly e
+  riceverebbe i link di accesso. Per provare un branch sull'anteprima si
+  aggiunge la sua voce esatta (`https://nutritrack-git-<branch>-…vercel.app/**`)
+  e la si toglie dopo il merge. Un `redirectTo` non in elenco viene
+  ignorato in silenzio: il link porta al Site URL
+- **Un reset chiesto dall'app installata su iPhone non può riuscire**
+  (limite noto, 10/10). Il link dell'email si apre sempre in Safari,
+  mentre il code verifier sta nei cookie dell'app, che sono separati. La
+  pagina lo spiega ("funziona solo nel browser da cui l'hai chiesto…") e
+  si richiede il link da Safari. Soluzione possibile in futuro: link con
+  `token_hash` e `verifyOtp` lato server, che non ha bisogno del
+  verifier; cambia il modello dell'email "Reset Password" su Supabase
+  (dalla dashboard, fuori da git)
+- **Errore di rete durante lo scambio del link** (10/10, raro). La
+  libreria cancella comunque il verifier: si vede "Errore di
+  connessione", e ricaricando compare il testo "altro browser". Serve un
+  link nuovo
+- **Email di Supabase gratuite: circa 2 all'ora** (il servizio interno
+  del piano gratuito, sezione 10.9). Da tenere presente nelle prove del
+  reset: oltre il limite la richiesta fallisce con "Troppi tentativi"
+- **L'app non è ancora condivisibile.** L'indirizzo
+  `nutritrack-git-main-…vercel.app` è protetto da Vercel: chi non ha
+  l'account Vercel trova la pagina di login di Vercel, non l'app. Prossimo
+  lavoro (sotto, "Prossimi passi")
 
 - **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
   (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi
@@ -3442,3 +3534,8 @@ Impostazioni, `BarraNavigazione.test.tsx`.
 2. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
    fatto e provato su iPhone il 10/10, prima della settimana (sopra,
    "Fatto")
+3. **Un indirizzo di produzione pubblico** (prossimo lavoro, dal 10/10).
+   Oggi `nutritrack-git-main-…` chiede il login Vercel a chi non ha
+   l'account: senza un indirizzo pubblico l'app non si può dare agli
+   amici. Con l'indirizzo nuovo vanno aggiornati anche Site URL e
+   Redirect URL su Supabase (voci esatte, sopra)

@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-10 — Ripristino della password provato su iPhone
+
+Branch `reset-password`. Provato il 10/10 su iPhone in Safari
+sull'anteprima, account di prova: link aperto la prima volta → modulo
+subito, con l'email dell'account; ricaricando prima di salvare il
+modulo resta; salvataggio → Oggi; link già usato (`otp_expired`) con la
+sessione dell'account di prova aperta → testo "link scaduto", niente
+modulo; link chiesto da Chrome sul PC e aperto in Safari su iPhone →
+testo "altro browser", niente modulo, e "Richiedi un nuovo link" apre la
+pagina anche da loggato; dopo il salvataggio "indietro" da Oggi non
+riporta più alla pagina del reset (`router.replace`). Nessun bug
+trovato. Documenti: PUNTO §9.1 (il flusso di ripristino come regola),
+§11 ("Fatto"; in "Difetti e verifiche aperti" Redirect URL solo esatte,
+reset dall'app installata su iPhone, errore di rete durante lo scambio,
+limite delle email gratuite, app non ancora condivisibile; "Prossimi
+passi": un indirizzo di produzione pubblico). Test 727 in 64 file.
+
 ## 2026-10-10 — Reimposta password: dopo il salvataggio la pagina esce dalla cronologia
 
 Branch `reset-password`. Provato sull'anteprima (`88b22ce`): dopo il
