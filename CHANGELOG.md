@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Doppioni in Aggiungi provato su iPhone
+
+Branch `doppioni-aggiungi`. Provato l'11/10 in Safari sull'anteprima, con
+l'account di prova, e verificato su Supabase: Somma con un tocco e
+Annulla che riporta i grammi; "Scrivi quantità" → "Aggiornato"; "Tieni
+separati"; "Non aggiungerlo" (resta su /aggiungi, il "+" risponde
+subito); pasto salvato con un doppione, anche escluso; doppio tocco → una
+riga; Duplica con doppione come prima. Nessun bug trovato. Provato anche
+il giorno che cambia sull'app installata, con l'account vero: riaperta
+dal multitasking la mattina dell'11, Oggi era su domenica 11 e il menu
+lasciato aperto la sera era chiuso. Tolta la voce aperta da PUNTO §11.
+Documenti: PUNTO §11.
+
 ## 2026-10-11 — Doppioni in Aggiungi, passo 6: documentazione
 
 Branch `doppioni-aggiungi`. PUNTO §3, Aggiungi: nuovo blocco "Doppioni in

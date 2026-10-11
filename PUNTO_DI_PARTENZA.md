@@ -3387,8 +3387,12 @@ proposto, `consumato_alle` vuoto); Duplica fino a sab 17 ott e spento
 oltre; Rinomina "da oggi" con e senza Annulla (voci di oggi e di lun 12
 spostate sul pasto nuovo, quelle di ieri rimaste sul vecchio); Elimina
 "da oggi" con la conferma "in N giorni, da oggi in poi" e Annulla che
-ricrea il pasto e le voci future. **Da provare** il giorno che cambia
-(sotto, "Difetti e verifiche aperti"). Com'è fatto: sezione 3,
+ricrea il pasto e le voci future. **Il giorno che cambia** è provato
+l'11/10 sull'app installata, con l'account vero: riaprendola dal
+multitasking la mattina dell'11, Oggi mostrava domenica 11, e il menu
+della voce lasciato aperto la sera era chiuso. Gli altri fogli (sheet
+della voce, Sposta, Duplica) si chiudono nello stesso modo, e lo coprono
+i test. Com'è fatto: sezione 3,
 "Inserimento retroattivo", "Pasti e orari" ed "Elimina pasto". Test:
 `dataGiorno.test.ts`, `useGiornoCorrente.test.tsx`,
 `modifichePasti.test.ts`, `vociDiario.test.ts`, `SheetDuplica.test.tsx`,
@@ -3451,6 +3455,31 @@ nuovo link" apre la pagina anche da loggato; dopo il salvataggio
 "indietro" da Oggi non riporta più alla pagina del reset. Com'è fatto:
 sezione 9.1, "Il ripristino della password". Test:
 `reimpostaPassword.test.tsx`.
+
+**Doppioni in Aggiungi** (11/10, branch `doppioni-aggiungi`, provato su
+iPhone l'11/10 in Safari sull'anteprima, account di prova; tutto
+verificato su Supabase). Aggiungere un alimento già nel pasto apre il
+foglio dei doppioni invece di creare una seconda riga in silenzio.
+Provati:
+- "+" su un alimento già nel pasto: foglio, un tocco su "Aggiungi" →
+  "Sommato", una riga sola. Annulla riporta i grammi di prima senza
+  cancellare la riga;
+- sheet quantità con "Scrivi quantità" 120 → "Aggiornato", poi Annulla;
+- "Tieni separati" → due righe, "Aggiunto";
+- "Non aggiungerlo" → si resta su /aggiungi, niente scritto, e il "+"
+  funziona subito dopo;
+- pasto salvato con un solo doppione: un blocco, gli altri alimenti
+  entrano, "(N alimenti)". Con "Non aggiungerlo" → "(tranne «…», che
+  c'era già)";
+- doppio tocco veloce sul "+" → una riga sola;
+- Duplica con un doppione, dopo il refactoring di `pianoInserimento`,
+  funziona come prima.
+
+Com'è fatto: sezione 3, "Doppioni in Aggiungi". Restano aperti i due
+difetti di Sposta, Duplica e dello sheet di modifica (sotto, "Difetti e
+verifiche aperti"). Test: `pianoInserimento.test.ts`,
+`vociDiario.test.ts`, `testiBarra.test.ts`, la pagina Aggiungi e la
+pagina Oggi.
 
 **Test.** 771 test permanenti in 65 file (Vitest), tutti verdi all'11/10.
 
@@ -3556,13 +3585,6 @@ sezione 9.1, "Il ripristino della password". Test:
   solo se la discesa arriva prima. Vale per ogni tabella; è raro (serve
   modificare proprio la riga cancellata). Da affrontare a parte
 
-- **Giorno che cambia, prova da fare l'11/10** sull'app installata (non
-  in Safari: è il caso del multitasking). Lasciare l'app aperta la sera,
-  riaprirla la mattina: deve andare sul nuovo oggi da qualunque giorno
-  stesse mostrando, e un foglio lasciato aperto (sheet della voce, menu,
-  Sposta) deve chiudersi senza scrivere niente. Il resto del diario fino a
-  7 giorni è provato il 10/10; questo caso lo coprono già i test
-  (`useGiornoCorrente.test.tsx`, pagina Oggi)
 - **Peso, prova da fare il 4/10** con l'account di prova in Safari:
   registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
   comparire con la data nuova. Il resto del passo 4 è provato; questo
