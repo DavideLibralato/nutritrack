@@ -2334,6 +2334,25 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
 
 Costi reali solo su API AI (V2) e dominio personalizzato (opzionale).
 
+**Strumenti di sviluppo** (solo devDependency, gratuiti): ESLint con la
+configurazione di Next.js (esclude `.claude/**`, codice di terzi), Vitest +
+Testing Library per i test (sezione 10.5), **Prettier 3.9.10**.
+
+- **Prettier è configurato ma non ancora applicato a tutto il codice.**
+  `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
+  doppi apici, punto e virgola, righe fino a 100, virgole finali "es5",
+  fine riga lasciato com'è (`auto`, perché Git su Windows li converte in
+  CRLF sul disco). `.prettierignore` esclude i documenti `.md` (a capo a
+  mano), `.next`, `node_modules`, `.claude` e i file generati
+- Lanciarlo oggi cambierebbe 128 file su 208 in `src`, più
+  `next.config.ts` e `tsconfig.json`: **il primo lancio
+  sarà un commit separato, solo di formattazione, deciso a parte**. Fino
+  ad allora nessun `prettier --write` su file interi, e nessuna
+  formattazione al salvataggio nell'editor
+- Non è collegato a ESLint (`eslint-config-prettier`): le regole attive
+  non hanno conflitti con Prettier (verificato l'11/10). Si aggiunge se
+  ne compare uno
+
 Rinunce accettate rispetto al nativo: accesso ad Apple Health e discoverability
 dello store. Nessuna delle due serve all'MVP.
 

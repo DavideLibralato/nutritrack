@@ -1,0 +1,24 @@
+# Prettier è configurato ma non ancora applicato a tutto src: il primo
+# lancio sarà un commit separato, solo di formattazione
+# (PUNTO_DI_PARTENZA.md, sezione 8).
+#
+# Stesse regole di .gitignore: un nome senza "/" iniziale vale in ogni
+# cartella ("supabase" escluderebbe anche src/lib/supabase), con "/"
+# solo nella radice del progetto.
+
+# Generati o di terzi
+/.next
+node_modules
+package-lock.json
+next-env.d.ts
+/.claude
+/.impeccable
+/public
+/supabase
+
+# Appunti personali e bozze a mano
+/Claude outputs
+/docs/mockups
+
+# I documenti sono a capo a mano
+*.md

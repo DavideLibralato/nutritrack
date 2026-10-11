@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Prettier configurato, non ancora applicato
+
+Branch `pulizie`. `prettier@3.9.10` come devDependency (versione esatta),
+`.prettierrc` sullo stile prevalente di `src` (doppi apici, `;`, 100
+colonne, virgole "es5", fine riga `auto` per il CRLF di Git su Windows),
+`.prettierignore` con documenti `.md`, generati e codice di terzi. Niente
+`eslint-config-prettier`: nessun conflitto con le regole attive. Nessun
+file riformattato: il primo lancio (128 file di `src` più due di
+configurazione) sarà un commit a parte, regola scritta in PUNTO §8.
+Corretto in prova un errore del `.prettierignore`: `supabase` senza "/"
+escludeva anche `src/lib/supabase`. In VS Code niente formattazione al
+salvataggio. Riallineata una riga della voce di merge qui sotto.
+
 ## 2026-10-11 — ESLint non controlla più le skill di `.claude`
 
 Branch `pulizie`. `.claude/**` aggiunto a `globalIgnores` in
@@ -18,9 +31,9 @@ Provato l'11/10 (voce sotto) e unito a main con fast-forward da
 `8889759` a `b7d164b`, senza commit di merge: `71f0057` (segnalibro fermo
 e area di tocco 44px, più la voce di merge di `doppioni-aggiungi`),
 `b7d164b` (provato su iPhone). Branch `icona-preferiti` cancellato, in
-locale e su GitHub. Deploy di produzione riuscito. 771 test verdi in 65 file. Voce scritta con il primo commit
-del branch successivo (`pulizie`), per non fare un commit su main solo
-per il registro.
+locale e su GitHub. Deploy di produzione riuscito. 771 test verdi in 65
+file. Voce scritta con il primo commit del branch successivo (`pulizie`),
+per non fare un commit su main solo per il registro.
 
 ## 2026-10-11 — Segnalibro allineato provato su iPhone
 
