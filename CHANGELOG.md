@@ -5,6 +5,15 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Numeri delle voci incolonnati provati su iPhone
+
+Branch `pulizie`. Provato l'11/10 in Safari sull'anteprima, con
+l'account di prova: "·" e "g" in colonna con kcal da 1, 2 e 3 cifre; una
+voce da 12,5 g scritta "12,5 g", anche nella copia trascinata; i nomi
+lunghi si accorciano con "…" senza spingere i numeri. Nessun bug
+trovato. In PUNTO §11 la voce "Fatto" al posto della verifica aperta.
+Solo documenti.
+
 ## 2026-10-11 — Numeri delle voci in Oggi incolonnati, grammi con la virgola
 
 Branch `pulizie`. Nella riga di ogni voce le kcal stanno in uno spazio

@@ -3526,6 +3526,15 @@ fuori dal disegno; toccando la prima voce sotto il pasto, vicino al
 segnalibro, si apre la voce e non il segnalibro; la riga di un pasto
 senza voci ("—") resta in ordine. Com'è fatto: sezione 3, Oggi, punto 3.
 
+**Numeri delle voci in Oggi incolonnati** (11/10, branch `pulizie`,
+provato su iPhone l'11/10 in Safari sull'anteprima, account di prova).
+Prima "·" e grammi si spostavano con il numero di cifre delle kcal, e i
+grammi con decimali si leggevano "12.5 g". Provati: "·" e "g" in colonna
+con kcal da 1, 2 e 3 cifre; una voce da 12,5 g scritta "12,5 g", anche
+nella copia che segue il dito trascinando; i nomi lunghi si accorciano
+con "…" senza spingere i numeri. Non provato su iPhone SE. Com'è fatto:
+sezione 3, Oggi, punto 3.
+
 **Test.** 771 test permanenti in 65 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
@@ -3541,12 +3550,6 @@ senza voci ("—") resta in ordine. Com'è fatto: sezione 3, Oggi, punto 3.
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
 
 ### Difetti e verifiche aperti
-
-- **Numeri delle voci in Oggi incolonnati: da provare su iPhone** (11/10,
-  branch `pulizie`). Da guardare: grammi e kcal in colonna con voci da 1,
-  2 e 3 cifre; una voce con decimali ("12,5 g"); un nome lungo che si
-  tronca con "…" senza spingere i numeri; iPhone SE se disponibile.
-  Com'è fatto: sezione 3, Oggi, punto 3
 
 - **Redirect URL su Supabase: solo voci esatte** (Authentication → URL
   Configuration; regola dal 10/10). Mai un jolly sui sottodomini
