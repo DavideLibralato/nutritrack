@@ -3706,7 +3706,12 @@ Nome nel manifest, nel titolo e in `offline.html`; icone e favicon
 nuovi; cache dei file statici a v7 (sezione 7, "Nome e icona"). Provati
 su iPhone l'11/10 in Safari sull'anteprima: la bilancia nella scheda e
 in "Aggiungi a Home", la pagina offline. Il primo deploy dell'anteprima
-era fallito per il favicon RGB, corretto nello stesso branch.
+era fallito per il favicon RGB, corretto nello stesso branch. Unito a main
+l'11/10 (`c988901`), deploy di produzione riuscito. Confermati su iPhone
+l'11/10: titolo della scheda "Libra", "Libra" proposto da "Aggiungi a
+Home", "Apri Libra…" nella pagina offline con il tema giusto, la
+bilancia nella scheda e in "Aggiungi a Home"; app vera reinstallata da
+app-libra con l'icona nuova, dati riscaricati, Build `c988901`.
 
 **Test.** 782 test permanenti in 67 file (Vitest), tutti verdi all'11/10.
 

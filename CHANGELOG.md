@@ -5,6 +5,39 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Migration per i vincoli verso auth.users (non applicata)
+
+Branch `vincoli-utente`, prima di "Elimina account". Nuovo file
+`supabase/migrations/vincoli_cancellazione_utente.sql`, non ancora
+applicato: porta a `ON DELETE CASCADE` quattro foreign key, con lo
+stesso nome (drop + add nello stesso `ALTER TABLE`):
+`alimenti_user_id_fkey` (era SET NULL: cancellando un utente i suoi
+alimenti restavano con `user_id` null e la policy `alimenti_select` li
+mostrava a tutti come catalogo comune), `giorni_user_id_fkey`,
+`obiettivi_target_user_id_fkey` e `obiettivi_target_obiettivo_id_fkey`
+(erano NO ACTION: la cancellazione dell'utente falliva). Nomi letti da
+`pg_constraint` in produzione: le migration che li hanno creati non sono
+nel repo. Il codice non ne dipende: l'app non cancella mai fisicamente
+(solo `upsert` con `deleted_at`), Dexie e `tipi.ts` invariati. Controllato
+in sola lettura: nessuna riga punta ad alimenti o obiettivi di un altro
+utente, nessun alimento con `user_id` null.
+
+## 2026-10-11 — Nome Libra unito a main
+
+Unito a main l'11/10 con fast-forward da `4567cf7` a `c988901`, senza
+commit di merge: `ef99241` (nome "Libra" visibile, più la voce di merge
+di `indirizzo`), `a1bb3ee` (icona della bilancia, PNG, favicon, mockup),
+`e2e6e9f` (favicon.ico con PNG RGBA: il deploy di `a1bb3ee` falliva),
+`c988901` (documenti). Branch cancellato in locale e su GitHub. Deploy
+di produzione riuscito. 782 test verdi in 67 file, lint, `tsc` e
+`npm run build` puliti su main dopo il merge. Provati su iPhone l'11/10:
+titolo della scheda "Libra", "Libra" proposto da "Aggiungi a Home",
+"Apri Libra…" nella pagina offline con il tema giusto, la bilancia nella
+scheda e in "Aggiungi a Home"; app vera reinstallata da app-libra con
+l'icona nuova, dati riscaricati, Build `c988901` (segnato in PUNTO §11).
+Voce scritta con il primo commit del branch successivo
+(`vincoli-utente`), per non fare un commit su main solo per il registro.
+
 ## 2026-10-11 — Libra nei documenti
 
 Branch `nome-libra`, passo 3 della rinomina. Provati su iPhone l'11/10
