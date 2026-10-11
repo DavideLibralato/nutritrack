@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — favicon.ico con PNG RGBA, per il deploy fallito
+
+Branch `nome-libra`. Il deploy di `a1bb3ee` falliva: Turbopack non
+leggeva `src/app/favicon.ico` ("Format error decoding Ico: The PNG is not
+in RGBA format!"), perché le tre immagini dentro (16, 32, 48) erano PNG
+RGB, color type 2, e Next.js le vuole RGBA, color type 6. Rigenerato con
+lo stesso disegno e le stesse misure, in RGBA con alpha 255 ovunque:
+controllato l'header di ogni PNG dentro l'ICO. `npm run build` in locale
+finisce senza errori. Da ora in poi la build si lancia prima di ogni
+commit che tocca `public/` o `src/app/`: test e lint erano verdi, solo la
+build lo avrebbe visto. I PNG in `public/` restano RGB: Next li serve
+così come sono, senza leggerli.
+
 ## 2026-10-11 — Icona di Libra: la bilancia
 
 Branch `nome-libra`, passo 2 della rinomina. Dal mockup
