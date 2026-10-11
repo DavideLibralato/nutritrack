@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Skill del plugin di design "impeccable": codice di terzi, non
+    // dell'app (152 avvisi che non riguardano src).
+    ".claude/**",
   ]),
 ]);
 

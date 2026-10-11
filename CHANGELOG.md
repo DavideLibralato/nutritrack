@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — ESLint non controlla più le skill di `.claude`
+
+Branch `pulizie`. `.claude/**` aggiunto a `globalIgnores` in
+`eslint.config.mjs`: i 152 avvisi venivano tutti dagli script della skill
+"impeccable" (codice di terzi), nessuno da `src`. Regole invariate.
+`npx eslint .` ora dà 0 avvisi; 771 test verdi, `tsc` pulito.
+
+## 2026-10-11 — Icona preferiti unita a main
+
+Provato l'11/10 (voce sotto) e unito a main con fast-forward da
+`8889759` a `b7d164b`, senza commit di merge: `71f0057` (segnalibro fermo
+e area di tocco 44px, più la voce di merge di `doppioni-aggiungi`),
+`b7d164b` (provato su iPhone). Branch `icona-preferiti` cancellato, in
+locale e su GitHub. Deploy di produzione riuscito. 771 test verdi in 65 file. Voce scritta con il primo commit
+del branch successivo (`pulizie`), per non fare un commit su main solo
+per il registro.
+
 ## 2026-10-11 — Segnalibro allineato provato su iPhone
 
 Branch `icona-preferiti`. Provato l'11/10 in Safari sull'anteprima, con
