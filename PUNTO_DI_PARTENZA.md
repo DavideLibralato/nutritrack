@@ -861,7 +861,7 @@ un comando che non fa niente sembra rotto):
   `next.config.ts`; in locale "sviluppo");
 - **Esci** in fondo, in arancio, con la conferma di sempre;
 - sotto Esci, in un gruppo suo, **Elimina il mio account** (costruita
-  l'11/10, branch `elimina-account`, da provare su iPhone; mockup
+  e provata su iPhone l'11/10, branch `elimina-account`; mockup
   `docs/mockups/elimina-account.html`): rossa (`--pericolo`, sezione 7),
   allineata a sinistra, con la freccia; porta alla sottopagina. Decisioni
   in §9.6, "Elimina il mio account".
@@ -3295,7 +3295,10 @@ costruzione e non per attenzione.
   `eliminaAccount.test.ts`
 - **Prova vera** su un account usa e getta,
   davidemancon02+elimina@gmail.com, creato da Davide dall'app. L'account
-  di prova fisso non si tocca
+  di prova fisso non si tocca. **Fatta l'11/10** sull'anteprima del
+  branch (§11, "Fatto"): riuscita. Non è entrato in gioco il percorso
+  della risposta persa, quindi che il server risponda proprio
+  `user_not_found` per un account cancellato resta da verificare
 
 ---
 
@@ -3895,7 +3898,28 @@ giorni 13, pasti 24, alimenti 3, voci_diario 70, composizioni 2,
 composizioni_voci 3, misurazioni 1, preferiti 2); righe di altri utenti
 invariate (311 tra voci e alimenti), nessun alimento con `user_id` null;
 account di prova intatto dopo l'annullamento. Pronto per "Elimina
-account", che resta da costruire.
+account" (sotto).
+
+**Elimina il mio account** (11/10, branch `elimina-account`, decisioni
+e com'è fatto in §9.6; mockup `docs/mockups/elimina-account.html`). In
+fondo a Impostazioni, sotto Esci, la riga rossa porta alla sottopagina
+con la parola da scrivere e un solo pulsante; lato server la funzione
+`elimina_mio_account` (versione 20261011155326). Provato su iPhone l'11/10
+sull'anteprima: la riga rossa nei due temi, la sottopagina e "‹
+Impostazioni", la tastiera che si apre in maiuscolo, la parola
+sbagliata (pulsante spento) e in minuscolo (accettata), offline
+(pulsante spento con la sua frase), il resto dell'app intatto. **Prova
+vera** sull'account usa e getta davidemancon02+elimina@gmail.com,
+eliminato da Davide dal pulsante, arrivato al login con "Account
+eliminato". Verificato da Cowork: prima 20 righe (obiettivi 1,
+obiettivi_target 1, pasti 5, alimenti 4, voci_diario 3, composizioni 1,
+composizioni_voci 3, misurazioni 1, preferiti 1), 1 identità, 1
+sessione, 7 utenti, 384 righe altrui; dopo utente sparito, 0 righe
+nelle 11 tabelle, 0 identità, 0 sessioni, 0 refresh token, 6 utenti,
+384 righe altrui invariate, nessun alimento senza utente. Account di
+prova fisso intatto (70 voci); rientrati con quello, solo i suoi dati e
+sincronizzazione a posto. Resta da verificare `user_not_found` (§9.6,
+"Segno").
 
 **Test.** 806 test permanenti in 69 file (Vitest), tutti verdi all'11/10.
 
@@ -3909,8 +3933,6 @@ account", che resta da costruire.
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
-- **Elimina il mio account**: costruito l'11/10, branch `elimina-account`,
-  da provare su iPhone e con la prova vera (decisioni in 9.6)
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6),
   si fa nel branch subito dopo Elimina account
 

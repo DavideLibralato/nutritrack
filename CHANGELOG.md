@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Elimina account provato
+
+Branch `elimina-account`. Provato su iPhone l'11/10 sull'anteprima: riga
+rossa nei due temi, sottopagina e "‹ Impostazioni", tastiera in
+maiuscolo, parola sbagliata (pulsante spento) e in minuscolo
+(accettata), offline, resto dell'app intatto. Prova vera sull'account
+usa e getta davidemancon02+elimina@gmail.com, eliminato dal pulsante,
+arrivato al login con "Account eliminato". Verificato da Cowork: da 20
+righe a 0 nelle 11 tabelle, 0 identità, sessioni e refresh token,
+utenti 7 → 6, 384 righe altrui invariate, nessun alimento senza utente;
+account di prova fisso intatto, sincronizzazione a posto. Aperto:
+`user_not_found` resta da verificare, il percorso della risposta persa
+non è entrato in gioco. In PUNTO §3, §9.6 e §11 (voce in "Fatto", tolto
+da "Non ancora costruito"). Solo documenti.
+
 ## 2026-10-11 — Pulsante Elimina il mio account
 
 Branch `elimina-account`, da provare su iPhone. In fondo a Impostazioni,
