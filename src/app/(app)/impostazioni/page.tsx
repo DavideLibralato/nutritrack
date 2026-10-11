@@ -5,7 +5,7 @@
 // come le impostazioni dell'iPhone, da cui si entra nelle sotto-pagine.
 //
 // Ci sono solo le righe che funzionano (sezione 3: un comando che non fa
-// niente sembra rotto). Preferiti resta fuori finché non esiste.
+// niente sembra rotto).
 //
 // La riga Obiettivi mostra a destra le calorie del periodo valido oggi
 // (testoRigaObiettivi, con il suo test): "2500 kcal", oppure "2500 · 2950
@@ -22,6 +22,11 @@
 // Pallino + testo"): "Tutto salvato", "In corso…", "2 in attesa", "Errore",
 // "Accedi di nuovo", "Da controllare" (rigaSincronizzazione, con il suo
 // test). Niente finché la coda non è arrivata da Dexie.
+// La riga Preferiti e pasti salvati (dall'11/10, mockup
+// docs/mockups/preferiti-e-pasti-salvati.html) mostra "12 alimenti · 3
+// pasti", o "Nessuno" (contaPreferiti e testoRigaPreferiti, con il loro
+// test): contati con le stesse funzioni dell'elenco, mai dalle tabelle
+// grezze. Niente finché i dati non sono arrivati da Dexie.
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -33,6 +38,9 @@ import {
   repositoryMisurazioni,
   repositoryObiettivi,
   repositoryObiettiviTarget,
+  repositoryPreferiti,
+  repositoryComposizioni,
+  repositoryComposizioniVoci,
 } from "@/lib/repository";
 import { ultimaMisurazione } from "@/lib/repository/misurazioni";
 import { tuttiIPasti } from "@/lib/repository/pasti";
@@ -50,6 +58,8 @@ import EsciAccount from "@/components/EsciAccount";
 import ValoreRigaSincronizzazione from "@/components/ValoreRigaSincronizzazione";
 import { useStatoSincronizzazione } from "@/lib/sync/useStatoSincronizzazione";
 import { rigaSincronizzazione } from "@/lib/sync/rigaSincronizzazione";
+import { catalogoLocale } from "@/lib/repository/alimenti";
+import { contaPreferiti, testoRigaPreferiti } from "@/lib/inserimento/rigaPreferiti";
 
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
@@ -102,6 +112,19 @@ export default function ImpostazioniPage() {
 
   const { stato: statoSincronizzazione } = useStatoSincronizzazione(userId);
 
+  // Una sola lettura per le quattro tabelle: il valore compare tutto insieme,
+  // non prima con gli alimenti e poi con i pasti.
+  const valorePreferiti = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    const [catalogo, preferiti, composizioni, composizioniVoci] = await Promise.all([
+      catalogoLocale(userId),
+      repositoryPreferiti.ottieniTutti(userId),
+      repositoryComposizioni.ottieniTutti(userId),
+      repositoryComposizioniVoci.ottieniTutti(userId),
+    ]);
+    return testoRigaPreferiti(contaPreferiti(catalogo, preferiti, composizioni, composizioniVoci));
+  }, [userId]);
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+1.5rem)]">
       <h1 className="mx-1 mt-1.5 font-display text-[34px] font-bold leading-tight">Impostazioni</h1>
@@ -143,6 +166,12 @@ export default function ImpostazioniPage() {
               : undefined
           }
           href="/impostazioni/aspetto"
+        />
+        <RigaImpostazioni
+          etichetta="Preferiti e pasti salvati"
+          icona={<IconaPreferiti />}
+          valore={valorePreferiti}
+          href="/impostazioni/preferiti"
         />
         <RigaImpostazioni
           etichetta="Sincronizzazione"
@@ -223,6 +252,14 @@ function IconaAspetto() {
     <svg {...TRATTO}>
       <circle cx="12" cy="12" r="8" />
       <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconaPreferiti() {
+  return (
+    <svg {...TRATTO}>
+      <path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" />
     </svg>
   );
 }

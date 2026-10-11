@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { db } from "../db/database";
 import { repositoryPreferiti } from "./index";
-import { togglePreferito } from "./preferiti";
+import { rimettiPreferito, togliPreferito, togglePreferito } from "./preferiti";
 
 const USER = "utente-preferiti-toggle";
 
@@ -46,5 +46,41 @@ describe("togglePreferito — aggiungere di nuovo un preferito già tolto", () =
       .filter((p) => p.user_id === USER && p.alimento_id === alimentoId)
       .toArray();
     expect(tutte).toHaveLength(1);
+  });
+});
+
+// togliPreferito e rimettiPreferito (Impostazioni > Preferiti e pasti
+// salvati) rileggono Dexie invece di fidarsi dell'elenco della pagina. Con
+// l'elenco della pagina, un "Annulla" toccato subito dopo la stella, prima
+// che la liveQuery ridisegni, vedrebbe il preferito ancora vivo e lo
+// toglierebbe di nuovo invece di rimetterlo.
+describe("togliPreferito e rimettiPreferito", () => {
+  const UTENTE = "utente-preferiti-togli-rimetti";
+
+  it("rimettere rimette in vita la stessa riga, e una seconda volta non fa niente", async () => {
+    const alimentoId = crypto.randomUUID();
+    const { id } = await repositoryPreferiti.crea({ user_id: UTENTE, alimento_id: alimentoId });
+
+    await togliPreferito(UTENTE, alimentoId);
+    await rimettiPreferito(UTENTE, alimentoId);
+    await rimettiPreferito(UTENTE, alimentoId);
+
+    const tutte = await db.preferiti
+      .filter((p) => p.user_id === UTENTE && p.alimento_id === alimentoId)
+      .toArray();
+    expect(tutte).toHaveLength(1);
+    expect(tutte[0].id).toBe(id);
+    expect(tutte[0].deleted_at).toBeNull();
+  });
+
+  it("togliere toglie anche la seconda riga viva dello stesso alimento", async () => {
+    const alimentoId = crypto.randomUUID();
+    await repositoryPreferiti.crea({ user_id: UTENTE, alimento_id: alimentoId });
+    await repositoryPreferiti.crea({ user_id: UTENTE, alimento_id: alimentoId });
+
+    await togliPreferito(UTENTE, alimentoId);
+
+    const vivi = await repositoryPreferiti.ottieniTutti(UTENTE);
+    expect(vivi.filter((p) => p.alimento_id === alimentoId)).toHaveLength(0);
   });
 });

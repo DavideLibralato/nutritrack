@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Preferiti in Impostazioni, passo 2: la pagina e la riga
+
+Branch `preferiti`. Pagina `/impostazioni/preferiti` dal mockup approvato
+(proposta A): "Alimenti preferiti" con la stella sulla riga, "Pasti
+salvati" che aprono `ModificaPastoSalvato`, pagina vuota con la
+spiegazione. La stella toglie con un tocco: la riga resta sbiadita e la
+barra offre "Annulla". Togliere e rimettere passano da `togliPreferito` e
+`rimettiPreferito`, che rileggono Dexie (un Annulla toccato prima che la
+pagina ridisegni toglieva di nuovo invece di rimettere) e rimettono in
+vita la stessa riga. Riga in Impostazioni, gruppo App, con "12 alimenti
+· 3 pasti", solo "4 alimenti" o "3 pasti" se l'altro gruppo è a zero,
+"Nessuno" se lo sono tutti e due (`contaPreferiti`, `testoRigaPreferiti`,
+forma corta "12 · 3" a una costante di distanza). `alimentiPreferiti` ora mostra una
+volta sola un alimento con due righe vive: tocca anche Aggiungi, dove
+prima comparivano doppie. `/impostazioni/preferiti` in `PAGINE_APP`.
+Test permanenti: conteggio (alimenti fuori catalogo, pasti invisibili,
+doppioni, ricette) e stella → tolto → Annulla con la stessa riga; provati
+rompendo la logica. 783 test verdi, `tsc` e lint puliti. Da provare su
+iPhone.
+
 ## 2026-10-11 — Preferiti in Impostazioni, passo 1: preparazione
 
 Branch `preferiti`. Nessun cambio visibile. Il sottotitolo di un pasto

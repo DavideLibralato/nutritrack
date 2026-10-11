@@ -51,6 +51,7 @@ describe("scegliStrategia", () => {
       "/impostazioni/pasti",
       "/impostazioni/peso",
       "/impostazioni/aspetto",
+      "/impostazioni/preferiti",
       "/impostazioni/sincronizzazione",
       "/impostazioni/informazioni",
       "/aggiungi?giorno=2026-09-20",

@@ -30,7 +30,15 @@ export function alimentiPreferiti(
   }
 
   const risultato: AlimentoPreferito[] = [];
+  // Un alimento compare una volta sola anche se ha due righe vive in
+  // `preferiti`: succede se due dispositivi lo aggiungono offline (sul
+  // server la seconda verrebbe rifiutata dal vincolo unico, ma qui c'è già).
+  // Senza, l'elenco lo mostrerebbe due volte e il conteggio in Impostazioni
+  // lo conterebbe doppio.
+  const giaVisti = new Set<string>();
   for (const p of preferiti) {
+    if (giaVisti.has(p.alimento_id)) continue;
+    giaVisti.add(p.alimento_id);
     // L'alimento potrebbe non esistere più nel catalogo (eliminato dopo
     // averlo messo tra i preferiti): in quel caso non compare.
     const alimento = catalogo.find((a) => a.id === p.alimento_id);

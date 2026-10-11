@@ -2,9 +2,10 @@
 
 // Modifica di un pasto salvato (PUNTO_DI_PARTENZA.md, sezione 3, "Salvare un
 // pasto intero"): nome, alimenti con i grammi, "Elimina pasto". Si apre dalla
-// matita sulla riga del pasto in Preferiti, dentro /aggiungi, e ne copre
-// tutta l'altezza con una testata sua (quella di Aggiungi mostra il pasto
-// della giornata, che qui non c'entra).
+// matita sulla riga del pasto in Preferiti, dentro /aggiungi, e dalla riga
+// del pasto in Impostazioni > Preferiti e pasti salvati. Copre tutta
+// l'altezza (anche la tab bar) con una testata sua: quella di Aggiungi
+// mostra il pasto della giornata, che qui non c'entra.
 //
 // Come il Profilo: tutto resta in sospeso finché non si preme Salva, e
 // "Annulla modifiche" torna a com'era. Niente si scrive in Dexie prima del

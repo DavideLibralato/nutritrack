@@ -113,6 +113,12 @@ export function messaggioRipristinato(nome: string): MessaggioBarra {
   return { testo: "Ripristinato:", nome, icona: "spunta" };
 }
 
+// Impostazioni > Preferiti e pasti salvati, dopo la stella svuotata sulla
+// riga di un alimento (con "Annulla", che lo rimette).
+export function messaggioToltoDaiPreferiti(nome: string): MessaggioBarra {
+  return { testo: "Tolto dai preferiti:", nome };
+}
+
 export const MESSAGGIO_ANNULLATO: MessaggioBarra = {
   testo: "Annullato.",
   icona: "annulla",

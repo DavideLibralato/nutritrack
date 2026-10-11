@@ -55,3 +55,34 @@ export async function togglePreferito(
 
   await repositoryPreferiti.crea({ user_id: userId, alimento_id: alimentoId });
 }
+
+// Togli e rimetti dalla pagina Impostazioni > Preferiti e pasti salvati: la
+// stella sulla riga e l'"Annulla" della barra. A differenza di
+// togglePreferito, non decidono da un elenco passato dal chiamante: lo
+// rileggono da Dexie. Il motivo è il tocco veloce: stella e subito "Annulla",
+// prima che la liveQuery della pagina abbia ridisegnato. Con l'elenco della
+// pagina, ancora vecchio di un giro, l'Annulla vedrebbe il preferito "vivo"
+// e invece di rimetterlo lo toglierebbe di nuovo.
+//
+// Tutte e due si possono chiamare due volte senza danni: togliere un
+// alimento che non è fra i preferiti, o rimetterne uno che c'è già, non fa
+// niente.
+
+// Toglie TUTTE le righe vive di quell'alimento: di norma una, ma due
+// dispositivi offline possono averne create due (alimentiPreferiti le
+// mostra come una sola), e toglierne una lascerebbe la stella piena.
+export async function togliPreferito(userId: string, alimentoId: string): Promise<void> {
+  const vivi = await repositoryPreferiti.ottieniTutti(userId);
+  await Promise.all(
+    vivi.filter((p) => p.alimento_id === alimentoId).map((p) => repositoryPreferiti.elimina(p.id))
+  );
+}
+
+// Rimette l'alimento fra i preferiti passando da togglePreferito, che
+// rimette in vita la riga cancellata (stesso id) invece di crearne una
+// nuova: niente "duplicate key" sul server (vedi il commento sopra).
+export async function rimettiPreferito(userId: string, alimentoId: string): Promise<void> {
+  const vivi = await repositoryPreferiti.ottieniTutti(userId);
+  if (ePreferito(vivi, alimentoId)) return;
+  await togglePreferito(userId, vivi, alimentoId);
+}

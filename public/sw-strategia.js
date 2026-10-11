@@ -27,6 +27,7 @@
     "/impostazioni/pasti",
     "/impostazioni/peso",
     "/impostazioni/aspetto",
+    "/impostazioni/preferiti",
     "/impostazioni/sincronizzazione",
     "/impostazioni/informazioni",
   ];
