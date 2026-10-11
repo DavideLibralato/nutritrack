@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — attendiDiscesaInCorso
+
+Branch `esci-svuota`. `scaricaTabella` tiene un elenco delle discese in
+corso (anche quelle del seed dei pasti) e `attendiDiscesaInCorso()` si
+risolve quando è vuoto, comprese le discese partite durante l'attesa;
+non rifiuta mai. Servirà a Esci (commit successivo): una discesa partita
+prima dell'uscita poteva finire dopo la pulizia e riscrivere righe e
+cursore, e al rientro lo storico più vecchio non sarebbe più tornato.
+Nessuno la chiama ancora. 4 test permanenti in `discesa.test.ts`,
+verificati rompendo il codice. 818 test verdi in 70 file, `tsc` e lint
+puliti.
+
 ## 2026-10-11 — La salita invia solo le voci dell'utente della sessione
 
 Branch `esci-svuota`. Corretto il bug trovato nell'analisi: `unGiro`

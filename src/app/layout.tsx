@@ -4,6 +4,7 @@ import "./globals.css";
 import RegistraServiceWorker from "@/components/RegistraServiceWorker";
 import Sincronizzazione from "@/components/Sincronizzazione";
 import RipresaEliminazioneAccount from "@/components/RipresaEliminazioneAccount";
+import RipresaUscita from "@/components/RipresaUscita";
 import { COLORI_BARRA, SCRIPT_TEMA } from "@/lib/tema";
 
 // Font per titoli e numeri: piu caratteristico del generico Geist/Arial usato finora.
@@ -102,6 +103,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <RegistraServiceWorker />
         <Sincronizzazione />
         <RipresaEliminazioneAccount />
+        <RipresaUscita />
       </body>
     </html>
   );

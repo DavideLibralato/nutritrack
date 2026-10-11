@@ -17,7 +17,7 @@
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
 import { ordinaOutbox } from "./outbox";
-import { chiaveSessione, leggiSessioneSalvata } from "../supabase/utenteOffline";
+import { idUtenteDellaSessione } from "../supabase/utenteDellaSessione";
 import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
 import {
   esitoDaStatus,
@@ -135,6 +135,10 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
   // in coda intatte, e partono quando rientra il loro utente. Si
   // riconoscono da dati.user_id, come in codaDellUtente.ts.
   //
+  // L'utente si legge anche offline con il token scaduto (vedi
+  // utenteDellaSessione.ts): lì le voci si tentano come prima e il giro
+  // finisce "rete", non "sessione".
+  //
   // Nessun utente (uscito, mai entrato): non parte niente. Se in coda c'è
   // qualcosa da mandare, l'esito è "sessione", come quando il server
   // risponde 401.
@@ -246,20 +250,4 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
   }
 
   return { risultato: { inviate, fallite, sospese }, esito };
-}
-
-// Di chi è la sessione. getSession legge quella salvata, senza rete; offline
-// con il token scaduto risponde null anche se la sessione c'è ancora
-// (utenteOffline.ts), e allora l'id si prende dal cookie, come fa
-// useUtenteId. Così offline le voci si tentano come prima e il giro finisce
-// "rete", non "sessione".
-async function idUtenteDellaSessione(supabase: ReturnType<typeof createClient>): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  if (data.session) return data.session.user.id;
-  try {
-    return leggiSessioneSalvata(document.cookie, chiaveSessione(process.env.NEXT_PUBLIC_SUPABASE_URL!))?.id ?? null;
-  } catch {
-    // Cookie o indirizzo illeggibili: come nessuna sessione.
-    return null;
-  }
 }
