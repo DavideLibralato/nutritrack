@@ -5,6 +5,15 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Messaggio d'errore di Duplica con giorno e pasto
+
+Branch `pulizie`. In `duplicaNelPasto` il controllo sul pasto di
+destinazione lanciava "Pasto non valido per Duplica il : ": le variabili
+erano sparite già nel commit `d3796d1` (un `${...}` svuotato dalla shell
+che ha scritto il file). Ora dice giorno e id del pasto, come il gemello
+di Aggiungi. È un messaggio per lo sviluppatore, non visibile in app.
+Cercati altri template rotti in `src`, nei `.md` e in `supabase`: nessuno.
+
 ## 2026-10-11 — Prettier configurato, non ancora applicato
 
 Branch `pulizie`. `prettier@3.9.10` come devDependency (versione esatta),

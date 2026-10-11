@@ -312,7 +312,7 @@ export async function duplicaNelPasto({
   // ma fra l'apertura e la conferma una sync può averli cambiati.
   const pastoDestinazione = await repositoryPasti.ottieniPerId(pastoDestinazioneId);
   if (!pastoDestinazione || !pastoValidoIl(pastoDestinazione, dataDestinazione)) {
-    throw new Error(`Pasto non valido per Duplica il : `);
+    throw new Error(`Pasto non valido per Duplica il ${dataDestinazione}: ${pastoDestinazioneId}`);
   }
 
   let originali: VoceDiario[];
