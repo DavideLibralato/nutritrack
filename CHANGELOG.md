@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Conferme su iPhone in PUNTO §11
+
+Branch `indirizzo`. Segnate come confermate da Davide l'11/10 su iPhone
+tre prove rimaste aperte: la pesata con lo stesso valore in un giorno
+nuovo (compare in cima con la data nuova; tolta da "Difetti e verifiche
+aperti"), i numeri delle voci con kcal da 1 cifra e su iPhone SE, la
+durata della barra con Annulla (3 s bastano, anche dopo "Elimina tutto
+il pasto"). Solo documenti.
+
+## 2026-10-11 — Preferiti uniti a main
+
+Provati l'11/10 e uniti a main con fast-forward da `659653d` a
+`4ec4961`, senza commit di merge: `481d020` (sottotitolo condiviso,
+`ModificaPastoSalvato` apribile da Impostazioni, più la voce di merge di
+`pulizie`), `af7fb01` (pagina Preferiti e pasti salvati, riga in
+Impostazioni), `3c37512` (etichetta "Preferiti", modifica senza elenco
+sotto), `0e8780e` (barra Salva che sparisce mentre si scrive),
+`4ec4961` (provato su iPhone). Branch `preferiti` cancellato, in locale
+e su GitHub. Deploy di produzione riuscito. 782 test verdi in 67 file.
+Voce scritta con il primo commit del branch successivo (`indirizzo`),
+per non fare un commit su main solo per il registro.
+
 ## 2026-10-11 — Preferiti in Impostazioni provato su iPhone
 
 Branch `preferiti`. Provato l'11/10 in Safari sull'anteprima, con

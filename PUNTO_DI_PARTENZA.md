@@ -3368,7 +3368,8 @@ dall'app installata, compreso "Salvato." in Profilo). Stesso vetro della
 tab bar, icona, linea del tempo; durate di 5, 4 e 2,5 secondi, dal 3/10
 3 e 2,5, con la pausa che riprende da dove era (provato su iPhone il 3/10:
 3 s con Annulla, 2,5 s il resto, pausa che riprende da dove era, tocchi
-ripetuti; sezione 7).
+ripetuti; sezione 7). Confermato da Davide l'11/10 su iPhone: 3 s con
+Annulla bastano, anche dopo "Elimina tutto il pasto".
 
 **Swipe per cambiare giorno in Oggi** (2/10, provato su iPhone da Safari
 e dall'app installata). Dito a sinistra giorno dopo, a destra giorno prima,
@@ -3414,7 +3415,8 @@ sostituzione nello stesso giorno, Profilo senza "Registra peso", offline;
 con l'account vero nell'app installata la riga Peso). Pagina `/impostazioni/peso` con l'ultima pesata e "Registra
 peso", uscito da Profilo; riga Peso nell'elenco; "Calcola proposta" in
 Obiettivi rimanda a Peso; regola della pesata corretta (stesso valore in un
-giorno nuovo ora si scrive) (sezione 3, "Peso").
+giorno nuovo ora si scrive; confermato da Davide l'11/10 su iPhone: la
+pesata compare in cima con la data nuova) (sezione 3, "Peso").
 
 **Impostazioni, passo 5: Aspetto** (3/10, provato su iPhone: Safari e app
 installata, Chiaro / Scuro / Sistema, cambio dal Centro di controllo con
@@ -3615,7 +3617,9 @@ Prima "·" e grammi si spostavano con il numero di cifre delle kcal, e i
 grammi con decimali si leggevano "12.5 g". Provati: "·" e "g" in colonna
 con kcal da 1, 2 e 3 cifre; una voce da 12,5 g scritta "12,5 g", anche
 nella copia che segue il dito trascinando; i nomi lunghi si accorciano
-con "…" senza spingere i numeri. Non provato su iPhone SE. Com'è fatto:
+con "…" senza spingere i numeri. Confermati da Davide l'11/10 su iPhone
+anche i numeri con kcal da 1 cifra e la schermata su iPhone SE. Com'è
+fatto:
 sezione 3, Oggi, punto 3.
 
 **Preferiti e pasti salvati in Impostazioni** (11/10, branch `preferiti`,
@@ -3740,10 +3744,6 @@ fatto: sezione 3, "Preferiti e pasti salvati".
   solo se la discesa arriva prima. Vale per ogni tabella; è raro (serve
   modificare proprio la riga cancellata). Da affrontare a parte
 
-- **Peso, prova da fare il 4/10** con l'account di prova in Safari:
-  registrare lo stesso valore dell'ultima pesata in un giorno nuovo; deve
-  comparire con la data nuova. Il resto del passo 4 è provato; questo
-  caso lo copre già il test (`misurazioni.test.ts`)
 - **Cancellando un utente, le sue righe in `alimenti` non vengono
   cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
   non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e
