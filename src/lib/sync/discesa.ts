@@ -244,9 +244,46 @@ export async function contaRigheSulServer(
   return count;
 }
 
+// Le discese di una tabella ancora in corso (dall'11/10/2026, per Esci;
+// PUNTO_DI_PARTENZA.md §9.6, "Esci svuota i dati locali"). Una discesa
+// partita prima dell'uscita può finire DOPO la pulizia dei dati e
+// riscrivere righe e cursore: al rientro dello stesso utente la discesa
+// incrementale ripartirebbe da quel cursore, e le righe più vecchie, già
+// cancellate, non tornerebbero più. Esci aspetta qui prima di pulire.
+// Si traccia ogni scaricaTabella, non solo scaricaTutto: la chiama anche il
+// seed dei pasti (repository/pasti.ts), che scrive righe e cursore come
+// le altre.
+const discesaInCorso = new Set<Promise<void>>();
+
+// Si risolve quando non c'è più nessuna discesa in corso, comprese quelle
+// partite mentre si aspettava. Non rifiuta mai: una discesa fallita non ha
+// scritto il suo cursore, e chi aspetta vuole solo sapere che è finita.
+// Dopo signOut una discesa nuova fallisce alla prima pagina (il ruolo
+// anonimo non legge le tabelle), quindi il ciclo finisce.
+export async function attendiDiscesaInCorso(): Promise<void> {
+  while (discesaInCorso.size > 0) {
+    await Promise.allSettled([...discesaInCorso]);
+  }
+}
+
 // Scarica una singola tabella per l'utente indicato, in modo incrementale
 // (dal cursore). `opzioni.includiCondivisi`: vedi TABELLE_DISCESA.
-export async function scaricaTabella<T extends RigaBase>(
+export function scaricaTabella<T extends RigaBase>(
+  userId: string,
+  tabella: Table<T, string>,
+  nomeTabella: NomeTabella,
+  opzioni?: { includiCondivisi?: boolean }
+): Promise<void> {
+  const discesa = scaricaUnaTabella(userId, tabella, nomeTabella, opzioni);
+  discesaInCorso.add(discesa);
+  // .catch: l'errore lo riceve chi ha chiamato scaricaTabella; qui serve
+  // solo togliere la discesa dall'elenco, senza un secondo rifiuto non
+  // gestito.
+  discesa.finally(() => discesaInCorso.delete(discesa)).catch(() => {});
+  return discesa;
+}
+
+async function scaricaUnaTabella<T extends RigaBase>(
   userId: string,
   tabella: Table<T, string>,
   nomeTabella: NomeTabella,

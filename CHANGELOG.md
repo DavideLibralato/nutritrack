@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — La salita invia solo le voci dell'utente della sessione
+
+Branch `esci-svuota`. Corretto il bug trovato nell'analisi: `unGiro`
+mandava tutta l'outbox, anche le modifiche lasciate da un altro utente
+uscito dal dispositivo; il server le rifiutava (403), contavano come
+tentativi, bloccavano la coda di chi era entrato e finivano accantonate.
+Ora partono solo le voci con `dati.user_id` dell'utente della sessione
+(`getSession`, o il cookie offline col token scaduto, come
+`useUtenteId`); senza utente non parte niente. Verificati tutti i punti
+che scrivono in outbox: ogni voce porta `user_id`. Nuovo
+`controllaUtenteDellaRiga` in `accodaMutazione` e nel repository prima
+di scrivere la riga, così un errore futuro è un'eccezione e non una
+voce ferma in silenzio. 8 test permanenti nuovi (3 in
+`sincronizza.test.ts`, 5 in `outbox.test.ts`), verificati rompendo il
+codice. 814 test verdi in 70 file, `tsc` e lint puliti.
+
 ## 2026-10-11 — Esci svuota i dati locali: decisioni
 
 Branch `esci-svuota`. Decise le regole per svuotare i dati dell'utente

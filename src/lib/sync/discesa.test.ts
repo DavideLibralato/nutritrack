@@ -25,7 +25,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { db } from "../db/database";
-import { scaricaTabella, DIMENSIONE_PAGINA, millisecondiDi } from "./discesa";
+import { attendiDiscesaInCorso, scaricaTabella, DIMENSIONE_PAGINA, millisecondiDi } from "./discesa";
 import type { Pasto } from "../db/tipi";
 import { MESSAGGIO_SCADUTA, TEMPO_MASSIMO_RICHIESTA_MS } from "./tempoMassimo";
 
@@ -489,6 +489,106 @@ describe("scaricaTabella — una pagina che non risponde mai", () => {
     await esito;
 
     expect(await db.pasti.where("user_id").equals(userId).count()).toBe(DIMENSIONE_PAGINA);
+    expect(await db.sync_cursori.get(`pasti:${userId}`)).toBeUndefined();
+  });
+});
+
+// attendiDiscesaInCorso (dall'11/10/2026, per Esci; PUNTO_DI_PARTENZA.md
+// §9.6). Il rischio che copre non fa rumore: una discesa partita prima di
+// Esci finisce dopo la pulizia e riscrive righe e cursore. Al rientro
+// dello stesso utente la discesa incrementale riparte da quel cursore e lo
+// storico più vecchio, già cancellato, non torna più — nessun errore, solo
+// giorni vuoti nel diario.
+describe("attendiDiscesaInCorso", () => {
+  // Una pagina che arriva solo quando il test lo decide: come una rete lenta.
+  function paginaInAttesa() {
+    let consegna: (righe: Pasto[]) => void = () => {};
+    let rifiuta: (messaggio: string) => void = () => {};
+    const risposta = new Promise<RisultatoQuery>((r) => {
+      consegna = (righe) => r({ data: righe, error: null });
+      rifiuta = (messaggio) => r({ data: null, error: { message: messaggio } });
+    });
+    const builder = creaBuilderFinto({ data: [], error: null }, {});
+    builder.then = (risolvi: (v: RisultatoQuery) => void) => {
+      void risposta.then(risolvi);
+    };
+    return { builder, consegna, rifiuta };
+  }
+
+  // Lascia girare tutto ciò che è già pronto (promise e scritture Dexie).
+  const unPoDiTempo = () => new Promise((r) => setTimeout(r, 20));
+
+  beforeEach(() => {
+    fromMock.mockReset();
+  });
+
+  it("senza discese in corso si risolve subito", async () => {
+    await expect(attendiDiscesaInCorso()).resolves.toBeUndefined();
+  });
+
+  it("aspetta la fine della discesa: una pulizia fatta dopo non vede righe né cursore riscritti", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const pagina = paginaInAttesa();
+    fromMock.mockReturnValue(pagina.builder);
+
+    const discesa = scaricaTabella(userId, db.pasti, "pasti");
+    let finita = false;
+    const attesa = attendiDiscesaInCorso().then(() => {
+      finita = true;
+    });
+
+    await unPoDiTempo();
+    expect(finita).toBe(false);
+
+    pagina.consegna([pasto({ id: crypto.randomUUID(), user_id: userId, updated_at: "2026-10-11T08:00:00.000Z" })]);
+    await attesa;
+
+    // La pulizia di Esci, subito dopo l'attesa.
+    await db.pasti.where("user_id").equals(userId).delete();
+    await db.sync_cursori.where("user_id").equals(userId).delete();
+
+    await discesa;
+    await unPoDiTempo();
+    expect(await db.pasti.where("user_id").equals(userId).count()).toBe(0);
+    expect(await db.sync_cursori.get(`pasti:${userId}`)).toBeUndefined();
+  });
+
+  it("aspetta anche una discesa partita mentre aspettava", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const prima = paginaInAttesa();
+    const seconda = paginaInAttesa();
+    fromMock.mockReturnValueOnce(prima.builder).mockReturnValueOnce(seconda.builder);
+
+    const discesa1 = scaricaTabella(userId, db.pasti, "pasti");
+    let finita = false;
+    const attesa = attendiDiscesaInCorso().then(() => {
+      finita = true;
+    });
+    const discesa2 = scaricaTabella(userId, db.misurazioni, "misurazioni");
+
+    prima.consegna([]);
+    await discesa1;
+    await unPoDiTempo();
+    expect(finita).toBe(false);
+
+    seconda.consegna([]);
+    await discesa2;
+    await attesa;
+    expect(finita).toBe(true);
+  });
+
+  it("una discesa fallita non fa fallire l'attesa; l'errore arriva a chi l'ha chiamata", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const pagina = paginaInAttesa();
+    fromMock.mockReturnValue(pagina.builder);
+
+    const discesa = scaricaTabella(userId, db.pasti, "pasti");
+    const esitoDiscesa = expect(discesa).rejects.toThrow("permesso negato");
+    const attesa = attendiDiscesaInCorso();
+
+    pagina.rifiuta("permesso negato");
+    await expect(attesa).resolves.toBeUndefined();
+    await esitoDiscesa;
     expect(await db.sync_cursori.get(`pasti:${userId}`)).toBeUndefined();
   });
 });
