@@ -1114,14 +1114,18 @@ sono in Obiettivi, la pesata in Peso.
   automatico e lascia i target manuali. Il livello di attività ha il menu a
   tutta larghezza sotto il nome, perché le voci sono lunghe
 - **"Ricarica i dati dal tuo account"** (§9.2) è passato in Impostazioni >
-  Sincronizzazione; **Esci** in fondo all'elenco Impostazioni. Esci chiede
-  conferma solo se uscire può far perdere qualcosa: modifiche non ancora
-  inviate (restano sul dispositivo ma non arrivano all'account finché non
-  si rientra da lì). Le modifiche non salvate di un modulo non c'entrano più:
-  per lasciare la pagina col modulo il guardiano chiede già prima. Esce solo
-  questo dispositivo (`scope: "local"`), e non offline: senza rete non si
-  esce, con un messaggio, mai "a metà". I dati locali restano (§9.6,
-  cancellazione al logout rimandata)
+  Sincronizzazione; **Esci** in fondo all'elenco Impostazioni. Uscendo
+  si svuotano i dati di questo utente dal dispositivo (branch
+  `esci-svuota`, regole in §9.6 "Esci svuota i dati locali"): prima prova
+  a inviare la coda, poi con la coda vuota esce senza chiedere; se resta
+  qualcosa e la sessione è valida chiede "perdi N" (**Resta** / **Esci e
+  perdile**, in arancio); se la sessione non vale più non svuota niente e
+  lo dice (**Resta** / **Esci**): rientrando le modifiche partono. Durante
+  l'uscita il pulsante dice **"Uscita…"** ed è spento, anche mentre
+  aspetta le discese in corso. Le modifiche non salvate di un modulo non
+  c'entrano: per lasciare la pagina col modulo il guardiano chiede già
+  prima. Esce solo questo dispositivo (`scope: "local"`), e non offline:
+  senza rete non si esce, con un messaggio, mai "a metà"
 - **Tema**: non sta in Profilo ma in Impostazioni > Aspetto (sopra)
 
 #### Un solo Salva (deciso il 2026-09-26)
@@ -2890,8 +2894,9 @@ Stesso hook della pagina, quindi stesso stato.
   momento;
 - **"Sincronizza ora"** (discesa e salita), spento mentre un giro è in
   corso. Con la sessione scaduta al suo posto c'è **"Esci e rientra"**: è
-  Esci (`EsciAccount` con un'altra etichetta), con la sua conferma. Esci
-  ora azzera anche lo stato dei giri in memoria;
+  Esci (`EsciAccount` con un'altra etichetta), stesso percorso: con la
+  sessione scaduta e modifiche in coda non svuota niente (§9.6). Esci
+  azzera anche lo stato dei giri in memoria;
 - con modifiche accantonate, il gruppo **"Non salvate online"**
   (`ModificheAccantonate`): che cosa, quale e quando, in parole
   dell'utente; **"Dettagli tecnici" chiuso di default** (tabella,

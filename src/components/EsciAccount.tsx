@@ -2,89 +2,82 @@
 
 // "Esci", in fondo all'elenco Impostazioni: una riga arancio centrata nel
 // suo gruppo, come nel mockup (docs/mockups/impostazioni.html). La conferma,
-// quando serve, compare dentro lo stesso gruppo.
+// quando serve, compare dentro lo stesso gruppo. Lo stesso componente è
+// "Esci e rientra" in Impostazioni > Sincronizzazione.
 //
-// I DATI LOCALI NON SI CANCELLANO all'uscita: la cancellazione al logout
-// (PUNTO_DI_PARTENZA.md §9.6) è rimandata per scelta finché l'app non si apre
-// ad altri utenti. Le modifiche non ancora inviate restano sul dispositivo.
-//
-// La conferma compare SOLO se uscire può far perdere qualcosa (regola: mai
-// perdere dati in silenzio): modifiche non ancora inviate al tuo account
-// (modificheNonInviate, accantonate comprese), che restano qui ma non
-// arrivano al tuo account finché non rientri da questo dispositivo. Se non
-// ce ne sono, si esce senza chiedere. Le modifiche non salvate di un modulo
-// non c'entrano più: l'elenco non ne ha, e per lasciare una sotto-pagina con
-// modifiche il guardiano chiede già prima (GuardianoModifiche).
-//
-// Offline non si esce. Dopo l'uscita per rientrare serve comunque la rete,
-// e signOut offline con il token scaduto non riesce a togliere la sessione:
-// si resterebbe "a metà". navigator.onLine da solo non basta (su iOS non è
-// affidabile), quindi prima di uscire si chiede al server chi è l'utente
-// (getUser, una vera chiamata di rete): se non risponde, non si tocca
-// niente. Dopo signOut si controlla che la sessione locale sia davvero
-// sparita: o si è usciti del tutto, o si resta dentro con un messaggio.
+// Dall'11/10 uscendo si svuotano i dati di questo utente dal dispositivo
+// (PUNTO_DI_PARTENZA.md §9.6, "Esci svuota i dati locali"). Che cosa
+// succede lo decide lo stato, non il pulsante: il lavoro e la regola stanno
+// in src/lib/account/esci.ts; qui solo stati e testi.
+// - offline → non si esce;
+// - coda vuota → si esce e si svuota, senza chiedere;
+// - coda non vuota, sessione valida → conferma "perdi N" (Resta / Esci e
+//   perdile). Arancio, non rosso: il rosso è solo di Elimina account;
+// - coda non vuota, sessione non valida → la frase che dice che restano
+//   qui (Resta / Esci), e non si svuota niente.
+// Le modifiche non salvate di un modulo non c'entrano: per lasciare una
+// sotto-pagina con modifiche il guardiano chiede già prima
+// (GuardianoModifiche).
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthRetryableFetchError } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
-import { modificheNonInviate, type ModificheNonInviate } from "@/lib/sync/ripristino";
-import { sincronizzaOutbox } from "@/lib/sync/sincronizza";
-import { azzeraStatoGiri } from "@/lib/sync/statoSincronizzazione";
+import type { ModificheNonInviate } from "@/lib/sync/ripristino";
+import {
+  eseguiUscita,
+  preparaUscita,
+  totaleModifiche,
+  type DecisioneUscita,
+} from "@/lib/account/esci";
 import { descriviGruppo } from "./RicaricaDatiAccount";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import { svuotaPagineSalvate } from "@/lib/serviceWorker";
 import { useOnline } from "@/lib/useOnline";
 import GruppoImpostazioni from "./GruppoImpostazioni";
 
 type Stato =
   | { fase: "inattivo" }
   | { fase: "controllo" }
-  | { fase: "conferma"; testo: string }
+  | {
+      fase: "conferma";
+      decisione: Exclude<DecisioneUscita, "svuota">;
+      testo: string;
+      etichetta: string;
+      firme: string[];
+    }
   | { fase: "uscita" }
   | { fase: "errore"; testo: string };
 
 const TESTO_SENZA_RETE = "Per uscire serve la connessione. Non sei uscito: riprova quando sei online.";
 
-export function testoConfermaUscita(modifiche: ModificheNonInviate): string | null {
-  const { inAttesa, nonRiuscite } = modifiche;
-  const frasi: string[] = [];
+// I tipi di dato di tutte le modifiche rimaste, senza ripetizioni.
+function tipi(modifiche: ModificheNonInviate): string[] {
+  return [...new Set([...modifiche.inAttesa.tipi, ...modifiche.nonRiuscite.tipi])];
+}
 
-  const parti: string[] = [];
-  if (inAttesa.numero > 0) {
-    parti.push(
-      descriviGruppo(
-        inAttesa.numero,
-        "modifica non ancora inviata",
-        "modifiche non ancora inviate",
-        inAttesa.tipi
-      )
-    );
-  }
-  if (nonRiuscite.numero > 0) {
-    parti.push(
-      descriviGruppo(
-        nonRiuscite.numero,
-        "modifica che l'app non è riuscita a salvare online, nemmeno riprovando",
-        "modifiche che l'app non è riuscita a salvare online, nemmeno riprovando",
-        nonRiuscite.tipi
-      )
-    );
-  }
-  if (parti.length > 0) {
-    const totale = inAttesa.numero + nonRiuscite.numero;
-    frasi.push(
-      `Su questo dispositivo ${totale === 1 ? "c'è" : "ci sono"} ${parti.join(" e ")}. Uscendo ${
-        totale === 1 ? "resta" : "restano"
-      } qui, ma non ${totale === 1 ? "arriva" : "arrivano"} al tuo account finché non rientri da questo dispositivo.`
-    );
-  }
-  return frasi.length > 0 ? frasi.join(" ") : null;
+// Coda non vuota, sessione valida: uscendo si perdono.
+export function testoPerdita(modifiche: ModificheNonInviate): string {
+  const n = totaleModifiche(modifiche);
+  const quante = descriviGruppo(
+    n,
+    "modifica che l'app non è riuscita a salvare online",
+    "modifiche che l'app non è riuscita a salvare online",
+    tipi(modifiche)
+  );
+  return `Su questo telefono ${n === 1 ? "c'è" : "ci sono"} ${quante}. Uscendo, i dati di questo telefono vengono cancellati: ${
+    n === 1 ? "questa modifica andrà persa" : "queste modifiche andranno perse"
+  }.`;
+}
+
+// Coda non vuota, sessione non valida: restano qui.
+export function testoTieni(modifiche: ModificheNonInviate): string {
+  const n = totaleModifiche(modifiche);
+  return n === 1
+    ? "La sessione è scaduta: la tua modifica resta su questo telefono e parte appena rientri con lo stesso account."
+    : `La sessione è scaduta: le tue ${n} modifiche restano su questo telefono e partono appena rientri con lo stesso account.`;
 }
 
 // `etichetta`: il testo del pulsante. "Esci" in fondo all'elenco; "Esci e
 // rientra" in Impostazioni > Sincronizzazione con la sessione scaduta
-// (dal 10/10), stesso percorso e stessa conferma.
+// (dal 10/10), stesso percorso.
 export default function EsciAccount({
   userId,
   etichetta = "Esci",
@@ -95,60 +88,54 @@ export default function EsciAccount({
   const router = useRouter();
   const [stato, setStato] = useState<Stato>({ fase: "inattivo" });
   // Solo per disattivare il pulsante quando il browser sa già di essere
-  // offline; la verifica vera è getUser() in esci().
+  // offline; la verifica vera è getUser() in preparaUscita.
   const online = useOnline();
 
   async function avvia() {
     setStato({ fase: "controllo" });
-    // Come per Ricarica: prima prova a inviare ciò che è in coda (spesso
-    // basta a svuotarla), poi conta ciò che resta.
-    await sincronizzaOutbox().catch(() => {});
-    let testo: string | null;
+    let preparazione;
     try {
-      testo = testoConfermaUscita(await modificheNonInviate(userId));
+      preparazione = await preparaUscita(userId);
     } catch {
       setStato({ fase: "errore", testo: "Controllo non riuscito. Non sei uscito: riprova." });
       return;
     }
-    if (testo) {
-      setStato({ fase: "conferma", testo });
+    if (preparazione.esito === "rete") {
+      setStato({ fase: "errore", testo: TESTO_SENZA_RETE });
+      return;
+    }
+
+    const { decisione, modifiche } = preparazione;
+    if (decisione === "svuota") {
+      await esci(decisione, modifiche.firme);
+    } else if (decisione === "conferma-perdita") {
+      setStato({
+        fase: "conferma",
+        decisione,
+        testo: testoPerdita(modifiche),
+        etichetta: totaleModifiche(modifiche) === 1 ? "Esci e perdila" : "Esci e perdile",
+        firme: modifiche.firme,
+      });
     } else {
-      await esci();
+      setStato({ fase: "conferma", decisione, testo: testoTieni(modifiche), etichetta: "Esci", firme: modifiche.firme });
     }
   }
 
-  async function esci() {
+  async function esci(decisione: DecisioneUscita, firme: string[]) {
+    // "Uscita…" con il pulsante spento per tutta l'uscita, compresa
+    // l'attesa delle discese in corso prima della pulizia.
     setStato({ fase: "uscita" });
-    const supabase = createClient();
-
-    // 1. Il server risponde? Se no, non si tocca niente.
-    const verifica = await supabase.auth.getUser();
-    if (verifica.error && isAuthRetryableFetchError(verifica.error)) {
+    let esito;
+    try {
+      esito = await eseguiUscita(userId, decisione, firme);
+    } catch {
+      setStato({ fase: "errore", testo: "Uscita non riuscita. Riprova." });
+      return;
+    }
+    if (esito === "sessione-rimasta") {
       setStato({ fase: "errore", testo: TESTO_SENZA_RETE });
       return;
     }
-
-    // 2. scope "local": esce solo QUESTO dispositivo. Il predefinito
-    //    ("global") chiuderebbe la sessione anche sugli altri dispositivi
-    //    dello stesso account.
-    await supabase.auth.signOut({ scope: "local" });
-
-    // 3. Uscita completa o niente: se la sessione è ancora qui (rete caduta
-    //    fra 1 e 2, token scaduto), si resta dentro con un messaggio.
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-      setStato({ fase: "errore", testo: TESTO_SENZA_RETE });
-      return;
-    }
-
-    // 4. Via le pagine salvate per l'uso offline: altrimenti, senza rete,
-    //    l'app si riaprirebbe come se si fosse ancora dentro.
-    await svuotaPagineSalvate().catch(() => {});
-
-    // 5. Via lo stato della sincronizzazione in memoria (esiti dei giri,
-    //    errori, da quando): è dell'utente appena uscito, e chi entra dopo
-    //    su questo dispositivo non deve vederlo.
-    azzeraStatoGiri();
 
     // Navigazione interna (non window.location): non fa scattare l'avviso
     // "modifiche non salvate" della pagina, già confermato qui sopra.
@@ -170,14 +157,14 @@ export default function EsciAccount({
                 onClick={() => setStato({ fase: "inattivo" })}
                 className={`flex-1 rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
               >
-                Annulla
+                Resta
               </button>
               <button
                 type="button"
-                onClick={esci}
+                onClick={() => esci(stato.decisione, stato.firme)}
                 className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong ${CLASSE_FOCUS}`}
               >
-                Esci lo stesso
+                {stato.etichetta}
               </button>
             </div>
           </div>
@@ -188,7 +175,7 @@ export default function EsciAccount({
             disabled={occupato || !online}
             className={`flex min-h-[52px] w-full items-center justify-center px-4 text-base font-medium text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
           >
-            {stato.fase === "controllo" ? "Controllo..." : stato.fase === "uscita" ? "Esco..." : etichetta}
+            {stato.fase === "controllo" ? "Controllo…" : stato.fase === "uscita" ? "Uscita…" : etichetta}
           </button>
         )}
       </GruppoImpostazioni>

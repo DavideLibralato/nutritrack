@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Segno di uscita e ripresa all'avvio
+
+Branch `esci-svuota`. Nuovo segno `nutritrack:uscita` (`{ idUtente,
+firme }`, `src/lib/account/uscitaInCorso.ts`), che Esci scriverà dopo
+signOut e toglierà a pulizia riuscita. All'avvio `RipresaUscita` (nel
+layout principale): rientrato lo stesso utente → segno tolto, dati
+intatti; nessuna sessione o un altro utente → pulizia con
+`sostituisciDatiUtente` e le firme del segno (una modifica non
+confermata non si perde nemmeno qui); pulizia fallita o utente non
+leggibile → segno lasciato. `idUtenteDellaSessione` (con il ripiego sul
+cookie offline) spostata in `src/lib/supabase/utenteDellaSessione.ts`,
+usata dalla salita e dalla ripresa. 8 test permanenti, verificati
+rompendo il codice (controllo "stesso utente", firme). 826 test verdi in
+71 file, `tsc`, lint e `npm run build` puliti.
+
 ## 2026-10-11 — attendiDiscesaInCorso
 
 Branch `esci-svuota`. `scaricaTabella` tiene un elenco delle discese in
