@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Preferiti in Impostazioni, passo 1: preparazione
+
+Branch `preferiti`. Nessun cambio visibile. Il sottotitolo di un pasto
+salvato ("3 alimenti · 412 kcal") era scritto due volte, nella riga di
+Aggiungi e in `ModificaPastoSalvato`: ora `kcalPastoSalvato` e
+`sottotitoloPastoSalvato` in `src/lib/inserimento/pastiSalvati.ts`.
+`ModificaPastoSalvato` si aggancia da sola alla parte visibile della
+finestra (`fixed` con `useAreaVisibile`, la stessa geometria del `<main>`
+di Aggiungi, dove prima era `absolute`), così copre anche la tab bar
+quando si aprirà da Impostazioni, e chiama `useSegnalaModifiche`, che in
+/aggiungi non fa niente. Aggiunto il mockup approvato
+`docs/mockups/preferiti-e-pasti-salvati.html`. 771 test verdi senza
+modifiche, `tsc` e lint puliti.
+
+## 2026-10-11 — Pulizie unite a main
+
+Provate l'11/10 e unite a main con fast-forward da `b7d164b` a
+`659653d`, senza commit di merge: `78b23f0` (ESLint ignora .claude, più
+la voce di merge di `icona-preferiti`), `dd4da7f` (Prettier configurato,
+non applicato), `e4f953f` (messaggio d'errore di Duplica), `5ce5657`
+(numeri delle voci incolonnati, grammi con la virgola), `659653d`
+(provato su iPhone). Branch `pulizie` cancellato, in locale e su GitHub.
+Deploy di produzione riuscito. 771 test verdi in 65 file. Voce scritta
+con il primo commit del branch successivo (`preferiti`), per non fare un
+commit su main solo per il registro.
+
 ## 2026-10-11 — Numeri delle voci incolonnati provati su iPhone
 
 Branch `pulizie`. Provato l'11/10 in Safari sull'anteprima, con

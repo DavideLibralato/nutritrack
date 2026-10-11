@@ -39,7 +39,12 @@ import { pastoPerOrario, primoPastoVuoto } from "@/lib/inserimento/propostaPasto
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { alimentiRecenti } from "@/lib/inserimento/recenti";
 import { alimentiPreferiti } from "@/lib/inserimento/preferiti";
-import { pastiSalvati, type PastoSalvato } from "@/lib/inserimento/pastiSalvati";
+import {
+  kcalPastoSalvato,
+  pastiSalvati,
+  sottotitoloPastoSalvato,
+  type PastoSalvato,
+} from "@/lib/inserimento/pastiSalvati";
 import {
   ripristinaAlimentoEliminato,
   type TracciaRimozione,
@@ -994,11 +999,7 @@ function RigaPastoSalvato({
   onAggiungi: (p: PastoSalvato) => void;
   onModifica: (p: PastoSalvato) => void;
 }) {
-  const kcalTotali = Math.round(
-    pasto.voci.reduce((somma, { alimento, quantitaG }) => somma + (alimento.kcal_100g * quantitaG) / 100, 0)
-  );
-  const numeroAlimenti = pasto.voci.length;
-  const sottotitolo = `${numeroAlimenti} ${numeroAlimenti === 1 ? "alimento" : "alimenti"} · ${kcalTotali} kcal`;
+  const sottotitolo = sottotitoloPastoSalvato(pasto.voci.length, kcalPastoSalvato(pasto.voci));
 
   return (
     <li className="flex items-center gap-2 border-b border-border py-3.5">

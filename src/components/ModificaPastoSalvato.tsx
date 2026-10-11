@@ -30,6 +30,9 @@ import { cercaPerNome, etichettaAlimento } from "@/lib/repository/alimenti";
 import { eliminaComposizione } from "@/lib/repository/composizioni";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
+import { kcalPastoSalvato, sottotitoloPastoSalvato } from "@/lib/inserimento/pastiSalvati";
+import { useAreaVisibile } from "@/lib/areaVisibile";
+import { useSegnalaModifiche } from "@/components/GuardianoModifiche";
 import {
   aggiungiAlimento,
   caricaModuloPasto,
@@ -55,6 +58,16 @@ interface Props {
 }
 
 type Conferma = "ultimo-alimento" | "elimina-pasto" | "esci";
+
+// La schermata si aggancia da sola alla parte visibile della finestra
+// (useAreaVisibile), come il <main> di /aggiungi: `fixed` con gli stessi
+// top/altezza/larghezza, quindi lì occupa esattamente lo spazio di prima,
+// quando era `absolute` dentro quel <main>. Così funziona anche aperta da
+// una pagina che scorre normalmente (Impostazioni), dove `absolute` si
+// appoggerebbe al documento. z-40 sta sopra la tab bar (pillola z-30): la
+// copre, come una schermata con una testata sua.
+const CLASSE_CONTENITORE =
+  "fixed inset-x-0 z-40 mx-auto flex w-full max-w-md flex-col bg-background";
 
 export default function ModificaPastoSalvato({ userId, composizioneId, catalogo, onChiudi }: Props) {
   const [caricati, setCaricati] = useState<ModuloPasto | null>(null);
@@ -95,6 +108,13 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
 
   const modificato = caricati && attuali ? moduloModificato(caricati, attuali) : false;
 
+  // Aperta da Impostazioni, la schermata sta dentro il guardiano delle
+  // modifiche (GuardianoModifiche): con modifiche non salvate, i link
+  // protetti chiedono "Esci senza salvare?". In /aggiungi, che sta fuori
+  // dal gruppo (app), il guardiano non c'è e questa chiamata non fa niente.
+  useSegnalaModifiche(modificato);
+  const areaVisibile = useAreaVisibile();
+
   // Chiusura o ricarica della scheda con modifiche non salvate: il browser
   // chiede conferma (stesso meccanismo del Profilo; il testo lo decide il
   // browser). Il gesto "indietro" del telefono non passa di qui: esce da
@@ -111,7 +131,10 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
 
   if (!caricati || !attuali) {
     return (
-      <div className="absolute inset-0 z-40 flex items-center justify-center bg-background">
+      <div
+        style={{ top: areaVisibile.top, height: areaVisibile.height }}
+        className={`${CLASSE_CONTENITORE} items-center justify-center`}
+      >
         <p className="text-sm text-muted">Caricamento...</p>
       </div>
     );
@@ -126,13 +149,12 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
 
   // Kcal totali di ciò che è a schermo, dai valori vivi del catalogo (come
   // la riga in Preferiti). Le righe non valide o fuori catalogo non contano.
-  const kcalTotali = Math.round(
-    attuali.righe.reduce((somma, r) => {
-      const a = catalogoPerId.get(r.alimentoId);
-      const g = grammiValidi(r.grammi);
-      if (!a || g === null) return somma;
-      return somma + (a.kcal_100g * g) / 100;
-    }, 0)
+  const kcalTotali = kcalPastoSalvato(
+    attuali.righe.flatMap((r) => {
+      const alimento = catalogoPerId.get(r.alimentoId);
+      const quantitaG = grammiValidi(r.grammi);
+      return alimento && quantitaG !== null ? [{ alimento, quantitaG }] : [];
+    })
   );
 
   function aggiorna(modulo: ModuloPasto) {
@@ -255,7 +277,10 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
   const risultati = query.trim() === "" ? [] : cercaPerNome(catalogo, query);
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col bg-background">
+    <div
+      style={{ top: areaVisibile.top, height: areaVisibile.height }}
+      className={CLASSE_CONTENITORE}
+    >
       <header className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
         <button
           type="button"
@@ -350,8 +375,7 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
             <div className="mt-6 flex items-baseline justify-between">
               <p className="text-xs uppercase tracking-wide text-muted">Alimenti</p>
               <p className="text-sm text-muted">
-                {attuali.righe.length} {attuali.righe.length === 1 ? "alimento" : "alimenti"} ·{" "}
-                {kcalTotali} kcal
+                {sottotitoloPastoSalvato(attuali.righe.length, kcalTotali)}
               </p>
             </div>
             <ul>

@@ -1,0 +1,233 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preferiti e pasti salvati</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: una colonna per proposta, ognuna con un telefono; il telefono usa la palette dell'app (chiaro o scuro), la pagina intorno segue il tema di chi guarda. */
+:root{
+  --pagina:#e4dfd5; --pagina-testo:#1f1b16; --pagina-tenue:#5d574b; --pagina-riquadro:#f3efe7; --pagina-linea:#cfc7b8; --pagina-acc:#3f7d4c;
+  --display:'Bricolage Grotesque',system-ui,sans-serif; --testo:'Hanken Grotesk',system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;color-scheme:dark}}
+:root[data-theme="dark"]{--pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;color-scheme:dark}
+
+/* palette dell'app, come in docs/mockups/impostazioni.html */
+.chiaro{--bg:#faf7f2;--fg:#1f1b16;--sup:#ffffff;--linea:#e7e0d2;--tenue:#8a8271;--acc:#3f7d4c;--caps:rgba(63,125,76,.12);--avv:#b5533c;--vetro:rgba(255,255,255,.82);--ombra:rgba(31,27,22,.10)}
+.scuro{--bg:#1b1815;--fg:#f2ede4;--sup:#26221e;--linea:#3a342d;--tenue:#a39a8b;--acc:#7bb887;--caps:rgba(123,184,135,.16);--avv:#e8916f;--vetro:rgba(38,34,30,.86);--ombra:rgba(0,0,0,.45)}
+
+*{box-sizing:border-box}
+body{background:var(--pagina);color:var(--pagina-testo);font-family:var(--testo);margin:0;padding-inline:16px;padding-block:28px 48px}
+.testa{max-width:1180px;margin:0 auto 28px}
+.testa h1{font-family:var(--display);font-size:clamp(26px,4vw,34px);margin:0 0 8px;text-wrap:balance}
+.testa p{margin:0;color:var(--pagina-tenue);max-width:68ch;line-height:1.5}
+.decisioni{max-width:1180px;margin:0 auto 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.dec{background:var(--pagina-riquadro);border:1px solid var(--pagina-linea);border-radius:14px;padding:14px 16px;min-width:0}
+.dec b{display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--pagina-acc);margin-bottom:6px}
+.dec p{margin:0;font-size:14px;line-height:1.45}
+.sezione{max-width:1180px;margin:0 auto 14px;font-family:var(--display);font-size:20px}
+.colonne{max-width:1180px;margin:0 auto 40px;display:flex;flex-wrap:wrap;gap:28px;justify-content:center}
+.col{width:360px;max-width:100%;min-width:0}
+.col h2{font-size:17px;margin:0 0 4px}
+.col .nota{font-size:13.5px;color:var(--pagina-tenue);margin:0 0 12px;line-height:1.45;min-height:58px}
+.col .pro,.col .contro{font-size:13px;margin:10px 0 0;line-height:1.45}
+.col .pro::before{content:"Pro · ";font-weight:600;color:var(--pagina-acc)}
+.col .contro::before{content:"Contro · ";font-weight:600;color:var(--pagina-tenue)}
+.consiglio{display:inline-block;font-size:11px;letter-spacing:1px;text-transform:uppercase;background:var(--pagina-acc);color:var(--pagina);padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:2px}
+
+/* telefono */
+.tel{position:relative;width:100%;background:var(--bg);color:var(--fg);border-radius:40px;overflow:hidden;box-shadow:0 10px 36px rgba(0,0,0,.22);padding-bottom:96px;min-height:720px}
+.sb{display:flex;justify-content:space-between;padding:16px 30px 0;font-weight:600;font-size:15px}
+.sb span:last-child{font-size:9px;letter-spacing:2px}
+.cnt{padding:16px 14px 0}
+.indietro{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:16px;margin:2px 2px 4px}
+.indietro svg{transform:scaleX(-1)}
+.grande{font-family:var(--display);font-size:30px;line-height:1.1;margin:4px 4px 16px;text-wrap:balance}
+.gt{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tenue);font-weight:500;margin:0 16px 8px}
+.gt .az{font-size:15px;letter-spacing:0;text-transform:none;color:var(--acc);font-weight:500}
+.grp{background:var(--sup);border:1px solid var(--linea);border-radius:20px;overflow:hidden;margin-bottom:8px}
+.grp-nota{font-size:12.5px;color:var(--tenue);margin:0 16px 20px;line-height:1.4}
+.r{display:flex;align-items:center;gap:12px;padding:9px 14px;min-height:56px;position:relative}
+.r+.r::before{content:"";position:absolute;top:0;right:0;left:14px;border-top:1px solid var(--linea)}
+.r.con-meno+.r.con-meno::before{left:50px}
+.tx{flex:1;min-width:0}
+.nm{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{font-size:13px;color:var(--tenue);margin-top:2px;font-variant-numeric:tabular-nums}
+.ch{color:var(--tenue);flex:none}
+.stella{flex:none;color:var(--acc);width:44px;height:44px;margin:-10px -10px -10px 0;display:flex;align-items:center;justify-content:center}
+.stella.vuota{color:var(--tenue)}
+.r.tolta .nm,.r.tolta .st{opacity:.45}
+.meno{flex:none;width:22px;height:22px;border-radius:50%;background:var(--avv);display:flex;align-items:center;justify-content:center}
+.meno::after{content:"";width:10px;height:2px;border-radius:1px;background:var(--sup)}
+.trasc{flex:none;display:flex;align-items:stretch;margin:-9px -14px -9px 0}
+.trasc .riga-sposta{display:flex;align-items:center;gap:12px;padding:9px 14px;transform:translateX(-84px);background:var(--sup);flex:1}
+.togli{position:absolute;right:0;top:0;bottom:0;width:84px;background:var(--avv);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}
+.r.scorsa{overflow:hidden;padding:0}
+.r.scorsa .dentro{display:flex;align-items:center;gap:12px;padding:9px 14px;min-height:56px;width:100%;background:var(--sup);transform:translateX(-84px);position:relative;z-index:1}
+
+/* barra dei messaggi in vetro + tab bar */
+.barra{position:absolute;left:14px;right:14px;bottom:96px;background:var(--vetro);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--linea);border-radius:16px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14.5px;box-shadow:0 6px 20px var(--ombra)}
+.barra span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barra b{color:var(--acc);font-weight:600;flex:none}
+.tab{position:absolute;left:50%;transform:translateX(-50%);bottom:22px;display:flex;gap:4px;background:var(--vetro);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--linea);border-radius:999px;padding:6px;box-shadow:0 6px 20px var(--ombra)}
+.tab span{font-size:12px;padding:8px 14px;border-radius:999px;color:var(--tenue)}
+.tab span.on{background:var(--caps);color:var(--acc);font-weight:600}
+
+/* riga di Impostazioni */
+.ico{width:32px;height:32px;border-radius:10px;background:var(--caps);color:var(--acc);display:flex;align-items:center;justify-content:center;flex:none}
+.lab{flex:1;min-width:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.val{color:var(--tenue);font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.r.imp{min-height:52px;padding:0 14px}
+.r.imp+.r.imp::before{left:58px}
+.evid{outline:2px dashed var(--acc);outline-offset:-3px;border-radius:12px}
+
+.vuoto{padding:22px 18px;text-align:left}
+.vuoto h3{margin:0 0 6px;font-size:16px}
+.vuoto p{margin:0 0 8px;font-size:14px;color:var(--tenue);line-height:1.45}
+
+@media (prefers-reduced-motion:no-preference){.tel{transition:transform .2s}}
+</style></head><body>
+
+<div class="testa">
+  <h1>Preferiti e pasti salvati</h1>
+  <p>Mockup della pagina nuova in Impostazioni (gruppo App). In tutte le proposte: due gruppi, gli alimenti in ordine alfabetico come in Aggiungi, un pasto salvato si apre nella stessa schermata di modifica della matita. Cambia solo <strong>come si toglie un alimento dai preferiti</strong>. I dati sono di esempio.</p>
+</div>
+
+<div class="decisioni">
+  <div class="dec"><b>Riga in Impostazioni</b><p>"12 alimenti · 3 pasti" se entra accanto al titolo, altrimenti "12 · 3" o il totale "15". Con nessuno dei due: "Nessuno". Si decide guardandolo su iPhone.</p></div>
+  <div class="dec"><b>Togliere un alimento</b><p>Un tocco, senza conferma, con la barra "Tolto dai preferiti — Annulla" (rimette in vita la stessa riga).</p></div>
+  <div class="dec"><b>Eliminare un pasto salvato</b><p>Dentro la schermata di modifica, con la conferma che c'è già oggi. Niente Annulla nuovo in questo lavoro.</p></div>
+  <div class="dec"><b>Fuori per ora</b><p>Riordinare a mano, ricerca, creare un pasto salvato da zero. La matita in Aggiungi resta.</p></div>
+</div>
+
+<div class="sezione">Le tre proposte</div>
+<div class="colonne">
+
+  <!-- A -->
+  <div class="col">
+    <h2>A · La stella sulla riga <span class="consiglio">Consigliata</span></h2>
+    <p class="nota">Ogni alimento ha la stella piena a destra, la stessa dello sheet quantità. Un tocco la svuota: la riga si sbiadisce e compare la barra con Annulla. Uscendo dalla pagina la riga sparisce.</p>
+    <div class="tel chiaro">
+      <div class="sb"><span>9:41</span><span>●●● ◠ ▭</span></div>
+      <div class="cnt">
+        <div class="indietro"><svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>Impostazioni</div>
+        <h1 class="grande">Preferiti e pasti salvati</h1>
+        <div class="gt">Alimenti preferiti</div>
+        <div class="grp">
+          <div class="r"><div class="tx"><div class="nm">Avena fiocchi</div><div class="st">60 g · 225 kcal</div></div><span class="stella"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></span></div>
+          <div class="r tolta"><div class="tx"><div class="nm">Petto di pollo</div><div class="st">150 g · 248 kcal</div></div><span class="stella vuota"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></span></div>
+          <div class="r"><div class="tx"><div class="nm">Riso basmati</div><div class="st">80 g · 284 kcal</div></div><span class="stella"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></span></div>
+          <div class="r"><div class="tx"><div class="nm">Yogurt greco 0%</div><div class="st">170 g · 97 kcal</div></div><span class="stella"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></span></div>
+        </div>
+        <p class="grp-nota">Si aggiungono con la stella quando scegli un alimento in Aggiungi.</p>
+        <div class="gt">Pasti salvati</div>
+        <div class="grp">
+          <div class="r"><div class="tx"><div class="nm">Colazione standard</div><div class="st">3 alimenti · 412 kcal</div></div><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+          <div class="r"><div class="tx"><div class="nm">Pranzo pollo e riso</div><div class="st">4 alimenti · 690 kcal</div></div><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+        </div>
+        <p class="grp-nota">Si salvano dal segnalibro di un pasto in Oggi.</p>
+      </div>
+      <div class="barra"><span>Tolto dai preferiti: Petto di pollo</span><b>Annulla</b></div>
+      <div class="tab"><span>Oggi</span><span>Statistiche</span><span class="on">Impostazioni</span></div>
+    </div>
+    <p class="pro">Lo stesso gesto e la stessa icona di Aggiungi: niente da imparare. Un tocco, e l'Annulla copre l'errore.</p>
+    <p class="contro">Una stella su ogni riga è un po' di rumore visivo; l'area di tocco va tenuta a 44 px come il segnalibro di Oggi.</p>
+  </div>
+
+  <!-- B -->
+  <div class="col">
+    <h2>B · Pulsante "Modifica"</h2>
+    <p class="nota">L'elenco è pulito. "Modifica" in alto al gruppo mostra i cerchi rossi col meno, come nelle Impostazioni dell'iPhone; "Fine" li nasconde.</p>
+    <div class="tel scuro">
+      <div class="sb"><span>9:41</span><span>●●● ◠ ▭</span></div>
+      <div class="cnt">
+        <div class="indietro"><svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>Impostazioni</div>
+        <h1 class="grande">Preferiti e pasti salvati</h1>
+        <div class="gt">Alimenti preferiti <span class="az">Fine</span></div>
+        <div class="grp">
+          <div class="r con-meno"><span class="meno"></span><div class="tx"><div class="nm">Avena fiocchi</div><div class="st">60 g · 225 kcal</div></div></div>
+          <div class="r con-meno"><span class="meno"></span><div class="tx"><div class="nm">Petto di pollo</div><div class="st">150 g · 248 kcal</div></div></div>
+          <div class="r con-meno"><span class="meno"></span><div class="tx"><div class="nm">Riso basmati</div><div class="st">80 g · 284 kcal</div></div></div>
+          <div class="r con-meno"><span class="meno"></span><div class="tx"><div class="nm">Yogurt greco 0%</div><div class="st">170 g · 97 kcal</div></div></div>
+        </div>
+        <p class="grp-nota">Si aggiungono con la stella quando scegli un alimento in Aggiungi.</p>
+        <div class="gt">Pasti salvati</div>
+        <div class="grp">
+          <div class="r"><div class="tx"><div class="nm">Colazione standard</div><div class="st">3 alimenti · 412 kcal</div></div><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+          <div class="r"><div class="tx"><div class="nm">Pranzo pollo e riso</div><div class="st">4 alimenti · 690 kcal</div></div><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+        </div>
+      </div>
+      <div class="tab"><span>Oggi</span><span>Statistiche</span><span class="on">Impostazioni</span></div>
+    </div>
+    <p class="pro">Elenco pulito quando lo si guarda e basta; impossibile togliere qualcosa per sbaglio.</p>
+    <p class="contro">Due tocchi in più ogni volta, e uno stato "in modifica" da gestire (e da chiudere se si esce dalla pagina).</p>
+  </div>
+
+  <!-- C -->
+  <div class="col">
+    <h2>C · Scorri per togliere</h2>
+    <p class="nota">Si scorre la riga verso sinistra e compare "Togli" in rosso, come in Mail. Poi la stessa barra con Annulla.</p>
+    <div class="tel chiaro">
+      <div class="sb"><span>9:41</span><span>●●● ◠ ▭</span></div>
+      <div class="cnt">
+        <div class="indietro"><svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>Impostazioni</div>
+        <h1 class="grande">Preferiti e pasti salvati</h1>
+        <div class="gt">Alimenti preferiti</div>
+        <div class="grp">
+          <div class="r"><div class="tx"><div class="nm">Avena fiocchi</div><div class="st">60 g · 225 kcal</div></div></div>
+          <div class="r scorsa"><div class="dentro"><div class="tx"><div class="nm">Petto di pollo</div><div class="st">150 g · 248 kcal</div></div></div><span class="togli">Togli</span></div>
+          <div class="r"><div class="tx"><div class="nm">Riso basmati</div><div class="st">80 g · 284 kcal</div></div></div>
+          <div class="r"><div class="tx"><div class="nm">Yogurt greco 0%</div><div class="st">170 g · 97 kcal</div></div></div>
+        </div>
+        <p class="grp-nota">Scorri a sinistra per togliere un alimento.</p>
+        <div class="gt">Pasti salvati</div>
+        <div class="grp">
+          <div class="r"><div class="tx"><div class="nm">Colazione standard</div><div class="st">3 alimenti · 412 kcal</div></div><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+          <div class="r"><div class="tx"><div class="nm">Pranzo pollo e riso</div><div class="st">4 alimenti · 690 kcal</div></div><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+        </div>
+      </div>
+      <div class="tab"><span>Oggi</span><span>Statistiche</span><span class="on">Impostazioni</span></div>
+    </div>
+    <p class="pro">Il gesto più "iPhone"; l'elenco resta pulito.</p>
+    <p class="contro">Non si vede che esiste (serve la nota), e nell'app i gesti sulle righe sono già tanti (tieni premuto, swipe del giorno): un gesto nuovo da costruire e provare.</p>
+  </div>
+</div>
+
+<div class="sezione">Le altre schermate (uguali per tutte le proposte)</div>
+<div class="colonne">
+  <div class="col">
+    <h2>La riga in Impostazioni</h2>
+    <p class="nota">Nel gruppo App, fra Aspetto e Sincronizzazione. A destra il conteggio, fatto con le stesse funzioni di Aggiungi (niente alimenti usciti dal catalogo, niente pasti invisibili).</p>
+    <div class="tel scuro" style="min-height:420px">
+      <div class="sb"><span>9:41</span><span>●●● ◠ ▭</span></div>
+      <div class="cnt">
+        <h1 class="grande">Impostazioni</h1>
+        <div class="gt">App</div>
+        <div class="grp">
+          <div class="r imp"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg></span><span class="lab">Aspetto</span><span class="val">Sistema · Verde</span><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+          <div class="r imp evid"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></span><span class="lab">Preferiti e pasti salvati</span><span class="val">12 · 3</span><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+          <div class="r imp"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 01-14 5.3M4 12a8 8 0 0114-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span><span class="lab">Sincronizzazione</span><span class="val">Tutto salvato</span><svg class="ch" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+        </div>
+        <p class="grp-nota">Qui la forma corta "12 · 3". La forma lunga "12 alimenti · 3 pasti" rischia di accorciare il titolo con "…": si sceglie guardandola su iPhone.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>Pagina vuota</h2>
+    <p class="nota">Senza preferiti né pasti salvati la pagina spiega da dove nascono, invece di mostrare due riquadri vuoti.</p>
+    <div class="tel chiaro" style="min-height:420px">
+      <div class="sb"><span>9:41</span><span>●●● ◠ ▭</span></div>
+      <div class="cnt">
+        <div class="indietro"><svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>Impostazioni</div>
+        <h1 class="grande">Preferiti e pasti salvati</h1>
+        <div class="grp vuoto">
+          <h3>Ancora niente qui</h3>
+          <p>Un alimento diventa preferito con la stella, quando lo scegli in Aggiungi.</p>
+          <p>Un pasto si salva dal segnalibro accanto alle sue kcal, in Oggi.</p>
+        </div>
+      </div>
+      <div class="tab"><span>Oggi</span><span>Statistiche</span><span class="on">Impostazioni</span></div>
+    </div>
+  </div>
+</div>
+</body></html>

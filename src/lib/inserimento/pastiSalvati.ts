@@ -69,6 +69,24 @@ export function pastiSalvati(
   return risultato.sort((a, b) => a.nome.localeCompare(b.nome, "it"));
 }
 
+// Kcal di un pasto salvato, dai valori vivi del catalogo, arrotondate solo
+// alla fine (la somma dei valori esatti, non dei singoli arrotondati).
+export function kcalPastoSalvato(voci: { alimento: Alimento; quantitaG: number }[]): number {
+  return Math.round(
+    voci.reduce((somma, { alimento, quantitaG }) => somma + (alimento.kcal_100g * quantitaG) / 100, 0)
+  );
+}
+
+// Il sottotitolo di un pasto salvato: "3 alimenti · 412 kcal". Lo usano la
+// riga in Preferiti di Aggiungi e la testata dell'elenco in
+// ModificaPastoSalvato, che prima lo scrivevano ciascuna per conto suo. Il
+// numero arriva a parte dalle kcal perché in ModificaPastoSalvato le righe
+// contate (tutte quelle a schermo) non sono le stesse sommate (solo quelle
+// con grammi validi e alimento nel catalogo).
+export function sottotitoloPastoSalvato(numeroAlimenti: number, kcal: number): string {
+  return `${numeroAlimenti} ${numeroAlimenti === 1 ? "alimento" : "alimenti"} · ${kcal} kcal`;
+}
+
 // Un pasto salvato "esiste" per l'utente solo se gli resta almeno un
 // alimento valido — stessa regola di pastiSalvati(), riusata qui perché la
 // serve anche esisteComposizioneConNome (src/lib/repository/composizioni.ts):
