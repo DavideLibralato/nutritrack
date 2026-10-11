@@ -692,23 +692,69 @@ introduce e che va tenuta:
 
 Lo sheet quantità resta **uno solo**, identico per ogni sorgente (sezione 5).
 
+**Doppioni in Aggiungi** (dal 10/10, branch `doppioni-aggiungi`). Prima
+aggiungere un alimento già presente nel pasto creava una seconda riga senza
+dire niente. Ora valgono le stesse regole di Sposta e Duplica ("Tieni
+premuto", sopra, "Doppioni"):
+- **Il confronto è per `alimento_id`, mai per nome.** Le righe in arrivo non
+  sono doppioni fra loro: due Mela in un pasto salvato restano due righe, se
+  nel pasto non c'è già una Mela;
+- **lo stesso foglio** (`SheetDoppioni`), con un blocco per alimento e le
+  quattro scelte. Le quantità si leggono "Pranzo 100 g · in arrivo 50 g".
+  La quarta scelta è "Non aggiungerlo", con l'esito "→ Resta quello che
+  c'è, non si aggiunge", e il bottone è "Aggiungi". Somma è già scelta,
+  quindi **basta un tocco** per confermare;
+- **alla conferma le righe del pasto si rileggono da Dexie**
+  (`aggiungiNelPasto` in `src/lib/repository/vociDiario.ts`), mai dalla
+  lista sullo schermo: così anche "la stessa Mela due volte di fila" trova
+  la prima. Se i doppioni non sono più quelli visti, non si scrive niente e
+  il foglio si riapre con l'avviso, come in Sposta;
+- **o tutto o niente, anche per un pasto salvato.** Le scritture passano
+  tutte da `applicaScritture`; prima il pasto salvato scriveva in parallelo,
+  e un guasto a metà lasciava metà pasto nel diario;
+- **"Non aggiungerlo" vale anche se il doppione sparisce** fra il foglio e
+  la conferma (per esempio cancellato da un altro dispositivo): un "no"
+  esplicito vale più di un cambiamento arrivato da altrove (regola del
+  10/10). Vale solo per Aggiungi: Sposta e Duplica, nello stesso caso,
+  spostano o copiano (sotto, sezione 11, "Difetti e verifiche aperti");
+- **niente aggiunto = si resta su /aggiungi senza barra.** Succede con
+  Annulla, con il tocco fuori, con Esc, o con tutto su "Non aggiungerlo";
+- **un blocco contro il doppio tocco** ("aggiunta in corso", un `useRef`
+  comune ai tre percorsi). Si prende subito al tocco e si libera dopo un
+  errore, dopo "niente aggiunto" e alla chiusura del foglio senza
+  conferma. Resta preso mentre il foglio è aperto e mentre si torna a Oggi.
+  Senza, due tocchi ravvicinati sul "+" scrivevano due righe;
+- **i testi della barra** (`messaggioInserimento` in
+  `src/lib/inserimento/testiBarra.ts`) dicono cosa è successo davvero:
+  "Aggiunto: Mela" (anche con "Tieni separati"), "Sommato: Mela → 150 g",
+  "Aggiornato: Mela → 120 g" (quantità scritta a mano), "Aggiunto:
+  Colazione (3 alimenti)". Con degli esclusi: "Aggiunto: «Colazione»
+  (tranne «Mela», che c'era già).". **"(N alimenti)" conta gli alimenti
+  entrati, non le righe**: un alimento sommato a una riga che c'era già
+  conta, uno escluso no.
+
+Test: `src/app/aggiungi/page.test.tsx`, oltre a quelli di
+`pianoInserimento`, `aggiungiNelPasto` e `testiBarra`.
+
 **Dopo ogni inserimento, "Annulla"** (punto 10.2). I percorsi che scrivono
-nel diario sono tre, tutti in `creaVoce` di /aggiungi: la conferma dallo
-sheet, il "+" rapido su Recenti/Preferiti, e il "+" di un pasto salvato. Tutti
-e tre tornano a Oggi, e lì compare la barra in basso "Aggiunto: Pane", oppure
-"Aggiunto: Colazione tipo (3 alimenti)" per un pasto salvato, con
-"Annulla" per qualche secondo. Il verbo sta prima del nome, così non ci
-sono problemi di genere ("Mela aggiunto"). Se la frase non sta su una
+nel diario sono tre: la conferma dallo sheet, il "+" rapido su
+Recenti/Preferiti, e il "+" di un pasto salvato. Passano tutti da una sola
+funzione di /aggiungi, che chiama `aggiungiNelPasto`. Quando è entrato
+qualcosa tornano a Oggi, e lì compare la barra in basso (i testi sono
+sopra, "Doppioni in Aggiungi") con "Annulla" per qualche secondo. Il
+verbo sta prima del nome, così non ci sono problemi di genere ("Mela
+aggiunto"). Se la frase non sta su una
 riga va a capo; il nome si accorcia con "…" solo se da solo è più lungo
 di una riga. Lo stesso formato vale per "Eliminato: Mela" e "Ripristinato:
 Mela" in /aggiungi. Com'è fatta la barra (vetro, icona, linea del tempo) è
 descritto nella sezione 7.
 
-- **Cosa annulla.** Esattamente le voci di quell'inserimento, per id: una
-  per un alimento, tutte quelle del gruppo per un pasto salvato. È una
-  cancellazione logica via repository (`annullaInserimento` in
-  `src/lib/repository/vociDiario.ts`), che rilegge le voci da Dexie e
-  passa dall'outbox (punto 10.6). Dopo compare "Annullato."
+- **Cosa annulla.** Esattamente quello che l'inserimento ha toccato,
+  dalla sua fotografia: le righe create si cancellano (in modo logico), e
+  le righe che c'erano già tornano ai grammi di prima, se l'alimento era
+  stato sommato o scritto a mano. Lo fa `annullaOperazione` in
+  `src/lib/repository/vociDiario.ts`, che rilegge le voci da Dexie e passa
+  dall'outbox (punto 10.6). Dopo compare "Annullato."
 - **La riga di `giorni` resta.** Se si annulla la prima voce di un giorno,
   la classificazione scritta in quel momento non si cancella: nei secondi
   della barra può essere arrivata una scelta esplicita dalla pastiglia, che
@@ -3406,7 +3452,7 @@ nuovo link" apre la pagina anche da loggato; dopo il salvataggio
 sezione 9.1, "Il ripristino della password". Test:
 `reimpostaPassword.test.tsx`.
 
-**Test.** 727 test permanenti in 64 file (Vitest), tutti verdi al 10/10.
+**Test.** 771 test permanenti in 65 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
 
@@ -3450,6 +3496,21 @@ sezione 9.1, "Il ripristino della password". Test:
   `nutritrack-git-main-…vercel.app` è protetto da Vercel: chi non ha
   l'account Vercel trova la pagina di login di Vercel, non l'app. Prossimo
   lavoro (sotto, "Prossimi passi")
+
+- **Sposta e Duplica ignorano "Non spostarlo" / "Non duplicarlo" se il
+  doppione sparisce** fra il foglio e la conferma (11/10, visto facendo i
+  doppioni in Aggiungi). Se la riga in doppione viene cancellata nel
+  frattempo, per esempio da un altro dispositivo, alla conferma non c'è più
+  niente da decidere: `spostaNelPasto` e `duplicaNelPasto` controllano le
+  scelte solo quando ci sono ancora dei doppioni, e l'alimento si sposta o
+  si copia lo stesso, contro il "no" dell'utente. Aggiungi invece lo
+  rispetta (sezione 3, "Doppioni in Aggiungi"). Raro; il rimedio è lo
+  stesso di Aggiungi: togliere gli esclusi prima del piano
+- **Il cambio di pasto dallo sheet di modifica in Oggi non controlla i
+  doppioni** (11/10). Cambiando il pasto di una voce dal suo sheet, la
+  voce va nel pasto nuovo con l'`update` diretto di `pasto_id`, senza
+  passare da `spostaNelPasto`: se lì c'è già lo stesso alimento si
+  ritrovano due righe, senza foglio. Il menu "Sposta" invece lo controlla
 
 - **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
   (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi

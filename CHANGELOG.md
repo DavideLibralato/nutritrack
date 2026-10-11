@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Doppioni in Aggiungi, passo 6: documentazione
+
+Branch `doppioni-aggiungi`. PUNTO §3, Aggiungi: nuovo blocco "Doppioni in
+Aggiungi" (confronto per `alimento_id`, foglio con "in arrivo" e "Non
+aggiungerlo", rilettura alla conferma, tutto o niente, "Non aggiungerlo"
+che vale anche se il doppione sparisce, il blocco del doppio tocco, i testi
+della barra). Corretto il paragrafo dell'Annulla, rimasto a `creaVoce` e
+`annullaInserimento`: ora si annulla dalla fotografia, con
+`annullaOperazione`. §11: due difetti aperti (Sposta e Duplica ignorano
+l'esclusione se il doppione sparisce; il cambio di pasto dallo sheet di
+modifica in Oggi non controlla i doppioni) e il conteggio dei test. Solo
+documenti.
+
 ## 2026-10-11 — Doppioni in Aggiungi, passo 5: la pagina /aggiungi
 
 Branch `doppioni-aggiungi`. I tre percorsi (sheet quantità, "+" di
