@@ -3154,16 +3154,10 @@ costruzione e non per attenzione.
   riga esiste nel database ma **non viene mai esposto all'app**: gli altri
   utenti vedono l'alimento, non chi l'ha inserito né quando
 - I dati sul dispositivo (IndexedDB) vanno **cancellati al logout**: su un
-  telefono condiviso resterebbero leggibili. **Rimandato per scelta**: oggi
-  l'app gira su dispositivi personali, e cancellare a ogni uscita costerebbe
-  una riscarica completa al rientro senza proteggere da nessuno. Si riprende
-  quando l'app si apre agli amici; la funzione pronta è
-  `sostituisciDatiUtente` (§9.2, "Ripristino dei dati locali"). Esci oggi
-  svuota solo le pagine salvate dal service worker. L'app è pubblica
-  dall'11/10: si fa nel branch subito dopo Elimina account (deciso
-  l'11/10). Attenzione a "Esci e rientra" in Sincronizzazione: serve
-  proprio quando la coda è piena di modifiche bloccate dalla sessione
-  scaduta, e cancellare lì le perderebbe
+  telefono condiviso resterebbero leggibili. Era rimandato finché l'app
+  girava su dispositivi personali; è pubblica dall'11/10, e si costruisce
+  nel branch `esci-svuota` (decisioni sotto). Fino al merge Esci svuota
+  solo le pagine salvate dal service worker
 - Se un giorno l'app si apre al pubblico servono anche informativa privacy,
   export dei propri dati e cancellazione dell'account. In Europa i dati
   nutrizionali collegati a peso e obiettivi ricadono in una categoria protetta,
@@ -3299,6 +3293,63 @@ costruzione e non per attenzione.
   branch (§11, "Fatto"): riuscita. Non è entrato in gioco il percorso
   della risposta persa, quindi che il server risponda proprio
   `user_not_found` per un account cancellato resta da verificare
+
+#### Esci svuota i dati locali (decisioni dell'11/10, branch `esci-svuota`)
+
+- **Decide lo stato, non il pulsante**: "Esci" in fondo a Impostazioni ed
+  "Esci e rientra" in Sincronizzazione fanno la stessa cosa. Prima si
+  prova a inviare la coda, poi si conta ciò che resta dell'utente (in
+  attesa e accantonate):
+  - **offline** → non si esce, come prima. Il controllo con `getUser`
+    passa **prima di tutto**, conferma compresa: una conferma "perdi N"
+    offline sarebbe falsa;
+  - **coda vuota** → si svuota senza chiedere;
+  - **coda non vuota, sessione valida** → ciò che resta il server non lo
+    prende da solo: conferma "perdi N", con **Resta** ed **Esci e
+    perdile**. Arancio (`--avviso`), non rosso: il rosso resta solo per
+    Elimina account (sezione 7). Testo: "Su questo telefono ci sono N
+    modifiche che l'app non è riuscita a salvare online (tipi). Uscendo, i
+    dati di questo telefono vengono cancellati: queste modifiche andranno
+    perse.";
+  - **coda non vuota, sessione non valida** (`getUser` risponde con un
+    errore di autenticazione, non di rete) → **non si svuota niente**:
+    rientrando con lo stesso account le modifiche partono. È il caso per
+    cui esiste "Esci e rientra". Frase: "La sessione è scaduta: le tue N
+    modifiche restano su questo telefono e partono appena rientri con lo
+    stesso account." Su un telefono condiviso i dati restano: accettato,
+    è l'unico modo per non perderli, e la frase lo dice
+- **Cosa si svuota**: le righe, l'outbox e i cursori di questo utente
+  (`sostituisciDatiUtente` con zero righe e le firme confermate: una
+  modifica comparsa dopo la conferma, da un'altra scheda, fa saltare la
+  pulizia e i dati restano), l'ora dell'ultimo contatto
+  (`CHIAVE_ULTIMO_SUCCESSO`, prima di `azzeraStatoGiri` che la rilegge),
+  il segno del reset password, lo stato dei giri, le pagine salvate.
+  **Restano** tema e colore (preferenze del telefono, si vedono anche al
+  login), il catalogo comune e i dati di altri utenti
+- **Ordine: signOut → attesa delle discese in corso → pulizia**. Una
+  discesa partita prima dell'uscita può finire dopo la pulizia e
+  riscrivere righe **e cursore**: al rientro dello stesso utente la
+  discesa ripartirebbe dal cursore e lo storico più vecchio non
+  tornerebbe più. Per questo `attendiDiscesaInCorso()` (discesa.ts).
+  Dopo signOut una discesa nuova fallisce alla prima pagina (il ruolo
+  anonimo non legge), quindi non scrive niente
+- **Segno `nutritrack:uscita`** (`{ idUtente }`, localStorage), come per
+  Elimina account: scritto dopo signOut e prima della pulizia, tolto a
+  pulizia riuscita. All'avvio: nessuna sessione o un altro utente → si
+  ripete la pulizia di quell'utente; rientrato lo stesso utente → si
+  toglie solo il segno (la pulizia è una transazione: se è fallita non
+  ha toccato niente). Una pulizia fallita non ferma l'uscita
+- **La salita invia solo le voci dell'utente della sessione** (bug
+  trovato l'11/10, primo commit di codice del branch, da solo): oggi
+  `unGiro` legge tutta l'outbox, e su un telefono con le modifiche
+  lasciate da un altro utente le manda con la sessione sbagliata. Il
+  server le rifiuta (403), contano come tentativi, bloccano la coda di
+  chi è entrato e dopo 5 rifiuti vengono accantonate
+- **Telefoni con dati vecchi**: le righe lasciate da uscite precedenti a
+  questo rilascio (per esempio l'account di prova sull'iPhone di
+  Davide) non si toccano. Restano invisibili (ogni lettura filtra per
+  utente); cancellarle "per tutti gli utenti diversi da chi entra"
+  toglierebbe anche i dati tenuti apposta con la sessione scaduta
 
 ---
 
@@ -3933,8 +3984,8 @@ sincronizzazione a posto. Resta da verificare `user_not_found` (§9.6,
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
-- Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6),
-  si fa nel branch subito dopo Elimina account
+- Cancellazione dei dati locali al logout: in costruzione nel branch
+  `esci-svuota` (decisioni in 9.6)
 
 ### Difetti e verifiche aperti
 

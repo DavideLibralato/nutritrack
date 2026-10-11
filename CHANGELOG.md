@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Esci svuota i dati locali: decisioni
+
+Branch `esci-svuota`. Decise le regole per svuotare i dati dell'utente
+da questo dispositivo all'uscita (PUNTO §9.6): controllo della rete
+prima di tutto; coda vuota → si svuota senza chiedere; coda non vuota
+con sessione valida → conferma "perdi N" (Resta / Esci e perdile, in
+arancio); coda non vuota con sessione non valida → non si svuota, con
+una frase. Ordine signOut → attesa delle discese in corso → pulizia, e
+segno `nutritrack:uscita` ripreso all'avvio. Trovato un bug aperto: la
+salita invia l'outbox di tutti gli utenti del dispositivo, non solo di
+quello della sessione (sarà il primo commit di codice, da solo). Solo
+documenti.
+
+## 2026-10-11 — Elimina account unito a main
+
+Unito a main l'11/10 con fast-forward da `acec5ff` a `3c8b425`, senza
+commit di merge: `90ffb68` (voce di merge di vincoli-utente, decisioni),
+`1415d5c` (mockup, posizione e colore), `6bef9c6` (migration
+`elimina_mio_account`), `e96ec1b` (cancellaDatiUtente e segno,
+migration applicata, regola §8 e CLAUDE.md A.5), `efdef52` (pulsante),
+`3c8b425` (provato, documenti). Branch cancellato in locale e su
+GitHub. Deploy di produzione riuscito. 806 test verdi in 69 file, lint,
+`tsc` e `npm run build` puliti su main dopo il merge. Solo documenti:
+la migration era già in produzione prima del merge (20261011155326).
+Voce scritta con il primo commit del branch successivo (`esci-svuota`),
+per non fare un commit su main solo per il registro.
+
 ## 2026-10-11 — Elimina account provato
 
 Branch `elimina-account`. Provato su iPhone l'11/10 sull'anteprima: riga
