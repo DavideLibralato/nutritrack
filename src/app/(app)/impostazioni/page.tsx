@@ -197,6 +197,15 @@ export default function ImpostazioniPage() {
       </GruppoImpostazioni>
 
       {userId && <EsciAccount userId={userId} />}
+
+      {/* In un gruppo suo, sotto Esci (deciso l'11/10, mockup
+          docs/mockups/elimina-account.html): rossa, a sinistra, con la
+          freccia; la conferma sta nella sottopagina. */}
+      {userId && (
+        <GruppoImpostazioni>
+          <RigaImpostazioni etichetta="Elimina il mio account" href="/impostazioni/elimina-account" pericolo />
+        </GruppoImpostazioni>
+      )}
     </main>
   );
 }

@@ -24,7 +24,7 @@
 // niente. Dopo signOut si controlla che la sessione locale sia davvero
 // sparita: o si è usciti del tutto, o si resta dentro con un messaggio.
 
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -34,6 +34,7 @@ import { azzeraStatoGiri } from "@/lib/sync/statoSincronizzazione";
 import { descriviGruppo } from "./RicaricaDatiAccount";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { svuotaPagineSalvate } from "@/lib/serviceWorker";
+import { useOnline } from "@/lib/useOnline";
 import GruppoImpostazioni from "./GruppoImpostazioni";
 
 type Stato =
@@ -79,27 +80,6 @@ export function testoConfermaUscita(modifiche: ModificheNonInviate): string | nu
     );
   }
   return frasi.length > 0 ? frasi.join(" ") : null;
-}
-
-// useSyncExternalStore: l'hook di React per leggere un valore che vive fuori
-// da React (qui navigator.onLine) e ridisegnare quando cambia. `subscribe`
-// si iscrive agli eventi online/offline; il terzo argomento è il valore
-// durante il rendering sul server, dove navigator non esiste.
-function iscriviOnline(avvisa: () => void) {
-  window.addEventListener("online", avvisa);
-  window.addEventListener("offline", avvisa);
-  return () => {
-    window.removeEventListener("online", avvisa);
-    window.removeEventListener("offline", avvisa);
-  };
-}
-
-function useOnline(): boolean {
-  return useSyncExternalStore(
-    iscriviOnline,
-    () => navigator.onLine,
-    () => true
-  );
 }
 
 // `etichetta`: il testo del pulsante. "Esci" in fondo all'elenco; "Esci e

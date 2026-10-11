@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Pulsante Elimina il mio account
+
+Branch `elimina-account`, da provare su iPhone. In fondo a Impostazioni,
+sotto Esci, la riga rossa "Elimina il mio account" porta alla sottopagina
+`/impostazioni/elimina-account`: cosa viene cancellato, la parola da
+scrivere (ELIMINA, maiuscole e minuscole indifferenti), un solo pulsante
+rosso, la riga di stato. Il flusso (`src/lib/account/eliminaAccount.ts`)
+controlla che il server riconosca l'utente, scrive il segno, chiama
+`elimina_mio_account` e solo dopo l'ok pulisce il dispositivo (Dexie,
+pagine salvate, ora dell'ultimo contatto, segno del reset, stato dei
+giri) ed esce; esiti rete, risposta persa, rifiuto e sessione non
+riconosciuta. Login con "Account eliminato". Ripresa del segno
+all'avvio nel layout principale. Token `--pericolo` e
+`--pericolo-pieno` nei due temi, con i contrasti in
+`contrasti.test.ts`. Pagina in `PAGINE_APP` del service worker.
+`useOnline` spostato in `src/lib/useOnline.ts`. 10 test permanenti
+nuovi; verificato che falliscono rompendo il codice (rifiuto trattato
+come risposta persa). 806 test verdi in 69 file, `tsc`, lint e
+`npm run build` puliti.
+
 ## 2026-10-11 — Pulizia del dispositivo e segno di eliminazione
 
 Branch `elimina-account`. La migration `elimina_mio_account` è in

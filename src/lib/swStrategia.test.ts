@@ -54,6 +54,7 @@ describe("scegliStrategia", () => {
       "/impostazioni/preferiti",
       "/impostazioni/sincronizzazione",
       "/impostazioni/informazioni",
+      "/impostazioni/elimina-account",
       "/aggiungi?giorno=2026-09-20",
     ]) {
       expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe("pagina");

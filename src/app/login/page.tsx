@@ -74,6 +74,16 @@ function LoginForm() {
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <form noValidate onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+        {/* Dopo "Elimina il mio account" (EliminaAccount.tsx porta qui con
+            ?eliminato=1). role="status": letto dagli screen reader. */}
+        {searchParams.get("eliminato") === "1" && (
+          <div role="status" className="rounded-xl border border-border bg-surface px-3.5 py-3">
+            <p className="text-[15px] font-medium">Account eliminato</p>
+            <p className="text-sm leading-snug text-muted">
+              I tuoi dati sono stati cancellati dal server e da questo telefono.
+            </p>
+          </div>
+        )}
         <h1 className="text-2xl font-display font-bold">Accedi</h1>
 
         <div>

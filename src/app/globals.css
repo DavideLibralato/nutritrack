@@ -51,6 +51,10 @@
      di "tutto a posto" e l'arancio di "serve attenzione". Dal 10/10, mockup
      docs/mockups/sincronizzazione.html. */
   --attesa: var(--se-chiaro, #8a6d1f) var(--se-scuro, #d9b764);
+  /* --pericolo: il rosso delle SOLE azioni che non si possono annullare
+     (oggi solo "Elimina il mio account"). L'arancio --avviso resta per
+     "attenzione". Dall'11/10, mockup docs/mockups/elimina-account.html. */
+  --pericolo: var(--se-chiaro, #b3261e) var(--se-scuro, #f2938a);
 
   /* --superficie: gli elementi staccati dal fondo (pillola, barra dei
      messaggi, sheet, barra Salva, gruppi e scheda dell'account di
@@ -59,9 +63,10 @@
      staccano dal crema come nel mockup; prima era uguale allo sfondo e si
      vedevano solo dal bordo. Al buio un po' più chiara dello sfondo,
      altrimenti spariscono.
-     --accento-pieno / --avviso-pieno: il riempimento dei bottoni con il
-     testo sopra ("+ Aggiungi", Salva, conferme, Elimina). In chiaro sono
-     l'accento e l'avviso; al buio restano i valori del chiaro (per
+     --accento-pieno / --avviso-pieno / --pericolo-pieno: il riempimento
+     dei bottoni con il testo sopra ("+ Aggiungi", Salva, conferme,
+     Elimina, "Elimina il mio account"). In chiaro sono l'accento,
+     l'avviso e il pericolo; al buio restano i valori del chiaro (per
      l'accento: --accento-chiaro del colore scelto): il bianco sopra i
      colori chiari del tema scuro non si leggerebbe.
      --su-pieno: il testo sopra quei riempimenti.
@@ -69,6 +74,7 @@
   --superficie: var(--se-chiaro, #ffffff) var(--se-scuro, #26221e);
   --accento-pieno: var(--accento-chiaro);
   --avviso-pieno: var(--se-chiaro, var(--avviso)) var(--se-scuro, #b5533c);
+  --pericolo-pieno: var(--se-chiaro, var(--pericolo)) var(--se-scuro, #b3261e);
   --su-pieno: var(--se-chiaro, var(--background)) var(--se-scuro, #ffffff);
   --velo:
     var(--se-chiaro, color-mix(in srgb, var(--foreground) 40%, transparent))
@@ -412,6 +418,8 @@ input[type="time"].campo-data::-webkit-date-and-time-value {
   --color-surface: var(--superficie);
   --color-accent-strong: var(--accento-pieno);
   --color-warning-strong: var(--avviso-pieno);
+  --color-danger: var(--pericolo);
+  --color-danger-strong: var(--pericolo-pieno);
   --color-on-strong: var(--su-pieno);
   --color-veil: var(--velo);
   /* --font-sans e' il font di testo di default di Tailwind (font-sans),

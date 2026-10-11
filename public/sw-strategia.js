@@ -30,6 +30,7 @@
     "/impostazioni/preferiti",
     "/impostazioni/sincronizzazione",
     "/impostazioni/informazioni",
+    "/impostazioni/elimina-account",
   ];
 
   // Decide come trattare una richiesta. Restituisce:

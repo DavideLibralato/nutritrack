@@ -860,8 +860,8 @@ un comando che non fa niente sembra rotto):
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
   `next.config.ts`; in locale "sviluppo");
 - **Esci** in fondo, in arancio, con la conferma di sempre;
-- sotto Esci, in un gruppo suo, **Elimina il mio account** (in
-  costruzione, branch `elimina-account`, deciso l'11/10 sul mockup
+- sotto Esci, in un gruppo suo, **Elimina il mio account** (costruita
+  l'11/10, branch `elimina-account`, da provare su iPhone; mockup
   `docs/mockups/elimina-account.html`): rossa (`--pericolo`, sezione 7),
   allineata a sinistra, con la freccia; porta alla sottopagina. Decisioni
   in §9.6, "Elimina il mio account".
@@ -870,7 +870,7 @@ un comando che non fa niente sembra rotto):
 `/impostazioni/obiettivi`, `/impostazioni/pasti`, `/impostazioni/peso`,
 `/impostazioni/aspetto`, `/impostazioni/preferiti`,
 `/impostazioni/sincronizzazione`, `/impostazioni/informazioni`;
-`/impostazioni/elimina-account` in costruzione.
+`/impostazioni/elimina-account` (branch `elimina-account`).
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
 layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
 "torna indietro": aperta da un indirizzo diretto, o ricaricata offline, la
@@ -2316,7 +2316,7 @@ principale").
   d'errore, gli stati della sincronizzazione che chiedono attenzione
   (sessione scaduta, server che rifiuta, modifiche accantonate).
 - **Il rosso** `--pericolo` (deciso l'11/10 sul mockup
-  `docs/mockups/elimina-account.html`, da costruire nel branch
+  `docs/mockups/elimina-account.html`, costruito nel branch
   `elimina-account`): **solo per le azioni che non si possono
   annullare**, oggi solo "Elimina il mio account". L'arancio resta per
   "attenzione" (Esci, errori, obiettivo superato). `#b3261e` in chiaro
@@ -3168,7 +3168,7 @@ costruzione e non per attenzione.
   export dei propri dati e cancellazione dell'account. In Europa i dati
   nutrizionali collegati a peso e obiettivi ricadono in una categoria protetta,
   quindi quel passo va preparato, non improvvisato. La cancellazione
-  dell'account è in costruzione (sotto)
+  dell'account è costruita nel branch `elimina-account` (sotto)
 
 #### Elimina il mio account (decisioni dell'11/10, branch `elimina-account`)
 
@@ -3278,7 +3278,21 @@ costruzione e non per attenzione.
   spento, con "Per eliminare l'account serve la connessione.";
   "Eliminazione…" con campo e pulsante spenti; errore di rete ("il tuo
   account non è stato toccato, riprova"); risposta persa ("non so se è
-  andata, riprova"). Testi esatti nel mockup
+  andata, riprova"). Testi esatti nel mockup. In più, scoperto scrivendo
+  il codice: **rifiuto del server** ("il server ha rifiutato la
+  richiesta, il tuo account non è stato toccato": la funzione gira in
+  una transazione) e **sessione non riconosciuta** ("esci e rientra, poi
+  riprova": prima della chiamata il server deve riconoscere proprio
+  questo utente)
+- **Com'è fatto** (11/10): il flusso in `src/lib/account/eliminaAccount.ts`
+  (verifica dell'utente, segno, chiamata, esito, pulizia, uscita), con la
+  regola della parola (`parolaDiConfermaGiusta`); la pagina in
+  `EliminaAccount.tsx`; la riga con `RigaImpostazioni pericolo`; la
+  ripresa all'avvio in `RipresaEliminazioneAccount.tsx`, nel layout
+  principale (gira anche sul login); il messaggio sul login con
+  `?eliminato=1`. `useOnline` spostato da EsciAccount in
+  `src/lib/useOnline.ts`, usato da tutti e due. Test permanenti in
+  `eliminaAccount.test.ts`
 - **Prova vera** su un account usa e getta,
   davidemancon02+elimina@gmail.com, creato da Davide dall'app. L'account
   di prova fisso non si tocca
@@ -3883,7 +3897,7 @@ invariate (311 tra voci e alimenti), nessun alimento con `user_id` null;
 account di prova intatto dopo l'annullamento. Pronto per "Elimina
 account", che resta da costruire.
 
-**Test.** 796 test permanenti in 68 file (Vitest), tutti verdi all'11/10.
+**Test.** 806 test permanenti in 69 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
 
@@ -3895,8 +3909,8 @@ account", che resta da costruire.
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
-- **Elimina il mio account**: in costruzione, branch `elimina-account`
-  (decisioni in 9.6)
+- **Elimina il mio account**: costruito l'11/10, branch `elimina-account`,
+  da provare su iPhone e con la prova vera (decisioni in 9.6)
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6),
   si fa nel branch subito dopo Elimina account
 

@@ -122,6 +122,11 @@ function coppie(p: Paletta, tema: Tema, accento: string): [string, number][] {
     ["--attesa su superficie", contrasto(c("--attesa"), superficie)],
     ["--attesa su sfondo", contrasto(c("--attesa"), sfondo)],
     ["--avviso su superficie", contrasto(c("--avviso"), superficie)],
+    // "Elimina il mio account" (dall'11/10): la riga rossa in Impostazioni,
+    // i pallini e il pulsante pieno della sottopagina.
+    ["--pericolo su superficie", contrasto(c("--pericolo"), superficie)],
+    ["--pericolo su sfondo", contrasto(c("--pericolo"), sfondo)],
+    ["--su-pieno su --pericolo-pieno", contrasto(sopra(c("--su-pieno"), c("--pericolo-pieno")), c("--pericolo-pieno"))],
   ];
 }
 

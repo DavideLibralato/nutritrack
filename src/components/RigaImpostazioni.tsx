@@ -7,7 +7,9 @@
 // La linea di separazione fra due righe la disegna globals.css
 // (.riga-impostazioni): parte dal testo, quindi più a destra se la riga ha
 // l'icona. Colori solo da token: icona in accento sulla capsula
-// (--capsula-attiva), valore e freccia in --tenue.
+// (--capsula-attiva), valore e freccia in --tenue. Con `pericolo`
+// l'etichetta è rossa (--pericolo): solo per le azioni che non si possono
+// annullare ("Elimina il mio account", sezione 7).
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
@@ -19,12 +21,14 @@ export default function RigaImpostazioni({
   valore,
   href,
   onClick,
+  pericolo = false,
 }: {
   etichetta: string;
   icona?: ReactNode;
   valore?: ReactNode;
   href?: string;
   onClick?: () => void;
+  pericolo?: boolean;
 }) {
   const stile = { "--rientro-linea": icona ? "58px" : "16px" } as CSSProperties;
   const contenuto = (
@@ -37,7 +41,7 @@ export default function RigaImpostazioni({
           {icona}
         </span>
       )}
-      <span className="min-w-0 flex-1 truncate">{etichetta}</span>
+      <span className={`min-w-0 flex-1 truncate ${pericolo ? "text-danger" : ""}`}>{etichetta}</span>
       {valore != null && <span className="shrink-0 text-[15px] text-muted">{valore}</span>}
       {(href || onClick) && <FrecciaDestra />}
     </>
