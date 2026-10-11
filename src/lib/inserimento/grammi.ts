@@ -21,6 +21,14 @@ const MESSAGGI: Record<ErroreDecimale, string> = {
   "sotto-minimo": "Deve essere maggiore di zero",
 };
 
+// Una quantità in grammi come la legge l'utente: virgola decimale, al
+// massimo due decimali, "g" in coda ("80 g", "12,5 g"). Senza, JavaScript
+// stamperebbe "12.5". Il punto delle migliaia compare solo da 10.000 in su
+// ("12.500 g"), come vuole la convenzione italiana di Intl.
+export function formattaGrammi(g: number): string {
+  return `${g.toLocaleString("it-IT", { maximumFractionDigits: 2 })} g`;
+}
+
 export function leggiGrammi(valore: string): LetturaGrammi {
   const lettura = leggiNumeroDecimale(valore, { zeroAmmesso: false });
   return lettura.errore === null

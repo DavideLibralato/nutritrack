@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Numeri delle voci in Oggi incolonnati, grammi con la virgola
+
+Branch `pulizie`. Nella riga di ogni voce le kcal stanno in uno spazio
+largo almeno 3 cifre, allineate a destra (`min-w-[3ch]`, `tabular-nums`):
+"·" e "g" restano fermi, grammi e kcal in colonna. I grammi con decimali
+si leggevano "12.5 g": ora "12,5 g", anche nella copia trascinata, con
+`formattaGrammi` spostata da `SheetDoppioni` in
+`src/lib/inserimento/grammi.ts` senza cambiarne il comportamento. 771
+test verdi, `tsc` e lint puliti. Da provare a schermo su iPhone (PUNTO
+§11, verifiche aperte). In PUNTO §3 corretta la descrizione superata
+delle voci ("nomi separati da punto medio": ora una riga ciascuna).
+
 ## 2026-10-11 — Messaggio d'errore di Duplica con giorno e pasto
 
 Branch `pulizie`. In `duplicaNelPasto` il controllo sul pasto di

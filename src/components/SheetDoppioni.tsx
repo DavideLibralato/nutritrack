@@ -34,7 +34,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import { leggiGrammi } from "@/lib/inserimento/grammi";
+import { formattaGrammi, leggiGrammi } from "@/lib/inserimento/grammi";
 import { testoEsitoDoppione } from "@/lib/diario/testiSpostamento";
 import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
 
@@ -59,10 +59,6 @@ interface Props {
   errore?: string | null;
   onAnnulla: () => void;
   onConferma: (scelte: Record<string, SceltaDoppione>) => void;
-}
-
-function grammi(g: number): string {
-  return `${g.toLocaleString("it-IT", { maximumFractionDigits: 2 })} g`;
 }
 
 export default function SheetDoppioni({
@@ -160,7 +156,7 @@ export default function SheetDoppioni({
               const idCampo = `doppione-${d.alimentoId}`;
               const totale = Math.round((d.grammiEsistenti + d.grammiInArrivo) * 100) / 100;
               const opzioni: { tipo: TipoScelta; etichetta: string }[] = [
-                { tipo: "somma", etichetta: `Somma (${grammi(totale)})` },
+                { tipo: "somma", etichetta: `Somma (${formattaGrammi(totale)})` },
                 { tipo: "separati", etichetta: "Tieni separati" },
                 { tipo: "scrivi", etichetta: "Scrivi quantità" },
                 { tipo: "escludi", etichetta: etichettaEscludi },
@@ -174,8 +170,8 @@ export default function SheetDoppioni({
                 >
                   <p className="truncate font-medium">{d.nome}</p>
                   <p className="text-sm text-muted">
-                    {nomeDestinazione} {grammi(d.grammiEsistenti)} · {nomePartenza}{" "}
-                    {grammi(d.grammiInArrivo)}
+                    {nomeDestinazione} {formattaGrammi(d.grammiEsistenti)} · {nomePartenza}{" "}
+                    {formattaGrammi(d.grammiInArrivo)}
                   </p>
 
                   <div

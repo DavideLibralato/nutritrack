@@ -86,6 +86,7 @@ import {
   messaggioSpostamento,
 } from "@/lib/diario/testiSpostamento";
 import { daVoce } from "@/lib/inserimento/alimentoPerSheet";
+import { formattaGrammi } from "@/lib/inserimento/grammi";
 import {
   pastoGiaSalvato,
   composizioniCorrispondenti,
@@ -710,7 +711,7 @@ function OggiContenuto() {
       if (!voce) return { titolo: "" };
       return {
         titolo: voce.nome_alimento,
-        dettaglio: `${voce.quantita_g} g · ${Math.round(totaleVoce(voce).kcal)} kcal`,
+        dettaglio: `${formattaGrammi(voce.quantita_g)} · ${Math.round(totaleVoce(voce).kcal)} kcal`,
       };
     }
     const nome = pasti?.find((p) => p.id === id)?.nome ?? "";
@@ -1391,8 +1392,19 @@ function OggiContenuto() {
                             className={`riga-tieni-premuto flex w-full items-baseline justify-between gap-3 rounded py-1 text-left text-sm text-muted ${CLASSE_FOCUS}`}
                           >
                             <span className="min-w-0 truncate">{voce.nome_alimento}</span>
+                            {/* Numeri incolonnati da una voce all'altra: le
+                                kcal stanno in uno spazio largo almeno 3
+                                cifre, allineate a destra, come le kcal del
+                                pasto (lì 4). Così "·" e "g" restano fermi
+                                e anche i grammi finiscono tutti nello
+                                stesso punto. Oltre 999 kcal lo spazio si
+                                allarga (min-w, non w). */}
                             <span className="shrink-0">
-                              {voce.quantita_g} g · {Math.round(totaleVoce(voce).kcal)} kcal
+                              {formattaGrammi(voce.quantita_g)} ·{" "}
+                              <span className="inline-block min-w-[3ch] text-right tabular-nums">
+                                {Math.round(totaleVoce(voce).kcal)}
+                              </span>{" "}
+                              kcal
                             </span>
                           </button>
                         </li>

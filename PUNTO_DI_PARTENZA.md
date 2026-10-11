@@ -167,8 +167,10 @@ Dall'alto:
    Affiancati, non impilati: sta tutto sopra la piega
 3. **I pasti in lista** — quanti e quali dipende dall'utente (tabella `pasti`,
    cinque nel set predefinito, non quattro come nel mockup). Per ognuno il nome,
-   le kcal totali a destra, e sotto in grigio i nomi degli alimenti separati da
-   punto medio. Un pasto vuoto mostra "—", non viene nascosto. Un tocco sulla
+   le kcal totali a destra, e sotto in grigio una riga per ogni alimento:
+   il nome a sinistra (troncato con "…" se lungo), grammi e kcal a destra
+   ("80 g · 200 kcal"); un tocco sulla riga apre l'alimento in modifica.
+   Un pasto vuoto mostra "—", non viene nascosto. Un tocco sulla
    riga di un pasto con alimenti nasconde o mostra il suo elenco (solo in
    memoria: a ogni apertura dell'app sono tutti aperti).
    **Segnalibro e kcal sempre allineati** (dall'11/10): le kcal del pasto
@@ -178,7 +180,14 @@ Dall'alto:
    con 2 cifre come con 4. Con 5 cifre lo spazio si allarga invece di far
    uscire il testo. L'area di tocco del segnalibro è di 44 px, con margini
    negativi che la compensano: per l'impaginazione occupa quanto l'icona
-   (18 px + 4 px per lato), e né l'icona né le kcal si spostano
+   (18 px + 4 px per lato), e né l'icona né le kcal si spostano.
+   **Numeri delle voci incolonnati** (dall'11/10): nella riga di ogni voce
+   ("80 g · 200 kcal") le kcal stanno in uno spazio largo almeno 3 cifre,
+   allineate a destra (`min-w-[3ch]`, `tabular-nums`); così "·" e "g"
+   restano fermi e i grammi finiscono tutti nello stesso punto. Oltre 999
+   kcal lo spazio si allarga. I grammi si scrivono all'italiana, con la
+   virgola ("12,5 g"), con la stessa funzione dei doppioni
+   (`formattaGrammi`), anche nella copia che segue il dito trascinando
 4. **Pulsante "+ Aggiungi"**, a pillola, centrato
 
 Nient'altro: nessun grafico, nessun banner, nessun consiglio.
@@ -3530,15 +3539,14 @@ senza voci ("—") resta in ordine. Com'è fatto: sezione 3, Oggi, punto 3.
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
-- Piccolo lavoro aperto (11/10): **`tabular-nums` sui numeri delle voci
-  dentro il pasto** in Oggi ("80 g · 200 kcal"), oggi non incolonnati da
-  una riga all'altra. Attenzione: con Hanken Grotesk le cifre sono già
-  larghe uguali, quindi `tabular-nums` da solo non cambia niente; il
-  disallineamento viene dal numero di cifre. Per incolonnare serve uno
-  spazio minimo per il numero, come per le kcal del pasto (punto 3 di
-  Oggi, sezione 3)
 
 ### Difetti e verifiche aperti
+
+- **Numeri delle voci in Oggi incolonnati: da provare su iPhone** (11/10,
+  branch `pulizie`). Da guardare: grammi e kcal in colonna con voci da 1,
+  2 e 3 cifre; una voce con decimali ("12,5 g"); un nome lungo che si
+  tronca con "…" senza spingere i numeri; iPhone SE se disponibile.
+  Com'è fatto: sezione 3, Oggi, punto 3
 
 - **Redirect URL su Supabase: solo voci esatte** (Authentication → URL
   Configuration; regola dal 10/10). Mai un jolly sui sottodomini
