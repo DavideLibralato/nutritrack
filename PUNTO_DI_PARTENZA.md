@@ -1116,6 +1116,9 @@ sono in Obiettivi, la pesata in Peso.
   questo dispositivo (`scope: "local"`), e non offline: senza rete non si
   esce, con un messaggio, mai "a metà". I dati locali restano (§9.6,
   cancellazione al logout rimandata)
+- **Elimina il mio account** (in costruzione, branch `elimina-account`):
+  in fondo, in un gruppo a sé, con la conferma scrivendo "ELIMINA".
+  Decisioni in §9.6, "Elimina il mio account"
 - **Tema**: non sta in Profilo ma in Impostazioni > Aspetto (sopra)
 
 #### Un solo Salva (deciso il 2026-09-26)
@@ -3132,11 +3135,80 @@ costruzione e non per attenzione.
   una riscarica completa al rientro senza proteggere da nessuno. Si riprende
   quando l'app si apre agli amici; la funzione pronta è
   `sostituisciDatiUtente` (§9.2, "Ripristino dei dati locali"). Esci oggi
-  svuota solo le pagine salvate dal service worker
+  svuota solo le pagine salvate dal service worker. L'app è pubblica
+  dall'11/10: si fa nel branch subito dopo Elimina account (deciso
+  l'11/10). Attenzione a "Esci e rientra" in Sincronizzazione: serve
+  proprio quando la coda è piena di modifiche bloccate dalla sessione
+  scaduta, e cancellare lì le perderebbe
 - Se un giorno l'app si apre al pubblico servono anche informativa privacy,
   export dei propri dati e cancellazione dell'account. In Europa i dati
   nutrizionali collegati a peso e obiettivi ricadono in una categoria protetta,
-  quindi quel passo va preparato, non improvvisato
+  quindi quel passo va preparato, non improvvisato. La cancellazione
+  dell'account è in costruzione (sotto)
+
+#### Elimina il mio account (decisioni dell'11/10, branch `elimina-account`)
+
+- **Lato server, una funzione Postgres**: `public.elimina_mio_account()`,
+  `security definer` con `search_path = ''`, senza parametri. Cancella da
+  `auth.users` la riga con `id = auth.uid()`; errore se `auth.uid()` è
+  null. **Idempotente**: se l'utente non c'è più cancella 0 righe e
+  risponde ok, così ritentare dopo una risposta persa non fa danni.
+  `revoke execute` da `public` e `anon`, `grant` solo ad `authenticated`.
+  L'app la chiama con `supabase.rpc` da un modulo in `/lib`, mai dal
+  componente
+- **Scartato**: un route handler Next con `auth.admin.deleteUser`. Vuole
+  la chiave di servizio su Vercel (anche nelle anteprime, che usano il
+  Supabase di produzione) e in `.env.local`: una chiave che può cancellare
+  chiunque, esposta a ogni bug futuro del codice server
+- **La cancellazione si propaga da sola**: dall'11/10 tutte le foreign key
+  verso `auth.users` sono `CASCADE` (sezione 4; §11, "Fatto"), e nello
+  schema `auth` identità, sessioni, refresh token e fattori MFA sono già
+  `CASCADE` (letto in `pg_constraint` l'11/10). Nessun trigger su
+  `auth.users`. Da verificare, non certo: cosa fa GoTrue in più con
+  `deleteUser` (probabilmente una riga nel registro di audit, che qui
+  manca)
+- **Avviso di `get_advisors` accettato** (11/10): la funzione `security
+  definer` eseguibile da `authenticated` dà un WARN. È voluto: cancella
+  solo l'utente che la chiama, senza parametri, quindi nessuno può
+  cancellare un altro. Eccezione decisa alla regola "nessun avviso nuovo"
+- **File in Storage**: oggi zero. Quando ci saranno file dell'utente (la
+  foto profilo), `elimina_mio_account` o il flusso che la chiama dovrà
+  cancellare anche quelli: le foreign key non toccano i file
+- **Sul dispositivo, solo dopo l'ok del server**: via le righe di questo
+  utente nelle 11 tabelle Dexie, le sue voci di outbox (accantonate
+  comprese) e i suoi cursori. Senza il controllo delle firme del
+  ripristino: a server cancellato non c'è più niente da proteggere. Il
+  catalogo comune e i dati di altri utenti sul dispositivo restano. Poi
+  le pagine salvate dal service worker, la sessione (`scope: "local"`),
+  lo stato dei giri, l'ora dell'ultimo contatto col server in
+  `localStorage`, il segno del reset password in `sessionStorage`. Tema e
+  colore restano: sono del dispositivo, non dell'account. Si atterra su
+  `/login` con "Account eliminato"
+- **Segno "eliminazione in corso"** in `localStorage`, con l'id
+  dell'utente: scritto prima della chiamata, tolto a pulizia finita.
+  All'avvio, se c'è: server che conferma "utente non trovato" → si
+  completa la pulizia; utente ancora esistente (la chiamata non era
+  arrivata) → si toglie il segno. Copre la pulizia fallita a metà e una
+  discesa partita prima, che riscrive righe dopo la pulizia
+- **Offline non si elimina**, come Esci: prima una chiamata vera
+  (`getUser`). Risposta persa dopo la chiamata: di nuovo `getUser`;
+  "utente non trovato" → si pulisce, errore di rete → "non so, riprova".
+  Doppio tocco: pulsante disattivato durante l'operazione
+- **Le modifiche non inviate si perdono** con tutto il resto: la conferma
+  lo dice; non si contano e non si inviano prima
+- **Altri dispositivi collegati**: il token d'accesso resta valido fino
+  alla scadenza (circa un'ora, da verificare nelle impostazioni Auth).
+  Intanto la discesa legge zero righe e la salita è rifiutata dalla
+  foreign key verso `auth.users` (accantonata dopo 5 tentativi). Il
+  rinnovo del token fallisce (refresh token cancellati) e l'app torna al
+  login. I dati locali su quel dispositivo restano, come con Esci oggi:
+  pulirli quando il server dice "utente non trovato" è lavoro a parte
+- **Dove e come**: in fondo a Impostazioni > Profilo, in un gruppo a sé;
+  conferma scrivendo "ELIMINA". Posizione esatta, testi e colore (arancio
+  o un rosso nuovo nei due temi) dal mockup
+- **Prova vera** su un account usa e getta,
+  davidemancon02+elimina@gmail.com, creato da Davide dall'app. L'account
+  di prova fisso non si tocca
 
 ---
 
@@ -3750,7 +3822,10 @@ account", che resta da costruire.
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
-- Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
+- **Elimina il mio account**: in costruzione, branch `elimina-account`
+  (decisioni in 9.6)
+- Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6),
+  si fa nel branch subito dopo Elimina account
 
 ### Difetti e verifiche aperti
 

@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Elimina account: decisioni
+
+Branch `elimina-account`. Dall'analisi approvata, in PUNTO §9.6 una parte
+nuova "Elimina il mio account": funzione Postgres `security definer`
+`elimina_mio_account()` senza parametri e idempotente (scartato il route
+handler con la chiave di servizio), WARN di `get_advisors` accettato con
+il motivo, file in Storage da cancellare quando arriverà la foto profilo,
+pulizia del dispositivo solo dopo l'ok del server, segno "eliminazione in
+corso" in `localStorage`, offline bloccato, altri dispositivi, prova vera
+su un account usa e getta. Rimandi in §3 Profilo e in §11; la
+cancellazione dei dati locali all'uscita va nel branch successivo. Solo
+documenti.
+
+## 2026-10-11 — Vincoli verso auth.users uniti a main
+
+Unito a main l'11/10 con fast-forward da `c988901` a `acec5ff`, senza
+commit di merge: `d1b29c6` (migration `vincoli_cancellazione_utente`,
+più la voce di merge di `nome-libra`), `acec5ff` (vincoli applicati,
+versione 20261011133801, e provati; PUNTO aggiornato). Branch cancellato
+in locale e su GitHub. Deploy di produzione riuscito. 782 test verdi in
+67 file, lint e `tsc` puliti su main dopo il merge. Solo documenti: la
+migration era già in produzione prima del merge. Voce scritta con il
+primo commit del branch successivo (`elimina-account`), per non fare un
+commit su main solo per il registro.
+
 ## 2026-10-11 — Vincoli verso auth.users applicati e provati
 
 Branch `vincoli-utente`. Migration `vincoli_cancellazione_utente`
