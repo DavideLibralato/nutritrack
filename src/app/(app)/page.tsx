@@ -1334,11 +1334,14 @@ function OggiContenuto() {
                         <CaretPasto aperto={!collassato} />
                         <span className="truncate">{pasto.nome}</span>
                       </button>
-                      <div className="flex shrink-0 items-baseline gap-2.5">
+                      <div className="flex shrink-0 items-baseline gap-2.5 whitespace-nowrap">
                         {/* Voce "Salvare un pasto intero" (sezione 3): non si
                             costruisce in una schermata apposta, si promuove da
                             una giornata già registrata — bersaglio separato dal
-                            collasso, stessa riga. */}
+                            collasso, stessa riga. Area di tocco di 44px (18px
+                            di icona + 13px per lato), ma con margini di -9px:
+                            per l'impaginazione occupa quanto il vecchio p-1,
+                            così icona e kcal restano dove stavano. */}
                         <button
                           type="button"
                           onClick={() => toggleSalvaPreferito(pasto)}
@@ -1348,11 +1351,19 @@ function OggiContenuto() {
                               ? `Togli ${pasto.nome} dai preferiti`
                               : `Salva ${pasto.nome} come preferito`
                           }
-                          className={`rounded p-1 ${giaSalvato ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
+                          className={`-m-[9px] rounded p-[13px] ${giaSalvato ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
                         >
                           <Segnalibro piena={giaSalvato} />
                         </button>
-                        <span className="text-lg">{kcalPasto} kcal</span>
+                        {/* Il numero sta in uno spazio largo almeno 4 cifre,
+                            allineato a destra, con cifre tutte larghe uguali
+                            (tabular-nums): l'icona non si sposta più tra 80 e
+                            618 kcal. min-w e non w: con 5 cifre lo spazio si
+                            allarga invece di far uscire il testo. */}
+                        <span className="text-lg">
+                          <span className="inline-block min-w-[4ch] text-right tabular-nums">{kcalPasto}</span>{" "}
+                          kcal
+                        </span>
                       </div>
                     </div>
                   ) : (

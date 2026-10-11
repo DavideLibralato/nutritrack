@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Icona preferiti ferma nella riga del pasto
+
+Branch `icona-preferiti`. In Oggi il segnalibro del pasto si spostava in
+base alle cifre delle kcal (80 contro 554). Ora il numero sta in uno
+spazio largo almeno 4 cifre, allineato a destra (`min-w-[4ch]`,
+`tabular-nums`), e "kcal" non va a capo. Area di tocco del segnalibro
+portata a 44px con margini negativi che la compensano: icona e kcal
+restano dove stavano. Hanken Grotesk non ha `tnum`, ma le sue cifre sono
+già tutte larghe uguali, quindi 4ch = 4 cifre. Aggiornato un test che
+cercava "100 kcal" in un solo elemento. Da provare a schermo su iPhone.
+
+## 2026-10-11 — Doppioni in Aggiungi unito a main
+
+Provato l'11/10 (voce sotto) e unito a main con fast-forward da
+`da9a9c7` a `8889759`, senza commit di merge: `f451474` (la voce di merge
+di `reset-password`), `a385832` (pianoInserimento), `cac0872`
+(aggiungiNelPasto, tutto o niente), `20d85d6` (testi della barra),
+`6f65b61` (la pagina /aggiungi), `6138482` (i documenti), `8889759`
+(provato su iPhone). Branch `doppioni-aggiungi` cancellato, in locale e su
+GitHub. Deploy di produzione riuscito. 771 test verdi in 65 file. Voce
+scritta con il primo commit del branch successivo (`icona-preferiti`),
+per non fare un commit su main solo per il registro.
+
 ## 2026-10-11 — Doppioni in Aggiungi provato su iPhone
 
 Branch `doppioni-aggiungi`. Provato l'11/10 in Safari sull'anteprima, con

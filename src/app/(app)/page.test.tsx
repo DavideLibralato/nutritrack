@@ -635,7 +635,9 @@ describe("Oggi: pasti non più in uso con voci in quel giorno", () => {
 
     const liMerenda = screen.getByText("Merenda").closest("li")!;
     expect(within(liMerenda).getByText("Non più in uso")).toBeTruthy();
-    expect(within(liMerenda).getByText("100 kcal")).toBeTruthy();
+    // Il numero sta in uno span a parte (spazio fisso per le cifre): si
+    // controlla il testo della riga intera, non un singolo elemento.
+    expect(liMerenda.textContent).toContain("100 kcal");
     // Non è un bersaglio del trascinamento.
     expect(document.querySelector(`[data-pasto-id="${merenda.id}"]`)).toBeNull();
   });
