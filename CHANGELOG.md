@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Migration elimina_mio_account (non applicata)
+
+Branch `elimina-account`. Nuovo file
+`supabase/migrations/elimina_mio_account.sql`, non ancora applicato: la
+funzione `public.elimina_mio_account()`, `security definer` con
+`search_path = ''`, senza parametri, che cancella da `auth.users` la riga
+di `auth.uid()` (errore se null, idempotente se l'utente non c'è più);
+il resto lo fanno le foreign key in CASCADE. Revoke da `public` e `anon`,
+grant ad `authenticated`: letto in `pg_default_acl` che, a seconda di chi
+crea la funzione, `anon` la riceverebbe da PUBLIC o con un EXECUTE
+esplicito, e la revoke copre i due casi. Nel commento il WARN atteso di
+`get_advisors`, già accettato, e la nota sui file di Storage per la foto
+profilo.
+
 ## 2026-10-11 — Mockup di Elimina account
 
 Branch `elimina-account`. Nuovo `docs/mockups/elimina-account.html`, nei
