@@ -1916,7 +1916,12 @@ messi da subito, non aggiunti dopo:
 
 - `id` **uuid generato dal client**, non `serial` — il dispositivo deve poter
   creare una riga valida mentre è offline
-- `user_id` con riferimento a `auth.users`, e **RLS attiva su ogni tabella**
+- `user_id` con riferimento a `auth.users` **`ON DELETE CASCADE`**, e **RLS
+  attiva su ogni tabella**. Cancellare un utente cancella tutte le sue
+  righe; anche i riferimenti tra tabelle dello stesso utente che
+  appartengono al genitore (`obiettivi_target` → `obiettivi`) sono
+  `CASCADE`, altrimenti la cancellazione dell'utente si blocca (sezione
+  11, "Fatto", vincoli verso `auth.users`)
 - `updated_at` — base della sincronizzazione
 - `deleted_at` — cancellazione logica: una riga cancellata offline deve poter
   essere propagata; il `delete` fisico non è sincronizzabile
@@ -3314,9 +3319,10 @@ per commit, sta in `CHANGELOG.md`.
 **Account di prova.** Esiste un account di prova fisso,
 davidemancon02@gmail.com, creato il 3/10. Si usa in Safari per le prove
 che scrivono dati (utente nuovo, cambio vero, ...), mentre l'app
-installata resta sull'account vero. Non va cancellato: con i vincoli
-verso `auth.users` oggi non si può comunque (vedi "Difetti e verifiche
-aperti"), e sarà il primo caso di prova per "elimina account".
+installata resta sull'account vero. Non va cancellato. Dall'11/10 i
+vincoli verso `auth.users` permettono di cancellarlo (sotto, "Fatto"):
+la prova è stata fatta in una transazione annullata, l'account è intatto
+e resta il primo caso di prova per "elimina account".
 
 ### Fatto
 
@@ -3713,6 +3719,25 @@ Home", "Apri Libra…" nella pagina offline con il tema giusto, la
 bilancia nella scheda e in "Aggiungi a Home"; app vera reinstallata da
 app-libra con l'icona nuova, dati riscaricati, Build `c988901`.
 
+**Vincoli verso `auth.users` in CASCADE** (11/10, branch
+`vincoli-utente`, migration `vincoli_cancellazione_utente`, versione
+20261011133801). Prima, cancellando un utente, `alimenti` era `ON DELETE
+SET NULL`: le sue righe restavano con `user_id` null e la policy
+`alimenti_select` le mostrava a tutti come catalogo comune. `giorni` e
+`obiettivi_target` (sia `user_id` sia `obiettivo_id`) erano `NO ACTION`:
+la cancellazione falliva. Ora tutte le foreign key verso `auth.users`
+sono `CASCADE`, e così `obiettivi_target_obiettivo_id_fkey`. Il codice
+non ne dipendeva: l'app non cancella mai fisicamente. Advisors identici
+a prima. Provato l'11/10 sull'account di prova in una transazione
+annullata apposta: prima della migration la cancellazione falliva su
+`obiettivi_target_user_id_fkey`; dopo, riuscita e 0 righe in tutte le 11
+tabelle (prima 122 in tutto: profili 1, obiettivi 1, obiettivi_target 2,
+giorni 13, pasti 24, alimenti 3, voci_diario 70, composizioni 2,
+composizioni_voci 3, misurazioni 1, preferiti 2); righe di altri utenti
+invariate (311 tra voci e alimenti), nessun alimento con `user_id` null;
+account di prova intatto dopo l'annullamento. Pronto per "Elimina
+account", che resta da costruire.
+
 **Test.** 782 test permanenti in 67 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
@@ -3816,13 +3841,6 @@ app-libra con l'icona nuova, dati riscaricati, Build `c988901`.
   solo se la discesa arriva prima. Vale per ogni tabella; è raro (serve
   modificare proprio la riga cancellata). Da affrontare a parte
 
-- **Cancellando un utente, le sue righe in `alimenti` non vengono
-  cancellate** (2/10): il vincolo verso `auth.users` è `ON DELETE SET NULL`,
-  non `CASCADE`, quindi restano con `user_id` null. In più `giorni` e
-  `obiettivi_target` sono `NO ACTION`: se l'utente ha righe lì, la
-  cancellazione dell'utente fallisce. Da sistemare prima di "elimina
-  account". Le altre tabelle sono `CASCADE`. Primo caso di prova:
-  l'account di prova fisso (sopra, "Account di prova")
 - **Eliminare un pasto salvato: due garanzie diverse** (incoerenza nota,
   11/10). In Oggi il segnalibro pieno di un pasto, ritoccato, elimina
   subito tutti i pasti salvati con quel contenuto, senza conferma e senza

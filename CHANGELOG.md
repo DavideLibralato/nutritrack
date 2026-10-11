@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Vincoli verso auth.users applicati e provati
+
+Branch `vincoli-utente`. Migration `vincoli_cancellazione_utente`
+applicata da Cowork l'11/10, versione 20261011133801: i quattro vincoli
+risultano `ON DELETE CASCADE` in `pg_constraint` (ricontrollato anche da
+Claude in sola lettura), le altre FK invariate, advisors security e
+performance identici a prima. Prova sull'account di prova in un blocco
+DO che va in errore apposta, così tutto si annulla: prima della
+migration la cancellazione dell'utente falliva su
+`obiettivi_target_user_id_fkey`, dopo riesce e lascia 0 righe in tutte
+le 11 tabelle (erano 122); 311 righe di altri utenti invariate; account
+intatto dopo l'annullamento. In PUNTO: difetto aperto spostato in
+"Fatto", regola `ON DELETE CASCADE` tra le colonne di ogni tabella
+(sezione 4), nota sull'account di prova aggiornata. Solo documenti.
+
 ## 2026-10-11 — Migration per i vincoli verso auth.users (non applicata)
 
 Branch `vincoli-utente`, prima di "Elimina account". Nuovo file
