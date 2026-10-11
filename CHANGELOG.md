@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Doppioni in Aggiungi, passo 5: la pagina /aggiungi
+
+Branch `doppioni-aggiungi`. I tre percorsi (sheet quantità, "+" di
+Recenti/Preferiti, pasto salvato) passano da una sola funzione che chiama
+`aggiungiNelPasto`: tolto `creaVoce`, che scriveva il pasto salvato in
+parallelo. Doppioni → `SheetDoppioni` ("in arrivo", "Non aggiungerlo",
+"Aggiungi"), "cambiati" → foglio riaperto con l'avviso come in Sposta;
+Annulla/Esc/tocco fuori o tutto escluso → si resta su /aggiungi senza
+barra. Blocco "aggiunta in corso" (`useRef`) preso al tocco, liberato dopo
+errore, "niente entrato" e chiusura del foglio; resta preso col foglio
+aperto e tornando a Oggi. Bug evitato: un doppio tocco sul "+" scriveva due
+righe. 5 test nuovi; 9 rotture di prova prese, ripristino dalla copia. 771
+test verdi in 65 file. Aperto: PUNTO_DI_PARTENZA.md non descrive ancora i
+doppioni in /aggiungi.
+
 ## 2026-10-10 — Doppioni in Aggiungi, passo 4: testi della barra e passaggio a Oggi
 
 Branch `doppioni-aggiungi`. `messaggioInserimento` in `testiBarra.ts`:

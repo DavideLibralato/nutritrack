@@ -15,7 +15,7 @@
 // riporta all'Oggi del giorno giusto (anche un giorno passato). Va avvolto
 // in <Suspense>, come nella pagina di login.
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
@@ -27,9 +27,8 @@ import {
   repositoryProfili,
 } from "@/lib/repository";
 import { usePastiIniziali } from "@/lib/usePastiIniziali";
-import { pastoValidoAdesso, tuttiIPasti } from "@/lib/repository/pasti";
+import { tuttiIPasti } from "@/lib/repository/pasti";
 import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
-import { garantisciGiornoPerPrimaVoce } from "@/lib/repository/giorni";
 import {
   catalogoLocale,
   cercaPerNome,
@@ -48,20 +47,23 @@ import {
 import { dataScrivibile, oraCorrente, oggiLocale } from "@/lib/dataGiorno";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
+import SheetDoppioni from "@/components/SheetDoppioni";
 import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import ServeConnessione from "@/components/ServeConnessione";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
-import type { Alimento, VoceDiario } from "@/lib/db/tipi";
+import type { Alimento } from "@/lib/db/tipi";
 import { segnaInserimento } from "@/lib/inserimento/ultimoInserimento";
 import {
-  messaggioAggiunto,
   messaggioEliminato,
+  messaggioInserimento,
   messaggioRipristinato,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
-import { fotografiaInserimento } from "@/lib/repository/vociDiario";
+import { aggiungiNelPasto, type AlimentoDaAggiungere } from "@/lib/repository/vociDiario";
+import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
+import { accorcia, MASSIMO_ALIMENTO, MASSIMO_PASTO } from "@/lib/diario/testiSpostamento";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 // Quanti alimenti mostrare in "Recenti": abbastanza da coprire la rotazione
@@ -70,6 +72,27 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 // fuori dalla prima schermata su telefono. Valore da tarare con l'uso reale,
 // non definitivo.
 const NUMERO_RECENTI = 5;
+
+const ERRORE_AGGIUNTA = "Non è stato possibile aggiungere. Riprova.";
+
+// Cosa si sta aggiungendo: un alimento o un pasto salvato, nel pasto scelto
+// al momento del tocco. `origine` dice dove mostrare un errore della prima
+// chiamata: nello sheet quantità, o sopra le liste per il "+".
+interface RichiestaAggiunta {
+  tipo: "alimento" | "pasto-salvato";
+  nome: string;
+  alimenti: AlimentoDaAggiungere[];
+  pastoId: string;
+  origine: "sheet" | "rapido";
+}
+
+interface FoglioDoppioni {
+  richiesta: RichiestaAggiunta;
+  doppioni: Doppione[];
+  avviso: string | null;
+  inCorso: boolean;
+  errore: string | null;
+}
 
 export default function AggiungiPage() {
   return (
@@ -221,6 +244,23 @@ function AggiungiContenuto() {
   // quindi non ha il messaggio d'errore di SheetQuantita a disposizione.
   const [erroreRapido, setErroreRapido] = useState<string | null>(null);
 
+  // Il foglio dei doppioni (sezione 3, "Doppioni"): aperto quando quello che
+  // si aggiunge c'è già nel pasto. Tiene la richiesta di partenza, per la
+  // seconda chiamata con le scelte.
+  const [foglioDoppioni, setFoglioDoppioni] = useState<FoglioDoppioni | null>(null);
+
+  // "Aggiunta in corso", comune ai tre percorsi (sheet quantità, "+" di
+  // Recenti/Preferiti, pasto salvato). È un useRef e non uno stato: un ref
+  // è una scatola che React non guarda (cambiarlo non ridisegna) e che si
+  // legge e si scrive SUBITO, mentre uno stato cambia solo al giro di
+  // ridisegno dopo. Con uno stato, due tocchi ravvicinati sul "+"
+  // vedrebbero entrambi "libero" e scriverebbero due righe. Si prende
+  // all'inizio, in modo sincrono, e si libera alla fine: dopo un errore,
+  // dopo "niente entrato", alla chiusura del foglio senza conferma. Resta
+  // preso mentre il foglio dei doppioni è aperto e quando si torna a Oggi
+  // (la pagina se ne va: nessuna seconda aggiunta durante il cambio).
+  const aggiuntaInCorso = useRef(false);
+
   // Modifica di un pasto salvato (PUNTO_DI_PARTENZA.md §3, "Salvare un pasto
   // intero"): la matita in RigaPastoSalvato apre ModificaPastoSalvato,
   // separata dal tap sulla riga che invece aggiunge subito al diario. Basta
@@ -311,119 +351,139 @@ function AggiungiContenuto() {
     ? catalogo.find((x) => x.id === alimentoSceltoRaw.id) ?? alimentoSceltoRaw
     : null;
 
-  // Scrittura condivisa fra lo sheet quantità (confermaQuantita), il "+" di
-  // Recenti/Preferiti (aggiungiRapido) e l'inserimento di un pasto salvato
-  // (aggiungiPastoSalvatoRapido, una chiamata per alimento con lo stesso
-  // gruppoId). Non naviga da sola: i chiamanti che inseriscono più righe in
-  // una volta sola devono farlo solo dopo che tutte sono scritte.
-  // Restituisce la voce scritta (null se mancano i dati per scriverla): i
-  // chiamanti ne tengono l'id per l'"Annulla" in Oggi (punto 10.2).
-  async function creaVoce(
-    alimento: Alimento,
-    grammi: number,
-    gruppoId: string | null = null
-  ): Promise<VoceDiario | null> {
-    if (!userId || !pastoSelezionatoId || profilo === undefined) return null;
-
-    // Nessuna voce in un pasto che quel giorno non esiste (cancellato, o
-    // chiuso da Pasti e orari): il titolo offre solo i pasti del giorno, ma
-    // il pasto scelto può essere cambiato nel frattempo, da un'altra scheda
-    // o da una sync. Come in duplicaNelPasto: si rilegge da Dexie qui.
-    if (!(await pastoValidoAdesso(pastoSelezionatoId, giorno))) {
-      throw new Error(`Pasto non valido il ${giorno}: ${pastoSelezionatoId}`);
-    }
-
-    // Gancio "riceve la prima voce di diario" (sezione 3, regola 1): non fa
-    // nulla se il giorno è già scritto o se la differenziazione non è
-    // attiva. Rilegge Dexie da sola per id (vedi il commento su
-    // garantisciGiornoPerPrimaVoce in src/lib/repository/giorni.ts) — non le
-    // passiamo righe di `giorni` da qui apposta, quindi anche le chiamate
-    // parallele di aggiungiPastoSalvatoRapido (Promise.all, più alimenti
-    // dello stesso gruppo) vedono sempre lo stato vero del dispositivo, non
-    // uno stato React potenzialmente di un giro indietro.
-    await garantisciGiornoPerPrimaVoce(userId, giorno, profilo);
-
-    return repositoryVociDiario.crea({
-      user_id: userId,
-      alimento_id: alimento.id,
-      pasto_id: pastoSelezionatoId,
-      gruppo_id: gruppoId,
-      quantita_g: grammi,
-      data: giorno,
-      creato_il: new Date().toISOString(),
-      // Precompilata con l'ora attuale solo se stai registrando adesso; su un
-      // giorno passato meglio null che un orario inventato — l'editor di
-      // consumato_alle nello sheet arriva in un pezzo successivo.
-      consumato_alle: registroAdesso ? new Date().toISOString() : null,
-      // Copia dei valori nutrizionali (mai un riferimento che possa
-      // cambiare dopo): sezione 4.
-      nome_alimento: alimento.nome,
-      kcal_100g: alimento.kcal_100g,
-      proteine_100g: alimento.proteine_100g,
-      carboidrati_100g: alimento.carboidrati_100g,
-      grassi_100g: alimento.grassi_100g,
-    });
+  // Un'aggiunta, da qualunque dei tre percorsi: lo sheet quantità
+  // (confermaQuantita), il "+" di Recenti/Preferiti (aggiungiRapido) e il
+  // pasto salvato (aggiungiPastoSalvatoRapido). Tutte le regole stanno in
+  // aggiungiNelPasto (src/lib/repository/vociDiario.ts): rilegge il pasto
+  // da Dexie, trova i doppioni, scrive tutto o niente. Qui si decide solo
+  // cosa mostrare. Se il blocco è già preso (un tocco mentre un'aggiunta è
+  // in corso, o il foglio dei doppioni è aperto) non fa niente.
+  function aggiungi(richiesta: Omit<RichiestaAggiunta, "pastoId">) {
+    if (aggiuntaInCorso.current || !pastoSelezionatoId) return;
+    aggiuntaInCorso.current = true;
+    void eseguiAggiunta({ ...richiesta, pastoId: pastoSelezionatoId });
   }
 
-  async function confermaQuantita(grammi: number) {
-    if (!alimentoScelto) return;
-    setSalvataggio("in-corso");
+  // Prima chiamata senza scelte; con `scelte` è la conferma del foglio dei
+  // doppioni, con i doppioni che l'utente aveva davanti. Chi chiama ha già
+  // preso il blocco: si libera nel `finally`, tranne quando deve restare
+  // preso (`tieniBlocco`: foglio aperto, o si torna a Oggi).
+  async function eseguiAggiunta(
+    richiesta: RichiestaAggiunta,
+    scelte?: Record<string, SceltaDoppione>
+  ) {
+    const conferma = scelte !== undefined && foglioDoppioni !== null;
+    let tieniBlocco = false;
+    if (conferma) {
+      setFoglioDoppioni({ ...foglioDoppioni, inCorso: true, errore: null });
+    } else if (richiesta.origine === "sheet") {
+      setSalvataggio("in-corso");
+    } else {
+      setErroreRapido(null);
+    }
     try {
-      const voce = await creaVoce(alimentoScelto, grammi);
-      if (voce) {
-        segnaInserimento({
-          fotografia: fotografiaInserimento([voce.id]),
-          messaggio: messaggioAggiunto(alimentoScelto.nome, null),
+      if (!userId || profilo === undefined) throw new Error("Dati della pagina non pronti");
+      const esito = await aggiungiNelPasto({
+        userId,
+        data: giorno,
+        pastoId: richiesta.pastoId,
+        alimenti: richiesta.alimenti,
+        inGruppo: richiesta.tipo === "pasto-salvato",
+        profilo,
+        scelte,
+        doppioniVisti: conferma ? foglioDoppioni.doppioni : undefined,
+      });
+
+      // Doppioni da decidere, o cambiati nel frattempo (un altro
+      // dispositivo): niente scritto, si apre (o riapre) il foglio. Lo
+      // sheet quantità si chiude: il foglio prende il suo posto.
+      if (esito.esito !== "fatto") {
+        setAlimentoSceltoRaw(null);
+        setSalvataggio("inattivo");
+        setFoglioDoppioni({
+          richiesta,
+          doppioni: esito.doppioni,
+          avviso:
+            esito.esito === "cambiati"
+              ? "Nel frattempo l'elenco è cambiato: controlla e conferma di nuovo."
+              : null,
+          inCorso: false,
+          errore: null,
         });
+        tieniBlocco = true;
+        return;
       }
+
+      // Fatto. Niente entrato (tutto "Non aggiungerlo"): nessun messaggio,
+      // si resta qui senza barra. Altrimenti la barra la mostra Oggi, con
+      // la fotografia per "Annulla" (anche i grammi sommati tornano come
+      // prima).
+      setFoglioDoppioni(null);
+      const messaggio = messaggioInserimento(richiesta.tipo, richiesta.nome, esito.piano);
+      if (!messaggio) {
+        setAlimentoSceltoRaw(null);
+        setSalvataggio("inattivo");
+        return;
+      }
+      segnaInserimento({ fotografia: esito.fotografia, messaggio });
+      tieniBlocco = true;
       router.replace(`/?giorno=${giorno}`);
     } catch {
-      setSalvataggio("errore");
+      // aggiungiNelPasto non ha scritto niente (tutto o niente). L'errore
+      // va dove l'utente sta guardando.
+      if (conferma) {
+        setFoglioDoppioni({ ...foglioDoppioni, inCorso: false, errore: ERRORE_AGGIUNTA });
+        tieniBlocco = true;
+      } else if (richiesta.origine === "sheet") {
+        setSalvataggio("errore");
+      } else {
+        setErroreRapido(ERRORE_AGGIUNTA);
+      }
+    } finally {
+      if (!tieniBlocco) aggiuntaInCorso.current = false;
     }
+  }
+
+  // Annulla, tocco fuori o Esc sul foglio dei doppioni: niente scritto,
+  // si resta su /aggiungi, e il blocco si libera.
+  function chiudiFoglioDoppioni() {
+    setFoglioDoppioni(null);
+    aggiuntaInCorso.current = false;
+  }
+
+  function confermaQuantita(grammi: number) {
+    if (!alimentoScelto) return;
+    aggiungi({
+      tipo: "alimento",
+      nome: alimentoScelto.nome,
+      alimenti: [{ alimento: alimentoScelto, grammi }],
+      origine: "sheet",
+    });
   }
 
   // "+" su Recenti/Preferiti (PUNTO_DI_PARTENZA.md, sezione 3: "aggiunge
   // subito con la quantità dell'ultima volta, senza aprire nulla. Un tap."):
-  // stessa scrittura dello sheet, ma con la quantità passata dalla riga
+  // stessa aggiunta dello sheet, ma con la quantità passata dalla riga
   // invece di quella confermata dall'utente.
-  async function aggiungiRapido(alimento: Alimento, grammi: number) {
-    setErroreRapido(null);
-    try {
-      const voce = await creaVoce(alimento, grammi);
-      if (voce) {
-        segnaInserimento({
-          fotografia: fotografiaInserimento([voce.id]),
-          messaggio: messaggioAggiunto(alimento.nome, null),
-        });
-      }
-      router.replace(`/?giorno=${giorno}`);
-    } catch {
-      setErroreRapido("Non è stato possibile aggiungere. Riprova.");
-    }
+  function aggiungiRapido(alimento: Alimento, grammi: number) {
+    aggiungi({
+      tipo: "alimento",
+      nome: alimento.nome,
+      alimenti: [{ alimento, grammi }],
+      origine: "rapido",
+    });
   }
 
-  // "+" su un pasto salvato (sezione 3, punto 5): tutte le sue righe insieme,
-  // stesso gruppo_id, nessuno sheet — la quantità di ciascun alimento è già
-  // quella salvata nella composizione, non c'è niente da confermare.
-  async function aggiungiPastoSalvatoRapido(pasto: PastoSalvato) {
-    setErroreRapido(null);
-    const gruppoId = crypto.randomUUID();
-    try {
-      const voci = await Promise.all(
-        pasto.voci.map(({ alimento, quantitaG }) => creaVoce(alimento, quantitaG, gruppoId))
-      );
-      // "Annulla" toglie tutto il pasto insieme: gli id di tutte le voci.
-      const idVoci = voci.filter((v): v is VoceDiario => v !== null).map((v) => v.id);
-      if (idVoci.length > 0) {
-        segnaInserimento({
-          fotografia: fotografiaInserimento(idVoci),
-          messaggio: messaggioAggiunto(pasto.nome, idVoci.length),
-        });
-      }
-      router.replace(`/?giorno=${giorno}`);
-    } catch {
-      setErroreRapido("Non è stato possibile aggiungere. Riprova.");
-    }
+  // "+" su un pasto salvato (sezione 3, punto 5): tutte le sue righe
+  // insieme, con un gruppo_id comune, nessuno sheet — la quantità di
+  // ciascun alimento è già quella salvata nella composizione.
+  function aggiungiPastoSalvatoRapido(pasto: PastoSalvato) {
+    aggiungi({
+      tipo: "pasto-salvato",
+      nome: pasto.nome,
+      alimenti: pasto.voci.map(({ alimento, quantitaG }) => ({ alimento, grammi: quantitaG })),
+      origine: "rapido",
+    });
   }
 
   function scegli(a: Alimento) {
@@ -775,7 +835,7 @@ function AggiungiContenuto() {
           alimento={daAlimento(alimentoScelto)}
           nomePasto={nomePastoSelezionato}
           inCorso={salvataggio === "in-corso"}
-          errore={salvataggio === "errore" ? "Non è stato possibile aggiungere. Riprova." : null}
+          errore={salvataggio === "errore" ? ERRORE_AGGIUNTA : null}
           preferito={ePreferito(preferiti, alimentoScelto.id)}
           onTogglePreferito={toggleStellaAlimentoScelto}
           onAnnulla={() => {
@@ -783,6 +843,28 @@ function AggiungiContenuto() {
             setSalvataggio("inattivo");
           }}
           onConferma={confermaQuantita}
+        />
+      )}
+
+      {/* Doppioni (sezione 3): lo stesso foglio di Sposta e Duplica. Le
+          quantità di ogni blocco: "Pranzo 100 g · in arrivo 50 g". */}
+      {foglioDoppioni && (
+        <SheetDoppioni
+          titolo={titoloFoglioDoppioni(
+            foglioDoppioni.doppioni,
+            pasti.find((p) => p.id === foglioDoppioni.richiesta.pastoId)?.nome ?? ""
+          )}
+          doppioni={foglioDoppioni.doppioni}
+          nomeDestinazione={pasti.find((p) => p.id === foglioDoppioni.richiesta.pastoId)?.nome ?? ""}
+          nomePartenza="in arrivo"
+          etichettaEscludi="Non aggiungerlo"
+          esitoEscludi="Resta quello che c'è, non si aggiunge"
+          etichettaConferma="Aggiungi"
+          avviso={foglioDoppioni.avviso}
+          inCorso={foglioDoppioni.inCorso}
+          errore={foglioDoppioni.errore}
+          onAnnulla={chiudiFoglioDoppioni}
+          onConferma={(scelte) => void eseguiAggiunta(foglioDoppioni.richiesta, scelte)}
         />
       )}
 
@@ -819,6 +901,15 @@ function AggiungiContenuto() {
       )}
     </main>
   );
+}
+
+// Il titolo del foglio dei doppioni, come in Sposta: «Mela» c'è già in
+// «Pranzo», oppure "2 alimenti ci sono già in «Pranzo»".
+function titoloFoglioDoppioni(doppioni: Doppione[], nomePasto: string): string {
+  const pasto = accorcia(nomePasto, MASSIMO_PASTO);
+  return doppioni.length === 1
+    ? `«${accorcia(doppioni[0].nome, MASSIMO_ALIMENTO)}» c'è già in «${pasto}»`
+    : `${doppioni.length} alimenti ci sono già in «${pasto}»`;
 }
 
 // Riga condivisa fra Recenti e Preferiti (sezione 3): stessa struttura e
