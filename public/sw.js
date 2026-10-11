@@ -46,7 +46,8 @@ const {
 // v4 (3/10/2026): offline.html segue la scelta di Impostazioni > Aspetto.
 // v5 (3/10/2026): offline.html segue anche il colore principale.
 // v6 (11/10/2026): offline.html con il nome Libra.
-const CACHE_STATICI = "nutritrack-statici-v6";
+// v7 (11/10/2026): icone nuove di Libra (la bilancia), salvate da PRECACHE.
+const CACHE_STATICI = "nutritrack-statici-v7";
 const CACHE_PAGINE = "nutritrack-pagine-v2";
 const PAGINA_OFFLINE = "/offline.html";
 

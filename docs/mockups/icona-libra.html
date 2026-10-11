@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Icona Libra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+</head><body>
+<style>
+/* Pagina di confronto per l'icona di Libra: tre proposte affiancate, alle
+   misure dei file veri (180, 192, 512) e piccole come nella Home di iPhone,
+   su sfondo chiaro e scuro. I colori dell'icona sono quelli del tema
+   dell'app (src/app/globals.css): accento verde, il predefinito, e fondo. */
+:root{
+  --bg:#ece7de; --fg:#1f1b16; --muted:#5f584c; --card:#f7f4ee; --line:#d4ccbd; --focus:#1f1b16;
+  --f-display:'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --f-body:'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Colori dell'app, copiati da globals.css */
+  --app-fondo:#faf7f2;          /* --background in chiaro */
+  --app-fondo-scuro:#1b1815;    /* --background al buio */
+  --app-accento:#3f7d4c;        /* --accento-chiaro, verde */
+  --app-accento-scuro:#7bb887;  /* --accento-scuro, verde */
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#141210; --fg:#efe9df; --muted:#a69d8e; --card:#1e1b18; --line:#37322b; --focus:#efe9df; color-scheme:dark }
+}
+:root[data-theme="dark"]{ --bg:#141210; --fg:#efe9df; --muted:#a69d8e; --card:#1e1b18; --line:#37322b; --focus:#efe9df; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;margin:0;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,5vw,34px);line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0}
+h3{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0}
+p{margin:0;max-width:68ch}
+.muted{color:var(--muted)}
+header{display:flex;flex-direction:column;gap:8px}
+section{display:flex;flex-direction:column;gap:14px}
+
+/* Scelta dei colori */
+.ctl{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{font:inherit;font-size:14px;color:var(--fg);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--fg);font-weight:600}
+.opt:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sw{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid var(--line)}
+
+/* Le tre proposte affiancate */
+.tre{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.tre{grid-template-columns:minmax(0,1fr)}}
+.prop{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.prop-top{display:flex;align-items:center;gap:14px}
+.prop-n{font-family:var(--f-display);font-weight:700;font-size:18px;line-height:1.15}
+.prop p{font-size:14px}
+
+/* Un'icona: il disegno è un SVG quadrato pieno, come il PNG vero; gli
+   angoli li arrotonda iOS (circa il 22% del lato), qui li arrotonda il CSS. */
+.ico{display:block;flex:none;border-radius:22.37%;overflow:hidden}
+.ico svg{display:block;width:100%;height:100%}
+
+/* Misure reali */
+.misure{display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px}
+.misura{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.misura .cap{font-size:13px;color:var(--muted)}
+.scorri{overflow-x:auto;padding-bottom:6px}
+
+/* Home di iPhone finta */
+.homes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.homes{grid-template-columns:minmax(0,1fr)}}
+.home{border-radius:28px;padding:22px 16px 26px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.home.chiara{background:linear-gradient(160deg,#f3eadb 0%,#dfe7ee 55%,#cfd9e4 100%);color:#1c1c1e}
+.home.scura{background:linear-gradient(160deg,#1d2430 0%,#141414 55%,#2a1f1a 100%);color:#f2f2f7}
+.home-t{font-size:12px;font-weight:600;opacity:.75}
+.griglia{display:grid;grid-template-columns:repeat(4,60px);justify-content:space-between;row-gap:16px}
+.app{display:flex;flex-direction:column;align-items:center;gap:5px;width:60px}
+.app .lab{font-size:11px;line-height:1.1;text-align:center;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.home.scura .app .lab{text-shadow:0 1px 2px rgba(0,0,0,.6)}
+/* Le altre app sono quadrati neutri: servono solo a dare la scala */
+.finta{width:60px;height:60px;border-radius:22.37%}
+.piccole{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.piccole .cap{font-size:12px;opacity:.75}
+
+.note{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.note ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Icona di Libra: tre proposte</h1>
+    <p class="muted">Mockup per il passo 2 di <b>nome-libra</b>, nessun PNG generato. Si sceglie qui, poi
+      si generano <code>icon-192.png</code>, <code>icon-512.png</code>, <code>apple-touch-icon.png</code> e
+      <code>favicon.ico</code>. Colori del tema dell'app: verde dell'accento (il predefinito) e fondo crema.</p>
+    <p><b>Scelta di Davide, 11/10: b) Bilancia, «Scuro con segno verde chiaro».</b></p>
+  </header>
+
+  <div class="ctl" role="group" aria-label="Colori dell'icona">
+    <h3>Colori dell'icona (valgono per tutte e tre)</h3>
+    <div class="opts" id="varianti"></div>
+  </div>
+
+  <section>
+    <h2>Le tre proposte</h2>
+    <div class="tre" id="proposte"></div>
+  </section>
+
+  <section>
+    <h2>Nella Home di iPhone</h2>
+    <p class="muted">Icona a 60 pt, come in Home; sotto, 40 pt (Spotlight, cartelle). Le altre app sono quadrati neutri, solo per la scala.</p>
+    <div class="homes" id="homes"></div>
+  </section>
+
+  <section>
+    <h2>Alle misure dei file</h2>
+    <p class="muted">180 = <code>apple-touch-icon.png</code> (iPhone), 192 e 512 = le icone del manifest. Sono pixel CSS:
+      su un iPhone lo schermo ne usa 2 o 3 per ognuno, quindi qui si vede più grande che nella Home.</p>
+    <div id="misure"></div>
+  </section>
+
+  <div class="note">
+    <h3>Da sapere prima di scegliere</h3>
+    <ul>
+      <li>I PNG nuovi saranno <b>quadrati pieni, senza angoli arrotondati</b>: gli angoli li taglia iPhone. Le icone di oggi
+        hanno gli angoli già arrotondati nel disegno, e iOS riempie di nero le parti trasparenti.</li>
+      <li>Ogni disegno sta nel cerchio centrale all'80%: è la zona sicura delle icone <i>maskable</i> del manifest
+        (Android le può ritagliare tonde).</li>
+      <li>L'icona non segue il colore principale scelto in Aspetto: è un file fisso, uno per tutti.</li>
+      <li>Chi ha già l'app nella Home vede l'icona nuova solo togliendola e riaggiungendola (prima: tutto sincronizzato).</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// I tre disegni, in un quadrato 100×100. Tratti spessi e arrotondati,
+// come gli angoli dell'app: a 40 pt devono ancora leggersi.
+const DISEGNI = {
+  L: {
+    nome: "a) Monogramma «L»",
+    testo: "La lettera del nome, fatta con un tratto unico arrotondato. La più semplice da riconoscere e da tenere nitida a ogni misura.",
+    svg: (segno) => `<path d="M41 27 V71 H66" fill="none" stroke="${segno}" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>`
+  },
+  bilancia: {
+    nome: "b) Bilancia",
+    testo: "Libra = bilancia in latino: asta, giogo e due piatti. Dice subito «pesare», ma ha più pezzi: a 40 pt i piatti diventano due macchie.",
+    svg: (segno) => `
+      <circle cx="50" cy="25" r="4.5" fill="${segno}"/>
+      <path d="M50 29 V73 M36 75 H64" fill="none" stroke="${segno}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M24 34 H76" fill="none" stroke="${segno}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M24 34 L15 55 M24 34 L33 55 M76 34 L67 55 M76 34 L85 55" fill="none" stroke="${segno}" stroke-width="3" stroke-linecap="round"/>
+      <path d="M13 55 H35 A11 9 0 0 1 13 55 Z M65 55 H87 A11 9 0 0 1 65 55 Z" fill="${segno}"/>`
+  },
+  equilibrio: {
+    nome: "c) Equilibrio",
+    testo: "Una mia: il segno della Bilancia ridotto a due linee, un arco che si posa su una base. Pulito come la «L» ma con il significato della bilancia. Contro: c'è chi lo legge come oroscopo.",
+    svg: (segno) => `<path d="M24 58 H37 C29 52 31 31 50 31 C69 31 71 52 63 58 H76 M24 71 H76" fill="none" stroke="${segno}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`
+  }
+};
+
+// Le coppie fondo / segno, tutte dai colori dell'app
+const VARIANTI = {
+  verde: { nome: "Verde con segno crema", fondo: "var(--app-accento)", segno: "var(--app-fondo)", sw: "#3f7d4c" },
+  crema: { nome: "Crema con segno verde", fondo: "var(--app-fondo)", segno: "var(--app-accento)", sw: "#faf7f2" },
+  scuro: { nome: "Scuro con segno verde chiaro", fondo: "var(--app-fondo-scuro)", segno: "var(--app-accento-scuro)", sw: "#1b1815" }
+};
+
+let variante = "verde";
+
+function icona(chiave, lato) {
+  const v = VARIANTI[variante];
+  return `<span class="ico" style="width:${lato}px;height:${lato}px" role="img" aria-label="${DISEGNI[chiave].nome}, ${lato} px">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="${v.fondo}"/>${DISEGNI[chiave].svg(v.segno)}</svg></span>`;
+}
+
+function disegnaVarianti() {
+  document.getElementById("varianti").innerHTML = Object.entries(VARIANTI).map(([k, v]) =>
+    `<button class="opt" type="button" data-v="${k}" aria-pressed="${k === variante}"><span class="sw" style="background:${v.sw}"></span>${v.nome}</button>`
+  ).join("");
+}
+
+function disegnaTutto() {
+  disegnaVarianti();
+
+  document.getElementById("proposte").innerHTML = Object.keys(DISEGNI).map((k) => `
+    <article class="prop">
+      <div class="prop-top">${icona(k, 96)}<div class="prop-n">${DISEGNI[k].nome}</div></div>
+      <p class="muted">${DISEGNI[k].testo}</p>
+    </article>`).join("");
+
+  const finte = {
+    chiara: ["#c9c3b8", "#b8c4cf", "#d6cabb", "#bfc9bd", "#cfc2c9", "#c2cbd6", "#d3cbbd"],
+    scura: ["#3a3f47", "#46413b", "#363d3a", "#423a40", "#3b434d", "#4a443c", "#393b42"]
+  };
+  document.getElementById("homes").innerHTML = ["chiara", "scura"].map((sfondo) => {
+    const colori = finte[sfondo];
+    // Una riga per proposta: Libra in mezzo a tre app finte
+    const righe = Object.keys(DISEGNI).map((k, i) => {
+      const altre = [colori[i], colori[i + 2], colori[i + 4]];
+      const celle = [
+        `<div class="app"><span class="finta" style="background:${altre[0]}"></span><span class="lab">Note</span></div>`,
+        `<div class="app">${icona(k, 60)}<span class="lab">Libra</span></div>`,
+        `<div class="app"><span class="finta" style="background:${altre[1]}"></span><span class="lab">Meteo</span></div>`,
+        `<div class="app"><span class="finta" style="background:${altre[2]}"></span><span class="lab">Foto</span></div>`
+      ];
+      return celle.join("");
+    }).join("");
+    const piccole = Object.keys(DISEGNI).map((k) => icona(k, 40)).join("");
+    return `<div class="home ${sfondo}">
+      <div class="home-t">Sfondo ${sfondo} · a, b, c dall'alto</div>
+      <div class="griglia">${righe}</div>
+      <div class="piccole"><span class="cap">40 pt:</span>${piccole}</div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("misure").innerHTML = Object.keys(DISEGNI).map((k) => `
+    <div class="scorri"><h3 style="margin-bottom:8px">${DISEGNI[k].nome}</h3>
+      <div class="misure">${[180, 192, 512].map((l) =>
+        `<div class="misura">${icona(k, l)}<span class="cap">${l} × ${l}</span></div>`).join("")}</div>
+    </div>`).join("");
+  document.getElementById("misure").style.cssText = "display:flex;flex-direction:column;gap:24px";
+}
+
+document.getElementById("varianti").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-v]");
+  if (!b) return;
+  variante = b.dataset.v;
+  disegnaTutto();
+});
+
+disegnaTutto();
+</script>
+</body></html>

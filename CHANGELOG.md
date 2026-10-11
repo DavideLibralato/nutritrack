@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Icona di Libra: la bilancia
+
+Branch `nome-libra`, passo 2 della rinomina. Dal mockup
+`docs/mockups/icona-libra.html` (tre proposte: monogramma "L", bilancia,
+segno della Bilancia) scelta la bilancia, scura con il segno verde chiaro
+(`--background` e `--accento-scuro` del tema scuro, verde). Al posto di
+"NT": `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, e
+`favicon.ico` (16, 32, 48 px), che era ancora il triangolo di Next.js.
+PNG quadrati pieni, senza angoli arrotondati né trasparenza: gli angoli
+li taglia iPhone, che riempie di nero le parti trasparenti. Il disegno
+sta nella zona sicura delle icone maskable. Cache dei file statici a
+v7: le icone sono in `PRECACHE`, e l'anteprima del passo 1 ha già
+installato la v6. Da provare su iPhone.
+
 ## 2026-10-11 — Nome "Libra" visibile all'utente
 
 Branch `nome-libra`, passo 1 della rinomina (nome deciso l'11/10). Il
