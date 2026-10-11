@@ -1,4 +1,4 @@
-// Il conteggio della riga "Preferiti e pasti salvati" in Impostazioni. Un
+// Il conteggio della riga "Preferiti" in Impostazioni. Un
 // errore qui non fa rumore: il numero sembra giusto, e solo aprendo la
 // pagina si vedrebbe che non coincide con l'elenco. I tre casi sottili:
 // - un alimento uscito dal catalogo resta in `preferiti` (riga viva), ma
@@ -92,26 +92,19 @@ describe("contaPreferiti", () => {
 });
 
 describe("testoRigaPreferiti", () => {
-  it("forma lunga, con singolare e plurale", () => {
-    expect(testoRigaPreferiti({ alimenti: 12, pasti: 3 }, "lunga")).toBe("12 alimenti · 3 pasti");
-    expect(testoRigaPreferiti({ alimenti: 1, pasti: 1 }, "lunga")).toBe("1 alimento · 1 pasto");
+  it("tutti e due, con singolare e plurale", () => {
+    expect(testoRigaPreferiti({ alimenti: 12, pasti: 3 })).toBe("12 alimenti · 3 pasti");
+    expect(testoRigaPreferiti({ alimenti: 1, pasti: 1 })).toBe("1 alimento · 1 pasto");
   });
 
-  it("forma corta", () => {
-    expect(testoRigaPreferiti({ alimenti: 12, pasti: 3 }, "corta")).toBe("12 · 3");
+  it("un gruppo a zero: solo l'altro, con la sua parola", () => {
+    expect(testoRigaPreferiti({ alimenti: 4, pasti: 0 })).toBe("4 alimenti");
+    expect(testoRigaPreferiti({ alimenti: 1, pasti: 0 })).toBe("1 alimento");
+    expect(testoRigaPreferiti({ alimenti: 0, pasti: 3 })).toBe("3 pasti");
+    expect(testoRigaPreferiti({ alimenti: 0, pasti: 1 })).toBe("1 pasto");
   });
 
-  it("un gruppo a zero: solo l'altro, con la sua parola, in tutte e due le forme", () => {
-    for (const forma of ["lunga", "corta"] as const) {
-      expect(testoRigaPreferiti({ alimenti: 4, pasti: 0 }, forma)).toBe("4 alimenti");
-      expect(testoRigaPreferiti({ alimenti: 1, pasti: 0 }, forma)).toBe("1 alimento");
-      expect(testoRigaPreferiti({ alimenti: 0, pasti: 3 }, forma)).toBe("3 pasti");
-      expect(testoRigaPreferiti({ alimenti: 0, pasti: 1 }, forma)).toBe("1 pasto");
-    }
-  });
-
-  it("nessuno dei due: «Nessuno», in tutte e due le forme", () => {
-    expect(testoRigaPreferiti({ alimenti: 0, pasti: 0 }, "lunga")).toBe("Nessuno");
-    expect(testoRigaPreferiti({ alimenti: 0, pasti: 0 }, "corta")).toBe("Nessuno");
+  it("nessuno dei due: «Nessuno»", () => {
+    expect(testoRigaPreferiti({ alimenti: 0, pasti: 0 })).toBe("Nessuno");
   });
 });

@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Preferiti: etichetta corta, modifica del pasto con la tastiera
+
+Branch `preferiti`. Dalle prove su iPhone dell'11/10 (Safari,
+anteprima, account di prova), due difetti. La riga in Impostazioni
+"Preferiti e pasti salvati" veniva accorciata con "…" accanto a "1
+alimento · 2 pasti": ora l'etichetta è "Preferiti", il titolo della
+pagina resta per esteso; tolta la forma corta "12 · 3", non serve più.
+Aperta da Impostazioni, `ModificaPastoSalvato` con la tastiera aperta
+finiva a metà schermo e sotto si vedeva l'elenco: iOS faceva scorrere
+il documento per mostrare il campo, e la schermata (fixed, agganciata
+con `useAreaVisibile`) non seguiva. In /aggiungi il documento è vuoto e
+non scorre. Ora, con un pasto aperto, la pagina disegna solo la
+schermata: il documento resta alto quanto la finestra, come in
+Aggiungi. Lo scorrimento dell'elenco si ripristina alla chiusura, righe
+tolte e barra restano. Causa dedotta dal codice, non misurata: da
+riprovare su iPhone. 782 test verdi, `tsc` e lint puliti.
+
 ## 2026-10-11 — Preferiti in Impostazioni, passo 2: la pagina e la riga
 
 Branch `preferiti`. Pagina `/impostazioni/preferiti` dal mockup approvato

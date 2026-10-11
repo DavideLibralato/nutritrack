@@ -17,13 +17,14 @@
 //   rimettiPreferito, che rileggono Dexie: rimettere fa tornare in vita la
 //   stessa riga, non ne crea una nuova (vincolo unico sul server).
 // - Pasto salvato: la riga apre ModificaPastoSalvato, la schermata della
-//   matita in Aggiungi, che copre anche la tab bar. Si elimina da lì, con la
-//   sua conferma: niente Annulla.
+//   matita in Aggiungi, che copre anche la tab bar. Mentre è aperta l'elenco
+//   non si disegna (il perché è accanto all'`if (pastoInModificaId)` qui
+//   sotto). Si elimina da lì, con la sua conferma: niente Annulla.
 //
 // Niente modulo da salvare in questa pagina, quindi niente guardiano qui:
 // lo chiama ModificaPastoSalvato quando è aperta e ha modifiche.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import {
@@ -88,6 +89,18 @@ export default function PreferitiPage() {
   const [pastoInModificaId, setPastoInModificaId] = useState<string | null>(null);
   const [barra, setBarra] = useState<Barra | null>(null);
 
+  // Dove era arrivato lo scorrimento dell'elenco quando si è aperto un
+  // pasto: alla chiusura l'elenco ricompare e si torna lì (vedi sotto, sul
+  // perché l'elenco sparisce). Un ref, non uno stato: serve solo da leggere
+  // alla chiusura, non deve ridisegnare niente.
+  // null finché non c'è niente da ripristinare (all'apertura della pagina).
+  const scorrimentoElenco = useRef<number | null>(null);
+  useEffect(() => {
+    if (pastoInModificaId !== null || scorrimentoElenco.current === null) return;
+    window.scrollTo(0, scorrimentoElenco.current);
+    scorrimentoElenco.current = null;
+  }, [pastoInModificaId]);
+
   if (
     !userId ||
     catalogo === undefined ||
@@ -146,9 +159,36 @@ export default function PreferitiPage() {
     }
   }
 
+  function apriModificaPasto(composizioneId: string) {
+    scorrimentoElenco.current = window.scrollY;
+    setBarra(null);
+    setPastoInModificaId(composizioneId);
+  }
+
   function chiudiModificaPasto(messaggio: string | null) {
     setPastoInModificaId(null);
     if (messaggio) mostra({ testo: messaggio });
+  }
+
+  // Con un pasto aperto si disegna SOLO la schermata di modifica, non
+  // l'elenco sotto. Provato su iPhone l'11/10: con l'elenco nel documento,
+  // toccando un campo iOS faceva scorrere la pagina per mostrarlo, la
+  // schermata (fixed, agganciata alla parte visibile con useAreaVisibile)
+  // non seguiva e sotto di lei, sopra la tastiera, compariva l'elenco. In
+  // /aggiungi non succede perché anche il <main> è fixed e il documento non
+  // ha niente da scorrere: senza l'elenco, qui il documento è vuoto allo
+  // stesso modo (il layout resta alto quanto la finestra, la tab bar è
+  // fixed). Righe tolte e barra restano: sono stato di questo componente,
+  // che non si smonta.
+  if (pastoInModificaId) {
+    return (
+      <ModificaPastoSalvato
+        userId={userId}
+        composizioneId={pastoInModificaId}
+        catalogo={catalogo}
+        onChiudi={chiudiModificaPasto}
+      />
+    );
   }
 
   return (
@@ -200,10 +240,7 @@ export default function PreferitiPage() {
             <RigaPastoSalvatoImpostazioni
               key={pasto.composizioneId}
               pasto={pasto}
-              onApri={() => {
-                setBarra(null);
-                setPastoInModificaId(pasto.composizioneId);
-              }}
+              onApri={() => apriModificaPasto(pasto.composizioneId)}
             />
           ))}
         </GruppoImpostazioni>
@@ -231,15 +268,6 @@ export default function PreferitiPage() {
             onChiudi={() => setBarra(null)}
           />
         </div>
-      )}
-
-      {pastoInModificaId && (
-        <ModificaPastoSalvato
-          userId={userId}
-          composizioneId={pastoInModificaId}
-          catalogo={catalogo}
-          onChiudi={chiudiModificaPasto}
-        />
       )}
     </main>
   );

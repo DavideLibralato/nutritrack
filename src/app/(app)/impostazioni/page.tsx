@@ -22,9 +22,11 @@
 // Pallino + testo"): "Tutto salvato", "In corso…", "2 in attesa", "Errore",
 // "Accedi di nuovo", "Da controllare" (rigaSincronizzazione, con il suo
 // test). Niente finché la coda non è arrivata da Dexie.
-// La riga Preferiti e pasti salvati (dall'11/10, mockup
-// docs/mockups/preferiti-e-pasti-salvati.html) mostra "12 alimenti · 3
-// pasti", o "Nessuno" (contaPreferiti e testoRigaPreferiti, con il loro
+// La riga Preferiti (dall'11/10, mockup
+// docs/mockups/preferiti-e-pasti-salvati.html; la pagina si intitola
+// "Preferiti e pasti salvati", ma per esteso l'etichetta veniva accorciata
+// con "…" su iPhone) mostra "12 alimenti · 3 pasti", solo uno dei due se
+// l'altro è a zero, o "Nessuno" (contaPreferiti e testoRigaPreferiti, con il loro
 // test): contati con le stesse funzioni dell'elenco, mai dalle tabelle
 // grezze. Niente finché i dati non sono arrivati da Dexie.
 //
@@ -168,7 +170,7 @@ export default function ImpostazioniPage() {
           href="/impostazioni/aspetto"
         />
         <RigaImpostazioni
-          etichetta="Preferiti e pasti salvati"
+          etichetta="Preferiti"
           icona={<IconaPreferiti />}
           valore={valorePreferiti}
           href="/impostazioni/preferiti"
