@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Preferiti in Impostazioni provato su iPhone
+
+Branch `preferiti`. Provato l'11/10 in Safari sull'anteprima, con
+l'account di prova, scritture controllate su Supabase: riga "Preferiti"
+intera; elenco uguale a quello di Aggiungi; stella, Annulla e ritocco,
+con una sola riga per alimento sul server (rimessa in vita, nessuna
+nuova); modifica del pasto sopra la tab bar, con la tastiera senza
+l'elenco sotto né la fascia vuota; salvataggio; ritorno allo stesso
+punto dell'elenco; matita in Aggiungi come prima; pagina offline.
+Nessun bug nuovo. In PUNTO: struttura e rotte di Impostazioni, la
+sezione "Preferiti e pasti salvati", la modifica del pasto apribile da
+Impostazioni, la barra Salva che sparisce mentre si scrive, la voce
+"Fatto" in §11 e l'incoerenza nota del segnalibro in Oggi, che elimina
+un pasto salvato senza conferma né Annulla. Corretto anche l'elenco
+delle rotte, a cui mancava `/impostazioni/pasti`. Solo documenti.
+
 ## 2026-10-11 — Barra Salva della modifica pasto: sparisce mentre si scrive
 
 Branch `preferiti`. In `ModificaPastoSalvato`, mentre nome o grammi hanno

@@ -116,6 +116,14 @@ barre restano sempre. Si usa `visibility: hidden` e non `display: none`: la
 barra Salva è sticky e occupa spazio nella pagina, toglierla farebbe saltare
 il contenuto.
 
+Un'eccezione, dall'11/10: la barra Salva di `ModificaPastoSalvato` (la
+modifica di un pasto salvato) **sparisce del tutto** (`display: none`,
+attributo `data-sparisci-mentre-scrivi`, regola limitata a quella
+schermata). Con `visibility` restava una fascia vuota fra l'elenco e la
+tastiera. Lì si può: la barra è l'ultima della colonna, e senza di lei
+l'elenco si allunga invece di saltare. Chiusa la tastiera (✓ o tocco
+fuori), la barra ricompare.
+
 Il motivo è la tastiera di iPhone, che copre il layout senza accorciarlo.
 Quando si tocca un campo, a volte iOS fa scorrere il documento e le barre
 fisse restano sotto la tastiera. Altre volte sposta la finestra e le barre
@@ -598,7 +606,15 @@ riga in Preferiti (separata dal tap sulla riga, che lo aggiunge subito) apre
 una schermata di modifica dentro Aggiungi, a tutta altezza con una testata
 sua: nome, elenco degli alimenti con i grammi, "Aggiungi alimento" ed
 "Elimina pasto". Codice in `src/components/ModificaPastoSalvato.tsx`,
-logica e test in `src/lib/inserimento/modificaPastoSalvato.ts`.
+logica e test in `src/lib/inserimento/modificaPastoSalvato.ts`. Dall'11/10
+la stessa schermata si apre anche dalla riga del pasto in Impostazioni >
+Preferiti (sezione 3, "Preferiti e pasti salvati"). Per questo si aggancia
+da sola alla parte visibile della finestra (`fixed` con `useAreaVisibile`,
+la stessa geometria del `<main>` di Aggiungi) e sta sopra la tab bar
+(z-40). Il sottotitolo "3 alimenti · 412 kcal" è uno solo, per la riga in
+Aggiungi, quella in Impostazioni e la testata dell'elenco qui
+(`sottotitoloPastoSalvato` e `kcalPastoSalvato` in
+`src/lib/inserimento/pastiSalvati.ts`).
 
 - **Come il Profilo, tutto in sospeso fino al Salva.** I grammi si cambiano
   nel campo sulla riga, con sotto "Prima: 150 g". Il campo segue la stessa
@@ -832,7 +848,10 @@ un comando che non fa niente sembra rotto):
 - gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
   kcal" con i giorni differenziati accesi), Pasti e orari, Peso;
 - gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
-  a destra tema e colore, "Sistema · Verde"), Preferiti e pasti salvati,
+  a destra tema e colore, "Sistema · Verde"), **Preferiti** (dall'11/10:
+  la pagina si intitola "Preferiti e pasti salvati", ma per esteso
+  l'etichetta veniva accorciata con "…" su iPhone; a destra "12 alimenti ·
+  3 pasti", vedi "Preferiti e pasti salvati" più sotto),
   Sincronizzazione (la pagina con l'indicatore dal 10/10, sezione 9.2; a
   destra della riga lo stato in breve con un pallino colorato: "Tutto
   salvato", "In corso…", "2 in attesa", "Errore", "Accedi di nuovo", "Da
@@ -843,7 +862,8 @@ un comando che non fa niente sembra rotto):
 - **Esci** in fondo, in arancio, con la conferma di sempre.
 
 **Rotte.** `/impostazioni`, `/impostazioni/profilo`,
-`/impostazioni/obiettivi`, `/impostazioni/peso`, `/impostazioni/aspetto`,
+`/impostazioni/obiettivi`, `/impostazioni/pasti`, `/impostazioni/peso`,
+`/impostazioni/aspetto`, `/impostazioni/preferiti`,
 `/impostazioni/sincronizzazione`, `/impostazioni/informazioni`.
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
 layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
@@ -899,11 +919,13 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 **La pagina Impostazioni è completa (passi 1–6, tutti provati su iPhone,
 il 6 il 3/10).** Oggi l'elenco ha: la scheda dell'account (→ Profilo);
 **Alimentazione**: Obiettivi, Pasti e orari (dal 9/10, "5 pasti": quanti
-valgono oggi), Peso; **App**: Aspetto, Sincronizzazione;
-**Informazioni**; **Esci**. Restano fuori, come **lavori a sé** e non come
-passi di questa pagina, le righe che mancano rispetto alla struttura
-finale:
-- **Preferiti e pasti salvati** (gruppo App);
+valgono oggi), Peso; **App**: Aspetto, Preferiti (dall'11/10),
+Sincronizzazione; **Informazioni**; **Esci**. Le righe che mancavano
+rispetto alla struttura finale sono state fatte come **lavori a sé**, non
+come passi di questa pagina:
+- ~~Preferiti e pasti salvati~~: pagina e riga fatte l'11/10 (branch
+  `preferiti`, più sotto "Preferiti e pasti salvati"), provate su iPhone
+  l'11/10 (sezione 11, "Fatto");
 - ~~l'indicatore di sincronizzazione~~: pagina, riga e pallino sulla tab
   fatti il 10/10 (sezione 9.2, "L'indicatore"), provati su iPhone il 10/10
   (sezione 11, "Fatto").
@@ -1006,6 +1028,67 @@ Anteprime e pallini non hanno colori propri: sono pezzi di pagina con
 del tema mostrano il colore principale in uso, e i pallini il colore vero
 nel tema in uso. Sono veri radio button: da tastiera le frecce passano da
 una scelta all'altra.
+
+### Preferiti e pasti salvati (dall'11/10, branch `preferiti`)
+
+In Impostazioni > Preferiti (`/impostazioni/preferiti`), con
+"‹ Impostazioni"; il titolo della pagina è "Preferiti e pasti salvati".
+Mockup approvato `docs/mockups/preferiti-e-pasti-salvati.html`, proposta A
+"la stella sulla riga". Non sostituisce niente: la sezione Preferiti di
+Aggiungi e la matita sui pasti salvati restano come sono. Qui si guarda e si
+fa ordine; non si riordina a mano, non si cerca e non si crea un pasto da
+zero.
+
+- **Due gruppi**, ciascuno in ordine alfabetico come in Aggiungi e mostrato
+  solo se ha qualcosa: **Alimenti preferiti** ("60 g · 225 kcal": l'ultima
+  quantità usata, o la porzione) e **Pasti salvati** ("3 alimenti · 412
+  kcal", freccia). Sotto ciascuno una nota grigia su come nascono: "Si
+  aggiungono con la stella quando scegli un alimento in Aggiungi." e "Si
+  salvano dal segnalibro di un pasto in Oggi." Senza né l'uno né l'altro,
+  un riquadro "Ancora niente qui" con le stesse due spiegazioni.
+- **Elenchi e conteggio dalle funzioni di Aggiungi**, mai dalle tabelle
+  grezze: `alimentiPreferiti` e `pastiSalvati`. Un alimento uscito dal
+  catalogo o un pasto senza alimenti validi non compaiono qui come non
+  compaiono là (regola "Alimenti cancellati", sezione 4). Un alimento con
+  due righe vive in `preferiti` (due dispositivi offline) compare e si
+  conta una volta sola, anche in Aggiungi.
+- **La riga in Impostazioni**: "12 alimenti · 3 pasti"; con un gruppo a
+  zero solo l'altro ("4 alimenti", "3 pasti"); con tutti e due a zero
+  "Nessuno" (`contaPreferiti` e `testoRigaPreferiti` in
+  `src/lib/inserimento/rigaPreferiti.ts`, con test). Niente forma corta
+  "12 · 3": l'etichetta "Preferiti" basta a far stare il valore intero.
+- **Togliere un alimento: la stella sulla riga**, un tocco, senza conferma
+  (area di tocco 44 px). La riga resta a schermo, sbiadita e con la stella
+  vuota, finché si è sulla pagina, e la barra in basso dice "Tolto dai
+  preferiti: Mela" con **Annulla**. Ritoccare la stella lo rimette. Uscendo
+  dalla pagina la riga sparisce. Togliere e rimettere passano da
+  `togliPreferito` e `rimettiPreferito` (`src/lib/repository/preferiti.ts`),
+  che rileggono Dexie invece di fidarsi dell'elenco della pagina: con un
+  Annulla toccato subito dopo la stella, l'elenco può essere ancora quello
+  di prima, e l'Annulla toglierebbe di nuovo invece di rimettere.
+  Rimettere fa tornare in vita **la stessa riga** (stesso id), mai una
+  nuova: su Supabase il vincolo unico (user_id, alimento_id) vale anche per
+  le righe cancellate (lo stesso bug già corretto in `togglePreferito`).
+  Togliere toglie tutte le righe vive di quell'alimento.
+- **Pasto salvato: il tocco sulla riga apre `ModificaPastoSalvato`**, la
+  stessa schermata della matita in Aggiungi (sezione 3, "Modificare un
+  pasto salvato"), che copre anche la tab bar. Si elimina da lì, con la
+  conferma di sempre: niente Annulla.
+- **Con un pasto aperto la pagina disegna solo la schermata di modifica**,
+  non l'elenco sotto. Provato su iPhone l'11/10: con l'elenco nel
+  documento, toccando un campo iOS faceva scorrere la pagina per mostrarlo,
+  la schermata (`fixed`, agganciata alla parte visibile della finestra con
+  `useAreaVisibile`) non seguiva, e sotto di lei, sopra la tastiera,
+  compariva l'elenco. In /aggiungi non succedeva perché anche il `<main>`
+  è `fixed` e il documento non ha niente da scorrere. Senza l'elenco il
+  documento resta alto quanto la finestra, come in Aggiungi. La causa è
+  dedotta dal codice, non misurata; la correzione è provata. Alla chiusura
+  l'elenco torna dove era arrivato lo scorrimento; righe tolte e barra
+  restano (sono stato della pagina, che non si smonta).
+- Niente guardiano nella pagina, che non ha un modulo: lo chiama
+  `ModificaPastoSalvato` quando ha modifiche (`useSegnalaModifiche`, che in
+  /aggiungi non fa niente perché lì il guardiano non c'è).
+- La pagina è in `PAGINE_APP` del service worker: si apre anche offline.
 
 ### Profilo
 
@@ -3535,7 +3618,25 @@ nella copia che segue il dito trascinando; i nomi lunghi si accorciano
 con "…" senza spingere i numeri. Non provato su iPhone SE. Com'è fatto:
 sezione 3, Oggi, punto 3.
 
-**Test.** 771 test permanenti in 65 file (Vitest), tutti verdi all'11/10.
+**Preferiti e pasti salvati in Impostazioni** (11/10, branch `preferiti`,
+provato su iPhone l'11/10 in Safari sull'anteprima, account di prova, con
+le scritture controllate su Supabase). Provati: la riga "Preferiti" in
+Impostazioni intera, con "1 alimento · 2 pasti"; l'elenco uguale ai
+Preferiti di Aggiungi; la stella che toglie (riga sbiadita, barra,
+Annulla che rimette) e il ritocco della stella che rimette; uscendo dalla
+pagina l'alimento tolto sparisce anche da Aggiungi; su Supabase una sola
+riga per alimento, rimessa in vita e mai creata di nuovo; il pasto
+salvato che si apre nella modifica sopra la tab bar; con la tastiera
+(grammi, nome, ricerca) sotto la schermata non si vede l'elenco e non
+resta la fascia vuota della barra Salva; ✓ chiude la tastiera e la barra
+ricompare; il salvataggio con il suo messaggio; chiudendo, l'elenco torna
+dov'era; la stessa schermata dalla matita in Aggiungi, come prima; la
+pagina che si apre offline. Due difetti trovati nella prima prova e
+corretti nello stesso branch: l'etichetta per esteso accorciata con "…",
+e l'elenco visibile sotto la modifica con la tastiera aperta. Com'è
+fatto: sezione 3, "Preferiti e pasti salvati".
+
+**Test.** 782 test permanenti in 67 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
 
@@ -3650,6 +3751,14 @@ sezione 3, Oggi, punto 3.
   cancellazione dell'utente fallisce. Da sistemare prima di "elimina
   account". Le altre tabelle sono `CASCADE`. Primo caso di prova:
   l'account di prova fisso (sopra, "Account di prova")
+- **Eliminare un pasto salvato: due garanzie diverse** (incoerenza nota,
+  11/10). In Oggi il segnalibro pieno di un pasto, ritoccato, elimina
+  subito tutti i pasti salvati con quel contenuto, senza conferma e senza
+  Annulla (`toggleSalvaPreferito`). Dalla modifica del pasto salvato,
+  aperta da Aggiungi o da Impostazioni > Preferiti, "Elimina pasto" chiede
+  conferma. Stessa azione, due livelli di protezione: un tocco per sbaglio
+  sul segnalibro perde il pasto. Da decidere a parte se il segnalibro
+  debba chiedere conferma o offrire l'Annulla
 - Il gesto "indietro" nella modifica di un pasto salvato esce senza avviso
   di modifiche non salvate: accettato per ora. In Impostazioni il cambio di
   scheda ora avvisa (il guardiano, sezione 3); resta scoperto solo il gesto
