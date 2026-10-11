@@ -30,7 +30,7 @@
 
 import Dexie, { type Table } from "dexie";
 import type { NomeTabella, RigaBase } from "../db/tipi";
-import { accodaMutazione } from "../sync/outbox";
+import { accodaMutazione, controllaUtenteDellaRiga } from "../sync/outbox";
 import { sincronizzaOutbox } from "../sync/sincronizza";
 
 function avviaSincronizzazione(): void {
@@ -69,6 +69,7 @@ export function creaRepository<T extends RigaBase>(
       deleted_at: null,
     } as T;
 
+    controllaUtenteDellaRiga(nomeTabella, riga);
     await tabella.put(riga);
     await accodaMutazione(nomeTabella, riga);
     avviaSincronizzazione();
@@ -88,6 +89,7 @@ export function creaRepository<T extends RigaBase>(
       updated_at: new Date().toISOString(),
     };
 
+    controllaUtenteDellaRiga(nomeTabella, riga);
     await tabella.put(riga);
     await accodaMutazione(nomeTabella, riga);
     avviaSincronizzazione();

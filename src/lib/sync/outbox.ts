@@ -90,10 +90,26 @@ export function ordinaOutbox(voci: VoceOutbox[]): VoceOutbox[] {
   );
 }
 
+// Ogni voce deve avere dati.user_id (dall'11/10/2026): la salita manda
+// solo le voci dell'utente della sessione (sincronizza.ts), quindi una
+// voce senza user_id non partirebbe mai, in silenzio. Oggi ogni scrittura
+// lo porta (verificato l'11/10 su tutti i punti che arrivano qui); questo
+// controllo fa sì che un errore futuro sia un'eccezione subito, non una
+// modifica che non arriva mai al server. Il catalogo condiviso (user_id
+// null) non si scrive mai dal client: RLS lo rifiuterebbe comunque.
+// La chiama anche il repository PRIMA di scrivere la riga in locale, così
+// una riga senza utente non resta in Dexie senza la sua voce.
+export function controllaUtenteDellaRiga(tabella: NomeTabella, riga: RigaBase): void {
+  if (typeof riga.user_id !== "string" || riga.user_id === "") {
+    throw new Error(`Riga senza user_id, non si accoda: ${tabella}:${riga.id}`);
+  }
+}
+
 export async function accodaMutazione(
   tabella: NomeTabella,
   riga: RigaBase
 ): Promise<void> {
+  controllaUtenteDellaRiga(tabella, riga);
   const voce: VoceOutbox = {
     id: `${tabella}:${riga.id}`,
     tabella,

@@ -32,6 +32,8 @@ const server = vi.hoisted(() => ({
 
 vi.mock("../supabase/client", () => ({
   createClient: () => ({
+    // La salita manda solo le voci dell'utente della sessione.
+    auth: { getSession: async () => ({ data: { session: { user: { id: "u1" } } } }) },
     from: (tabella: string) => {
       const builder = {
         upsert: async () => server.rispostaUpsert,

@@ -41,6 +41,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 describe("creaFetchConScadenza", () => {
@@ -162,6 +163,12 @@ describe("il client Supabase vero con una rete appesa", () => {
       sospesa_il: null,
     };
     await db.outbox.put(voce);
+    // La salita manda solo le voci dell'utente della sessione: qui non ce
+    // n'è una vera, se ne finge una (il client del browser è uno solo).
+    vi.spyOn(createClient().auth, "getSession").mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+      error: null,
+    } as never);
 
     const giro = sincronizzaOutbox();
     await partita;

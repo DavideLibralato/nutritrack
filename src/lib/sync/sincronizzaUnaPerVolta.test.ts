@@ -29,6 +29,8 @@ vi.mock("../supabase/client", () => ({
       throw new Error("guasto imprevisto");
     }
     return {
+      // La salita manda solo le voci dell'utente della sessione.
+      auth: { getSession: async () => ({ data: { session: { user: { id: "utente-una-per-volta" } } } }) },
       from: (tabella: string) => ({
         upsert: async (dati: { id: string }) => {
           inCorsoAdesso++;

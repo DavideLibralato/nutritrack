@@ -17,6 +17,7 @@
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
 import { ordinaOutbox } from "./outbox";
+import { chiaveSessione, leggiSessioneSalvata } from "../supabase/utenteOffline";
 import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
 import {
   esitoDaStatus,
@@ -126,16 +127,29 @@ async function unGiroConStato(): Promise<RisultatoSincronizzazione> {
 // l'indicatore le conta a parte, da Dexie.
 async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: EsitoGiro }> {
   const supabase = createClient();
+  // Solo le voci dell'utente della sessione (dall'11/10/2026). La coda può
+  // contenere anche le modifiche lasciate da un altro utente che è uscito
+  // da questo dispositivo: mandate con questa sessione, il server le
+  // rifiuterebbe (RLS, 403), conterebbero come tentativi, fermerebbero la
+  // coda di chi è entrato e dopo 5 rifiuti verrebbero accantonate. Restano
+  // in coda intatte, e partono quando rientra il loro utente. Si
+  // riconoscono da dati.user_id, come in codaDellUtente.ts.
+  //
+  // Nessun utente (uscito, mai entrato): non parte niente. Se in coda c'è
+  // qualcosa da mandare, l'esito è "sessione", come quando il server
+  // risponde 401.
+  const idUtente = await idUtenteDellaSessione(supabase);
   // Le voci già accantonate (vedi sotto) restano in Dexie ma escluse da ogni
   // passata: altrimenti tornerebbero a bloccare l'ordine ogni volta.
   // L'ordine è quello di ordinaOutbox (outbox.ts): genitori prima dei
   // figli, poi creato_il.
-  const voci = ordinaOutbox(await db.outbox.toArray()).filter((v) => !v.sospesa_il);
+  const daInviare = ordinaOutbox(await db.outbox.toArray()).filter((v) => !v.sospesa_il);
+  const voci = idUtente ? daInviare.filter((v) => v.dati.user_id === idUtente) : [];
 
   let inviate = 0;
   let fallite = 0;
   let sospese = 0;
-  let esito: EsitoGiro = "ok";
+  let esito: EsitoGiro = !idUtente && daInviare.length > 0 ? "sessione" : "ok";
 
   // In sequenza, non in parallelo: se due voci toccano righe collegate
   // (es. un obiettivo e il suo target, o un pasto e le sue voci di diario),
@@ -232,4 +246,20 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
   }
 
   return { risultato: { inviate, fallite, sospese }, esito };
+}
+
+// Di chi è la sessione. getSession legge quella salvata, senza rete; offline
+// con il token scaduto risponde null anche se la sessione c'è ancora
+// (utenteOffline.ts), e allora l'id si prende dal cookie, come fa
+// useUtenteId. Così offline le voci si tentano come prima e il giro finisce
+// "rete", non "sessione".
+async function idUtenteDellaSessione(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) return data.session.user.id;
+  try {
+    return leggiSessioneSalvata(document.cookie, chiaveSessione(process.env.NEXT_PUBLIC_SUPABASE_URL!))?.id ?? null;
+  } catch {
+    // Cookie o indirizzo illeggibili: come nessuna sessione.
+    return null;
+  }
 }

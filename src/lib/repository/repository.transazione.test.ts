@@ -14,6 +14,8 @@ const upsertMock = vi.fn();
 
 vi.mock("../supabase/client", () => ({
   createClient: () => ({
+    // La salita manda solo le voci dell'utente della sessione.
+    auth: { getSession: async () => ({ data: { session: { user: { id: "utente-transazione" } } } }) },
     from: (tabella: string) => ({
       upsert: (dati: unknown) => upsertMock(tabella, dati),
     }),

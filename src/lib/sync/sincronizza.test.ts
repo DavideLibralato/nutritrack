@@ -15,11 +15,21 @@ import { db } from "../db/database";
 import { sincronizzaOutbox } from "./sincronizza";
 import { accodaMutazione, ordinaOutbox, type VoceOutbox } from "./outbox";
 import { MESSAGGIO_SCADUTA, TEMPO_MASSIMO_RICHIESTA_MS } from "./tempoMassimo";
+import { azzeraStatoGiri, leggiStatoGiri } from "./statoSincronizzazione";
+import { chiaveSessione } from "../supabase/utenteOffline";
+import { stringToBase64URL } from "@supabase/ssr";
 
 const upsertMock = vi.fn();
+// L'utente della sessione che getSession restituisce; null = nessuna
+// sessione. vi.hoisted: si può usare dentro vi.mock, che sale in cima.
+const sessione = vi.hoisted(() => ({ id: "u1" as string | null }));
 
 vi.mock("../supabase/client", () => ({
   createClient: () => ({
+    // La salita manda solo le voci dell'utente della sessione.
+    auth: {
+      getSession: async () => ({ data: { session: sessione.id ? { user: { id: sessione.id } } : null } }),
+    },
     from: (tabella: string) => ({
       upsert: (dati: unknown) => upsertMock(tabella, dati),
     }),
@@ -389,5 +399,91 @@ describe("sincronizzaOutbox — un invio che non risponde mai", () => {
     const pasto = await db.outbox.get("pasti:p1");
     expect(pasto?.tentativi).toBe(0);
     expect(pasto?.ultimo_errore).toBe(MESSAGGIO_SCADUTA);
+  });
+});
+
+// Bug trovato l'11/10/2026 (PUNTO_DI_PARTENZA.md §9.6, "Esci svuota i dati
+// locali"): la salita mandava TUTTA la coda, anche le modifiche lasciate
+// sul dispositivo da un altro utente uscito. Con la sessione di chi è
+// entrato il server le rifiutava (RLS, 403): contavano come tentativi,
+// fermavano la coda di chi era entrato e dopo 5 rifiuti finivano
+// accantonate, senza che il loro utente avesse fatto niente. Non fa
+// rumore: nessun errore a schermo per chi ha lasciato le modifiche.
+describe("sincronizzaOutbox — solo le voci dell'utente della sessione", () => {
+  const ALTRO = "utente-uscito";
+
+  function voceDi(userId: string, id: string, creato_il: string): VoceOutbox {
+    return voce({
+      id: `misurazioni:${id}`,
+      tabella: "misurazioni",
+      creato_il,
+      dati: { id, user_id: userId, updated_at: creato_il, deleted_at: null },
+    });
+  }
+
+  beforeEach(async () => {
+    upsertMock.mockReset();
+    await db.outbox.clear();
+    sessione.id = "u1";
+    azzeraStatoGiri();
+  });
+
+  afterEach(() => {
+    sessione.id = "u1";
+    document.cookie = `${chiaveSessione("https://progetto.supabase.co")}=; max-age=0`;
+    vi.unstubAllEnvs();
+  });
+
+  it("le voci di un altro utente non partono e non consumano tentativi, quelle della sessione sì", async () => {
+    // Quella dell'altro è più vecchia: nell'ordine della coda verrebbe prima.
+    await db.outbox.bulkPut([
+      voceDi(ALTRO, "a1", "2026-10-11T08:00:00.000Z"),
+      voceDi("u1", "m1", "2026-10-11T09:00:00.000Z"),
+    ]);
+    upsertMock.mockResolvedValue({ error: null, status: 201 });
+
+    const risultato = await sincronizzaOutbox();
+
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    expect(upsertMock).toHaveBeenCalledWith("misurazioni", expect.objectContaining({ user_id: "u1" }));
+    expect(risultato).toEqual({ inviate: 1, fallite: 0, sospese: 0 });
+    expect(leggiStatoGiri().salita.esito).toBe("ok");
+
+    const rimaste = await db.outbox.toArray();
+    expect(rimaste.map((v) => v.id)).toEqual(["misurazioni:a1"]);
+    expect(rimaste[0]).toMatchObject({ tentativi: 0, ultimo_errore: null, sospesa_il: null });
+  });
+
+  it("senza sessione non parte niente, e con qualcosa in coda l'esito è sessione", async () => {
+    sessione.id = null;
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://progetto.supabase.co");
+    await db.outbox.put(voceDi("u1", "m1", "2026-10-11T09:00:00.000Z"));
+
+    const risultato = await sincronizzaOutbox();
+
+    expect(upsertMock).not.toHaveBeenCalled();
+    expect(risultato).toEqual({ inviate: 0, fallite: 0, sospese: 0 });
+    expect(leggiStatoGiri().salita.esito).toBe("sessione");
+    expect(await db.outbox.get("misurazioni:m1")).toMatchObject({ tentativi: 0, ultimo_errore: null });
+  });
+
+  it("offline con il token scaduto (getSession null) l'utente si prende dal cookie, e la coda si tenta come prima", async () => {
+    sessione.id = null;
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://progetto.supabase.co");
+    document.cookie = `${chiaveSessione("https://progetto.supabase.co")}=base64-${stringToBase64URL(
+      JSON.stringify({ user: { id: "u1" } })
+    )}`;
+    await db.outbox.bulkPut([
+      voceDi(ALTRO, "a1", "2026-10-11T08:00:00.000Z"),
+      voceDi("u1", "m1", "2026-10-11T09:00:00.000Z"),
+    ]);
+    upsertMock.mockResolvedValue({ error: { message: "Failed to fetch" }, status: 0 });
+
+    const risultato = await sincronizzaOutbox();
+
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    expect(upsertMock).toHaveBeenCalledWith("misurazioni", expect.objectContaining({ user_id: "u1" }));
+    expect(risultato).toEqual({ inviate: 0, fallite: 1, sospese: 0 });
+    expect(leggiStatoGiri().salita.esito).toBe("rete");
   });
 });
