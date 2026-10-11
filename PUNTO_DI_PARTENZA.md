@@ -1,4 +1,4 @@
-# Punto di partenza — app tracking nutrizionale
+# Punto di partenza — Libra, app di tracking nutrizionale
 
 **L'unica fonte** per posizionamento, schermate, modello dati, decisioni,
 ordine di sviluppo e stato dell'app (lo stabilisce `CLAUDE.md`). Quando una
@@ -2151,6 +2151,47 @@ Confermate dai mockup, con una correzione.
   volevi, arancio = hai superato"**. Va scritta così nel codice, altrimenti si
   finisce con due componenti che colorano al contrario
 
+### Nome e icona (dall'11/10, branch `nome-libra`)
+
+- **Il nome dell'app è "Libra"** (deciso l'11/10; prima NutriTrack).
+  Libra = bilancia in latino. Compare nel `name` e `short_name` del
+  manifest, nel titolo della scheda e in `apple-mobile-web-app-title`
+  (`layout.tsx`, il nome proposto da "Aggiungi a Home") e in
+  `offline.html`. Indirizzo: https://app-libra.vercel.app
+- **L'icona è la bilancia**: asta, giogo e due piatti, verde chiaro
+  `#7bb887` su fondo scuro `#1b1815` (`--accento-scuro` del verde e
+  `--background` del tema scuro). Scelta fra tre proposte nel mockup
+  `docs/mockups/icona-libra.html`. File: `public/icons/icon-192.png`,
+  `public/icons/icon-512.png`, `public/apple-touch-icon.png` (180),
+  `src/app/favicon.ico` (16, 32, 48). È un file fisso, uguale per tutti:
+  non segue il colore principale scelto in Aspetto
+- **Come sono fatti i file**: quadrati pieni, senza angoli arrotondati né
+  trasparenza (gli angoli li taglia iPhone, che riempie di nero le parti
+  trasparenti); il disegno sta nel cerchio centrale all'80%, la zona
+  sicura delle icone maskable. Dentro `favicon.ico` i PNG devono essere
+  **RGBA** (color type 6): con PNG RGB la build di Next.js fallisce
+  ("The PNG is not in RGBA format!", visto l'11/10). Cambiando le icone
+  si alza la versione di `CACHE_STATICI` in `sw.js`, perché stanno in
+  `PRECACHE`
+- **Chi ha già l'app installata** tiene nome e icona del momento in cui
+  l'ha aggiunta alla Home: iOS non li aggiorna mai. Per l'icona nuova
+  si toglie l'app e la si riaggiunge, **dopo aver controllato in
+  Impostazioni > Sincronizzazione che sia tutto sincronizzato**: l'app
+  installata ha dati suoi, separati da Safari, e quello che non è ancora
+  salito sul server si perde. Dopo, i dati si riscaricano dal server
+- **Restano "nutritrack" per sempre** (regola fissa, 11/10): le chiavi
+  tecniche dei dati sul telefono (il database Dexie `nutritrack`, le
+  chiavi di localStorage e sessionStorage, le cache del service worker
+  `nutritrack-statici-…` e `nutritrack-pagine-…`), il `name` di
+  `package.json`, la classe `NutriTrackDatabase`, il repository GitHub e
+  i progetti Vercel e Supabase. Non si vedono, e cambiarle rischia i dati
+  locali: un database Dexie con un nome nuovo nasce vuoto e perde le
+  scritture non ancora salite; chiavi e cache nuove azzerano tema,
+  colore e pagine salvate. Il nome nuovo vale solo per ciò che vede
+  l'utente
+- **Le email di Supabase non contengono il nome dell'app**: sul piano
+  gratuito i modelli non si personalizzano (sezione 10.9)
+
 ### Tema chiaro / scuro / sistema
 
 Previsto dall'inizio, con tre opzioni: Chiaro, Scuro, Sistema (segue le
@@ -2430,6 +2471,12 @@ Costi reali solo su API AI (V2) e dominio personalizzato (opzionale).
 configurazione di Next.js (esclude `.claude/**`, codice di terzi), Vitest +
 Testing Library per i test (sezione 10.5), **Prettier 3.9.10**.
 
+**Prima di ogni commit che tocca `public/` o `src/app/`** si lancia anche
+`npm run build`, non solo test, `tsc` e lint (dall'11/10). Lezione del
+favicon: un `favicon.ico` con PNG RGB passava test e lint, ma la build di
+Vercel falliva perché Next.js lo legge e lo vuole RGBA (sezione 7, "Nome
+e icona").
+
 - **Prettier è configurato ma non ancora applicato a tutto il codice.**
   `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
   doppi apici, punto e virgola, righe fino a 100, virgole finali "es5",
@@ -2705,9 +2752,10 @@ Come, in concreto:
     terrebbe in cache per sempre i file che cita
   - **Esci** svuota le pagine salvate (i file statici restano: non hanno
     niente dell'utente)
-  - due cache, `nutritrack-statici-v2` e `nutritrack-pagine-v2`; `activate`
-    cancella tutte le altre. Il numero si alza solo se cambia la forma di
-    ciò che è salvato o `offline.html`
+  - due cache, `nutritrack-statici-v7` e `nutritrack-pagine-v2` (all'11/10;
+    il nome resta "nutritrack" anche dopo la rinomina, sezione 7, "Nome e
+    icona"); `activate` cancella tutte le altre. Il numero si alza solo se
+    cambia la forma di ciò che è salvato, `offline.html` o le icone
   - scartato Serwist (`@serwist/turbopack` 9.5.12): per Turbopack è un
     ripiego dichiarato (route handler + esbuild), non salva le pagine HTML
     (le nostre stanno dietro il login, il riscaldamento andrebbe scritto
@@ -3653,6 +3701,13 @@ da app-libra, dati riscaricati dal server, vecchia icona tolta; reset
 password dal nuovo indirizzo con l'account di prova, il link porta su
 app-libra e funziona.
 
+**Nome "Libra" e icona della bilancia** (11/10, branch `nome-libra`).
+Nome nel manifest, nel titolo e in `offline.html`; icone e favicon
+nuovi; cache dei file statici a v7 (sezione 7, "Nome e icona"). Provati
+su iPhone l'11/10 in Safari sull'anteprima: la bilancia nella scheda e
+in "Aggiungi a Home", la pagina offline. Il primo deploy dell'anteprima
+era fallito per il favicon RGB, corretto nello stesso branch.
+
 **Test.** 782 test permanenti in 67 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
@@ -3795,5 +3850,5 @@ app-libra e funziona.
 3. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
    https://app-libra.vercel.app, con Site URL e Redirect URL su Supabase
    aggiornati (sopra, "Fatto")
-4. **Rinominare l'app in "Libra"** (prossimo lavoro, nome deciso
-   l'11/10): oggi dentro l'app il nome è ancora NutriTrack
+4. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
+   della bilancia (sezione 7, "Nome e icona"; sopra, "Fatto")

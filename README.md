@@ -1,4 +1,4 @@
-# NutriTrack
+# Libra
 
 App per registrare quello che mangi — calorie e macronutrienti — con meno
 fatica possibile. È una PWA installabile sul telefono e funziona anche

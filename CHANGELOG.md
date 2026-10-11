@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Libra nei documenti
+
+Branch `nome-libra`, passo 3 della rinomina. Provati su iPhone l'11/10
+sull'anteprima: la bilancia nella scheda e in "Aggiungi a Home", la
+pagina offline; deploy dell'anteprima riuscito dopo la correzione del
+favicon. In PUNTO: sezione 7 nuova "Nome e icona" (nome, icona e file,
+come vanno fatti i PNG, reinstallazione solo dopo aver controllato la
+sincronizzazione, regola fissa su cosa resta "nutritrack" per sempre,
+email di Supabase senza nome); in §8 la build prima dei commit che
+toccano `public/` o `src/app/`; in 9.2 i nomi delle cache aggiornati
+(erano fermi a `-statici-v2`); voce in "Fatto"; passo 4 fatto; titolo
+del documento. README con il titolo "Libra". I mockup in `docs/`
+restano come sono. Solo documenti.
+
 ## 2026-10-11 — favicon.ico con PNG RGBA, per il deploy fallito
 
 Branch `nome-libra`. Il deploy di `a1bb3ee` falliva: Turbopack non
