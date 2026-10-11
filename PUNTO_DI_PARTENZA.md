@@ -2498,6 +2498,17 @@ favicon: un `favicon.ico` con PNG RGB passava test e lint, ma la build di
 Vercel falliva perché Next.js lo legge e lo vuole RGBA (sezione 7, "Nome
 e icona").
 
+**Migration che il connettore rifiuta** (dall'11/10). Se il connettore
+Supabase rifiuta `apply_migration` senza chiedere conferma (succede con
+un DELETE nel testo, anche dentro una funzione), la applica Davide dal
+SQL Editor con il testo esatto del file, più la riga di registrazione
+perché compaia in `list_migrations` con la sua versione:
+`insert into supabase_migrations.schema_migrations (version, name,
+created_by) values (to_char(now() at time zone 'utc',
+'YYYYMMDDHH24MISS'), '<nome>', 'sql-editor (Davide)');`. Poi Cowork
+verifica (`list_migrations`, `get_advisors` e le prove della migration).
+Primo caso: `elimina_mio_account` (sezione 9.6).
+
 - **Prettier è configurato ma non ancora applicato a tutto il codice.**
   `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
   doppi apici, punto e virgola, righe fino a 100, virgole finali "es5",
@@ -3169,6 +3180,20 @@ costruzione e non per attenzione.
   `revoke execute` da `public` e `anon`, `grant` solo ad `authenticated`.
   L'app la chiama con `supabase.rpc` da un modulo in `/lib`, mai dal
   componente
+- **Applicata l'11/10**, versione 20261011155326, file
+  `supabase/migrations/elimina_mio_account.sql`. Il connettore rifiutava
+  `apply_migration` senza chiedere conferma (il DELETE nel testo): l'ha
+  applicata Davide dal SQL Editor con il testo esatto e la riga di
+  registrazione (sezione 8, "Migration che il connettore rifiuta").
+  Verificato da Cowork: proprietario `postgres`, `security definer`,
+  `search_path` vuoto; `has_function_privilege` falso per `anon`, vero
+  per `authenticated`. Prova sull'account di prova in un blocco annullato
+  apposta: da `anon` "permission denied"; da `authenticated` senza utente
+  l'errore "nessun utente autenticato"; da account di prova utente
+  cancellato, 0 righe nelle 11 tabelle, 0 identità, 0 sessioni; una
+  seconda chiamata senza errore (idempotente); utenti 6 → 5, righe altrui
+  311 → 311; tutto annullato, account intatto. `get_advisors`: solo il
+  WARN atteso `authenticated_security_definer_function_executable`
 - **Scartato**: un route handler Next con `auth.admin.deleteUser`. Vuole
   la chiave di servizio su Vercel (anche nelle anteprime, che usano il
   Supabase di produzione) e in `.env.local`: una chiave che può cancellare
@@ -3197,12 +3222,27 @@ costruzione e non per attenzione.
   `localStorage`, il segno del reset password in `sessionStorage`. Tema e
   colore restano: sono del dispositivo, non dell'account. Si atterra su
   `/login` con "Account eliminato"
-- **Segno "eliminazione in corso"** in `localStorage`, con l'id
-  dell'utente: scritto prima della chiamata, tolto a pulizia finita.
-  All'avvio, se c'è: server che conferma "utente non trovato" → si
-  completa la pulizia; utente ancora esistente (la chiamata non era
-  arrivata) → si toglie il segno. Copre la pulizia fallita a metà e una
-  discesa partita prima, che riscrive righe dopo la pulizia
+- **Segno "eliminazione in corso"** in `localStorage`
+  (`src/lib/account/eliminazioneInCorso.ts`), con l'id dell'utente e una
+  fase. **"richiesta"** si scrive prima della chiamata; **"confermata"**
+  appena il server dice di sì. Il flusso non toglie il segno
+  "confermata" a pulizia finita: lo toglie il prossimo avvio, dopo una
+  seconda pulizia (`cancellaDatiUtente` è idempotente). Così sono coperte
+  la pulizia fallita a metà e una discesa partita prima che riscrive
+  righe *dopo* la pulizia: al prossimo avvio nessuna discesa vecchia è
+  più in corso (corretto l'11/10 scrivendo il codice: con il segno tolto
+  a fine flusso questo secondo caso restava scoperto). All'avvio
+  (`riprendiEliminazioneInSospeso`): "confermata" → si pulisce senza
+  rete; "richiesta" → si chiede al server: "utente non trovato" (codice
+  `user_not_found`) → si pulisce; lo stesso utente riconosciuto → la
+  chiamata non era arrivata, si toglie il segno; tutto il resto (rete,
+  sessione mancante o scaduta, un altro utente) → non si tocca niente e
+  il segno resta. Da verificare nella prova vera che per un account
+  cancellato il server risponda proprio `user_not_found`. Limite
+  accettato: un segno "richiesta" con la sessione sparita resta lì
+  finché non si può chiedere al server; i dati restano sul dispositivo,
+  inerti. Test permanenti in `eliminazioneInCorso.test.ts` e
+  `ripristino.test.ts`
 - **Offline non si elimina**, come Esci: prima una chiamata vera
   (`getUser`). Risposta persa dopo la chiamata: di nuovo `getUser`;
   "utente non trovato" → si pulisce, errore di rete → "non so, riprova".
@@ -3843,7 +3883,7 @@ invariate (311 tra voci e alimenti), nessun alimento con `user_id` null;
 account di prova intatto dopo l'annullamento. Pronto per "Elimina
 account", che resta da costruire.
 
-**Test.** 782 test permanenti in 67 file (Vitest), tutti verdi all'11/10.
+**Test.** 796 test permanenti in 68 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
 

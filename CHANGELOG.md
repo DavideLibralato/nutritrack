@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Pulizia del dispositivo e segno di eliminazione
+
+Branch `elimina-account`. La migration `elimina_mio_account` è in
+produzione dall'11/10, versione 20261011155326: il connettore rifiutava
+`apply_migration` senza chiedere conferma, l'ha applicata Davide dal SQL
+Editor con il testo del file e la riga di registrazione in
+`supabase_migrations.schema_migrations`. Verifiche di Cowork: permessi
+(anon no, authenticated sì), prova in un blocco annullato sull'account
+di prova (cancellato a cascata, idempotente, righe altrui invariate,
+tutto annullato), `get_advisors` con il solo WARN atteso. Regola nuova
+in PUNTO §8 per le migration che il connettore rifiuta, con un rimando
+in CLAUDE.md, regola A.5.
+
+Codice, non ancora collegato all'app (lo usa il commit del pulsante):
+`cancellaDatiUtente` in `ripristino.ts`, che toglie dal dispositivo
+righe, coda (accantonate comprese) e cursori di un utente senza toccare
+altri utenti e catalogo, con il cuore in comune con
+`sostituisciDatiUtente`; `src/lib/account/eliminazioneInCorso.ts`, il
+segno in `localStorage` a due fasi ("richiesta", "confermata") e la
+ripresa all'avvio. Corretto il disegno di PUNTO §9.6: il segno
+"confermata" lo toglie il prossimo avvio, dopo una seconda pulizia,
+altrimenti una discesa in ritardo poteva riscrivere righe dopo la
+pulizia. 14 test permanenti nuovi; verificato che falliscono rompendo
+il codice (accantonate saltate, pulizia nel dubbio). 796 test verdi in
+68 file, `tsc` e lint puliti.
+
 ## 2026-10-11 — Migration elimina_mio_account (non applicata)
 
 Branch `elimina-account`. Nuovo file

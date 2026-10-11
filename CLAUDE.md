@@ -128,7 +128,11 @@ entrambe le checklist vanno verdi; un deploy può toccarne anche una sola.
 4. Colonna nuova `NOT NULL` solo con `DEFAULT`. Mai `NOT NULL` secco su una
    tabella non vuota.
 5. Ogni modifica di struttura passa da `apply_migration` (una migration =
-   un file versionato), mai da `execute_sql` a mano.
+   un file versionato), mai da `execute_sql` a mano. Unica eccezione: se
+   il connettore rifiuta `apply_migration` senza chiedere conferma, la
+   applica Davide dal SQL Editor con il testo esatto del file e la riga
+   di registrazione — procedura in `PUNTO_DI_PARTENZA.md` §8, "Migration
+   che il connettore rifiuta".
 6. **Una tabella nuova nasce già con RLS attiva e le sue policy nella stessa
    migration di creazione** (`enable row level security` + i `create policy`
    nello stesso file), non in un secondo momento. `get_advisors` dopo è la

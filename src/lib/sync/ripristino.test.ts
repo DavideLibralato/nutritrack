@@ -15,7 +15,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { db } from "../db/database";
 import { scaricaTabella } from "./discesa";
-import { modificheNonInviate, ripristinaDatiLocali } from "./ripristino";
+import { cancellaDatiUtente, modificheNonInviate, ripristinaDatiLocali } from "./ripristino";
 import type { Alimento, NomeTabella, Pasto } from "../db/tipi";
 import type { VoceOutbox } from "./outbox";
 
@@ -282,5 +282,58 @@ describe("ripristinaDatiLocali", () => {
     expect((await db.sync_cursori.get(`alimenti:${utenteB}`))?.ultimo_aggiornamento).toBe(
       "2026-09-10T08:00:00.000Z"
     );
+  });
+});
+
+// "Elimina il mio account" (PUNTO_DI_PARTENZA.md §9.6): dopo l'ok del
+// server via TUTTO ciò che è dell'utente, anche le modifiche non inviate,
+// senza conferme; mai i dati di un altro utente né il catalogo condiviso.
+describe("cancellaDatiUtente", () => {
+  it("toglie righe, modifiche in attesa e accantonate e cursori dell'utente; lascia l'altro utente e il catalogo", async () => {
+    const utenteA = `utente-${crypto.randomUUID()}`;
+    const utenteB = `utente-${crypto.randomUUID()}`;
+
+    const condiviso = alimento(null, "Mela", "2026-09-01T08:00:00.000Z");
+    const alimentoA = alimento(utenteA, "Pane di A", "2026-09-10T08:00:00.000Z");
+    const alimentoB = alimento(utenteB, "Ricetta di B", "2026-09-10T08:00:00.000Z");
+    const pastoA = pasto(utenteA, "Pranzo di A", "2026-09-10T08:00:00.000Z");
+    const bloccatoA = pasto(utenteA, "Bloccato di A", "2026-09-10T08:00:00.000Z");
+    const pastoB = pasto(utenteB, "Cena di B", "2026-09-10T08:00:00.000Z");
+    await db.alimenti.bulkPut([condiviso, alimentoA, alimentoB]);
+    await db.pasti.bulkPut([pastoA, bloccatoA, pastoB]);
+    await db.outbox.bulkPut([voceOutbox(pastoA), voceOutbox(bloccatoA, true), voceOutbox(pastoB)]);
+    for (const utente of [utenteA, utenteB]) {
+      await db.sync_cursori.put({
+        id: `pasti:${utente}`,
+        tabella: "pasti",
+        user_id: utente,
+        ultimo_aggiornamento: "2026-09-10T08:00:00.000Z",
+      });
+    }
+
+    await cancellaDatiUtente(utenteA);
+
+    // A: niente righe, niente coda (anche l'accantonata), niente cursori.
+    expect(await pastiLocali(utenteA)).toHaveLength(0);
+    expect(await db.alimenti.get(alimentoA.id)).toBeUndefined();
+    expect(await db.outbox.get(`pasti:${pastoA.id}`)).toBeUndefined();
+    expect(await db.outbox.get(`pasti:${bloccatoA.id}`)).toBeUndefined();
+    expect(await db.sync_cursori.get(`pasti:${utenteA}`)).toBeUndefined();
+
+    // B e il catalogo condiviso: intatti.
+    expect(await db.pasti.get(pastoB.id)).not.toBeUndefined();
+    expect(await db.alimenti.get(alimentoB.id)).not.toBeUndefined();
+    expect(await db.alimenti.get(condiviso.id)).not.toBeUndefined();
+    expect(await db.outbox.get(`pasti:${pastoB.id}`)).not.toBeUndefined();
+    expect(await db.sync_cursori.get(`pasti:${utenteB}`)).not.toBeUndefined();
+  });
+
+  it("chiamata due volte non dà errore", async () => {
+    const utente = `utente-${crypto.randomUUID()}`;
+    await db.pasti.put(pasto(utente, "Cena", "2026-09-10T08:00:00.000Z"));
+
+    await cancellaDatiUtente(utente);
+    await expect(cancellaDatiUtente(utente)).resolves.toBeUndefined();
+    expect(await pastiLocali(utente)).toHaveLength(0);
   });
 });

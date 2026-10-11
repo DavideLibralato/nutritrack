@@ -192,14 +192,9 @@ export async function sostituisciDatiUtente(
       const vociUtente = vociOutboxDellUtente(await db.outbox.toArray(), userId);
       if (vociUtente.some((v) => !confermate.has(firma(v)))) return false;
 
-      // Solo le righe di questo utente. Le righe con user_id null (catalogo
-      // condiviso) non sono indicizzate da IndexedDB, quindi where() non le
-      // tocca: restano, e bulkPut qui sotto le sovrascrive.
-      for (const t of TABELLE_DISCESA) {
-        await t.tabella.where("user_id").equals(userId).delete();
-      }
-      await db.outbox.bulkDelete(vociUtente.map((v) => v.id));
-      await db.sync_cursori.where("user_id").equals(userId).delete();
+      // Restano, e bulkPut qui sotto sovrascrive, le righe con user_id
+      // null (catalogo condiviso): vedi togliDatiUtente.
+      await togliDatiUtente(userId, vociUtente);
 
       for (const t of TABELLE_DISCESA) {
         const righeTabella = righe.get(t.nome) ?? [];
@@ -223,4 +218,37 @@ export async function sostituisciDatiUtente(
       return true;
     }
   );
+}
+
+// "Elimina il mio account" (PUNTO_DI_PARTENZA.md §9.6): via dal
+// dispositivo tutto ciò che è di questo utente — righe delle 11 tabelle,
+// TUTTE le sue voci di outbox (in attesa e accantonate) e i suoi cursori.
+// A differenza di sostituisciDatiUtente nessun controllo delle firme: si
+// chiama solo dopo che il server ha cancellato l'account, quando non c'è
+// più niente da proteggere (una modifica non inviata non avrebbe più
+// dove arrivare). Restano il catalogo condiviso e i dati di altri utenti.
+//
+// Idempotente: chiamata due volte, la seconda non trova niente. Serve:
+// all'avvio dopo l'eliminazione si ripete (eliminazioneInCorso.ts), per
+// togliere le righe che una discesa partita prima ha riscritto dopo.
+export async function cancellaDatiUtente(userId: string): Promise<void> {
+  await db.transaction(
+    "rw",
+    [...TABELLE_DISCESA.map((t) => t.tabella), db.outbox, db.sync_cursori],
+    async () => {
+      await togliDatiUtente(userId, vociOutboxDellUtente(await db.outbox.toArray(), userId));
+    }
+  );
+}
+
+// Il cuore comune delle due funzioni qui sopra; va chiamato DENTRO una
+// loro transazione. Solo le righe di questo utente: quelle con user_id
+// null (catalogo condiviso) non sono indicizzate da IndexedDB, quindi
+// where() non le tocca.
+async function togliDatiUtente(userId: string, vociUtente: VoceOutbox[]): Promise<void> {
+  for (const t of TABELLE_DISCESA) {
+    await t.tabella.where("user_id").equals(userId).delete();
+  }
+  await db.outbox.bulkDelete(vociUtente.map((v) => v.id));
+  await db.sync_cursori.where("user_id").equals(userId).delete();
 }
