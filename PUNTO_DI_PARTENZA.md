@@ -3640,6 +3640,19 @@ corretti nello stesso branch: l'etichetta per esteso accorciata con "…",
 e l'elenco visibile sotto la modifica con la tastiera aperta. Com'è
 fatto: sezione 3, "Preferiti e pasti salvati".
 
+**Indirizzo pubblico** (11/10, fuori dal codice). L'app sta su
+https://app-libra.vercel.app, dominio di produzione su Vercel; il vecchio
+`nutritrack-green-one.vercel.app` rimanda lì (307). Gli indirizzi dei
+branch, compreso `nutritrack-git-main-…`, restano protetti dal login di
+Vercel, apposta: servono solo per le prove. Su Supabase Site URL e unica
+Redirect URL puntano al nuovo indirizzo (sotto, "Difetti e verifiche
+aperti"). Il codice non aveva indirizzi scritti a mano: il reset usa
+`window.location.origin`, il service worker `self.location.origin`, il
+manifest percorsi relativi. Provato su iPhone l'11/10: app reinstallata
+da app-libra, dati riscaricati dal server, vecchia icona tolta; reset
+password dal nuovo indirizzo con l'account di prova, il link porta su
+app-libra e funziona.
+
 **Test.** 782 test permanenti in 67 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
@@ -3661,10 +3674,13 @@ fatto: sezione 3, "Preferiti e pasti salvati".
   `vercel.app`: i nomi dei progetti Vercel li sceglie chiunque, e un
   progetto altrui con un nome adatto (per esempio
   `nutritrack-x-davide-libralato-personale`) soddisferebbe il jolly e
-  riceverebbe i link di accesso. Per provare un branch sull'anteprima si
+  riceverebbe i link di accesso. Dall'11/10 Site URL =
+  `https://app-libra.vercel.app` e l'unica Redirect URL è
+  `https://app-libra.vercel.app/**`. Per provare un branch sull'anteprima si
   aggiunge la sua voce esatta (`https://nutritrack-git-<branch>-…vercel.app/**`)
   e la si toglie dopo il merge. Un `redirectTo` non in elenco viene
-  ignorato in silenzio: il link porta al Site URL
+  ignorato in silenzio: il link porta al Site URL, quindi un reset chiesto
+  dall'anteprima di un branch senza la sua voce porta su app-libra
 - **Un reset chiesto dall'app installata su iPhone non può riuscire**
   (limite noto, 10/10). Il link dell'email si apre sempre in Safari,
   mentre il code verifier sta nei cookie dell'app, che sono separati. La
@@ -3680,10 +3696,6 @@ fatto: sezione 3, "Preferiti e pasti salvati".
 - **Email di Supabase gratuite: circa 2 all'ora** (il servizio interno
   del piano gratuito, sezione 10.9). Da tenere presente nelle prove del
   reset: oltre il limite la richiesta fallisce con "Troppi tentativi"
-- **L'app non è ancora condivisibile.** L'indirizzo
-  `nutritrack-git-main-…vercel.app` è protetto da Vercel: chi non ha
-  l'account Vercel trova la pagina di login di Vercel, non l'app. Prossimo
-  lavoro (sotto, "Prossimi passi")
 
 - **Sposta e Duplica ignorano "Non spostarlo" / "Non duplicarlo" se il
   doppione sparisce** fra il foglio e la conferma (11/10, visto facendo i
@@ -3780,8 +3792,8 @@ fatto: sezione 3, "Preferiti e pasti salvati".
 2. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
    fatto e provato su iPhone il 10/10, prima della settimana (sopra,
    "Fatto")
-3. **Un indirizzo di produzione pubblico** (prossimo lavoro, dal 10/10).
-   Oggi `nutritrack-git-main-…` chiede il login Vercel a chi non ha
-   l'account: senza un indirizzo pubblico l'app non si può dare agli
-   amici. Con l'indirizzo nuovo vanno aggiornati anche Site URL e
-   Redirect URL su Supabase (voci esatte, sopra)
+3. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
+   https://app-libra.vercel.app, con Site URL e Redirect URL su Supabase
+   aggiornati (sopra, "Fatto")
+4. **Rinominare l'app in "Libra"** (prossimo lavoro, nome deciso
+   l'11/10): oggi dentro l'app il nome è ancora NutriTrack

@@ -8,6 +8,10 @@ Supabase quando c'è rete.
 Stack: Next.js (App Router) + React + TypeScript, Supabase (Postgres, Auth),
 Dexie per il database locale, Vitest per i test. Deploy su Vercel.
 
+L'app è su https://app-libra.vercel.app. Gli indirizzi dei branch su
+Vercel (anche `…-git-main-…`) sono protetti dal login di Vercel e servono
+solo per le prove.
+
 ## Avviarla in locale
 
 Serve un file `.env.local` nella cartella del progetto (non va mai

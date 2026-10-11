@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Indirizzo pubblico nei documenti
+
+Branch `indirizzo`. L'app ha un indirizzo pubblico dall'11/10,
+https://app-libra.vercel.app (configurato su Vercel e Supabase, fuori
+dal codice; il vecchio `nutritrack-green-one.vercel.app` rimanda lì). In
+PUNTO: voce "Indirizzo pubblico" in "Fatto", Site URL e Redirect URL
+attuali nella regola sulle voci esatte, tolto "L'app non è ancora
+condivisibile", prossimo passo 3 fatto e nuovo passo 4, la rinomina in
+"Libra". Nel README l'indirizzo dell'app e gli indirizzi dei branch solo
+per le prove. Cercati nel repo "git-main", "vercel.app", "green-one" e
+indirizzi scritti a mano: nel codice nessuno (reset, service worker e
+manifest usano l'origine); gli indirizzi finti nei test restano. Solo
+documenti.
+
 ## 2026-10-11 — Conferme su iPhone in PUNTO §11
 
 Branch `indirizzo`. Segnate come confermate da Davide l'11/10 su iPhone
