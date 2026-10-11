@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Elimina account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Mockup di "Elimina il mio account" (PUNTO_DI_PARTENZA.md §3 e §9.6).
+   Colori: gli stessi token di src/app/globals.css, valori chiari e scuri,
+   più i due nuovi decisi l'11/10: --pericolo e --pericolo-pieno, il rosso
+   delle sole azioni che non si possono annullare. */
+:root{
+  --background:#faf7f2; --foreground:#1f1b16; --linea:#e7e0d2; --tenue:#78705f;
+  --accento:#3f7d4c; --accento-pieno:#3f7d4c;
+  --avviso:#b5533c; --avviso-pieno:#b5533c;
+  --pericolo:#b3261e; --pericolo-pieno:#b3261e;
+  --superficie:#ffffff; --su-pieno:#faf7f2;
+  --capsula:color-mix(in srgb, var(--accento) 12%, transparent);
+  --ombra:0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
+  --cornice:#d9d4ca;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-tema="chiaro"]){
+    --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+    --accento:#7bb887; --accento-pieno:#3f7d4c;
+    --avviso:#e8916f; --avviso-pieno:#b5533c;
+    --pericolo:#f2938a; --pericolo-pieno:#b3261e;
+    --superficie:#26221e; --su-pieno:#ffffff;
+    --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+    --ombra:0 4px 16px color-mix(in srgb, #000 45%, transparent);
+    --cornice:#0f0d0b;
+    color-scheme:dark;
+  }
+}
+:root[data-tema="scuro"]{
+  --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+  --accento:#7bb887; --accento-pieno:#3f7d4c;
+  --avviso:#e8916f; --avviso-pieno:#b5533c;
+  --pericolo:#f2938a; --pericolo-pieno:#b3261e;
+  --superficie:#26221e; --su-pieno:#ffffff;
+  --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+  --ombra:0 4px 16px color-mix(in srgb, #000 45%, transparent);
+  --cornice:#0f0d0b;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  background:var(--cornice); color:var(--foreground);
+  font-family:'Hanken Grotesk',system-ui,sans-serif;
+  padding:24px 16px 48px;
+}
+.pagina{max-width:1200px; margin:0 auto}
+h1.ttl{font-family:'Bricolage Grotesque',sans-serif; font-size:26px; margin:0 0 6px}
+.lede{margin:0 0 18px; max-width:72ch; line-height:1.5; font-size:15px; color:color-mix(in srgb, var(--foreground) 80%, var(--cornice))}
+
+/* Interruttori in alto */
+.toolbar{display:flex; flex-direction:column; gap:10px; margin:0 0 24px; padding:12px; background:var(--superficie); border:1px solid var(--linea); border-radius:16px; max-width:900px}
+.tb-riga{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.tb-riga > span{font-size:12px; color:var(--tenue); text-transform:uppercase; letter-spacing:.08em; font-weight:600; min-width:90px}
+.seg{display:flex; gap:2px; background:var(--background); border:1px solid var(--linea); border-radius:999px; padding:2px; flex-wrap:wrap}
+.seg button{border:0; background:transparent; color:var(--tenue); font:600 13px 'Hanken Grotesk',sans-serif; padding:6px 12px; border-radius:999px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--superficie); color:var(--foreground); box-shadow:0 1px 2px rgba(0,0,0,.12)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accento); outline-offset:2px}
+
+/* Telefoni */
+.griglia{display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start}
+.colonna{width:360px; max-width:100%; display:flex; flex-direction:column; gap:8px}
+.didascalia{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--foreground); margin:0 6px}
+.spiega{font-size:13px; line-height:1.45; color:color-mix(in srgb, var(--foreground) 80%, var(--cornice)); margin:0 6px 4px; min-height:56px}
+.phone{
+  position:relative; width:360px; max-width:100%; height:800px; overflow:hidden;
+  background:var(--background); color:var(--foreground);
+  border-radius:40px; box-shadow:0 18px 40px -16px rgba(0,0,0,.45); border:1px solid var(--linea);
+}
+.scorre{position:absolute; inset:0; overflow-y:auto; padding:14px 16px 120px}
+.sb{display:flex; justify-content:space-between; font-weight:600; font-size:15px; padding:0 14px 10px}
+
+/* IntestazioneSottopagina */
+.indietro{display:inline-flex; align-items:center; gap:6px; min-height:44px; color:var(--accento); font-size:16px; margin-left:-4px}
+.indietro svg{width:9px; height:15px}
+.titolo{font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:700; line-height:1.15; margin:2px 4px 18px}
+.scorciato{font-size:13px; color:var(--tenue); text-align:center; margin:-4px 0 14px; letter-spacing:.04em}
+
+/* GruppoImpostazioni + RigaImpostazioni */
+.gruppo{margin:0 0 22px}
+.gt{font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:.1em; color:var(--tenue); margin:0 16px 8px}
+.scatola{background:var(--superficie); border:1px solid var(--linea); border-radius:20px; overflow:hidden}
+.riga{position:relative; display:flex; align-items:center; gap:10px; min-height:52px; padding:0 16px; font-size:16px; width:100%; border:0; background:transparent; color:inherit; font-family:inherit; text-align:left}
+.riga + .riga::before{content:""; position:absolute; top:0; right:0; left:58px; border-top:1px solid var(--linea)}
+.ico{width:32px; height:32px; border-radius:10px; background:var(--capsula); color:var(--accento); display:flex; align-items:center; justify-content:center; flex:none}
+.ico i{display:block; width:14px; height:14px; border-radius:4px; border:2px solid currentColor}
+.riga .val{margin-left:auto; color:var(--tenue); font-size:15px}
+.freccia{width:8px; height:13px; color:var(--tenue); opacity:.7; flex:none}
+.riga .val + .freccia{margin-left:0}
+.riga.centrata{justify-content:center; font-weight:500}
+.riga.esci{color:var(--avviso)}
+.riga.pericolo{color:var(--pericolo)}
+.riga.pericolo .freccia{margin-left:auto}
+.nota{margin:8px 16px 0; font-size:14px; line-height:1.4; color:var(--tenue)}
+.stato{margin:8px 16px 0; font-size:14px; line-height:1.4}
+.stato:empty{display:none}
+.stato.tenue{color:var(--tenue)}
+.stato.avviso{color:var(--avviso)}
+
+/* La conferma nella sottopagina */
+.conferma{padding:16px; display:flex; flex-direction:column; gap:12px}
+.etichetta{font-size:14px; font-weight:500; margin:0 0 6px; display:block}
+.campo{width:100%; border:1px solid var(--linea); background:var(--background); color:var(--foreground); border-radius:8px; padding:9px 10px; font:500 16px 'Hanken Grotesk',sans-serif; letter-spacing:.06em}
+.campo:disabled{opacity:.6}
+.btn{width:100%; border:0; border-radius:8px; padding:9px 8px; min-height:44px; font:500 16px 'Hanken Grotesk',sans-serif; cursor:pointer; background:var(--pericolo-pieno); color:var(--su-pieno)}
+.btn:disabled{opacity:.5; cursor:default}
+
+/* Elenco di cosa viene cancellato */
+.elenco{margin:0; padding:4px 0}
+.elenco li{list-style:none; position:relative; padding:11px 16px 11px 40px; font-size:15px; line-height:1.35}
+.elenco li + li::before{content:""; position:absolute; top:0; right:0; left:40px; border-top:1px solid var(--linea)}
+.elenco li::after{content:""; position:absolute; left:18px; top:18px; width:8px; height:8px; border-radius:50%; background:var(--pericolo)}
+.elenco li small{display:block; color:var(--tenue); font-size:13px; margin-top:2px}
+
+/* Tab bar (pillola) */
+.pillola{position:absolute; left:16px; right:16px; bottom:14px; height:62px; border-radius:999px; background:color-mix(in srgb, var(--superficie) 85%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:var(--ombra); border:1px solid var(--linea); display:flex; align-items:center; justify-content:space-around; padding:0 8px}
+.pillola span{font-size:11px; color:var(--tenue); display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 12px; border-radius:999px}
+.pillola span i{display:block; width:20px; height:20px; border-radius:6px; border:2px solid currentColor}
+.pillola span.attiva{background:var(--capsula); color:var(--accento)}
+
+/* Login */
+.login{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:16px}
+.login form{width:100%; max-width:384px; display:flex; flex-direction:column; gap:16px}
+.login h1{font:700 24px 'Bricolage Grotesque',sans-serif; margin:0}
+.login label{display:block; font-size:14px; font-weight:500; margin-bottom:4px}
+.login .campo{letter-spacing:0}
+.login .accedi{width:100%; border:0; border-radius:8px; padding:9px; background:var(--accento-pieno); color:var(--su-pieno); font:500 16px 'Hanken Grotesk',sans-serif}
+.login .link{display:flex; justify-content:space-between; font-size:14px; color:var(--tenue)}
+.login .link a{color:inherit; text-decoration:underline}
+.messaggio{border:1px solid var(--linea); background:var(--superficie); border-radius:12px; padding:12px 14px}
+.messaggio b{display:block; font-size:15px; margin-bottom:2px}
+.messaggio span{font-size:14px; line-height:1.4; color:var(--tenue)}
+
+/* Note */
+.note{margin-top:36px; display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px}
+.nota-box{background:var(--superficie); border:1px solid var(--linea); border-radius:16px; padding:16px 18px; font-size:14px; line-height:1.5}
+.nota-box h3{font:700 17px 'Bricolage Grotesque',sans-serif; margin:0 0 8px}
+.nota-box p{margin:0 0 8px}
+.nota-box ul{margin:0; padding-left:18px}
+.nota-box li{margin:0 0 4px}
+table{border-collapse:collapse; width:100%; font-size:13px}
+th,td{text-align:left; padding:5px 6px; border-bottom:1px solid var(--linea); vertical-align:top}
+th{color:var(--tenue); font-weight:600}
+.camp{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; border:1px solid var(--linea)}
+code{font-size:12.5px}
+@media (max-width:420px){ .phone{height:760px} }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <h1 class="ttl">Elimina il mio account</h1>
+  <p class="lede">Scelte dell'11/10: la riga sta in fondo a Impostazioni, sotto Esci, in un gruppo suo; porta alla sottopagina <code>/impostazioni/elimina-account</code>; colore rosso nuovo, solo per le azioni che non si possono annullare. Gli interruttori cambiano tutti i telefoni insieme, e il campo "Scrivi ELIMINA" si può provare a mano.</p>
+
+  <div class="toolbar" role="group" aria-label="Interruttori">
+    <div class="tb-riga"><span>Tema</span>
+      <div class="seg" data-gruppo="tema">
+        <button type="button" data-v="chiaro" aria-pressed="true">Chiaro</button>
+        <button type="button" data-v="scuro" aria-pressed="false">Scuro</button>
+      </div>
+    </div>
+    <div class="tb-riga"><span>Stato</span>
+      <div class="seg" data-gruppo="stato">
+        <button type="button" data-v="vuoto" aria-pressed="true">Da scrivere</button>
+        <button type="button" data-v="scritto" aria-pressed="false">ELIMINA scritto</button>
+        <button type="button" data-v="minuscolo" aria-pressed="false">"Elimina " (accettato)</button>
+        <button type="button" data-v="offline" aria-pressed="false">Offline</button>
+        <button type="button" data-v="lavoro" aria-pressed="false">Eliminazione…</button>
+        <button type="button" data-v="rete" aria-pressed="false">Errore di rete</button>
+        <button type="button" data-v="persa" aria-pressed="false">Risposta persa</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="griglia">
+
+    <!-- 1. Impostazioni, in fondo -->
+    <div class="colonna">
+      <p class="didascalia">1 · Impostazioni, in fondo</p>
+      <p class="spiega">L'elenco scorso fino in fondo. Esci resta com'è; sotto, in un gruppo suo, "Elimina il mio account": rossa, a sinistra, con la freccia.</p>
+      <div class="phone">
+        <div class="scorre">
+          <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+          <p class="scorciato">· · · (elenco scorso in fondo) · · ·</p>
+          <div class="gruppo">
+            <div class="gt">App</div>
+            <div class="scatola">
+              <div class="riga"><span class="ico"><i></i></span>Aspetto<span class="val">Sistema · Verde</span>
+                <svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+              <div class="riga"><span class="ico"><i></i></span>Preferiti<span class="val">12 alimenti · 3 pasti</span>
+                <svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+              <div class="riga"><span class="ico"><i></i></span>Sincronizzazione<span class="val">Tutto salvato</span>
+                <svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+            </div>
+          </div>
+          <div class="gruppo">
+            <div class="scatola">
+              <div class="riga"><span class="ico"><i></i></span>Informazioni<span class="val">v0.1.0</span>
+                <svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+            </div>
+          </div>
+          <div class="gruppo">
+            <div class="scatola">
+              <button type="button" class="riga centrata esci">Esci</button>
+            </div>
+          </div>
+          <div class="gruppo">
+            <div class="scatola">
+              <button type="button" class="riga pericolo">Elimina il mio account
+                <svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni</span></div>
+      </div>
+    </div>
+
+    <!-- 2. Sottopagina -->
+    <div class="colonna">
+      <p class="didascalia">2 · La sottopagina</p>
+      <p class="spiega">Prima cosa viene cancellato, poi il campo e un solo pulsante. "‹ Impostazioni" per tornare indietro. Sotto il gruppo, la riga di stato.</p>
+      <div class="phone">
+        <div class="scorre">
+          <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+          <a class="indietro"><svg viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 1.5l-6 6 6 6"/></svg>Impostazioni</a>
+          <div class="titolo">Elimina account</div>
+          <div class="gruppo">
+            <div class="gt">Cosa viene cancellato</div>
+            <div class="scatola">
+              <ul class="elenco">
+                <li>Il diario e i tuoi pasti</li>
+                <li>Gli alimenti che hai creato</li>
+                <li>Obiettivi e peso</li>
+                <li>Preferiti e pasti salvati</li>
+                <li>L'account<small>Email e password: per rientrare dovrai registrarti di nuovo</small></li>
+              </ul>
+            </div>
+            <p class="nota">Dal server e da questo telefono, comprese le modifiche non ancora inviate. Per sempre: non si può annullare né recuperare.</p>
+          </div>
+          <div class="gruppo">
+            <div class="scatola">
+              <div class="conferma">
+                <div>
+                  <label class="etichetta" for="campo">Per confermare scrivi ELIMINA</label>
+                  <input id="campo" class="campo" data-campo autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+                </div>
+                <button type="button" class="btn" data-elimina>Elimina il mio account</button>
+              </div>
+            </div>
+            <div class="stato" role="status" data-stato></div>
+          </div>
+        </div>
+        <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni</span></div>
+      </div>
+    </div>
+
+    <!-- 3. Login -->
+    <div class="colonna">
+      <p class="didascalia">3 · Login dopo l'eliminazione</p>
+      <p class="spiega">La pagina di login di oggi, con il messaggio sopra il titolo. Compare solo arrivando da qui (<code>/login?eliminato=1</code>); niente tab bar.</p>
+      <div class="phone">
+        <div class="login">
+          <form onsubmit="return false">
+            <div class="messaggio" role="status">
+              <b>Account eliminato</b>
+              <span>I tuoi dati sono stati cancellati dal server e da questo telefono.</span>
+            </div>
+            <h1>Accedi</h1>
+            <div><label for="l-email">Email</label><input id="l-email" class="campo" type="email"></div>
+            <div><label for="l-pw">Password</label><input id="l-pw" class="campo" type="password"></div>
+            <button class="accedi" type="button">Accedi</button>
+            <p class="link"><span>Non hai un account? <a>Registrati</a></span><a>Password dimenticata?</a></p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <div class="nota-box">
+      <h3>Il rosso: valori e contrasti</h3>
+      <table>
+        <tr><th></th><th>Chiaro</th><th>Scuro</th></tr>
+        <tr><td><code>--pericolo</code><br>testo, riga, pallini</td>
+          <td><span class="camp" style="background:#b3261e"></span>#b3261e<br>6,5:1 su superficie<br>6,1:1 su fondo</td>
+          <td><span class="camp" style="background:#f2938a"></span>#f2938a<br>7,0:1 su superficie<br>7,8:1 su fondo</td></tr>
+        <tr><td><code>--pericolo-pieno</code><br>pulsante</td>
+          <td>#b3261e, testo #faf7f2<br>6,1:1</td>
+          <td>#b3261e, testo #ffffff<br>6,5:1</td></tr>
+      </table>
+      <p style="margin-top:10px">Come per l'arancio, al buio il riempimento resta quello del chiaro con il testo bianco: sul rosso chiaro del tema scuro il bianco non si leggerebbe. Tutto sopra il 4,5:1; da controllare in <code>contrasti.test.ts</code> e <code>temaScuro.test.ts</code>.</p>
+    </div>
+    <div class="nota-box">
+      <h3>Stati del pulsante</h3>
+      <ul>
+        <li><b>Da scrivere:</b> spento finché il testo non è ELIMINA. Vale anche "elimina" o "Elimina", con gli spazi ai bordi tolti. Il campo apre la tastiera in maiuscolo, senza correttore.</li>
+        <li><b>Offline:</b> spento, con "Per eliminare l'account serve la connessione."</li>
+        <li><b>Eliminazione…:</b> campo e pulsante spenti, così il doppio tocco non parte.</li>
+        <li><b>Errore di rete:</b> niente è stato toccato, si può riprovare subito.</li>
+        <li><b>Risposta persa:</b> la richiesta è partita, la risposta no. Riprovare è sicuro: se l'account non c'è più, l'app lo vede e finisce la pulizia di questo telefono.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// Solo per il mockup: interruttori e campo. Nessun dato salvato.
+const html = document.documentElement;
+const STATI = {
+  vuoto:     { testo:"", classe:"" },
+  scritto:   { testo:"", classe:"", valore:"ELIMINA" },
+  minuscolo: { testo:"", classe:"", valore:"Elimina " },
+  offline:   { testo:"Per eliminare l'account serve la connessione.", classe:"tenue", spentoPulsante:true, valore:"ELIMINA" },
+  lavoro:    { testo:"", classe:"", lavoro:true, valore:"ELIMINA" },
+  rete:      { testo:"Non riuscito: il server non risponde. Il tuo account non è stato toccato. Riprova.", classe:"avviso", valore:"ELIMINA" },
+  persa:     { testo:"Non so se è andata: la connessione si è interrotta prima della risposta. Riprova: se l'account è già eliminato, l'app lo vede e finisce il lavoro.", classe:"avviso", valore:"ELIMINA" },
+};
+let statoCorrente = "vuoto";
+
+// La regola decisa: maiuscole e minuscole indifferenti, spazi ai bordi tolti.
+const valido = (v) => v.trim().toUpperCase() === "ELIMINA";
+
+const campo = document.querySelector("[data-campo]");
+const pulsante = document.querySelector("[data-elimina]");
+const riga = document.querySelector("[data-stato]");
+
+function aggiornaPulsante() {
+  const s = STATI[statoCorrente];
+  campo.disabled = !!s.lavoro;
+  if (s.lavoro) { pulsante.disabled = true; pulsante.textContent = "Eliminazione…"; return; }
+  pulsante.textContent = "Elimina il mio account";
+  pulsante.disabled = !!s.spentoPulsante || !valido(campo.value);
+}
+
+function impostaStato(v) {
+  statoCorrente = v;
+  const s = STATI[v];
+  campo.value = s.valore ?? "";
+  riga.textContent = s.testo;
+  riga.className = "stato " + s.classe;
+  aggiornaPulsante();
+}
+
+function premi(gruppo, v) {
+  document.querySelectorAll(`[data-gruppo="${gruppo}"] button`).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+}
+
+document.querySelectorAll(".seg[data-gruppo]").forEach((seg) => {
+  seg.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    const g = seg.dataset.gruppo, v = b.dataset.v;
+    premi(g, v);
+    if (g === "tema") html.dataset.tema = v;
+    if (g === "stato") impostaStato(v);
+  });
+});
+campo.addEventListener("input", aggiornaPulsante);
+
+// Tema iniziale: quello del telefono, come l'app senza scelta.
+const scuro = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+html.dataset.tema = scuro ? "scuro" : "chiaro";
+premi("tema", html.dataset.tema);
+impostaStato("vuoto");
+</script>
+</body>
+</html>

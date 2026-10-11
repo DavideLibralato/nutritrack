@@ -859,12 +859,18 @@ un comando che non fa niente sembra rotto):
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
   `next.config.ts`; in locale "sviluppo");
-- **Esci** in fondo, in arancio, con la conferma di sempre.
+- **Esci** in fondo, in arancio, con la conferma di sempre;
+- sotto Esci, in un gruppo suo, **Elimina il mio account** (in
+  costruzione, branch `elimina-account`, deciso l'11/10 sul mockup
+  `docs/mockups/elimina-account.html`): rossa (`--pericolo`, sezione 7),
+  allineata a sinistra, con la freccia; porta alla sottopagina. Decisioni
+  in §9.6, "Elimina il mio account".
 
 **Rotte.** `/impostazioni`, `/impostazioni/profilo`,
 `/impostazioni/obiettivi`, `/impostazioni/pasti`, `/impostazioni/peso`,
 `/impostazioni/aspetto`, `/impostazioni/preferiti`,
-`/impostazioni/sincronizzazione`, `/impostazioni/informazioni`.
+`/impostazioni/sincronizzazione`, `/impostazioni/informazioni`;
+`/impostazioni/elimina-account` in costruzione.
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
 layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
 "torna indietro": aperta da un indirizzo diretto, o ricaricata offline, la
@@ -1116,9 +1122,6 @@ sono in Obiettivi, la pesata in Peso.
   questo dispositivo (`scope: "local"`), e non offline: senza rete non si
   esce, con un messaggio, mai "a metà". I dati locali restano (§9.6,
   cancellazione al logout rimandata)
-- **Elimina il mio account** (in costruzione, branch `elimina-account`):
-  in fondo, in un gruppo a sé, con la conferma scrivendo "ELIMINA".
-  Decisioni in §9.6, "Elimina il mio account"
 - **Tema**: non sta in Profilo ma in Impostazioni > Aspetto (sopra)
 
 #### Un solo Salva (deciso il 2026-09-26)
@@ -2312,6 +2315,16 @@ principale").
   principale: segnala un obiettivo superato e, come già nei messaggi
   d'errore, gli stati della sincronizzazione che chiedono attenzione
   (sessione scaduta, server che rifiuta, modifiche accantonate).
+- **Il rosso** `--pericolo` (deciso l'11/10 sul mockup
+  `docs/mockups/elimina-account.html`, da costruire nel branch
+  `elimina-account`): **solo per le azioni che non si possono
+  annullare**, oggi solo "Elimina il mio account". L'arancio resta per
+  "attenzione" (Esci, errori, obiettivo superato). `#b3261e` in chiaro
+  (6,5:1 su superficie, 6,1:1 su fondo), `#f2938a` al buio (7,0:1 su
+  superficie, 7,8:1 su fondo). `--pericolo-pieno`, il riempimento del
+  pulsante, è `#b3261e` nei due temi, come `--avviso-pieno`: testo crema
+  in chiaro 6,1:1, bianco al buio 6,5:1. I due token vanno in
+  `contrasti.test.ts` e `temaScuro.test.ts`
 - **L'ocra** `--attesa` (`text-pending`, dal 10/10): `#8a6d1f` in chiaro,
   `#d9b764` al buio. Solo per "modifiche in attesa" nell'indicatore di
   sincronizzazione: niente di sbagliato, solo da sapere (mockup
@@ -3203,9 +3216,29 @@ costruzione e non per attenzione.
   rinnovo del token fallisce (refresh token cancellati) e l'app torna al
   login. I dati locali su quel dispositivo restano, come con Esci oggi:
   pulirli quando il server dice "utente non trovato" è lavoro a parte
-- **Dove e come**: in fondo a Impostazioni > Profilo, in un gruppo a sé;
-  conferma scrivendo "ELIMINA". Posizione esatta, testi e colore (arancio
-  o un rosso nuovo nei due temi) dal mockup
+- **Dove e come** (deciso l'11/10 sul mockup
+  `docs/mockups/elimina-account.html`): la riga "Elimina il mio account"
+  sta in fondo all'elenco Impostazioni, sotto Esci, in un gruppo suo;
+  rossa (`--pericolo`, sezione 7), allineata a sinistra, con la freccia.
+  Porta alla sottopagina `/impostazioni/elimina-account` ("‹
+  Impostazioni" per tornare; va in `PAGINE_APP` del service worker come
+  le altre). La pagina dice cosa viene cancellato (diario e pasti,
+  alimenti creati, obiettivi e peso, preferiti e pasti salvati,
+  l'account), "dal server e da questo telefono, comprese le modifiche non
+  ancora inviate", "per sempre"; poi il campo "Per confermare scrivi
+  ELIMINA" e un solo pulsante rosso, "Elimina il mio account". Sotto, la
+  riga di stato. Scartate: la conferma dentro il gruppo, come Esci, e la
+  riga in fondo a Profilo (Profilo è un modulo con la barra Salva in
+  fondo, che mescolerebbe due flussi)
+- **La parola**: "ELIMINA" con maiuscole e minuscole indifferenti
+  ("elimina", "Elimina" valgono), tolti gli spazi ai bordi (sull'iPhone
+  la tastiera mette da sola la prima lettera maiuscola). Il campo apre la tastiera in maiuscolo
+  e senza correttore
+- **Stati del pulsante**: spento finché la parola non è giusta; offline
+  spento, con "Per eliminare l'account serve la connessione.";
+  "Eliminazione…" con campo e pulsante spenti; errore di rete ("il tuo
+  account non è stato toccato, riprova"); risposta persa ("non so se è
+  andata, riprova"). Testi esatti nel mockup
 - **Prova vera** su un account usa e getta,
   davidemancon02+elimina@gmail.com, creato da Davide dall'app. L'account
   di prova fisso non si tocca

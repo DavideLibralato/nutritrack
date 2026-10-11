@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Mockup di Elimina account
+
+Branch `elimina-account`. Nuovo `docs/mockups/elimina-account.html`, nei
+due temi: l'elenco Impostazioni in fondo (Esci e, sotto, il gruppo
+"Elimina il mio account"), la sottopagina con la parola da scrivere e gli
+stati del pulsante, il login con "Account eliminato". Prima versione con
+due proposte (conferma nel gruppo in fondo a Profilo, oppure sottopagina)
+e due colori; decise l'11/10: riga in fondo a Impostazioni sotto Esci,
+sottopagina `/impostazioni/elimina-account`, rosso nuovo `--pericolo`
+solo per le azioni che non si possono annullare, "ELIMINA" accettato
+anche in minuscolo o con l'iniziale maiuscola. In PUNTO §3 (Impostazioni,
+tolta la riga in Profilo), §7 (il rosso, valori e contrasti) e §9.6. Solo
+documenti.
+
 ## 2026-10-11 — Elimina account: decisioni
 
 Branch `elimina-account`. Dall'analisi approvata, in PUNTO §9.6 una parte
