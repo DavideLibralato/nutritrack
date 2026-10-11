@@ -5,6 +5,43 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Esci svuota i dati locali provato
+
+Branch `esci-svuota`. Provato l'11/10 sull'anteprima con l'account di
+prova fisso. PC (Chrome): Esci con la coda vuota senza domande e
+IndexedDB senza righe dell'utente, rientro con lo storico completo; con
+`*/rest/v1*` bloccato, conferma con Resta / Esci e perdila, Resta
+lascia tutto, Esci e perdila svuota; sbloccato e rientrato, storico
+completo e voce persa assente. iPhone (Safari): coda vuota e rientro con
+lo storico completo; offline bloccato, niente toccato; Esci appena
+aperta l'app con "Uscita…", rientro con lo storico completo. Giro
+generale per la salita verificato da Cowork su Supabase (voci_diario 3
+con 1 eliminata, preferiti 2 con 1 tolto, misurazioni 1, pasti 1, con
+`updated_at` del server). In PUNTO §9.6 e §11 ("Fatto", tolto da "Non
+ancora costruito"). Corretti i commenti che dicevano ancora "i dati
+locali non si cancellano all'uscita" (`ripristino.ts`,
+`codaDellUtente.ts`, `discesa.ts`, PUNTO §9.2). Non provabili a mano,
+coperti dai test: sessione scaduta vera e app chiusa a metà uscita.
+Documenti e commenti.
+
+## 2026-10-11 — Esci svuota i dati locali
+
+Branch `esci-svuota`, da provare. Nuovo `src/lib/account/esci.ts`:
+`preparaUscita` (getUser prima di tutto, offline non si esce; con la
+sessione valida prova a inviare la coda, poi decide) e `eseguiUscita`
+(signOut, controllo della sessione, e solo se si svuota: segno, attesa
+delle discese, pulizia con le firme). Coda vuota → svuota senza
+chiedere; coda non vuota con sessione valida → "Resta / Esci e
+perdile" (perdila con una sola); con sessione scaduta → non svuota
+niente, "Resta / Esci" con la frase. "Uscita…" con il pulsante spento
+per tutta l'uscita. `EsciAccount` riscritto, solo stati e testi. Il
+segno di uscita si scrive solo quando si svuota: 7 test permanenti in
+`esci.test.ts`, verificati rompendo la regola. PUNTO §3 e la riga di
+"Esci e rientra" aggiornati. 833 test verdi in 72 file, `tsc`, lint e
+`npm run build` puliti. Aperto: commenti che dicono ancora "i dati
+locali non si cancellano all'uscita" (ripristino.ts, codaDellUtente.ts,
+discesa.ts, PUNTO §9.2), da correggere con il commit di documenti.
+
 ## 2026-10-11 — Segno di uscita e ripresa all'avvio
 
 Branch `esci-svuota`. Nuovo segno `nutritrack:uscita` (`{ idUtente,

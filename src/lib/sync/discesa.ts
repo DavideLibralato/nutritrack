@@ -24,12 +24,12 @@ import {
 import type { NomeTabella, RigaBase } from "../db/tipi";
 
 export interface CursoreSync {
-  // "<tabella>:<user_id>": stessa convenzione di outbox.ts. Per-utente
-  // anche se oggi un solo utente alla volta usa questo Dexie: i dati
-  // locali non vengono ancora cancellati al logout (PUNTO_DI_PARTENZA.md,
-  // sezione 9.6, non ancora implementato), quindi un cursore senza
-  // user_id potrebbe far leggere a un utente il "già scaricato" di un
-  // altro su un dispositivo condiviso.
+  // "<tabella>:<user_id>": stessa convenzione di outbox.ts. Per-utente:
+  // su un dispositivo condiviso possono restare i dati di un altro utente
+  // (Esci non svuota con la sessione scaduta e modifiche in coda, né i
+  // dati lasciati dalle uscite prima dell'11/10; PUNTO_DI_PARTENZA.md,
+  // sezione 9.6), e un cursore senza user_id potrebbe far leggere a un
+  // utente il "già scaricato" dell'altro.
   id: string;
   tabella: NomeTabella;
   user_id: string;

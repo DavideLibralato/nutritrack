@@ -39,7 +39,8 @@
 // con il resto.
 //
 // SOLO I DATI DI QUESTO UTENTE. Il dispositivo può contenere dati di un
-// altro utente (i dati locali non si cancellano al logout, §9.6): le sue
+// altro utente (Esci non svuota con la sessione scaduta e modifiche in
+// coda, né i dati lasciati dalle uscite prima dell'11/10; §9.6): le sue
 // righe, le sue modifiche non inviate e i suoi cursori restano intatti.
 // Il catalogo condiviso (alimenti con user_id null) non si cancella: si
 // sovrascrive con le righe appena scaricate. Cancellarlo lascerebbe un
@@ -48,8 +49,8 @@
 // (RLS): non possono avere modifiche in sospeso da perdere.
 //
 // sostituisciDatiUtente è separata apposta: con zero righe da scrivere è
-// la cancellazione dei dati locali al logout (§9.6), rimandata per scelta —
-// quando arriverà userà questa stessa funzione.
+// la pulizia di Esci (src/lib/account/esci.ts) e della sua ripresa
+// all'avvio (uscitaInCorso.ts), con lo stesso controllo delle firme.
 
 import { db } from "../db/database";
 import type { NomeTabella, RigaBase } from "../db/tipi";

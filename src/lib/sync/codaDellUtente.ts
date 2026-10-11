@@ -2,9 +2,11 @@
 // Sincronizzazione (PUNTO_DI_PARTENZA.md, sezione 9.2, "L'indicatore").
 // Dal 10/10/2026.
 //
-// Solo le voci di quell'utente: i dati locali non si cancellano all'uscita
-// (sezione 9.6), quindi su un dispositivo usato da due persone la coda può
-// contenere anche le modifiche dell'altro. Come modificheNonInviate in
+// Solo le voci di quell'utente: su un dispositivo usato da due persone la
+// coda può contenere anche le modifiche dell'altro. Esci svuota i dati di
+// chi esce, ma non con la sessione scaduta e modifiche in coda (restano
+// apposta, per partire al rientro), e non tocca i dati lasciati dalle
+// uscite prima dell'11/10 (sezione 9.6). Come modificheNonInviate in
 // ripristino.ts, si riconoscono da dati.user_id.
 //
 // Qui solo letture e una scrittura sulla coda in Dexie: la pagina non

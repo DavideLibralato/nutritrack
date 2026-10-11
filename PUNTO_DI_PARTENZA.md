@@ -2908,7 +2908,8 @@ Stesso hook della pagina, quindi stesso stato.
 
 Solo le voci dell'utente entrano nei conteggi e nell'elenco
 (`codaDellUtente.ts`): su un dispositivo condiviso la coda può contenere
-anche quelle di un altro (i dati locali non si cancellano all'uscita, 9.6).
+anche quelle di un altro (Esci non svuota con la sessione scaduta e
+modifiche in coda, né i dati lasciati dalle uscite prima dell'11/10; 9.6).
 
 #### Ripristino dei dati locali (deciso il 2026-09-25)
 
@@ -2958,7 +2959,8 @@ peggio riportare indietro un cursore (una riscarica in più, nessuna riga
 persa).
 
 **Solo i dati di questo utente.** Il dispositivo può contenere dati di un
-altro utente (i dati locali non si cancellano al logout, §9.6): le sue
+altro utente (Esci non svuota con la sessione scaduta e modifiche in
+coda, né i dati lasciati dalle uscite prima dell'11/10; §9.6): le sue
 righe, le sue modifiche in coda e i suoi cursori restano intatti. Il
 **catalogo condiviso** (alimenti con `user_id` null) non si cancella, si
 sovrascrive con le righe scaricate: cancellarlo lascerebbe l'altro utente
@@ -2976,8 +2978,8 @@ mostrato i valori di prima, e un "Salva" li avrebbe rimandati al server
 sopra quelli giusti.
 
 `sostituisciDatiUtente` è separata apposta: con zero righe da scrivere è la
-cancellazione dei dati locali al logout (§9.6), **rimandata per scelta** —
-quando arriverà userà la stessa funzione. Test permanenti in
+pulizia di Esci e della sua ripresa all'avvio (§9.6, "Esci svuota i dati
+locali"), con lo stesso controllo delle firme. Test permanenti in
 `src/lib/sync/ripristino.test.ts`.
 
 Perché ora e non dopo: il local-first non è una feature, è *dove vive il dato*.
@@ -3160,9 +3162,8 @@ costruzione e non per attenzione.
   utenti vedono l'alimento, non chi l'ha inserito né quando
 - I dati sul dispositivo (IndexedDB) vanno **cancellati al logout**: su un
   telefono condiviso resterebbero leggibili. Era rimandato finché l'app
-  girava su dispositivi personali; è pubblica dall'11/10, e si costruisce
-  nel branch `esci-svuota` (decisioni sotto). Fino al merge Esci svuota
-  solo le pagine salvate dal service worker
+  girava su dispositivi personali; è pubblica dall'11/10. Costruito e
+  provato nel branch `esci-svuota` (decisioni sotto; §11, "Fatto")
 - Se un giorno l'app si apre al pubblico servono anche informativa privacy,
   export dei propri dati e cancellazione dell'account. In Europa i dati
   nutrizionali collegati a peso e obiettivi ricadono in una categoria protetta,
@@ -3977,7 +3978,31 @@ prova fisso intatto (70 voci); rientrati con quello, solo i suoi dati e
 sincronizzazione a posto. Resta da verificare `user_not_found` (§9.6,
 "Segno").
 
-**Test.** 806 test permanenti in 69 file (Vitest), tutti verdi all'11/10.
+**Esci svuota i dati locali** (11/10, branch `esci-svuota`, decisioni e
+com'è fatto in §9.6). Uscendo si svuotano righe, coda e cursori
+dell'utente dal dispositivo, deciso dallo stato: coda vuota senza
+chiedere, "Resta / Esci e perdile" con la sessione valida, niente
+svuotato con la sessione scaduta; signOut → attesa delle discese →
+pulizia, segno `nutritrack:uscita` ripreso all'avvio. Insieme, la
+correzione della salita: partono solo le voci dell'utente della
+sessione, e nessuna voce entra in outbox senza `user_id`. Provato
+l'11/10 sull'anteprima con l'account di prova fisso. PC (Chrome): Esci
+con la coda vuota senza domande, IndexedDB senza righe dell'utente,
+rientro con lo storico completo; con `*/rest/v1*` bloccato una voce in
+coda dà la conferma con Resta / Esci e perdila, Resta lascia tutto, Esci
+e perdila svuota; sbloccato e rientrato, storico completo e la voce
+persa assente. iPhone (Safari): Esci con la coda vuota e rientro con lo
+storico completo; Esci offline bloccato, niente toccato; Esci appena
+aperta l'app con "Uscita…" e poi login, rientro con lo storico
+completo. Giro generale per la salita (aggiungi, modifica, elimina,
+duplica voce, preferito aggiunto e tolto, peso, pasto salvato),
+verificato da Cowork su Supabase: arrivate voci_diario (3 righe, 1
+eliminata), preferiti (2, 1 tolto), misurazioni (1), pasti (1), con
+`updated_at` del server. Non provabili a mano, coperti dai test
+permanenti: la sessione scaduta vera (nessun segno scritto, dati che
+restano) e l'app chiusa a metà uscita.
+
+**Test.** 833 test permanenti in 72 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
 
@@ -3989,8 +4014,6 @@ sincronizzazione a posto. Resta da verificare `user_not_found` (§9.6,
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
-- Cancellazione dei dati locali al logout: in costruzione nel branch
-  `esci-svuota` (decisioni in 9.6)
 
 ### Difetti e verifiche aperti
 
