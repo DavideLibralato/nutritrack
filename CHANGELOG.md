@@ -5,6 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Segnalibro allineato provato su iPhone
+
+Branch `icona-preferiti`. Provato l'11/10 in Safari sull'anteprima, con
+l'account di prova: segnalibri in colonna con kcal da 2 e da 3 cifre, in
+tema scuro e chiaro; tocco appena fuori dal disegno preso dal segnalibro;
+tocco sulla prima voce vicino al segnalibro apre la voce; riga del pasto
+vuoto ("—") in ordine. Nessun bug trovato. In PUNTO §3 (Oggi, punto 3)
+la regola della riga; in §11 la voce "Fatto" e il piccolo lavoro aperto
+`tabular-nums` sulle voci dentro il pasto. Solo documenti.
+
 ## 2026-10-11 — Icona preferiti ferma nella riga del pasto
 
 Branch `icona-preferiti`. In Oggi il segnalibro del pasto si spostava in

@@ -170,7 +170,15 @@ Dall'alto:
    le kcal totali a destra, e sotto in grigio i nomi degli alimenti separati da
    punto medio. Un pasto vuoto mostra "—", non viene nascosto. Un tocco sulla
    riga di un pasto con alimenti nasconde o mostra il suo elenco (solo in
-   memoria: a ogni apertura dell'app sono tutti aperti)
+   memoria: a ogni apertura dell'app sono tutti aperti).
+   **Segnalibro e kcal sempre allineati** (dall'11/10): le kcal del pasto
+   stanno in uno spazio largo almeno 4 cifre, allineate a destra
+   (`min-w-[4ch]`, `tabular-nums`), con "kcal" fuori dallo spazio e senza
+   andare a capo; così il segnalibro sta sempre nella stessa posizione,
+   con 2 cifre come con 4. Con 5 cifre lo spazio si allarga invece di far
+   uscire il testo. L'area di tocco del segnalibro è di 44 px, con margini
+   negativi che la compensano: per l'impaginazione occupa quanto l'icona
+   (18 px + 4 px per lato), e né l'icona né le kcal si spostano
 4. **Pulsante "+ Aggiungi"**, a pillola, centrato
 
 Nient'altro: nessun grafico, nessun banner, nessun consiglio.
@@ -3481,6 +3489,15 @@ verifiche aperti"). Test: `pianoInserimento.test.ts`,
 `vociDiario.test.ts`, `testiBarra.test.ts`, la pagina Aggiungi e la
 pagina Oggi.
 
+**Segnalibro allineato in Oggi** (11/10, branch `icona-preferiti`,
+provato su iPhone l'11/10 in Safari sull'anteprima, account di prova).
+Prima il segnalibro del pasto si spostava con il numero di cifre delle
+kcal. Provati: segnalibri in colonna con kcal da 2 e da 3 cifre, nel
+tema scuro e nel chiaro; il segnalibro risponde anche toccando appena
+fuori dal disegno; toccando la prima voce sotto il pasto, vicino al
+segnalibro, si apre la voce e non il segnalibro; la riga di un pasto
+senza voci ("—") resta in ordine. Com'è fatto: sezione 3, Oggi, punto 3.
+
 **Test.** 771 test permanenti in 65 file (Vitest), tutti verdi all'11/10.
 
 ### Non ancora costruito
@@ -3494,6 +3511,13 @@ pagina Oggi.
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 - Cancellazione dei dati locali al logout: **rimandata per scelta** (9.6)
+- Piccolo lavoro aperto (11/10): **`tabular-nums` sui numeri delle voci
+  dentro il pasto** in Oggi ("80 g · 200 kcal"), oggi non incolonnati da
+  una riga all'altra. Attenzione: con Hanken Grotesk le cifre sono già
+  larghe uguali, quindi `tabular-nums` da solo non cambia niente; il
+  disallineamento viene dal numero di cifre. Per incolonnare serve uno
+  spazio minimo per il numero, come per le kcal del pasto (punto 3 di
+  Oggi, sezione 3)
 
 ### Difetti e verifiche aperti
 
