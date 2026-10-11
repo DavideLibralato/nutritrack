@@ -18,7 +18,7 @@ const fontTesto = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "NutriTrack",
+  title: "Libra",
   description: "Traccia calorie e macronutrienti in modo semplice e veloce",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     // passerebbe sotto l'orologio, che è sempre bianco, quindi invisibile
     // sul fondo chiaro, e ogni pagina dovrebbe lasciare lo spazio in alto.
     statusBarStyle: "default",
-    title: "NutriTrack",
+    title: "Libra",
   },
   icons: {
     apple: "/apple-touch-icon.png",

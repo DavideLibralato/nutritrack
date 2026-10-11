@@ -1,4 +1,4 @@
-// Service worker di NutriTrack (PUNTO_DI_PARTENZA.md §9.2 e §10.7).
+// Service worker di Libra (PUNTO_DI_PARTENZA.md §9.2 e §10.7).
 //
 // Un service worker è uno script che il browser tiene in esecuzione accanto
 // all'app e che si mette in mezzo a ogni richiesta di rete della pagina:
@@ -45,7 +45,8 @@ const {
 // v3 (3/10/2026): offline.html con i colori del tema scuro.
 // v4 (3/10/2026): offline.html segue la scelta di Impostazioni > Aspetto.
 // v5 (3/10/2026): offline.html segue anche il colore principale.
-const CACHE_STATICI = "nutritrack-statici-v5";
+// v6 (11/10/2026): offline.html con il nome Libra.
+const CACHE_STATICI = "nutritrack-statici-v6";
 const CACHE_PAGINE = "nutritrack-pagine-v2";
 const PAGINA_OFFLINE = "/offline.html";
 

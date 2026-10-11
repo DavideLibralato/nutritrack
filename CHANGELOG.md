@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Nome "Libra" visibile all'utente
+
+Branch `nome-libra`, passo 1 della rinomina (nome deciso l'11/10). Il
+nome che si vede diventa "Libra": `name` e `short_name` nel manifest, il
+titolo della scheda e `apple-mobile-web-app-title` in `layout.tsx` (il
+nome proposto da "Aggiungi a Home"), titolo e testo di `offline.html`.
+Cache dei file statici del service worker a v6, perché `offline.html` è
+cambiata. Restano "nutritrack" per scelta, e per sempre, le chiavi
+tecniche dei dati sul telefono (database Dexie, localStorage,
+sessionStorage, cache), `package.json` e la classe `NutriTrackDatabase`:
+cambiarle non si vede e rischia i dati locali. Repository GitHub e
+progetti Vercel e Supabase restano "nutritrack". Da provare su iPhone.
+
+## 2026-10-11 — Indirizzo unito a main
+
+Unito a main l'11/10 con fast-forward da `4ec4961` a `4567cf7`, senza
+commit di merge: `cd9df4a` (voce di merge di `preferiti`, conferme su
+iPhone in PUNTO §11), `4567cf7` (indirizzo pubblico app-libra in PUNTO e
+README). Branch `indirizzo` mai pushato su GitHub, cancellato in locale.
+Deploy di produzione riuscito. 782 test verdi in 67 file, lint e `tsc`
+puliti su main dopo il merge. Solo documenti. Voce scritta con il primo
+commit del branch successivo (`nome-libra`), per non fare un commit su
+main solo per il registro.
+
 ## 2026-10-11 — Indirizzo pubblico nei documenti
 
 Branch `indirizzo`. L'app ha un indirizzo pubblico dall'11/10,
