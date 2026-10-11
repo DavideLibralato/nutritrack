@@ -279,6 +279,7 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
 
   return (
     <div
+      data-modifica-pasto-salvato
       style={{ top: areaVisibile.top, height: areaVisibile.height }}
       className={CLASSE_CONTENITORE}
     >
@@ -415,11 +416,16 @@ export default function ModificaPastoSalvato({ userId, composizioneId, catalogo,
           </div>
 
           {/* Barra Salva/Annulla, come in Profilo (BarraSalvaProfilo). Con
-              data-nascondi-mentre-scrivi (regola in globals.css) sparisce
-              mentre un campo ha il fuoco: la pagina è agganciata al visual
-              viewport, senza l'attributo resterebbe sopra la tastiera. */}
+              data-sparisci-mentre-scrivi (regola in globals.css) sparisce
+              del tutto mentre un campo ha il fuoco: la schermata è
+              agganciata al visual viewport, senza l'attributo resterebbe
+              sopra la tastiera. Non data-nascondi-mentre-scrivi come in
+              Profilo: quella regola usa visibility e lascia lo spazio della
+              barra, una fascia vuota sopra la tastiera. Qui la barra è
+              l'ultima della colonna e senza di lei l'elenco si allunga, non
+              salta niente. */}
           <div
-            data-nascondi-mentre-scrivi
+            data-sparisci-mentre-scrivi
             className="shrink-0 border-t border-border bg-background px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           >
             <div role="status" className="text-sm">

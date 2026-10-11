@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-11 — Barra Salva della modifica pasto: sparisce mentre si scrive
+
+Branch `preferiti`. In `ModificaPastoSalvato`, mentre nome o grammi hanno
+il fuoco, la barra Salva/Annulla non è più solo invisibile
+(`visibility: hidden` della regola `data-nascondi-mentre-scrivi`, che ne
+lasciava lo spazio: una fascia vuota sopra la tastiera) ma sparisce del
+tutto (`display: none`), e l'elenco si allunga fino alla tastiera. Regola
+nuova `data-sparisci-mentre-scrivi` in `globals.css`, limitata a quella
+schermata; la regola globale resta com'è per tab bar e Profilo. Vale da
+Impostazioni e dalla matita in /aggiungi. 782 test verdi, `tsc` e lint
+puliti. Da provare su iPhone.
+
 ## 2026-10-11 — Preferiti: etichetta corta, modifica del pasto con la tastiera
 
 Branch `preferiti`. Dalle prove su iPhone dell'11/10 (Safari,

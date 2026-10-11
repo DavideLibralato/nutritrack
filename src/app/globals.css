@@ -486,4 +486,14 @@ button:not(:disabled) {
     visibility: hidden;
     pointer-events: none;
   }
+
+  /* La barra Salva di ModificaPastoSalvato invece sparisce del tutto
+     (display: none), così sopra la tastiera non resta la fascia vuota che
+     lascerebbe visibility. Lì si può: la barra è l'ultima della colonna, e
+     senza di lei l'elenco si allunga invece di saltare. Il selettore è più
+     corto di quello sopra perché vale solo dentro quella schermata, dove i
+     soli campi sotto la barra sono nome e grammi, tutti e due di testo. */
+  [data-modifica-pasto-salvato]:has(input:focus) [data-sparisci-mentre-scrivi] {
+    display: none;
+  }
 }
