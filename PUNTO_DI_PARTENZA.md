@@ -1340,20 +1340,45 @@ del 15/10.
 **Le amicizie**
 - **Aggiungi**: si scrive lo username esatto, "Invia richiesta".
   `chiedi_amicizia` risponde solo con un esito, mai con un id o un nome:
-  `inviata`, `non_trovato` ("Nessun utente con questo username"),
-  `sei_tu`, `gia_amici`, `gia_chiesta`, `troppo_presto` ("Puoi riprovare
-  tra qualche giorno") e `accettata`: se l'altro ti aveva già chiesto
-  l'amicizia, la sua richiesta diventa accettata.
+  `inviata`, `non_trovato` ("Nessun utente con questo username": vale
+  anche per un formato sbagliato, non si distingue), `sei_tu`,
+  `gia_amici`, `gia_chiesta`, `troppo_presto` ("Puoi riprovare tra
+  qualche giorno"), `accettata` (se l'altro ti aveva già chiesto
+  l'amicizia, la sua richiesta diventa accettata) e **`senza_username`**
+  (deciso il 15/10, passo 5): chi chiede non ha ancora uno username, e
+  senza non si possono avere amici, perché l'altro non avrebbe un nome da
+  leggere. Due persone che si chiedono l'amicizia nello stesso istante:
+  la seconda trova la riga della prima e diventano amici (`accettata`),
+  mai un errore.
 - **In arrivo**: Accetta / Rifiuta. **Inviate**: "In attesa", con Annulla.
+  Le risposte (`rispondi_amicizia`) hanno tre esiti: `ok`,
+  `non_trovata` (la richiesta non c'è più, per esempio annullata nel
+  frattempo) e `senza_username` (si accetta solo con uno username;
+  rifiutare è sempre possibile). Ripetere la stessa risposta dà `ok`:
+  dopo una risposta persa si può ripremere senza danni. La risposta
+  opposta a una già data dà `non_trovata`.
 - **Rifiuto** (decisione del 15/10): chi ha mandato la richiesta vede
-  "Non accettata" con un pulsante **Ok**; toccato Ok, la riga sparisce.
-  **Per 7 giorni dal rifiuto** non può richiedere l'amicizia alla stessa
-  persona (`troppo_presto`), dopo sì. Chi rifiuta non vede altro: la
+  "Non accettata" con un pulsante **Ok**; toccato Ok, la riga sparisce
+  (`chiudi_rifiuto`, esiti `ok`, anche ripetuto, e `non_trovata`).
+  **Per 7 giorni dal rifiuto**, cioè 7×24 ore da quando è stata rifiutata,
+  non può richiedere l'amicizia alla stessa persona (`troppo_presto`),
+  dopo sì; l'Ok non accorcia l'attesa. Chi rifiuta non vede altro: la
   richiesta rifiutata sparisce dalla sua pagina, e lui può chiedere
-  l'amicizia all'altro quando vuole.
-- **Rimuovi amico**: l'amicizia finisce per tutti e due, e gli alimenti
-  ancora in attesa fra i due diventano `annullato`. Le copie già aggiunte
-  restano. Dopo, tutti e due possono richiedere subito.
+  l'amicizia all'altro quando vuole. **Una richiesta rifiutata non si
+  annulla**: se chi è stato rifiutato potesse cancellarla, aggirerebbe i
+  7 giorni.
+- **Annulla e Rimuovi amico** (`annulla_o_rimuovi_amicizia`, esiti `ok` e
+  `non_trovata`): annulla chi ha chiesto, su una richiesta in attesa;
+  rimuove uno qualsiasi dei due, su un'amicizia accettata. Ripetuta, per
+  esempio dopo una risposta persa, risponde `non_trovata` (la riga è già
+  cancellata): **la pagina lo tratta come "già fatto"**, ricarica
+  l'elenco e non mostra nessun errore (passo 6). L'amicizia
+  finisce per tutti e due. Le copie già aggiunte restano. Dopo, tutti e
+  due possono richiedere subito. Gli alimenti ancora in attesa fra i due
+  diventano `annullato`: **non ancora**, perché `alimenti_condivisi` non
+  esiste; la migration `alimenti_condivisi` (branch
+  `condivisione-alimenti`) ridefinirà la funzione con `create or
+  replace` per farlo.
 
 **Condividere un alimento** (branch `condivisione-alimenti`)
 - **Da dove**: Impostazioni > Alimenti, selezione multipla. L'icona
@@ -2282,8 +2307,10 @@ delle due cose, ma sono dati diversi
 Stato delle migration: **`nomi_utente` applicata il 15/10** (versione
 20261015175818, `apply_migration`; prove in un blocco annullato 20/20,
 advisors solo con i WARN accettati in 9.6; tipo `NomeUtente` in
-`tipi.ts`). `amicizie` e `alimenti_condivisi` da applicare; il trigger su
-`auth.users` dopo il merge (9.1).
+`tipi.ts`). **`amicizie` applicata il 15/10** (versione 20261015184017,
+`apply_migration`; prove in un blocco annullato 90/90, advisors solo con i
+WARN accettati in 9.6; tipo `Amicizia` in `tipi.ts`). `alimenti_condivisi`
+da scrivere; il trigger su `auth.users` dopo il merge (9.1).
 
 Tre tabelle per Amici (sezione 3). **Non sono local-first**: non stanno in
 Dexie, non passano dalla coda né dalla discesa, non entrano in
@@ -2318,17 +2345,43 @@ funzioni (sotto), non da `insert`/`update` diretti, salvo dove è detto.
 - indice unico sulla coppia in qualunque ordine,
   `(least(user_id, amico_id), greatest(user_id, amico_id)) where
   deleted_at is null`: fra due persone c'è al massimo una riga viva.
-  Indice su `amico_id`
-- RLS, lettura: chi ha chiesto la vede finché non è un rifiuto già
-  visto; chi riceve la vede finché non l'ha rifiutata
-  (`(user_id = uid and not (stato = 'rifiutata' and rifiuto_visto)) or
-  (amico_id = uid and stato <> 'rifiutata')`). Nessuna policy di
-  scrittura
+  Indici semplici su `user_id` e su `amico_id`: quello sulla coppia
+  comincia da un'espressione e non copre le due foreign key (avviso
+  "unindexed foreign keys", e la cascata scorrerebbe la tabella)
+- RLS, lettura: chi ha chiesto la vede finché è viva e non è un rifiuto
+  già visto; chi riceve la vede finché è viva e non l'ha rifiutata
+  (`(user_id = uid and deleted_at is null and not (stato = 'rifiutata'
+  and rifiuto_visto)) or (amico_id = uid and deleted_at is null and
+  stato <> 'rifiutata')`). Nessuna policy e nessun grant di scrittura
+- `nomi_utente` si legge con la **stessa regola**: la policy di
+  `nomi_utente` chiede che esista una riga di `amicizie` che posso
+  leggere con l'altro utente, e la RLS di `amicizie` vale anche dentro
+  quella sottoquery. Una regola sola: se cambia chi vede le amicizie,
+  cambia anche chi legge gli username
 - una richiesta rifiutata **resta** (con `risposta_il`) per la regola dei
-  7 giorni: `chiedi_amicizia` dello stesso richiedente risponde
-  `troppo_presto` finché non sono passati; dopo, o se chiede l'altro,
-  la riga vecchia prende `deleted_at` e ne nasce una nuova. Rimuovere
-  un'amicizia o annullare una richiesta = `deleted_at`
+  7 giorni (7×24 ore da `risposta_il`): `chiedi_amicizia` dello stesso
+  richiedente risponde `troppo_presto` finché non sono passati; dopo, o
+  se chiede l'altro, la riga vecchia prende `deleted_at` e ne nasce una
+  nuova. Annullare una richiesta o rimuovere un'amicizia = `deleted_at`;
+  una riga rifiutata **non** si annulla (aggirerebbe i 7 giorni). L'Ok su
+  "Non accettata" mette solo `rifiuto_visto`
+- **le quattro funzioni e i loro esiti** (solo testo, mai dati; senza
+  utente autenticato → errore; l'uuid è sempre l'id della riga di
+  `amicizie`): `chiedi_amicizia(text)` → `inviata`, `non_trovato`,
+  `sei_tu`, `gia_amici`, `gia_chiesta`, `accettata`, `troppo_presto`,
+  `senza_username`; `rispondi_amicizia(uuid, bool)` → `ok`,
+  `non_trovata`, `senza_username` (solo chi riceve, solo su una riga in
+  attesa; la stessa risposta ripetuta → `ok`);
+  `annulla_o_rimuovi_amicizia(uuid)` → `ok`, `non_trovata`;
+  `chiudi_rifiuto(uuid)` → `ok`, `non_trovata`
+- concorrenza: due richieste incrociate nello stesso istante. La seconda
+  `insert` viola l'indice sulla coppia; `chiedi_amicizia` intercetta
+  `unique_violation`, rilegge la riga che ora c'è e decide su quella
+  (`accettata` o `gia_chiesta`). La riga trovata si legge con `for
+  update`. Al massimo tre giri, poi l'errore vero
+- `annulla_o_rimuovi_amicizia` oggi tocca solo `amicizie`: la migration
+  `alimenti_condivisi` la ridefinirà (`create or replace`) per segnare
+  `annullato` gli alimenti in attesa fra i due
 
 **`alimenti_condivisi`** — un alimento mandato, una riga per alimento ×
 destinatario, `user_id` = chi manda

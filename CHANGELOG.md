@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: migration `amicizie` applicata, tipo `Amicizia`
+
+Branch `amici`. `supabase/migrations/amicizie.sql`: tabella solo online
+con una riga viva per coppia (indice unico sulla coppia in qualunque
+ordine, indici su `user_id` e `amico_id`), RLS di sola lettura (chi
+chiede, chi riceve, rifiuto nascosto a chi ha rifiutato e, dopo l'Ok, a
+chi è stato rifiutato), lettura di `nomi_utente` allargata con la stessa
+regola (`alter policy`), quattro funzioni `security definer` con esiti
+di solo testo: `chiedi_amicizia` (anche `senza_username`, regola dei 7×24
+ore, richieste incrociate nello stesso istante gestite intercettando
+`unique_violation`), `rispondi_amicizia`, `annulla_o_rimuovi_amicizia`
+(non su una riga rifiutata), `chiudi_rifiuto`. Prove in un blocco
+annullato lanciate da Davide dal SQL Editor: 90/90 ok. Applicata da
+Cowork con `apply_migration`, versione 20261015184017; verifiche: RLS
+attiva, 0 righe, utenti e `nomi_utente` invariati, permessi e policy come
+nel file, `get_advisors` con i soli 4 WARN attesi nuovi
+(`authenticated_security_definer`), performance solo con INFO
+`unused_index` (tabella vuota). Tipo `Amicizia` e tipi degli esiti in
+`tipi.ts`; PUNTO §3 e §4 con le decisioni del passo 5 e lo stato della
+migration. Script di prova temporaneo cancellato, mai in git.
+
 ## 2026-10-15 — Amici: username in Profilo
 
 Branch `amici`. Gruppo "Account" in Profilo con la riga "Username" (letta

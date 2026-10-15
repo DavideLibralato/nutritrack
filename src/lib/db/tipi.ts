@@ -254,3 +254,37 @@ export interface NomeUtente extends RigaBase {
   // deleted_at (da RigaBase) qui resta sempre null: la riga si aggiorna e
   // sparisce solo con l'utente (ON DELETE CASCADE).
 }
+
+export type StatoAmicizia = "in_attesa" | "accettata" | "rifiutata";
+
+// Una richiesta di amicizia o un'amicizia (migration `amicizie`, versione
+// 20261015184017). Una riga viva per coppia; user_id = chi ha chiesto,
+// amico_id = chi riceve. Confrontato il 15/10 con
+// information_schema.columns: tutte NOT NULL tranne risposta_il e
+// deleted_at. Si legge con la RLS (chi vede cosa: PUNTO_DI_PARTENZA.md §4)
+// e si scrive solo con le quattro funzioni qui sotto.
+export interface Amicizia extends RigaBase {
+  user_id: string; // NOT NULL qui, a differenza di RigaBase
+  amico_id: string;
+  stato: StatoAmicizia; // check sul database, default 'in_attesa'
+  risposta_il: string | null; // ISO 8601: quando ha accettato o rifiutato (regola dei 7 giorni)
+  rifiuto_visto: boolean; // default false: chi ha chiesto ha toccato Ok su "Non accettata"
+  creato_il: string; // ISO 8601, default now() sul server
+}
+
+// Gli esiti delle funzioni di `amicizie`: solo testo, mai dati
+// (PUNTO_DI_PARTENZA.md §3 "Le amicizie" e §4). Senza utente autenticato le
+// funzioni danno un errore, non un esito: chi le chiama lo tratta come una
+// risposta non arrivata.
+export type EsitoChiediAmicizia =
+  | "inviata"
+  | "non_trovato"
+  | "sei_tu"
+  | "gia_amici"
+  | "gia_chiesta"
+  | "accettata"
+  | "troppo_presto"
+  | "senza_username";
+export type EsitoRispondiAmicizia = "ok" | "non_trovata" | "senza_username";
+export type EsitoAnnullaORimuoviAmicizia = "ok" | "non_trovata";
+export type EsitoChiudiRifiuto = "ok" | "non_trovata";
