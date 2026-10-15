@@ -1174,7 +1174,31 @@ catalogo, si corregge e si fa pulizia.
   aprire "Modifica". La **barra di selezione copre la tab bar**: "N
   selezionati", Elimina, Annulla (che esce dalla selezione).
   **L'icona condividi non c'è** finché non esiste Amici: un pulsante che
-  non fa niente sembra rotto.
+  non fa niente sembra rotto. Come è fatta (dal 15/10):
+  - si entra da tutti e due i rami del gesto: dito fermo (il "menu" di
+    Oggi, 450 + 160 ms) e dito che si muove dopo il sollevamento (il
+    "trascina" di Oggi), perché qui non c'è niente da trascinare. Anche il
+    tasto destro (`contextmenu`) seleziona. In selezione, tenere premuto
+    un'altra riga la aggiunge;
+  - togliendo l'ultima spunta si esce dalla selezione, come nel mockup;
+  - il click che il browser manda dopo il gesto non apre "Modifica" né
+    toglie la spunta appena messa: lo blocca l'hook, come in Oggi (un
+    click solo, entro 400 ms);
+  - la barra ha la forma e la posizione della pillola della tab bar, con
+    fondo pieno (`bg-surface`, non `vetro`, che lascerebbe vedere la
+    pillola sotto); come la pillola si nasconde mentre un campo ha il
+    fuoco. Elimina è un pulsante tondo arancio (`warning`), non rosso:
+    `--pericolo` è solo per ciò che non si può annullare (sezione 7);
+  - in selezione il "+" e il suggerimento spariscono. Il suggerimento
+    "Tieni premuto su un alimento per selezionarne più di uno insieme."
+    sta sopra l'elenco fuori dalla selezione, con almeno due alimenti,
+    in grigio (`text-muted`): non c'è un token per il fondo tenue del
+    mockup, e i colori sono controllati dal test dei contrasti;
+  - la ricerca resta usabile in selezione e non toglie le spunte: lo
+    sheet dice comunque quanti alimenti si eliminano;
+  - `useTieniPremuto` è generico: chi lo usa dichiara i `tipi` di riga
+    (Oggi `voce` e `pasto`, qui `alimento`), e una riga di un tipo non
+    dichiarato non partecipa (test in `tieniPremuto.test.tsx`).
 - **Eliminare più alimenti**: `SheetConferma` "Eliminare N alimenti? Il
   diario non cambia." (con uno solo selezionato: "Eliminare «Mela»?"). Solo
   se serve, una seconda frase: "Verranno tolti anche da X pasti salvati e
@@ -1182,7 +1206,11 @@ catalogo, si corregge e si fa pulizia.
   alimento solo; "1 pasto salvato", "1 preferito"; se una delle due parti
   è a zero, solo l'altra). X = pasti salvati visibili che contengono
   almeno uno degli alimenti; Y = alimenti selezionati che sono fra i
-  preferiti. Poi la barra con Annulla.
+  preferiti (`conseguenzeEliminazione` e `testiConfermaEliminazione` in
+  `src/lib/catalogo/confermaEliminazione.ts`, con test). Pulsanti
+  "Annulla" / "Elimina". Poi la barra con Annulla: "Eliminati: 3
+  alimenti" (con uno solo "Eliminato: Mela"), e dopo l'Annulla
+  "Ripristinati: 3 alimenti".
 - **Tutto o niente, in una sola transazione Dexie** (possibile dal 9/10:
   la sync parte fuori dalla transazione, `repository.ts`). Serve una
   funzione per più alimenti insieme, non la funzione per un alimento

@@ -15,7 +15,7 @@ import { useTieniPremuto, type RigaPremuta } from "./tieniPremuto";
 import { DURATA_PRESSIONE_MS, FINESTRA_DECISIONE_MS } from "./decisioneTieniPremuto";
 
 function Lista({ onMenu }: { onMenu: (riga: RigaPremuta) => void }) {
-  const { rif } = useTieniPremuto({ attivo: true, onMenu });
+  const { rif } = useTieniPremuto({ tipi: ["voce", "pasto"], attivo: true, onMenu });
   return (
     <ul ref={rif}>
       <li>
@@ -127,5 +127,51 @@ describe("timer in anticipo", () => {
     scarto = 0;
     avanza(1);
     expect(onMenu).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Dal 15/10 il hook serve anche Impostazioni > Alimenti, con il tipo di
+// riga "alimento". Chi lo usa dichiara i suoi `tipi`: una riga di un tipo
+// non dichiarato non partecipa. In Oggi questo impedisce che un tipo
+// estraneo finisca nei rami che distinguono solo voce e pasto (dove
+// verrebbe trattato da pasto).
+describe("solo i tipi di riga dichiarati partecipano al gesto", () => {
+  function ListaConTipi({
+    tipi,
+    onMenu,
+  }: {
+    tipi: readonly string[];
+    onMenu: (riga: RigaPremuta<string>) => void;
+  }) {
+    const { rif } = useTieniPremuto({ tipi, attivo: true, onMenu });
+    return (
+      <ul ref={rif}>
+        <li>
+          <button type="button" data-tieni-premuto="alimento" data-id="a-1">
+            Avena
+          </button>
+        </li>
+      </ul>
+    );
+  }
+
+  function tieniPremuto(tipi: readonly string[]) {
+    const onMenu = vi.fn();
+    const { container } = render(<ListaConTipi tipi={tipi} onMenu={onMenu} />);
+    const riga = container.querySelector("button")!;
+    puntatore("pointerdown", riga, 1);
+    avanza(DURATA_PRESSIONE_MS + FINESTRA_DECISIONE_MS);
+    puntatore("pointerup", riga, 1);
+    return onMenu;
+  }
+
+  it("una riga \"alimento\" in una lista che accetta voce e pasto non apre il menu", () => {
+    expect(tieniPremuto(["voce", "pasto"])).not.toHaveBeenCalled();
+  });
+
+  it("la stessa riga in una lista che accetta \"alimento\" lo apre, con il suo tipo", () => {
+    const onMenu = tieniPremuto(["alimento"]);
+    expect(onMenu).toHaveBeenCalledTimes(1);
+    expect(onMenu.mock.calls[0][0]).toMatchObject({ tipo: "alimento", id: "a-1" });
   });
 });

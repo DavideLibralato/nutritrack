@@ -58,7 +58,6 @@ import ServeConnessione from "@/components/ServeConnessione";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import {
-  elencoNomi,
   messaggioDopoRipristino,
   testoRipristinoNonRiuscito,
 } from "@/lib/inserimento/testiAlimentiCancellati";
@@ -533,7 +532,6 @@ function AggiungiContenuto() {
     if (!userId || !annullabile) return;
     setBarra(null);
 
-    const nome = elencoNomi([annullabile.alimento.nome]);
     try {
       const { pastiNonRipristinati } = await ripristinaAlimentoEliminato(
         userId,
@@ -545,14 +543,14 @@ function AggiungiContenuto() {
       // Impostazioni > Alimenti).
       setBarra({
         id: crypto.randomUUID(),
-        ...messaggioDopoRipristino(annullabile.alimento.nome, pastiNonRipristinati),
+        ...messaggioDopoRipristino([annullabile.alimento.nome], pastiNonRipristinati),
       });
     } catch {
       // Si ripropone l'Annulla: ripristinaAlimentoEliminato salta ciò che è
       // già tornato in vita, quindi riprovare dopo un guasto a metà converge.
       setBarra({
         id: crypto.randomUUID(),
-        testo: testoRipristinoNonRiuscito(nome),
+        testo: testoRipristinoNonRiuscito([annullabile.alimento.nome]),
         annullabile,
       });
     }

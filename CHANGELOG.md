@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Catalogo alimenti: la pagina
+
+Branch `catalogo-alimenti`. Commit `a16c9b2`: `/impostazioni/alimenti` con
+elenco degli alimenti modificabili, ricerca, ordinamento (`<select>`
+nativo, scelta approvata da Davide al posto del menu del mockup), "+"
+sopra la tab bar alla stessa altezza di "+ Aggiungi" in Oggi, form a
+pagina intera come stato della pagina ("‹" lo chiude), barra "Creato:" ed
+"Eliminato:" con Annulla, riquadro a catalogo vuoto; in `PAGINE_APP`.
+Portate in un posto solo la regola `eModificabile` (prima scritta due
+volte in Aggiungi) e le frasi dopo l'Annulla (`messaggioDopoRipristino`),
+testi invariati. Verificata con un test temporaneo della pagina, poi
+cancellato. 852 test verdi, `tsc`, `eslint` e `npm run build` puliti. La
+pagina non ha ancora la riga in Impostazioni (commit 7) e non è stata
+guardata su iPhone.
+
 ## 2026-10-15 — Catalogo alimenti: testi del form dal chiamante
 
 Branch `catalogo-alimenti`. Commit `9350cb3`: `CreaAlimentoForm` riceve

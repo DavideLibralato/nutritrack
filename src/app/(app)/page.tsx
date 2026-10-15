@@ -122,6 +122,11 @@ import { useTieniPremuto, type TipoRiga } from "@/lib/tieniPremuto";
 import { useTrascinaInPasto } from "@/lib/trascinaInPasto";
 import CopiaTrascinata from "@/components/CopiaTrascinata";
 
+// Le righe di Oggi che si possono tenere premute: gli alimenti ("voce") e
+// il nome del pasto ("pasto"). Fuori dal componente: un elenco nuovo a ogni
+// ridisegno non cambierebbe niente, ma così è chiaro che è fisso.
+const TIPI_RIGA_OGGI: readonly TipoRiga[] = ["voce", "pasto"];
+
 // "Sposta" (sezione 3, "Tieni premuto"): cosa si sposta e a che punto si è.
 // `sceltaPasto`: si sta scegliendo il pasto nel foglio (Sposta dal menu); col
 // trascinamento la destinazione la dà il rilascio, e il foglio dei pasti non
@@ -506,6 +511,7 @@ function OggiContenuto() {
   // premuto: sposta, duplica, elimina"): il ramo "menu" apre il menu
   // contestuale. Il ramo "trascina" per ora non fa niente (passo D).
   const { rif: rifTieniPremuto, azzera: azzeraTieniPremuto } = useTieniPremuto({
+    tipi: TIPI_RIGA_OGGI,
     attivo: gestiAttivi,
     onMenu: (riga, daContextmenu) =>
       setMenu({

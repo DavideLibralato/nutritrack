@@ -42,14 +42,19 @@ export function testoGiaSalvato(nomePasto: string, nomiEsclusi: string[]): strin
 // Punto 4: la barra dopo l'"Annulla" di una cancellazione, dall'esito di
 // ripristinaAlimenti. Caso normale: "Ripristinato: Mela", su una riga. Se
 // un pasto salvato non è tornato (il suo nome nel frattempo è stato preso),
-// serve la frase intera, che può andare a capo. `nome` è quello mostrato:
-// il nome dell'alimento, o "3 alimenti" dopo un'eliminazione multipla.
+// serve la frase intera, che può andare a capo. `nomi`: gli alimenti
+// ripristinati, uno solo (Aggiungi, o il form del catalogo) o più di uno
+// (selezione in Impostazioni > Alimenti: "Ripristinati: 3 alimenti").
 export function messaggioDopoRipristino(
-  nome: string,
+  nomi: string[],
   pastiNonRipristinati: string[]
 ): MessaggioBarra {
-  if (pastiNonRipristinati.length === 0) return messaggioRipristinato(nome);
-  let testo = `Ripristinato: ${nome}.`;
+  const piu = nomi.length > 1;
+  const [verbo, nome] = piu ? ["Ripristinati:", `${nomi.length} alimenti`] : ["Ripristinato:", nomi[0]];
+  if (pastiNonRipristinati.length === 0) {
+    return piu ? { testo: verbo, nome, icona: "spunta" } : messaggioRipristinato(nome);
+  }
+  let testo = `${verbo} ${nome}.`;
   if (pastiNonRipristinati.length === 1) {
     testo += ` Il pasto salvato ${elencoNomi(pastiNonRipristinati)} no: ne hai già un altro con lo stesso nome.`;
   } else {
@@ -60,7 +65,9 @@ export function messaggioDopoRipristino(
 
 // Il ripristino non è riuscito: la barra lo dice e ripropone l'Annulla
 // (ripristinaAlimenti salta ciò che è già tornato in vita, quindi
-// riprovare converge). `nome` come sopra, già tra «» se è un nome.
-export function testoRipristinoNonRiuscito(nome: string): string {
-  return `Non è stato possibile ripristinare ${nome}.`;
+// riprovare converge). "Non è stato possibile ripristinare «Mela»." o
+// "… ripristinare 3 alimenti."
+export function testoRipristinoNonRiuscito(nomi: string[]): string {
+  const cosa = nomi.length > 1 ? `${nomi.length} alimenti` : elencoNomi(nomi);
+  return `Non è stato possibile ripristinare ${cosa}.`;
 }

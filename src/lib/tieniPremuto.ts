@@ -10,7 +10,11 @@
 // delegation"): un evento che parte da una riga risale fino alla lista, che
 // guarda da quale riga arriva con `closest("[data-tieni-premuto]")`. Una
 // riga partecipa al gesto se ha:
-//   data-tieni-premuto="voce" | "pasto"   e   data-id="<id>"
+//   data-tieni-premuto="<tipo>"   e   data-id="<id>"
+// dove <tipo> è uno dei `tipi` che chi usa il hook dichiara: in Oggi
+// "voce" | "pasto", in Impostazioni > Alimenti "alimento". Una riga di un
+// tipo non dichiarato non partecipa: così in Oggi un tipo estraneo non può
+// finire nei rami che distinguono solo voce e pasto.
 // Così le righe restano semplici <button> e non serve un hook per riga.
 //
 // Ascoltatori nativi e non onPointerDown di React, come in swipeGiorno.ts:
@@ -52,30 +56,35 @@ import { liberaPuntatore, rivendicaPuntatore } from "./puntatoriRivendicati";
 
 export type TipoRiga = "voce" | "pasto";
 
-export interface RigaPremuta {
-  tipo: TipoRiga;
+// `T`: i tipi di riga di chi usa il hook. Il valore predefinito è quello di
+// Oggi, così il codice di Oggi (anche trascinaInPasto.ts) scrive
+// `RigaPremuta` senza parametri.
+export interface RigaPremuta<T extends string = TipoRiga> {
+  tipo: T;
   id: string;
   // La riga nella pagina: serve ad ancorarci il menu.
   elemento: HTMLElement;
 }
 
-interface OpzioniTieniPremuto {
+interface OpzioniTieniPremuto<T extends string> {
+  // I valori di data-tieni-premuto che partecipano al gesto.
+  tipi: readonly T[];
   // Falso con uno sheet o un menu aperto: il gesto non parte.
   attivo: boolean;
   // Il gesto è finito sul ramo menu (dito fermo, o alzato senza muoversi),
   // oppure è arrivato un `contextmenu` senza gesti in corso
   // (`daContextmenu`: tasto destro o tastiera, il fuoco può andare al menu).
-  onMenu: (riga: RigaPremuta, daContextmenu: boolean) => void;
+  onMenu: (riga: RigaPremuta<T>, daContextmenu: boolean) => void;
   // Il ramo "trascina" (passo D). Facoltativo: senza, il trascinamento non
   // fa niente.
-  onTrascinamento?: AscoltatoriTrascinamento;
+  onTrascinamento?: AscoltatoriTrascinamento<T>;
 }
 
-export interface AscoltatoriTrascinamento {
+export interface AscoltatoriTrascinamento<T extends string = TipoRiga> {
   // Il dito ha cominciato a trascinare. `origine`: dove era il dito quando
   // la riga si è sollevata (da lì si misura lo spostamento della copia);
   // (x, y): dove è adesso.
-  inizio: (riga: RigaPremuta, origine: { x: number; y: number }, x: number, y: number) => void;
+  inizio: (riga: RigaPremuta<T>, origine: { x: number; y: number }, x: number, y: number) => void;
   // Ogni movimento del dito durante il trascinamento. Arriva a ogni
   // pointermove: chi la riceve non deve ridisegnare la pagina ogni volta.
   movimento: (x: number, y: number) => void;
@@ -83,24 +92,28 @@ export interface AscoltatoriTrascinamento {
   // del sistema — una chiamata, l'app in background —, un gesto rimasto
   // aperto chiuso dal tocco dopo, la lista smontata): vale come rilascio
   // fuori, niente si scrive.
-  fine: (riga: RigaPremuta, x: number, y: number, interrotto: boolean) => void;
+  fine: (riga: RigaPremuta<T>, x: number, y: number, interrotto: boolean) => void;
 }
 
-interface Gesto {
+interface Gesto<T extends string> {
   id: number;
-  riga: RigaPremuta;
+  riga: RigaPremuta<T>;
   stato: StatoTieniPremuto;
   timer: ReturnType<typeof setTimeout> | null;
 }
 
-function rigaDa(target: EventTarget | null, contenitore: HTMLElement): RigaPremuta | null {
+function rigaDa<T extends string>(
+  target: EventTarget | null,
+  contenitore: HTMLElement,
+  tipi: readonly T[]
+): RigaPremuta<T> | null {
   if (!(target instanceof Element)) return null;
   const el = target.closest<HTMLElement>("[data-tieni-premuto]");
   if (!el || !contenitore.contains(el)) return null;
   const tipo = el.dataset.tieniPremuto;
   const id = el.dataset.id;
-  if ((tipo !== "voce" && tipo !== "pasto") || !id) return null;
-  return { tipo, id, elemento: el };
+  if (!tipo || !(tipi as readonly string[]).includes(tipo) || !id) return null;
+  return { tipo: tipo as T, id, elemento: el };
 }
 
 // Restituisce:
@@ -109,7 +122,7 @@ function rigaDa(target: EventTarget | null, contenitore: HTMLElement): RigaPremu
 //   sono. La chiama chi chiude il menu (chiudiMenu in Oggi): quando il menu
 //   si chiude il dito che l'ha aperto è finito, anche se il browser non
 //   l'ha detto.
-export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
+export function useTieniPremuto<T extends string = TipoRiga>(opzioni: OpzioniTieniPremuto<T>) {
   // Gli ascoltatori sono attaccati una volta sola: leggono le opzioni più
   // recenti da qui, aggiornate dopo ogni render.
   const rifOpzioni = useRef(opzioni);
@@ -134,7 +147,7 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
     // bloccherebbero per sempre scroll e tieni-premuto. Un nuovo pointerdown
     // PRIMARIO vuol dire che nessun altro dito è giù: quello che era rimasto
     // aperto è finito di sicuro, e si chiude lì.
-    let gesto: Gesto | null = null;
+    let gesto: Gesto<T> | null = null;
     let ditoPreso: number | null = null;
     const blocco = creaBloccoClick();
     // Quando è finito l'ultimo gesto che ha sollevato una riga
@@ -144,7 +157,7 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
 
     // Fine della decisione: la riga torna giù e il timer si ferma. Il dito,
     // se era stato preso, resta preso finché non si alza.
-    function chiudiGesto(g: Gesto) {
+    function chiudiGesto(g: Gesto<T>) {
       if (gesto === g) gesto = null;
       // Chiuso a metà trascinamento (non con un rilascio, che passa da
       // "lasciato"): il trascinamento è interrotto.
@@ -177,7 +190,7 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
     }
 
     // Applica il nuovo stato: effetti del cambio di fase e timer seguente.
-    function applica(g: Gesto, nuovo: StatoTieniPremuto, x: number, y: number) {
+    function applica(g: Gesto<T>, nuovo: StatoTieniPremuto, x: number, y: number) {
       const prima = g.stato.fase;
       g.stato = nuovo;
       if (prima === nuovo.fase) return;
@@ -220,7 +233,7 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
       }
     }
 
-    function programma(g: Gesto) {
+    function programma(g: Gesto<T>) {
       if (g.timer !== null) clearTimeout(g.timer);
       g.timer = null;
       const scadenza = prossimaScadenza(g.stato);
@@ -252,7 +265,7 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
       blocco.inizioGesto();
       // Solo il tasto principale: il destro passa da `contextmenu`.
       if (!e.isPrimary || e.button !== 0 || !rifOpzioni.current.attivo) return;
-      const riga = rigaDa(e.target, el!);
+      const riga = rigaDa(e.target, el!, rifOpzioni.current.tipi);
       if (!riga) return;
       liberaPuntatore(e.pointerId); // un id rimasto da un gesto interrotto
       gesto = {
@@ -294,7 +307,7 @@ export function useTieniPremuto(opzioni: OpzioniTieniPremuto) {
     }
 
     function suContextMenu(e: MouseEvent) {
-      const riga = rigaDa(e.target, el!);
+      const riga = rigaDa(e.target, el!, rifOpzioni.current.tipi);
       if (!riga) return;
       e.preventDefault();
       const msDaUltimoSollevato =

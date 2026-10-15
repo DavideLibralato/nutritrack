@@ -109,6 +109,13 @@ export function messaggioEliminato(
   return { testo: "Eliminato:", nome, coda: `(${numeroAlimenti} ${parola})`, icona: "elimina" };
 }
 
+// Impostazioni > Alimenti, dopo l'eliminazione dalla selezione:
+// "Eliminato: Mela" con un alimento solo, "Eliminati: 3 alimenti" con più.
+export function messaggioAlimentiEliminati(nomi: string[]): MessaggioBarra {
+  if (nomi.length === 1) return messaggioEliminato(nomi[0]);
+  return { testo: "Eliminati:", nome: `${nomi.length} alimenti`, icona: "elimina" };
+}
+
 export function messaggioRipristinato(nome: string): MessaggioBarra {
   return { testo: "Ripristinato:", nome, icona: "spunta" };
 }
