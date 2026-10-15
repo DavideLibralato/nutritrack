@@ -5,6 +5,34 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: decisioni nel documento
+
+Branch `amici`. Analisi e decisioni di Davide del 15/10 in
+`PUNTO_DI_PARTENZA.md`: sezione 3 "Amici" (copia dell'alimento da
+accettare, username scelto alla registrazione e cambiabile da Profilo,
+ricerca solo per nome esatto, rifiuto con "Non accettata" e 7 giorni
+prima di poter richiedere, chi manda non vede l'esito, pallino nel colore
+principale con l'arancio della sync che vince), §4 le tre tabelle solo
+online (`nomi_utente`, `amicizie`, `alimenti_condivisi`) e le funzioni,
+§9.1 il codice di invito controllato anche dal trigger su `auth.users`
+(codice nel Vault di Supabase, `CODICE_INVITO` su Vercel solo per il
+messaggio, procedura per cambiarlo; trigger applicato dopo il merge e il
+deploy Ready, perché le anteprime usano il Supabase di produzione), eccezioni in
+§9.5 e §9.6 con gli avvisi degli advisors accettati, Elimina account ed
+Esci. Solo documenti, schema dati invariato.
+
+## 2026-10-15 — Catalogo alimenti unito a main
+
+Unito a main il 15/10 con fast-forward da `c4d7190` a `38dfcff`, senza
+commit di merge: `f4aa9a6` (mockup e decisioni), `093781c` (contaUsi e
+ordinaCatalogo), `f348e03` (eliminazione e ripristino di più alimenti in
+una transazione), `9350cb3` (testi del form dal chiamante), `a16c9b2` (la
+pagina), `e987c64` (selezione multipla), `7a3de96` (riga in
+Impostazioni), `38dfcff` (provato, documenti). Branch cancellato in
+locale e su GitHub. 862 test verdi in 76 file, lint, `tsc` e `npm run
+build` puliti su main prima del push. Schema dati invariato. Deploy di
+produzione di `38dfcff` riuscito, confermato da Davide il 15/10.
+
 ## 2026-10-15 — Catalogo alimenti: provato su iPhone
 
 Branch `catalogo-alimenti`. Commit dei documenti (questa voce compresa):

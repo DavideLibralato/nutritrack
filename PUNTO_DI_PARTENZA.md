@@ -40,6 +40,9 @@ Decisioni prese:
 - Rimandate: barcode, foto piatto AI, inserimento vocale, inserimento testuale AI,
   insight AI, assistente AI, meal planner, community, condivisione nutrizionista,
   database ristoranti, gamification, export multiformato, integrazione fitness.
+  La "community" resta rimandata: **Amici** (dal 15/10, sezione 3) non lo è,
+  è solo il modo di mandare a un amico una copia di un alimento, senza
+  feed né profili da sfogliare (eccezioni scritte in 9.5 e 9.6).
 - Il documento deve avere una sezione **"fuori scope"** esplicita, non solo la
   lista di cosa includere.
 
@@ -853,6 +856,9 @@ un comando che non fa niente sembra rotto):
   si intitola "Preferiti e pasti salvati", ma per esteso l'etichetta
   veniva accorciata con "…" su iPhone; a destra "12 alimenti · 3 pasti",
   vedi "Preferiti e pasti salvati" più sotto), Peso;
+- gruppo **Amici** (dal 15/10, branch `amici`, in costruzione), sotto
+  Alimentazione: una riga **Amici**, con a destra le novità ("2 nuove")
+  e il pallino nel colore principale; vedi "Amici" più sotto;
 - gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
   a destra tema e colore, "Sistema · Verde"), Sincronizzazione (la
   pagina con l'indicatore dal 10/10, sezione 9.2; a destra della riga lo stato in breve con un pallino colorato: "Tutto
@@ -872,6 +878,7 @@ un comando che non fa niente sembra rotto):
 `/impostazioni/obiettivi`, `/impostazioni/pasti`, `/impostazioni/peso`,
 `/impostazioni/aspetto`, `/impostazioni/preferiti`,
 `/impostazioni/alimenti` (branch `catalogo-alimenti`),
+`/impostazioni/amici` (branch `amici`, in costruzione),
 `/impostazioni/sincronizzazione`, `/impostazioni/informazioni`;
 `/impostazioni/elimina-account` (branch `elimina-account`).
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
@@ -1175,7 +1182,9 @@ catalogo, si corregge e si fa pulizia.
   aprire "Modifica". La **barra di selezione copre la tab bar**: "N
   selezionati", Elimina, Annulla (che esce dalla selezione).
   **L'icona condividi non c'è** finché non esiste Amici: un pulsante che
-  non fa niente sembra rotto. Come è fatta (dal 15/10):
+  non fa niente sembra rotto. Nel codice non esiste ancora (non è
+  nascosta): la aggiunge il branch `condivisione-alimenti`, collegata
+  allo sheet "Condividi con" (vedi "Amici" più sotto). Come è fatta (dal 15/10):
   - si entra da tutti e due i rami del gesto: dito fermo (il "menu" di
     Oggi, 450 + 160 ms) e dito che si muove dopo il sollevamento (il
     "trascina" di Oggi), perché qui non c'è niente da trascinare. Anche il
@@ -1235,6 +1244,161 @@ catalogo, si corregge e si fa pulizia.
 - La pagina è in `PAGINE_APP` del service worker.
 - **Schema dati invariato**: niente migration Supabase, niente nuova
   versione Dexie.
+
+### Amici (dal 15/10, branch `amici` e poi `condivisione-alimenti`, in costruzione)
+
+Serve a una cosa sola: **mandare a un amico una copia di un alimento** del
+proprio catalogo, così chi mangia le stesse cose non le riscrive a mano
+(il primo giorno, sezione 10.1, è quello in cui l'attrito pesa di più).
+Non è un social: niente feed, niente profili da sfogliare, niente diario
+o peso visibili ad altri (eccezioni in 9.5 e 9.6). Analisi e decisioni
+del 15/10.
+
+**Le decisioni**
+- **Condividere = mandare una copia.** Accettata, entra nel catalogo
+  dell'amico come sua: id nuovo, il suo `user_id`, modificabile da lui.
+  Le modifiche successive del mittente non la toccano. Rimuovere un amico
+  non toglie le copie già accettate.
+- **Gli alimenti in arrivo vanno accettati**: elenco "In arrivo" con
+  **Aggiungi** / **Rifiuta**.
+- **Avvisi solo dentro l'app**: un pallino sulla tab Impostazioni e sulla
+  riga Amici. Niente notifiche push.
+- **Amicizia con richiesta e accettazione esplicita.**
+- **Ricerca solo per username esatto**: nessun elenco degli utenti,
+  nessuna ricerca parziale.
+- La pagina sta in Impostazioni, gruppo **Amici** sotto Alimentazione
+  (`/impostazioni/amici`, in `PAGINE_APP` del service worker).
+
+**Lo username**
+- **Regola**: `^[a-z][a-z0-9_]{2,19}$`: da 3 a 20 caratteri, comincia con
+  una lettera, poi lettere, cifre e `_`; niente accenti, punti o spazi.
+  **Sempre minuscolo**: l'app normalizza (spazi ai bordi tolti, tutto in
+  minuscolo) prima di controllare e di inviare, quindi "Marco" e "marco"
+  sono lo stesso nome per costruzione, e l'indice unico sul database lo
+  garantisce senza estensioni. Il campo apre la tastiera senza maiuscola
+  iniziale e senza correttore.
+- **Si sceglie alla registrazione**: campo "Username" nella pagina
+  Registrati, sotto Nome. **Prima dell'invio** la Server Action chiede
+  `username_disponibile` ("Questo username è già in uso"). **Lo
+  garantisce il database**: il trigger su `auth.users` (sezione 9.1)
+  crea la riga in `nomi_utente`; con il nome preso nel frattempo o un
+  formato sbagliato la registrazione fallisce tutta, mai un account senza
+  username. Due persone che scelgono lo stesso nome nello stesso istante:
+  GoTrue risponde con un errore generico, che la Server Action traduce in
+  "Username appena preso, scegline un altro". Il trigger si applica dopo
+  il merge di `amici` (9.1, "ordine dei rilasci"): chi si registra prima
+  sceglie lo username alla prima apertura di Amici, come chi era già
+  registrato.
+- **Chi è già registrato** lo sceglie alla prima apertura di Amici: al
+  posto della pagina c'è "Scegli il tuo username".
+- **Si cambia da Profilo**, se il nome nuovo è libero: una riga
+  "Username" che apre un piccolo modulo con il **suo** Salva, solo
+  online. Non entra nel Salva unico di Profilo, che scrive in locale: una
+  scrittura che può fallire per "già in uso" non si mescola con una
+  locale (lo stesso motivo per cui Elimina account non sta in Profilo,
+  9.6). Il nome lasciato torna libero.
+- Non sta in `profili`: quella riga non nasce alla registrazione (il
+  15/10: 6 utenti, 3 righe), passa dalla coda, dove un vincolo violato la
+  bloccherebbe (sezione 4, `pasti`), ed è privata per costruzione, mentre
+  lo username lo vedono gli amici. Ha una tabella sua, `nomi_utente`
+  (sezione 4).
+- Gli amici vedono **solo lo username**: mai nome, email o altro.
+
+**Le amicizie**
+- **Aggiungi**: si scrive lo username esatto, "Invia richiesta".
+  `chiedi_amicizia` risponde solo con un esito, mai con un id o un nome:
+  `inviata`, `non_trovato` ("Nessun utente con questo username"),
+  `sei_tu`, `gia_amici`, `gia_chiesta`, `troppo_presto` ("Puoi riprovare
+  tra qualche giorno") e `accettata`: se l'altro ti aveva già chiesto
+  l'amicizia, la sua richiesta diventa accettata.
+- **In arrivo**: Accetta / Rifiuta. **Inviate**: "In attesa", con Annulla.
+- **Rifiuto** (decisione del 15/10): chi ha mandato la richiesta vede
+  "Non accettata" con un pulsante **Ok**; toccato Ok, la riga sparisce.
+  **Per 7 giorni dal rifiuto** non può richiedere l'amicizia alla stessa
+  persona (`troppo_presto`), dopo sì. Chi rifiuta non vede altro: la
+  richiesta rifiutata sparisce dalla sua pagina, e lui può chiedere
+  l'amicizia all'altro quando vuole.
+- **Rimuovi amico**: l'amicizia finisce per tutti e due, e gli alimenti
+  ancora in attesa fra i due diventano `annullato`. Le copie già aggiunte
+  restano. Dopo, tutti e due possono richiedere subito.
+
+**Condividere un alimento** (branch `condivisione-alimenti`)
+- **Da dove**: Impostazioni > Alimenti, selezione multipla. L'icona
+  condividi nella barra di selezione apre lo sheet **"Condividi con"**
+  con gli amici da spuntare. Serve la connessione.
+- **Cosa si copia, al momento dell'invio e da Dexie** (quello che il
+  mittente vede): nome, marca, barcode, i quattro valori, zuccheri,
+  fibre, saturi, sale, porzione, `fonte`. Non dal server: un alimento
+  creato o corretto offline e non ancora inviato lì non c'è, o c'è
+  vecchio. Se poi il mittente lo modifica o lo elimina, la copia in
+  attesa non cambia.
+- **Chi manda non vede** se l'alimento è stato aggiunto o rifiutato
+  (decisione del 15/10).
+- **In arrivo**, nella pagina Amici: ogni alimento con chi lo manda
+  (username), "Nome · Marca" e kcal per 100 g; **Aggiungi** /
+  **Rifiuta**. **Doppione**: se nel catalogo vivo dell'utente (o in
+  quello comune) c'è già lo stesso nome con la stessa marca, maiuscole e
+  accenti indifferenti come `cercaPerNome`, la riga lo dice ("Hai già
+  «Pane · Mulino»") e i pulsanti diventano **Aggiungi comunque** /
+  **Rifiuta**. Niente unione automatica: i valori possono essere
+  diversi. Funzione pura con test permanente.
+- **La copia nasce sul server**, in `rispondi_alimento_condiviso`, in una
+  transazione: inserisce in `alimenti` con l'id calcolato dalla
+  condivisione (UUID v5, `uuid-ossp` è già installata), `user_id` di chi
+  accetta, `verificato = false`, `fonte` del mittente (`ricetta` diventa
+  `manuale`: senza la sua composizione non sarebbe una ricetta), e segna
+  la riga `aggiunto`. L'id calcolato rende il tentativo ripetibile: se
+  la risposta si perde e si ripreme, `on conflict (id) do nothing` non
+  crea un doppione. Poi l'app fa partire una discesa e l'alimento compare
+  nel catalogo come gli altri. Nessuna foreign key da `alimenti` verso la
+  condivisione: la copia è indipendente da tutto.
+
+**Il pallino**
+- **Il numero** = richieste di amicizia in arrivo + alimenti in arrivo,
+  tutti "in attesa", contati su Supabase (filtrati dalla RLS) da un
+  modulo in `/lib`.
+- **Si aggiorna** agli stessi inneschi della discesa (avvio, ritorno
+  online, ritorno in primo piano) e dopo ogni azione nella pagina Amici.
+  Niente Realtime, niente polling (9.2).
+- **Offline**: l'ultimo numero noto, in `localStorage` con una chiave per
+  utente (`nutritrack:amici:novita:<id>`); lo sovrascrive il primo
+  contatto riuscito, lo cancellano Esci ed Elimina account.
+- **Colore principale**. Sulla tab Impostazioni c'è un pallino solo: se
+  la sincronizzazione chiede attenzione vince il suo arancio (9.2),
+  altrimenti, con delle novità, quello del colore principale. Uno screen
+  reader legge "Impostazioni, 2 novità in Amici". Nella riga Amici, a
+  destra, "2 nuove" con lo stesso pallino.
+
+**Offline e dati.** Le tre tabelle di Amici sono **solo online** (sezione
+4): non entrano in Dexie, nella coda né nella discesa, quindi niente
+versione Dexie nuova. Offline la pagina Amici mostra "Serve la
+connessione". Entra nel local-first una cosa sola, la copia accettata,
+che è una riga normale di `alimenti`.
+
+**Fasi**, ognuna con la sua migration (file in `supabase/migrations/`,
+prove in un blocco SQL annullato prima, `get_advisors` dopo):
+- branch **`amici`**: (1) questo documento; (2) migration `nomi_utente`
+  con `username_disponibile` e `imposta_username`, senza trigger; (3)
+  campo Username in Registrati, che manda username e codice nei
+  metadati, e regole in `validazione.ts` con test; (4) riga Username in
+  Profilo; (5) migration `amicizie`; (6) pagina Amici, con "Scegli il tuo
+  username", e gruppo in Impostazioni; (7) pallino per le richieste.
+  (8) la migration del trigger su `auth.users` (username e codice di
+  invito, sezione 9.1), in quest'ordine: merge di `amici` → deploy di
+  produzione **Ready** → prove in un blocco SQL annullato → applicazione
+  → una registrazione vera;
+- branch **`condivisione-alimenti`**: (1) migration `alimenti_condivisi` e
+  `rispondi_alimento_condiviso`; (2) icona condividi e sheet "Condividi
+  con"; (3) "In arrivo" con il doppione; (4) pallino esteso agli
+  alimenti e testo di Elimina account; (5) prova della cascata.
+
+**Prove con due utenti**: due account usa e getta creati da Davide
+dall'app (per esempio `davidemancon02+amici1@…` e `+amici2@…`), eliminati
+alla fine con Elimina account, che così prova anche la cascata. Il suo
+account e l'account di prova fisso restano fuori. Sullo stesso iPhone uno
+in Safari e uno nell'app installata (memorie separate). Servono il codice
+di invito, la Redirect URL esatta dell'anteprima del branch (sezione 11)
+e pazienza con le email gratuite (circa 2 all'ora).
 
 ### Profilo
 
@@ -1774,7 +1938,7 @@ bug che si nota sei mesi dopo, guardando un grafico che non torna.
 
 ---
 
-## 4. Modello dati (11 tabelle)
+## 4. Modello dati (11 tabelle sincronizzate, più 3 solo online per Amici)
 
 Progettate per il quadro completo, anche se in V1 se ne usa metà. **Creare una
 tabella non vuol dire costruire la feature**: alcune restano vuote finché non
@@ -2060,6 +2224,79 @@ divergere.
 **`preferiti`** — associazione utente / alimento. I pasti salvati **non** stanno
 qui: stanno in `composizioni`. La sezione "Preferiti" della UI mostra l'unione
 delle due cose, ma sono dati diversi
+
+#### Le tabelle di Amici: solo online (decise il 15/10, migration da applicare)
+
+Tre tabelle per Amici (sezione 3). **Non sono local-first**: non stanno in
+Dexie, non passano dalla coda né dalla discesa, non entrano in
+`NomeTabella` (che pretenderebbe un livello in `LIVELLO_TABELLA`,
+un'etichetta e una voce nella discesa). I loro tipi stanno in `tipi.ts`
+ma fuori da `NomeTabella`. Il motivo: cercare uno username, rispondere a
+una richiesta e ricevere un alimento non hanno senso offline, e una riga
+scritta da due utenti diversi non sta nel modello "vince l'ultima
+scrittura, un utente alla volta" (9.2). Hanno lo stesso le quattro
+colonne obbligatorie (sotto) e il trigger `set_updated_at`. Ogni colonna
+che punta a un utente è `ON DELETE CASCADE`. Le scritture passano dalle
+funzioni (sotto), non da `insert`/`update` diretti, salvo dove è detto.
+
+**`nomi_utente`** — lo username, una riga per utente
+- `user_id` unico, `username text` con
+  `check (username ~ '^[a-z][a-z0-9_]{2,19}$')`, indice unico su
+  `username`: il formato ammette solo minuscole, quindi l'unicità è
+  indifferente alle maiuscole per costruzione
+- RLS, lettura: la propria riga, oppure quella di chi ha con me una riga
+  di `amicizie` che posso leggere (sotto: in attesa, accettata, o il mio
+  "Non accettata" non ancora chiuso con Ok). Nessun altro username è
+  leggibile
+- la crea il trigger su `auth.users` alla registrazione (9.1), oppure
+  `imposta_username` per chi è registrato da prima; si cambia con
+  `imposta_username`
+
+**`amicizie`** — una riga per coppia, `user_id` = chi chiede
+- `amico_id` (chi riceve), `stato` (`in_attesa` | `accettata` |
+  `rifiutata`), `risposta_il` (quando ha accettato o rifiutato),
+  `rifiuto_visto` (bool, default false: chi ha chiesto ha toccato Ok su
+  "Non accettata"); `check (user_id <> amico_id)`
+- indice unico sulla coppia in qualunque ordine,
+  `(least(user_id, amico_id), greatest(user_id, amico_id)) where
+  deleted_at is null`: fra due persone c'è al massimo una riga viva.
+  Indice su `amico_id`
+- RLS, lettura: chi ha chiesto la vede finché non è un rifiuto già
+  visto; chi riceve la vede finché non l'ha rifiutata
+  (`(user_id = uid and not (stato = 'rifiutata' and rifiuto_visto)) or
+  (amico_id = uid and stato <> 'rifiutata')`). Nessuna policy di
+  scrittura
+- una richiesta rifiutata **resta** (con `risposta_il`) per la regola dei
+  7 giorni: `chiedi_amicizia` dello stesso richiedente risponde
+  `troppo_presto` finché non sono passati; dopo, o se chiede l'altro,
+  la riga vecchia prende `deleted_at` e ne nasce una nuova. Rimuovere
+  un'amicizia o annullare una richiesta = `deleted_at`
+
+**`alimenti_condivisi`** — un alimento mandato, una riga per alimento ×
+destinatario, `user_id` = chi manda
+- `id` generato dal client, `destinatario_id`, la **copia dei valori**
+  presa al momento dell'invio (le stesse colonne di `alimenti`: nome,
+  marca, barcode, valori per 100 g, porzione, `fonte`; nome e marca al
+  massimo 200 caratteri), `stato` (`in_attesa` | `aggiunto` |
+  `rifiutato` | `annullato`), `risposta_il`
+- RLS, lettura: **solo il destinatario** (chi manda non vede l'esito,
+  decisione del 15/10). Inserimento diretto: `user_id = uid`, `stato =
+  'in_attesa'` e un'amicizia accettata fra i due. Nessun update o delete
+  diretto
+- indici su `destinatario_id` (le righe in attesa) e `user_id`
+- l'alimento creato dall'accettazione ha come id un UUID v5 di questa
+  riga, ma **nessuna foreign key** la lega: la copia è indipendente
+
+**Le funzioni** (tutte `security definer`, `search_path = ''`, controlli
+espliciti dentro, `revoke` da `public`; `grant` solo ad `authenticated`,
+salvo dove è detto): `username_disponibile(text)` (anche ad `anon`, per la
+pagina Registrati: risponde solo sì o no sul nome esatto),
+`imposta_username(text)`, `chiedi_amicizia(text)`,
+`rispondi_amicizia(uuid, bool)`, `annulla_o_rimuovi_amicizia(uuid)`,
+`chiudi_rifiuto(uuid)` (l'Ok su "Non accettata"),
+`rispondi_alimento_condiviso(uuid, bool)`; più la funzione del trigger
+su `auth.users` (9.1), non chiamabile da nessuno. Gli avvisi degli
+advisors che danno sono accettati (9.6).
 
 ### Campi tecnici obbligatori su ogni tabella
 
@@ -2697,6 +2934,94 @@ Conseguenze:
 - l'apertura al pubblico è un'ipotesi tenuta viva dall'architettura, non un
   obiettivo dell'MVP
 
+#### Il codice di invito anche nel database (deciso il 15/10, branch `amici`)
+
+**Il buco.** Fino al 15/10 il codice lo controllava solo la Server Action
+`registrati`: chiunque abbia la chiave pubblica dell'app (è nel browser per
+costruzione) può chiamare `auth.signUp` direttamente e registrarsi senza.
+Si chiude nello stesso trigger su `auth.users` che crea lo username
+(sezione 3, "Amici").
+
+**Il trigger** (due, sulla stessa tabella, con funzioni `security
+definer` e `search_path = ''`):
+- **`BEFORE INSERT`**: legge `codice_invito` dai metadati della
+  registrazione e lo confronta con quello salvato (sotto). Codice
+  mancante o sbagliato → errore, l'account non nasce. Controlla anche il
+  formato dello username. Poi **toglie `codice_invito` dai metadati**,
+  così il codice non resta salvato nella riga dell'utente
+- **`AFTER INSERT`**: crea la riga in `nomi_utente` dallo `username` dei
+  metadati (prima la riga in `auth.users` non esiste, e la foreign key
+  la rifiuterebbe). Nome già preso → errore, e la registrazione viene
+  annullata tutta. Lo `username` resta nei metadati come "nome alla
+  registrazione", ma l'app non lo legge mai: vale `nomi_utente`
+- vale per **ogni** riga nuova in `auth.users`, anche per gli utenti
+  creati dalla dashboard di Supabase: da qui in poi gli account nascono
+  solo dall'app
+- **ordine dei rilasci**: prima in produzione la pagina Registrati che
+  manda `codice_invito` e `username` nei metadati (innocui finché il
+  trigger non c'è), poi il trigger. Al contrario, nella finestra fra i
+  due nessuno potrebbe registrarsi dalla pagina di produzione: le
+  anteprime usano lo stesso Supabase, quindi il trigger si applica **dopo
+  il merge** di `amici`, non durante il branch. Ordine deciso il 15/10:
+  merge → deploy di produzione **Ready** → prove nel blocco SQL annullato
+  → applicazione → una registrazione vera.
+  Fino ad allora chi si registra (anche gli account di prova) sceglie lo
+  username alla prima apertura di Amici, percorso che serve comunque a
+  chi è già registrato. Dopo l'applicazione, una registrazione vera con
+  un account usa e getta
+- **è il punto più delicato del lavoro**: un errore nel trigger blocca
+  tutte le registrazioni. Prima di applicarlo, prove in un blocco SQL
+  annullato: registrazione valida, username preso, formato sbagliato,
+  codice sbagliato, codice mancante
+
+**Dove sta il codice (deciso il 15/10).** Nel **Vault di Supabase** (`supabase_vault`, già installato nel
+progetto), un segreto di nome `codice_invito`: cifrato sul disco, non
+esposto dall'API, leggibile solo dalle funzioni del database. Non nel
+client, niente `NEXT_PUBLIC_`. La variabile `CODICE_INVITO` su Vercel e
+in `.env.local` resta: alla Server Action serve per dire "Codice di invito
+non valido." invece dell'errore generico che GoTrue restituisce quando il
+trigger rifiuta. Il database è la garanzia, la Server Action il messaggio.
+- **Senza il segreto** (cancellato per sbaglio) il trigger rifiuta tutte
+  le registrazioni: direzione sicura, mai registrazione aperta per un
+  dato mancante
+- **Aprire al pubblico**: una migration che toglie il controllo dalla
+  funzione del trigger, più la riga nella Server Action
+
+**Cambiare il codice di invito**, passo per passo. **I due valori, su
+Vercel e nel Vault, devono coincidere**: se sono diversi, chi scrive il
+codice di Vercel passa la Server Action ma viene rifiutato dal trigger con
+l'errore generico, e chi scrive quello del Vault si ferma a "Codice di
+invito non valido." In pratica nessuno si registra finché non coincidono.
+1. Scegliere il codice nuovo. Non va scritto in nessun file del
+   repository (`.env.local` non si committa mai, CLAUDE.md).
+2. **Vercel**: progetto → Settings → Environment Variables →
+   `CODICE_INVITO` → Edit, valore nuovo, per l'ambiente Production (e
+   Preview, se si prova la registrazione da un'anteprima) → Save.
+3. **Redeploy**: Deployments → l'ultimo deploy di Production → "…" →
+   Redeploy. La variabile nuova vale solo dal deploy successivo; aspettare
+   lo stato **Ready**.
+4. **Vault**: dal SQL Editor di Supabase
+   `select vault.update_secret((select id from vault.secrets where name =
+   'codice_invito'), '<nuovo>');`
+5. **Verifica**: `select count(*) from vault.decrypted_secrets where name
+   = 'codice_invito' and decrypted_secret = '<nuovo>';` deve dare 1. Poi,
+   se serve un account, una registrazione vera dall'app con il codice
+   nuovo.
+6. In locale, se serve provare la registrazione da `npm run dev`,
+   aggiornare anche `CODICE_INVITO` in `.env.local`.
+
+**La prima volta** il segreto non esiste ancora, e non può nascere dal
+file della migration: il codice finirebbe nel repository. Lo crea Davide
+dal SQL Editor, con lo stesso valore di `CODICE_INVITO` su Vercel,
+**prima** di applicare la migration del trigger:
+`select vault.create_secret('<codice>', 'codice_invito');`, poi la
+verifica del passo 5. Senza il segreto il trigger rifiuterebbe tutte le
+registrazioni.
+
+Fra il passo 3 e il 4 i due valori sono diversi e nessuno si registra:
+pochi minuti, accettabile per una beta di amici. I passi si fanno uno
+dopo l'altro, senza lasciare la procedura a metà.
+
 #### Il ripristino della password (dal 10/10, branch `reset-password`)
 
 `/password-dimenticata` chiede il link (`resetPasswordForEmail`, flusso
@@ -3269,7 +3594,12 @@ un `debounce` sulla digitazione.
 *(confermato)*
 
 - **Niente social**: nessun feed, nessun profilo pubblico, nessun confronto con
-  altri utenti
+  altri utenti. **Eccezione decisa il 15/10: Amici** (sezione 3). Si può
+  avere degli amici e mandare loro una copia di un alimento, niente di
+  più: lo username si trova solo scrivendolo esatto (nessun elenco,
+  nessuna ricerca parziale), un amico vede solo lo username, mai diario,
+  peso, obiettivi o profilo, e niente classifiche o confronti. Gli avvisi
+  sono un pallino dentro l'app, mai una notifica
 - **Niente gamification**: nessuna streak, nessun badge, nessun punteggio. Saltare
   un giorno non è un fallimento da notificare
 - **Niente giudizi sul cibo**: nessun alimento "sano" o "da evitare", nessun
@@ -3307,6 +3637,33 @@ costruzione e non per attenzione.
   prodotto (nome, marca, valori per 100 g). Il `user_id` di chi ha creato la
   riga esiste nel database ma **non viene mai esposto all'app**: gli altri
   utenti vedono l'alimento, non chi l'ha inserito né quando
+- **Eccezioni di Amici** (decise il 15/10, sezione 3 e sezione 4, "Le
+  tabelle di Amici"), le uniche righe che riguardano due utenti:
+  - lo **username** è leggibile solo da chi ha con te una riga di
+    `amicizie` che può vedere (sezione 4); chiunque, anche senza
+    account, può sapere solo se un nome **esatto** è già preso (`username_disponibile`, per la
+    pagina Registrati), lo stesso che la richiesta di amicizia dice a chi
+    è entrato. Nessuna funzione restituisce un elenco, un id o un nome
+    che non hai scritto tu;
+  - un **alimento mandato** porta a un amico una copia dei soli dati di
+    prodotto (gli stessi del catalogo), con lo username di chi lo manda;
+    chi lo manda non sa se è stato aggiunto o rifiutato;
+  - le righe di `amicizie` mostrano a ciascuno dei due l'id dell'altro:
+    serve a leggere il suo username, e non dice niente di più;
+  - nessuna di queste regole tocca diario, peso, obiettivi, profilo,
+    pasti salvati o preferiti, che restano `user_id = auth.uid()`
+- **Avvisi di `get_advisors` accettati per Amici** (15/10), come per
+  `elimina_mio_account`: un WARN
+  `authenticated_security_definer_function_executable` per ogni funzione
+  di Amici (sezione 4), e `anon_security_definer_function_executable` per
+  `username_disponibile`. Sono voluti: le funzioni leggono righe di altri
+  utenti che la RLS nasconde (per questo `security definer`), ma ciascuna
+  agisce solo per chi la chiama, con i controlli scritti dentro, e
+  restituisce un esito, mai dati di altri. `username_disponibile` è
+  chiamabile senza account perché la pagina Registrati non ha ancora una
+  sessione, e risponde solo sì o no sul nome esatto. Su Supabase non c'è
+  un limite di frequenza per funzione: se un giorno servisse, una
+  tabellina dei tentativi. Con la beta a inviti non serve
 - I dati sul dispositivo (IndexedDB) vanno **cancellati al logout**: su un
   telefono condiviso resterebbero leggibili. Era rimandato finché l'app
   girava su dispositivi personali; è pubblica dall'11/10. Costruito e
@@ -3356,6 +3713,19 @@ costruzione e non per attenzione.
   definer` eseguibile da `authenticated` dà un WARN. È voluto: cancella
   solo l'utente che la chiama, senza parametri, quindi nessuno può
   cancellare un altro. Eccezione decisa alla regola "nessun avviso nuovo"
+- **Amici** (deciso il 15/10): le tre tabelle nuove hanno `ON DELETE
+  CASCADE` su ogni colonna che punta a un utente, quindi
+  `elimina_mio_account` (che fa solo `delete from auth.users`, verificato
+  il 15/10) le copre senza cambiare. Per chi elimina: spariscono
+  username (che torna libero), amicizie, richieste e alimenti mandati o
+  ricevuti; sul dispositivo si cancella in più solo la chiave del
+  pallino di Amici. Per l'altro utente l'amicizia e gli alimenti in
+  attesa da quel mittente spariscono in silenzio; **le copie già
+  aggiunte restano**, sono righe sue di `alimenti` senza legami. Lo
+  username liberato può prenderlo un altro, ma la vecchia amicizia non
+  passa a lui. Il testo della pagina va aggiornato ("amici e username")
+  e la prova nel blocco annullato va rifatta contando anche le tabelle
+  nuove (branch `condivisione-alimenti`, sezione 3)
 - **File in Storage**: oggi zero. Quando ci saranno file dell'utente (la
   foto profilo), `elimina_mio_account` o il flusso che la chiama dovrà
   cancellare anche quelli: le foreign key non toccano i file
@@ -3478,7 +3848,10 @@ costruzione e non per attenzione.
   (`CHIAVE_ULTIMO_SUCCESSO`, prima di `azzeraStatoGiri` che la rilegge),
   il segno del reset password, lo stato dei giri, le pagine salvate.
   **Restano** tema e colore (preferenze del telefono, si vedono anche al
-  login), il catalogo comune e i dati di altri utenti
+  login), il catalogo comune e i dati di altri utenti. Con Amici (15/10)
+  si cancella anche la chiave del pallino di questo utente
+  (`nutritrack:amici:novita:<id>`); in Dexie niente di nuovo, le tabelle
+  di Amici sono solo online
 - **Ordine: signOut → attesa delle discese in corso → pulizia**. Una
   discesa partita prima dell'uscita può finire dopo la pulizia e
   riscrivere righe **e cursore**: al rientro dello stesso utente la
@@ -4184,6 +4557,10 @@ transazione); "Dxx" creato da Aggiungi, eliminato e ripristinato.
   (fase 5)
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
+- **Amici e condivisione degli alimenti** (sezione 3, "Amici"): decisi
+  il 15/10, in costruzione nel branch `amici`, poi
+  `condivisione-alimenti`. Comprende il codice di invito controllato
+  anche nel database (9.1)
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
