@@ -5,6 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Catalogo alimenti: contaUsi e ordinaCatalogo
+
+Branch `catalogo-alimenti`. Commit `093781c`: in
+`src/lib/catalogo/ordinamentoCatalogo.ts` le due funzioni pure per
+l'ordinamento della pagina Alimenti (usi dalle voci di diario vive;
+Più usati / A → Z / Z → A / Meno usati, a parità A → Z, poi marca, poi
+id). 10 test permanenti, provati al contrario: contando anche le voci
+cancellate fallisce "non conta le voci cancellate"; togliendo la parità
+A → Z da "Meno usati" fallisce il test di "Meno usati". Nessuna pagina
+le usa ancora.
+
 ## 2026-10-15 — Catalogo alimenti: mockup e decisioni
 
 Branch `catalogo-alimenti`. Commit `f4aa9a6`: in git il mockup approvato

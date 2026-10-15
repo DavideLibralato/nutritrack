@@ -3,6 +3,7 @@
 // "pasto_salvato"` in questo pezzo — le ricette (stessa tabella, tipo
 // "ricetta") sono un perimetro diverso, non ancora costruito.
 
+import { db } from "../db/database";
 import { repositoryAlimenti, repositoryComposizioni, repositoryComposizioniVoci } from "./index";
 import { catalogoLocale } from "./alimenti";
 import {
@@ -186,7 +187,7 @@ export interface TracciaRimozione {
   idComposizioni: string[];
 }
 
-// Cancellare un alimento dal catalogo (CreaAlimentoForm, "Elimina") lo toglie
+// Cancellare un alimento dal catalogo (eliminaAlimenti, qui sotto) lo toglie
 // anche da ogni pasto salvato che lo conteneva (regola "Alimenti cancellati"
 // in PUNTO_DI_PARTENZA.md: ritirato dal futuro, non dal passato — il diario
 // non si tocca). L'utente può annullare per qualche secondo subito dopo
@@ -215,12 +216,26 @@ export async function rimuoviAlimentoDaPastiSalvati(
   userId: string,
   alimentoId: string
 ): Promise<TracciaRimozione> {
+  return rimuoviAlimentiDaPastiSalvati(userId, new Set([alimentoId]));
+}
+
+// La stessa cascata per un insieme di alimenti cancellati insieme
+// (Impostazioni > Alimenti, selezione multipla). Non è la funzione sopra
+// ripetuta per ogni alimento: la domanda "il pasto è rimasto vuoto?" va
+// fatta sull'insieme. Con due alimenti dello stesso pasto salvato, fatta
+// un alimento alla volta su un elenco letto all'inizio, ciascun giro
+// vedrebbe ancora viva la riga dell'altro e nessuno dei due cancellerebbe
+// il pasto: il guscio vuoto del bug del 22/09.
+async function rimuoviAlimentiDaPastiSalvati(
+  userId: string,
+  alimentoIds: Set<string>
+): Promise<TracciaRimozione> {
   const [composizioni, composizioniVoci] = await Promise.all([
     repositoryComposizioni.ottieniTutti(userId),
     repositoryComposizioniVoci.ottieniTutti(userId),
   ]);
 
-  const vociDaEliminare = composizioniVoci.filter((v) => v.alimento_id === alimentoId);
+  const vociDaEliminare = composizioniVoci.filter((v) => alimentoIds.has(v.alimento_id));
   if (vociDaEliminare.length === 0) return { idComposizioniVoci: [], idComposizioni: [] };
 
   await Promise.all(vociDaEliminare.map((v) => repositoryComposizioniVoci.elimina(v.id)));
@@ -246,17 +261,78 @@ export async function rimuoviAlimentoDaPastiSalvati(
   };
 }
 
+// Cosa ha cancellato DAVVERO una chiamata a eliminaAlimenti: gli alimenti,
+// più la traccia della cascata sui pasti salvati. Serve all'Annulla
+// (ripristinaAlimenti), che rimette in vita questo e nient'altro.
+export interface TracciaEliminazioneAlimenti extends TracciaRimozione {
+  idAlimenti: string[];
+}
+
+// Cancellare uno o più alimenti dal catalogo (PUNTO_DI_PARTENZA.md,
+// sezione 3, "Alimenti"; regola "Alimenti cancellati" in sezione 4): la
+// cascata sui pasti salvati e poi gli alimenti, **tutto o niente**, in una
+// sola transazione Dexie. Se una scrittura fallisce a metà, IndexedDB
+// annulla anche quelle già fatte, compresa la coda outbox: niente pasto
+// salvato con un ingrediente in meno per un alimento che poi è rimasto nel
+// catalogo. Possibile dal 9/10: le scritture del repository fanno partire
+// la sync FUORI dalla transazione (src/lib/repository/repository.ts).
+//
+// Dentro la transazione si aspettano solo letture e scritture di Dexie,
+// mai altro (rete, timer): IndexedDB chiuderebbe la transazione.
+//
+// Un alimento già cancellato (da un altro dispositivo, via sync, o da un
+// secondo tocco) si salta e non entra nella traccia: l'Annulla non deve
+// ripristinare una cancellazione che non è sua. Un alimento che non è
+// dell'utente (catalogo comune, user_id null) non si cancella mai di qui:
+// la pagina non lo mostra, quindi se arriva è un errore del chiamante, e
+// si annulla tutto.
+//
+// Le righe di `preferiti` non si toccano: restano vive e nascoste finché
+// l'alimento è cancellato (alimentiPreferiti guarda il catalogo), e tornano
+// da sole con l'Annulla.
+export async function eliminaAlimenti(
+  userId: string,
+  alimentoIds: string[]
+): Promise<TracciaEliminazioneAlimenti> {
+  return db.transaction(
+    "rw",
+    [db.alimenti, db.composizioni, db.composizioni_voci, db.outbox],
+    async () => {
+      const idAlimenti: string[] = [];
+      for (const id of new Set(alimentoIds)) {
+        const alimento = await repositoryAlimenti.ottieniPerId(id);
+        if (!alimento || alimento.deleted_at !== null) continue;
+        if (alimento.user_id !== userId) {
+          throw new Error(`L'alimento ${id} non è dell'utente: non si cancella`);
+        }
+        idAlimenti.push(id);
+      }
+      if (idAlimenti.length === 0) {
+        return { idAlimenti, idComposizioniVoci: [], idComposizioni: [] };
+      }
+
+      // Stesso ordine di quando le scritture non erano in una transazione:
+      // prima i pasti salvati, poi gli alimenti. Dentro la transazione
+      // l'ordine non cambia l'esito (tutto o niente), ma resta lo stesso
+      // ragionamento da leggere in un posto solo.
+      const traccia = await rimuoviAlimentiDaPastiSalvati(userId, new Set(idAlimenti));
+      for (const id of idAlimenti) await repositoryAlimenti.elimina(id);
+      return { idAlimenti, ...traccia };
+    }
+  );
+}
+
 // L'"Annulla" dopo la cancellazione di un alimento: rimette in vita
 // (deleted_at di nuovo null, via repository, così la sync lo propaga) solo
 // ciò che quella cancellazione aveva toccato — l'alimento e le righe della
 // `traccia`. Né più né meno.
 //
-// ORDINE VOLUTO, speculare a handleElimina in CreaAlimentoForm: prima
-// l'alimento, poi i pasti salvati, poi le righe di composizioni_voci. In
-// nessun momento esiste una riga viva che punta a un alimento cancellato o
-// a un pasto cancellato — se un passo fallisce a metà restano al più un
-// alimento ripristinato senza tutti i suoi pasti (stato corretto, solo
-// incompleto), mai un riferimento morto.
+// ORDINE VOLUTO, speculare a eliminaAlimenti: prima l'alimento, poi i pasti
+// salvati, poi le righe di composizioni_voci. In nessun momento esiste una
+// riga viva che punta a un alimento cancellato o a un pasto cancellato. Dal
+// 15/10 i passi stanno in una transazione (ripristinaAlimenti), quindi un
+// guasto a metà non lascia niente; l'ordine resta perché i controlli dei
+// passi dopo leggono ciò che i passi prima hanno già rimesso in vita.
 //
 // Due casi in cui qualcosa NON si ripristina, decisi il 2026-09-25:
 // - un pasto salvato cancellato perché era rimasto vuoto, se nel frattempo
@@ -273,7 +349,43 @@ export async function ripristinaAlimentoEliminato(
   alimentoId: string,
   traccia: TracciaRimozione
 ): Promise<{ pastiNonRipristinati: string[] }> {
-  await repositoryAlimenti.aggiorna(alimentoId, { deleted_at: null });
+  return ripristinaAlimenti(userId, { ...traccia, idAlimenti: [alimentoId] });
+}
+
+// L'"Annulla" dopo eliminaAlimenti, per uno o più alimenti: le stesse
+// regole di ripristinaAlimentoEliminato qui sopra, con prima TUTTI gli
+// alimenti della traccia, poi i pasti salvati, poi le righe. In una sola
+// transazione, come la cancellazione: o torna tutto ciò che si può
+// ripristinare, o niente (e la barra ripropone l'Annulla).
+//
+// Un alimento che non c'è più o è già vivo si salta: rimetterlo in vita non
+// serve, e aggiornarlo sposterebbe solo il suo updated_at.
+export async function ripristinaAlimenti(
+  userId: string,
+  traccia: TracciaEliminazioneAlimenti
+): Promise<{ pastiNonRipristinati: string[] }> {
+  return db.transaction(
+    "rw",
+    [db.alimenti, db.composizioni, db.composizioni_voci, db.outbox],
+    // `async` e `await` qui NON sono superflui. Dexie segue la transazione
+    // attraverso gli await solo se la funzione che riceve è async: con
+    // `() => ripristinaNellaTransazione(...)` (una funzione normale che
+    // restituisce la promise) la transazione si perdeva dopo la prima
+    // scrittura, le altre finivano fuori, e Dexie chiudeva con
+    // PrematureCommitError. Trovato dai test il 15/10.
+    async () => await ripristinaNellaTransazione(userId, traccia)
+  );
+}
+
+async function ripristinaNellaTransazione(
+  userId: string,
+  traccia: TracciaEliminazioneAlimenti
+): Promise<{ pastiNonRipristinati: string[] }> {
+  for (const id of traccia.idAlimenti) {
+    const alimento = await repositoryAlimenti.ottieniPerId(id);
+    if (!alimento || alimento.deleted_at === null) continue;
+    await repositoryAlimenti.aggiorna(id, { deleted_at: null });
+  }
 
   const pastiNonRipristinati: string[] = [];
   const [catalogo, composizioniVive, vociVive] = await Promise.all([

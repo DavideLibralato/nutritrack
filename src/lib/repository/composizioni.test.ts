@@ -23,6 +23,7 @@ import {
   salvaPastoComeComposizione,
   ripristinaAlimentoEliminato,
   eliminaComposizione,
+  eliminaAlimenti,
 } from "./composizioni";
 import { repositoryAlimenti, repositoryComposizioni, repositoryComposizioniVoci, repositoryVociDiario } from "./index";
 import { catalogoLocale } from "./alimenti";
@@ -366,11 +367,9 @@ describe("regola Alimenti cancellati", () => {
   });
 
   describe("punto 4: Annulla dopo la cancellazione di un alimento", () => {
-    // Stessi passi e stesso ordine di handleElimina in CreaAlimentoForm.
+    // La stessa chiamata di handleElimina in CreaAlimentoForm.
     async function cancellaAlimento(userId: string, alimentoId: string) {
-      const traccia = await rimuoviAlimentoDaPastiSalvati(userId, alimentoId);
-      await repositoryAlimenti.elimina(alimentoId);
-      return traccia;
+      return eliminaAlimenti(userId, [alimentoId]);
     }
 
     async function alimentiDelPasto(userId: string, nome: string) {

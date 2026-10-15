@@ -1168,7 +1168,13 @@ catalogo, si corregge e si fa pulizia.
   ripristina tutti gli alimenti, poi i pasti salvati, poi le righe. Le
   righe di `preferiti` non si toccano, come per un alimento solo: restano
   vive e nascoste finché l'alimento è cancellato, e tornano con
-  l'Annulla. Test permanenti.
+  l'Annulla. Funzioni `eliminaAlimenti` e `ripristinaAlimenti` in
+  `src/lib/repository/composizioni.ts`, test permanenti in
+  `eliminazioneAlimenti.test.ts`. **Anche l'Elimina del form** (Aggiungi e
+  qui) passa da `eliminaAlimenti` con un alimento solo, e l'Annulla di
+  Aggiungi da `ripristinaAlimenti`: dal 15/10 anche l'eliminazione
+  singola è tutto o niente (prima erano due scritture separate, in un
+  ordine scelto perché un guasto a metà lasciasse uno stato visibile).
 - **La riga in Impostazioni**: "Alimenti", nel gruppo Alimentazione prima
   di Preferiti, con a destra "46 alimenti", "1 alimento" o "Nessuno",
   contati con la stessa funzione dell'elenco.
@@ -2712,7 +2718,12 @@ Come, in concreto:
   - le scritture del repository si possono fare **dentro una transazione
     Dexie** (tutto o niente): la sync che ogni scrittura fa partire esce
     dalla transazione (`Dexie.ignoreTransaction`) e legge la coda solo
-    dopo il commit
+    dopo il commit. **La funzione passata a `db.transaction` deve essere
+    `async`** (`async () => { … }` oppure `async () => await f()`), mai
+    `() => f()` che restituisce la promise di un'altra funzione: in quel
+    caso Dexie perde la transazione dopo la prima scrittura, le altre
+    finiscono fuori, e il "tutto o niente" non vale più (trovato il 15/10
+    dai test di `ripristinaAlimenti`, con PrematureCommitError)
   - **una sincronizzazione per volta** (dal 9/10): se un giro è in corso,
     una chiamata nuova non ne apre un altro ma ne prenota **uno** dopo,
     condiviso da tutte quelle arrivate nel frattempo (il giro in corso può

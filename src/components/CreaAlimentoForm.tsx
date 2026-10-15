@@ -15,10 +15,7 @@
 
 import { useState } from "react";
 import { repositoryAlimenti } from "@/lib/repository";
-import {
-  rimuoviAlimentoDaPastiSalvati,
-  type TracciaRimozione,
-} from "@/lib/repository/composizioni";
+import { eliminaAlimenti, type TracciaRimozione } from "@/lib/repository/composizioni";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { validaValoriAlimento, type CampoAlimento } from "@/lib/inserimento/valoriAlimento";
@@ -144,39 +141,19 @@ export default function CreaAlimentoForm({
     setErrore(null);
     setInCorso(true);
     try {
-      // ORDINE VOLUTO, non intercambiabile: prima si toglie l'alimento dai
-      // pasti salvati, POI si cancella l'alimento stesso. Al contrario, se
-      // rimuoviAlimentoDaPastiSalvati fallisse dopo che l'alimento è già
-      // cancellato, si ricrea da un'altra strada esattamente il bug che
-      // questa funzione serve a impedire — un pasto salvato che referenzia
-      // un alimento sparito — ma stavolta invisibile: l'utente legge solo
-      // "Non è stato possibile eliminare" e non ha motivo di riprovare,
-      // pensando che l'eliminazione non sia avvenuta affatto.
-      // In quest'ordine un guasto a metà lascia invece l'alimento ancora nel
-      // catalogo (visibile, l'utente può riprovare) e al più un pasto
-      // salvato già con un ingrediente in meno — stato intermedio ma corretto,
-      // mai un fantasma. Il secondo tentativo converge comunque:
-      // rimuoviAlimentoDaPastiSalvati su un alimento già ripulito esce subito
-      // (vociDaEliminare vuoto), poi repositoryAlimenti.elimina è idempotente.
-      //
-      // Le due scritture non sono in un'unica transazione Dexie: valutato e
-      // scartato. creaRepository (src/lib/repository/repository.ts) lancia
-      // sincronizzaOutbox() ad ogni scrittura, che fa vere chiamate di rete
-      // (supabase.from(...).upsert(...), in sequenza, anche più di una) — se
-      // quella catena finisse dentro l'ambient transaction di Dexie (basta
-      // che parta da dentro una db.transaction(), anche senza await: Dexie
-      // segue la catena di promise) l'IndexedDB transaction dovrebbe restare
-      // aperta per tutta quella rete, cosa che IndexedDB non permette e che
-      // farebbe fallire proprio le scritture che si voleva rendere più
-      // sicure. L'inversione basta: nessuno stato intermedio invisibile,
-      // nessuna riga fantasma.
+      // Cascata sui pasti salvati e cancellazione logica (deleted_at)
+      // dell'alimento, tutto o niente in una transazione: la stessa funzione
+      // dell'eliminazione multipla in Impostazioni > Alimenti
+      // (src/lib/repository/composizioni.ts). Fino al 15/10 erano due
+      // scritture separate, in un ordine scelto perché un guasto a metà
+      // lasciasse uno stato visibile: la transazione non era possibile
+      // finché la sync partiva dentro di lei (risolto il 9/10 in
+      // repository.ts). Un guasto ora non lascia niente: l'alimento resta
+      // nel catalogo con tutti i suoi pasti salvati, e si può riprovare.
       //
       // La traccia (cosa è stato cancellato davvero) passa al chiamante per
-      // l'Annulla: ripristinaAlimentoEliminato
-      // (src/lib/repository/composizioni.ts) rifà questi passi al contrario.
-      const traccia = await rimuoviAlimentoDaPastiSalvati(userId, alimentoDaModificare.id);
-      // Cancellazione logica (deleted_at), come per tutte le tabelle.
-      await repositoryAlimenti.elimina(alimentoDaModificare.id);
+      // l'Annulla: ripristinaAlimentoEliminato.
+      const traccia = await eliminaAlimenti(userId, [alimentoDaModificare.id]);
       onEliminato?.(alimentoDaModificare, traccia);
     } catch {
       setInCorso(false);
