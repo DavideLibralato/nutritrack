@@ -2,7 +2,9 @@
 
 // Impostazioni > Profilo (PUNTO_DI_PARTENZA.md, sezione 3, "Profilo" e
 // "Impostazioni"). Restano qui solo i dati personali (sesso, data di
-// nascita, altezza, livello di attività) e l'email in sola lettura.
+// nascita, altezza, livello di attività) e l'email in sola lettura. Dal
+// 15/10 anche lo username (Amici), nel gruppo Account: si cambia nel suo
+// foglio (SheetUsername) con il suo Salva online, non con quello in fondo.
 // Obiettivo, target e giorni di allenamento sono in Impostazioni >
 // Obiettivi (passo "obiettivi"), la pesata in Impostazioni > Peso (passo
 // "peso").
@@ -16,7 +18,11 @@
 // caricate e il Salva non le scrive. Sotto i campi cambiati c'è il valore di
 // prima; il gruppo ha il bordo d'accento e "Modificato".
 
+import { useState } from "react";
 import { useNomeUtente, useEmailUtente } from "@/lib/supabase/useUtente";
+import { useMioUsername } from "@/lib/amici/useMioUsername";
+import RigaImpostazioni from "@/components/RigaImpostazioni";
+import SheetUsername from "@/components/SheetUsername";
 import { useModuloImpostazioni } from "@/lib/profilo/useModuloImpostazioni";
 import type { LivelloAttivita, Sesso } from "@/lib/db/tipi";
 import { oggiLocale, formattaDataBreve } from "@/lib/dataGiorno";
@@ -64,6 +70,10 @@ export default function ProfiloPage() {
   const modulo = useModuloImpostazioni();
   const nome = useNomeUtente();
   const email = useEmailUtente();
+  // Lo username si legge online e si cambia nel suo foglio, fuori dal Salva
+  // unico della pagina (PUNTO_DI_PARTENZA.md §3, "Amici").
+  const mioUsername = useMioUsername();
+  const [foglioUsername, setFoglioUsername] = useState(false);
 
   if (!modulo.pronto || !modulo.prima || !modulo.ora || !modulo.m) {
     return (
@@ -90,6 +100,39 @@ export default function ProfiloPage() {
         altezzaCm={profilo?.altezza_cm ?? null}
         email={email}
       />
+
+      {/* Username: letto dal server. Senza risposta (offline) il tocco
+          riprova a leggerlo; con la risposta apre il foglio. */}
+      <GruppoImpostazioni titolo="Account">
+        {mioUsername.stato.esito === "ok" ? (
+          <RigaImpostazioni
+            etichetta="Username"
+            valore={
+              mioUsername.stato.username ? `@${mioUsername.stato.username}` : "Da scegliere"
+            }
+            onClick={() => setFoglioUsername(true)}
+          />
+        ) : mioUsername.stato.esito === "errore" ? (
+          <RigaImpostazioni
+            etichetta="Username"
+            valore="Serve la connessione"
+            onClick={mioUsername.ricarica}
+          />
+        ) : (
+          <RigaImpostazioni etichetta="Username" valore="…" />
+        )}
+      </GruppoImpostazioni>
+
+      {foglioUsername && mioUsername.stato.esito === "ok" && (
+        <SheetUsername
+          attuale={mioUsername.stato.username}
+          onAnnulla={() => setFoglioUsername(false)}
+          onSalvato={(username) => {
+            mioUsername.impostato(username);
+            setFoglioUsername(false);
+          }}
+        />
+      )}
 
       <GruppoImpostazioni
         titolo="Dati personali"

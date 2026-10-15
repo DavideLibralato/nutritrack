@@ -1444,6 +1444,25 @@ sono in Obiettivi, la pesata in Peso.
   email dell'account in sola lettura. Il nome viene dai metadati
   dell'account scritti alla registrazione (`profili.nome` non lo scrive
   ancora nessuno): se manca, niente iniziali e niente nome
+- **Account** (dal 15/10, branch `amici`, passo 4; mockup
+  `docs/mockups/amici.html`, schermata 5): la riga **Username**, sopra i
+  dati personali. A destra "@nome", "Da scegliere" se non c'è ancora,
+  "…" mentre si legge; offline "Serve la connessione", e il tocco riprova
+  a leggerlo. Si legge da Supabase all'apertura (`useMioUsername`: solo
+  online, non sta in Dexie). Il tocco apre il foglio **"Cambia
+  username"** ("Scegli il tuo username" se non c'è): campo con la "@",
+  esito mentre si scrive come in Registrati, più il caso del nome attuale
+  ("È già il tuo username.", Salva spento: per il database il tuo nome è
+  "preso", e senza questa regola il foglio direbbe "già in uso",
+  `foglioUsername.ts` con test); sotto, "I tuoi amici restano: sono
+  legati al tuo account, non al nome. Il vecchio nome torna libero."
+  **Annulla / Salva**: il Salva chiama `imposta_username` e si spegne
+  offline ("Per cambiare lo username serve la connessione."); "occupato"
+  → "Questo username è già in uso.", nessuna risposta → "Non sono
+  riuscito a salvarlo. Controlla la connessione e riprova." Riuscito, il
+  foglio si chiude e la riga mostra il nome nuovo. Fuori dal Salva unico e
+  dal guardiano: il foglio salva da sé. L'email resta nell'intestazione,
+  non nel gruppo come nel mockup, per non mostrarla due volte
 - **Dati personali** (per il calcolo): sesso, data di nascita, altezza, livello di attività.
   Non sono dati "in più": senza di loro il fabbisogno non è calcolabile (vedi
   sotto). Il sesso ammette "preferisco non indicarlo" (a schermo "Non

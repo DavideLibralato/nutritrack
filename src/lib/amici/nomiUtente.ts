@@ -33,6 +33,30 @@ export async function controllaDisponibilita(
   }
 }
 
+// Lo username di chi è entrato: la RLS fa leggere solo la propria riga, il
+// filtro su user_id lo rende esplicito. `username: null` = non l'ha ancora
+// scelto; "errore" = la risposta non è arrivata (offline, sessione
+// scaduta), e allora non si sa. Un oggetto e non una stringa: "errore" è
+// anche uno username valido.
+export type LetturaUsername = { esito: "ok"; username: string | null } | { esito: "errore" };
+
+export async function leggiMioUsername(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<LetturaUsername> {
+  try {
+    const { data, error } = await supabase
+      .from("nomi_utente")
+      .select("username")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) return { esito: "errore" };
+    return { esito: "ok", username: typeof data?.username === "string" ? data.username : null };
+  } catch {
+    return { esito: "errore" };
+  }
+}
+
 // Gli esiti di `imposta_username` sul database, più "errore" quando la
 // risposta non arriva o la funzione fallisce (per esempio senza sessione).
 export type EsitoImpostaUsername = "ok" | "non_valido" | "occupato" | "errore";

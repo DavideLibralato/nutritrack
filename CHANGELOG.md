@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: username in Profilo
+
+Branch `amici`. Gruppo "Account" in Profilo con la riga "Username" (letta
+da Supabase, `useMioUsername`) e il foglio `SheetUsername` con il suo
+Salva online (`imposta_username`), come nella schermata 5 del mockup;
+l'email resta nell'intestazione. Regola del nome attuale (non "già in
+uso", Salva spento) in `foglioUsername.ts`, con test permanente.
+`leggiMioUsername` restituisce un oggetto con l'esito, non la stringa
+"errore", che è anche uno username valido. Nel test della pagina Profilo
+l'hook dello username è finto (il test riguarda IndexedDB). 881 test verdi
+in 79 file, lint, `tsc` e `npm run build` puliti. Non provato nel
+browser.
+
 ## 2026-10-15 — Amici: username nella pagina Registrati
 
 Branch `amici`. Campo "Username" sotto Nome, come nel mockup approvato

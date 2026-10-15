@@ -24,6 +24,17 @@ vi.mock("@/lib/supabase/useUtente", () => ({
   useEmailUtente: () => null,
 }));
 
+// Lo username si legge da Supabase (solo online, non da Dexie): questi test
+// riguardano i dati personali in IndexedDB, quindi una risposta finta e
+// ferma, senza client Supabase.
+vi.mock("@/lib/amici/useMioUsername", () => ({
+  useMioUsername: () => ({
+    stato: { esito: "ok", username: null },
+    ricarica: () => {},
+    impostato: () => {},
+  }),
+}));
+
 // Il router di Next.js fuori dall'app vera non esiste: qui un finto vuoto.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: () => {}, refresh: () => {} }),
