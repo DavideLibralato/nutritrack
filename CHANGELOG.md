@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: pagina Amici provata su iPhone
+
+Branch `amici`. Provata da Davide il 15/10 sull'anteprima: account A
+(davidemancon02*amici1@gmail.com, `@amici_uno`) in Safari su iPhone,
+account B (davidemancon02+amici2@gmail.com, `@amici_due_b`) in Chrome sul
+PC. Provati: registrazione con username (A e B); "già in uso" su un nome
+preso; Aggiungi un amico con gli esiti non trovato, formato sbagliato, sei
+tu, inviata, già chiesta; rifiuto → "Non accettata", troppo presto, Ok,
+troppo presto ancora dopo l'Ok; chi ha rifiutato chiede subito; richiesta
+incrociata → "Ora siete amici."; già amici; riga Amici con il conteggio;
+cambio di username in Profilo visto dall'altro; Rimuovi con la conferma
+da tutti e due i lati; Annulla; Accetta con doppio tocco; offline; tema
+scuro. Verificato da Cowork su Supabase: 5 righe di `amicizie` coerenti
+con le prove (rifiutata e superata, accettata e rimossa, annullata,
+accettata e rimossa, accettata e viva: A e B sono amici), `nomi_utente`
+con `amici_uno` e `amici_due_b`. **Non provati a mano**: "Questa richiesta
+non c'è più." (il comportamento del database è provato nel blocco SQL,
+D11) e "Scegli il tuo username", mai comparsa perché la conferma email è
+spenta: si prova dopo il merge con l'account vero di Davide, che non ha
+username. Corretto PUNTO: la conferma email è **spenta**, non attiva
+(verificato da Cowork: account confermati nello stesso secondo della
+registrazione), quindi lo username lo salva la Server Action; in §9.1 la
+conseguenza su "Password dimenticata" per un indirizzo che non riceve
+email; in §11 i due account A e B, da eliminare alla fine di
+`condivisione-alimenti`. Solo documenti.
+
 ## 2026-10-15 — Amici: la pagina Amici
 
 Branch `amici`, passo 6. Pagina `/impostazioni/amici` come nelle schermate

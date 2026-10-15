@@ -1291,9 +1291,9 @@ del 15/10.
   username. Due persone che scelgono lo stesso nome nello stesso istante:
   GoTrue risponde con un errore generico, che la Server Action traduce in
   "Username appena preso, scegline un altro". Il trigger si applica dopo
-  il merge di `amici` (9.1, "ordine dei rilasci"): chi si registra prima
-  sceglie lo username alla prima apertura di Amici, come chi era già
-  registrato.
+  il merge di `amici` (9.1, "ordine dei rilasci"): fino ad allora lo
+  username di chi si registra lo salva la Server Action con
+  `imposta_username` (sotto, "All'invio").
 - **Com'è fatta la pagina Registrati** (dal 15/10, passo 3; mockup
   `docs/mockups/amici.html`, schermata 1). Campo "Username" sotto Nome,
   con la "@" davanti (fuori dal valore); il campo scrive già in
@@ -1312,11 +1312,16 @@ del 15/10.
   poi `username_disponibile` (se la risposta non arriva si va avanti:
   il nome lo protegge l'indice unico). `signUp` porta nei metadati
   `nome`, `username` e `codice_invito` (per il trigger che verrà). **Finché
-  il trigger non c'è**: con la sessione subito disponibile la Server
-  Action chiama `imposta_username` e poi entra; con un esito diverso da
-  `ok` (nome preso nell'istante, rete) entra lo stesso, l'account non si
-  annulla per lo username, e lo username lo chiede Amici. Senza sessione
-  (conferma email attiva) resta solo nei metadati e lo chiede Amici. Regole
+  il trigger non c'è**: la **conferma email è spenta** sul nostro progetto
+  (scelta di Davide; verificato il 15/10 da Cowork: gli account nuovi
+  risultano confermati nello stesso secondo della registrazione), quindi
+  dopo `signUp` c'è subito la sessione, e la Server Action chiama
+  `imposta_username` e poi entra. Con un esito diverso da `ok` (nome
+  preso nell'istante, rete) entra lo stesso, l'account non si annulla
+  per lo username, e lo username lo chiede Amici. Il ramo "senza
+  sessione" della Server Action ("controlla la tua email") resta nel
+  codice per il giorno in cui la conferma si accendesse: lì lo username
+  resterebbe solo nei metadati e lo chiederebbe Amici. Regole
   in `validazione.ts` (`FORMATO_USERNAME`, `normalizzaUsername`,
   `usernameValido`, con test), chiamate in `src/lib/amici/nomiUtente.ts`,
   testi in `testiUsername.ts`.
@@ -1324,11 +1329,13 @@ del 15/10.
   posto della pagina c'è "Scegli il tuo username". **Se nei metadati
   dell'account c'è già uno `username`** (scritto da Registrati), il campo
   lo propone già scritto, con il suo esito "Disponibile / già in uso":
-  basta confermarlo (decisione del 15/10, passo 6). Sul nostro progetto
-  la **conferma email è attiva** (l'account usa e getta dell'11/10 andava
-  confermato da Mail): dopo `signUp` di solito non c'è sessione, quindi
-  finché non c'è il trigger è questo il percorso normale, non
-  l'eccezione.
+  basta confermarlo (decisione del 15/10, passo 6). Con la conferma email
+  spenta (sopra, "All'invio") questa schermata serve a **chi era
+  registrato prima di Amici** e al caso raro in cui `imposta_username`
+  non ha risposto `ok` alla registrazione (lì il campo parte dai
+  metadati). Nelle prove del 15/10 non è mai comparsa: si prova dopo il
+  merge con l'account vero di Davide, che non ha username. (Corretto il
+  15/10: prima qui c'era scritto che la conferma email era attiva.)
 - **Si cambia da Profilo**, se il nome nuovo è libero: una riga
   "Username" che apre un piccolo modulo con il **suo** Salva, solo
   online. Non entra nel Salva unico di Profilo, che scrive in locale: una
@@ -1539,8 +1546,10 @@ dall'app (per esempio `davidemancon02+amici1@…` e `+amici2@…`), eliminati
 alla fine con Elimina account, che così prova anche la cascata. Il suo
 account e l'account di prova fisso restano fuori. Sullo stesso iPhone uno
 in Safari e uno nell'app installata (memorie separate). Servono il codice
-di invito, la Redirect URL esatta dell'anteprima del branch (sezione 11)
-e pazienza con le email gratuite (circa 2 all'ora).
+di invito e la Redirect URL esatta dell'anteprima del branch (sezione
+11). Fatte il 15/10 con gli account A e B (sezione 11, "Account di
+prova"): A in Safari su iPhone, B in Chrome sul PC; nessuna email da
+aspettare, perché la conferma email è spenta.
 
 ### Profilo
 
@@ -3128,6 +3137,13 @@ Conseguenze:
   cui si apre
 - l'apertura al pubblico è un'ipotesi tenuta viva dall'architettura, non un
   obiettivo dell'MVP
+- **la conferma email è spenta** (scelta di Davide; verificato il 15/10:
+  gli account nuovi risultano confermati nello stesso secondo della
+  registrazione). Conseguenza: chi ha il codice di invito può
+  registrarsi anche con un indirizzo che non riceve email, e allora
+  "Password dimenticata" non gli funziona, perché il link non arriva. È
+  il caso dell'account di prova A di Amici (sezione 11, "Account di
+  prova")
 
 #### Il codice di invito anche nel database (deciso il 15/10, branch `amici`)
 
@@ -3164,10 +3180,11 @@ definer` e `search_path = ''`):
   il merge** di `amici`, non durante il branch. Ordine deciso il 15/10:
   merge → deploy di produzione **Ready** → prove nel blocco SQL annullato
   → applicazione → una registrazione vera.
-  Fino ad allora chi si registra (anche gli account di prova) sceglie lo
-  username alla prima apertura di Amici, percorso che serve comunque a
-  chi è già registrato. Dopo l'applicazione, una registrazione vera con
-  un account usa e getta
+  Fino ad allora lo username di chi si registra (anche gli account di
+  prova) lo salva la Server Action con `imposta_username`: la conferma
+  email è spenta, quindi dopo `signUp` c'è già la sessione (sezione 3,
+  "Lo username"). Dopo l'applicazione, una registrazione vera con un
+  account usa e getta
 - **è il punto più delicato del lavoro**: un errore nel trigger blocca
   tutte le registrazioni. Prima di applicarlo, prove in un blocco SQL
   annullato: registrazione valida, username preso, formato sbagliato,
@@ -4261,6 +4278,19 @@ installata resta sull'account vero. Non va cancellato. Dall'11/10 i
 vincoli verso `auth.users` permettono di cancellarlo (sotto, "Fatto"):
 la prova è stata fatta in una transazione annullata, l'account è intatto
 e resta il primo caso di prova per "elimina account".
+
+Dal 15/10 ci sono anche **due account usa e getta di Amici** (branch
+`amici`), per le prove con due utenti:
+- **A**: davidemancon02*amici1@gmail.com, username `@amici_uno`, usato in
+  Safari su iPhone. L'indirizzo, con l'asterisco, non riceve email: con
+  la conferma email spenta la registrazione è riuscita lo stesso, ma
+  "Password dimenticata" non gli funziona (sezione 9.1);
+- **B**: davidemancon02+amici2@gmail.com, username `@amici_due_b`, usato
+  in Chrome sul PC.
+
+Al 15/10 A e B sono amici. **Si eliminano con Elimina il mio account alla
+fine del branch `condivisione-alimenti`**, che così prova anche la
+cascata sulle tabelle di Amici (sezione 9.6).
 
 ### Fatto
 
