@@ -2,8 +2,9 @@
 
 // Lo username di chi è entrato, per la riga "Username" in Profilo (e poi per
 // Amici). Solo online: `nomi_utente` non sta in Dexie (PUNTO_DI_PARTENZA.md
-// §4). Si legge all'apertura della pagina; dopo un salvataggio riuscito la
-// pagina lo aggiorna con `impostato`, senza rileggere.
+// §4). Si legge all'apertura della pagina e al ritorno della rete; dopo un
+// salvataggio riuscito la pagina lo aggiorna con `impostato`, senza
+// rileggere.
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -31,6 +32,16 @@ export function useMioUsername() {
       annullato = true;
     };
   }, [userId, giro]);
+
+  // Al ritorno della rete si rilegge da solo: offline la lettura è finita in
+  // "errore", e la pagina Amici deve aprirsi senza un tocco in più.
+  useEffect(() => {
+    function allaRete() {
+      setGiro((g) => g + 1);
+    }
+    window.addEventListener("online", allaRete);
+    return () => window.removeEventListener("online", allaRete);
+  }, []);
 
   const ricarica = useCallback(() => {
     setStato({ esito: "caricamento" });

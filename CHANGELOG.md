@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: la pagina Amici
+
+Branch `amici`, passo 6. Pagina `/impostazioni/amici` come nelle schermate
+3 e 4 del mockup: offline "Serve la connessione" (che si toglie da solo),
+"Scegli il tuo username" con lo username dei metadati già scritto
+(`SceltaUsername`), "Aggiungi un amico" (`SheetAggiungiAmico`, esiti di
+`chiedi_amicizia` sotto il campo), richieste ricevute (Rifiuta / Accetta),
+inviate (Annulla, "Non accettata" con Ok), amici con Rimuovi e conferma
+arancio. Si rilegge all'apertura, dopo ogni azione, al ritorno in primo
+piano e al ritorno della rete (`useAmicizie`). Riga Amici in Impostazioni,
+gruppo nuovo sotto Alimentazione, con il numero di amici. Dati in
+`src/lib/amici/amicizie.ts` (letture, chiamate, `dividiAmicizie`, tipi
+degli esiti tolti da `tipi.ts`), testi in `testiAmici.ts`.
+`/impostazioni/amici` in `PAGINE_APP`, senza cache nuova. `ServeConnessione`
+con un testo facoltativo; nome e username dei metadati letti da una
+funzione sola in `useUtente.ts`; `useMioUsername` rilegge al ritorno della
+rete. Test permanenti: divisione delle righe (compresi rifiuto mio e
+username mancante), testi, suggerimento che non scrive sopra quello
+dell'utente; ognuno fallisce rompendo il punto che protegge (provato da
+copie, ripristinate). 901 test verdi in 82 file, lint, `tsc` e `npm run
+build` puliti. Non provato nel browser: le prove con due account le fa
+Davide su iPhone.
+
 ## 2026-10-15 — Amici: migration `amicizie` applicata, tipo `Amicizia`
 
 Branch `amici`. `supabase/migrations/amicizie.sql`: tabella solo online

@@ -32,6 +32,9 @@ importScripts("/sw-strategia.js");
 // PAGINE_APP.
 // 15/10/2026, branch "catalogo-alimenti": /impostazioni/alimenti in
 // PAGINE_APP.
+// 15/10/2026, branch "amici": /impostazioni/amici in PAGINE_APP. Nessuna
+// cache nuova: cambia l'elenco delle pagine, non la forma di ciò che è
+// salvato.
 const {
   PAGINE_APP,
   pagineDaTogliere,

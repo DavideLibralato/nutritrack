@@ -9,7 +9,18 @@
 
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
-export default function ServeConnessione({ onRiprova }: { onRiprova: () => void }) {
+// `testo`: la frase sotto il titolo. Senza, quella del primo avvio (Oggi e
+// Aggiungi); la pagina Amici, che funziona solo online, ne passa una sua.
+const TESTO_PRIMO_AVVIO =
+  "Al primo avvio l'app scarica i tuoi pasti. Collegati a internet: riprova da sola appena torna la rete.";
+
+export default function ServeConnessione({
+  onRiprova,
+  testo = TESTO_PRIMO_AVVIO,
+}: {
+  onRiprova: () => void;
+  testo?: string;
+}) {
   return (
     <div className="rounded-2xl bg-surface p-5 text-center">
       <svg
@@ -29,10 +40,7 @@ export default function ServeConnessione({ onRiprova }: { onRiprova: () => void 
         <path d="M20.4 17.5A4 4 0 0 0 17.5 11 6 6 0 0 0 10 6.2" />
       </svg>
       <h2 className="mt-2 font-display text-lg font-bold">Serve la connessione</h2>
-      <p className="mt-1.5 text-sm text-muted">
-        Al primo avvio l&apos;app scarica i tuoi pasti. Collegati a internet: riprova da sola
-        appena torna la rete.
-      </p>
+      <p className="mt-1.5 text-sm text-muted">{testo}</p>
       <button
         type="button"
         onClick={onRiprova}

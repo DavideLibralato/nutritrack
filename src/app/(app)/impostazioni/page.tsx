@@ -34,6 +34,9 @@
 // Preferiti; PUNTO_DI_PARTENZA.md sezione 3, "Alimenti") mostra quanti
 // alimenti ha la pagina del catalogo: "46 alimenti", "1 alimento",
 // "Nessuno" (alimentiModificabili e testoRigaAlimenti, con il loro test).
+// La riga Amici (dal 15/10, branch amici, in un gruppo suo sotto
+// Alimentazione) mostra quanti amici: "2 amici", "1 amico", "Nessuno"
+// (testoRigaAmici, con il suo test). Si legge online (useAmicizie).
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -68,6 +71,8 @@ import { rigaSincronizzazione } from "@/lib/sync/rigaSincronizzazione";
 import { catalogoLocale } from "@/lib/repository/alimenti";
 import { contaPreferiti, testoRigaPreferiti } from "@/lib/inserimento/rigaPreferiti";
 import { alimentiModificabili, testoRigaAlimenti } from "@/lib/catalogo/alimentiModificabili";
+import { useAmicizie } from "@/lib/amici/useAmicizie";
+import { testoRigaAmici } from "@/lib/amici/testiAmici";
 
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
@@ -119,6 +124,12 @@ export default function ImpostazioniPage() {
     numeroPasti === undefined ? undefined : numeroPasti === 1 ? "1 pasto" : `${numeroPasti} pasti`;
 
   const { stato: statoSincronizzazione } = useStatoSincronizzazione(userId);
+
+  // Quanti amici, letti dal server come nella pagina Amici (stessa
+  // divisione delle righe): "…" mentre legge, "Serve la connessione" se la
+  // risposta non arriva. La riga apre comunque la pagina, che lo dice e
+  // riprova da sola.
+  const { stato: statoAmicizie } = useAmicizie();
 
   // Gli stessi alimenti della pagina Alimenti, contati con la stessa
   // funzione dell'elenco.
@@ -180,6 +191,22 @@ export default function ImpostazioniPage() {
           icona={<IconaPeso />}
           valore={valorePeso}
           href="/impostazioni/peso"
+        />
+      </GruppoImpostazioni>
+
+      {/* Amici (dal 15/10, branch amici): letti online, non da Dexie. */}
+      <GruppoImpostazioni titolo="Amici">
+        <RigaImpostazioni
+          etichetta="Amici"
+          icona={<IconaAmici />}
+          valore={
+            statoAmicizie.esito === "ok"
+              ? testoRigaAmici(statoAmicizie.divise.amici.length)
+              : statoAmicizie.esito === "errore"
+                ? "Serve la connessione"
+                : "…"
+          }
+          href="/impostazioni/amici"
         />
       </GruppoImpostazioni>
 
@@ -273,6 +300,18 @@ function IconaPeso() {
       <rect x="4" y="4" width="16" height="16" rx="4" />
       <path d="M9 10a3 3 0 016 0" />
       <path d="M12 10l1.2-1.6" />
+    </svg>
+  );
+}
+
+// Due persone: gli amici (disegno del mockup docs/mockups/amici.html).
+function IconaAmici() {
+  return (
+    <svg {...TRATTO}>
+      <circle cx="9" cy="9" r="3.6" />
+      <path d="M2.7 19.5c.75-3.6 3.3-5.4 6.3-5.4s5.55 1.8 6.3 5.4" />
+      <circle cx="17" cy="8.1" r="2.85" />
+      <path d="M16.5 13.95c2.7 0 4.5 1.5 5.1 4.5" />
     </svg>
   );
 }

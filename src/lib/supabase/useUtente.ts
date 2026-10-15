@@ -74,32 +74,48 @@ export function useUtenteId(): string | null | undefined {
 // risponde null (vedi utenteOffline.ts): allora il nome si prende dal
 // cookie. null se il nome non c'è.
 export function useNomeUtente(): string | null {
-  const [nome, setNome] = useState<string | null>(null);
+  return useTestoDaiMetadati("nome");
+}
+
+// Lo username scritto alla registrazione (`options.data.username` in
+// src/lib/actions/auth.ts). Finché il trigger su auth.users non c'è, e con
+// la conferma email attiva, resta solo qui: Amici lo propone già scritto in
+// "Scegli il tuo username" (PUNTO_DI_PARTENZA.md §3). È solo un
+// suggerimento: lo username vero sta in `nomi_utente`. null se non c'è.
+export function useUsernameDaiMetadati(): string | null {
+  return useTestoDaiMetadati("username");
+}
+
+// Un testo dai metadati dell'account, con la stessa strada per tutti:
+// prima la sessione salvata sul dispositivo (senza rete), e con il token
+// scaduto offline il cookie.
+function useTestoDaiMetadati(chiave: string): string | null {
+  const [testo, setTesto] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
     function daMetadati(metadati: Record<string, unknown> | undefined): string | null {
-      const valore = metadati?.nome;
+      const valore = metadati?.[chiave];
       return typeof valore === "string" && valore.trim() !== "" ? valore.trim() : null;
     }
 
     supabase.auth.getSession().then(({ data }) => {
-      setNome(daMetadati(data.session?.user.user_metadata ?? sessioneSalvata()?.metadati));
+      setTesto(daMetadati(data.session?.user.user_metadata ?? sessioneSalvata()?.metadati));
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((evento, sessione) => {
-      if (sessione) setNome(daMetadati(sessione.user.user_metadata));
-      else if (evento === "SIGNED_OUT") setNome(null);
-      else setNome(daMetadati(sessioneSalvata()?.metadati));
+      if (sessione) setTesto(daMetadati(sessione.user.user_metadata));
+      else if (evento === "SIGNED_OUT") setTesto(null);
+      else setTesto(daMetadati(sessioneSalvata()?.metadati));
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [chiave]);
 
-  return nome;
+  return testo;
 }
 
 // L'email dell'account, per mostrarla in sola lettura in Impostazioni >

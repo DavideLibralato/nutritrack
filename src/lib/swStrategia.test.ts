@@ -52,6 +52,8 @@ describe("scegliStrategia", () => {
       "/impostazioni/peso",
       "/impostazioni/aspetto",
       "/impostazioni/preferiti",
+      "/impostazioni/alimenti",
+      "/impostazioni/amici",
       "/impostazioni/sincronizzazione",
       "/impostazioni/informazioni",
       "/impostazioni/elimina-account",

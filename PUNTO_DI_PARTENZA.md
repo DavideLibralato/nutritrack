@@ -856,9 +856,14 @@ un comando che non fa niente sembra rotto):
   si intitola "Preferiti e pasti salvati", ma per esteso l'etichetta
   veniva accorciata con "…" su iPhone; a destra "12 alimenti · 3 pasti",
   vedi "Preferiti e pasti salvati" più sotto), Peso;
-- gruppo **Amici** (dal 15/10, branch `amici`, in costruzione), sotto
-  Alimentazione: una riga **Amici**, con a destra le novità ("2 nuove")
-  e il pallino nel colore principale; vedi "Amici" più sotto;
+- gruppo **Amici** (dal 15/10, branch `amici`, passo 6), sotto
+  Alimentazione: una riga **Amici** con l'icona delle due persone e, a
+  destra, quanti amici ("2 amici", "1 amico", "Nessuno",
+  `testoRigaAmici`); "…" mentre legge, "Serve la connessione" se la
+  risposta non arriva, come la riga Username in Profilo. Si legge online
+  (`useAmicizie`, la stessa divisione della pagina). La riga apre sempre
+  la pagina. Il pallino e "2 nuove" arrivano al passo 7; vedi "Amici" più
+  sotto;
 - gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
   a destra tema e colore, "Sistema · Verde"), Sincronizzazione (la
   pagina con l'indicatore dal 10/10, sezione 9.2; a destra della riga lo stato in breve con un pallino colorato: "Tutto
@@ -878,7 +883,7 @@ un comando che non fa niente sembra rotto):
 `/impostazioni/obiettivi`, `/impostazioni/pasti`, `/impostazioni/peso`,
 `/impostazioni/aspetto`, `/impostazioni/preferiti`,
 `/impostazioni/alimenti` (branch `catalogo-alimenti`),
-`/impostazioni/amici` (branch `amici`, in costruzione),
+`/impostazioni/amici` (branch `amici`, in `PAGINE_APP` dal passo 6),
 `/impostazioni/sincronizzazione`, `/impostazioni/informazioni`;
 `/impostazioni/elimina-account` (branch `elimina-account`).
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
@@ -1432,6 +1437,85 @@ del 15/10.
 versione Dexie nuova. Offline la pagina Amici mostra "Serve la
 connessione". Entra nel local-first una cosa sola, la copia accettata,
 che è una riga normale di `alimenti`.
+
+**La pagina Amici** (dal 15/10, branch `amici`, passo 6; mockup
+`docs/mockups/amici.html`, schermate 3 e 4). Decisioni del 15/10:
+1. **"Alimenti in arrivo" non c'è ancora**: arriva con il branch
+   `condivisione-alimenti`.
+2. **La riga in Impostazioni** mostra quanti amici (vedi "Impostazioni"
+   sopra); pallino e "2 nuove" al passo 7.
+3. **Testi**: gli esiti di `chiedi_amicizia` come nel mockup ("Richiesta
+   inviata a @nome.", "Nessun utente con questo username. Controlla come
+   è scritto.", "Siete già amici.", "Hai già mandato una richiesta a
+   @nome.", "Puoi riprovare tra qualche giorno.", "Ora siete amici."), più
+   `sei_tu` "Questo è il tuo username." e `senza_username` "Prima scegli
+   il tuo username." (in pratica non succede: la pagina lo chiede prima).
+   In verde solo "inviata" e "Ora siete amici.", gli altri in arancio,
+   come nel mockup. Il nome nel testo è normalizzato, come lo vede
+   l'altro. Accetta / Rifiuta con `non_trovata`: si rilegge l'elenco e la
+   barra dice "Questa richiesta non c'è più."; Annulla / Rimuovi / Ok con
+   `non_trovata` valgono "già fatto", senza messaggi (passo 5). Una
+   risposta che non arriva: la barra "Non sono riuscito a farlo.
+   Controlla la connessione e riprova." Testi in
+   `src/lib/amici/testiAmici.ts`, con test.
+4. **Conferme**: solo Rimuovi amico, con `SheetConferma` "Rimuovere
+   @sara_c dagli amici?" / "Gli alimenti che vi siete già mandati
+   restano.", Annulla / Rimuovi in arancio (`warning`, non `--pericolo`:
+   si può richiedere subito). Accetta, Rifiuta, Annulla e Ok senza
+   conferma.
+5. **Elenchi**: una sezione vuota non si mostra; senza richieste né
+   amici, sotto "Aggiungi un amico", il riquadro "Ancora nessun amico.
+   Aggiungine uno con il suo username esatto." Richieste (ricevute e
+   inviate) dalla più recente, amici in ordine alfabetico di username.
+6. **Quando si rilegge**: all'apertura, dopo ogni azione, al ritorno in
+   primo piano (`visibilitychange`) e al ritorno della rete (`online`).
+   Niente polling, niente Realtime. Una rilettura non rimette
+   "Caricamento...": l'elenco resta finché arriva quello nuovo, e se due
+   letture si accavallano vale l'ultima partita (`useAmicizie`).
+
+Com'è fatta, dall'alto ("‹ Impostazioni" e il titolo "Amici"):
+- **offline**: `ServeConnessione` con un testo suo ("Amici funziona solo
+  con internet…"), che si toglie da solo quando torna la rete;
+- **senza username** (nessuna riga in `nomi_utente`): "Scegli il tuo
+  username" (`SceltaUsername`, schermata 3) al posto della pagina, con
+  "Gli amici ti trovano solo con il nome esatto. Potrai cambiarlo da
+  Profilo.", il campo con la "@" e l'esito mentre si scrive. Con uno
+  `username` nei metadati dell'account (`useUsernameDaiMetadati`) il
+  campo parte già scritto e mostra subito il suo esito; se il
+  suggerimento arriva un attimo dopo, riempie il campo solo se l'utente
+  non ha ancora scritto (test permanente). "Continua" chiama
+  `imposta_username`: con `ok` si apre la pagina, con `occupato` o
+  `non_valido` il messaggio sotto il campo, come in `SheetUsername`;
+- **"Aggiungi un amico"**, pulsante pieno a tutta larghezza: apre il
+  foglio del mockup (`SheetAggiungiAmico`). Campo "@" in minuscolo,
+  "Invia richiesta"; il formato si controlla prima di chiamare il server
+  (sbagliato → la regola del formato sotto il campo); l'esito resta sotto
+  il campo e il foglio non si chiude da solo; dopo `inviata` o
+  `accettata` l'elenco si rilegge. **Chiudi** per uscire. Niente
+  controllo "esiste?" mentre si scrive: la ricerca è solo all'invio;
+- **Richieste ricevute**: iniziali nel cerchio, "@username", "Vuole
+  essere tuo amico", **Rifiuta** / **Accetta**;
+- **Richieste inviate**: prima quelle "In attesa che accetti", con
+  **Annulla**, poi le "Non accettata", con **Ok** (`chiudi_rifiuto`);
+- **I tuoi amici · N**, nota "Tocca un amico per rimuoverlo.": tocco
+  sulla riga (con la freccia) → conferma → Rimuovi;
+- durante un'azione i pulsanti di quella riga sono spenti (niente doppio
+  tocco).
+
+Le iniziali vengono dallo username: le prime lettere delle prime due
+parti separate da "_" ("marco_b" → "mb"), altrimenti le prime due lettere
+(`inizialiUsername`). La divisione delle righe in ricevute / inviate in
+attesa / non accettate / amici è una funzione pura con test
+(`dividiAmicizie` in `src/lib/amici/amicizie.ts`): non si fida della RLS e
+scarta comunque le righe cancellate, quelle senza di me, le richieste
+rifiutate da me e i rifiuti già chiusi. **Username mancante** (in pratica
+non succede: può capitare solo se il nome cambia fra le due letture): la
+riga resta con "Nome non disponibile" e "?" nel cerchio, e i pulsanti
+funzionano; nasconderla lascerebbe una richiesta a cui non si può
+rispondere e un numero di amici diverso dall'elenco. Fra gli amici va in
+fondo. Le chiamate alle quattro funzioni e i tipi dei loro esiti stanno
+in `amicizie.ts`, come `EsitoImpostaUsername` in `nomiUtente.ts`;
+`tipi.ts` tiene solo i tipi delle righe.
 
 **Fasi**, ognuna con la sua migration (file in `supabase/migrations/`,
 prove in un blocco SQL annullato prima, `get_advisors` dopo):
