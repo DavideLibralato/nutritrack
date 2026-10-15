@@ -232,3 +232,25 @@ export interface Misurazione extends RigaBase {
 export interface Preferito extends RigaBase {
   alimento_id: string;
 }
+
+// --- Tabelle solo online (Amici, PUNTO_DI_PARTENZA.md §4, "Le tabelle di
+// Amici") ---
+//
+// Fuori da NomeTabella di proposito: non stanno in Dexie, non passano dalla
+// coda né dalla discesa. Se entrassero in NomeTabella, TypeScript
+// pretenderebbe un livello in LIVELLO_TABELLA, un'etichetta in ETICHETTE e
+// una voce nella discesa, cioè la sincronizzazione che qui non deve
+// esserci. Si leggono e si scrivono solo online, da un modulo in /lib.
+
+// Lo username di un utente (migration `nomi_utente`, versione
+// 20261015175818). Confrontato il 15/10 con information_schema.columns:
+// tutte le colonne NOT NULL tranne deleted_at.
+export interface NomeUtente extends RigaBase {
+  user_id: string; // NOT NULL qui, a differenza di RigaBase (che ammette null per alimenti)
+  // Solo `^[a-z][a-z0-9_]{2,19}$`, sempre minuscolo: lo garantisce il check
+  // sul database, l'app normalizza prima di inviare.
+  username: string;
+  creato_il: string; // ISO 8601, default now() sul server
+  // deleted_at (da RigaBase) qui resta sempre null: la riga si aggiorna e
+  // sparisce solo con l'utente (ON DELETE CASCADE).
+}

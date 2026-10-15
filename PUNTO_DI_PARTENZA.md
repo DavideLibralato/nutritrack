@@ -2225,7 +2225,13 @@ divergere.
 qui: stanno in `composizioni`. La sezione "Preferiti" della UI mostra l'unione
 delle due cose, ma sono dati diversi
 
-#### Le tabelle di Amici: solo online (decise il 15/10, migration da applicare)
+#### Le tabelle di Amici: solo online (decise il 15/10)
+
+Stato delle migration: **`nomi_utente` applicata il 15/10** (versione
+20261015175818, `apply_migration`; prove in un blocco annullato 20/20,
+advisors solo con i WARN accettati in 9.6; tipo `NomeUtente` in
+`tipi.ts`). `amicizie` e `alimenti_condivisi` da applicare; il trigger su
+`auth.users` dopo il merge (9.1).
 
 Tre tabelle per Amici (sezione 3). **Non sono local-first**: non stanno in
 Dexie, non passano dalla coda né dalla discesa, non entrano in

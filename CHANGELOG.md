@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: migration `nomi_utente` applicata, tipo `NomeUtente`
+
+Branch `amici`. Applicata da Cowork con `apply_migration` (questa volta il
+connettore l'ha accettata), versione 20261015175818. Verifiche: RLS
+attiva; `username_disponibile` eseguibile da `anon` e `authenticated`,
+`imposta_username` solo da `authenticated`; `anon` non legge la tabella,
+`authenticated` legge ma non scrive direttamente; 0 righe; colonne
+confrontate con `information_schema.columns`; `get_advisors` solo con i
+WARN attesi (`anon_security_definer` su `username_disponibile`,
+`authenticated_security_definer` sulle due funzioni nuove e su
+`elimina_mio_account`), performance invariata. Tipo `NomeUtente` in
+`tipi.ts`, fuori da `NomeTabella`; PUNTO §4 con lo stato delle migration.
+
 ## 2026-10-15 — Amici: file della migration `nomi_utente`
 
 Branch `amici`. `supabase/migrations/nomi_utente.sql`: tabella solo
