@@ -5,6 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Catalogo alimenti: mockup e decisioni
+
+Branch `catalogo-alimenti`. Commit `f4aa9a6`: in git il mockup approvato
+il 12/10 (`docs/mockups/catalogo-alimenti.html`) e in PUNTO §3 la
+sezione "Alimenti" con le decisioni dell'analisi del 15/10 (solo
+alimenti propri modificabili, "Più usati" dalle voci di diario, form
+come stato della pagina e non rotta con id, selezione multipla senza
+condividi, eliminazione multipla tutto o niente con Annulla). Solo
+documenti, nessun codice. Trovato e lasciato al commit 3: il commento in
+`CreaAlimentoForm` sulla transazione "scartata" è superato dal 9/10.
+
 ## 2026-10-15 — Preferiti nel gruppo Alimentazione
 
 Su main, senza branch (deciso da Davide). In Impostazioni la riga
