@@ -9,15 +9,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
-import { emailValida } from "@/lib/validazione";
+import { emailValida, normalizzaUsername, usernameValido } from "@/lib/validazione";
+import { controllaDisponibilita, impostaUsername } from "@/lib/amici/nomiUtente";
+import { TESTO_USERNAME_IN_USO, TESTO_USERNAME_NON_VALIDO } from "@/lib/amici/testiUsername";
 
 export interface StatoRegistrazione {
   errore: string | null;
   messaggio: string | null;
-  // Nome ed email inseriti nell'ultimo tentativo, per ripopolare il form
-  // dopo un errore senza dover far riscrivere tutto da capo. La password
-  // non torna mai indietro, nemmeno in caso di errore.
-  valori: { nome: string; email: string };
+  // Nome, username ed email inseriti nell'ultimo tentativo, per ripopolare
+  // il form dopo un errore senza dover far riscrivere tutto da capo. La
+  // password non torna mai indietro, nemmeno in caso di errore.
+  valori: { nome: string; username: string; email: string };
 }
 
 export async function registrati(
@@ -25,16 +27,20 @@ export async function registrati(
   formData: FormData
 ): Promise<StatoRegistrazione> {
   const nome = formData.get("nome")?.toString().trim() ?? "";
+  const username = normalizzaUsername(formData.get("username")?.toString() ?? "");
   const email = formData.get("email")?.toString().trim() ?? "";
   const password = formData.get("password")?.toString() ?? "";
   const codiceInvito = formData.get("codiceInvito")?.toString().trim() ?? "";
 
-  const valori = { nome, email };
+  const valori = { nome, username, email };
 
   // Il form ha noValidate: questi controlli sostituiscono i messaggi nativi
   // del browser (spesso in inglese) con messaggi in italiano.
-  if (!nome || !email || !password || !codiceInvito) {
+  if (!nome || !username || !email || !password || !codiceInvito) {
     return { errore: "Compila tutti i campi.", messaggio: null, valori };
+  }
+  if (!usernameValido(username)) {
+    return { errore: TESTO_USERNAME_NON_VALIDO, messaggio: null, valori };
   }
   if (!emailValida(email)) {
     return { errore: "Inserisci un indirizzo email valido.", messaggio: null, valori };
@@ -51,11 +57,26 @@ export async function registrati(
 
   const supabase = await createClient();
 
+  // Lo username è libero? Si chiede dopo il codice di invito, così da
+  // questo modulo il controllo lo fa solo chi è invitato. Se la risposta
+  // non arriva si va avanti: il nome lo protegge comunque l'indice unico
+  // del database, al salvataggio qui sotto.
+  if ((await controllaDisponibilita(supabase, username)) === "in_uso") {
+    return { errore: TESTO_USERNAME_IN_USO, messaggio: null, valori };
+  }
+
+  // Tutto in raw_user_meta_data. `username` e `codice_invito` servono al
+  // trigger su auth.users (PUNTO_DI_PARTENZA.md §9.1), che arriva dopo il
+  // merge di `amici` e da lì in poi controlla il codice, toglie
+  // `codice_invito` dai metadati e crea la riga di `nomi_utente`. Finché
+  // il trigger non c'è, i due campi restano lì senza effetto (la migration
+  // del trigger toglie `codice_invito` anche dalle righe di chi si è
+  // registrato prima).
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { nome }, // finisce in raw_user_meta_data
+      data: { nome, username, codice_invito: codiceInvito },
     },
   });
 
@@ -65,7 +86,9 @@ export async function registrati(
 
   // Se il progetto Supabase ha la conferma email attiva, qui c'è un utente
   // ma non ancora una sessione: non possiamo mandarlo dentro, deve prima
-  // aprire il link che gli arriva via email.
+  // aprire il link che gli arriva via email. Lo username non si può
+  // salvare ora (imposta_username vuole un utente entrato): lo chiede
+  // Amici alla prima apertura (PUNTO_DI_PARTENZA.md §3).
   if (!data.session) {
     return {
       errore: null,
@@ -73,6 +96,14 @@ export async function registrati(
       valori,
     };
   }
+
+  // Con la sessione lo username si salva subito, finché il trigger non lo
+  // fa da solo. Qualunque esito si entra lo stesso: l'account esiste già e
+  // non si annulla per lo username. Se il nome è stato preso nel frattempo
+  // ("occupato") o la risposta non arriva, lo username resta da scegliere
+  // e lo chiede Amici alla prima apertura, come per chi è registrato da
+  // prima.
+  await impostaUsername(supabase, username);
 
   redirect("/");
 }

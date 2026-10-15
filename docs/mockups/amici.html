@@ -1,0 +1,416 @@
+<title>Amici di Libra</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: una tavola di telefoni affiancati (vanno a capo), uno per schermata,
+   con i token veri dell'app (globals.css) e una nota sotto ognuno. */
+:root{
+  --background:#faf7f2; --foreground:#1f1b16; --linea:#e7e0d2; --tenue:#78705f;
+  --superficie:#ffffff; --accento:#3f7d4c; --accento-pieno:#3f7d4c; --su-pieno:#faf7f2;
+  --capsula:color-mix(in srgb, var(--accento) 12%, transparent);
+  --avviso:#b5533c; --cornice:#e3ddd2; --ombra:0 18px 40px -18px rgba(31,27,22,.45);
+  --f-display:'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --f-body:'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+    --superficie:#26221e; --accento:#7bb887; --accento-pieno:#3f7d4c; --su-pieno:#ffffff;
+    --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+    --avviso:#e8916f; --cornice:#100e0c; --ombra:0 18px 40px -18px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+  --superficie:#26221e; --accento:#7bb887; --accento-pieno:#3f7d4c; --su-pieno:#ffffff;
+  --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+  --avviso:#e8916f; --cornice:#100e0c; --ombra:0 18px 40px -18px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--cornice);color:var(--foreground);font-family:var(--f-body);
+  padding-block:24px 56px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.pagina{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header h1{font-family:var(--f-display);font-size:clamp(26px,5vw,34px);margin:0 0 6px;text-wrap:balance}
+header p{margin:0;max-width:68ch;line-height:1.5;color:var(--tenue);font-size:15px}
+.tema{display:flex;gap:6px;margin-top:12px}
+.tema button{font:600 13px var(--f-body);border:1px solid var(--linea);background:var(--superficie);color:var(--foreground);border-radius:999px;padding:6px 12px;cursor:pointer}
+.tema button[aria-pressed="true"]{border-color:var(--foreground)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accento);outline-offset:2px}
+
+.griglia{display:flex;flex-wrap:wrap;gap:28px 24px;align-items:flex-start}
+.colonna{width:340px;max-width:100%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.didascalia{font:700 12px var(--f-body);text-transform:uppercase;letter-spacing:.08em;margin:0 4px}
+.spiega{font-size:13px;line-height:1.45;color:var(--tenue);margin:0 4px 2px}
+.phone{position:relative;width:340px;max-width:100%;height:700px;overflow:hidden;background:var(--background);
+  border-radius:38px;border:1px solid var(--linea);box-shadow:var(--ombra)}
+.scorre{position:absolute;inset:0;overflow-y:auto;padding:14px 16px 110px}
+.sb{display:flex;justify-content:space-between;font-weight:600;font-size:14px;padding:0 12px 8px}
+.indietro{display:inline-flex;align-items:center;gap:6px;min-height:40px;color:var(--accento);font-size:16px}
+.titolo{font:700 32px/1.15 var(--f-display);margin:0 2px 16px}
+
+.gruppo{margin:0 0 20px}
+.gt{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--tenue);margin:0 14px 8px}
+.scatola{background:var(--superficie);border:1px solid var(--linea);border-radius:18px;overflow:hidden}
+.riga{position:relative;display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 14px;font-size:15.5px}
+.riga + .riga::before{content:"";position:absolute;top:0;right:0;left:14px;border-top:1px solid var(--linea)}
+.val{margin-left:auto;color:var(--tenue);font-size:14.5px;white-space:nowrap}
+.freccia{width:8px;height:13px;color:var(--tenue);flex:none}
+.ico{width:30px;height:30px;border-radius:9px;background:var(--capsula);color:var(--accento);display:flex;align-items:center;justify-content:center;flex:none}
+.ico svg{width:16px;height:16px}
+.nota{margin:8px 14px 0;font-size:13.5px;line-height:1.45;color:var(--tenue)}
+.pallino{width:9px;height:9px;border-radius:50%;background:var(--accento);flex:none}
+.nuove{color:var(--accento);font-weight:600}
+
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--capsula);color:var(--accento);display:flex;align-items:center;justify-content:center;font:700 14px var(--f-body);flex:none;text-transform:uppercase}
+.info{flex:1;min-width:0}
+.nome{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sotto{font-size:13px;color:var(--tenue);margin-top:1px;line-height:1.35}
+.sotto.avviso{color:var(--avviso)}
+.azioni{display:flex;gap:8px;flex:none}
+.btn{font:600 14px var(--f-body);border-radius:10px;padding:8px 12px;min-height:38px;cursor:pointer;border:1px solid var(--linea);background:transparent;color:var(--foreground)}
+.btn.pieno{background:var(--accento-pieno);border-color:var(--accento-pieno);color:var(--su-pieno)}
+.btn.largo{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:14px;font-weight:500}
+.input{width:100%;font:500 16px var(--f-body);color:var(--foreground);background:var(--background);border:1px solid var(--linea);border-radius:10px;padding:10px 12px}
+.prefisso{position:relative}
+.prefisso span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--tenue);font-weight:500}
+.prefisso .input{padding-left:28px}
+.esito{font-size:13.5px;line-height:1.4;min-height:19px}
+.esito.ok{color:var(--accento)}
+.esito.no{color:var(--avviso)}
+.regole{font-size:12.5px;color:var(--tenue);line-height:1.4}
+
+.pillola{position:absolute;left:14px;right:14px;bottom:14px;height:60px;border-radius:999px;background:color-mix(in srgb,var(--superficie) 88%,transparent);
+  border:1px solid var(--linea);display:flex;align-items:center;justify-content:space-around}
+.pillola span{position:relative;font-size:11px;color:var(--tenue);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;border-radius:999px}
+.pillola i{display:block;width:20px;height:20px;border-radius:6px;border:2px solid currentColor}
+.pillola .attiva{background:var(--capsula);color:var(--accento)}
+.pillola .badge{position:absolute;top:3px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--accento);border:2px solid var(--superficie)}
+
+.sheet-fondo{position:absolute;inset:0;background:rgba(15,12,10,.42);display:flex;align-items:flex-end}
+.sheet{width:100%;background:var(--superficie);border-radius:22px 22px 0 0;padding:18px 18px 26px;display:flex;flex-direction:column;gap:12px}
+.sheet h2{font:700 20px var(--f-display);margin:0}
+.sheet p{margin:0;font-size:14px;line-height:1.45;color:var(--tenue)}
+.maniglia{width:38px;height:5px;border-radius:3px;background:var(--linea);align-self:center;margin-bottom:2px}
+.opz{display:flex;flex-wrap:wrap;gap:6px}
+.opz button{font:600 12px var(--f-body);border:1px solid var(--linea);border-radius:999px;padding:5px 10px;background:transparent;color:var(--tenue);cursor:pointer}
+.opz button[aria-pressed="true"]{color:var(--foreground);border-color:var(--foreground)}
+.spunta{width:22px;height:22px;border-radius:50%;border:2px solid var(--linea);display:flex;align-items:center;justify-content:center;flex:none;color:var(--su-pieno);font-size:13px}
+.spunta.on{background:var(--accento-pieno);border-color:var(--accento-pieno)}
+.barra-sel{position:absolute;left:14px;right:14px;bottom:14px;height:60px;border-radius:999px;background:var(--superficie);border:1px solid var(--linea);display:flex;align-items:center;gap:10px;padding:0 10px 0 18px}
+.barra-sel b{flex:1;font-size:14.5px}
+.tondo{width:40px;height:40px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tondo svg{width:18px;height:18px}
+.tondo.cond{background:var(--capsula);color:var(--accento)}
+.tondo.el{background:color-mix(in srgb,var(--avviso) 14%,transparent);color:var(--avviso)}
+.link{background:none;border:none;color:var(--tenue);font:500 14px var(--f-body);cursor:pointer;padding:6px}
+.vuoto{padding:14px;font-size:13.5px;color:var(--tenue);line-height:1.45}
+
+.note{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.nota-box{background:var(--superficie);border:1px solid var(--linea);border-radius:16px;padding:16px 18px;font-size:14px;line-height:1.5;min-width:0}
+.nota-box h3{font:700 17px var(--f-display);margin:0 0 8px}
+.nota-box ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+code{font-size:12.5px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="pagina">
+  <header>
+    <h1>Amici di Libra</h1>
+    <p>Mockup con le decisioni del 15/10: username alla registrazione, ricerca solo per username esatto, richieste da accettare, alimenti mandati come copia e accettati da chi li riceve, pallino delle novità. I nomi sono esempi.</p>
+    <div class="tema" role="group" aria-label="Tema">
+      <button type="button" data-t="light" aria-pressed="false">Chiaro</button>
+      <button type="button" data-t="dark" aria-pressed="false">Scuro</button>
+      <button type="button" data-t="" aria-pressed="true">Sistema</button>
+    </div>
+  </header>
+
+  <div class="griglia">
+
+    <!-- 1. Registrati -->
+    <div class="colonna">
+      <p class="didascalia">1 · Registrati</p>
+      <p class="spiega">Campo nuovo sotto il Nome. Mentre scrivi, l'app chiede se il nome è libero (solo sì o no, sul nome esatto). Provalo: "marco_b" è già preso.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div style="display:flex;flex-direction:column;gap:14px;padding:22px 4px 0">
+          <div class="titolo" style="margin:0">Registrati</div>
+          <div class="campo"><label for="r-nome">Nome</label><input id="r-nome" class="input" value="Giulia"></div>
+          <div class="campo">
+            <label for="r-user">Username</label>
+            <div class="prefisso"><span>@</span><input id="r-user" class="input" value="giulia_r" autocapitalize="none" autocomplete="off" spellcheck="false"></div>
+            <div class="esito ok" id="r-esito" role="status">Disponibile</div>
+            <div class="regole">Da 3 a 20 caratteri: lettere, numeri e _. Serve agli amici per trovarti.</div>
+          </div>
+          <div class="campo"><label for="r-mail">Email</label><input id="r-mail" class="input" value="giulia@esempio.it"></div>
+          <div class="campo"><label for="r-pw">Password</label><input id="r-pw" class="input" type="password" value="••••••••"></div>
+          <div class="campo"><label for="r-cod">Codice di invito</label><input id="r-cod" class="input" value="••••••"></div>
+          <button class="btn pieno largo" type="button" id="r-invia">Registrati</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- 2. Impostazioni -->
+    <div class="colonna">
+      <p class="didascalia">2 · Impostazioni</p>
+      <p class="spiega">Gruppo nuovo "Amici" sotto Alimentazione. Il pallino nel colore principale compare sulla riga e sulla tab quando c'è qualcosa da guardare.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="titolo">Impostazioni</div>
+        <div class="gruppo"><div class="gt">Alimentazione</div><div class="scatola">
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg></span>Obiettivi<span class="val">2500 kcal</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg></span>Pasti e orari<span class="val">5 pasti</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4.5c-1.2-2-5-1.6-5 1.8 0 3.4 3 5.7 5 5.7s5-2.3 5-5.7c0-3.4-3.8-3.8-5-1.8z"/></svg></span>Alimenti<span class="val">46 alimenti</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2.5l1.7 3.5 3.8.5-2.8 2.6.7 3.8L8 11l-3.4 1.9.7-3.8L2.5 6.5l3.8-.5z"/></svg></span>Preferiti<span class="val">12 · 3 pasti</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        </div></div>
+        <div class="gruppo"><div class="gt">Amici</div><div class="scatola">
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.4"/><path d="M1.8 13c.5-2.4 2.2-3.6 4.2-3.6s3.7 1.2 4.2 3.6"/><circle cx="11.3" cy="5.4" r="1.9"/><path d="M11 9.3c1.8 0 3 1 3.4 3"/></svg></span>Amici<span class="val nuove">2 nuove</span><span class="pallino" aria-hidden="true"></span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        </div></div>
+        <div class="gruppo"><div class="gt">App</div><div class="scatola">
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11"/></svg></span>Aspetto<span class="val">Sistema</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        </div></div>
+      </div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni<b class="badge" aria-label="2 novità in Amici"></b></span></div>
+      </div>
+    </div>
+
+    <!-- 3. Amici, prima volta -->
+    <div class="colonna">
+      <p class="didascalia">3 · Amici, la prima volta</p>
+      <p class="spiega">Per chi si è registrato prima di questa funzione: la pagina chiede lo username una volta sola, poi si apre normalmente.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Amici</div>
+        <div class="gruppo"><div class="scatola" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="font:700 18px var(--f-display)">Scegli il tuo username</div>
+          <div class="sotto" style="font-size:14px">Gli amici ti trovano solo con il nome esatto. Potrai cambiarlo da Profilo.</div>
+          <div class="campo">
+            <label for="p-user">Username</label>
+            <div class="prefisso"><span>@</span><input id="p-user" class="input" value="davide_l" autocapitalize="none" autocomplete="off" spellcheck="false"></div>
+            <div class="esito ok" id="p-esito" role="status">Disponibile</div>
+          </div>
+          <button class="btn pieno largo" type="button">Continua</button>
+        </div></div>
+      </div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni</span></div>
+      </div>
+    </div>
+
+    <!-- 4. Amici -->
+    <div class="colonna">
+      <p class="didascalia">4 · Amici</p>
+      <p class="spiega">Prima le cose da fare (richieste e alimenti in arrivo), poi le richieste mandate, poi gli amici. Tocca i pulsanti: le righe reagiscono.</p>
+      <div class="phone"><div class="scorre" id="amici-scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Amici</div>
+        <button class="btn pieno largo" type="button" style="margin-bottom:18px" data-apri="sheet-aggiungi">Aggiungi un amico</button>
+
+        <div class="gruppo"><div class="gt">Richieste ricevute</div><div class="scatola" id="ricevute">
+          <div class="riga" data-riga><span class="avatar">mb</span><div class="info"><div class="nome">@marco_b</div><div class="sotto">Vuole essere tuo amico</div></div>
+            <div class="azioni"><button class="btn" type="button" data-rifiuta>Rifiuta</button><button class="btn pieno" type="button" data-accetta>Accetta</button></div></div>
+        </div></div>
+
+        <div class="gruppo"><div class="gt">Alimenti in arrivo</div><div class="scatola" id="arrivo">
+          <div class="riga" data-riga><div class="info"><div class="nome">Pane di segale · Mulino</div><div class="sotto">Da @sara_c · 259 kcal / 100 g</div></div>
+            <div class="azioni"><button class="btn" type="button" data-rifiuta>Rifiuta</button><button class="btn pieno" type="button" data-aggiungi>Aggiungi</button></div></div>
+          <div class="riga" data-riga><div class="info"><div class="nome">Yogurt greco 0%</div><div class="sotto avviso">Hai già «Yogurt greco 0%». Valori diversi: 57 kcal invece di 59.</div><div class="sotto">Da @sara_c</div></div>
+            <div class="azioni" style="flex-direction:column"><button class="btn pieno" type="button" data-aggiungi>Aggiungi comunque</button><button class="btn" type="button" data-rifiuta>Rifiuta</button></div></div>
+        </div></div>
+
+        <div class="gruppo"><div class="gt">Richieste inviate</div><div class="scatola" id="inviate">
+          <div class="riga"><span class="avatar">gr</span><div class="info"><div class="nome">@giulia_r</div><div class="sotto">In attesa che accetti</div></div><button class="link" type="button" data-rimuovi>Annulla</button></div>
+          <div class="riga" data-riga><span class="avatar">lf</span><div class="info"><div class="nome">@luca_f</div><div class="sotto">Non accettata</div></div><button class="btn" type="button" data-ok>Ok</button></div>
+        </div></div>
+
+        <div class="gruppo"><div class="gt">I tuoi amici · 2</div><div class="scatola" id="lista-amici">
+          <div class="riga"><span class="avatar">sc</span><div class="info"><div class="nome">@sara_c</div></div><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="avatar">pa</span><div class="info"><div class="nome">@paolo_a</div></div><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        </div><p class="nota">Tocca un amico per rimuoverlo (con conferma). Gli alimenti che vi siete già mandati restano.</p></div>
+      </div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni<b class="badge" id="badge-amici"></b></span></div>
+
+      <div class="sheet-fondo" id="sheet-aggiungi" hidden>
+        <div class="sheet" role="dialog" aria-labelledby="sa-t">
+          <div class="maniglia"></div>
+          <h2 id="sa-t">Aggiungi un amico</h2>
+          <p>Scrivi il suo username esatto. Gli arriverà una richiesta da accettare.</p>
+          <div class="campo"><div class="prefisso"><span>@</span><input id="sa-user" class="input" value="marco_b" autocapitalize="none" autocomplete="off" spellcheck="false" aria-label="Username"></div></div>
+          <div class="opz" role="group" aria-label="Esito di esempio">
+            <button type="button" data-e="inviata" aria-pressed="true">inviata</button>
+            <button type="button" data-e="non_trovato" aria-pressed="false">non trovato</button>
+            <button type="button" data-e="gia_amici" aria-pressed="false">già amici</button>
+            <button type="button" data-e="gia_chiesta" aria-pressed="false">già chiesta</button>
+            <button type="button" data-e="troppo_presto" aria-pressed="false">troppo presto</button>
+            <button type="button" data-e="sei_tu" aria-pressed="false">sei tu</button>
+          </div>
+          <div class="esito ok" id="sa-esito" role="status">Richiesta inviata a @marco_b.</div>
+          <div style="display:flex;gap:10px"><button class="btn largo" type="button" data-chiudi>Chiudi</button><button class="btn pieno largo" type="button">Invia richiesta</button></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- 5. Profilo -->
+    <div class="colonna">
+      <p class="didascalia">5 · Profilo</p>
+      <p class="spiega">Riga "Username" nei dati dell'account. Si cambia in un piccolo foglio con il suo Salva, fuori dal Salva di Profilo: serve la connessione.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Profilo</div>
+        <div class="gruppo"><div class="gt">Account</div><div class="scatola">
+          <div class="riga">Email<span class="val">davide@esempio.it</span></div>
+          <div class="riga">Username<span class="val">@davide_l</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        </div></div>
+        <div class="gruppo"><div class="gt">Dati personali</div><div class="scatola">
+          <div class="riga">Altezza<span class="val">180 cm</span></div>
+          <div class="riga">Livello di attività<span class="val">Moderato</span></div>
+        </div></div>
+      </div>
+      <div class="sheet-fondo">
+        <div class="sheet" role="dialog" aria-labelledby="pu-t">
+          <div class="maniglia"></div>
+          <h2 id="pu-t">Cambia username</h2>
+          <div class="prefisso"><span>@</span><input id="pu-user" class="input" value="davide_libra" autocapitalize="none" autocomplete="off" spellcheck="false" aria-label="Username"></div>
+          <div class="esito ok" role="status">Disponibile</div>
+          <p>I tuoi amici restano: sono legati al tuo account, non al nome. Il vecchio nome torna libero.</p>
+          <div style="display:flex;gap:10px"><button class="btn largo" type="button">Annulla</button><button class="btn pieno largo" type="button">Salva</button></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- 6. Catalogo: condividi -->
+    <div class="colonna">
+      <p class="didascalia">6 · Alimenti: condividi</p>
+      <p class="spiega">Nella selezione multipla del catalogo compare l'icona Condividi. Si scelgono gli amici, e ognuno riceve una copia da accettare.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Alimenti</div>
+        <div class="scatola">
+          <div class="riga"><span class="spunta on">✓</span><div class="info"><div class="nome">Pane di segale · Mulino</div><div class="sotto">259 kcal / 100 g</div></div></div>
+          <div class="riga"><span class="spunta on">✓</span><div class="info"><div class="nome">Hummus fatto in casa</div><div class="sotto">166 kcal / 100 g</div></div></div>
+          <div class="riga"><span class="spunta"></span><div class="info"><div class="nome">Petto di pollo</div><div class="sotto">110 kcal / 100 g</div></div></div>
+        </div>
+      </div>
+      <div class="sheet-fondo">
+        <div class="sheet" role="dialog" aria-labelledby="sc-t">
+          <div class="maniglia"></div>
+          <h2 id="sc-t">Condividi 2 alimenti</h2>
+          <p>Ogni amico riceve una copia: la aggiunge al suo catalogo solo se la accetta, e le tue modifiche future non la toccano.</p>
+          <div class="scatola">
+            <div class="riga" data-scelta><span class="spunta on">✓</span><div class="info"><div class="nome">@sara_c</div></div></div>
+            <div class="riga" data-scelta><span class="spunta"></span><div class="info"><div class="nome">@paolo_a</div></div></div>
+          </div>
+          <div style="display:flex;gap:10px"><button class="btn largo" type="button">Annulla</button><button class="btn pieno largo" type="button" id="sc-invia">Manda a 1 amico</button></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <div class="nota-box">
+      <h3>Testi degli esiti</h3>
+      <ul>
+        <li><b>inviata:</b> "Richiesta inviata a @nome."</li>
+        <li><b>non trovato:</b> "Nessun utente con questo username. Controlla come è scritto."</li>
+        <li><b>già amici / già chiesta:</b> "Siete già amici." / "Hai già mandato una richiesta a @nome."</li>
+        <li><b>troppo presto:</b> "Puoi riprovare tra qualche giorno."</li>
+        <li><b>l'altro ti aveva già chiesto:</b> "Ora siete amici." (la sua richiesta diventa accettata)</li>
+      </ul>
+    </div>
+    <div class="nota-box">
+      <h3>Cosa non si vede, apposta</h3>
+      <ul>
+        <li>Di un amico si vede solo lo username: niente nome, email o dati.</li>
+        <li>Chi rifiuta non dà spiegazioni; chi aveva chiesto vede "Non accettata" fino all'Ok.</li>
+        <li>Chi manda un alimento non sa se è stato aggiunto o rifiutato.</li>
+        <li>Offline la pagina Amici mostra "Serve la connessione".</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const root = document.documentElement;
+document.querySelectorAll('.tema button').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.t) root.setAttribute('data-theme', b.dataset.t); else root.removeAttribute('data-theme');
+  document.querySelectorAll('.tema button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+}));
+
+const PRESI = ['marco_b', 'sara_c', 'paolo_a', 'luca_f'];
+const RE = /^[a-z][a-z0-9_]{2,19}$/;
+function controllaNome(input, esito){
+  const v = input.value.trim().toLowerCase();
+  if (!RE.test(v)) { esito.textContent = 'Da 3 a 20 caratteri: inizia con una lettera, poi lettere, numeri e _.'; esito.className = 'esito no'; return false; }
+  if (PRESI.includes(v)) { esito.textContent = 'Questo username è già in uso.'; esito.className = 'esito no'; return false; }
+  esito.textContent = 'Disponibile'; esito.className = 'esito ok'; return true;
+}
+[['r-user','r-esito'],['p-user','p-esito']].forEach(([i,e]) => {
+  const input = document.getElementById(i), esito = document.getElementById(e);
+  input.addEventListener('input', () => {
+    const ok = controllaNome(input, esito);
+    if (i === 'r-user') document.getElementById('r-invia').disabled = !ok;
+  });
+});
+
+function aggiornaBadge(){
+  const n = document.querySelectorAll('#ricevute [data-riga], #arrivo [data-riga]').length;
+  document.getElementById('badge-amici').hidden = n === 0;
+}
+function sostituisci(riga, testo){
+  const r = document.createElement('div'); r.className = 'vuoto'; r.textContent = testo;
+  const scatola = riga.parentElement; riga.remove();
+  if (!scatola.querySelector('.riga')) scatola.append(r);
+  aggiornaBadge();
+}
+document.getElementById('amici-scorre').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const riga = b.closest('.riga');
+  if (b.hasAttribute('data-accetta')) { sostituisci(riga, 'Ora tu e @marco_b siete amici.'); }
+  else if (b.hasAttribute('data-aggiungi')) { sostituisci(riga, 'Aggiunto ai tuoi alimenti.'); }
+  else if (b.hasAttribute('data-rifiuta')) { sostituisci(riga, 'Nessuna novità.'); }
+  else if (b.hasAttribute('data-ok') || b.hasAttribute('data-rimuovi')) { riga.remove(); }
+  else if (b.dataset.apri) { document.getElementById(b.dataset.apri).hidden = false; }
+});
+
+const TESTI = {
+  inviata: ['ok', 'Richiesta inviata a @{n}.'],
+  non_trovato: ['no', 'Nessun utente con questo username. Controlla come è scritto.'],
+  gia_amici: ['no', 'Tu e @{n} siete già amici.'],
+  gia_chiesta: ['no', 'Hai già mandato una richiesta a @{n}.'],
+  troppo_presto: ['no', 'Puoi riprovare tra qualche giorno.'],
+  sei_tu: ['no', 'Questo è il tuo username.']
+};
+const sheet = document.getElementById('sheet-aggiungi');
+sheet.addEventListener('click', e => {
+  if (e.target === sheet || e.target.closest('[data-chiudi]')) { sheet.hidden = true; return; }
+  const b = e.target.closest('[data-e]'); if (!b) return;
+  sheet.querySelectorAll('[data-e]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  const [tipo, testo] = TESTI[b.dataset.e];
+  const n = document.getElementById('sa-user').value.trim().toLowerCase() || 'nome';
+  const esito = document.getElementById('sa-esito');
+  esito.textContent = testo.replace('{n}', n); esito.className = 'esito ' + tipo;
+});
+
+document.querySelectorAll('[data-scelta]').forEach(r => r.addEventListener('click', () => {
+  r.querySelector('.spunta').classList.toggle('on');
+  r.querySelector('.spunta').textContent = r.querySelector('.spunta').classList.contains('on') ? '✓' : '';
+  const n = document.querySelectorAll('[data-scelta] .spunta.on').length;
+  const btn = document.getElementById('sc-invia');
+  btn.disabled = n === 0;
+  btn.textContent = n === 0 ? 'Scegli almeno un amico' : 'Manda a ' + n + (n === 1 ? ' amico' : ' amici');
+}));
+</script>

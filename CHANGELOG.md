@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: username nella pagina Registrati
+
+Branch `amici`. Campo "Username" sotto Nome, come nel mockup approvato
+`docs/mockups/amici.html` (aggiunto in questo commit): "@" davanti,
+minuscolo mentre si scrive, esito "Disponibile / già in uso" chiesto a
+`username_disponibile` 400 ms dopo l'ultimo tasto
+(`useDisponibilitaUsername`), formato sbagliato detto subito. La Server
+Action ricontrolla formato e disponibilità, manda `username` e
+`codice_invito` nei metadati per il trigger futuro e, con la sessione già
+aperta, salva lo username con `imposta_username`; senza sessione, o con un
+esito diverso da `ok`, lo chiederà Amici. Regole in `validazione.ts`
+(`normalizzaUsername`, `usernameValido`) e chiamate in
+`src/lib/amici/nomiUtente.ts`. Test permanenti: le regole (gli stessi casi
+delle prove sulla migration) e le risposte fuori ordine dell'esito (il
+test fallisce togliendo il controllo, provato da una copia e
+ripristinato). 875 test verdi in 78 file, lint, `tsc` e `npm run build`
+puliti. Non provato nel browser: la registrazione vera crea un account,
+serve l'ok di Davide. Con la conferma email attiva (il caso del progetto)
+lo username resta nei metadati: Amici lo proporrà già scritto in "Scegli
+il tuo username" (passo 6, annotato in PUNTO §3).
+
 ## 2026-10-15 — Amici: migration `nomi_utente` applicata, tipo `NomeUtente`
 
 Branch `amici`. Applicata da Cowork con `apply_migration` (questa volta il

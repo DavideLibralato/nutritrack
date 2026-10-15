@@ -1289,8 +1289,41 @@ del 15/10.
   il merge di `amici` (9.1, "ordine dei rilasci"): chi si registra prima
   sceglie lo username alla prima apertura di Amici, come chi era già
   registrato.
+- **Com'è fatta la pagina Registrati** (dal 15/10, passo 3; mockup
+  `docs/mockups/amici.html`, schermata 1). Campo "Username" sotto Nome,
+  con la "@" davanti (fuori dal valore); il campo scrive già in
+  minuscolo. Sotto, una riga di esito che cambia **mentre si scrive**
+  (`useDisponibilitaUsername`): niente a campo vuoto; il formato sbagliato
+  si dice subito, senza chiedere al server ("Da 3 a 20 caratteri: inizia
+  con una lettera, poi lettere, numeri e _."); con il formato giusto, 400
+  ms dopo l'ultimo tasto, `username_disponibile` → "Disponibile" (colore
+  principale) o "Questo username è già in uso." (arancio); senza risposta
+  "Non riesco a controllarlo ora: lo controllo quando crei l'account."
+  Vale solo la risposta per il nome scritto adesso: una lenta per un nome
+  precedente si scarta (test permanente). Sotto ancora le regole: "Da 3 a
+  20 caratteri: lettere, numeri e _. Serve agli amici per trovarti."
+  "Crea account" si spegne solo con formato sbagliato o nome preso.
+- **All'invio** la Server Action rifà tutto: formato, codice di invito,
+  poi `username_disponibile` (se la risposta non arriva si va avanti:
+  il nome lo protegge l'indice unico). `signUp` porta nei metadati
+  `nome`, `username` e `codice_invito` (per il trigger che verrà). **Finché
+  il trigger non c'è**: con la sessione subito disponibile la Server
+  Action chiama `imposta_username` e poi entra; con un esito diverso da
+  `ok` (nome preso nell'istante, rete) entra lo stesso, l'account non si
+  annulla per lo username, e lo username lo chiede Amici. Senza sessione
+  (conferma email attiva) resta solo nei metadati e lo chiede Amici. Regole
+  in `validazione.ts` (`FORMATO_USERNAME`, `normalizzaUsername`,
+  `usernameValido`, con test), chiamate in `src/lib/amici/nomiUtente.ts`,
+  testi in `testiUsername.ts`.
 - **Chi è già registrato** lo sceglie alla prima apertura di Amici: al
-  posto della pagina c'è "Scegli il tuo username".
+  posto della pagina c'è "Scegli il tuo username". **Se nei metadati
+  dell'account c'è già uno `username`** (scritto da Registrati), il campo
+  lo propone già scritto, con il suo esito "Disponibile / già in uso":
+  basta confermarlo (decisione del 15/10, passo 6). Sul nostro progetto
+  la **conferma email è attiva** (l'account usa e getta dell'11/10 andava
+  confermato da Mail): dopo `signUp` di solito non c'è sessione, quindi
+  finché non c'è il trigger è questo il percorso normale, non
+  l'eccezione.
 - **Si cambia da Profilo**, se il nome nuovo è libero: una riga
   "Username" che apre un piccolo modulo con il **suo** Salva, solo
   online. Non entra nel Salva unico di Profilo, che scrive in locale: una
@@ -2954,7 +2987,11 @@ definer` e `search_path = ''`):
   registrazione e lo confronta con quello salvato (sotto). Codice
   mancante o sbagliato → errore, l'account non nasce. Controlla anche il
   formato dello username. Poi **toglie `codice_invito` dai metadati**,
-  così il codice non resta salvato nella riga dell'utente
+  così il codice non resta salvato nella riga dell'utente. Dal passo 3
+  (15/10) la pagina Registrati lo manda già, prima che il trigger ci sia:
+  chi si registra nel frattempo lo ha nei metadati. La migration del
+  trigger lo toglie anche da quelle righe
+  (`raw_user_meta_data - 'codice_invito'`)
 - **`AFTER INSERT`**: crea la riga in `nomi_utente` dallo `username` dei
   metadati (prima la riga in `auth.users` non esiste, e la foreign key
   la rifiuterebbe). Nome già preso → errore, e la registrazione viene
