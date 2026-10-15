@@ -5,6 +5,10 @@
 // I valori sono per 100 g (sezione 9.3), più la porzione predefinita in
 // grammi che poi lo sheet quantità userà come default.
 //
+// Si apre da due posti: /aggiungi e Impostazioni > Alimenti (sezione 3,
+// "Alimenti"). Quello che cambia fra i due sono solo i testi
+// `etichettaIndietro` ed `etichettaCrea`, passati dal chiamante.
+//
 // Lo stesso form serve anche a **modificare** un alimento del catalogo, ma
 // solo se creato dall'utente e non ancora verificato (sezione 10.8: un
 // alimento verificato non si modifica, se ne crea uno nuovo; quelli
@@ -36,6 +40,13 @@ const ETICHETTE_MANCANTI: Record<CampoAlimento, string> = {
 interface Props {
   userId: string;
   nomeIniziale: string;
+  // I due testi che dipendono da dove si apre il form: in Aggiungi
+  // "Torna alla ricerca" e "Crea e scegli la quantità" (dopo la creazione
+  // si sceglie subito la quantità), in Impostazioni > Alimenti "Torna al
+  // catalogo" e "Salva". Obbligatori, senza un valore predefinito: chi
+  // apre il form dice sempre dove si torna.
+  etichettaIndietro: string;
+  etichettaCrea: string;
   onAnnulla: () => void;
   onCreato: (alimento: Alimento) => void;
   // --- Solo in modifica di un alimento esistente ---
@@ -50,6 +61,8 @@ interface Props {
 export default function CreaAlimentoForm({
   userId,
   nomeIniziale,
+  etichettaIndietro,
+  etichettaCrea,
   onAnnulla,
   onCreato,
   alimentoDaModificare,
@@ -172,7 +185,7 @@ export default function CreaAlimentoForm({
           onClick={onAnnulla}
           className={`rounded text-sm text-muted underline ${CLASSE_FOCUS}`}
         >
-          Torna alla ricerca
+          {etichettaIndietro}
         </button>
       </div>
 
@@ -270,6 +283,15 @@ export default function CreaAlimentoForm({
         </p>
       </div>
 
+      {/* Solo in modifica, sotto tutti i valori: cosa cambia salvando. Il
+          diario copia i valori al momento dell'inserimento, i pasti salvati
+          li leggono dal catalogo (PUNTO_DI_PARTENZA.md §3, "Alimenti"). */}
+      {modifica && (
+        <p className="text-sm text-muted">
+          Le modifiche valgono da ora e nei pasti salvati. Il diario già registrato non cambia.
+        </p>
+      )}
+
       {errore && <p className="text-sm text-warning">{errore}</p>}
 
       {/* Perché il pulsante è spento, quando manca qualcosa: i campi vuoti
@@ -330,7 +352,7 @@ export default function CreaAlimentoForm({
           disabled={inCorso || !salvabile}
           className={`w-full rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
         >
-          {inCorso ? "Salvataggio..." : "Crea e scegli la quantità"}
+          {inCorso ? "Salvataggio..." : etichettaCrea}
         </button>
       )}
     </form>

@@ -602,6 +602,8 @@ function AggiungiContenuto() {
               key={alimentoInModifica?.id ?? "nuovo"}
               userId={userId}
               nomeIniziale={query.trim()}
+              etichettaIndietro="Torna alla ricerca"
+              etichettaCrea="Crea e scegli la quantità"
               alimentoDaModificare={alimentoInModifica ?? undefined}
               onAnnulla={() => {
                 setCreando(false);

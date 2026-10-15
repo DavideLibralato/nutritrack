@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Catalogo alimenti: eliminazione e ripristino di più alimenti
+
+Branch `catalogo-alimenti`. Commit `f348e03`: `eliminaAlimenti` e
+`ripristinaAlimenti` in `src/lib/repository/composizioni.ts`, cascata sui
+pasti salvati calcolata sull'insieme degli alimenti, tutto o niente in
+una transazione Dexie, Annulla che rimette esattamente ciò che è stato
+tolto. Le funzioni per un alimento solo ora le richiamano, e l'Elimina di
+`CreaAlimentoForm` passa da `eliminaAlimenti`: anche in Aggiungi
+l'eliminazione singola è tutto o niente; tolto il commento sulla
+transazione "scartata", superato dal 9/10.
+**Bug trovato dai test e corretto prima del commit**: con
+`() => ripristinaNellaTransazione(...)` (funzione non async) Dexie perdeva
+la transazione dopo la prima scrittura (PrematureCommitError); corretto
+con `async () => await …`, regola scritta in PUNTO §9.2. Verificato con un
+test temporaneo, poi cancellato, che le transazioni di `modifichePasti.ts`
+non hanno lo stesso problema. 9 test nuovi in
+`eliminazioneAlimenti.test.ts`, provati al contrario in tre modi (cascata
+un alimento alla volta, niente transazione, funzione non async): ognuno fa
+fallire i test attesi. 852 test verdi, `tsc` ed `eslint` puliti.
+
 ## 2026-10-15 — Catalogo alimenti: contaUsi e ordinaCatalogo
 
 Branch `catalogo-alimenti`. Commit `093781c`: in
