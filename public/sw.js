@@ -30,6 +30,8 @@ importScripts("/sw-strategia.js");
 // 11/10/2026, branch "preferiti": /impostazioni/preferiti in PAGINE_APP.
 // 11/10/2026, branch "elimina-account": /impostazioni/elimina-account in
 // PAGINE_APP.
+// 15/10/2026, branch "catalogo-alimenti": /impostazioni/alimenti in
+// PAGINE_APP.
 const {
   PAGINE_APP,
   pagineDaTogliere,

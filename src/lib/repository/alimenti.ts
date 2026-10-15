@@ -25,12 +25,18 @@ export async function catalogoLocale(userId: string): Promise<Alimento[]> {
 // Ricerca per sottostringa nel nome, indifferente a maiuscole e accenti
 // ("però" trova "pero", "PANE" trova "pane"). Ordina i risultati per nome.
 export function cercaPerNome(alimenti: Alimento[], query: string): Alimento[] {
-  const q = senzaAccenti(query);
-  if (!q) return [];
+  if (!senzaAccenti(query)) return [];
+  return filtraPerNome(alimenti, query).sort((a, b) => a.nome.localeCompare(b.nome, "it"));
+}
 
-  return alimenti
-    .filter((a) => senzaAccenti(a.nome).includes(q))
-    .sort((a, b) => a.nome.localeCompare(b.nome, "it"));
+// Lo stesso confronto di cercaPerNome, ma senza ordinare e con una
+// differenza: a ricerca vuota restituisce tutto, non niente. Serve a
+// Impostazioni > Alimenti, dove l'elenco c'è anche prima di cercare e
+// l'ordine lo sceglie l'utente (ordinaCatalogo).
+export function filtraPerNome(alimenti: Alimento[], query: string): Alimento[] {
+  const q = senzaAccenti(query);
+  if (!q) return alimenti;
+  return alimenti.filter((a) => senzaAccenti(a.nome).includes(q));
 }
 
 // Etichetta di un alimento in una lista (ricerca, in futuro recenti e

@@ -57,13 +57,17 @@ import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import ServeConnessione from "@/components/ServeConnessione";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
-import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
+import {
+  elencoNomi,
+  messaggioDopoRipristino,
+  testoRipristinoNonRiuscito,
+} from "@/lib/inserimento/testiAlimentiCancellati";
+import { eModificabile } from "@/lib/catalogo/alimentiModificabili";
 import type { Alimento } from "@/lib/db/tipi";
 import { segnaInserimento } from "@/lib/inserimento/ultimoInserimento";
 import {
   messaggioEliminato,
   messaggioInserimento,
-  messaggioRipristinato,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
 import { aggiungiNelPasto, type AlimentoDaAggiungere } from "@/lib/repository/vociDiario";
@@ -536,25 +540,19 @@ function AggiungiContenuto() {
         annullabile.alimento.id,
         annullabile.traccia
       );
-      // Caso normale: "Ripristinato: Mela", su una riga. Se un pasto salvato
-      // non è tornato, serve la frase intera, che può andare a capo.
-      if (pastiNonRipristinati.length === 0) {
-        setBarra({ id: crypto.randomUUID(), ...messaggioRipristinato(annullabile.alimento.nome) });
-        return;
-      }
-      let testo = `Ripristinato: ${annullabile.alimento.nome}.`;
-      if (pastiNonRipristinati.length === 1) {
-        testo += ` Il pasto salvato ${elencoNomi(pastiNonRipristinati)} no: ne hai già un altro con lo stesso nome.`;
-      } else {
-        testo += ` I pasti salvati ${elencoNomi(pastiNonRipristinati)} no: hai già altri pasti con gli stessi nomi.`;
-      }
-      setBarra({ id: crypto.randomUUID(), testo });
+      // "Ripristinato: Mela", o la frase intera se un pasto salvato non è
+      // tornato (testi in testiAlimentiCancellati.ts, gli stessi di
+      // Impostazioni > Alimenti).
+      setBarra({
+        id: crypto.randomUUID(),
+        ...messaggioDopoRipristino(annullabile.alimento.nome, pastiNonRipristinati),
+      });
     } catch {
       // Si ripropone l'Annulla: ripristinaAlimentoEliminato salta ciò che è
       // già tornato in vita, quindi riprovare dopo un guasto a metà converge.
       setBarra({
         id: crypto.randomUUID(),
-        testo: `Non è stato possibile ripristinare ${nome}.`,
+        testo: testoRipristinoNonRiuscito(nome),
         annullabile,
       });
     }
@@ -761,8 +759,8 @@ function AggiungiContenuto() {
                     // Modificabile solo se è tuo e non ancora verificato
                     // (sezione 10.8). Sugli alimenti condivisi (user_id null)
                     // o verificati la matita non compare — come la RLS che
-                    // nega comunque update/delete.
-                    const modificabile = a.user_id === userId && !a.verificato;
+                    // nega comunque update/delete. Regola in eModificabile.
+                    const modificabile = eModificabile(a, userId);
                     return (
                       <li
                         key={a.id}
@@ -942,7 +940,7 @@ function RigaRapida({
   // modificabile solo se è tuo e non ancora verificato. Recenti e Preferiti
   // possono mostrare lo stesso identico alimento che compare in ricerca — il
   // bug segnalato era proprio che qui mancava, mentre in ricerca c'era.
-  const modificabile = alimento.user_id === userId && !alimento.verificato;
+  const modificabile = eModificabile(alimento, userId);
 
   return (
     <li className="flex items-center gap-2 border-b border-border py-3.5">

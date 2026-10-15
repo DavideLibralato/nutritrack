@@ -5,6 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Catalogo alimenti: testi del form dal chiamante
+
+Branch `catalogo-alimenti`. Commit `9350cb3`: `CreaAlimentoForm` riceve
+`etichettaIndietro` ed `etichettaCrea` (obbligatorie, senza valore
+predefinito) al posto di "Torna alla ricerca" e "Crea e scegli la
+quantità" scritti fissi; Aggiungi passa gli stessi testi di prima. In
+modifica, sotto i valori, la frase "Le modifiche valgono da ora e nei
+pasti salvati. Il diario già registrato non cambia." 852 test verdi,
+`tsc`, `eslint` e `npm run build` puliti. Non ancora guardato nel
+browser: lo verifica Davide su iPhone nelle prove finali.
+
 ## 2026-10-15 — Catalogo alimenti: eliminazione e ripristino di più alimenti
 
 Branch `catalogo-alimenti`. Commit `f348e03`: `eliminaAlimenti` e

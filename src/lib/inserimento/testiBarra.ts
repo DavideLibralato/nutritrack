@@ -119,6 +119,13 @@ export function messaggioToltoDaiPreferiti(nome: string): MessaggioBarra {
   return { testo: "Tolto dai preferiti:", nome };
 }
 
+// Impostazioni > Alimenti, dopo "Nuovo alimento": con "Più usati" un
+// alimento appena creato (0 usi) finisce in fondo all'elenco, e senza la
+// barra non si vedrebbe che è stato salvato.
+export function messaggioAlimentoCreato(nome: string): MessaggioBarra {
+  return { testo: "Creato:", nome, icona: "spunta" };
+}
+
 export const MESSAGGIO_ANNULLATO: MessaggioBarra = {
   testo: "Annullato.",
   icona: "annulla",

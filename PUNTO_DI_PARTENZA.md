@@ -1115,9 +1115,19 @@ catalogo, si corregge e si fa pulizia.
   oggi vuoto) non compare: si trova dalla ricerca in Aggiungi, e non è
   modificabile (anche per RLS).
 - **Ricerca per nome**, con le stesse regole di `cercaPerNome`
-  (maiuscole e accenti indifferenti), e **ordinamento**: Più usati
-  (predefinito) / A → Z / Z → A / Meno usati. Sotto la ricerca il numero
-  di alimenti mostrati ("14 alimenti").
+  (maiuscole e accenti indifferenti; `filtraPerNome`, che a ricerca vuota
+  restituisce tutto), e **ordinamento**: Più usati (predefinito, a ogni
+  visita) / A → Z / Z → A / Meno usati. Sotto la ricerca, a sinistra il
+  numero di alimenti mostrati ("14 alimenti"), a destra l'ordine scelto.
+  L'ordine è un `<select>` nativo, non il menu disegnato del mockup: sul
+  telefono apre il selettore di sistema, come il titolo del pasto in
+  Aggiungi. Senza risultati: "Nessun alimento trovato. Prova un altro
+  termine di ricerca."
+- **La riga**: il nome, con la marca se c'è ("Pane · Mulino",
+  `etichettaAlimento`), e sotto "165 kcal / 100 g".
+- **Catalogo vuoto**: niente ricerca né ordine, un riquadro "Ancora nessun
+  alimento" — "Crea il primo con il + qui sotto, oppure da Aggiungi quando
+  la ricerca non trova quello che cerchi."
 - **"Più usati" conta le voci di diario vive** dell'utente con
   quell'`alimento_id`. Le righe dei pasti salvati (`composizioni_voci`) non
   contano: un pasto salvato è uno stampo, non un uso, e quando lo si
@@ -1132,7 +1142,22 @@ catalogo, si corregge e si fa pulizia.
   della pagina, **non una rotta con l'id**: una rotta
   `/impostazioni/alimenti/[id]` non può stare in `PAGINE_APP`, quindi
   offline non si aprirebbe. Il "‹" in alto, con il form aperto, chiude il
-  form e torna all'elenco.
+  form e torna all'elenco. Il form copre anche la tab bar, e mentre è
+  aperto l'elenco non si disegna (lo stesso rimedio di Preferiti al
+  problema di scorrimento di iOS dell'11/10). In alto "‹ Alimenti", nel
+  form "Torna al catalogo" e, per un alimento nuovo, "Salva". Dopo la
+  creazione la barra dice "Creato: Mela": con "Più usati" un alimento
+  nuovo finisce in fondo all'elenco, e senza la barra non si vedrebbe che
+  è stato salvato. Dopo una modifica nessuna barra, come in Aggiungi.
+- **Il "+"** è tondo, a destra, alla stessa altezza di "+ Aggiungi" in
+  Oggi (sopra la tab bar, con la stessa sfumatura dietro), e come la tab
+  bar si nasconde mentre un campo ha il fuoco. La barra con Annulla sta
+  appena sopra il "+", senza coprirlo, come in Oggi.
+- **Una regola sola per "modificabile"**: `eModificabile` in
+  `src/lib/catalogo/alimentiModificabili.ts`, usata anche dalla matita di
+  Aggiungi (prima scritta due volte lì). Le frasi della barra dopo
+  l'Annulla (`messaggioDopoRipristino`, `testoRipristinoNonRiuscito`) sono
+  in `testiAlimentiCancellati.ts`, le stesse in Aggiungi e qui.
 - **Frase sotto i valori, in modifica** (in Aggiungi e qui, non in "Nuovo
   alimento"): "Le modifiche valgono da ora e nei pasti salvati. Il diario
   già registrato non cambia." È la regola già in vigore: il diario copia i

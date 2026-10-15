@@ -203,7 +203,8 @@
 
 /* In Oggi la sfumatura copre anche "+ Aggiungi" (data-pulsante-aggiungi in
    src/app/(app)/page.tsx): una sola sfumatura, più alta, invece di due
-   sovrapposte che farebbero uno scalino. */
+   sovrapposte che farebbero uno scalino. Lo stesso in Impostazioni >
+   Alimenti, dove alla stessa altezza c'è il "+". */
 body:has([data-pulsante-aggiungi]) {
   --altezza-sfumatura: calc(var(--ingombro-oggi) + 1.5rem);
 }

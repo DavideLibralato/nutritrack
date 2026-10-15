@@ -28,6 +28,7 @@
     "/impostazioni/peso",
     "/impostazioni/aspetto",
     "/impostazioni/preferiti",
+    "/impostazioni/alimenti",
     "/impostazioni/sincronizzazione",
     "/impostazioni/informazioni",
     "/impostazioni/elimina-account",

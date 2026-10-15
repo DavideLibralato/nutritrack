@@ -2,7 +2,11 @@
 // cancellati dal catalogo (regola "Alimenti cancellati" in
 // PUNTO_DI_PARTENZA.md). Scritte in un posto solo perché le stesse parole
 // compaiono in due punti di Oggi (al tocco della stella e dentro lo sheet)
-// e devono restare identiche, singolare/plurale compresi.
+// e devono restare identiche, singolare/plurale compresi. Qui anche le
+// frasi della barra dopo l'Annulla di una cancellazione, che compaiono in
+// Aggiungi e in Impostazioni > Alimenti.
+
+import { messaggioRipristinato, type MessaggioBarra } from "./testiBarra";
 
 // «a» / «a» e «b» / «a», «b» e «c». Nomi ripetuti (lo stesso alimento
 // inserito due volte) compaiono una volta sola.
@@ -33,4 +37,30 @@ export function testoGiaSalvato(nomePasto: string, nomiEsclusi: string[]): strin
   if (nomiEsclusi.length === 0) return primo;
   const che = new Set(nomiEsclusi).size === 1 ? "che non è più" : "che non sono più";
   return `${primo} Non contiene ${elencoNomi(nomiEsclusi)}, ${che} nel catalogo.`;
+}
+
+// Punto 4: la barra dopo l'"Annulla" di una cancellazione, dall'esito di
+// ripristinaAlimenti. Caso normale: "Ripristinato: Mela", su una riga. Se
+// un pasto salvato non è tornato (il suo nome nel frattempo è stato preso),
+// serve la frase intera, che può andare a capo. `nome` è quello mostrato:
+// il nome dell'alimento, o "3 alimenti" dopo un'eliminazione multipla.
+export function messaggioDopoRipristino(
+  nome: string,
+  pastiNonRipristinati: string[]
+): MessaggioBarra {
+  if (pastiNonRipristinati.length === 0) return messaggioRipristinato(nome);
+  let testo = `Ripristinato: ${nome}.`;
+  if (pastiNonRipristinati.length === 1) {
+    testo += ` Il pasto salvato ${elencoNomi(pastiNonRipristinati)} no: ne hai già un altro con lo stesso nome.`;
+  } else {
+    testo += ` I pasti salvati ${elencoNomi(pastiNonRipristinati)} no: hai già altri pasti con gli stessi nomi.`;
+  }
+  return { testo };
+}
+
+// Il ripristino non è riuscito: la barra lo dice e ripropone l'Annulla
+// (ripristinaAlimenti salta ciò che è già tornato in vita, quindi
+// riprovare converge). `nome` come sopra, già tra «» se è un nome.
+export function testoRipristinoNonRiuscito(nome: string): string {
+  return `Non è stato possibile ripristinare ${nome}.`;
 }
