@@ -1100,7 +1100,7 @@ zero.
   /aggiungi non fa niente perché lì il guardiano non c'è).
 - La pagina è in `PAGINE_APP` del service worker: si apre anche offline.
 
-### Alimenti (dal 15/10, branch `catalogo-alimenti`)
+### Alimenti (dal 15/10, branch `catalogo-alimenti`, provata su iPhone il 15/10)
 
 Gestione del catalogo personale, in Impostazioni > Alimenti
 (`/impostazioni/alimenti`), con "‹ Impostazioni". Mockup approvato da
@@ -4149,14 +4149,36 @@ eliminata), preferiti (2, 1 tolto), misurazioni (1), pasti (1), con
 permanenti: la sessione scaduta vera (nessun segno scritto, dati che
 restano) e l'app chiusa a metà uscita.
 
-**Test.** 833 test permanenti in 72 file (Vitest), tutti verdi all'11/10.
+**Impostazioni > Alimenti, il catalogo personale** (15/10, branch
+`catalogo-alimenti`, decisioni e com'è fatto in sezione 3, "Alimenti";
+mockup `docs/mockups/catalogo-alimenti.html`). Elenco degli alimenti
+modificabili con ricerca e ordinamento, "Modifica alimento" e "Nuovo
+alimento" a pagina intera con lo stesso form di Aggiungi, tieni premuto
+per la selezione multipla, eliminazione di più alimenti tutto o niente in
+una transazione con Annulla, riga in Impostazioni. Insieme: l'Elimina del
+form (anche in Aggiungi) passa dalla stessa transazione, e nel form la
+frase "Le modifiche valgono da ora e nei pasti salvati. Il diario già
+registrato non cambia." Un bug trovato dai test prima del commit e
+corretto: la funzione passata a `db.transaction` non `async` perdeva la
+transazione dopo la prima scrittura (regola in §9.2). Provato su iPhone
+il 15/10 in Safari sull'anteprima, account di prova: la riga "Alimenti"
+prima di Preferiti con lo stesso numero della pagina; ricerca, i quattro
+ordini dal selettore dell'iPhone, lo scorrimento che non entra mai in
+selezione; la modifica con la frase nuova, "‹ Alimenti" che torna allo
+stesso scorrimento, "+" → "Nuovo alimento" → "Creato: …"; tieni premuto
+→ selezione, la barra che copre la tab bar, spunte aggiunte e tolte, lo
+sheet con i conteggi di pasti salvati e preferiti, Elimina e Annulla
+(anche con un alimento dentro un pasto salvato: tutto ripristinato); la
+pagina che si apre offline; in Aggiungi la matita con la frase nuova,
+crea, elimina dal form e Annulla. Verificato da Cowork su Supabase:
+"Prova catalogo" cancellato; "Prova", il pasto salvato "Colazione" e le
+sue righe di `composizioni_voci` ripristinati nello stesso secondo (una
+transazione); "Dxx" creato da Aggiungi, eliminato e ripristinato.
+
+**Test.** 862 test permanenti in 76 file (Vitest), tutti verdi al 15/10.
 
 ### Non ancora costruito
 
-- **Impostazioni > Alimenti**, il catalogo personale: decisa il 15/10
-  (sezione 3, "Alimenti"), costruita il 15/10 sul branch
-  `catalogo-alimenti` (pagina, selezione multipla, riga in Impostazioni);
-  da provare su iPhone prima del merge
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)

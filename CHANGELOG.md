@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Catalogo alimenti: provato su iPhone
+
+Branch `catalogo-alimenti`. Commit dei documenti (questa voce compresa):
+esito delle prove in PUNTO §11, "Fatto"; tolto "Impostazioni > Alimenti"
+da "Non ancora costruito". Provato da Davide il 15/10 in Safari
+sull'anteprima con l'account di prova: ingresso da Impostazioni con il
+conteggio uguale alla pagina, ricerca, i quattro ordini, scorrimento che
+non entra in selezione, modifica con la frase nuova e ritorno allo stesso
+scorrimento, "+" → "Creato: …", selezione con la barra sopra la tab bar,
+sheet con i conteggi, Elimina + Annulla anche con un alimento in un pasto
+salvato, apertura offline; in Aggiungi matita con la frase nuova, crea,
+elimina e Annulla. Verificato da Cowork su Supabase: cancellazione e
+ripristino arrivati, con pasto salvato e righe ripristinati nello stesso
+secondo. Nessun difetto trovato nelle prove.
+
+## 2026-10-15 — Catalogo alimenti: riga in Impostazioni
+
+Branch `catalogo-alimenti`. Commit `7a3de96`: riga "Alimenti" nel gruppo
+Alimentazione, prima di Preferiti, con "46 alimenti" / "1 alimento" /
+"Nessuno" (`testoRigaAlimenti`), contati con `alimentiModificabili` come
+l'elenco della pagina; icona a forma di mela. Test permanente sul
+conteggio. 862 test verdi, `tsc`, `eslint` e `npm run build` puliti.
+Branch pushato su GitHub per l'anteprima Vercel e le prove su iPhone.
+
 ## 2026-10-15 — Catalogo alimenti: selezione multipla
 
 Branch `catalogo-alimenti`. Commit `e987c64`: tieni premuto (stesso gesto
