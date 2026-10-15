@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Amici: file della migration `nomi_utente`
+
+Branch `amici`. `supabase/migrations/nomi_utente.sql`: tabella solo
+online con lo username (formato `^[a-z][a-z0-9_]{2,19}$`, indice unico,
+`user_id` unico e `ON DELETE CASCADE`), RLS con lettura della sola propria
+riga e nessuna scrittura diretta, `username_disponibile` (anche per
+`anon`) e `imposta_username` (esiti `ok` / `non_valido` / `occupato`).
+Senza il trigger su `auth.users`, che arriva dopo il merge. Migration
+non ancora applicata. Prove in un blocco annullato: il connettore ha
+rifiutato l'esecuzione (`declined`), le ha lanciate Davide dal SQL Editor
+in un blocco unico (versione di Cowork, con la migration dentro il blocco
+`do`, annullata dal `raise` finale): 20/20 ok (T01–T20: RLS, permessi,
+anon, normalizzazione, occupato, formati non validi, limiti di 3 e 20
+caratteri, cambio nome, lettura solo della propria riga, niente scritture
+dirette, errore senza utente, check, `updated_at`, cascata). Verificato
+da Cowork dopo: tabella assente, funzioni 0, utenti finti 0, utenti 6.
+Script di prova temporanei, cancellati, mai in git.
+
 ## 2026-10-15 — Amici: decisioni nel documento
 
 Branch `amici`. Analisi e decisioni di Davide del 15/10 in
