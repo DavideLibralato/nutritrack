@@ -846,14 +846,14 @@ un comando che non fa niente sembra rotto):
 - in cima la **scheda dell'account**: iniziali (prime due parole del nome),
   nome, "78,4 kg · 180 cm"; porta a **Profilo**;
 - gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
-  kcal" con i giorni differenziati accesi), Pasti e orari, Peso;
+  kcal" con i giorni differenziati accesi), Pasti e orari, **Preferiti**
+  (dall'11/10, in Alimentazione dal 15/10, prima stava in App: la pagina
+  si intitola "Preferiti e pasti salvati", ma per esteso l'etichetta
+  veniva accorciata con "…" su iPhone; a destra "12 alimenti · 3 pasti",
+  vedi "Preferiti e pasti salvati" più sotto), Peso;
 - gruppo **App**: Aspetto (Chiaro / Scuro / Sistema e colore principale;
-  a destra tema e colore, "Sistema · Verde"), **Preferiti** (dall'11/10:
-  la pagina si intitola "Preferiti e pasti salvati", ma per esteso
-  l'etichetta veniva accorciata con "…" su iPhone; a destra "12 alimenti ·
-  3 pasti", vedi "Preferiti e pasti salvati" più sotto),
-  Sincronizzazione (la pagina con l'indicatore dal 10/10, sezione 9.2; a
-  destra della riga lo stato in breve con un pallino colorato: "Tutto
+  a destra tema e colore, "Sistema · Verde"), Sincronizzazione (la
+  pagina con l'indicatore dal 10/10, sezione 9.2; a destra della riga lo stato in breve con un pallino colorato: "Tutto
   salvato", "In corso…", "2 in attesa", "Errore", "Accedi di nuovo", "Da
   controllare");
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
@@ -925,8 +925,8 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 **La pagina Impostazioni è completa (passi 1–6, tutti provati su iPhone,
 il 6 il 3/10).** Oggi l'elenco ha: la scheda dell'account (→ Profilo);
 **Alimentazione**: Obiettivi, Pasti e orari (dal 9/10, "5 pasti": quanti
-valgono oggi), Peso; **App**: Aspetto, Preferiti (dall'11/10),
-Sincronizzazione; **Informazioni**; **Esci**. Le righe che mancavano
+valgono oggi), Preferiti (dall'11/10, qui dal 15/10), Peso; **App**:
+Aspetto, Sincronizzazione; **Informazioni**; **Esci**. Le righe che mancavano
 rispetto alla struttura finale sono state fatte come **lavori a sé**, non
 come passi di questa pagina:
 - ~~Preferiti e pasti salvati~~: pagina e riga fatte l'11/10 (branch

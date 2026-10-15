@@ -22,7 +22,8 @@
 // Pallino + testo"): "Tutto salvato", "In corso…", "2 in attesa", "Errore",
 // "Accedi di nuovo", "Da controllare" (rigaSincronizzazione, con il suo
 // test). Niente finché la coda non è arrivata da Dexie.
-// La riga Preferiti (dall'11/10, mockup
+// La riga Preferiti (dall'11/10 in App, dal 15/10 in Alimentazione dopo
+// Pasti e orari; mockup
 // docs/mockups/preferiti-e-pasti-salvati.html; la pagina si intitola
 // "Preferiti e pasti salvati", ma per esteso l'etichetta veniva accorciata
 // con "…" su iPhone) mostra "12 alimenti · 3 pasti", solo uno dei due se
@@ -151,6 +152,12 @@ export default function ImpostazioniPage() {
           href="/impostazioni/pasti"
         />
         <RigaImpostazioni
+          etichetta="Preferiti"
+          icona={<IconaPreferiti />}
+          valore={valorePreferiti}
+          href="/impostazioni/preferiti"
+        />
+        <RigaImpostazioni
           etichetta="Peso"
           icona={<IconaPeso />}
           valore={valorePeso}
@@ -168,12 +175,6 @@ export default function ImpostazioniPage() {
               : undefined
           }
           href="/impostazioni/aspetto"
-        />
-        <RigaImpostazioni
-          etichetta="Preferiti"
-          icona={<IconaPreferiti />}
-          valore={valorePreferiti}
-          href="/impostazioni/preferiti"
         />
         <RigaImpostazioni
           etichetta="Sincronizzazione"

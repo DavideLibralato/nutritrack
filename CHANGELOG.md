@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Preferiti nel gruppo Alimentazione
+
+Su main, senza branch (deciso da Davide). In Impostazioni la riga
+Preferiti, con il suo conteggio, passa dal gruppo App al gruppo
+Alimentazione, dopo Pasti e orari: Obiettivi, Pasti e orari, Preferiti,
+Peso. App resta con Aspetto e Sincronizzazione. Il test di Impostazioni
+non controlla l'ordine delle righe, invariato. PUNTO §3 aggiornato.
+
+## 2026-10-11 — Esci svuota i dati locali unito a main
+
+Unito a main l'11/10 con fast-forward da `3c8b425` a `245441d`, senza
+commit di merge: `9eb9cd1` (voce di merge di elimina-account,
+decisioni), `2043ceb` (salita solo per l'utente della sessione, nessuna
+voce senza user_id), `aebeece` (attendiDiscesaInCorso), `609ae31`
+(segno di uscita e ripresa all'avvio), `d7ace8e` (Esci svuota i dati
+locali), `245441d` (provato, documenti). Branch cancellato in locale e
+su GitHub. Deploy di produzione riuscito (confermato da Davide l'11/10).
+833 test verdi in 72 file, lint, `tsc` e `npm run build` puliti su main
+prima del push. Nessuna migration e nessuna version Dexie nuova. Voce
+scritta con il commit successivo (Preferiti in Alimentazione), per non
+fare un commit su main solo per il registro.
+
 ## 2026-10-11 — Esci svuota i dati locali provato
 
 Branch `esci-svuota`. Provato l'11/10 sull'anteprima con l'account di
