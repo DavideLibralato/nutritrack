@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-15 — Catalogo alimenti: selezione multipla
+
+Branch `catalogo-alimenti`. Commit `e987c64`: tieni premuto (stesso gesto
+di Oggi, tutti e due i rami e il tasto destro) → selezione, tocco che
+spunta o toglie, uscita togliendo l'ultima spunta; barra di selezione con
+la forma della pillola della tab bar e fondo pieno, senza condividi;
+`SheetConferma` con i conteggi di pasti salvati e preferiti
+(`confermaEliminazione.ts`), eliminazione tutto o niente, "Eliminati: N
+alimenti" con Annulla. `useTieniPremuto` reso generico (`tipi`), Oggi
+invariato. Scelte approvate da Davide: Elimina arancio e non rosso,
+suggerimento in grigio, ricerca usabile in selezione, tocco entro 400 ms
+dal gesto scartato come in Oggi. 8 test permanenti nuovi, provati al
+contrario in tre modi; pagina verificata con un test temporaneo, poi
+cancellato. 860 test verdi, `tsc`, `eslint` e `npm run build` puliti. Non
+ancora provato su iPhone.
+
 ## 2026-10-15 — Catalogo alimenti: la pagina
 
 Branch `catalogo-alimenti`. Commit `a16c9b2`: `/impostazioni/alimenti` con

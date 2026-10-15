@@ -928,7 +928,8 @@ le copre il `beforeunload` della pagina. Resta scoperto solo il gesto
 **La pagina Impostazioni è completa (passi 1–6, tutti provati su iPhone,
 il 6 il 3/10).** Oggi l'elenco ha: la scheda dell'account (→ Profilo);
 **Alimentazione**: Obiettivi, Pasti e orari (dal 9/10, "5 pasti": quanti
-valgono oggi), Preferiti (dall'11/10, qui dal 15/10), Peso; **App**:
+valgono oggi), Alimenti (dal 15/10, branch `catalogo-alimenti`, "46
+alimenti"), Preferiti (dall'11/10, qui dal 15/10), Peso; **App**:
 Aspetto, Sincronizzazione; **Informazioni**; **Esci**. Le righe che mancavano
 rispetto alla struttura finale sono state fatte come **lavori a sé**, non
 come passi di questa pagina:
@@ -4153,7 +4154,9 @@ restano) e l'app chiusa a metà uscita.
 ### Non ancora costruito
 
 - **Impostazioni > Alimenti**, il catalogo personale: decisa il 15/10
-  (sezione 3, "Alimenti"), in costruzione sul branch `catalogo-alimenti`
+  (sezione 3, "Alimenti"), costruita il 15/10 sul branch
+  `catalogo-alimenti` (pagina, selezione multipla, riga in Impostazioni);
+  da provare su iPhone prima del merge
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)

@@ -30,6 +30,10 @@
 // l'altro è a zero, o "Nessuno" (contaPreferiti e testoRigaPreferiti, con il loro
 // test): contati con le stesse funzioni dell'elenco, mai dalle tabelle
 // grezze. Niente finché i dati non sono arrivati da Dexie.
+// La riga Alimenti (dal 15/10, branch catalogo-alimenti, prima di
+// Preferiti; PUNTO_DI_PARTENZA.md sezione 3, "Alimenti") mostra quanti
+// alimenti ha la pagina del catalogo: "46 alimenti", "1 alimento",
+// "Nessuno" (alimentiModificabili e testoRigaAlimenti, con il loro test).
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -63,6 +67,7 @@ import { useStatoSincronizzazione } from "@/lib/sync/useStatoSincronizzazione";
 import { rigaSincronizzazione } from "@/lib/sync/rigaSincronizzazione";
 import { catalogoLocale } from "@/lib/repository/alimenti";
 import { contaPreferiti, testoRigaPreferiti } from "@/lib/inserimento/rigaPreferiti";
+import { alimentiModificabili, testoRigaAlimenti } from "@/lib/catalogo/alimentiModificabili";
 
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
@@ -115,6 +120,13 @@ export default function ImpostazioniPage() {
 
   const { stato: statoSincronizzazione } = useStatoSincronizzazione(userId);
 
+  // Gli stessi alimenti della pagina Alimenti, contati con la stessa
+  // funzione dell'elenco.
+  const valoreAlimenti = useLiveQuery(async () => {
+    if (!userId) return undefined;
+    return testoRigaAlimenti(alimentiModificabili(await catalogoLocale(userId), userId).length);
+  }, [userId]);
+
   // Una sola lettura per le quattro tabelle: il valore compare tutto insieme,
   // non prima con gli alimenti e poi con i pasti.
   const valorePreferiti = useLiveQuery(async () => {
@@ -150,6 +162,12 @@ export default function ImpostazioniPage() {
           icona={<IconaPasti />}
           valore={valorePasti}
           href="/impostazioni/pasti"
+        />
+        <RigaImpostazioni
+          etichetta="Alimenti"
+          icona={<IconaAlimenti />}
+          valore={valoreAlimenti}
+          href="/impostazioni/alimenti"
         />
         <RigaImpostazioni
           etichetta="Preferiti"
@@ -264,6 +282,16 @@ function IconaAspetto() {
     <svg {...TRATTO}>
       <circle cx="12" cy="12" r="8" />
       <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+    </svg>
+  );
+}
+
+// Una mela: il catalogo degli alimenti.
+function IconaAlimenti() {
+  return (
+    <svg {...TRATTO}>
+      <path d="M12 8c-1.6-1.3-4.6-1.3-6 .9-1.5 2.4-.8 6.2 1.3 8.7 1.3 1.5 2.5 2 3.4 1.5.8-.4 1.8-.4 2.6 0 .9.5 2.1 0 3.4-1.5 2.1-2.5 2.8-6.3 1.3-8.7-1.4-2.2-4.4-2.2-6-.9z" />
+      <path d="M12 8c0-1.9.9-3.2 2.5-3.8" />
     </svg>
   );
 }

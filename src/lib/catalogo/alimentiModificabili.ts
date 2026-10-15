@@ -20,3 +20,12 @@ export function eModificabile(alimento: Alimento, userId: string): boolean {
 export function alimentiModificabili(catalogo: Alimento[], userId: string): Alimento[] {
   return catalogo.filter((a) => eModificabile(a, userId));
 }
+
+// Il valore della riga "Alimenti" in Impostazioni: quanti alimenti mostra
+// la pagina, contati con la stessa funzione dell'elenco (alimentiModificabili),
+// mai dalla tabella grezza. "46 alimenti", "1 alimento", "Nessuno" (come
+// la riga Preferiti).
+export function testoRigaAlimenti(numero: number): string {
+  if (numero === 0) return "Nessuno";
+  return numero === 1 ? "1 alimento" : `${numero} alimenti`;
+}
