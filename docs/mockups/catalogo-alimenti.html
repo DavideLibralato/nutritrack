@@ -1,0 +1,477 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Alimenti — mockup</title>
+<style>
+  :root{
+    --bg:#ffffff; --bg-2:#f7f7f5; --card:#ffffff; --testo:#1b1815; --testo-2:#8a8680;
+    --linea:#ecebe7; --accento:#2f9e62; --accento-bg:#e7f5ec; --pericolo:#d14343;
+    --ombra:0 1px 2px rgba(0,0,0,.05);
+  }
+  [data-tema="scuro"]{
+    --bg:#1b1815; --bg-2:#242019; --card:#242019; --testo:#f3f1ec; --testo-2:#a39c90;
+    --linea:#3a352c; --accento:#7bb887; --accento-bg:#2a3b2c; --pericolo:#e0776b;
+    --ombra:none;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Hanken Grotesk',system-ui,sans-serif;background:#d8d6d0;
+    display:flex;justify-content:center;padding:28px 12px;}
+  .controlli{position:fixed;top:12px;left:12px;display:flex;gap:6px;z-index:10;}
+  .controlli button{border:1px solid #bbb;background:#fff;border-radius:999px;padding:6px 12px;
+    font-size:12px;font-family:inherit;cursor:pointer;}
+  .telefono{width:375px;height:780px;background:var(--bg);border-radius:40px;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);overflow:hidden;position:relative;
+    display:flex;flex-direction:column;color:var(--testo);}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:22px;
+    background:var(--bg);border-radius:0 0 14px 14px;z-index:5;}
+  .schermo{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-top:38px;}
+
+  .header{display:flex;align-items:center;gap:10px;padding:6px 18px 10px;}
+  .header .indietro{font-size:22px;color:var(--testo-2);width:22px;cursor:pointer;}
+  .header h1{font-size:26px;margin:0;font-weight:600;flex:1;}
+
+  .ricerca-riga{padding:0 18px 10px;}
+  .ricerca{display:flex;align-items:center;gap:8px;background:var(--bg-2);border:1px solid var(--linea);
+    border-radius:14px;padding:11px 14px;color:var(--testo-2);font-size:15px;}
+  .ricerca input{border:none;background:none;outline:none;font:inherit;color:var(--testo);flex:1;}
+  .ricerca input::placeholder{color:var(--testo-2);}
+
+  .ordina-riga{display:flex;align-items:center;justify-content:space-between;padding:2px 18px 10px;}
+  .conteggio{font-size:13px;color:var(--testo-2);}
+  .ordina{position:relative;}
+  .ordina-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--testo);
+    font:inherit;font-size:14px;font-weight:600;padding:6px 4px;cursor:pointer;}
+  .ordina-btn .freccia{font-size:11px;color:var(--testo-2);transition:transform .15s;}
+  .ordina-btn.aperto .freccia{transform:rotate(180deg);}
+  .ordina-menu{position:absolute;top:34px;right:0;background:var(--card);border:1px solid var(--linea);
+    border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:168px;padding:6px;display:none;z-index:20;}
+  .ordina-menu.aperto{display:block;}
+  .ordina-opz{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:9px;
+    font-size:14.5px;cursor:pointer;}
+  .ordina-opz:hover{background:var(--bg-2);}
+  .ordina-opz.sel{color:var(--accento);font-weight:600;}
+  .ordina-opz .spunta{opacity:0;}
+  .ordina-opz.sel .spunta{opacity:1;}
+
+  .lista{flex:1;overflow-y:auto;padding:0 18px 90px;-webkit-overflow-scrolling:touch;}
+  .riga{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--linea);
+    user-select:none;-webkit-user-select:none;touch-action:pan-y;position:relative;}
+  .riga .spunta-sel{width:22px;height:22px;border-radius:50%;border:2px solid var(--linea);flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;transition:all .12s;
+    transform:scale(.001);opacity:0;}
+  .selezione-attiva .riga .spunta-sel{transform:scale(1);opacity:1;margin-right:-2px;}
+  .riga.sel .spunta-sel{background:var(--accento);border-color:var(--accento);}
+  .riga-info{flex:1;min-width:0;}
+  .riga-nome{font-size:16.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .riga-sotto{font-size:13.5px;color:var(--testo-2);margin-top:2px;}
+  .riga.lift{background:var(--bg-2);border-radius:12px;}
+
+  .vuoto{padding:60px 30px;text-align:center;color:var(--testo-2);font-size:14.5px;line-height:1.5;}
+
+  .fab{position:absolute;right:20px;bottom:28px;width:56px;height:56px;border-radius:50%;
+    background:var(--accento);color:#fff;border:none;font-size:28px;display:flex;align-items:center;
+    justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,.25);cursor:pointer;transition:transform .15s;}
+  .fab:active{transform:scale(.93);}
+
+  .barra-sel{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--linea);
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;
+    justify-content:space-between;transform:translateY(110%);transition:transform .2s;}
+  .selezione-attiva .barra-sel{transform:translateY(0);}
+  .barra-sel .txt{font-size:14.5px;font-weight:600;}
+  .barra-sel .azioni{display:flex;gap:10px;}
+  .azione-tonda{width:40px;height:40px;border-radius:50%;border:none;display:flex;align-items:center;
+    justify-content:center;font-size:17px;cursor:pointer;}
+  .azione-tonda.condividi{background:var(--accento-bg);color:var(--accento);}
+  .azione-tonda.elimina{background:#fbe6e3;color:var(--pericolo);}
+  [data-tema="scuro"] .azione-tonda.elimina{background:#3a2420;}
+  .azione-annulla{background:none;border:none;color:var(--testo-2);font:inherit;font-size:14.5px;cursor:pointer;}
+
+  .suggerimento{margin:4px 18px 10px;background:var(--accento-bg);color:var(--accento);font-size:12.5px;
+    padding:9px 12px;border-radius:10px;line-height:1.4;}
+  .suggerimento b{font-weight:700;}
+
+  /* foglio di conferma eliminazione (resta un overlay, come altrove nell'app) */
+  .overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;
+    opacity:0;pointer-events:none;transition:opacity .18s;z-index:40;}
+  .overlay.aperto{opacity:1;pointer-events:auto;}
+  .sheet{background:var(--card);width:100%;border-radius:22px 22px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+    transform:translateY(100%);transition:transform .2s;}
+  .overlay.aperto .sheet{transform:translateY(0);}
+  .sheet h2{margin:0 0 16px;font-size:19px;}
+  .sheet-azioni{display:flex;gap:10px;margin-top:6px;}
+  .btn{flex:1;border:none;border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;}
+  .btn-primario{background:var(--accento);color:#fff;}
+  .btn-secondario{background:var(--bg-2);color:var(--testo);}
+  .btn-pericolo{background:var(--pericolo);color:#fff;}
+  .sheet-conferma{text-align:center;}
+  .sheet-conferma .icona{width:52px;height:52px;border-radius:50%;background:#fbe6e3;color:var(--pericolo);
+    display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;}
+  [data-tema="scuro"] .sheet-conferma .icona{background:#3a2420;}
+  .sheet-conferma p{color:var(--testo-2);font-size:14.5px;line-height:1.5;margin:0 0 20px;}
+
+  /* pagina a tutto schermo: Modifica / Nuovo alimento (come nell'app vera, screenshot dell'11/10) */
+  .pagina-modifica{position:absolute;inset:0;background:var(--bg);z-index:35;display:flex;flex-direction:column;
+    transform:translateX(100%);transition:transform .22s;padding-top:38px;}
+  .pagina-modifica.aperta{transform:translateX(0);}
+  .pm-contenuto{flex:1;overflow-y:auto;padding:0 18px 20px;}
+  .pm-titolo-riga{display:flex;align-items:baseline;justify-content:space-between;margin:10px 0 18px;}
+  .pm-titolo-riga h2{margin:0;font-size:20px;}
+  .pm-torna{color:var(--testo-2);font-size:13.5px;text-decoration:underline;background:none;border:none;
+    font-family:inherit;cursor:pointer;padding:0;}
+  .campo{margin-bottom:16px;}
+  .campo label{display:block;font-size:14.5px;margin-bottom:7px;}
+  .campo label .facolt{color:var(--testo-2);font-weight:400;}
+  .campo input{width:100%;font:inherit;font-size:16px;background:none;border:1px solid var(--linea);
+    border-radius:12px;padding:12px 14px;color:var(--testo);outline:none;}
+  .campo .aiuto{font-size:12.5px;color:var(--testo-2);margin-top:6px;line-height:1.4;}
+  .etichetta-sezione{font-size:11.5px;letter-spacing:.05em;color:var(--testo-2);text-transform:uppercase;
+    margin:24px 0 2px;}
+  .riga-valore{display:flex;align-items:center;justify-content:space-between;padding:13px 0;
+    border-bottom:1px solid var(--linea);}
+  .riga-valore label{font-size:15.5px;}
+  .riga-valore input{width:100px;text-align:right;background:none;border:none;font:inherit;font-size:16px;
+    color:var(--testo);outline:none;}
+  .pm-azioni{display:flex;gap:10px;padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--linea);}
+  .btn-outline-pericolo{background:none;border:1.5px solid var(--pericolo);color:var(--pericolo);}
+</style>
+
+<div class="controlli">
+  <button onclick="document.documentElement.removeAttribute('data-tema')">Chiaro</button>
+  <button onclick="document.documentElement.setAttribute('data-tema','scuro')">Scuro</button>
+</div>
+
+<div class="telefono">
+  <div class="notch"></div>
+  <div class="schermo" id="schermo">
+    <div class="header">
+      <div class="indietro">‹</div>
+      <h1>Alimenti</h1>
+    </div>
+
+    <div class="ricerca-riga">
+      <div class="ricerca">
+        <span>⌕</span>
+        <input id="campo-ricerca" placeholder="Cerca un alimento" oninput="applicaFiltri()">
+      </div>
+    </div>
+
+    <div class="ordina-riga">
+      <div class="conteggio" id="conteggio">14 alimenti</div>
+      <div class="ordina">
+        <button class="ordina-btn" id="ordina-btn" onclick="toggleOrdina()">
+          <span id="ordina-etichetta">Più usati</span><span class="freccia">▾</span>
+        </button>
+        <div class="ordina-menu" id="ordina-menu">
+          <div class="ordina-opz sel" data-v="usati-desc" onclick="scegliOrdine('usati-desc','Più usati')">
+            <span>Più usati</span><span class="spunta">✓</span>
+          </div>
+          <div class="ordina-opz" data-v="az" onclick="scegliOrdine('az','A → Z')">
+            <span>A → Z</span><span class="spunta">✓</span>
+          </div>
+          <div class="ordina-opz" data-v="za" onclick="scegliOrdine('za','Z → A')">
+            <span>Z → A</span><span class="spunta">✓</span>
+          </div>
+          <div class="ordina-opz" data-v="usati-asc" onclick="scegliOrdine('usati-asc','Meno usati')">
+            <span>Meno usati</span><span class="spunta">✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="suggerimento">
+      <b>Tieni premuto</b> su un alimento per selezionarne più di uno insieme.
+    </div>
+
+    <div class="lista" id="lista"></div>
+
+    <button class="fab" onclick="apriNuovo()">+</button>
+
+    <div class="barra-sel">
+      <div class="txt" id="barra-sel-txt">1 selezionato</div>
+      <div class="azioni">
+        <button class="azione-tonda condividi" title="Condividi (punto 6, non ancora costruito)">⇪</button>
+        <button class="azione-tonda elimina" onclick="eliminaSelezionati()" title="Elimina">🗑</button>
+        <button class="azione-annulla" onclick="uscitaSelezione()">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- pagina a tutto schermo: Modifica/Nuovo alimento -->
+  <div class="pagina-modifica" id="pagina-modifica">
+    <div class="header">
+      <div class="indietro" onclick="chiudiPaginaModifica()">‹</div>
+      <h1>Alimenti</h1>
+    </div>
+    <div class="pm-contenuto">
+      <div class="pm-titolo-riga">
+        <h2 id="pm-titolo">Modifica alimento</h2>
+        <button class="pm-torna" onclick="chiudiPaginaModifica()">Torna al catalogo</button>
+      </div>
+
+      <div class="campo">
+        <label>Nome</label>
+        <input id="pm-nome" placeholder="es. Zucchine">
+      </div>
+      <div class="campo">
+        <label>Marca <span class="facolt">(facoltativa)</span></label>
+        <input id="pm-marca">
+        <div class="aiuto">Per distinguere due prodotti con lo stesso nome ma marca diversa.</div>
+      </div>
+
+      <div class="etichetta-sezione">Valori per 100 g</div>
+      <div class="riga-valore"><label>Calorie (kcal)</label><input id="pm-kcal" inputmode="decimal"></div>
+      <div class="riga-valore"><label>Grassi (g)</label><input id="pm-grassi" inputmode="decimal"></div>
+      <div class="riga-valore"><label>Carboidrati (g)</label><input id="pm-carbo" inputmode="decimal"></div>
+      <div class="riga-valore"><label>Proteine (g)</label><input id="pm-proteine" inputmode="decimal"></div>
+
+      <div class="campo" style="margin-top:22px;">
+        <label>Porzione predefinita (g)</label>
+        <input id="pm-porzione" inputmode="numeric">
+        <div class="aiuto">È il valore già pronto nello sheet quantità: scegli quello che pesi più spesso.</div>
+      </div>
+    </div>
+    <div class="pm-azioni" id="pm-azioni">
+      <button class="btn btn-outline-pericolo" id="pm-elimina" onclick="apriConfermaDaPagina()">Elimina</button>
+      <button class="btn btn-primario" onclick="salvaModifica()">Salva</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-conferma" onclick="chiudiSeSfondo(event,'overlay-conferma')">
+    <div class="sheet sheet-conferma">
+      <div class="icona">🗑</div>
+      <h2 id="conferma-titolo">Eliminare questo alimento?</h2>
+      <p id="conferma-testo">Non sarà più nel catalogo. Le voci già registrate nei pasti non cambiano.</p>
+      <div class="sheet-azioni">
+        <button class="btn btn-secondario" onclick="chiudiOverlay('overlay-conferma')">Annulla</button>
+        <button class="btn btn-pericolo" onclick="confermaEliminazione()">Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let contaId = 1;
+function nuovoId(){ return contaId++; }
+
+const ALIMENTI = [
+  {id:nuovoId(), nome:'Petto di pollo', marca:'', kcal:165, grassi:3.6, carbo:0, proteine:31, porzione:150, usi:34},
+  {id:nuovoId(), nome:'Riso basmati', marca:'', kcal:130, grassi:0.3, carbo:28, proteine:2.7, porzione:80, usi:28},
+  {id:nuovoId(), nome:'Yogurt greco 0%', marca:'Fage', kcal:59, grassi:0.4, carbo:3.6, proteine:10, porzione:170, usi:26},
+  {id:nuovoId(), nome:'Uova', marca:'', kcal:143, grassi:9.5, carbo:0.7, proteine:12.6, porzione:55, usi:22},
+  {id:nuovoId(), nome:'Avena', marca:'', kcal:389, grassi:6.9, carbo:66, proteine:16.9, porzione:50, usi:19},
+  {id:nuovoId(), nome:'Banana', marca:'', kcal:89, grassi:0.3, carbo:23, proteine:1.1, porzione:120, usi:17},
+  {id:nuovoId(), nome:'Pane integrale', marca:'', kcal:247, grassi:3.4, carbo:41, proteine:9, porzione:60, usi:15},
+  {id:nuovoId(), nome:'Tonno al naturale', marca:'Rio Mare', kcal:116, grassi:1, carbo:0, proteine:26, porzione:80, usi:14},
+  {id:nuovoId(), nome:'Parmigiano', marca:'', kcal:392, grassi:29, carbo:0, proteine:33, porzione:20, usi:9},
+  {id:nuovoId(), nome:'Olio extravergine', marca:'', kcal:884, grassi:100, carbo:0, proteine:0, porzione:10, usi:8},
+  {id:nuovoId(), nome:'Mandorle', marca:'', kcal:579, grassi:50, carbo:22, proteine:21, porzione:30, usi:6},
+  {id:nuovoId(), nome:'Salmone', marca:'', kcal:208, grassi:13, carbo:0, proteine:20, porzione:120, usi:4},
+  {id:nuovoId(), nome:'Quinoa', marca:'', kcal:120, grassi:1.9, carbo:21, proteine:4.4, porzione:80, usi:2},
+  {id:nuovoId(), nome:'Lenticchie', marca:'', kcal:116, grassi:0.4, carbo:20, proteine:9, porzione:80, usi:1},
+];
+
+let ordineAttuale = 'usati-desc';
+let selezionati = new Set(); // id degli alimenti selezionati
+let modSelezione = false;
+let idInModifica = null; // null = nuovo alimento
+let idInAttesaDiEliminazione = [];
+
+function ordina(lista){
+  const a = [...lista];
+  if(ordineAttuale==='usati-desc') a.sort((x,y)=>y.usi-x.usi);
+  if(ordineAttuale==='usati-asc') a.sort((x,y)=>x.usi-y.usi);
+  if(ordineAttuale==='az') a.sort((x,y)=>x.nome.localeCompare(y.nome,'it'));
+  if(ordineAttuale==='za') a.sort((x,y)=>y.nome.localeCompare(x.nome,'it'));
+  return a;
+}
+
+function applicaFiltri(){
+  const q = document.getElementById('campo-ricerca').value.trim().toLowerCase();
+  const filtrati = ALIMENTI.filter(a=>a.nome.toLowerCase().includes(q));
+  renderLista(ordina(filtrati));
+  document.getElementById('conteggio').textContent =
+    filtrati.length===ALIMENTI.length ? `${ALIMENTI.length} alimenti` : `${filtrati.length} risultati`;
+}
+
+function renderLista(lista){
+  const el = document.getElementById('lista');
+  if(lista.length===0){
+    el.innerHTML = '<div class="vuoto">Nessun alimento trovato.<br>Prova un altro termine di ricerca.</div>';
+    return;
+  }
+  el.innerHTML = lista.map(a=>{
+    const sel = selezionati.has(a.id) ? ' sel':'';
+    return `<div class="riga${sel}" data-id="${a.id}"
+        onpointerdown="avviaPressione(this,${a.id})" onpointerup="fineStampa(this,${a.id})"
+        onpointerleave="annullaPressione(this)">
+      <div class="spunta-sel">✓</div>
+      <div class="riga-info">
+        <div class="riga-nome">${a.nome}</div>
+        <div class="riga-sotto">${a.kcal} kcal / 100 g</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let timerPressione=null;
+let pressioneLunga=false;
+function avviaPressione(el,id){
+  pressioneLunga=false;
+  if(modSelezione) return; // il tap normale gestisce già la selezione
+  timerPressione = setTimeout(()=>{
+    pressioneLunga=true;
+    el.classList.add('lift');
+    entraSelezione(id);
+    el.classList.remove('lift');
+  },450);
+}
+function annullaPressione(){ clearTimeout(timerPressione); }
+function fineStampa(el,id){
+  clearTimeout(timerPressione);
+  if(modSelezione){
+    toggleSel(id);
+  } else if(!pressioneLunga){
+    apriModifica(id);
+  }
+}
+
+function compilaCampiVuoti(){
+  document.getElementById('pm-nome').value = '';
+  document.getElementById('pm-marca').value = '';
+  document.getElementById('pm-kcal').value = '';
+  document.getElementById('pm-grassi').value = '';
+  document.getElementById('pm-carbo').value = '';
+  document.getElementById('pm-proteine').value = '';
+  document.getElementById('pm-porzione').value = '';
+}
+
+function apriModifica(id){
+  const a = ALIMENTI.find(x=>x.id===id);
+  if(!a) return;
+  idInModifica = id;
+  document.getElementById('pm-titolo').textContent = 'Modifica alimento';
+  document.getElementById('pm-elimina').style.display = '';
+  document.getElementById('pm-nome').value = a.nome;
+  document.getElementById('pm-marca').value = a.marca || '';
+  document.getElementById('pm-kcal').value = a.kcal;
+  document.getElementById('pm-grassi').value = a.grassi;
+  document.getElementById('pm-carbo').value = a.carbo;
+  document.getElementById('pm-proteine').value = a.proteine;
+  document.getElementById('pm-porzione').value = a.porzione;
+  document.getElementById('pagina-modifica').classList.add('aperta');
+}
+
+function apriNuovo(){
+  idInModifica = null;
+  document.getElementById('pm-titolo').textContent = 'Nuovo alimento';
+  document.getElementById('pm-elimina').style.display = 'none';
+  compilaCampiVuoti();
+  document.getElementById('pm-porzione').value = 100;
+  document.getElementById('pagina-modifica').classList.add('aperta');
+}
+
+function chiudiPaginaModifica(){
+  document.getElementById('pagina-modifica').classList.remove('aperta');
+}
+
+function salvaModifica(){
+  const nome = document.getElementById('pm-nome').value.trim();
+  if(!nome){ document.getElementById('pm-nome').focus(); return; }
+  const kcal = parseFloat(document.getElementById('pm-kcal').value) || 0;
+  const grassi = parseFloat(document.getElementById('pm-grassi').value) || 0;
+  const carbo = parseFloat(document.getElementById('pm-carbo').value) || 0;
+  const proteine = parseFloat(document.getElementById('pm-proteine').value) || 0;
+  const porzione = parseInt(document.getElementById('pm-porzione').value,10) || 100;
+  const marca = document.getElementById('pm-marca').value.trim();
+
+  if(idInModifica===null){
+    ALIMENTI.push({id:nuovoId(), nome, marca, kcal, grassi, carbo, proteine, porzione, usi:0});
+  } else {
+    const a = ALIMENTI.find(x=>x.id===idInModifica);
+    if(a) Object.assign(a, {nome, marca, kcal, grassi, carbo, proteine, porzione});
+  }
+  chiudiPaginaModifica();
+  applicaFiltri();
+}
+
+function apriConfermaDaPagina(){
+  apriConferma([idInModifica]);
+}
+
+function apriOverlay(id){ document.getElementById(id).classList.add('aperto'); }
+function chiudiOverlay(id){ document.getElementById(id).classList.remove('aperto'); }
+function chiudiSeSfondo(e,id){ if(e.target.id===id) chiudiOverlay(id); }
+
+function entraSelezione(id){
+  modSelezione = true;
+  selezionati.add(id);
+  document.getElementById('schermo').classList.add('selezione-attiva');
+  aggiornaSel();
+}
+function toggleSel(id){
+  if(selezionati.has(id)) selezionati.delete(id); else selezionati.add(id);
+  if(selezionati.size===0){ uscitaSelezione(); return; }
+  aggiornaSel();
+}
+function aggiornaSel(){
+  document.querySelectorAll('.riga').forEach(r=>{
+    r.classList.toggle('sel', selezionati.has(parseInt(r.dataset.id,10)));
+  });
+  document.getElementById('barra-sel-txt').textContent =
+    selezionati.size===1 ? '1 selezionato' : `${selezionati.size} selezionati`;
+}
+function uscitaSelezione(){
+  modSelezione = false;
+  selezionati.clear();
+  document.getElementById('schermo').classList.remove('selezione-attiva');
+  applicaFiltri();
+}
+function eliminaSelezionati(){
+  apriConferma([...selezionati]);
+}
+
+function apriConferma(idArray){
+  idInAttesaDiEliminazione = idArray.filter(x=>x!==null && x!==undefined);
+  if(idInAttesaDiEliminazione.length===0) return;
+  const nomi = idInAttesaDiEliminazione
+    .map(id=>ALIMENTI.find(a=>a.id===id))
+    .filter(Boolean)
+    .map(a=>a.nome);
+  const n = nomi.length;
+  document.getElementById('conferma-titolo').textContent =
+    n===1 ? `Eliminare «${nomi[0]}»?` : `Eliminare ${n} alimenti?`;
+  document.getElementById('conferma-testo').textContent =
+    n===1 ? 'Non sarà più nel catalogo. Le voci già registrate nei pasti non cambiano.'
+           : 'Non saranno più nel catalogo. Le voci già registrate nei pasti non cambiano.';
+  apriOverlay('overlay-conferma');
+}
+
+function confermaEliminazione(){
+  const daTogliere = new Set(idInAttesaDiEliminazione);
+  for(let i=ALIMENTI.length-1;i>=0;i--){
+    if(daTogliere.has(ALIMENTI[i].id)) ALIMENTI.splice(i,1);
+  }
+  chiudiOverlay('overlay-conferma');
+  chiudiPaginaModifica();
+  uscitaSelezione(); // richiama già applicaFiltri()
+}
+
+function toggleOrdina(){
+  document.getElementById('ordina-menu').classList.toggle('aperto');
+  document.getElementById('ordina-btn').classList.toggle('aperto');
+}
+function scegliOrdine(v,etichetta){
+  ordineAttuale = v;
+  document.getElementById('ordina-etichetta').textContent = etichetta;
+  document.querySelectorAll('.ordina-opz').forEach(o=>o.classList.toggle('sel', o.dataset.v===v));
+  toggleOrdina();
+  applicaFiltri();
+}
+
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.ordina')) document.getElementById('ordina-menu').classList.remove('aperto');
+});
+
+applicaFiltri();
+</script>
+
+</body></html>

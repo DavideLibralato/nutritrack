@@ -846,7 +846,9 @@ un comando che non fa niente sembra rotto):
 - in cima la **scheda dell'account**: iniziali (prime due parole del nome),
   nome, "78,4 kg · 180 cm"; porta a **Profilo**;
 - gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
-  kcal" con i giorni differenziati accesi), Pasti e orari, **Preferiti**
+  kcal" con i giorni differenziati accesi), Pasti e orari, **Alimenti**
+  (dal 15/10, branch `catalogo-alimenti`: il catalogo personale, "46
+  alimenti", vedi "Alimenti" più sotto), **Preferiti**
   (dall'11/10, in Alimentazione dal 15/10, prima stava in App: la pagina
   si intitola "Preferiti e pasti salvati", ma per esteso l'etichetta
   veniva accorciata con "…" su iPhone; a destra "12 alimenti · 3 pasti",
@@ -869,6 +871,7 @@ un comando che non fa niente sembra rotto):
 **Rotte.** `/impostazioni`, `/impostazioni/profilo`,
 `/impostazioni/obiettivi`, `/impostazioni/pasti`, `/impostazioni/peso`,
 `/impostazioni/aspetto`, `/impostazioni/preferiti`,
+`/impostazioni/alimenti` (branch `catalogo-alimenti`),
 `/impostazioni/sincronizzazione`, `/impostazioni/informazioni`;
 `/impostazioni/elimina-account` (branch `elimina-account`).
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
@@ -1095,6 +1098,83 @@ zero.
   `ModificaPastoSalvato` quando ha modifiche (`useSegnalaModifiche`, che in
   /aggiungi non fa niente perché lì il guardiano non c'è).
 - La pagina è in `PAGINE_APP` del service worker: si apre anche offline.
+
+### Alimenti (dal 15/10, branch `catalogo-alimenti`)
+
+Gestione del catalogo personale, in Impostazioni > Alimenti
+(`/impostazioni/alimenti`), con "‹ Impostazioni". Mockup approvato da
+Davide il 12/10: `docs/mockups/catalogo-alimenti.html`. Analisi e
+decisioni del 15/10. Non sostituisce niente: in Aggiungi ricerca, matita e
+"Crea alimento manualmente" restano come sono. Qui si guarda tutto il
+catalogo, si corregge e si fa pulizia.
+
+- **Quali alimenti**: solo quelli modificabili, cioè dell'utente
+  (`user_id` = me), vivi e non verificati: la stessa condizione della
+  matita in Aggiungi (sezione 10.8). Un tocco apre sempre "Modifica", mai
+  una riga che non si può toccare. Il catalogo comune (`user_id` null,
+  oggi vuoto) non compare: si trova dalla ricerca in Aggiungi, e non è
+  modificabile (anche per RLS).
+- **Ricerca per nome**, con le stesse regole di `cercaPerNome`
+  (maiuscole e accenti indifferenti), e **ordinamento**: Più usati
+  (predefinito) / A → Z / Z → A / Meno usati. Sotto la ricerca il numero
+  di alimenti mostrati ("14 alimenti").
+- **"Più usati" conta le voci di diario vive** dell'utente con
+  quell'`alimento_id`. Le righe dei pasti salvati (`composizioni_voci`) non
+  contano: un pasto salvato è uno stampo, non un uso, e quando lo si
+  inserisce crea comunque voci di diario, già contate. A parità di usi,
+  ordine per nome A → Z; "Meno usati" mette in cima gli alimenti mai
+  usati. **Il numero di usi non si mostra nella riga**, serve solo per
+  ordinare. Calcolato in locale da Dexie in un passaggio solo, nessun
+  indice nuovo. Funzioni pure con test permanenti (sezione 10.5).
+- **Tocco su un alimento → "Modifica alimento"** a pagina intera, lo stesso
+  `CreaAlimentoForm` di Aggiungi. **Il "+"** (sopra la tab bar) apre lo
+  stesso form come "Nuovo alimento", senza Elimina. Il form è uno stato
+  della pagina, **non una rotta con l'id**: una rotta
+  `/impostazioni/alimenti/[id]` non può stare in `PAGINE_APP`, quindi
+  offline non si aprirebbe. Il "‹" in alto, con il form aperto, chiude il
+  form e torna all'elenco.
+- **Frase sotto i valori, in modifica** (in Aggiungi e qui, non in "Nuovo
+  alimento"): "Le modifiche valgono da ora e nei pasti salvati. Il diario
+  già registrato non cambia." È la regola già in vigore: il diario copia i
+  valori al momento dell'inserimento, i pasti salvati li leggono dal
+  catalogo (sezione 4, "Alimenti cancellati", strada C scartata).
+- **Eliminare un alimento, dal form**: la conferma nella riga del form
+  ("No / Sì, elimina"), come in Aggiungi, poi la barra con Annulla
+  (`BarraAnnulla`). Niente sheet: lo stesso componente si comporta allo
+  stesso modo nei due posti.
+- **Tieni premuto 450 ms → selezione multipla**, con lo stesso gesto di Oggi
+  (`useTieniPremuto`, soglie in `decisioneTieniPremuto.ts`) ma senza
+  trascinamento né menu: il sollevamento entra in selezione con quella
+  riga spuntata. In selezione un tocco spunta o toglie la spunta, invece di
+  aprire "Modifica". La **barra di selezione copre la tab bar**: "N
+  selezionati", Elimina, Annulla (che esce dalla selezione).
+  **L'icona condividi non c'è** finché non esiste Amici: un pulsante che
+  non fa niente sembra rotto.
+- **Eliminare più alimenti**: `SheetConferma` "Eliminare N alimenti? Il
+  diario non cambia." (con uno solo selezionato: "Eliminare «Mela»?"). Solo
+  se serve, una seconda frase: "Verranno tolti anche da X pasti salvati e
+  Y preferiti." con singolare e plurale giusti ("Verrà tolto" con un
+  alimento solo; "1 pasto salvato", "1 preferito"; se una delle due parti
+  è a zero, solo l'altra). X = pasti salvati visibili che contengono
+  almeno uno degli alimenti; Y = alimenti selezionati che sono fra i
+  preferiti. Poi la barra con Annulla.
+- **Tutto o niente, in una sola transazione Dexie** (possibile dal 9/10:
+  la sync parte fuori dalla transazione, `repository.ts`). Serve una
+  funzione per più alimenti insieme, non la funzione per un alimento
+  ripetuta: se due alimenti eliminati stanno nello stesso pasto salvato,
+  la domanda "il pasto è rimasto vuoto?" va fatta sull'insieme, altrimenti
+  resta il guscio vuoto del bug del 22/09. Cascata e ripristino seguono la
+  regola "Alimenti cancellati" (sezione 4), estesa a più alimenti: l'Annulla
+  ripristina tutti gli alimenti, poi i pasti salvati, poi le righe. Le
+  righe di `preferiti` non si toccano, come per un alimento solo: restano
+  vive e nascoste finché l'alimento è cancellato, e tornano con
+  l'Annulla. Test permanenti.
+- **La riga in Impostazioni**: "Alimenti", nel gruppo Alimentazione prima
+  di Preferiti, con a destra "46 alimenti", "1 alimento" o "Nessuno",
+  contati con la stessa funzione dell'elenco.
+- La pagina è in `PAGINE_APP` del service worker.
+- **Schema dati invariato**: niente migration Supabase, niente nuova
+  versione Dexie.
 
 ### Profilo
 
@@ -1891,7 +1971,9 @@ nome non era più riusabile):
    Non si ripristina: un pasto salvato vuoto se nel frattempo ne è nato un
    altro con lo stesso nome (lo dice la barra: niente doppione, niente nome
    inventato), né una riga il cui pasto salvato è stato cancellato durante
-   la finestra. Se l'utente non preme, la cancellazione resta.
+   la finestra. Se l'utente non preme, la cancellazione resta. Lo stesso
+   Annulla c'è in Impostazioni > Alimenti, anche dopo l'eliminazione di
+   più alimenti insieme (sezione 3, "Alimenti").
 
 Avviso (prima dell'azione, dentro lo sheet che già chiede conferma) e barra
 (dopo l'azione, con la possibilità di tornare indietro) sono volutamente due
@@ -4006,6 +4088,8 @@ restano) e l'app chiusa a metà uscita.
 
 ### Non ancora costruito
 
+- **Impostazioni > Alimenti**, il catalogo personale: decisa il 15/10
+  (sezione 3, "Alimenti"), in costruzione sul branch `catalogo-alimenti`
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
