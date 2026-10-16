@@ -1,0 +1,540 @@
+<title>Alimenti in arrivo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: tavola di telefoni affiancati (vanno a capo), una proposta per
+   telefono, con i token veri dell'app (globals.css) come nel mockup Amici. */
+:root{
+  --background:#faf7f2; --foreground:#1f1b16; --linea:#e7e0d2; --tenue:#78705f;
+  --superficie:#ffffff; --accento:#3f7d4c; --accento-pieno:#3f7d4c; --su-pieno:#faf7f2;
+  --capsula:color-mix(in srgb, var(--accento) 12%, transparent);
+  --avviso:#b5533c; --cornice:#e3ddd2; --ombra:0 18px 40px -18px rgba(31,27,22,.45);
+  --velo:rgba(15,12,10,.42); --avviso-pieno:#b5533c;
+  --f-display:'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --f-body:'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+    --superficie:#26221e; --accento:#7bb887; --accento-pieno:#3f7d4c; --su-pieno:#ffffff;
+    --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+    --avviso:#e8916f; --cornice:#100e0c; --ombra:0 18px 40px -18px rgba(0,0,0,.8);
+    --velo:rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+  --superficie:#26221e; --accento:#7bb887; --accento-pieno:#3f7d4c; --su-pieno:#ffffff;
+  --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+  --avviso:#e8916f; --cornice:#100e0c; --ombra:0 18px 40px -18px rgba(0,0,0,.8);
+  --velo:rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--cornice);color:var(--foreground);font-family:var(--f-body);
+  padding-block:24px 56px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.pagina{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header h1{font-family:var(--f-display);font-size:clamp(26px,5vw,34px);margin:0 0 6px;text-wrap:balance}
+header p{margin:0;max-width:70ch;line-height:1.5;color:var(--tenue);font-size:15px}
+.tema{display:flex;gap:6px;margin-top:12px}
+.tema button{font:600 13px var(--f-body);border:1px solid var(--linea);background:var(--superficie);color:var(--foreground);border-radius:999px;padding:6px 12px;cursor:pointer}
+.tema button[aria-pressed="true"]{border-color:var(--foreground)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accento);outline-offset:2px}
+
+.griglia{display:flex;flex-wrap:wrap;gap:28px 24px;align-items:flex-start}
+.colonna{width:340px;max-width:100%;display:flex;flex-direction:column;gap:8px;min-width:0}
+.didascalia{font:700 12px var(--f-body);text-transform:uppercase;letter-spacing:.08em;margin:0 4px}
+.spiega{font-size:13px;line-height:1.45;color:var(--tenue);margin:0 4px 2px;min-height:57px}
+.phone{position:relative;width:340px;max-width:100%;height:700px;overflow:hidden;background:var(--background);
+  border-radius:38px;border:1px solid var(--linea);box-shadow:var(--ombra)}
+.scorre{position:absolute;inset:0;overflow-y:auto;padding:14px 16px 150px}
+.sb{display:flex;justify-content:space-between;font-weight:600;font-size:14px;padding:0 12px 8px}
+.indietro{display:inline-flex;align-items:center;min-height:40px;color:var(--accento);font-size:16px}
+.titolo{font:700 32px/1.15 var(--f-display);margin:0 2px 14px}
+
+.gruppo{margin:0 0 18px}
+.gt{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--tenue);margin:0 14px 8px;display:flex;align-items:center;gap:6px}
+.scatola{background:var(--superficie);border:1px solid var(--linea);border-radius:18px;overflow:hidden}
+.riga{position:relative;display:flex;align-items:center;gap:12px;min-height:52px;padding:9px 14px;font-size:15.5px}
+.riga + .riga::before{content:"";position:absolute;top:0;right:0;left:14px;border-top:1px solid var(--linea)}
+.riga.tocca{cursor:pointer}
+.val{margin-left:auto;color:var(--tenue);font-size:14.5px;white-space:nowrap}
+.freccia{width:8px;height:13px;color:var(--tenue);flex:none}
+.ico{width:30px;height:30px;border-radius:9px;background:var(--capsula);color:var(--accento);display:flex;align-items:center;justify-content:center;flex:none}
+.ico svg{width:16px;height:16px}
+.pallino{width:9px;height:9px;border-radius:50%;background:var(--accento);flex:none}
+.nuove{color:var(--accento);font-weight:600}
+.info{flex:1;min-width:0}
+.nome{font-weight:600;line-height:1.3}
+.sotto{font-size:13px;color:var(--tenue);margin-top:2px;line-height:1.35;font-variant-numeric:tabular-nums}
+.sotto.avviso{color:var(--avviso)}
+.azioni{display:flex;gap:8px;flex:none}
+.azioni.col{flex-direction:column;align-items:stretch}
+.btn{font:600 14px var(--f-body);border-radius:10px;padding:7px 11px;min-height:36px;cursor:pointer;border:1px solid var(--linea);background:transparent;color:var(--foreground)}
+.btn.pieno{background:var(--accento-pieno);border-color:var(--accento-pieno);color:var(--su-pieno)}
+.btn.largo{width:100%}
+.tag{display:inline-block;font:700 10.5px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--accento);background:var(--capsula);border-radius:999px;padding:2px 7px;margin-right:6px;vertical-align:1px}
+
+.cerca{display:flex;align-items:center;gap:8px;background:var(--superficie);border:1px solid var(--linea);border-radius:12px;padding:10px 12px;color:var(--tenue);font-size:15px;margin-bottom:10px}
+.cerca svg{width:16px;height:16px}
+.conta{display:flex;justify-content:space-between;font-size:13px;color:var(--tenue);margin:0 4px 8px}
+.conta b{color:var(--foreground);font-weight:500}
+
+.avvisoriga{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--superficie);border:1px solid var(--linea);border-radius:16px;padding:12px 14px;margin-bottom:14px;cursor:pointer;color:var(--foreground);font:500 15px var(--f-body)}
+.avvisoriga .info .sotto{margin-top:1px}
+
+.schede{display:flex;background:color-mix(in srgb,var(--foreground) 7%,transparent);border-radius:10px;padding:3px;margin-bottom:14px}
+.schede button{flex:1;border:none;background:transparent;border-radius:8px;padding:7px 0;font:600 14px var(--f-body);color:var(--tenue);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.schede button[aria-selected="true"]{background:var(--superficie);color:var(--foreground);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+.piu{position:absolute;right:20px;bottom:88px;width:52px;height:52px;border-radius:50%;background:var(--accento-pieno);color:var(--su-pieno);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:var(--ombra)}
+.pillola{position:absolute;left:14px;right:14px;bottom:14px;height:60px;border-radius:999px;background:color-mix(in srgb,var(--superficie) 88%,transparent);
+  border:1px solid var(--linea);display:flex;align-items:center;justify-content:space-around}
+.pillola span{position:relative;font-size:11px;color:var(--tenue);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;border-radius:999px}
+.pillola i{display:block;width:20px;height:20px;border-radius:6px;border:2px solid currentColor}
+.pillola .attiva{background:var(--capsula);color:var(--accento)}
+.pillola .badge{position:absolute;top:3px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--accento);border:2px solid var(--superficie)}
+
+.sheet-fondo{position:absolute;inset:0;background:var(--velo);display:flex;align-items:flex-end;z-index:5}
+.sheet{width:100%;max-height:88%;overflow-y:auto;background:var(--superficie);border-radius:22px 22px 0 0;padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.sheet h2{font:700 20px var(--f-display);margin:0}
+.sheet p{margin:0;font-size:14px;line-height:1.45;color:var(--tenue)}
+.maniglia{width:38px;height:5px;border-radius:3px;background:var(--linea);align-self:center}
+.valori{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.valori div{background:var(--background);border:1px solid var(--linea);border-radius:10px;padding:8px 2px}
+.valori b{display:block;font:600 16px var(--f-body);font-variant-numeric:tabular-nums}
+.valori span{font-size:11px;color:var(--tenue);text-transform:uppercase;letter-spacing:.06em}
+.vuoto{padding:14px;font-size:13.5px;color:var(--tenue);line-height:1.45}
+.confronta-btn{background:none;border:none;padding:6px 0 0;color:var(--accento);font:600 13.5px var(--f-body);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.confronto{width:100%;margin-top:8px;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.confronto th{font:500 11px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--tenue);text-align:right;padding:4px 0 6px}
+.confronto th:first-child,.confronto td:first-child{text-align:left;color:var(--tenue)}
+.confronto td{text-align:right;padding:5px 0;border-top:1px solid var(--linea)}
+.confronto td.diverso{color:var(--avviso);font-weight:600}
+.confronto-nota{font-size:12.5px;color:var(--tenue);margin-top:4px;line-height:1.4}
+.testa-sheet{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.link-acc{background:none;border:none;color:var(--accento);font:600 15px var(--f-body);cursor:pointer;padding:6px 0;min-height:36px}
+.barra-tutti{display:flex;justify-content:space-between;margin-top:-6px}
+.spunta{width:22px;height:22px;border-radius:7px;border:2px solid var(--linea);display:flex;align-items:center;justify-content:center;flex:none;color:var(--su-pieno);font-size:13px;font-weight:700;background:var(--superficie)}
+.spunta.on{background:var(--accento-pieno);border-color:var(--accento-pieno)}
+.spunta.off{opacity:.35}
+.riga.selezionata{background:var(--capsula)}
+.riga[data-sel-ok]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.nota-sel{font-size:12.5px;color:var(--tenue);margin-top:3px}
+.barra-sel-foglio{position:sticky;bottom:-24px;display:flex;align-items:center;gap:8px;background:var(--superficie);border-top:1px solid var(--linea);padding:12px 0 2px;margin-bottom:-2px}
+.barra-sel-foglio b{flex:1;font-size:14.5px;font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.rifiuto{background:var(--avviso-pieno);border-color:var(--avviso-pieno);color:var(--su-pieno)}
+.conferma-fondo{position:absolute;inset:0;background:var(--velo);display:flex;align-items:flex-end;z-index:7}
+.scelta{display:inline-block;font:700 11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--su-pieno);background:var(--accento-pieno);border-radius:999px;padding:3px 8px;margin-left:6px;vertical-align:2px}
+
+.note{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.nota-box{background:var(--superficie);border:1px solid var(--linea);border-radius:16px;padding:16px 18px;font-size:14px;line-height:1.5;min-width:0}
+.nota-box h3{font:700 17px var(--f-display);margin:0 0 8px;text-wrap:balance}
+.nota-box ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.pro{color:var(--accento);font-weight:600}
+.contro{color:var(--avviso);font-weight:600}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="pagina">
+  <header>
+    <h1>Alimenti in arrivo</h1>
+    <p>Dove mostrare gli alimenti che un amico ti ha mandato e che aspettano Aggiungi o Rifiuta, se non nella pagina Amici. Quattro posizioni nella pagina Impostazioni &gt; Alimenti, più la riga in Impostazioni (deciso: "2 in arrivo" al posto del numero di alimenti). Stessi esempi in tutte: due alimenti da @sara_c, uno è un doppione. I pulsanti funzionano.</p>
+    <div class="tema" role="group" aria-label="Tema">
+      <button type="button" data-t="light" aria-pressed="false">Chiaro</button>
+      <button type="button" data-t="dark" aria-pressed="false">Scuro</button>
+      <button type="button" data-t="" aria-pressed="true">Sistema</button>
+    </div>
+  </header>
+
+  <div class="griglia">
+
+    <!-- 0. Impostazioni -->
+    <div class="colonna">
+      <p class="didascalia">Impostazioni · la riga</p>
+      <p class="spiega">Deciso: con alimenti in arrivo la riga Alimenti dice "2 in arrivo" con il pallino. Amici mostra solo le richieste di amicizia. Sulla tab un pallino solo, per tutte e due.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="titolo">Impostazioni</div>
+        <div class="gruppo"><div class="gt">Alimentazione</div><div class="scatola">
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg></span>Obiettivi<span class="val">2500 kcal</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg></span>Pasti e orari<span class="val">5 pasti</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4.5c-1.2-2-5-1.6-5 1.8 0 3.4 3 5.7 5 5.7s5-2.3 5-5.7c0-3.4-3.8-3.8-5-1.8z"/></svg></span>Alimenti<span class="val nuove">2 in arrivo</span><span class="pallino" aria-hidden="true"></span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2.5l1.7 3.5 3.8.5-2.8 2.6.7 3.8L8 11l-3.4 1.9.7-3.8L2.5 6.5l3.8-.5z"/></svg></span>Preferiti<span class="val">12 · 3 pasti</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12.5l3-4 2.5 2.5L13 4.5"/></svg></span>Peso<span class="val">78,4 kg</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        </div></div>
+        <div class="gruppo"><div class="gt">Amici</div><div class="scatola">
+          <div class="riga"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.4"/><path d="M1.8 13c.5-2.4 2.2-3.6 4.2-3.6s3.7 1.2 4.2 3.6"/><circle cx="11.3" cy="5.4" r="1.9"/><path d="M11 9.3c1.8 0 3 1 3.4 3"/></svg></span>Amici<span class="val">2 amici</span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        </div></div>
+      </div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni<b class="badge"></b></span></div>
+      </div>
+    </div>
+
+    <!-- A. Gruppo in cima -->
+    <div class="colonna">
+      <p class="didascalia">A · Gruppo in cima</p>
+      <p class="spiega">Gli alimenti in arrivo sono un gruppo sopra la ricerca, con i pulsanti già sulla riga. Un tocco per decidere. Sparisce quando è vuoto, mentre cerchi e in selezione.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Alimenti</div>
+        <div class="gruppo" data-arrivo><div class="gt">In arrivo dagli amici</div><div class="scatola">
+          <div class="riga" data-voce><div class="info"><div class="nome">Pane di segale · Mulino</div><div class="sotto">Da @sara_c · 259 kcal / 100 g</div></div>
+            <div class="azioni"><button class="btn" type="button" data-via>Rifiuta</button><button class="btn pieno" type="button" data-via>Aggiungi</button></div></div>
+          <div class="riga" data-voce><div class="info"><div class="nome">Yogurt greco 0% · Fage</div><div class="sotto avviso">Hai già «Yogurt greco 0% · Fage»: 57 kcal invece di 59.</div><div class="sotto">Da @sara_c</div></div>
+            <div class="azioni col"><button class="btn pieno" type="button" data-via>Aggiungi comunque</button><button class="btn" type="button" data-via>Rifiuta</button></div></div>
+        </div></div>
+        <div class="cerca"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>Cerca un alimento</div>
+        <div class="conta"><span>46 alimenti</span><b>Più usati ▾</b></div>
+        <div class="scatola" data-catalogo></div>
+      </div>
+      <div class="piu">+</div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni<b class="badge" data-badge></b></span></div>
+      </div>
+    </div>
+
+    <!-- B. Riga in cima → foglio -->
+    <div class="colonna">
+      <p class="didascalia">B · Una riga che apre un foglio <span class="scelta">Scelta</span></p>
+      <p class="spiega">In cima solo una riga "2 alimenti in arrivo". Il tocco apre un foglio con l'elenco, i valori per 100 g e i pulsanti. Su un doppione (stesso nome e marca) il confronto parte chiuso; si sceglie fra "Usa questi valori" e "Tieni i miei". Mai due alimenti uguali. Con "Seleziona" o tenendo premuto si sceglie per più alimenti insieme.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Alimenti</div>
+        <button class="avvisoriga" type="button" data-apri="foglio-b" data-arrivo>
+          <span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2.5v8M4.5 7L8 10.5 11.5 7M3 13h10"/></svg></span>
+          <span class="info"><span class="nome" style="display:block" data-titolo-b>6 alimenti in arrivo</span><span class="sotto" style="display:block">Da @sara_c · tocca per vederli</span></span>
+          <span class="pallino" aria-hidden="true"></span><svg class="freccia" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l5 5-5 5"/></svg>
+        </button>
+        <div class="cerca"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>Cerca un alimento</div>
+        <div class="conta"><span>46 alimenti</span><b>Più usati ▾</b></div>
+        <div class="scatola" data-catalogo></div>
+      </div>
+      <div class="piu">+</div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni<b class="badge" data-badge></b></span></div>
+      <div class="sheet-fondo" id="foglio-b" hidden>
+        <div class="sheet" role="dialog" aria-label="Alimenti in arrivo" data-foglio-b>
+          <div class="maniglia"></div>
+          <div class="testa-sheet"><h2>In arrivo dagli amici</h2><button class="link-acc" type="button" data-sel-toggle>Seleziona</button></div>
+          <div class="barra-tutti" data-solo-sel hidden><button class="link-acc" type="button" data-tutti>Seleziona tutti</button><button class="link-acc" type="button" data-nessuno>Deseleziona tutti</button></div>
+          <p data-non-sel>Aggiunto, diventa un alimento tuo: lo puoi modificare, e le modifiche di chi l'ha mandato non lo toccano.</p>
+          <p data-solo-sel hidden>I doppioni non si selezionano: per loro si decide uno per uno.</p>
+          <div class="scatola" data-elenco-b>
+            <div class="riga" data-voce data-sel-ok><span class="spunta" data-solo-sel hidden aria-hidden="true"></span><div class="info"><div class="nome">Pane di segale · Mulino</div><div class="sotto">Da @sara_c</div><div class="sotto">259 kcal · G 3,3 · C 45 · P 9 g</div></div>
+              <div class="azioni col" data-non-sel><button class="btn pieno" type="button" data-via>Aggiungi</button><button class="btn" type="button" data-via>Rifiuta</button></div></div>
+            <div class="riga" data-voce data-sel-ok><span class="spunta" data-solo-sel hidden aria-hidden="true"></span><div class="info"><div class="nome">Hummus di ceci · Valsoia</div><div class="sotto">Da @sara_c</div><div class="sotto">166 kcal · G 9,5 · C 12 · P 6,8 g</div></div>
+              <div class="azioni col" data-non-sel><button class="btn pieno" type="button" data-via>Aggiungi</button><button class="btn" type="button" data-via>Rifiuta</button></div></div>
+            <div class="riga" data-voce data-sel-ok><span class="spunta" data-solo-sel hidden aria-hidden="true"></span><div class="info"><div class="nome">Gallette di riso · Scotti</div><div class="sotto">Da @sara_c</div><div class="sotto">381 kcal · G 2,8 · C 81 · P 7,9 g</div></div>
+              <div class="azioni col" data-non-sel><button class="btn pieno" type="button" data-via>Aggiungi</button><button class="btn" type="button" data-via>Rifiuta</button></div></div>
+            <div class="riga" data-voce data-sel-ok><span class="spunta" data-solo-sel hidden aria-hidden="true"></span><div class="info"><div class="nome">Skyr bianco · Milbona</div><div class="sotto">Da @paolo_a</div><div class="sotto">63 kcal · G 0,2 · C 4 · P 11 g</div></div>
+              <div class="azioni col" data-non-sel><button class="btn pieno" type="button" data-via>Aggiungi</button><button class="btn" type="button" data-via>Rifiuta</button></div></div>
+            <div class="riga" data-voce style="flex-wrap:wrap"><span class="spunta off" data-solo-sel hidden aria-hidden="true"></span><div class="info"><div class="nome">Yogurt greco 0% · Fage</div><div class="sotto avviso">Hai già «Yogurt greco 0% · Fage», con valori diversi.</div><div class="sotto">Da @sara_c</div><div class="nota-sel" data-solo-sel hidden>Doppione: decidi qui sotto.</div><button class="confronta-btn" type="button" aria-expanded="false" aria-controls="confronto-yogurt" data-confronta>Confronta i valori ▾</button></div>
+              <div class="azioni col"><button class="btn pieno" type="button" data-via>Usa questi valori</button><button class="btn" type="button" data-via>Tieni i miei</button></div>
+              <div id="confronto-yogurt" style="flex-basis:100%" hidden>
+                <table class="confronto">
+                  <thead><tr><th>Per 100 g</th><th>Il tuo</th><th>In arrivo</th></tr></thead>
+                  <tbody>
+                    <tr><td>Kcal</td><td>57</td><td class="diverso">59</td></tr>
+                    <tr><td>Grassi</td><td>0,4 g</td><td class="diverso">0,2 g</td></tr>
+                    <tr><td>Carboidrati</td><td>3,9 g</td><td class="diverso">3,6 g</td></tr>
+                    <tr><td>Proteine</td><td>10 g</td><td>10 g</td></tr>
+                    <tr><td>Porzione</td><td>150 g</td><td class="diverso">170 g</td></tr>
+                  </tbody>
+                </table>
+                <p class="confronto-nota">In arancio i valori diversi dal tuo. "Usa questi valori" aggiorna il tuo alimento: preferiti e pasti salvati prendono i valori nuovi, il diario già registrato non cambia.</p>
+              </div></div>
+            <div class="riga" data-voce><span class="spunta off" data-solo-sel hidden aria-hidden="true"></span><div class="info"><div class="nome">Tonno al naturale · Rio Mare</div><div class="sotto">Hai già questo alimento, con gli stessi valori.</div><div class="sotto">Da @sara_c</div></div>
+              <div class="azioni"><button class="btn" type="button" data-via>Ok</button></div></div>
+          </div>
+          <button class="btn largo" type="button" data-chiudi data-non-sel>Chiudi</button>
+          <div class="barra-sel-foglio" data-solo-sel hidden><b data-n-sel>0 selezionati</b><button class="btn" type="button" data-bulk="rifiuta" disabled>Rifiuta</button><button class="btn pieno" type="button" data-bulk="aggiungi" disabled>Aggiungi</button></div>
+        </div>
+      </div>
+      <div class="conferma-fondo" id="conferma-b" hidden>
+        <div class="sheet" role="alertdialog" aria-labelledby="conf-b-t">
+          <div class="maniglia"></div>
+          <h2 id="conf-b-t" data-conf-t>Aggiungere 3 alimenti?</h2>
+          <p data-conf-p></p>
+          <div style="display:flex;gap:8px"><button class="btn" type="button" style="flex:1" data-conf-no>Annulla</button><button class="btn pieno" type="button" style="flex:1" data-conf-si>Aggiungi 3</button></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- C. Nell'elenco, con anteprima -->
+    <div class="colonna">
+      <p class="didascalia">C · Nell'elenco, con anteprima</p>
+      <p class="spiega">In cima all'elenco, con l'etichetta "In arrivo". Il tocco apre l'anteprima con tutti i valori, poi Aggiungi o Rifiuta. Sembrano già tuoi, anche se non lo sono ancora.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Alimenti</div>
+        <div class="cerca"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>Cerca un alimento</div>
+        <div class="conta"><span>46 alimenti · 2 in arrivo</span><b>Più usati ▾</b></div>
+        <div class="scatola" data-catalogo data-prima>
+          <div class="riga tocca" data-voce data-apri="foglio-c" data-c="pane"><div class="info"><div class="nome"><span class="tag">In arrivo</span>Pane di segale · Mulino</div><div class="sotto">259 kcal / 100 g · da @sara_c</div></div><span class="pallino"></span></div>
+          <div class="riga tocca" data-voce data-apri="foglio-c" data-c="yogurt"><div class="info"><div class="nome"><span class="tag">In arrivo</span>Yogurt greco 0% · Fage</div><div class="sotto">59 kcal / 100 g · da @sara_c</div></div><span class="pallino"></span></div>
+        </div>
+      </div>
+      <div class="piu">+</div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni<b class="badge" data-badge></b></span></div>
+      <div class="sheet-fondo" id="foglio-c" hidden>
+        <div class="sheet" role="dialog" aria-label="Anteprima">
+          <div class="maniglia"></div>
+          <h2 data-c-nome>Pane di segale · Mulino</h2>
+          <p>Da @sara_c · porzione 50 g</p>
+          <p class="sotto avviso" data-c-doppione hidden style="font-size:14px">Hai già «Yogurt greco 0% · Fage»: 57 kcal invece di 59.</p>
+          <div class="valori"><div><b data-c-k>259</b><span>kcal</span></div><div><b data-c-g>3,3</b><span>Grassi</span></div><div><b data-c-cc>45</b><span>Carbo</span></div><div><b data-c-p>9</b><span>Prot.</span></div></div>
+          <p style="font-size:12.5px">Valori per 100 g.</p>
+          <div style="display:flex;gap:8px"><button class="btn" type="button" style="flex:1" data-c-via>Rifiuta</button><button class="btn pieno" type="button" style="flex:1" data-c-via data-c-agg>Aggiungi</button></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- D. Due schede -->
+    <div class="colonna">
+      <p class="didascalia">D · Due schede</p>
+      <p class="spiega">In cima "Catalogo | In arrivo 2". Le due liste non si mescolano mai. Le schede ci sono solo quando arriva qualcosa: senza, la pagina è quella di oggi.</p>
+      <div class="phone"><div class="scorre">
+        <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+        <div class="indietro">‹ Impostazioni</div>
+        <div class="titolo">Alimenti</div>
+        <div class="schede" role="tablist" data-arrivo>
+          <button type="button" role="tab" aria-selected="false" data-scheda="cat">Catalogo</button>
+          <button type="button" role="tab" aria-selected="true" data-scheda="arr">In arrivo <span class="pallino"></span><span data-n-d>2</span></button>
+        </div>
+        <div data-pannello="arr">
+          <div class="scatola">
+            <div class="riga" data-voce><div class="info"><div class="nome">Pane di segale · Mulino</div><div class="sotto">Da @sara_c · 259 kcal / 100 g</div></div>
+              <div class="azioni"><button class="btn" type="button" data-via>Rifiuta</button><button class="btn pieno" type="button" data-via>Aggiungi</button></div></div>
+            <div class="riga" data-voce><div class="info"><div class="nome">Yogurt greco 0% · Fage</div><div class="sotto avviso">Hai già «Yogurt greco 0% · Fage»: 57 kcal invece di 59.</div><div class="sotto">Da @sara_c</div></div>
+              <div class="azioni col"><button class="btn pieno" type="button" data-via>Aggiungi comunque</button><button class="btn" type="button" data-via>Rifiuta</button></div></div>
+          </div>
+        </div>
+        <div data-pannello="cat" hidden>
+          <div class="cerca"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>Cerca un alimento</div>
+          <div class="conta"><span>46 alimenti</span><b>Più usati ▾</b></div>
+          <div class="scatola" data-catalogo></div>
+        </div>
+      </div>
+      <div class="piu">+</div>
+      <div class="pillola"><span><i></i>Oggi</span><span><i></i>Statistiche</span><span class="attiva"><i></i>Impostazioni<b class="badge" data-badge></b></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <div class="nota-box">
+      <h3>A · Gruppo in cima</h3>
+      <ul>
+        <li><span class="pro">Pro</span>: si vede tutto subito, un tocco per decidere.</li>
+        <li><span class="contro">Contro</span>: con molti alimenti mandati insieme (un amico che ne manda 10) il catalogo scende sotto la piega.</li>
+        <li>I valori sono solo le kcal: per vedere i macro bisogna aggiungerlo e aprirlo.</li>
+      </ul>
+    </div>
+    <div class="nota-box">
+      <h3>B · Una riga che apre un foglio</h3>
+      <ul>
+        <li><span class="pro">Pro</span>: il catalogo resta pulito, qualunque sia il numero di alimenti in arrivo.</li>
+        <li><span class="pro">Pro</span>: nel foglio c'è spazio per i quattro valori, utili per decidere (soprattutto con un doppione).</li>
+        <li><span class="contro">Contro</span>: un tocco in più per arrivarci.</li>
+        <li><b>Scelta il 16/10.</b> Doppione = stesso nome e marca: mai due alimenti uguali. Valori diversi: "Usa questi valori" (aggiorna il tuo) o "Tieni i miei", con il confronto chiuso all'inizio. Valori identici: solo Ok.</li>
+        <li><b>Doppione = stesso nome e stessa marca</b>, con maiuscole, accenti e spazi ai bordi indifferenti. «Yogurt greco 0% · Fage» e «Yogurt greco 0% · Müller» non sono doppioni; due alimenti senza marca con lo stesso nome sì. Il messaggio scrive sempre nome e marca.</li>
+        <li><b>Selezione (16/10)</b>: "Seleziona" in alto nel foglio, oppure tieni premuto su un alimento. Quadratini a sinistra, "Seleziona tutti" / "Deseleziona tutti", barra in fondo con Rifiuta e Aggiungi. I doppioni e gli alimenti già uguali non si selezionano. Con più di un alimento selezionato, conferma sia per Aggiungi sia per Rifiuta; con uno solo, niente conferma. In blocco: tutto o niente, in una sola chiamata.</li>
+      </ul>
+    </div>
+    <div class="nota-box">
+      <h3>C · Nell'elenco, con anteprima</h3>
+      <ul>
+        <li><span class="pro">Pro</span>: l'anteprima mostra tutti i valori e la porzione.</li>
+        <li><span class="contro">Contro</span>: alimenti non ancora tuoi in mezzo ai tuoi. Cosa fanno la ricerca, il conteggio "46 alimenti", la selezione multipla? Ogni regola del catalogo va ripensata.</li>
+        <li><span class="contro">Contro</span>: due tocchi per ogni alimento.</li>
+      </ul>
+    </div>
+    <div class="nota-box">
+      <h3>D · Due schede</h3>
+      <ul>
+        <li><span class="pro">Pro</span>: separazione netta, anche con tanti alimenti.</li>
+        <li><span class="contro">Contro</span>: un selettore che compare e scompare cambia la forma della pagina; il catalogo finisce dietro una scheda.</li>
+        <li>Quale scheda si apre per prima? Se "In arrivo", chi entra per cercare un alimento trova altro.</li>
+      </ul>
+    </div>
+    <div class="nota-box">
+      <h3>Per tutte e quattro</h3>
+      <ul>
+        <li>Solo con la rete: offline la parte "in arrivo" non compare, il catalogo funziona come oggi.</li>
+        <li>Dopo Aggiungi l'alimento compare nel catalogo appena arriva dal server.</li>
+        <li>La pagina Amici torna solo persone: richieste e amici.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Tema
+  var bottoni=document.querySelectorAll('.tema button');
+  bottoni.forEach(function(b){b.addEventListener('click',function(){
+    var t=b.getAttribute('data-t');
+    if(t) document.documentElement.setAttribute('data-theme',t); else document.documentElement.removeAttribute('data-theme');
+    bottoni.forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+  })});
+
+  // Catalogo di esempio, uguale per tutte le proposte
+  var cat=[['Petto di pollo','110'],['Riso basmati · Scotti','352'],['Pane · Mulino','265'],['Tonno al naturale · Rio Mare','103'],['Yogurt greco 0% · Fage','57'],['Banana','89'],['Fiocchi d\'avena','372'],['Olio extravergine','884']];
+  document.querySelectorAll('[data-catalogo]').forEach(function(box){
+    var html=cat.map(function(c){return '<div class="riga"><div class="info"><div class="nome" style="font-weight:500">'+c[0]+'</div><div class="sotto">'+c[1]+' kcal / 100 g</div></div></div>'}).join('');
+    box.insertAdjacentHTML('beforeend',html);
+  });
+
+  // Toglie una voce in arrivo; quando non ne resta nessuna, sparisce la parte "in arrivo" e il pallino
+  function togli(voce){
+    var phone=voce.closest('.phone');
+    voce.remove();
+    var resto=phone.querySelectorAll('[data-voce]').length;
+    var tit=phone.querySelector('[data-titolo-b]');
+    if(tit) tit.textContent=resto===1?'1 alimento in arrivo':resto+' alimenti in arrivo';
+    var nd=phone.querySelector('[data-n-d]'); if(nd) nd.textContent=resto;
+    if(resto===0){
+      phone.querySelectorAll('[data-arrivo]').forEach(function(e){e.hidden=true});
+      var b=phone.querySelector('[data-badge]'); if(b) b.hidden=true;
+      var f=phone.querySelector('.sheet-fondo'); if(f) f.hidden=true;
+      var cnt=phone.querySelector('.conta span'); if(cnt) cnt.textContent='46 alimenti';
+      var pc=phone.querySelector('[data-pannello="cat"]'), pa=phone.querySelector('[data-pannello="arr"]');
+      if(pc){pc.hidden=false; pa.hidden=true;}
+    } else {
+      var cnt2=phone.querySelector('.conta span'); if(cnt2 && phone.querySelector('[data-prima]')) cnt2.textContent='46 alimenti · '+resto+' in arrivo';
+    }
+  }
+  document.querySelectorAll('[data-via]').forEach(function(b){
+    b.addEventListener('click',function(){togli(b.closest('[data-voce]'))});
+  });
+
+  // Fogli
+  document.querySelectorAll('[data-apri]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var f=document.getElementById(el.getAttribute('data-apri'));
+      if(el.hasAttribute('data-c')) preparaC(el);
+      f.hidden=false;
+    });
+  });
+  document.querySelectorAll('.sheet-fondo').forEach(function(f){
+    f.addEventListener('click',function(e){if(e.target===f) f.hidden=true});
+    var c=f.querySelector('[data-chiudi]'); if(c) c.addEventListener('click',function(){f.hidden=true});
+  });
+
+  // Proposta C: l'anteprima
+  var datiC={pane:['Pane di segale · Mulino','259','3,3','45','9',false],yogurt:['Yogurt greco 0% · Fage','59','0,2','3,6','10',true]};
+  var voceC=null;
+  function preparaC(el){
+    voceC=el; var d=datiC[el.getAttribute('data-c')]; var f=document.getElementById('foglio-c');
+    f.querySelector('[data-c-nome]').textContent=d[0];
+    f.querySelector('[data-c-k]').textContent=d[1];
+    f.querySelector('[data-c-g]').textContent=d[2];
+    f.querySelector('[data-c-cc]').textContent=d[3];
+    f.querySelector('[data-c-p]').textContent=d[4];
+    f.querySelector('[data-c-doppione]').hidden=!d[5];
+    f.querySelector('[data-c-agg]').textContent=d[5]?'Aggiungi comunque':'Aggiungi';
+  }
+  document.querySelectorAll('[data-c-via]').forEach(function(b){
+    b.addEventListener('click',function(){document.getElementById('foglio-c').hidden=true; if(voceC) togli(voceC); voceC=null;});
+  });
+
+  // Proposta B: confronto dei valori sul doppione
+  document.querySelectorAll('[data-confronta]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var box=document.getElementById(b.getAttribute('aria-controls'));
+      var apri=box.hidden; box.hidden=!apri;
+      b.setAttribute('aria-expanded',apri?'true':'false');
+      b.textContent=apri?'Nascondi il confronto ▴':'Confronta i valori ▾';
+    });
+  });
+
+  // Proposta B: selezione multipla nel foglio
+  (function(){
+    var foglio=document.querySelector('[data-foglio-b]'); if(!foglio) return;
+    var phone=foglio.closest('.phone');
+    var conf=document.getElementById('conferma-b');
+    var inSel=false, azioneInAttesa=null;
+    function righe(){return Array.prototype.slice.call(foglio.querySelectorAll('[data-sel-ok]'))}
+    function scelte(){return righe().filter(function(r){return r.classList.contains('selezionata')})}
+    function aggiorna(){
+      var n=scelte().length;
+      foglio.querySelector('[data-n-sel]').textContent=n===1?'1 selezionato':n+' selezionati';
+      foglio.querySelectorAll('[data-bulk]').forEach(function(b){b.disabled=n===0});
+      righe().forEach(function(r){var sp=r.querySelector('.spunta'); var on=r.classList.contains('selezionata'); sp.classList.toggle('on',on); sp.textContent=on?'✓':''});
+    }
+    function imposta(sel){
+      inSel=sel;
+      foglio.querySelectorAll('[data-solo-sel]').forEach(function(e){e.hidden=!sel});
+      foglio.querySelectorAll('[data-non-sel]').forEach(function(e){e.hidden=sel});
+      foglio.querySelector('[data-sel-toggle]').textContent=sel?'Annulla':'Seleziona';
+      if(!sel) righe().forEach(function(r){r.classList.remove('selezionata')});
+      aggiorna();
+    }
+    foglio.querySelector('[data-sel-toggle]').addEventListener('click',function(){imposta(!inSel)});
+    foglio.querySelector('[data-tutti]').addEventListener('click',function(){righe().forEach(function(r){r.classList.add('selezionata')}); aggiorna()});
+    foglio.querySelector('[data-nessuno]').addEventListener('click',function(){righe().forEach(function(r){r.classList.remove('selezionata')}); aggiorna()});
+    // Tocco in selezione: spunta / toglie. Tieni premuto 450 ms: entra in selezione con quella riga.
+    righe().forEach(function(r){
+      var timer=null, x0=0, y0=0, appenaEntrato=false;
+      r.addEventListener('pointerdown',function(e){
+        if(inSel||e.target.closest('button')) return;
+        x0=e.clientX; y0=e.clientY;
+        timer=setTimeout(function(){timer=null; imposta(true); r.classList.add('selezionata'); appenaEntrato=true; aggiorna();},450);
+      });
+      function ferma(){if(timer){clearTimeout(timer); timer=null}}
+      r.addEventListener('pointermove',function(e){if(timer&&Math.hypot(e.clientX-x0,e.clientY-y0)>8) ferma()});
+      r.addEventListener('pointerup',ferma); r.addEventListener('pointercancel',ferma); r.addEventListener('pointerleave',ferma);
+      r.addEventListener('contextmenu',function(e){e.preventDefault()});
+      r.addEventListener('click',function(e){
+        if(!inSel) return;
+        if(appenaEntrato){appenaEntrato=false; return;}
+        r.classList.toggle('selezionata'); aggiorna();
+      });
+    });
+    function esegui(){
+      scelte().forEach(function(r){togli(r)});
+      if(document.body.contains(foglio)) imposta(false);
+    }
+    foglio.querySelectorAll('[data-bulk]').forEach(function(b){
+      b.addEventListener('click',function(){
+        var n=scelte().length, tipo=b.getAttribute('data-bulk');
+        if(n<=1){esegui(); return;}
+        azioneInAttesa=tipo;
+        var si=conf.querySelector('[data-conf-si]');
+        var doppioni=foglio.querySelectorAll('[data-voce]:not([data-sel-ok])').length;
+        if(tipo==='aggiungi'){
+          conf.querySelector('[data-conf-t]').textContent='Aggiungere '+n+' alimenti?';
+          conf.querySelector('[data-conf-p]').textContent='Entrano nel tuo catalogo come alimenti tuoi.'+(doppioni?' I doppioni restano qui, da decidere uno per uno.':'');
+          si.textContent='Aggiungi '+n; si.className='btn pieno';
+        } else {
+          conf.querySelector('[data-conf-t]').textContent='Rifiutare '+n+' alimenti?';
+          conf.querySelector('[data-conf-p]').textContent='Chi te li ha mandati non lo saprà. Per riaverli dovrà mandarteli di nuovo.';
+          si.textContent='Rifiuta '+n; si.className='btn rifiuto';
+        }
+        si.style.flex='1';
+        conf.hidden=false;
+      });
+    });
+    conf.querySelector('[data-conf-no]').addEventListener('click',function(){conf.hidden=true; azioneInAttesa=null});
+    conf.querySelector('[data-conf-si]').addEventListener('click',function(){conf.hidden=true; azioneInAttesa=null; esegui()});
+    conf.addEventListener('click',function(e){if(e.target===conf){conf.hidden=true}});
+  })();
+
+  // Proposta D: le schede
+  document.querySelectorAll('[data-scheda]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var phone=b.closest('.phone'); var s=b.getAttribute('data-scheda');
+      phone.querySelectorAll('[data-scheda]').forEach(function(x){x.setAttribute('aria-selected',x===b?'true':'false')});
+      phone.querySelectorAll('[data-pannello]').forEach(function(p){p.hidden=p.getAttribute('data-pannello')!==s});
+    });
+  });
+})();
+</script>

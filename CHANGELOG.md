@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Amici: pallino provato su iPhone, decisioni sugli alimenti in arrivo
+
+Branch `amici`. Pallino provato da Davide il 16/10 sull'anteprima (A in
+Safari su iPhone, B in Chrome sul PC, account di prova fisso in
+incognito): pallino nel colore principale sulla tab e "1 nuova" / "2
+nuove" sulla riga Amici; pallino e numero restano offline; Accetta e
+Rifiuta spengono il pallino; "Non accettata" senza pallino; dopo Esci e
+rientro con un altro account nessun pallino del precedente; tema scuro e
+un altro colore principale. Verificato da Cowork su Supabase. Non
+provati a mano, coperti dai test: l'arancio insieme a una richiesta,
+VoiceOver. In PUNTO le decisioni del 16/10: gli alimenti in arrivo
+stanno nella pagina Alimenti (riga "N alimenti in arrivo" con un foglio,
+riga Alimenti di Impostazioni "2 in arrivo"), Amici è solo persone;
+doppione = stesso nome e stessa marca, mai due alimenti uguali ("Usa
+questi valori" / "Tieni i miei" con il confronto e l'Annulla che riapre
+la condivisione, valori identici con Ok; "Aggiungi comunque" tolto);
+selezione multipla nel foglio; secondo invio dello stesso alimento che
+sostituisce il primo; Condividi senza amici; nessuna scadenza; in §4
+cosa resta da progettare nella migration `alimenti_condivisi`. In §9.1
+la conferma email spenta per la beta, da riaccendere prima di un'apertura
+al pubblico; in §11 il difetto "Alimenti doppi nel catalogo" (da fare
+subito dopo il merge) e la voce di Amici in "Fatto". Mockup
+`docs/mockups/alimenti-in-arrivo.html` (nuovo, proposta B scelta) e
+`docs/mockups/amici.html` (aggiornato da Cowork, senza gli alimenti in
+arrivo). Solo documenti.
+
 ## 2026-10-16 — Amici: il pallino delle novità
 
 Branch `amici`, passo 7. `src/lib/amici/novita.ts`: le novità come somma

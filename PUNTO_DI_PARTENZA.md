@@ -851,7 +851,9 @@ un comando che non fa niente sembra rotto):
 - gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
   kcal" con i giorni differenziati accesi), Pasti e orari, **Alimenti**
   (dal 15/10, branch `catalogo-alimenti`: il catalogo personale, "46
-  alimenti", vedi "Alimenti" più sotto), **Preferiti**
+  alimenti"; con alimenti mandati dagli amici, "2 in arrivo" con il
+  pallino al posto del numero, branch `condivisione-alimenti`, decisione
+  del 16/10; vedi "Alimenti" più sotto), **Preferiti**
   (dall'11/10, in Alimentazione dal 15/10, prima stava in App: la pagina
   si intitola "Preferiti e pasti salvati", ma per esteso l'etichetta
   veniva accorciata con "…" su iPhone; a destra "12 alimenti · 3 pasti",
@@ -1189,7 +1191,10 @@ catalogo, si corregge e si fa pulizia.
   **L'icona condividi non c'è** finché non esiste Amici: un pulsante che
   non fa niente sembra rotto. Nel codice non esiste ancora (non è
   nascosta): la aggiunge il branch `condivisione-alimenti`, collegata
-  allo sheet "Condividi con" (vedi "Amici" più sotto). Come è fatta (dal 15/10):
+  allo sheet "Condividi con" (vedi "Amici" più sotto, "Condividere un
+  alimento"). Lo stesso branch mette in cima alla pagina la riga "N
+  alimenti in arrivo" con il suo foglio (decisione del 16/10, mockup
+  `docs/mockups/alimenti-in-arrivo.html`, proposta B). Come è fatta (dal 15/10):
   - si entra da tutti e due i rami del gesto: dito fermo (il "menu" di
     Oggi, 450 + 160 ms) e dito che si muove dopo il sollevamento (il
     "trascina" di Oggi), perché qui non c'è niente da trascinare. Anche il
@@ -1245,7 +1250,10 @@ catalogo, si corregge e si fa pulizia.
   ordine scelto perché un guasto a metà lasciasse uno stato visibile).
 - **La riga in Impostazioni**: "Alimenti", nel gruppo Alimentazione prima
   di Preferiti, con a destra "46 alimenti", "1 alimento" o "Nessuno",
-  contati con la stessa funzione dell'elenco.
+  contati con la stessa funzione dell'elenco. Con alimenti in arrivo
+  (branch `condivisione-alimenti`), "2 in arrivo" ("1 in arrivo") con il
+  pallino nel colore principale, al posto del numero (§3 "Amici", "Il
+  pallino").
 - La pagina è in `PAGINE_APP` del service worker.
 - **Schema dati invariato**: niente migration Supabase, niente nuova
   versione Dexie.
@@ -1264,10 +1272,12 @@ del 15/10.
   dell'amico come sua: id nuovo, il suo `user_id`, modificabile da lui.
   Le modifiche successive del mittente non la toccano. Rimuovere un amico
   non toglie le copie già accettate.
-- **Gli alimenti in arrivo vanno accettati**: elenco "In arrivo" con
-  **Aggiungi** / **Rifiuta**.
-- **Avvisi solo dentro l'app**: un pallino sulla tab Impostazioni e sulla
-  riga Amici. Niente notifiche push.
+- **Gli alimenti in arrivo vanno accettati**, con **Aggiungi** /
+  **Rifiuta**. Dal 16/10 stanno nella **pagina Alimenti**, non in Amici
+  (Amici = solo persone): vedi "Condividere un alimento" più sotto.
+- **Avvisi solo dentro l'app**: un pallino solo sulla tab Impostazioni;
+  sulla riga Amici per le richieste di amicizia, sulla riga Alimenti per
+  gli alimenti in arrivo (dal 16/10). Niente notifiche push.
 - **Amicizia con richiesta e accettazione esplicita.**
 - **Ricerca solo per username esatto**: nessun elenco degli utenti,
   nessuna ricerca parziale.
@@ -1362,7 +1372,9 @@ del 15/10.
   leggere. Due persone che si chiedono l'amicizia nello stesso istante:
   la seconda trova la riga della prima e diventano amici (`accettata`),
   mai un errore.
-- **In arrivo**: Accetta / Rifiuta. **Inviate**: "In attesa", con Annulla.
+- **Richieste ricevute**: Accetta / Rifiuta. **Richieste inviate**: "In
+  attesa", con Annulla. ("In arrivo", dal 16/10, si dice solo degli
+  alimenti.)
   Le risposte (`rispondi_amicizia`) hanno tre esiti: `ok`,
   `non_trovata` (la richiesta non c'è più, per esempio annullata nel
   frattempo) e `senza_username` (si accetta solo con uno username;
@@ -1392,10 +1404,18 @@ del 15/10.
   `condivisione-alimenti`) ridefinirà la funzione con `create or
   replace` per farlo.
 
-**Condividere un alimento** (branch `condivisione-alimenti`)
+**Condividere un alimento** (branch `condivisione-alimenti`; decisioni
+del 15/10 e del 16/10; mockup `docs/mockups/alimenti-in-arrivo.html`,
+proposta **B**, scelta il 16/10)
 - **Da dove**: Impostazioni > Alimenti, selezione multipla. L'icona
   condividi nella barra di selezione apre lo sheet **"Condividi con"**
-  con gli amici da spuntare. Serve la connessione.
+  con gli amici da spuntare. Serve la connessione. **Senza amici** l'icona
+  c'è lo stesso: il foglio dice "Non hai ancora amici", con un
+  collegamento ad Amici.
+- **Lo stesso alimento mandato due volte alla stessa persona**, prima che
+  risponda: il secondo invio sostituisce il primo, chi riceve ne vede uno
+  solo, con i valori più recenti.
+- **Gli alimenti mai decisi restano**, senza scadenza.
 - **Cosa si copia, al momento dell'invio e da Dexie** (quello che il
   mittente vede): nome, marca, barcode, i quattro valori, zuccheri,
   fibre, saturi, sale, porzione, `fonte`. Non dal server: un alimento
@@ -1404,14 +1424,47 @@ del 15/10.
   attesa non cambia.
 - **Chi manda non vede** se l'alimento è stato aggiunto o rifiutato
   (decisione del 15/10).
-- **In arrivo**, nella pagina Amici: ogni alimento con chi lo manda
-  (username), "Nome · Marca" e kcal per 100 g; **Aggiungi** /
-  **Rifiuta**. **Doppione**: se nel catalogo vivo dell'utente (o in
-  quello comune) c'è già lo stesso nome con la stessa marca, maiuscole e
-  accenti indifferenti come `cercaPerNome`, la riga lo dice ("Hai già
-  «Pane · Mulino»") e i pulsanti diventano **Aggiungi comunque** /
-  **Rifiuta**. Niente unione automatica: i valori possono essere
-  diversi. Funzione pura con test permanente.
+- **Dove arrivano: nella pagina Alimenti** (decisione del 16/10; prima
+  erano nella pagina Amici, che ora è solo persone). In cima al catalogo
+  una riga **"N alimenti in arrivo"** che apre un **foglio** con
+  l'elenco: per ciascuno chi lo manda (username), "Nome · Marca", i
+  quattro valori per 100 g e i pulsanti **Rifiuta** / **Aggiungi**. Il
+  catalogo resta pulito qualunque sia il numero di alimenti in arrivo, e
+  nel foglio c'è spazio per i valori, utili per decidere. **Solo con la
+  rete**: offline la riga non c'è e il catalogo funziona come oggi. Dopo
+  Aggiungi l'alimento compare nel catalogo appena arriva dal server.
+- **Doppione** = stesso nome e stessa marca di un alimento vivo del
+  proprio catalogo, con maiuscole, accenti e spazi ai bordi indifferenti;
+  la marca vuota conta come una marca («Yogurt greco 0% · Fage» e
+  «Yogurt greco 0% · Müller» non sono doppioni, due alimenti senza marca
+  con lo stesso nome sì). **Mai due alimenti uguali**: "Aggiungi
+  comunque" non esiste. Il messaggio scrive sempre nome e marca.
+  - **Valori diversi**: "Hai già «nome · marca», con valori diversi.", il
+    collegamento **"Confronta i valori"** (una tabella, chiusa
+    all'inizio: il tuo e quello in arrivo per kcal, grassi, carboidrati,
+    proteine e porzione, i valori diversi in arancio) e i pulsanti **"Usa
+    questi valori"** e **"Tieni i miei"** (= Rifiuta).
+  - **"Usa questi valori"** aggiorna il **proprio** alimento, con lo
+    stesso id: tutti i valori nutrizionali e la porzione, non nome, marca
+    e barcode. Passa da Dexie e dalla coda come ogni modifica (§9.2); il
+    server chiude solo la condivisione. Valgono le regole di una modifica
+    (sezione 4): da ora e nei pasti salvati, il diario non cambia. Dopo,
+    la barra con **Annulla**: rimette i valori di prima **e** riapre la
+    condivisione, che torna in attesa. Per riaprirla serve una funzione
+    nel database, solo per il destinatario e solo su una condivisione
+    chiusa con "Usa questi valori": da progettare nella migration
+    `alimenti_condivisi` (sezione 4).
+  - **Valori identici**: "Hai già questo alimento, con gli stessi
+    valori." e solo **Ok**, che chiude la condivisione.
+  - Il confronto (doppione sì o no, valori uguali o diversi) è una
+    funzione pura con test permanente.
+- **Selezione multipla nel foglio**: "Seleziona" in alto, oppure tieni
+  premuto su un alimento. Quadratini a sinistra, "Seleziona tutti" /
+  "Deseleziona tutti", barra in fondo con **Rifiuta** e **Aggiungi**. I
+  doppioni e gli alimenti già uguali non si selezionano: hanno le loro
+  scelte. Con più di un alimento selezionato si chiede conferma, sia per
+  Aggiungi sia per Rifiuta; con uno solo no. In blocco è **una sola
+  chiamata, tutto o niente**. Niente selezione multipla in Amici.
 - **La copia nasce sul server**, in `rispondi_alimento_condiviso`, in una
   transazione: inserisce in `alimenti` con l'id calcolato dalla
   condivisione (UUID v5, `uuid-ossp` è già installata), `user_id` di chi
@@ -1419,9 +1472,11 @@ del 15/10.
   `manuale`: senza la sua composizione non sarebbe una ricetta), e segna
   la riga `aggiunto`. L'id calcolato rende il tentativo ripetibile: se
   la risposta si perde e si ripreme, `on conflict (id) do nothing` non
-  crea un doppione. Poi l'app fa partire una discesa e l'alimento compare
-  nel catalogo come gli altri. Nessuna foreign key da `alimenti` verso la
-  condivisione: la copia è indipendente da tutto.
+  crea una seconda copia. Poi l'app fa partire una discesa e l'alimento
+  compare nel catalogo come gli altri. Nessuna foreign key da `alimenti`
+  verso la condivisione: la copia è indipendente da tutto. Con la
+  selezione multipla la stessa cosa vale per più righe insieme, in una
+  transazione (forma della funzione da progettare nella migration).
 
 **Il pallino** (dal 16/10, branch `amici`, passo 7; codice in
 `src/lib/amici/novita.ts`)
@@ -1432,7 +1487,11 @@ del 15/10.
   richiesta propria. Il secondo termine, gli alimenti in arrivo, arriva
   con il branch `condivisione-alimenti`; la somma è pronta per riceverlo.
   Il pallino della tab conta il totale; **la riga Amici conta solo le
-  richieste** (`richiesteRicevute`), non il totale.
+  richieste** (`richiesteRicevute`), non il totale. Gli alimenti in
+  arrivo (decisione del 16/10) hanno il loro numero sulla **riga
+  Alimenti** di Impostazioni: "2 in arrivo" con il pallino, al posto del
+  numero di alimenti, come "2 nuove" sulla riga Amici. Sulla tab resta un
+  pallino solo, per la somma.
 - **Si aggiorna** agli stessi inneschi della discesa (avvio, ritorno
   online, ritorno in primo piano: `useNovitaAmici`) e dopo ogni azione
   nella pagina Amici: ogni rilettura riuscita della pagina (`useAmicizie`)
@@ -1481,8 +1540,11 @@ che è una riga normale di `alimenti`.
 
 **La pagina Amici** (dal 15/10, branch `amici`, passo 6; mockup
 `docs/mockups/amici.html`, schermate 3 e 4). Decisioni del 15/10:
-1. **"Alimenti in arrivo" non c'è ancora**: arriva con il branch
-   `condivisione-alimenti`.
+1. **"Alimenti in arrivo" non sta in questa pagina**: dal 16/10 va nella
+   pagina Alimenti, con il branch `condivisione-alimenti` (vedi
+   "Condividere un alimento" sopra). Amici è solo persone: richieste e
+   amici. Il mockup `docs/mockups/amici.html` è aggiornato di
+   conseguenza (16/10, senza il gruppo "Alimenti in arrivo").
 2. **La riga in Impostazioni** mostra quanti amici (vedi "Impostazioni"
    sopra); pallino e "2 nuove" al passo 7.
 3. **Testi**: gli esiti di `chiedi_amicizia` come nel mockup ("Richiesta
@@ -1570,10 +1632,18 @@ prove in un blocco SQL annullato prima, `get_advisors` dopo):
   invito, sezione 9.1), in quest'ordine: merge di `amici` → deploy di
   produzione **Ready** → prove in un blocco SQL annullato → applicazione
   → una registrazione vera;
-- branch **`condivisione-alimenti`**: (1) migration `alimenti_condivisi` e
-  `rispondi_alimento_condiviso`; (2) icona condividi e sheet "Condividi
-  con"; (3) "In arrivo" con il doppione; (4) pallino esteso agli
-  alimenti e testo di Elimina account; (5) prova della cascata.
+- prima, subito dopo il merge di `amici`: il controllo dei doppi nel
+  catalogo quando si crea o si rinomina un alimento (sezione 11,
+  "Difetti e verifiche aperti", "Alimenti doppi nel catalogo");
+- branch **`condivisione-alimenti`**: (1) migration `alimenti_condivisi`
+  con `rispondi_alimento_condiviso` (anche per più righe insieme) e la
+  funzione che riapre una condivisione dopo l'Annulla di "Usa questi
+  valori"; (2) icona condividi e sheet "Condividi con", anche senza amici;
+  (3) nella pagina Alimenti la riga "N alimenti in arrivo" e il suo
+  foglio, con il doppione ("Usa questi valori" / "Tieni i miei" e
+  Annulla, valori identici con Ok) e la selezione multipla; (4) riga
+  Alimenti "N in arrivo", pallino della tab esteso agli alimenti, testo di
+  Elimina account; (5) prova della cascata.
 
 **Prove con due utenti**: due account usa e getta creati da Davide
 dall'app (per esempio `davidemancon02+amici1@…` e `+amici2@…`), eliminati
@@ -2524,6 +2594,23 @@ destinatario, `user_id` = chi manda
 - indici su `destinatario_id` (le righe in attesa) e `user_id`
 - l'alimento creato dall'accettazione ha come id un UUID v5 di questa
   riga, ma **nessuna foreign key** la lega: la copia è indipendente
+- **da progettare nella migration**, per le decisioni del 16/10
+  (sezione 3, "Condividere un alimento"):
+  - uno stato per la condivisione chiusa con **"Usa questi valori"**
+    (il destinatario ha aggiornato il proprio alimento, nessuna copia
+    nuova) e una funzione che la **riapre** (torna `in_attesa`) per
+    l'Annulla: solo il destinatario, solo su una condivisione chiusa in
+    quel modo;
+  - lo **stesso alimento mandato due volte** alla stessa persona prima
+    della risposta: il secondo sostituisce il primo. Serve sapere da quale
+    alimento del mittente viene la copia (per esempio una colonna con il
+    suo id, senza foreign key: il mittente può cancellarlo) e un modo per
+    chiudere la riga vecchia quando arriva la nuova;
+  - `rispondi_alimento_condiviso` per **più righe insieme**, in una
+    transazione (la selezione multipla del foglio: tutto o niente);
+  - "Ok" su valori identici chiude la condivisione senza toccare
+    `alimenti`;
+  - le righe in attesa **non scadono**
 
 **Le funzioni** (tutte `security definer`, `search_path = ''`, controlli
 espliciti dentro, `revoke` da `public`; `grant` solo ad `authenticated`,
@@ -2532,7 +2619,9 @@ pagina Registrati: risponde solo sì o no sul nome esatto),
 `imposta_username(text)`, `chiedi_amicizia(text)`,
 `rispondi_amicizia(uuid, bool)`, `annulla_o_rimuovi_amicizia(uuid)`,
 `chiudi_rifiuto(uuid)` (l'Ok su "Non accettata"),
-`rispondi_alimento_condiviso(uuid, bool)`; più la funzione del trigger
+`rispondi_alimento_condiviso` (forma da decidere: dal 16/10 anche per più
+righe insieme) e la funzione che riapre una condivisione dopo l'Annulla
+di "Usa questi valori"; più la funzione del trigger
 su `auth.users` (9.1), non chiamabile da nessuno. Gli avvisi degli
 advisors che danno sono accettati (9.6).
 
@@ -3177,7 +3266,10 @@ Conseguenze:
   registrarsi anche con un indirizzo che non riceve email, e allora
   "Password dimenticata" non gli funziona, perché il link non arriva. È
   il caso dell'account di prova A di Amici (sezione 11, "Account di
-  prova")
+  prova"). **Spenta per la beta**: prima di un'eventuale apertura al
+  pubblico va riaccesa, e va riprovato il percorso "username solo nei
+  metadati, lo chiede Amici" (sezione 3, "Lo username": dopo `signUp`
+  senza sessione la Server Action non può salvarlo)
 
 #### Il codice di invito anche nel database (deciso il 15/10, branch `amici`)
 
@@ -4811,7 +4903,29 @@ crea, elimina dal form e Annulla. Verificato da Cowork su Supabase:
 sue righe di `composizioni_voci` ripristinati nello stesso secondo (una
 transazione); "Dxx" creato da Aggiungi, eliminato e ripristinato.
 
-**Test.** 862 test permanenti in 76 file (Vitest), tutti verdi al 15/10.
+**Amici, passi 1–7** (15–16/10, branch `amici`; sezione 3, "Amici";
+mockup `docs/mockups/amici.html`). Username: tabella `nomi_utente`
+(migration 20261015175818) con `username_disponibile` e
+`imposta_username`; campo Username in Registrati con il controllo mentre
+si scrive; riga Username in Profilo con il suo foglio. Amicizie: tabella
+`amicizie` (migration 20261015184017) con le quattro funzioni e la
+lettura degli username allargata agli amici; prove nei blocchi annullati
+20/20 e 90/90; advisors solo con i WARN accettati in §9.6. Pagina
+`/impostazioni/amici`: "Scegli il tuo username", Aggiungi un amico,
+richieste ricevute e inviate ("Non accettata" con Ok), amici con Rimuovi;
+riga Amici in un gruppo suo. Pallino delle richieste ricevute sulla tab
+(l'arancio della sincronizzazione vince) e "N nuove" sulla riga Amici,
+con l'ultimo numero noto offline. Provati su iPhone il 15/10 (pagina) e
+il 16/10 (pallino) sull'anteprima, con gli account A e B ("Account di
+prova", sopra) e l'account di prova fisso; verificati da Cowork su
+Supabase. Non provati a mano, coperti da test o dai blocchi SQL: "Questa
+richiesta non c'è più.", l'arancio insieme a una richiesta, VoiceOver;
+"Scegli il tuo username" si prova dopo il merge con l'account vero di
+Davide, che non ha username. Restano da fare: il merge, il trigger su
+`auth.users` (passo 8, dopo il merge) e il branch
+`condivisione-alimenti`.
+
+**Test.** 918 test permanenti in 83 file (Vitest), tutti verdi al 16/10.
 
 ### Non ancora costruito
 
@@ -4820,15 +4934,26 @@ transazione); "Dxx" creato da Aggiungi, eliminato e ripristinato.
   (fase 5)
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
-- **Amici e condivisione degli alimenti** (sezione 3, "Amici"): decisi
-  il 15/10, in costruzione nel branch `amici`, poi
-  `condivisione-alimenti`. Comprende il codice di invito controllato
-  anche nel database (9.1)
+- **Amici e condivisione degli alimenti** (sezione 3, "Amici"): i passi
+  1–7 di Amici sono fatti (sopra, "Fatto"), da unire a main; restano il
+  trigger su `auth.users` con il codice di invito controllato anche nel
+  database (passo 8, §9.1, dopo il merge) e il branch
+  `condivisione-alimenti` (decisioni del 15 e del 16/10)
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Alimenti doppi nel catalogo** (trovato da Davide il 16/10). Creando o
+  rinominando un alimento (Aggiungi, Impostazioni > Alimenti) non c'è
+  nessun controllo su nome + marca: si possono avere due alimenti
+  uguali. Al 16/10 nei dati non c'è nessun doppione (verificato da
+  Cowork). Si fa **subito dopo il merge di `amici`, prima di
+  `condivisione-alimenti`**, con la stessa regola di doppione decisa per
+  gli alimenti in arrivo (sezione 3, "Condividere un alimento": stesso
+  nome e stessa marca, maiuscole, accenti e spazi ai bordi indifferenti,
+  marca vuota come marca)
 
 - **Redirect URL su Supabase: solo voci esatte** (Authentication → URL
   Configuration; regola dal 10/10). Mai un jolly sui sottodomini
