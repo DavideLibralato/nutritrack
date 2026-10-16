@@ -1362,18 +1362,42 @@ del 15/10.
     più.** Lì iOS vede email (`autoComplete="email"`) e password
     (`"new-password"`) nello stesso modulo, e prende l'email per il campo
     di accesso: email e password si salvano ancora insieme.
-  - **Cambia username, Scegli il tuo username, Aggiungi un amico**: con
-    `nickname` la proposta compariva ancora (prova del 16/10): un campo
-    solo, nel suo foglio, con l'etichetta "Username". Questi tre sono
-    `type="search"`: iOS non propone le credenziali sui campi di
-    ricerca. La "×" nativa la toglie `globals.css` (come nelle ricerche
-    di Aggiungi e del catalogo); `enterKeyHint` dà al tasto della
-    tastiera il nome giusto ("Fine", "Vai", "Invia"). Costo: VoiceOver
-    annuncia "campo di ricerca". Aggiungi un amico ha `autoComplete="off"`,
-    non `nickname`: lo username è di un altro. Nessuno dei tre stava in
-    un `<form>`, quindi toglierlo non era una strada.
-  - L'etichetta visibile resta "Username". Nessun test: l'unica prova
-    possibile è su iPhone.
+  - **La regola** (nata il 16/10): **in un campo che sta da solo (un
+    foglio, una schermata senza email e password) la parola "username"
+    non deve stare vicino al campo**: né nel titolo, né nell'etichetta o
+    nell'`aria-label`, né nella frase sopra, né nell'esito che compare
+    all'apertura. iOS legge il testo intorno al campo e, con quella
+    parola, lo prende per un accesso; `type` e `autocomplete` non
+    bastano. Al suo posto **"nome su Libra"**. In Registrati la parola
+    resta: lì c'è l'email.
+  - **Come ci si è arrivati** (prove su iPhone del 16/10): con
+    `nickname` la proposta compariva ancora nei fogli; poi con
+    `type="search"` anche. La diagnosi, solo in Aggiungi un amico:
+    senza la parola nei testi la proposta è sparita, mentre in Cambia
+    username, dove la parola c'era ancora, compariva. Nessuno dei tre
+    campi stava in un `<form>`, quindi toglierlo non era una strada.
+  - **I tre campi fuori da Registrati, come sono ora:**
+    - foglio di Profilo: titolo **"Cambia il tuo nome su Libra"**
+      ("Scegli il tuo nome su Libra" se non c'è ancora), `aria-label` "Il
+      tuo nome su Libra", e l'esito sul nome attuale **"È già il tuo
+      nome."** (compare all'apertura, sotto il campo);
+    - Amici, prima apertura: titolo **"Scegli il tuo nome su Libra"**,
+      frase "Gli amici ti trovano solo con il nome esatto. Potrai
+      cambiarlo da Profilo.", niente etichetta visibile, `aria-label` "Il
+      tuo nome su Libra";
+    - Aggiungi un amico: frase "Scrivi il suo nome esatto, quello che ha
+      scelto in Libra. Gli arriverà una richiesta da accettare.",
+      `aria-label` "Nome dell'amico", `autoComplete="off"` (non
+      `nickname`: il nome è di un altro).
+    - Tutti e tre restano `type="search"` con `enterKeyHint` ("Fine",
+      "Vai", "Invia"): non danno fastidio e aiutano. La "×" nativa la
+      toglie `globals.css`, come nelle ricerche di Aggiungi e del
+      catalogo. Costo: VoiceOver annuncia "campo di ricerca".
+  - **Restano con "username"**: la riga **Username** in Profilo, la
+    pagina Registrati e i messaggi d'esito dopo un'azione ("Questo
+    username è già in uso.", "Nessun utente con questo username…"). Non
+    stanno vicino a un campo vuoto quando lo si tocca.
+  - Nessun test sul comportamento: l'unica prova possibile è su iPhone.
 - **Si sceglie alla registrazione**: campo "Username" nella pagina
   Registrati, sotto Nome. **Prima dell'invio** la Server Action chiede
   `username_disponibile` ("Questo username è già in uso"). **Lo
@@ -1418,7 +1442,8 @@ del 15/10.
   `usernameValido`, con test), chiamate in `src/lib/amici/nomiUtente.ts`,
   testi in `testiUsername.ts`.
 - **Chi è già registrato** lo sceglie alla prima apertura di Amici: al
-  posto della pagina c'è "Scegli il tuo username". **Se nei metadati
+  posto della pagina c'è "Scegli il tuo nome su Libra" (fino al 16/10
+  "Scegli il tuo username"). **Se nei metadati
   dell'account c'è già uno `username`** (scritto da Registrati), il campo
   lo propone già scritto, con il suo esito "Disponibile / già in uso":
   basta confermarlo (decisione del 15/10, passo 6). Con la conferma email
@@ -1757,10 +1782,11 @@ sono in Obiettivi, la pesata in Peso.
   dati personali. A destra "@nome", "Da scegliere" se non c'è ancora,
   "…" mentre si legge; offline "Serve la connessione", e il tocco riprova
   a leggerlo. Si legge da Supabase all'apertura (`useMioUsername`: solo
-  online, non sta in Dexie). Il tocco apre il foglio **"Cambia
-  username"** ("Scegli il tuo username" se non c'è): campo con la "@",
-  esito mentre si scrive come in Registrati, più il caso del nome attuale
-  ("È già il tuo username.", Salva spento: per il database il tuo nome è
+  online, non sta in Dexie). Il tocco apre il foglio **"Cambia il tuo
+  nome su Libra"** ("Scegli il tuo nome su Libra" se non c'è; fino al
+  16/10 "Cambia username", vedi sopra "Lo username", iPhone): campo con
+  la "@", esito mentre si scrive come in Registrati, più il caso del nome
+  attuale ("È già il tuo nome.", Salva spento: per il database il tuo nome è
   "preso", e senza questa regola il foglio direbbe "già in uso",
   `foglioUsername.ts` con test); sotto, "I tuoi amici restano: sono
   legati al tuo account, non al nome. Il vecchio nome torna libero."

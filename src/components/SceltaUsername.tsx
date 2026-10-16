@@ -1,6 +1,6 @@
 "use client";
 
-// "Scegli il tuo username" (PUNTO_DI_PARTENZA.md §3, "Amici"; mockup
+// "Scegli il tuo nome su Libra" (PUNTO_DI_PARTENZA.md §3, "Amici"; mockup
 // docs/mockups/amici.html, schermata 3): al posto della pagina Amici per chi
 // non ha ancora una riga in nomi_utente. Campo con la "@" ed esito mentre si
 // scrive, come in Registrati e in SheetUsername; "Continua" chiama
@@ -68,15 +68,14 @@ export default function SceltaUsername({
 
   return (
     <section className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-4">
-      <h2 className="font-display text-lg font-bold">Scegli il tuo username</h2>
+      <h2 className="font-display text-lg font-bold">Scegli il tuo nome su Libra</h2>
       <p className="text-sm text-muted">
         Gli amici ti trovano solo con il nome esatto. Potrai cambiarlo da Profilo.
       </p>
 
+      {/* Niente etichetta visibile "Username": il campo ha l'aria-label, e
+          il titolo sopra dice già cosa scrivere. */}
       <div>
-        <label htmlFor="scelta-nome-utente" className="mb-1 block text-sm font-medium">
-          Username
-        </label>
         <div className="relative">
           <span
             aria-hidden="true"
@@ -84,12 +83,14 @@ export default function SceltaUsername({
           >
             @
           </span>
-          {/* type="search", perché iPhone non proponga le password
-              salvate: il perché in SheetUsername. */}
+          {/* Niente parola "username" nei testi vicino al campo, perché
+              iPhone non lo prenda per un accesso: il perché in
+              SheetUsername. */}
           <input
             id="scelta-nome-utente"
             type="search"
             enterKeyHint="go"
+            aria-label="Il tuo nome su Libra"
             value={valore}
             onChange={(e) => {
               setScritto(true);

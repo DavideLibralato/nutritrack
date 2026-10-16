@@ -24,7 +24,7 @@ afterEach(() => {
 });
 
 function campo() {
-  return screen.getByLabelText("Username") as HTMLInputElement;
+  return screen.getByLabelText("Il tuo nome su Libra") as HTMLInputElement;
 }
 
 describe("SceltaUsername", () => {

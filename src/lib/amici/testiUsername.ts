@@ -40,7 +40,10 @@ export function testoStatoUsername(
       return TESTO_USERNAME_NON_VALIDO;
     case "errore":
       return `Non riesco a controllarlo ora: lo controllo ${quando}.`;
+    // Senza "username": compare appena si apre il foglio di Profilo, sotto
+    // il campo, e iPhone prenderebbe il campo per un accesso (§3 "Lo
+    // username", 16/10).
     case "attuale":
-      return "È già il tuo username.";
+      return "È già il tuo nome.";
   }
 }

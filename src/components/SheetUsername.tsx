@@ -1,6 +1,6 @@
 "use client";
 
-// Il foglio "Cambia username" di Impostazioni > Profilo (PUNTO_DI_PARTENZA.md
+// Il foglio "Cambia il tuo nome su Libra" di Impostazioni > Profilo (PUNTO_DI_PARTENZA.md
 // §3, "Amici"; mockup docs/mockups/amici.html, schermata 5). Ha il SUO
 // Salva, solo online, fuori dal Salva unico di Profilo: scrive con
 // imposta_username, che può rispondere "occupato", mentre il Salva di
@@ -49,7 +49,9 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
   const stato = statoNelFoglio(useDisponibilitaUsername(valore), valore, attuale);
   const salvabile = puoSalvareUsername(stato, online) && !inCorso;
   const daCorreggere = stato === "non_valido" || stato === "in_uso";
-  const titolo = attuale ? "Cambia username" : "Scegli il tuo username";
+  // "nome su Libra" e non "username", in tutti i testi vicino al campo:
+  // vedi il commento sul campo.
+  const titolo = attuale ? "Cambia il tuo nome su Libra" : "Scegli il tuo nome su Libra";
 
   // All'apertura: fuoco sul campo e testo selezionato, come SheetNome: un
   // nome diverso si scrive senza prima cancellare.
@@ -111,20 +113,22 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
             >
               @
             </span>
-            {/* type="search": iPhone non propone le password salvate sui
-                campi di ricerca. Con type="text" e autoComplete="nickname"
-                la proposta "Accedi con la password" compariva ancora (prova
-                del 16/10): un campo solo, con l'etichetta "Username", iOS lo
-                prende per un accesso. La "×" nativa la toglie globals.css;
-                enterKeyHint dà al tasto della tastiera il nome giusto. Lo
-                stesso in SceltaUsername e SheetAggiungiAmico; Registrati
-                no, lì funziona già (commento sul campo in
-                src/app/register/page.tsx). */}
+            {/* Niente parola "username" nei testi vicino al campo (titolo,
+                aria-label, esito che compare all'apertura): iPhone legge il
+                testo intorno a un campo che sta da solo e, con quella
+                parola, lo prende per un accesso e propone la password
+                salvata. Né type né autocomplete bastavano: lo ha mostrato
+                la prova su iPhone del 16/10 in Aggiungi un amico (§3 "Lo
+                username"). type="search" ed enterKeyHint restano: non
+                danno fastidio e aiutano; la "×" nativa la toglie
+                globals.css. Lo stesso in SceltaUsername e
+                SheetAggiungiAmico. In Registrati la parola resta: lì c'è
+                l'email, e iOS prende quella per l'accesso. */}
             <input
               ref={rifInput}
               type="search"
               enterKeyHint="done"
-              aria-label="Username"
+              aria-label="Il tuo nome su Libra"
               value={valore}
               onChange={(e) => {
                 setValore(e.target.value.toLowerCase());

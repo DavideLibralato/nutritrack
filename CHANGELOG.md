@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — "Nome su Libra" nei fogli: iPhone non propone più l'accesso
+
+Branch `ritocchi-username`. La diagnosi è riuscita (iPhone, 16/10): in
+Aggiungi un amico, senza la parola "username" nei testi, la proposta
+"Accedi con la password" non compare più. In Cambia username, dove la
+parola c'era ancora, compariva. iOS si fa guidare dal testo intorno a un
+campo che sta da solo, non da `type` o `autocomplete`.
+
+Regola nuova in PUNTO §3 "Lo username": nei campi da soli, niente
+"username" vicino al campo, al suo posto "nome su Libra". I testi:
+- foglio di Profilo: titolo "Cambia il tuo nome su Libra" / "Scegli il
+  tuo nome su Libra", `aria-label` "Il tuo nome su Libra", esito
+  all'apertura "È già il tuo nome." (prima "È già il tuo username.");
+- Amici, prima apertura: titolo "Scegli il tuo nome su Libra", niente
+  etichetta visibile, `aria-label` "Il tuo nome su Libra";
+- Aggiungi un amico: i testi della prova, con il commento definitivo.
+
+`type="search"` ed `enterKeyHint` restano. Restano con "username" la
+riga in Profilo, Registrati e i messaggi d'esito dopo un'azione. Test di
+SceltaUsername aggiornato all'etichetta nuova.
+
+Registrazione vera con il campo `nomeUtente` provata da Davide
+(+trigger3, username `test3`): lo username è arrivato, verificato da
+Cowork. Restano da provare su iPhone i due fogli cambiati. Il mockup
+`docs/mockups/amici.html` ha ancora i testi vecchi.
+
 ## 2026-10-16 — Prova di diagnosi: "username" tolto da Aggiungi un amico
 
 Branch `ritocchi-username`. Con `type="search"` la proposta "Accedi con

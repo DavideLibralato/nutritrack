@@ -96,15 +96,14 @@ export default function SheetAggiungiAmico({ onChiudi, onCambiato }: Props) {
             >
               @
             </span>
-            {/* type="search", perché iPhone non proponga le password
-                salvate: il perché in SheetUsername. Qui si scrive lo
-                username di un altro, quindi autoComplete="off" e non
-                "nickname" (che proporrebbe il proprio soprannome).
-                PROVA DI DIAGNOSI (16/10), solo in questo foglio: con
-                type="search" la proposta compariva ancora. Ipotesi: iOS
-                legge i testi intorno al campo, e "username" gli fa
-                pensare a un accesso. Per questo la parola non c'è né
-                nell'aria-label né nella frase sopra il campo. */}
+            {/* Niente parola "username" nei testi vicino al campo (frase
+                sopra, aria-label): iPhone lo prenderebbe per un accesso e
+                proporrebbe la password salvata. È questo foglio che l'ha
+                dimostrato, su iPhone il 16/10: con type="search" la
+                proposta c'era ancora, senza la parola non più. Il perché
+                completo in SheetUsername. Qui si scrive lo username di un
+                altro, quindi autoComplete="off" e non "nickname" (che
+                proporrebbe il proprio soprannome). */}
             <input
               ref={rifInput}
               type="search"
