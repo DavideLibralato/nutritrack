@@ -1681,6 +1681,26 @@ proposta **B**, scelta il 16/10)
   scelte. Con più di un alimento selezionato si chiede conferma, sia per
   Aggiungi sia per Rifiuta; con uno solo no. In blocco è **una sola
   chiamata, tutto o niente**. Niente selezione multipla in Amici.
+  - **Com'è fatta** (passo 6, 16/10, come nel mockup). "Seleziona" diventa
+    "Annulla" (esce dalla selezione); non c'è se nessun alimento si può
+    spuntare. In selezione la nota diventa "I doppioni non si
+    selezionano: per loro si decide uno per uno.", le righe nuove
+    perdono i loro pulsanti e si spuntano con un tocco (la riga spuntata
+    prende il fondo tenue del colore principale), doppioni e uguali
+    tengono le loro scelte con il quadratino spento. Togliere l'ultima
+    spunta **non** esce dalla selezione (barra con "0 selezionati" e i
+    pulsanti spenti), al contrario del catalogo: qui "Seleziona" è un
+    pulsante, e l'uscita è "Annulla". Il tieni premuto è lo stesso
+    gesto del catalogo (`useTieniPremuto`, tipo di riga
+    `alimentoInArrivo`) e vale solo sulle righe nuove. La barra in fondo
+    prende il posto di "Chiudi": "N selezionati", **Rifiuta** pieno in
+    arancio (`warning`), **Aggiungi** pieno nel colore principale. Le
+    conferme sono quelle del mockup (`SheetConferma`, "Rifiuta N" in
+    arancio). Prima di Aggiungi si ricontrolla su Dexie: se uno degli
+    spuntati è diventato un doppione nel frattempo non si chiama il
+    server, la sua spunta cade e si ripreme. Dopo la risposta si esce
+    dalla selezione; Aggiungi ha la barra "Aggiunti: N alimenti",
+    Rifiuta no.
 - **La copia nasce sul server**, in `rispondi_alimenti_condivisi`, in una
   transazione: inserisce in `alimenti` con l'id calcolato dalla
   condivisione (UUID v5, `uuid-ossp` è già installata), `user_id` di chi

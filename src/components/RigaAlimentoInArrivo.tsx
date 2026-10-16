@@ -10,7 +10,13 @@
 //   (chiuso all'inizio) e "Usa questi valori" / "Tieni i miei". Senza
 //   "Usa questi valori" se il proprio alimento non si può modificare.
 // Durante un'azione del foglio tutti i pulsanti sono spenti (niente doppio
-// tocco); quelli della riga che lavora dicono cosa sta facendo.
+// tocco).
+//
+// In selezione (passo 6) a sinistra c'è il quadratino. Le righe nuove si
+// spuntano con un tocco, e i loro pulsanti spariscono: si decide con la
+// barra in fondo al foglio. Doppioni e uguali hanno il quadratino spento e
+// tengono le loro scelte, come nel mockup. Solo le righe selezionabili
+// partecipano al tieni premuto (data-tieni-premuto="alimentoInArrivo").
 
 import { useState } from "react";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
@@ -32,6 +38,8 @@ interface Props {
   onRifiuta: () => void;
   onOk: () => void;
   onUsaValori: () => void;
+  // null fuori dalla selezione.
+  selezione: { spuntata: boolean; onSpunta: () => void } | null;
 }
 
 const PULSANTE = `min-h-9 rounded-[10px] border px-3 py-1.5 text-sm font-semibold disabled:opacity-50 ${CLASSE_FOCUS}`;
@@ -46,16 +54,18 @@ export default function RigaAlimentoInArrivo({
   onRifiuta,
   onOk,
   onUsaValori,
+  selezione,
 }: Props) {
   const [confrontoAperto, setConfrontoAperto] = useState(false);
   const { riga, confronto } = voce;
   const idConfronto = `confronto-${riga.id}`;
+  const selezionabile = confronto.tipo === "nuovo";
+  // In selezione, una riga nuova non mostra i suoi pulsanti.
+  const pulsanti = !(selezione && selezionabile);
 
-  return (
-    <li className="border-b border-border px-3.5 py-3 last:border-b-0">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug">{etichettaAlimento(riga)}</p>
+  const testi = (
+    <>
+      <p className="font-semibold leading-snug">{etichettaAlimento(riga)}</p>
           {confronto.tipo === "diverso" && (
             <p className="mt-0.5 text-sm text-warning">{testoDoppioneDiverso(confronto.mio)}</p>
           )}
@@ -64,6 +74,34 @@ export default function RigaAlimentoInArrivo({
           )}
           <p className="mt-0.5 text-sm text-muted">{username ? `Da @${username}` : "Da un amico"}</p>
           <p className="mt-0.5 text-sm tabular-nums text-muted">{testoValoriBrevi(riga)}</p>
+    </>
+  );
+
+  return (
+    <li
+      data-tieni-premuto={selezionabile ? "alimentoInArrivo" : undefined}
+      data-id={riga.id}
+      className={`border-b border-border px-3.5 py-3 last:border-b-0 ${
+        selezionabile ? "riga-tieni-premuto" : ""
+      } ${selezione?.spuntata ? "bg-[var(--capsula-attiva)]" : ""}`}
+    >
+      <div className="flex items-start gap-3">
+        {selezione && <Spunta piena={selezione.spuntata} spenta={!selezionabile} />}
+        <div className="min-w-0 flex-1">
+          {selezione && selezionabile ? (
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={selezione.spuntata}
+              onClick={selezione.onSpunta}
+              disabled={bloccata}
+              className={`block w-full rounded text-left ${CLASSE_FOCUS}`}
+            >
+              {testi}
+            </button>
+          ) : (
+            testi
+          )}
           {confronto.tipo === "diverso" && (
             <button
               type="button"
@@ -77,6 +115,7 @@ export default function RigaAlimentoInArrivo({
           )}
         </div>
 
+        {pulsanti && (
         <div className="flex w-[8.5rem] shrink-0 flex-col gap-2">
           {confronto.tipo === "nuovo" && (
             <>
@@ -106,11 +145,40 @@ export default function RigaAlimentoInArrivo({
             </>
           )}
         </div>
+        )}
       </div>
 
       {confronto.tipo === "diverso" && confrontoAperto && (
         <TabellaConfronto righe={confronto.righe} id={idConfronto} />
       )}
     </li>
+  );
+}
+
+// Il quadratino della selezione, come nel mockup: vuoto, pieno nel colore
+// principale con il segno, o spento (un doppione, che non si seleziona).
+function Spunta({ piena, spenta }: { piena: boolean; spenta: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] border-2 ${
+        piena ? "border-accent-strong bg-accent-strong text-on-strong" : "border-border"
+      } ${spenta ? "opacity-35" : ""}`}
+    >
+      {piena && (
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3.5 8.5l3 3 6-7" />
+        </svg>
+      )}
+    </span>
   );
 }

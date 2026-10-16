@@ -5,6 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Condivisione alimenti: selezione multipla nel foglio
+
+Branch `condivisione-alimenti`, passo 6. Nel foglio degli alimenti in
+arrivo: "Seleziona" / "Annulla" o tieni premuto (lo stesso gesto del
+catalogo), quadratini, "Seleziona tutti" / "Deseleziona tutti", barra
+con Rifiuta e Aggiungi, conferma con più di un alimento, una chiamata
+sola tutto o niente; ricontrollo dei doppioni prima di Aggiungi. Come
+nel mockup, togliere l'ultima spunta non esce dalla selezione (diverso
+dal catalogo, scritto nel PUNTO). 990 test, build verde; prova completa
+della ricezione su iPhone da fare.
+
 ## 2026-10-16 — Condivisione alimenti: riga e foglio degli alimenti in arrivo
 
 Branch `condivisione-alimenti`, passo 5 (senza la selezione multipla, che
