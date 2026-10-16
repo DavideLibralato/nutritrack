@@ -27,7 +27,9 @@ export async function registrati(
   formData: FormData
 ): Promise<StatoRegistrazione> {
   const nome = formData.get("nome")?.toString().trim() ?? "";
-  const username = normalizzaUsername(formData.get("username")?.toString() ?? "");
+  // Il campo si chiama "nomeUtente", non "username": vedi il commento sul
+  // campo in src/app/register/page.tsx (iPhone e le password salvate).
+  const username = normalizzaUsername(formData.get("nomeUtente")?.toString() ?? "");
   const email = formData.get("email")?.toString().trim() ?? "";
   const password = formData.get("password")?.toString() ?? "";
   const codiceInvito = formData.get("codiceInvito")?.toString().trim() ?? "";

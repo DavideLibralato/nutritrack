@@ -1266,9 +1266,15 @@ catalogo, si corregge e si fa pulizia.
     `doppioniAlimenti.test.ts`. La usa anche la condivisione (sotto,
     "Condividere un alimento").
   - **Nel form** (`CreaAlimentoForm`: "Nuovo alimento" e "Modifica
-    alimento", in Aggiungi e qui): mentre si scrive, sotto il nome «Hai
-    già «Pane · Mulino»» (`etichettaAlimento`) in arancio, il campo con il
-    bordo arancio e il Salva spento. Il form legge il catalogo da solo,
+    alimento", in Aggiungi e qui): mentre si scrive, **sotto il campo
+    Marca** (dopo tutti e due i campi) il messaggio in arancio, nome e
+    marca con il bordo arancio, e il Salva spento. Il testo dice che il
+    confronto è sulla coppia (`testoDoppione`, con test): «Hai già un
+    alimento con questo nome e questa marca: «Pane · Mulino».», oppure,
+    senza marca, «Hai già «Banana», senza marca.». Fino al 16/10 stava
+    sotto il solo Nome («Hai già «Pane · Mulino»»): sembrava un errore sul
+    nome, come se un altro «Pane» non si potesse avere (Davide, 16/10;
+    branch `ritocchi-username`). Il form legge il catalogo da solo,
     con `useLiveQuery`: anche un alimento arrivato con la sync compare
     subito. In Modifica l'alimento stesso non conta, quindi una rinomina
     che cambia solo maiuscole o accenti ("pane" → "Pane") passa.
@@ -1345,6 +1351,19 @@ del 15/10.
   sono lo stesso nome per costruzione, e l'indice unico sul database lo
   garantisce senza estensioni. Il campo apre la tastiera senza maiuscola
   iniziale e senza correttore.
+- **iPhone non deve scambiarlo per il campo di accesso** (visto da Davide
+  il 16/10 in Profilo > Cambia username: "Vuoi accedere a vercel.app con
+  la password per …?"). `autoComplete="off"` non bastava: iOS lo ignora
+  per le password salvate. Dal 16/10 (branch `ritocchi-username`) i
+  quattro campi username (Registrati, Scegli il tuo username, Cambia
+  username, Aggiungi un amico) hanno `autoComplete="nickname"` (per lo
+  standard HTML "un nome breve o handle al posto del nome completo", cioè
+  proprio lo username) e niente "username" in `id` e `name`: in
+  Registrati il campo si chiama `nomeUtente`. L'etichetta visibile resta
+  "Username". In Registrati il campo di accesso vero è l'email, con
+  `autoComplete="email"` e la password con `"new-password"`: iPhone
+  continua a salvarle insieme. Nessun test: l'unica prova possibile è
+  su iPhone.
 - **Si sceglie alla registrazione**: campo "Username" nella pagina
   Registrati, sotto Nome. **Prima dell'invio** la Server Action chiede
   `username_disponibile` ("Questo username è già in uso"). **Lo

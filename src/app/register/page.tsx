@@ -77,7 +77,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="register-username" className="block text-sm font-medium mb-1">
+          <label htmlFor="register-nome-utente" className="block text-sm font-medium mb-1">
             Username
           </label>
           <div className="relative">
@@ -88,15 +88,24 @@ export default function RegisterPage() {
             >
               @
             </span>
+            {/* Né id né name dicono "username", e autoComplete="nickname"
+                (lo standard HTML: "un nome breve o handle, al posto del
+                nome completo"): iPhone scambiava il campo per quello di
+                accesso e proponeva la password salvata (16/10). Il campo
+                di accesso vero è l'email, con la password: quelli restano
+                riconosciuti come tali (autoComplete "email" e
+                "new-password"). Gli stessi attributi negli altri tre
+                campi username: SceltaUsername, SheetUsername,
+                SheetAggiungiAmico. */}
             <input
-              id="register-username"
-              name="username"
+              id="register-nome-utente"
+              name="nomeUtente"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               autoCapitalize="none"
               autoCorrect="off"
-              autoComplete="off"
+              autoComplete="nickname"
               spellCheck={false}
               aria-describedby="register-username-esito register-username-regole"
               aria-invalid={usernameDaCorreggere}

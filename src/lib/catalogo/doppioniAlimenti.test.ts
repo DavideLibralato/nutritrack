@@ -5,7 +5,13 @@
 
 import { describe, it, expect } from "vitest";
 import type { Alimento } from "../db/tipi";
-import { chiaveAlimento, normalizzaSpazi, testoConfronto, trovaDoppione } from "./doppioniAlimenti";
+import {
+  chiaveAlimento,
+  normalizzaSpazi,
+  testoConfronto,
+  testoDoppione,
+  trovaDoppione,
+} from "./doppioniAlimenti";
 
 const USER = "u1";
 
@@ -46,6 +52,20 @@ describe("normalizzaSpazi e testoConfronto", () => {
     expect(testoConfronto("  CAFFÈ  Lungo ")).toBe("caffe lungo");
     expect(testoConfronto("Müller")).toBe("muller");
     expect(normalizzaSpazi(" Caffè ")).toBe("Caffè");
+  });
+});
+
+describe("testoDoppione", () => {
+  it("con la marca: dice che contano nome e marca insieme", () => {
+    expect(testoDoppione({ nome: "Pane", marca: "Mulino" })).toBe(
+      "Hai già un alimento con questo nome e questa marca: «Pane · Mulino»."
+    );
+  });
+
+  it("senza marca (null, vuota o di soli spazi): lo dice", () => {
+    for (const marca of [null, "", "  "]) {
+      expect(testoDoppione({ nome: "Banana", marca })).toBe("Hai già «Banana», senza marca.");
+    }
   });
 });
 

@@ -74,7 +74,7 @@ export default function SceltaUsername({
       </p>
 
       <div>
-        <label htmlFor="scelta-username" className="mb-1 block text-sm font-medium">
+        <label htmlFor="scelta-nome-utente" className="mb-1 block text-sm font-medium">
           Username
         </label>
         <div className="relative">
@@ -84,8 +84,11 @@ export default function SceltaUsername({
           >
             @
           </span>
+          {/* autoComplete="nickname" e niente "username" nell'id: iPhone
+              non deve scambiarlo per il campo di accesso (commento sul
+              campo in src/app/register/page.tsx). */}
           <input
-            id="scelta-username"
+            id="scelta-nome-utente"
             type="text"
             value={valore}
             onChange={(e) => {
@@ -98,7 +101,7 @@ export default function SceltaUsername({
             }}
             autoCapitalize="none"
             autoCorrect="off"
-            autoComplete="off"
+            autoComplete="nickname"
             spellCheck={false}
             aria-describedby="scelta-username-esito"
             aria-invalid={daCorreggere}

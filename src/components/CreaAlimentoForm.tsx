@@ -19,16 +19,17 @@
 //
 // Mai due alimenti uguali (stesso nome e stessa marca, regola in
 // src/lib/catalogo/doppioniAlimenti.ts): mentre si scrive il form guarda il
-// catalogo e, se c'è già, scrive sotto il nome «Hai già «Pane · Mulino»»
-// con "Apri" accanto, e spegne il Salva. Al Salva salvaAlimento rilegge il
+// catalogo e, se c'è già, scrive sotto la marca il messaggio di
+// testoDoppione con "Apri" accanto, segna in arancio nome e marca, e
+// spegne il Salva. Al Salva salvaAlimento rilegge il
 // catalogo e scrive nella stessa transazione. Cosa fa "Apri" lo decide il
 // chiamante (`onApriEsistente`, `puoAprire`).
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { catalogoLocale, etichettaAlimento, salvaAlimento } from "@/lib/repository/alimenti";
+import { catalogoLocale, salvaAlimento } from "@/lib/repository/alimenti";
 import { eliminaAlimenti, type TracciaRimozione } from "@/lib/repository/composizioni";
-import { trovaDoppione } from "@/lib/catalogo/doppioniAlimenti";
+import { testoDoppione, trovaDoppione } from "@/lib/catalogo/doppioniAlimenti";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { validaValoriAlimento, type CampoAlimento } from "@/lib/inserimento/valoriAlimento";
@@ -217,15 +218,31 @@ export default function CreaAlimentoForm({
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           aria-invalid={doppione !== null}
-          aria-describedby={doppione ? "crea-nome-doppione" : undefined}
+          aria-describedby={doppione ? "crea-doppione" : undefined}
           className={`w-full rounded-lg border p-2 ${doppione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
         />
-        {/* Sotto il nome anche quando a renderlo doppione è la marca: è
-            la coppia che conta, e il nome è il campo che si guarda. */}
+      </div>
+
+      <div>
+        <label htmlFor="crea-marca" className="block text-sm font-medium mb-1">
+          Marca <span className="font-normal text-muted">(facoltativa)</span>
+        </label>
+        <input
+          id="crea-marca"
+          type="text"
+          value={marca}
+          onChange={(e) => setMarca(e.target.value)}
+          aria-invalid={doppione !== null}
+          aria-describedby={doppione ? "crea-doppione" : undefined}
+          className={`w-full rounded-lg border p-2 ${doppione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+        />
+        {/* Il doppione è la coppia nome + marca: il messaggio sta dopo
+            tutti e due i campi, e tutti e due hanno il bordo arancio.
+            Sotto il solo nome sembrava un errore sul nome (16/10). */}
         {doppione && (
           <div className="mt-1 flex items-baseline justify-between gap-3">
-            <p id="crea-nome-doppione" className="text-sm text-warning">
-              Hai già «{etichettaAlimento(doppione)}»
+            <p id="crea-doppione" className="text-sm text-warning">
+              {testoDoppione(doppione)}
             </p>
             {puoAprire(doppione) && (
               <button
@@ -238,19 +255,6 @@ export default function CreaAlimentoForm({
             )}
           </div>
         )}
-      </div>
-
-      <div>
-        <label htmlFor="crea-marca" className="block text-sm font-medium mb-1">
-          Marca <span className="font-normal text-muted">(facoltativa)</span>
-        </label>
-        <input
-          id="crea-marca"
-          type="text"
-          value={marca}
-          onChange={(e) => setMarca(e.target.value)}
-          className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
-        />
         <p className="text-xs text-muted mt-1">
           Per distinguere due prodotti con lo stesso nome ma marca diversa.
         </p>

@@ -48,6 +48,18 @@ export function chiaveAlimento(a: { nome: string; marca: string | null }): strin
   return `${testoConfronto(a.nome)}\u0000${testoConfronto(a.marca ?? "")}`;
 }
 
+// Il messaggio del form quando c'è un doppione (CreaAlimentoForm, sotto i
+// campi Nome e Marca). Deve dire che il confronto è su nome E marca: sotto
+// il solo nome sembrava un errore sul nome, come se un altro «Pane» non
+// si potesse avere (Davide, 16/10). Il nome e la marca sono quelli
+// dell'alimento che c'è già, come li ha scritti l'utente.
+export function testoDoppione(doppione: { nome: string; marca: string | null }): string {
+  const marca = doppione.marca?.trim();
+  return marca
+    ? `Hai già un alimento con questo nome e questa marca: «${doppione.nome} · ${marca}».`
+    : `Hai già «${doppione.nome}», senza marca.`;
+}
+
 // L'alimento dell'utente che è già "questo", se c'è. `escludiId`: in
 // Modifica l'alimento stesso, così una rinomina che cambia solo maiuscole
 // o accenti ("pane" → "Pane") passa. Con il nome vuoto non c'è doppione:

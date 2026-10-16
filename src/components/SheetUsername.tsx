@@ -111,6 +111,9 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
             >
               @
             </span>
+            {/* autoComplete="nickname": iPhone non deve scambiarlo per il
+                campo di accesso (commento sul campo in
+                src/app/register/page.tsx). */}
             <input
               ref={rifInput}
               type="text"
@@ -125,7 +128,7 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
               }}
               autoCapitalize="none"
               autoCorrect="off"
-              autoComplete="off"
+              autoComplete="nickname"
               spellCheck={false}
               aria-describedby="sheet-username-esito"
               aria-invalid={daCorreggere}

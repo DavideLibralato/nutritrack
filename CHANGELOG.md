@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Messaggio del doppione e campi username su iPhone
+
+Branch `ritocchi-username`. Due ritocchi chiesti da Davide il 16/10.
+(1) Il messaggio del doppione ora sta sotto il campo Marca, con nome e
+marca tutti e due in arancio, e dice che il confronto è sulla coppia:
+sotto il solo Nome sembrava un errore sul nome. Testo in `testoDoppione`
+(«Hai già un alimento con questo nome e questa marca: «Pane · Mulino».»
+/ «Hai già «Banana», senza marca.»), con test. (2) iPhone proponeva
+"Accedi" con la password salvata toccando un campo username:
+`autoComplete="off"` non bastava, iOS lo ignora. Ora i quattro campi
+username hanno `autoComplete="nickname"` e niente "username" in id e
+name (in Registrati `nomeUtente`, letto così anche dalla Server Action).
+Email e password di Registrati non cambiano. Prova su iPhone ancora da
+fare: solo lì si vede se iOS obbedisce.
+
+## 2026-10-16 — Merge di `alimenti-doppi` su main
+
+Fast-forward, main a `fb8aa21`. tsc, lint, 940 test e build verdi su
+main prima del push. Branch cancellato in locale e su GitHub.
+
 ## 2026-10-16 — Alimenti doppi: provato su iPhone
 
 Branch `alimenti-doppi`. Provato da Davide il 16/10 sull'anteprima del
