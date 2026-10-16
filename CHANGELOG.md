@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Amici: il pallino delle novità
+
+Branch `amici`, passo 7. `src/lib/amici/novita.ts`: le novità come somma
+di parti (oggi solo le richieste di amicizia ricevute in attesa, contate
+su Supabase con `contaRichiesteRicevute`; gli alimenti in arrivo
+arriveranno come secondo termine, sulla tab ma non sulla riga Amici,
+decisione del 16/10), condivise in memoria fra tab e riga, salvate in
+`localStorage` (`nutritrack:amici:novita:<id>`, JSON delle parti) per
+l'offline, aggiornate agli inneschi della discesa e da ogni rilettura
+della pagina Amici, con lo scarto delle letture vecchie. Sulla tab
+Impostazioni un pallino solo (`pallinoTab`): l'arancio della
+sincronizzazione vince, altrimenti il colore principale con "N novità in
+Amici" per lo screen reader. Riga Amici: "2 nuove" / "1 nuova" con il
+pallino al posto del numero di amici. Esci (anche con i dati tenuti) ed
+Elimina account cancellano la chiave. Contrasti: nessun test nuovo, il
+pallino ha l'anello della superficie e "accento su superficie" è già
+controllato a 4,5:1 (PUNTO §3). Commento di `useUtente.ts` corretto sulla
+conferma email spenta. Test permanenti su pallino, somma, chiave, Esci,
+Elimina account, testi e tab bar; ognuno fallisce rompendo il punto che
+protegge (provato da copie, ripristinate). 918 test verdi in 83 file,
+lint, `tsc` e `npm run build` puliti. Non provato nel browser.
+
 ## 2026-10-15 — Amici: pagina Amici provata su iPhone
 
 Branch `amici`. Provata da Davide il 15/10 sull'anteprima: account A

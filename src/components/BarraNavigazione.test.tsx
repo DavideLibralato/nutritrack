@@ -5,6 +5,7 @@ import GuardianoModifiche from "./GuardianoModifiche";
 import { db } from "@/lib/db/database";
 import type { VoceOutbox } from "@/lib/sync/outbox";
 import { azzeraStatoGiri, segnaFineGiro } from "@/lib/sync/statoSincronizzazione";
+import { cancellaNovita, chiaveNovita } from "@/lib/amici/novita";
 
 // Il pallino sulla tab Impostazioni (decisione del 10/10): acceso solo per
 // accantonate, accesso scaduto e server che rifiuta dal secondo giro
@@ -110,5 +111,39 @@ describe("pallino sulla tab Impostazioni", () => {
 
     segnaFineGiro("salita", "ok", { parlatoColServer: true });
     await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).toBeNull());
+  });
+});
+
+// Il pallino delle novità di Amici (dal 15/10, passo 7): nel colore
+// principale con delle richieste ricevute, ma l'arancio della
+// sincronizzazione vince. Qui il numero arriva dall'ultimo salvato in
+// localStorage (come offline, all'avvio): il server finto non risponde.
+describe("pallino delle novità di Amici sulla tab Impostazioni", () => {
+  beforeEach(() => {
+    cancellaNovita(USER_ID);
+  });
+
+  it("con 2 richieste ricevute: pallino nel colore principale e '2 novità in Amici'", async () => {
+    window.localStorage.setItem(chiaveNovita(USER_ID), JSON.stringify({ richiesteRicevute: 2 }));
+    disegna();
+    await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull());
+    expect(voceImpostazioni().textContent).toContain("2 novità in Amici");
+    expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).toBeNull();
+  });
+
+  it("senza novità nessun pallino", async () => {
+    window.localStorage.setItem(chiaveNovita(USER_ID), JSON.stringify({ richiesteRicevute: 0 }));
+    disegna();
+    await pallinoSpento();
+    expect(voceImpostazioni().querySelector("[data-pallino-amici]")).toBeNull();
+  });
+
+  it("con la sincronizzazione da controllare vince l'arancio, e si legge solo quella", async () => {
+    window.localStorage.setItem(chiaveNovita(USER_ID), JSON.stringify({ richiesteRicevute: 2 }));
+    segnaFineGiro("salita", "sessione", { parlatoColServer: false });
+    disegna();
+    await pallinoAcceso();
+    expect(voceImpostazioni().querySelector("[data-pallino-amici]")).toBeNull();
+    expect(voceImpostazioni().textContent).not.toContain("novità");
   });
 });

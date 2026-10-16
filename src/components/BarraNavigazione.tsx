@@ -30,12 +30,16 @@
 // anche per la voce già attiva: da una sotto-pagina di Impostazioni riporta
 // all'elenco, come su iPhone.
 //
-// Sulla voce Impostazioni, un pallino arancio quando la sincronizzazione
-// chiede attenzione (usePallinoSincronizzazione, dal 10/10): sull'icona,
-// con il suo bordo del colore della pillola per staccarlo dal disegno.
+// Sulla voce Impostazioni, un pallino solo (pallinoTab): arancio quando la
+// sincronizzazione chiede attenzione (usePallinoSincronizzazione, dal
+// 10/10), che vince; altrimenti nel colore principale quando Amici ha delle
+// novità (useNovitaAmici, dal 15/10). Sull'icona, con il suo bordo del
+// colore della pillola per staccarlo dal disegno.
 
 import LinkProtetto from "./LinkProtetto";
 import { usePallinoSincronizzazione } from "@/lib/sync/usePallinoSincronizzazione";
+import { pallinoTab, totaleNovita, useNovitaAmici } from "@/lib/amici/novita";
+import { testoNovitaTab } from "@/lib/amici/testiAmici";
 import { usePathname } from "next/navigation";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
@@ -47,7 +51,10 @@ const VOCI = [
 
 export default function BarraNavigazione() {
   const percorso = usePathname();
-  const pallino = usePallinoSincronizzazione();
+  // Il pallino della tab conta il totale delle novità (oggi solo le
+  // richieste di amicizia; poi anche gli alimenti in arrivo).
+  const novita = totaleNovita(useNovitaAmici());
+  const pallino = pallinoTab(usePallinoSincronizzazione(), novita);
 
   return (
     <>
@@ -78,19 +85,29 @@ export default function BarraNavigazione() {
                 >
                   <span className="relative">
                     <Icona nome={voce.etichetta} />
-                    {voce.href === "/impostazioni" && pallino && (
+                    {voce.href === "/impostazioni" && pallino === "sincronizzazione" && (
                       <span
                         aria-hidden="true"
                         data-pallino-sincronizzazione
                         className="absolute -top-0.5 -right-1 size-2.5 rounded-full bg-warning ring-2 ring-surface"
                       />
                     )}
+                    {voce.href === "/impostazioni" && pallino === "amici" && (
+                      <span
+                        aria-hidden="true"
+                        data-pallino-amici
+                        className="absolute -top-0.5 -right-1 size-2.5 rounded-full bg-accent ring-2 ring-surface"
+                      />
+                    )}
                   </span>
                   {voce.etichetta}
                   {/* Il pallino si vede soltanto: a uno screen reader la
                       voce lo dice a parole, dopo il nome. */}
-                  {voce.href === "/impostazioni" && pallino && (
+                  {voce.href === "/impostazioni" && pallino === "sincronizzazione" && (
                     <span className="sr-only">, sincronizzazione da controllare</span>
+                  )}
+                  {voce.href === "/impostazioni" && pallino === "amici" && (
+                    <span className="sr-only">, {testoNovitaTab(novita)}</span>
                   )}
                 </LinkProtetto>
               </li>

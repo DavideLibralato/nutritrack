@@ -26,6 +26,7 @@ import { createClient } from "../supabase/client";
 import { cancellaDatiUtente } from "../sync/ripristino";
 import { svuotaPagineSalvate } from "../serviceWorker";
 import { azzeraStatoGiri, CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
+import { cancellaNovita } from "../amici/novita";
 import { conTempoMassimo, SCADUTA } from "../sync/tempoMassimo";
 import { togliSegnoRipristino } from "../segnoRipristinoPassword";
 import { classificaErroreVerifica } from "../supabase/utenteOffline";
@@ -118,6 +119,8 @@ async function confermaEPulisci(idUtente: string): Promise<"eliminato"> {
     // Niente localStorage: non c'era niente da togliere.
   }
   togliSegnoRipristino();
+  // Le novità di Amici salvate per il pallino offline (dal 15/10).
+  cancellaNovita(idUtente);
   // Dopo aver tolto l'ora salvata: azzeraStatoGiri la rilegge da lì.
   azzeraStatoGiri();
 

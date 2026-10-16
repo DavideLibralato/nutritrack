@@ -36,7 +36,9 @@
 // "Nessuno" (alimentiModificabili e testoRigaAlimenti, con il loro test).
 // La riga Amici (dal 15/10, branch amici, in un gruppo suo sotto
 // Alimentazione) mostra quanti amici: "2 amici", "1 amico", "Nessuno"
-// (testoRigaAmici, con il suo test). Si legge online (useAmicizie).
+// (testoRigaAmici, con il suo test). Si legge online (useAmicizie). Con
+// delle novità (dal passo 7, useNovitaAmici) al posto del numero c'è "2
+// nuove" in colore principale con il pallino.
 //
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
@@ -72,7 +74,8 @@ import { catalogoLocale } from "@/lib/repository/alimenti";
 import { contaPreferiti, testoRigaPreferiti } from "@/lib/inserimento/rigaPreferiti";
 import { alimentiModificabili, testoRigaAlimenti } from "@/lib/catalogo/alimentiModificabili";
 import { useAmicizie } from "@/lib/amici/useAmicizie";
-import { testoRigaAmici } from "@/lib/amici/testiAmici";
+import { testoNovitaRiga, testoRigaAmici } from "@/lib/amici/testiAmici";
+import { useNovitaAmici } from "@/lib/amici/novita";
 
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
@@ -130,6 +133,10 @@ export default function ImpostazioniPage() {
   // risposta non arriva. La riga apre comunque la pagina, che lo dice e
   // riprova da sola.
   const { stato: statoAmicizie } = useAmicizie();
+  // Solo le richieste di amicizia ricevute, non il totale della tab: gli
+  // alimenti in arrivo avranno il loro numero sulla riga Alimenti
+  // (decisione del 16/10).
+  const novitaAmici = useNovitaAmici().richiesteRicevute;
 
   // Gli stessi alimenti della pagina Alimenti, contati con la stessa
   // funzione dell'elenco.
@@ -200,11 +207,21 @@ export default function ImpostazioniPage() {
           etichetta="Amici"
           icona={<IconaAmici />}
           valore={
-            statoAmicizie.esito === "ok"
-              ? testoRigaAmici(statoAmicizie.divise.amici.length)
-              : statoAmicizie.esito === "errore"
-                ? "Serve la connessione"
-                : "…"
+            // Con delle novità, "2 nuove" con il pallino al posto del
+            // numero di amici (passo 7): anche offline, dall'ultimo numero
+            // noto.
+            novitaAmici > 0 ? (
+              <span className="flex items-center gap-1.5 font-semibold text-accent">
+                {testoNovitaRiga(novitaAmici)}
+                <span aria-hidden="true" className="size-2.5 rounded-full bg-accent" />
+              </span>
+            ) : statoAmicizie.esito === "ok" ? (
+              testoRigaAmici(statoAmicizie.divise.amici.length)
+            ) : statoAmicizie.esito === "errore" ? (
+              "Serve la connessione"
+            ) : (
+              "…"
+            )
           }
           href="/impostazioni/amici"
         />

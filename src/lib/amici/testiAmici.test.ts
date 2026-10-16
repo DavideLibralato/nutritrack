@@ -9,6 +9,8 @@ import {
   etichettaAmico,
   testiConfermaRimozione,
   testoEsitoChiedi,
+  testoNovitaRiga,
+  testoNovitaTab,
   testoRigaAmici,
 } from "./testiAmici";
 
@@ -47,6 +49,18 @@ describe("testoEsitoChiedi", () => {
     const verdi = tutti.filter((e) => testoEsitoChiedi(e, "x").tono === "ok");
     expect(verdi).toEqual(["inviata", "accettata"]);
     for (const e of tutti) expect(testoEsitoChiedi(e, "x").testo, e).not.toBe("");
+  });
+});
+
+describe("testoNovitaRiga e testoNovitaTab", () => {
+  it("nella riga Amici: singolare e plurale", () => {
+    expect(testoNovitaRiga(1)).toBe("1 nuova");
+    expect(testoNovitaRiga(2)).toBe("2 nuove");
+  });
+
+  it("sulla tab, per lo screen reader: 'novità' non cambia", () => {
+    expect(testoNovitaTab(1)).toBe("1 novità in Amici");
+    expect(testoNovitaTab(2)).toBe("2 novità in Amici");
   });
 });
 

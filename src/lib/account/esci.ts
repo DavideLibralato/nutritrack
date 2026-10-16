@@ -32,6 +32,7 @@ import {
 import { sincronizzaOutbox } from "../sync/sincronizza";
 import { attendiDiscesaInCorso } from "../sync/discesa";
 import { azzeraStatoGiri, CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
+import { cancellaNovita } from "../amici/novita";
 import { svuotaPagineSalvate } from "../serviceWorker";
 import { togliSegnoRipristino } from "../segnoRipristinoPassword";
 import { scriviSegnoUscita, togliSegnoUscita } from "./uscitaInCorso";
@@ -133,6 +134,8 @@ export async function eseguiUscita(
     // Niente localStorage: non c'era niente da togliere.
   }
   togliSegnoRipristino();
+  // - le novità di Amici salvate per il pallino offline (dal 15/10);
+  cancellaNovita(userId);
   // - lo stato dei giri in memoria. Dopo aver tolto l'ora salvata:
   //   azzeraStatoGiri la rilegge da lì.
   azzeraStatoGiri();

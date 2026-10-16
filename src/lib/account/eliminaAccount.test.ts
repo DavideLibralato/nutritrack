@@ -17,6 +17,7 @@ import { AuthApiError, AuthRetryableFetchError } from "@supabase/supabase-js";
 import { db } from "../db/database";
 import type { Pasto } from "../db/tipi";
 import { CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
+import { chiaveNovita } from "../amici/novita";
 import { leggiSegnoEliminazione } from "./eliminazioneInCorso";
 import { eliminaAccount, parolaDiConfermaGiusta } from "./eliminaAccount";
 
@@ -84,6 +85,7 @@ beforeEach(async () => {
   await db.pasti.clear();
   await db.pasti.bulkPut([pasto(ID), pasto(ALTRO)]);
   localStorage.setItem(CHIAVE_ULTIMO_SUCCESSO, "2026-10-11T10:00:00.000Z");
+  localStorage.setItem(chiaveNovita(ID), JSON.stringify({ richiesteRicevute: 2 }));
 });
 
 describe("eliminaAccount", () => {
@@ -95,6 +97,8 @@ describe("eliminaAccount", () => {
     expect(await pastiDi(ALTRO)).toBe(1);
     expect(leggiSegnoEliminazione()).toEqual({ idUtente: ID, fase: "confermata" });
     expect(localStorage.getItem(CHIAVE_ULTIMO_SUCCESSO)).toBeNull();
+    // Le novità di Amici salvate per il pallino offline (dal 15/10).
+    expect(localStorage.getItem(chiaveNovita(ID))).toBeNull();
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 

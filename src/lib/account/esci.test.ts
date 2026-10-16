@@ -15,6 +15,7 @@ import type { VoceOutbox } from "../sync/outbox";
 import { decidiUscita, eseguiUscita, preparaUscita } from "./esci";
 import { CHIAVE_USCITA, leggiSegnoUscita, riprendiUscitaInSospeso } from "./uscitaInCorso";
 import { CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
+import { chiaveNovita } from "../amici/novita";
 
 // Il server finto: chi risponde getUser, e se dopo signOut la sessione
 // c'è ancora.
@@ -133,6 +134,7 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
   it("coda non vuota e sessione non valida: tieni, il segno non si scrive mai, i dati restano anche dopo il prossimo avvio", async () => {
     const { utente } = await dispositivo({ conCoda: true });
     server.getUser = scaduta;
+    localStorage.setItem(chiaveNovita(utente), JSON.stringify({ richiesteRicevute: 2 }));
 
     const preparazione = await preparaUscita(utente);
     expect(preparazione).toMatchObject({ esito: "pronta", decisione: "tieni" });
@@ -145,6 +147,8 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
     expect(scrittureSegno).toEqual([]);
     expect(leggiSegnoUscita()).toBeNull();
     expect(await contaDi(utente)).toEqual({ pasti: 1, coda: 1, cursori: 1 });
+    // I dati restano, le novità di Amici no: non sono modifiche da salvare.
+    expect(localStorage.getItem(chiaveNovita(utente))).toBeNull();
 
     // Il prossimo avvio, senza nessuno dentro: niente da riprendere.
     expect(await riprendiUscitaInSospeso(async () => null)).toBe("niente");
@@ -155,6 +159,7 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
     const { utente, altro } = await dispositivo({ conCoda: false });
     server.getUser = valida(utente);
     localStorage.setItem(CHIAVE_ULTIMO_SUCCESSO, "2026-10-11T08:00:00.000Z");
+    localStorage.setItem(chiaveNovita(utente), JSON.stringify({ richiesteRicevute: 2 }));
 
     const preparazione = await preparaUscita(utente);
     expect(preparazione).toMatchObject({ esito: "pronta", decisione: "svuota" });
@@ -167,6 +172,8 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
     expect(await contaDi(utente)).toEqual(VUOTO);
     expect(await contaDi(altro)).toEqual({ pasti: 1, coda: 1, cursori: 1 });
     expect(localStorage.getItem(CHIAVE_ULTIMO_SUCCESSO)).toBeNull();
+    // Le novità di Amici salvate per il pallino offline (dal 15/10).
+    expect(localStorage.getItem(chiaveNovita(utente))).toBeNull();
   });
 
   it("coda non vuota e sessione valida: conferma; confermata, svuota anche la coda", async () => {

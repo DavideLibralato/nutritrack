@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import { dividiAmicizie, leggiAmicizie, type AmicizieDivise } from "./amicizie";
+import { impostaNovita } from "./novita";
 
 export type StatoAmicizie =
   | { esito: "caricamento" }
@@ -37,7 +38,11 @@ export function useAmicizie() {
     return leggiAmicizie(createClient(), userId).then((lettura) => {
       if (numero !== ultimaLettura.current) return;
       if (lettura.esito === "ok") {
-        setStato({ esito: "ok", divise: dividiAmicizie(lettura.righe, lettura.nomi, userId) });
+        const divise = dividiAmicizie(lettura.righe, lettura.nomi, userId);
+        setStato({ esito: "ok", divise });
+        // Le stesse righe danno anche il pallino: dopo un'azione nella
+        // pagina, tab e riga Amici si aggiornano senza un'altra lettura.
+        impostaNovita(userId, { richiesteRicevute: divise.ricevute.length });
       } else {
         // Un elenco già a schermo resta: l'errore conta solo se non c'è niente.
         setStato((prima) => (prima.esito === "ok" ? prima : { esito: "errore" }));

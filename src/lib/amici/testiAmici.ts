@@ -65,6 +65,19 @@ export function testiConfermaRimozione(username: string | null): {
   };
 }
 
+// Le novità nella riga Amici, al posto del numero di amici: "1 nuova",
+// "2 nuove" (mockup, schermata 2).
+export function testoNovitaRiga(numero: number): string {
+  return numero === 1 ? "1 nuova" : `${numero} nuove`;
+}
+
+// Le novità lette da uno screen reader sulla voce Impostazioni della tab
+// bar, dopo il nome: "Impostazioni, 2 novità in Amici". "Novità" non cambia
+// al plurale.
+export function testoNovitaTab(numero: number): string {
+  return `${numero} novità in Amici`;
+}
+
 // La riga Amici in Impostazioni: quanti amici (accettati).
 export function testoRigaAmici(numero: number): string {
   if (numero === 0) return "Nessuno";

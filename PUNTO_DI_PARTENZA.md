@@ -1423,21 +1423,55 @@ del 15/10.
   nel catalogo come gli altri. Nessuna foreign key da `alimenti` verso la
   condivisione: la copia è indipendente da tutto.
 
-**Il pallino**
-- **Il numero** = richieste di amicizia in arrivo + alimenti in arrivo,
-  tutti "in attesa", contati su Supabase (filtrati dalla RLS) da un
-  modulo in `/lib`.
+**Il pallino** (dal 16/10, branch `amici`, passo 7; codice in
+`src/lib/amici/novita.ts`)
+- **Il numero è una somma di parti** (`NovitaAmici`, `totaleNovita`): oggi
+  una sola, le **richieste di amicizia ricevute in attesa**
+  (`contaRichiesteRicevute`: solo il numero, con `head: true`, filtrato
+  dalla RLS). "Non accettata" non è una novità: è la risposta a una
+  richiesta propria. Il secondo termine, gli alimenti in arrivo, arriva
+  con il branch `condivisione-alimenti`; la somma è pronta per riceverlo.
+  Il pallino della tab conta il totale; **la riga Amici conta solo le
+  richieste** (`richiesteRicevute`), non il totale.
 - **Si aggiorna** agli stessi inneschi della discesa (avvio, ritorno
-  online, ritorno in primo piano) e dopo ogni azione nella pagina Amici.
-  Niente Realtime, niente polling (9.2).
-- **Offline**: l'ultimo numero noto, in `localStorage` con una chiave per
-  utente (`nutritrack:amici:novita:<id>`); lo sovrascrive il primo
-  contatto riuscito, lo cancellano Esci ed Elimina account.
-- **Colore principale**. Sulla tab Impostazioni c'è un pallino solo: se
-  la sincronizzazione chiede attenzione vince il suo arancio (9.2),
-  altrimenti, con delle novità, quello del colore principale. Uno screen
-  reader legge "Impostazioni, 2 novità in Amici". Nella riga Amici, a
-  destra, "2 nuove" con lo stesso pallino.
+  online, ritorno in primo piano: `useNovitaAmici`) e dopo ogni azione
+  nella pagina Amici: ogni rilettura riuscita della pagina (`useAmicizie`)
+  scrive anche le novità, contate dalle stesse righe, senza un'altra
+  chiamata. Se una lettura del pallino partita prima arriva dopo, si
+  scarta: non riaccende un pallino che la pagina ha appena spento (test
+  permanente). Niente Realtime, niente polling (9.2).
+- **Un numero condiviso**: tab e riga leggono le novità dallo stesso
+  posto in memoria (`useSyncExternalStore`): una lettura aggiorna tutte e
+  due.
+- **Offline**: le ultime novità note, in `localStorage` con una chiave per
+  utente (`nutritrack:amici:novita:<id>`), il JSON delle parti
+  (`{"richiesteRicevute":2}`): offline la tab e la riga hanno ciascuna il
+  suo numero. Accesso protetto (`try/catch`) come le altre chiavi; un
+  valore rovinato vale "nessuna novità". Lo sovrascrive il primo contatto
+  riuscito; se la risposta non arriva resta l'ultimo noto. Lo cancellano
+  **Esci**, nel blocco "sempre" (anche quando la sessione è scaduta e i
+  dati restano: le novità non sono modifiche da salvare), ed **Elimina
+  account** (9.6).
+- **Sulla tab Impostazioni c'è un pallino solo** (`pallinoTab`, funzione
+  pura con test): se la sincronizzazione chiede attenzione vince il suo
+  arancio (9.2), e lo screen reader legge solo "sincronizzazione da
+  controllare"; altrimenti, con delle novità, il pallino nel colore
+  principale (`bg-accent`), e lo screen reader legge "Impostazioni, 2
+  novità in Amici" ("novità" non cambia al plurale). Il testo vale finché
+  c'è solo il termine delle richieste: con gli alimenti in arrivo si
+  deciderà un testo comune.
+- **Nella riga Amici**, con richieste ricevute, a destra "2 nuove" ("1
+  nuova") in colore principale con lo stesso pallino, al posto del numero
+  di amici; senza, "N amici" come prima.
+- **Contrasti** (verificato il 16/10, nessun test nuovo): il pallino ha
+  un anello del colore della superficie (`ring-2 ring-surface`), quindi il
+  colore che lo tocca davvero è `--superficie`, sia sul vetro della
+  pillola sia sulla capsula della voce attiva. "`--accento` su
+  superficie" è già controllato da `contrasti.test.ts` per i quattro
+  colori, in chiaro e in scuro, con la soglia dei testi (4,5:1), più alta
+  di quella degli elementi grafici (3:1). Vale anche per il pallino
+  arancio ("`--avviso` su superficie") e per quello della riga Amici, che
+  sta sul gruppo, cioè sulla superficie.
 
 **Offline e dati.** Le tre tabelle di Amici sono **solo online** (sezione
 4): non entrano in Dexie, nella coda né nella discesa, quindi niente

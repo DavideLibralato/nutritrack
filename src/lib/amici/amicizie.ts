@@ -131,6 +131,29 @@ export async function leggiAmicizie(
   }
 }
 
+// Quante richieste di amicizia ho ricevuto e aspettano una risposta: per il
+// pallino (novita.ts). Solo il numero (head: true, nessuna riga scaricata):
+// la tab bar lo chiede su ogni pagina. "Non accettata" non conta: è una
+// risposta a una richiesta mia, non qualcosa da fare. null = la risposta
+// non è arrivata.
+export async function contaRichiesteRicevute(
+  supabase: SupabaseClient,
+  io: string
+): Promise<number | null> {
+  try {
+    const { count, error } = await supabase
+      .from("amicizie")
+      .select("id", { count: "exact", head: true })
+      .eq("amico_id", io)
+      .eq("stato", "in_attesa")
+      .is("deleted_at", null);
+    if (error || typeof count !== "number") return null;
+    return count;
+  } catch {
+    return null;
+  }
+}
+
 // --- Divisione per la pagina (funzione pura, con test) ---
 
 // Una riga come la mostra la pagina. `username` null: il nome dell'altro non
