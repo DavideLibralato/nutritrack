@@ -1701,6 +1701,16 @@ proposta **B**, scelta il 16/10)
     server, la sua spunta cade e si ripreme. Dopo la risposta si esce
     dalla selezione; Aggiungi ha la barra "Aggiunti: N alimenti",
     Rifiuta no.
+  - **Passi 5 e 6 provati su iPhone il 16/10** da Davide (anteprima in
+    Safari, A → B, build `cba066a`): riga "in arrivo", foglio,
+    confronto, "Usa questi valori" con Annulla, Ok sui valori uguali,
+    Aggiungi singolo, selezione (Seleziona, tieni premuto, Seleziona
+    tutti / Deseleziona tutti), Aggiungi e Rifiuta multipli con
+    conferma. "0 selezionati" senza uscire dalla selezione confermato.
+    Verificato da Cowork sul database: stati `aggiunto`, `rifiutato`,
+    `uguale`, `valori_usati`, `sostituito` corretti; tre copie nel
+    catalogo di B con i valori giusti (`manuale`, non verificate); lo
+    Yogurt di B aggiornato con i valori di A sullo stesso id.
 - **La copia nasce sul server**, in `rispondi_alimenti_condivisi`, in una
   transazione: inserisce in `alimenti` con l'id calcolato dalla
   condivisione (UUID v5, `uuid-ossp` è già installata), `user_id` di chi

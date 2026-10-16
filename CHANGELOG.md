@@ -5,6 +5,15 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Condivisione alimenti: ricezione provata su iPhone
+
+Branch `condivisione-alimenti`. Passi 5 e 6 provati da Davide
+sull'anteprima in Safari (A → B, build `cba066a`): riga e foglio,
+confronto, "Usa questi valori" con Annulla, Ok, Aggiungi singolo,
+selezione e Aggiungi / Rifiuta multipli con conferma. Verificati da
+Cowork sul database: stati, tre copie su B, lo Yogurt aggiornato sullo
+stesso id. "0 selezionati" resta così. Solo documenti.
+
 ## 2026-10-16 — Condivisione alimenti: selezione multipla nel foglio
 
 Branch `condivisione-alimenti`, passo 6. Nel foglio degli alimenti in
