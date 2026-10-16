@@ -5,6 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Condivisione alimenti: icona Condividi e foglio "Condividi con"
+
+Branch `condivisione-alimenti`, passo 4. Nella barra di selezione di
+Impostazioni > Alimenti l'icona Condividi, prima di Elimina; apre
+`SheetCondividiCon`: gli amici da spuntare, "Manda a N amici", un invio
+solo tutto o niente con i valori riletti da Dexie, lo stesso id d'invio
+nei tentativi, la barra "Mandati 2 alimenti a @…". Testi nuovi per
+offline, senza amici e amici non letti. Build, tipi, lint e 978 test
+verdi; da provare su iPhone (invio da A a B).
+
 ## 2026-10-16 — Condivisione alimenti: chiamate, confronto e testi
 
 Branch `condivisione-alimenti`, passo 3. `src/lib/amici/alimentiCondivisi.ts`

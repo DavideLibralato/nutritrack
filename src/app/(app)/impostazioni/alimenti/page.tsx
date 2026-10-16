@@ -17,11 +17,11 @@
 // - Tieni premuto su una riga (lo stesso gesto di Oggi, useTieniPremuto):
 //   selezione multipla. In selezione un tocco spunta o toglie la spunta, e
 //   togliendo l'ultima si esce. La barra di selezione prende il posto della
-//   tab bar: "N selezionati", Elimina, Annulla. Niente icona condividi
-//   finché non esiste Amici. Elimina apre SheetConferma con cosa verrà
-//   toccato oltre al catalogo (confermaEliminazione.ts), poi tutto o niente
-//   in una transazione (eliminaAlimenti) e la barra con "Annulla"
-//   (ripristinaAlimenti).
+//   tab bar: "N selezionati", Condividi, Elimina, Annulla. Condividi apre
+//   il foglio "Condividi con" (SheetCondividiCon, anche senza amici).
+//   Elimina apre SheetConferma con cosa verrà toccato oltre al catalogo
+//   (confermaEliminazione.ts), poi tutto o niente in una transazione
+//   (eliminaAlimenti) e la barra con "Annulla" (ripristinaAlimenti).
 
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -67,6 +67,7 @@ import RigaAlimentoCatalogo from "@/components/RigaAlimentoCatalogo";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import SheetConferma from "@/components/SheetConferma";
+import SheetCondividiCon from "@/components/SheetCondividiCon";
 
 const ORDINI: { valore: OrdineCatalogo; etichetta: string }[] = [
   { valore: "piu-usati", etichetta: "Più usati" },
@@ -139,6 +140,8 @@ export default function AlimentiPage() {
   // null = fuori dalla selezione; un insieme (mai vuoto) = in selezione.
   const [selezione, setSelezione] = useState<Set<string> | null>(null);
   const [conferma, setConferma] = useState<Conferma | null>(null);
+  // Il foglio "Condividi con": gli id degli alimenti, fissati all'apertura.
+  const [condividi, setCondividi] = useState<string[] | null>(null);
 
   // Il tieni premuto entra in selezione con quella riga spuntata (o la
   // aggiunge, se si è già in selezione). Tutti e due i rami del gesto
@@ -152,7 +155,7 @@ export default function AlimentiPage() {
   }
   const { rif: rifLista } = useTieniPremuto({
     tipi: TIPI_RIGA,
-    attivo: conferma === null,
+    attivo: conferma === null && condividi === null,
     onMenu: seleziona,
     onTrascinamento: { inizio: seleziona, movimento: () => {}, fine: () => {} },
   });
@@ -444,6 +447,18 @@ export default function AlimentiPage() {
           </p>
           <button
             type="button"
+            onClick={() => {
+              if (selezionati.length === 0) return;
+              setBarra(null);
+              setCondividi(selezionati);
+            }}
+            aria-label="Condividi con un amico"
+            className={`flex h-11 w-11 items-center justify-center rounded-full border border-accent text-accent ${CLASSE_FOCUS}`}
+          >
+            <IconaCondividi />
+          </button>
+          <button
+            type="button"
             onClick={apriConferma}
             aria-label="Elimina"
             className={`flex h-11 w-11 items-center justify-center rounded-full border border-warning text-warning ${CLASSE_FOCUS}`}
@@ -471,6 +486,19 @@ export default function AlimentiPage() {
           errore={conferma.errore}
           onNo={() => setConferma(null)}
           onSi={() => void eliminaSelezionati()}
+        />
+      )}
+
+      {condividi && (
+        <SheetCondividiCon
+          userId={userId}
+          idAlimenti={condividi}
+          onChiudi={() => setCondividi(null)}
+          onInviato={(messaggio) => {
+            setCondividi(null);
+            setSelezione(null);
+            mostra(messaggio);
+          }}
         />
       )}
     </main>
@@ -628,6 +656,28 @@ function Croce() {
       aria-hidden
     >
       <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+// Condividi: la scatola con la freccia verso l'alto, il segno che iPhone
+// usa per condividere. Stessa misura e tratto del cestino.
+function IconaCondividi() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M8 10V2" />
+      <path d="M5 4.5L8 1.5l3 3" />
+      <path d="M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5" />
     </svg>
   );
 }

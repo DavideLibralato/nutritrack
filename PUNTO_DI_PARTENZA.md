@@ -1188,10 +1188,10 @@ catalogo, si corregge e si fa pulizia.
   riga spuntata. In selezione un tocco spunta o toglie la spunta, invece di
   aprire "Modifica". La **barra di selezione copre la tab bar**: "N
   selezionati", Elimina, Annulla (che esce dalla selezione).
-  **L'icona condividi non c'è** finché non esiste Amici: un pulsante che
-  non fa niente sembra rotto. Nel codice non esiste ancora (non è
-  nascosta): la aggiunge il branch `condivisione-alimenti`, collegata
-  allo sheet "Condividi con" (vedi "Amici" più sotto, "Condividere un
+  **L'icona condividi** (la scatola con la freccia in su, tonda, nel
+  colore principale) la aggiunge il branch `condivisione-alimenti`,
+  prima di Elimina: "N selezionati", Condividi, Elimina, Annulla. Apre lo
+  sheet "Condividi con" (vedi "Amici" più sotto, "Condividere un
   alimento"). Lo stesso branch mette in cima alla pagina la riga "N
   alimenti in arrivo" con il suo foglio (decisione del 16/10, mockup
   `docs/mockups/alimenti-in-arrivo.html`, proposta B). Come è fatta (dal 15/10):
@@ -1518,9 +1518,15 @@ proposta **B**, scelta il 16/10)
   condividi nella barra di selezione apre lo sheet **"Condividi con"**
   con gli amici da spuntare (mockup `docs/mockups/amici.html`, schermata
   6: titolo "Condividi 2 alimenti", pulsante "Manda a 1 amico", spento
-  senza amici spuntati). Serve la connessione. **Senza amici** l'icona
-  c'è lo stesso: il foglio dice "Non hai ancora amici", con un
-  collegamento ad Amici.
+  senza amici spuntati: allora dice solo "Manda"). Serve la connessione:
+  offline "Per condividere un alimento serve la connessione." e Manda
+  spento. **Senza amici** l'icona c'è lo stesso: il foglio dice "Non hai
+  ancora amici. Aggiungine uno da Amici, poi torna qui." con il
+  collegamento "Vai ad Amici". Se gli amici non si leggono: "Non riesco a
+  leggere i tuoi amici. Controlla la connessione e riprova." con
+  Riprova. Gli amici sono quelli della pagina Amici, in ordine
+  alfabetico, con la spunta a quadratino; "Annulla" chiude. Il foglio
+  è `SheetCondividiCon` (passo 4, 16/10).
 - **L'invio è una chiamata sola, tutto o niente** (`manda_alimenti`,
   sezione 4; deciso il 16/10): tutti gli alimenti a tutti gli amici
   spuntati, oppure niente. Se nel frattempo uno degli amici non lo è più

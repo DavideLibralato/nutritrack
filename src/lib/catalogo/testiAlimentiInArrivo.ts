@@ -139,17 +139,44 @@ export function messaggioAlimentiAggiunti(nomi: string[]): MessaggioBarra {
 
 // Dopo l'invio: "Mandati 2 alimenti a @sara_c.", con la stessa forma per
 // un alimento ("Mandato 1 alimento a …") e per più amici ("… a @sara_c e
-// @paolo_a.", "… a 3 amici.").
-export function messaggioInviati(numeroAlimenti: number, amici: string[]): MessaggioBarra {
+// @paolo_a.", "… a 3 amici."). Uno username non arrivato (null) non si
+// scrive, come nel sottotitolo: "… a un amico.", "… a 2 amici.".
+export function messaggioInviati(numeroAlimenti: number, amici: (string | null)[]): MessaggioBarra {
   const verbo = numeroAlimenti === 1 ? "Mandato" : "Mandati";
+  const n = amici.length;
   const a =
-    amici.length === 1
-      ? `@${amici[0]}`
-      : amici.length === 2
-        ? `@${amici[0]} e @${amici[1]}`
-        : `${amici.length} amici`;
+    n >= 3 || (n === 2 && amici.some((u) => u === null))
+      ? `${n} amici`
+      : n === 1
+        ? amici[0] === null
+          ? "un amico"
+          : `@${amici[0]}`
+        : `@${amici[0]} e @${amici[1]}`;
   return { testo: `${verbo} ${alimentiN(numeroAlimenti)} a ${a}.`, icona: "spunta" };
 }
+
+// --- Il foglio "Condividi con" (mockup amici.html, schermata 6) ---
+
+export function titoloCondividi(numeroAlimenti: number): string {
+  return `Condividi ${alimentiN(numeroAlimenti)}`;
+}
+
+export const TESTO_CONDIVIDI =
+  "Ogni amico riceve una copia: la aggiunge al suo catalogo solo se la accetta, e le tue modifiche future non la toccano.";
+
+// Il pulsante: "Manda a 1 amico", "Manda a 3 amici"; senza amici spuntati
+// solo "Manda", spento.
+export function etichettaManda(numeroAmici: number): string {
+  if (numeroAmici === 0) return "Manda";
+  return numeroAmici === 1 ? "Manda a 1 amico" : `Manda a ${numeroAmici} amici`;
+}
+
+export const TESTO_SENZA_AMICI = "Non hai ancora amici. Aggiungine uno da Amici, poi torna qui.";
+
+export const TESTO_CONDIVIDI_SENZA_RETE = "Per condividere un alimento serve la connessione.";
+
+export const TESTO_AMICI_NON_LETTI =
+  "Non riesco a leggere i tuoi amici. Controlla la connessione e riprova.";
 
 // L'esito di "Manda" quando non è andato: resta nel foglio "Condividi
 // con", che non si chiude. "non_valido" non dovrebbe mai succedere (l'app

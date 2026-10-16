@@ -4,6 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  etichettaManda,
+  titoloCondividi,
   messaggioAlimentiAggiunti,
   messaggioInviati,
   sottotitoloMittenti,
@@ -105,6 +107,16 @@ describe("conferme e barre", () => {
     expect(messaggioInviati(1, ["sara_c"]).testo).toBe("Mandato 1 alimento a @sara_c.");
     expect(messaggioInviati(2, ["sara_c", "paolo_a"]).testo).toBe("Mandati 2 alimenti a @sara_c e @paolo_a.");
     expect(messaggioInviati(1, ["a", "b", "c"]).testo).toBe("Mandato 1 alimento a 3 amici.");
+    expect(messaggioInviati(1, [null]).testo).toBe("Mandato 1 alimento a un amico.");
+    expect(messaggioInviati(3, ["sara_c", null]).testo).toBe("Mandati 3 alimenti a 2 amici.");
+  });
+
+  it("il foglio Condividi con", () => {
+    expect(titoloCondividi(1)).toBe("Condividi 1 alimento");
+    expect(titoloCondividi(2)).toBe("Condividi 2 alimenti");
+    expect(etichettaManda(0)).toBe("Manda");
+    expect(etichettaManda(1)).toBe("Manda a 1 amico");
+    expect(etichettaManda(3)).toBe("Manda a 3 amici");
   });
 
   it("gli esiti dell'invio non riuscito", () => {
