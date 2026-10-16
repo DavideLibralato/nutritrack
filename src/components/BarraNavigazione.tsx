@@ -32,9 +32,11 @@
 //
 // Sulla voce Impostazioni, un pallino solo (pallinoTab): arancio quando la
 // sincronizzazione chiede attenzione (usePallinoSincronizzazione, dal
-// 10/10), che vince; altrimenti nel colore principale quando Amici ha delle
-// novità (useNovitaAmici, dal 15/10). Sull'icona, con il suo bordo del
-// colore della pillola per staccarlo dal disegno.
+// 10/10), che vince; altrimenti nel colore principale quando ci sono delle
+// novità (useNovitaAmici, dal 15/10: richieste di amicizia e, dal 16/10,
+// alimenti in arrivo; lo screen reader legge "Impostazioni, N novità").
+// Sull'icona, con il suo bordo del colore della pillola per staccarlo dal
+// disegno.
 
 import LinkProtetto from "./LinkProtetto";
 import { usePallinoSincronizzazione } from "@/lib/sync/usePallinoSincronizzazione";
@@ -51,8 +53,8 @@ const VOCI = [
 
 export default function BarraNavigazione() {
   const percorso = usePathname();
-  // Il pallino della tab conta il totale delle novità (oggi solo le
-  // richieste di amicizia; poi anche gli alimenti in arrivo).
+  // Il pallino della tab conta il totale delle novità: richieste di
+  // amicizia più alimenti in arrivo.
   const novita = totaleNovita(useNovitaAmici());
   const pallino = pallinoTab(usePallinoSincronizzazione(), novita);
 

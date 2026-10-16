@@ -27,6 +27,14 @@ const COSA_SI_CANCELLA: { testo: string; dettaglio?: string }[] = [
   { testo: "Gli alimenti che hai creato" },
   { testo: "Obiettivi e peso" },
   { testo: "Preferiti e pasti salvati" },
+  // Mai la parola "username": la pagina ha un campo da solo (scrivi
+  // ELIMINA) e iPhone la prenderebbe per un accesso (PUNTO §3, "Lo
+  // username"). Deciso il 16/10, branch condivisione-alimenti.
+  {
+    testo: "I tuoi amici e il tuo nome su Libra",
+    dettaglio:
+      "Gli alimenti mandati e non ancora accettati spariscono; le copie già aggiunte dagli amici restano.",
+  },
   { testo: "L'account", dettaglio: "Email e password: per rientrare dovrai registrarti di nuovo" },
 ];
 

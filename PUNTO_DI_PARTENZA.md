@@ -1737,7 +1737,11 @@ proposta **B**, scelta il 16/10)
   conto suo**: la rilettura della pagina Amici scrive solo le richieste,
   quella della pagina Alimenti solo gli alimenti, e nessuna azzera
   l'altra. Se uno dei due conteggi non risponde, quella parte resta
-  l'ultima nota.
+  l'ultima nota. Anche lo scarto delle letture vecchie è **per parte**
+  (passo 7, 16/10): se la pagina Amici scrive le richieste mentre il
+  pallino sta chiedendo i due numeri, si scarta la risposta vecchia sulle
+  richieste, non quella sugli alimenti (test permanenti in
+  `novita.test.ts`).
   Il pallino della tab conta il totale; **la riga Amici conta solo le
   richieste** (`richiesteRicevute`), non il totale. Gli alimenti in
   arrivo (decisione del 16/10) hanno il loro numero sulla **riga

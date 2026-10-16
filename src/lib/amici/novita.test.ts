@@ -2,7 +2,10 @@
 // pallino"). Test permanente: un pallino che copre l'arancio della
 // sincronizzazione nasconde un problema vero; uno che resta dopo Esci mostra
 // le richieste di un altro a chi entra dopo; una risposta vecchia arrivata
-// tardi riaccende un pallino già spento dalla pagina Amici.
+// tardi riaccende un pallino già spento dalla pagina Amici. Con gli alimenti
+// in arrivo (dal 16/10) le parti sono due: la rilettura di una pagina non
+// deve azzerare l'altra, e un numero salvato prima (senza gli alimenti) deve
+// restare leggibile.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -19,14 +22,21 @@ import {
 const ID = "utente-novita";
 const ALTRO = "altro-utente-novita";
 
-// Il conteggio sul server, finto: ogni chiamata resta in sospeso finché il
-// test non risponde.
-const risposte: ((n: number | null) => void)[] = [];
+// I due conteggi sul server, finti: ogni chiamata resta in sospeso finché
+// il test non risponde.
+const risposteRichieste: ((n: number | null) => void)[] = [];
+const risposteAlimenti: ((n: number | null) => void)[] = [];
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
 vi.mock("./amicizie", () => ({
   contaRichiesteRicevute: () =>
     new Promise<number | null>((resolve) => {
-      risposte.push(resolve);
+      risposteRichieste.push(resolve);
+    }),
+}));
+vi.mock("./alimentiCondivisi", () => ({
+  contaAlimentiInArrivo: () =>
+    new Promise<number | null>((resolve) => {
+      risposteAlimenti.push(resolve);
     }),
 }));
 
@@ -34,7 +44,8 @@ beforeEach(() => {
   window.localStorage.clear();
   cancellaNovita(ID);
   cancellaNovita(ALTRO);
-  risposte.length = 0;
+  risposteRichieste.length = 0;
+  risposteAlimenti.length = 0;
 });
 
 afterEach(() => {
@@ -57,8 +68,10 @@ describe("pallinoTab", () => {
 });
 
 describe("totaleNovita", () => {
-  it("oggi è solo il numero delle richieste ricevute", () => {
-    expect(totaleNovita({ richiesteRicevute: 3 })).toBe(3);
+  it("è la somma delle richieste ricevute e degli alimenti in arrivo", () => {
+    expect(totaleNovita({ richiesteRicevute: 3, alimentiInArrivo: 0 })).toBe(3);
+    expect(totaleNovita({ richiesteRicevute: 0, alimentiInArrivo: 2 })).toBe(2);
+    expect(totaleNovita({ richiesteRicevute: 1, alimentiInArrivo: 2 })).toBe(3);
   });
 });
 
@@ -68,60 +81,102 @@ describe("la chiave in localStorage", () => {
   });
 
   it("impostaNovita la scrive, novitaDi e leggiNovitaSalvate la rileggono", () => {
-    impostaNovita(ID, { richiesteRicevute: 2 });
-    expect(JSON.parse(window.localStorage.getItem(chiaveNovita(ID))!)).toEqual({ richiesteRicevute: 2 });
-    expect(leggiNovitaSalvate(ID)).toEqual({ richiesteRicevute: 2 });
-    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 2 });
+    impostaNovita(ID, { richiesteRicevute: 2, alimentiInArrivo: 1 });
+    expect(JSON.parse(window.localStorage.getItem(chiaveNovita(ID))!)).toEqual({
+      richiesteRicevute: 2,
+      alimentiInArrivo: 1,
+    });
+    expect(leggiNovitaSalvate(ID)).toEqual({ richiesteRicevute: 2, alimentiInArrivo: 1 });
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 2, alimentiInArrivo: 1 });
   });
 
-  it("all'avvio (niente in memoria) vale l'ultimo numero salvato", () => {
-    window.localStorage.setItem(chiaveNovita(ID), JSON.stringify({ richiesteRicevute: 4 }));
-    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 4 });
+  it("all'avvio (niente in memoria) valgono gli ultimi numeri salvati", () => {
+    window.localStorage.setItem(chiaveNovita(ID), JSON.stringify({ richiesteRicevute: 4, alimentiInArrivo: 3 }));
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 4, alimentiInArrivo: 3 });
+  });
+
+  it("un valore salvato prima degli alimenti in arrivo vale 0 alimenti, e le sue richieste restano", () => {
+    window.localStorage.setItem(chiaveNovita(ID), JSON.stringify({ richiesteRicevute: 2 }));
+    expect(leggiNovitaSalvate(ID)).toEqual({ richiesteRicevute: 2, alimentiInArrivo: 0 });
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 2, alimentiInArrivo: 0 });
   });
 
   it("un valore rovinato vale 'non so', cioè nessuna novità", () => {
-    for (const rovinato of ["3", "{}", "{\"richiesteRicevute\":-1}", "{\"richiesteRicevute\":1.5}", "non json"]) {
+    for (const rovinato of [
+      "3",
+      "{}",
+      "{\"richiesteRicevute\":-1}",
+      "{\"richiesteRicevute\":1.5}",
+      "{\"richiesteRicevute\":1,\"alimentiInArrivo\":-2}",
+      "{\"richiesteRicevute\":1,\"alimentiInArrivo\":\"2\"}",
+      "{\"alimentiInArrivo\":2}",
+      "non json",
+    ]) {
       cancellaNovita(ID);
       window.localStorage.setItem(chiaveNovita(ID), rovinato);
       expect(leggiNovitaSalvate(ID), rovinato).toBeNull();
-      expect(novitaDi(ID).richiesteRicevute, rovinato).toBe(0);
+      expect(totaleNovita(novitaDi(ID)), rovinato).toBe(0);
     }
   });
 
-  it("cancellaNovita toglie la chiave e il numero in memoria di quell'utente, non di altri", () => {
-    impostaNovita(ID, { richiesteRicevute: 2 });
+  it("cancellaNovita toglie la chiave e i numeri in memoria di quell'utente, non di altri", () => {
+    impostaNovita(ID, { richiesteRicevute: 2, alimentiInArrivo: 1 });
     impostaNovita(ALTRO, { richiesteRicevute: 1 });
     cancellaNovita(ID);
     expect(window.localStorage.getItem(chiaveNovita(ID))).toBeNull();
-    expect(novitaDi(ID).richiesteRicevute).toBe(0);
+    expect(totaleNovita(novitaDi(ID))).toBe(0);
     expect(novitaDi(ALTRO).richiesteRicevute).toBe(1);
   });
 });
 
+describe("impostaNovita: ogni pagina scrive solo la sua parte", () => {
+  it("la pagina Amici scrive le richieste e lascia gli alimenti, e viceversa", () => {
+    impostaNovita(ID, { richiesteRicevute: 2, alimentiInArrivo: 3 });
+    impostaNovita(ID, { richiesteRicevute: 0 });
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 0, alimentiInArrivo: 3 });
+    impostaNovita(ID, { alimentiInArrivo: 1 });
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 0, alimentiInArrivo: 1 });
+    expect(leggiNovitaSalvate(ID)).toEqual({ richiesteRicevute: 0, alimentiInArrivo: 1 });
+  });
+});
+
 describe("aggiornaNovita", () => {
-  it("scrive il numero arrivato dal server", async () => {
+  it("scrive i due numeri arrivati dal server", async () => {
     const lettura = aggiornaNovita(ID);
-    risposte[0](3);
+    risposteRichieste[0](3);
+    risposteAlimenti[0](2);
     await lettura;
-    expect(novitaDi(ID).richiesteRicevute).toBe(3);
-    expect(leggiNovitaSalvate(ID)).toEqual({ richiesteRicevute: 3 });
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 3, alimentiInArrivo: 2 });
+    expect(leggiNovitaSalvate(ID)).toEqual({ richiesteRicevute: 3, alimentiInArrivo: 2 });
   });
 
-  it("senza risposta resta l'ultimo numero noto", async () => {
-    impostaNovita(ID, { richiesteRicevute: 2 });
+  it("senza risposta resta l'ultimo numero noto, solo per la parte che manca", async () => {
+    impostaNovita(ID, { richiesteRicevute: 2, alimentiInArrivo: 4 });
     const lettura = aggiornaNovita(ID);
-    risposte[0](null);
+    risposteRichieste[0](null);
+    risposteAlimenti[0](1);
     await lettura;
-    expect(novitaDi(ID).richiesteRicevute).toBe(2);
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 2, alimentiInArrivo: 1 });
   });
 
-  it("una lettura partita prima di una scrittura della pagina, e arrivata dopo, si scarta", async () => {
-    // Il pallino chiede il numero; intanto la pagina Amici accetta l'unica
-    // richiesta e rilegge: zero. Poi arriva la risposta vecchia (1).
+  it("una lettura partita prima di una scrittura della pagina, e arrivata dopo, si scarta per quella parte", async () => {
+    // Il pallino chiede i numeri; intanto la pagina Amici accetta l'unica
+    // richiesta e rilegge: zero. Poi arrivano le risposte vecchie (1
+    // richiesta, 2 alimenti): la richiesta si scarta, gli alimenti no.
     const lettura = aggiornaNovita(ID);
     impostaNovita(ID, { richiesteRicevute: 0 });
-    risposte[0](1);
+    risposteRichieste[0](1);
+    risposteAlimenti[0](2);
     await lettura;
-    expect(novitaDi(ID).richiesteRicevute).toBe(0);
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 0, alimentiInArrivo: 2 });
+  });
+
+  it("lo stesso per la pagina Alimenti: la sua scrittura vince sulla lettura vecchia", async () => {
+    const lettura = aggiornaNovita(ID);
+    impostaNovita(ID, { alimentiInArrivo: 0 });
+    risposteRichieste[0](1);
+    risposteAlimenti[0](3);
+    await lettura;
+    expect(novitaDi(ID)).toEqual({ richiesteRicevute: 1, alimentiInArrivo: 0 });
   });
 });

@@ -58,9 +58,9 @@ describe("testoNovitaRiga e testoNovitaTab", () => {
     expect(testoNovitaRiga(2)).toBe("2 nuove");
   });
 
-  it("sulla tab, per lo screen reader: 'novità' non cambia", () => {
-    expect(testoNovitaTab(1)).toBe("1 novità in Amici");
-    expect(testoNovitaTab(2)).toBe("2 novità in Amici");
+  it("sulla tab, per lo screen reader: 'novità' non cambia, e non dice più 'in Amici'", () => {
+    expect(testoNovitaTab(1)).toBe("1 novità");
+    expect(testoNovitaTab(2)).toBe("2 novità");
   });
 });
 

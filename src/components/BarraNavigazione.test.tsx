@@ -123,12 +123,33 @@ describe("pallino delle novità di Amici sulla tab Impostazioni", () => {
     cancellaNovita(USER_ID);
   });
 
-  it("con 2 richieste ricevute: pallino nel colore principale e '2 novità in Amici'", async () => {
+  it("con 2 richieste ricevute: pallino nel colore principale e '2 novità'", async () => {
     window.localStorage.setItem(chiaveNovita(USER_ID), JSON.stringify({ richiesteRicevute: 2 }));
     disegna();
     await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull());
-    expect(voceImpostazioni().textContent).toContain("2 novità in Amici");
+    expect(voceImpostazioni().textContent).toContain("2 novità");
+    expect(voceImpostazioni().textContent).not.toContain("in Amici");
     expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).toBeNull();
+  });
+
+  it("richieste e alimenti in arrivo si sommano: '3 novità'", async () => {
+    window.localStorage.setItem(
+      chiaveNovita(USER_ID),
+      JSON.stringify({ richiesteRicevute: 1, alimentiInArrivo: 2 })
+    );
+    disegna();
+    await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull());
+    expect(voceImpostazioni().textContent).toContain("3 novità");
+  });
+
+  it("solo alimenti in arrivo: il pallino c'è lo stesso", async () => {
+    window.localStorage.setItem(
+      chiaveNovita(USER_ID),
+      JSON.stringify({ richiesteRicevute: 0, alimentiInArrivo: 1 })
+    );
+    disegna();
+    await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull());
+    expect(voceImpostazioni().textContent).toContain("1 novità");
   });
 
   it("senza novità nessun pallino", async () => {

@@ -3,66 +3,78 @@
 // Le novità di Amici e il loro pallino (PUNTO_DI_PARTENZA.md §3 "Amici",
 // "Il pallino"; mockup docs/mockups/amici.html, schermata 2).
 //
-// Il numero della TAB è una SOMMA di parti: oggi una sola, le richieste di
-// amicizia ricevute in attesa. Il branch condivisione-alimenti aggiungerà
-// gli alimenti in arrivo come un termine in più di NovitaAmici e di
-// totaleNovita. Attenzione (decisione del 16/10): quel termine va sul
-// pallino della tab, ma NON sulla riga Amici. Gli alimenti in arrivo stanno
-// nella pagina Alimenti, con il loro conteggio sulla riga Alimenti di
-// Impostazioni ("2 in arrivo"); la riga Amici mostra solo le richieste
-// (richiesteRicevute, non il totale). Anche il testo per lo screen reader
-// sulla tab ("N novità in Amici") vale finché c'è solo questo termine:
-// con gli alimenti si deciderà un testo comune.
+// Il numero della TAB è una SOMMA di due parti: le richieste di amicizia
+// ricevute in attesa e, dal branch condivisione-alimenti, gli alimenti in
+// arrivo dagli amici. Le due parti hanno anche il loro posto: la riga Amici
+// di Impostazioni mostra solo le richieste ("2 nuove"), la riga Alimenti
+// solo gli alimenti ("2 in arrivo"). Sulla tab un pallino solo, per la
+// somma, e lo screen reader legge "Impostazioni, N novità".
 //
 // Da dove arriva: Supabase (filtrato dalla RLS), mai Dexie. Quando: agli
 // stessi inneschi della discesa (avvio, ritorno online, ritorno in primo
-// piano: useNovitaAmici) e dopo ogni rilettura della pagina Amici
-// (useAmicizie chiama impostaNovita con le righe appena lette). Niente
-// polling, niente Realtime (§9.2).
+// piano: useNovitaAmici), dopo ogni rilettura della pagina Amici
+// (useAmicizie scrive le richieste) e di quella degli alimenti in arrivo
+// (useAlimentiInArrivo scrive gli alimenti). Ciascuna pagina scrive SOLO
+// la sua parte: nessuna azzera l'altra. Niente polling, niente Realtime
+// (§9.2).
 //
-// Offline: l'ultimo numero noto, in localStorage con una chiave per utente;
-// lo sovrascrive il primo contatto riuscito; lo cancellano Esci ed Elimina
-// account. Accesso protetto come le altre chiavi: senza localStorage
-// (Safari privato, memoria piena) il numero vive solo in memoria.
+// Offline: le ultime novità note, in localStorage con una chiave per
+// utente; le sovrascrive il primo contatto riuscito; le cancellano Esci ed
+// Elimina account. Accesso protetto come le altre chiavi: senza
+// localStorage (Safari privato, memoria piena) i numeri vivono solo in
+// memoria.
 //
-// La tab bar e la riga Amici leggono lo stesso numero da qui
-// (useSyncExternalStore): una lettura aggiorna tutti e due.
+// La tab bar e le righe di Impostazioni leggono gli stessi numeri da qui
+// (useSyncExternalStore): una lettura aggiorna tutti.
 
 import { useEffect, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import { contaRichiesteRicevute } from "./amicizie";
+import { contaAlimentiInArrivo } from "./alimentiCondivisi";
 
 // --- Il conteggio ---
 
 export interface NovitaAmici {
+  // Richieste di amicizia ricevute, in attesa: la riga Amici.
   richiesteRicevute: number;
-  // alimentiInArrivo: number;  ← branch condivisione-alimenti: nella somma
-  //                               della tab, non nella riga Amici
+  // Alimenti mandati dagli amici, in attesa: la riga Alimenti.
+  alimentiInArrivo: number;
 }
 
+type ParteNovita = keyof NovitaAmici;
+const PARTI: readonly ParteNovita[] = ["richiesteRicevute", "alimentiInArrivo"];
+
 export function totaleNovita(novita: NovitaAmici): number {
-  return novita.richiesteRicevute;
+  return novita.richiesteRicevute + novita.alimentiInArrivo;
 }
 
 // --- La chiave in localStorage ---
 
-// Il valore è il JSON delle parti ({"richiesteRicevute":2}), non il solo
-// totale: la riga Amici legge le richieste, la tab il totale, e offline
-// tutte e due devono avere il loro numero.
+// Il valore è il JSON delle parti ({"richiesteRicevute":2,
+// "alimentiInArrivo":1}), non il solo totale: ogni riga legge la sua parte,
+// la tab la somma, e offline tutte devono avere il loro numero.
 export function chiaveNovita(idUtente: string): string {
   return `nutritrack:amici:novita:${idUtente}`;
+}
+
+function numeroValido(valore: unknown): valore is number {
+  return typeof valore === "number" && Number.isInteger(valore) && valore >= 0;
 }
 
 export function leggiNovitaSalvate(idUtente: string): NovitaAmici | null {
   try {
     const testo = window.localStorage.getItem(chiaveNovita(idUtente));
     if (testo === null) return null;
-    const valore: unknown = JSON.parse(testo);
-    const richieste = (valore as { richiesteRicevute?: unknown } | null)?.richiesteRicevute;
+    const valore = JSON.parse(testo) as Record<string, unknown> | null;
+    const richieste = valore?.richiesteRicevute;
+    const alimenti = valore?.alimentiInArrivo;
     // Un valore rovinato (scritto a mano, versione diversa) vale "non so".
-    if (typeof richieste !== "number" || !Number.isInteger(richieste) || richieste < 0) return null;
-    return { richiesteRicevute: richieste };
+    if (!numeroValido(richieste)) return null;
+    // Salvato prima degli alimenti in arrivo: la chiave non c'è, vale 0.
+    if (alimenti === undefined) return { richiesteRicevute: richieste, alimentiInArrivo: 0 };
+    if (!numeroValido(alimenti)) return null;
+    return { richiesteRicevute: richieste, alimentiInArrivo: alimenti };
   } catch {
     return null;
   }
@@ -72,11 +84,11 @@ function salvaNovita(idUtente: string, novita: NovitaAmici) {
   try {
     window.localStorage.setItem(chiaveNovita(idUtente), JSON.stringify(novita));
   } catch {
-    // Niente localStorage: il numero resta solo in memoria.
+    // Niente localStorage: i numeri restano solo in memoria.
   }
 }
 
-// Per Esci ed Elimina account: via la chiave e il numero in memoria di
+// Per Esci ed Elimina account: via la chiave e i numeri in memoria di
 // questo utente. Chi entra dopo su questo dispositivo non vede le novità di
 // un altro.
 export function cancellaNovita(idUtente: string) {
@@ -91,13 +103,25 @@ export function cancellaNovita(idUtente: string) {
 
 // --- Le novità in memoria, condivise ---
 
-const NESSUNA: NovitaAmici = { richiesteRicevute: 0 };
+const NESSUNA: NovitaAmici = { richiesteRicevute: 0, alimentiInArrivo: 0 };
 
 const memoria = new Map<string, NovitaAmici>();
 const ascoltatori = new Set<() => void>();
-// L'ultima lettura partita per ogni utente: una risposta più vecchia si
-// scarta, come in useAmicizie.
+// L'ultima lettura partita per ogni utente e per ogni parte: una risposta
+// più vecchia si scarta, come in useAmicizie. Per parte, così una
+// scrittura della pagina Amici non fa scartare il conteggio degli alimenti
+// (e viceversa).
 const ultimaLettura = new Map<string, number>();
+
+function chiaveLettura(idUtente: string, parte: ParteNovita): string {
+  return `${idUtente}:${parte}`;
+}
+
+function nuovaLettura(idUtente: string, parte: ParteNovita): number {
+  const numero = (ultimaLettura.get(chiaveLettura(idUtente, parte)) ?? 0) + 1;
+  ultimaLettura.set(chiaveLettura(idUtente, parte), numero);
+  return numero;
+}
 
 function avvisa() {
   for (const ascolta of ascoltatori) ascolta();
@@ -111,7 +135,11 @@ function iscrivi(ascolta: () => void) {
 }
 
 function uguali(a: NovitaAmici | undefined, b: NovitaAmici): boolean {
-  return a !== undefined && a.richiesteRicevute === b.richiesteRicevute;
+  return (
+    a !== undefined &&
+    a.richiesteRicevute === b.richiesteRicevute &&
+    a.alimentiInArrivo === b.alimentiInArrivo
+  );
 }
 
 // Le novità di un utente: quelle in memoria, altrimenti le ultime salvate
@@ -127,41 +155,58 @@ export function novitaDi(idUtente: string): NovitaAmici {
   return salvate;
 }
 
-function scrivi(idUtente: string, novita: NovitaAmici) {
+// Scrive alcune parti, lasciando com'è l'altra.
+function scrivi(idUtente: string, parti: Partial<NovitaAmici>) {
+  const novita = { ...novitaDi(idUtente), ...parti };
   salvaNovita(idUtente, novita);
   if (uguali(memoria.get(idUtente), novita)) return;
   memoria.set(idUtente, novita);
   avvisa();
 }
 
-// Scrive le novità arrivate dal server con le righe della pagina Amici
-// (useAmicizie): in memoria e in localStorage. Una lettura di
-// aggiornaNovita partita prima, e arrivata dopo, si scarta.
-export function impostaNovita(idUtente: string, novita: NovitaAmici) {
-  ultimaLettura.set(idUtente, (ultimaLettura.get(idUtente) ?? 0) + 1);
-  scrivi(idUtente, novita);
+// Scrive le parti arrivate dal server con le righe di una pagina: la pagina
+// Amici le richieste (useAmicizie), la pagina Alimenti gli alimenti in
+// arrivo (useAlimentiInArrivo). Una lettura di aggiornaNovita partita
+// prima, e arrivata dopo, si scarta per quelle parti.
+export function impostaNovita(idUtente: string, parti: Partial<NovitaAmici>) {
+  for (const parte of PARTI) {
+    if (parti[parte] !== undefined) nuovaLettura(idUtente, parte);
+  }
+  scrivi(idUtente, parti);
 }
 
-// Chiede le novità al server. Se la risposta non arriva, restano le ultime
-// note.
+// Chiede i due numeri al server, insieme. Se una risposta non arriva, quella
+// parte resta l'ultima nota.
 export async function aggiornaNovita(idUtente: string): Promise<void> {
-  const numeroLettura = (ultimaLettura.get(idUtente) ?? 0) + 1;
-  ultimaLettura.set(idUtente, numeroLettura);
-  let richiesteRicevute: number | null;
+  const numeri = {
+    richiesteRicevute: nuovaLettura(idUtente, "richiesteRicevute"),
+    alimentiInArrivo: nuovaLettura(idUtente, "alimentiInArrivo"),
+  };
+  let risposte: [number | null, number | null];
   try {
-    richiesteRicevute = await contaRichiesteRicevute(createClient(), idUtente);
+    const supabase = createClient();
+    risposte = await Promise.all([
+      contaRichiesteRicevute(supabase, idUtente).catch(() => null),
+      contaAlimentiInArrivo(supabase, idUtente).catch(() => null),
+    ]);
   } catch {
     // Anche il client che non si crea vale "risposta non arrivata": il
     // pallino resta com'era, senza un errore non gestito sulla tab bar.
-    richiesteRicevute = null;
+    risposte = [null, null];
   }
-  if (richiesteRicevute === null || ultimaLettura.get(idUtente) !== numeroLettura) return;
-  scrivi(idUtente, { richiesteRicevute });
+  const parti: Partial<NovitaAmici> = {};
+  PARTI.forEach((parte, i) => {
+    const valore = risposte[i];
+    if (valore !== null && ultimaLettura.get(chiaveLettura(idUtente, parte)) === numeri[parte]) {
+      parti[parte] = valore;
+    }
+  });
+  if (Object.keys(parti).length > 0) scrivi(idUtente, parti);
 }
 
 // Le novità di chi è entrato, aggiornate agli inneschi della discesa.
 // Nessuna finché l'utente non è noto. La tab usa totaleNovita, la riga
-// Amici solo richiesteRicevute.
+// Amici richiesteRicevute, la riga Alimenti alimentiInArrivo.
 export function useNovitaAmici(): NovitaAmici {
   const userId = useUtenteId();
 

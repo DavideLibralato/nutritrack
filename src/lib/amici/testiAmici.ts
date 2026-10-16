@@ -72,10 +72,11 @@ export function testoNovitaRiga(numero: number): string {
 }
 
 // Le novità lette da uno screen reader sulla voce Impostazioni della tab
-// bar, dopo il nome: "Impostazioni, 2 novità in Amici". "Novità" non cambia
-// al plurale.
+// bar, dopo il nome: "Impostazioni, 2 novità". Il numero è la somma di
+// richieste di amicizia e alimenti in arrivo, che non stanno più tutti in
+// Amici (decisione del 16/10). "Novità" non cambia al plurale.
 export function testoNovitaTab(numero: number): string {
-  return `${numero} novità in Amici`;
+  return `${numero} novità`;
 }
 
 // La riga Amici in Impostazioni: quanti amici (accettati).

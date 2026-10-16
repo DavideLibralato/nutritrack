@@ -5,6 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Condivisione alimenti: pallino, riga Alimenti, Elimina account
+
+Branch `condivisione-alimenti`, passo 7. Le novità hanno due parti
+(richieste di amicizia e alimenti in arrivo): il pallino della tab le
+somma ("Impostazioni, N novità"), ogni pagina scrive solo la sua parte,
+lo scarto delle letture vecchie è per parte, un valore salvato prima vale
+0 alimenti. Riga Alimenti di Impostazioni con "N in arrivo" e il pallino.
+Elimina account con "I tuoi amici e il tuo nome su Libra". Test delle
+novità riscritti, provati rompendo una copia in tre punti; 995 test,
+build verde.
+
 ## 2026-10-16 — Condivisione alimenti: ricezione provata su iPhone
 
 Branch `condivisione-alimenti`. Passi 5 e 6 provati da Davide

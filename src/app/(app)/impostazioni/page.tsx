@@ -34,6 +34,10 @@
 // Preferiti; PUNTO_DI_PARTENZA.md sezione 3, "Alimenti") mostra quanti
 // alimenti ha la pagina del catalogo: "46 alimenti", "1 alimento",
 // "Nessuno" (alimentiModificabili e testoRigaAlimenti, con il loro test).
+// Con alimenti in arrivo dagli amici (dal 16/10, branch
+// condivisione-alimenti) al posto del numero c'è "2 in arrivo" in colore
+// principale con il pallino, come "2 nuove" sulla riga Amici, anche
+// offline dall'ultimo numero noto.
 // La riga Amici (dal 15/10, branch amici, in un gruppo suo sotto
 // Alimentazione) mostra quanti amici: "2 amici", "1 amico", "Nessuno"
 // (testoRigaAmici, con il suo test). Si legge online (useAmicizie). Con
@@ -75,6 +79,7 @@ import { contaPreferiti, testoRigaPreferiti } from "@/lib/inserimento/rigaPrefer
 import { alimentiModificabili, testoRigaAlimenti } from "@/lib/catalogo/alimentiModificabili";
 import { useAmicizie } from "@/lib/amici/useAmicizie";
 import { testoNovitaRiga, testoRigaAmici } from "@/lib/amici/testiAmici";
+import { testoRigaImpostazioniInArrivo } from "@/lib/catalogo/testiAlimentiInArrivo";
 import { useNovitaAmici } from "@/lib/amici/novita";
 
 export default function ImpostazioniPage() {
@@ -133,10 +138,12 @@ export default function ImpostazioniPage() {
   // risposta non arriva. La riga apre comunque la pagina, che lo dice e
   // riprova da sola.
   const { stato: statoAmicizie } = useAmicizie();
-  // Solo le richieste di amicizia ricevute, non il totale della tab: gli
-  // alimenti in arrivo avranno il loro numero sulla riga Alimenti
-  // (decisione del 16/10).
-  const novitaAmici = useNovitaAmici().richiesteRicevute;
+  // Ogni riga la sua parte delle novità, non il totale della tab: le
+  // richieste di amicizia sulla riga Amici, gli alimenti in arrivo sulla
+  // riga Alimenti (decisione del 16/10).
+  const novita = useNovitaAmici();
+  const novitaAmici = novita.richiesteRicevute;
+  const alimentiInArrivo = novita.alimentiInArrivo;
 
   // Gli stessi alimenti della pagina Alimenti, contati con la stessa
   // funzione dell'elenco.
@@ -184,7 +191,16 @@ export default function ImpostazioniPage() {
         <RigaImpostazioni
           etichetta="Alimenti"
           icona={<IconaAlimenti />}
-          valore={valoreAlimenti}
+          valore={
+            alimentiInArrivo > 0 ? (
+              <span className="flex items-center gap-1.5 font-semibold text-accent">
+                {testoRigaImpostazioniInArrivo(alimentiInArrivo)}
+                <span aria-hidden="true" className="size-2.5 rounded-full bg-accent" />
+              </span>
+            ) : (
+              valoreAlimenti
+            )
+          }
           href="/impostazioni/alimenti"
         />
         <RigaImpostazioni
