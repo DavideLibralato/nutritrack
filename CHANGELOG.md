@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Alimenti doppi: provato su iPhone
+
+Branch `alimenti-doppi`. Provato da Davide il 16/10 sull'anteprima del
+branch, account di prova in Safari: prove 1–12 (Nuovo e Modifica in
+Aggiungi e nel catalogo, "Apri" nei due posti, spazi doppi, doppio tocco
+su Salva). Saltate la 13 (Annulla con un doppione nato nel frattempo) e
+la 14 (alimento arrivato da un altro telefono), coperte dai test.
+Verificato da Cowork su Supabase: sono nati solo «Pane · Mulino»,
+«Banana» (poi rinominata «BANANA») e «Pane di segale», con gli spazi
+ridotti; nessun doppione e nessuna copia dal doppio tocco. Alimenti di
+prova eliminati da Davide. Solo documenti.
+
 ## 2026-10-16 — Mai due alimenti uguali nel catalogo
 
 Branch `alimenti-doppi`. Creando o rinominando un alimento non c'era

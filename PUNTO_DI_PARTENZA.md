@@ -5062,7 +5062,13 @@ Ora vale "Mai due alimenti uguali" (sezione 3, "Alimenti"): messaggio
 Salva nella stessa transazione della scrittura (chiude anche il doppio
 tocco), e l'Annulla dopo un'eliminazione che non rimette in vita un
 doppione. Al 16/10 nei dati non c'era nessun doppione (verificato da
-Cowork, e di nuovo con la chiave nuova). Schema invariato.
+Cowork, e di nuovo con la chiave nuova). Schema invariato. **Provato su
+iPhone il 16/10** sull'anteprima del branch, con l'account di prova in
+Safari: Nuovo e Modifica in Aggiungi e nel catalogo, "Apri", spazi doppi,
+doppio tocco su Salva. Le due prove rimaste (Annulla con un doppione nato
+nel frattempo, alimento arrivato da un altro telefono) sono coperte dai
+test. Verificato da Cowork su Supabase: nessun doppione e nessuna copia
+dal doppio tocco.
 
 **Test.** 940 test permanenti in 86 file (Vitest), tutti verdi al 16/10.
 
