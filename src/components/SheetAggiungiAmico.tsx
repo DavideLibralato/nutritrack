@@ -95,14 +95,14 @@ export default function SheetAggiungiAmico({ onChiudi, onCambiato }: Props) {
             >
               @
             </span>
-            {/* autoComplete="nickname" come gli altri campi username, anche
-                se qui si scrive lo username di un altro: iPhone non deve
-                scambiarlo per il campo di accesso (commento sul campo in
-                src/app/register/page.tsx). Al massimo propone il proprio
-                soprannome dalla scheda contatto, se c'è: si ignora. */}
+            {/* type="search", perché iPhone non proponga le password
+                salvate: il perché in SheetUsername. Qui si scrive lo
+                username di un altro, quindi autoComplete="off" e non
+                "nickname" (che proporrebbe il proprio soprannome). */}
             <input
               ref={rifInput}
-              type="text"
+              type="search"
+              enterKeyHint="send"
               aria-label="Username"
               value={valore}
               onChange={(e) => {
@@ -114,7 +114,7 @@ export default function SheetAggiungiAmico({ onChiudi, onCambiato }: Props) {
               }}
               autoCapitalize="none"
               autoCorrect="off"
-              autoComplete="nickname"
+              autoComplete="off"
               spellCheck={false}
               aria-describedby="sheet-aggiungi-amico-esito"
               className={`w-full rounded-lg border border-border p-3 pl-8 text-lg ${CLASSE_FOCUS}`}

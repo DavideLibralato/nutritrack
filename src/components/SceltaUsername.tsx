@@ -84,12 +84,12 @@ export default function SceltaUsername({
           >
             @
           </span>
-          {/* autoComplete="nickname" e niente "username" nell'id: iPhone
-              non deve scambiarlo per il campo di accesso (commento sul
-              campo in src/app/register/page.tsx). */}
+          {/* type="search", perché iPhone non proponga le password
+              salvate: il perché in SheetUsername. */}
           <input
             id="scelta-nome-utente"
-            type="text"
+            type="search"
+            enterKeyHint="go"
             value={valore}
             onChange={(e) => {
               setScritto(true);

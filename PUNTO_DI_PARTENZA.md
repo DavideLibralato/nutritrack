@@ -1354,16 +1354,26 @@ del 15/10.
 - **iPhone non deve scambiarlo per il campo di accesso** (visto da Davide
   il 16/10 in Profilo > Cambia username: "Vuoi accedere a vercel.app con
   la password per …?"). `autoComplete="off"` non bastava: iOS lo ignora
-  per le password salvate. Dal 16/10 (branch `ritocchi-username`) i
-  quattro campi username (Registrati, Scegli il tuo username, Cambia
-  username, Aggiungi un amico) hanno `autoComplete="nickname"` (per lo
-  standard HTML "un nome breve o handle al posto del nome completo", cioè
-  proprio lo username) e niente "username" in `id` e `name`: in
-  Registrati il campo si chiama `nomeUtente`. L'etichetta visibile resta
-  "Username". In Registrati il campo di accesso vero è l'email, con
-  `autoComplete="email"` e la password con `"new-password"`: iPhone
-  continua a salvarle insieme. Nessun test: l'unica prova possibile è
-  su iPhone.
+  per le password salvate. Dal 16/10 (branch `ritocchi-username`):
+  - **Registrati**: `autoComplete="nickname"` (per lo standard HTML "un
+    nome breve o handle al posto del nome completo", cioè proprio lo
+    username) e niente "username" in `id` e `name`: il campo si chiama
+    `nomeUtente`. **Provato su iPhone il 16/10: la proposta non compare
+    più.** Lì iOS vede email (`autoComplete="email"`) e password
+    (`"new-password"`) nello stesso modulo, e prende l'email per il campo
+    di accesso: email e password si salvano ancora insieme.
+  - **Cambia username, Scegli il tuo username, Aggiungi un amico**: con
+    `nickname` la proposta compariva ancora (prova del 16/10): un campo
+    solo, nel suo foglio, con l'etichetta "Username". Questi tre sono
+    `type="search"`: iOS non propone le credenziali sui campi di
+    ricerca. La "×" nativa la toglie `globals.css` (come nelle ricerche
+    di Aggiungi e del catalogo); `enterKeyHint` dà al tasto della
+    tastiera il nome giusto ("Fine", "Vai", "Invia"). Costo: VoiceOver
+    annuncia "campo di ricerca". Aggiungi un amico ha `autoComplete="off"`,
+    non `nickname`: lo username è di un altro. Nessuno dei tre stava in
+    un `<form>`, quindi toglierlo non era una strada.
+  - L'etichetta visibile resta "Username". Nessun test: l'unica prova
+    possibile è su iPhone.
 - **Si sceglie alla registrazione**: campo "Username" nella pagina
   Registrati, sotto Nome. **Prima dell'invio** la Server Action chiede
   `username_disponibile` ("Questo username è già in uso"). **Lo

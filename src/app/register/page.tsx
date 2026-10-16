@@ -94,9 +94,10 @@ export default function RegisterPage() {
                 accesso e proponeva la password salvata (16/10). Il campo
                 di accesso vero è l'email, con la password: quelli restano
                 riconosciuti come tali (autoComplete "email" e
-                "new-password"). Gli stessi attributi negli altri tre
-                campi username: SceltaUsername, SheetUsername,
-                SheetAggiungiAmico. */}
+                "new-password"). Qui basta (prova su iPhone del 16/10:
+                iOS vede email e password nello stesso modulo). Gli altri
+                tre campi username, da soli in un foglio, no: lì serve
+                type="search" (commento in SheetUsername). */}
             <input
               id="register-nome-utente"
               name="nomeUtente"

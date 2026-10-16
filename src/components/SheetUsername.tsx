@@ -111,12 +111,19 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
             >
               @
             </span>
-            {/* autoComplete="nickname": iPhone non deve scambiarlo per il
-                campo di accesso (commento sul campo in
+            {/* type="search": iPhone non propone le password salvate sui
+                campi di ricerca. Con type="text" e autoComplete="nickname"
+                la proposta "Accedi con la password" compariva ancora (prova
+                del 16/10): un campo solo, con l'etichetta "Username", iOS lo
+                prende per un accesso. La "×" nativa la toglie globals.css;
+                enterKeyHint dà al tasto della tastiera il nome giusto. Lo
+                stesso in SceltaUsername e SheetAggiungiAmico; Registrati
+                no, lì funziona già (commento sul campo in
                 src/app/register/page.tsx). */}
             <input
               ref={rifInput}
-              type="text"
+              type="search"
+              enterKeyHint="done"
               aria-label="Username"
               value={valore}
               onChange={(e) => {

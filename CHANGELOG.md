@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Campi username nei fogli: type="search"
+
+Branch `ritocchi-username`. Prova su iPhone del 16/10: il messaggio del
+doppione va bene ovunque. In Registrati la proposta "Accedi con la
+password" non compare più. In Cambia username e Aggiungi un amico invece
+compariva ancora, anche con `autoComplete="nickname"`: lì il campo è da
+solo nel suo foglio, con l'etichetta "Username". Ora quei campi, e Scegli
+il tuo username, sono `type="search"`: iOS non propone credenziali sui
+campi di ricerca. Sui tasti della tastiera "Fine", "Vai" e "Invia" con
+`enterKeyHint`; Aggiungi un amico ha `autoComplete="off"`. Togliere il
+`<form>` non era una strada: non c'era. Costo: VoiceOver dice "campo di
+ricerca". Ancora da provare su iPhone, insieme alla registrazione vera
+con il campo `nomeUtente`.
+
 ## 2026-10-16 — Messaggio del doppione e campi username su iPhone
 
 Branch `ritocchi-username`. Due ritocchi chiesti da Davide il 16/10.
