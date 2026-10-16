@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Ritocchi username e doppione: provato su iPhone
+
+Branch `ritocchi-username`. Provato da Davide il 16/10 sull'anteprima
+(build `da5d90a`):
+- il messaggio del doppione: nome e marca, sotto Marca, con due bordi
+  arancio e "Apri";
+- Profilo > "Cambia il tuo nome su Libra" e Aggiungi un amico: niente
+  proposta "Accedi con la password", titoli a posto;
+- la registrazione vera con il campo `nomeUtente` (+trigger3, `test3`),
+  verificata da Cowork.
+
+Decisi: «È già il tuo nome.» resta; il mockup `amici.html` resta com'è.
+Solo documenti.
+
 ## 2026-10-16 — "Nome su Libra" nei fogli: iPhone non propone più l'accesso
 
 Branch `ritocchi-username`. La diagnosi è riuscita (iPhone, 16/10): in

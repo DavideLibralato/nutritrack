@@ -5125,6 +5125,20 @@ nel frattempo, alimento arrivato da un altro telefono) sono coperte dai
 test. Verificato da Cowork su Supabase: nessun doppione e nessuna copia
 dal doppio tocco.
 
+**Ritocchi: messaggio del doppione e campi username** (16/10, branch
+`ritocchi-username`). Due cose chieste da Davide il 16/10.
+(1) Il messaggio del doppione sta sotto il campo Marca, con nome e marca
+tutti e due in arancio, e dice che conta la coppia (`testoDoppione`;
+sezione 3, "Alimenti").
+(2) iPhone proponeva "Accedi con la password" toccando un campo username.
+Rimedio, dopo tre prove: nei campi che stanno da soli, niente parola
+"username" vicino al campo, al suo posto "nome su Libra"; in Registrati
+il campo si chiama `nomeUtente`, con `autoComplete="nickname"` (sezione
+3, "Lo username"). **Provato su iPhone il 16/10** sull'anteprima (build
+`da5d90a`): il doppione, i fogli "Cambia il tuo nome su Libra" e
+Aggiungi un amico senza la proposta, e una registrazione vera con
+`nomeUtente` (+trigger3, `test3`), verificata da Cowork.
+
 **Test.** 940 test permanenti in 86 file (Vitest), tutti verdi al 16/10.
 
 ### Non ancora costruito
