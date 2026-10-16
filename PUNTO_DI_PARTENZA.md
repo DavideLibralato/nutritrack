@@ -3219,6 +3219,17 @@ created_by) values (to_char(now() at time zone 'utc',
 verifica (`list_migrations`, `get_advisors` e le prove della migration).
 Primo caso: `elimina_mio_account` (sezione 9.6).
 
+**Una migration non si esegue dal SQL Editor** (regola del 16/10). Quel
+giorno `trigger_registrazione` è stata applicata per sbaglio eseguendo
+il suo file al posto del blocco di prove (sezione 9.1). D'ora in poi ogni
+file nuovo in `supabase/migrations/` ha **in testa**, prima di ogni altro
+commento, una riga ben visibile:
+`-- NON eseguire dal SQL Editor: si applica con apply_migration; le prove
+sono nel file prove_<nome>.sql`. L'unica eccezione resta il caso sopra
+(il connettore rifiuta), deciso esplicitamente. I file delle migration
+già applicate non si modificano per aggiungerla: il testo applicato e
+quello nel repository devono restare uguali.
+
 - **Prettier è configurato ma non ancora applicato a tutto il codice.**
   `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
   doppi apici, punto e virgola, righe fino a 100, virgole finali "es5",
@@ -3315,6 +3326,47 @@ definer` e `search_path = ''`):
   tutte le registrazioni. Prima di applicarlo, prove in un blocco SQL
   annullato: registrazione valida, username preso, formato sbagliato,
   codice sbagliato, codice mancante
+- **Stato (16/10, passo 8, su main): fatto.** Due migration applicate,
+  tre trigger attivi su `auth.users`:
+  - `trigger_registrazione` (versione **20261016112900**): applicata da
+    Davide dal SQL Editor, per sbaglio al posto del blocco di prove;
+    registrata da Cowork in `schema_migrations` con created_by
+    "sql-editor (Davide)". Funzioni `public.controlla_registrazione()`
+    (BEFORE INSERT) e `public.crea_nome_utente_registrazione()` (AFTER
+    INSERT), trigger con gli stessi nomi. Il 16/10, prima, su
+    `auth.users` non c'era nessun altro trigger. Il BEFORE, oltre a
+    togliere `codice_invito`, **riscrive lo `username` dei metadati già
+    normalizzato** (minuscolo, senza spazi ai bordi): il "nome alla
+    registrazione" coincide con la riga di `nomi_utente`. Messaggi
+    d'errore che cominciano tutti con "registrazione rifiutata:" (codice
+    di invito non configurato / non valido, username non valido / già in
+    uso), mai con il codice dentro: GoTrue all'app manda solo un errore
+    generico, il motivo si legge nei log;
+  - `registrazione_pulizia_codice` (versione **20261016113910**):
+    applicata da Cowork con `apply_migration`, dopo il blocco di prove
+    annullato **58/58 ok** eseguito da Davide. Funzione e trigger
+    `public.togli_codice_invito()`, **BEFORE UPDATE**, con `WHEN` sulla
+    presenza della chiave: se i metadati sono un oggetto JSON e hanno
+    `codice_invito`, lo toglie. **Non dà mai errore** (scatta anche a
+    ogni accesso e aggiornamento di GoTrue): nessun raise, metadati null
+    o non oggetto lasciati come sono. Nella stessa migration la pulizia
+    dell'account che aveva ancora la chiave.
+- **Perché il terzo trigger** (difetto trovato il 16/10 con la prima
+  registrazione vera; causa verificata da Cowork sui dati). Il BEFORE
+  INSERT toglie `codice_invito`, ma circa 100 ms dopo GoTrue fa un
+  UPDATE di `raw_user_meta_data` (aggiunge `sub`, `email`,
+  `email_verified`, `phone_verified`) partendo dalla **sua copia in
+  memoria**, che il codice lo aveva ancora. Togliere la chiave
+  all'inserimento non basta: si toglie a ogni scrittura.
+- **Verifiche di Cowork (16/10)**: 3 trigger attivi; funzioni security
+  definer, owner postgres, non eseguibili da anon e authenticated;
+  segreto `codice_invito` presente; nessun account con `codice_invito`
+  nei metadati; advisors senza avvisi nuovi. Due registrazioni vere da
+  app-libra: davidemancon02+trigger@gmail.com (username `test`, 13:31,
+  ha fatto scoprire il difetto) e davidemancon02+trigger2@gmail.com
+  (username `prova_trigger2`, 13:42, dopo la correzione: metadati senza
+  codice). Da lì gli account nascono solo dall'app, con codice e
+  username
 
 **Dove sta il codice (deciso il 15/10).** Nel **Vault di Supabase** (`supabase_vault`, già installato nel
 progetto), un segreto di nome `codice_invito`: cifrato sul disco, non
@@ -4414,9 +4466,15 @@ Dal 15/10 ci sono anche **due account usa e getta di Amici** (branch
 - **B**: davidemancon02+amici2@gmail.com, username `@amici_due_b`, usato
   in Chrome sul PC.
 
-Al 15/10 A e B sono amici. **Si eliminano con Elimina il mio account alla
-fine del branch `condivisione-alimenti`**, che così prova anche la
-cascata sulle tabelle di Amici (sezione 9.6).
+Dal 16/10 anche **due account usa e getta del trigger di registrazione**
+(sezione 9.1), nati dalle registrazioni vere di prova su app-libra:
+- davidemancon02+trigger@gmail.com, username `@test`;
+- davidemancon02+trigger2@gmail.com, username `@prova_trigger2`.
+
+Al 15/10 A e B sono amici. **A, B e i due account del trigger si
+eliminano con Elimina il mio account alla fine del branch
+`condivisione-alimenti`**, che così prova anche la cascata sulle tabelle
+di Amici (sezione 9.6).
 
 ### Fatto
 
@@ -4920,10 +4978,20 @@ il 16/10 (pallino) sull'anteprima, con gli account A e B ("Account di
 prova", sopra) e l'account di prova fisso; verificati da Cowork su
 Supabase. Non provati a mano, coperti da test o dai blocchi SQL: "Questa
 richiesta non c'è più.", l'arancio insieme a una richiesta, VoiceOver;
-"Scegli il tuo username" si prova dopo il merge con l'account vero di
-Davide, che non ha username. Restano da fare: il merge, il trigger su
-`auth.users` (passo 8, dopo il merge) e il branch
-`condivisione-alimenti`.
+Unito a main il 16/10 (fast-forward, `ae0a75a`, deploy di produzione
+Ready); "Scegli il tuo username" provato in produzione il 16/10 con
+l'account vero di Davide (username `@libra`), verificato da Cowork.
+
+**Amici, passo 8** (16/10, su main; §9.1, "Il codice di invito anche nel
+database"). Il codice di invito e lo username controllati anche nel
+database, con tre trigger su `auth.users`: migration
+`trigger_registrazione` (20261016112900, BEFORE e AFTER INSERT: codice
+contro il segreto `codice_invito` del Vault, formato dello username, riga
+di `nomi_utente`) e `registrazione_pulizia_codice` (20261016113910,
+BEFORE UPDATE: toglie `codice_invito` quando GoTrue riscrive i metadati).
+Prove nel blocco annullato 58/58; advisors senza avvisi nuovi; due
+registrazioni vere da app-libra, la seconda con i metadati puliti.
+Verificato da Cowork. Resta da fare il branch `condivisione-alimenti`.
 
 **Test.** 918 test permanenti in 83 file (Vitest), tutti verdi al 16/10.
 
@@ -4935,15 +5003,25 @@ Davide, che non ha username. Restano da fare: il merge, il trigger su
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
 - **Amici e condivisione degli alimenti** (sezione 3, "Amici"): i passi
-  1–7 di Amici sono fatti (sopra, "Fatto"), da unire a main; restano il
-  trigger su `auth.users` con il codice di invito controllato anche nel
-  database (passo 8, §9.1, dopo il merge) e il branch
+  1–8 di Amici sono fatti e su main (sopra, "Fatto"; il passo 8 è il
+  trigger su `auth.users`, §9.1); resta il branch
   `condivisione-alimenti` (decisioni del 15 e del 16/10)
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **"Username appena preso, scegline un altro" non esiste ancora**
+  (16/10, passo 8). La sezione 3 ("Lo username") lo prevede per due
+  persone che scelgono lo stesso nome nello stesso istante: il trigger
+  rifiuta la seconda registrazione, ma GoTrue all'app manda solo un
+  errore generico, e `traduciErroreAuth` lo trasforma in "Si è
+  verificato un errore. Riprova tra poco." Raro: la pagina Registrati e
+  la Server Action controllano prima con `username_disponibile`. Da
+  fare: riconoscere quel caso nella Server Action (per esempio
+  richiamando `username_disponibile` dopo l'errore) e dare il messaggio
+  giusto
 
 - **Alimenti doppi nel catalogo** (trovato da Davide il 16/10). Creando o
   rinominando un alimento (Aggiungi, Impostazioni > Alimenti) non c'è

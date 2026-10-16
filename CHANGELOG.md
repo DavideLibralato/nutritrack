@@ -5,6 +5,68 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Amici: passo 8 completato, trigger di registrazione attivi
+
+Su main, solo documenti e le due migration. `trigger_registrazione`
+applicata da Davide dal SQL Editor (per sbaglio, al posto delle prove) e
+registrata da Cowork in `schema_migrations` (20261016112900, created_by
+"sql-editor (Davide)"); `registrazione_pulizia_codice` applicata da
+Cowork con `apply_migration` (20261016113910) dopo il blocco di prove
+58/58 ok. Verificato da Cowork: 3 trigger attivi su `auth.users`,
+funzioni security definer non eseguibili da anon e authenticated,
+segreto presente, nessun account con `codice_invito`, advisors senza
+avvisi nuovi; due registrazioni vere da app-libra (`test` alle 13:31,
+che ha fatto scoprire il difetto; `prova_trigger2` alle 13:42, metadati
+puliti). Blocco di prove cancellato. In PUNTO: stato finale in §9.1;
+in §8 la regola nuova, ogni migration nuova ha in testa "NON eseguire dal
+SQL Editor"; in §11 il passo 8 in "Fatto", i due account del trigger da
+eliminare con A e B alla fine di `condivisione-alimenti`, e fra i
+difetti aperti il messaggio "Username appena preso" che non esiste
+ancora (oggi la seconda di due registrazioni simultanee con lo stesso
+nome vede "Si è verificato un errore. Riprova tra poco.").
+
+## 2026-10-16 — Amici: il codice di invito tornava nei metadati
+
+Passo 8, su main. `trigger_registrazione` applicata il 16/10 dal SQL
+Editor, per sbaglio al posto delle prove; verificata da Cowork (trigger
+attivi, funzioni come nel file, segreto uguale a `CODICE_INVITO`,
+advisors puliti, registrazione vera passata con username `test`). Quella
+registrazione ha mostrato il difetto: `codice_invito` restava nei
+metadati, perché ~100 ms dopo l'insert GoTrue riscrive
+`raw_user_meta_data` dalla sua copia in memoria. Nuova migration
+`supabase/migrations/registrazione_pulizia_codice.sql`, **non
+applicata**: trigger BEFORE UPDATE `togli_codice_invito` (con `WHEN`
+sulla chiave, mai errori, metadati null o non oggetto lasciati stare) e
+pulizia dell'account che ha ancora la chiave. Blocco di prove
+`prove_trigger_registrazione.sql` rifatto: prova i due trigger già
+attivi, esegue dentro la migration nuova e aggiunge l'UPDATE come
+GoTrue, l'UPDATE con metadati null, quello con uno scalare e quello di
+`last_sign_in_at`. Non ancora eseguito. PUNTO §9.1 e §11 aggiornati.
+
+## 2026-10-16 — Amici: il file del trigger di registrazione
+
+Passo 8, su main. `supabase/migrations/trigger_registrazione.sql`, **non
+applicato**: BEFORE INSERT su `auth.users` (`controlla_registrazione`:
+codice di invito contro il segreto `codice_invito` del Vault, segreto
+assente → rifiuta tutto; formato dello username; toglie `codice_invito`
+dai metadati e ci rimette lo username normalizzato) e AFTER INSERT
+(`crea_nome_utente_registrazione`: la riga di `nomi_utente`, nome preso →
+la registrazione si annulla). Funzioni security definer, `search_path =
+''`, non eseguibili da nessuno. Nella stessa migration `codice_invito`
+tolto dai metadati dei 2 account che lo hanno. Letto da Supabase: nessun
+altro trigger su `auth.users`; `postgres` non ha UPDATE su
+`vault.secrets`, quindi le prove rinominano il segreto con
+`vault.update_secret`. Blocco di prove `prove_trigger_registrazione.sql`
+nella radice (temporaneo, fuori da git), non ancora eseguito. PUNTO §9.1
+e §11 aggiornati.
+
+## 2026-10-16 — Merge di `amici` su main
+
+Main `ae0a75a`, fast-forward; deploy di produzione Ready confermato il
+16/10. "Scegli il tuo username" provato in produzione il 16/10 con
+l'account vero di Davide (username `@libra`), verificato da Cowork su
+Supabase.
+
 ## 2026-10-16 — Amici: pallino provato su iPhone, decisioni sugli alimenti in arrivo
 
 Branch `amici`. Pallino provato da Davide il 16/10 sull'anteprima (A in
