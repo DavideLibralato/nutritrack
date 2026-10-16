@@ -1528,7 +1528,16 @@ proposta **B**, scelta il 16/10)
   tentativo ripetuto dopo una risposta persa non crea doppie righe (un id
   per ogni tocco su "Manda", tenuto nei tentativi). Dopo l'invio il
   foglio si chiude, si esce dalla selezione e la barra dice "Mandati 2
-  alimenti a @sara_c." (la stessa forma con un alimento o più amici).
+  alimenti a @sara_c." (la stessa forma con un alimento o più amici:
+  "Mandato 1 alimento a @sara_c.", "… a @sara_c e @paolo_a.", "… a 3
+  amici."). Con `non_amici` il foglio resta aperto e dice "Uno degli
+  amici scelti non è più tuo amico: non è partito niente. Controlla
+  l'elenco e riprova."; senza risposta il testo comune di Amici ("Non
+  sono riuscito a farlo…"). Una risposta nel foglio in arrivo su
+  alimenti che nel frattempo non ci sono più (`non_trovata`): "Questo
+  alimento non è più in arrivo." oppure "Alcuni di questi alimenti non
+  sono più in arrivo: non è cambiato niente.", e l'elenco si rilegge.
+  Testi in `src/lib/catalogo/testiAlimentiInArrivo.ts` (passo 3, 16/10).
   Niente insert diretto nella tabella: il secondo invio deve chiudere la
   riga vecchia, e solo una funzione lo fa insieme all'invio nuovo.
 - **Lo stesso alimento mandato due volte alla stessa persona**, prima che
@@ -1628,6 +1637,9 @@ proposta **B**, scelta il 16/10)
     due farebbe due alimenti uguali. Nella selezione multipla **se ne
     spunta uno solo per chiave** (`chiaveAlimento`); dopo l'Aggiungi e
     la discesa l'altro diventa un doppione normale, con le sue scelte.
+    Spuntare il secondo **sposta la spunta** dal primo a lui (come una
+    scelta fra due); "Seleziona tutti" prende il primo dell'elenco, il
+    più recente (passo 3, 16/10).
   - Il confronto (doppione sì o no, valori uguali o diversi, uguale a un
     altro in arrivo) e le righe della tabella sono funzioni pure con test
     permanente (`src/lib/catalogo/alimentiInArrivo.ts`). Il doppione lo

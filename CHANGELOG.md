@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Condivisione alimenti: chiamate, confronto e testi
+
+Branch `condivisione-alimenti`, passo 3. `src/lib/amici/alimentiCondivisi.ts`
+(le tre funzioni del database, la copia che parte, la lettura e il
+conteggio degli alimenti in arrivo); `src/lib/catalogo/alimentiInArrivo.ts`
+(nuovo / uguale / diverso sui 9 valori in centesimi, righe del confronto,
+selezione con un solo alimento per nome e marca);
+`testiAlimentiInArrivo.ts`. 35 test nuovi, provati anche rompendo una
+copia del confronto (4 falliti, quelli giusti). Decisi scrivendo:
+spuntare il secondo di due alimenti uguali sposta la spunta; i testi di
+`non_amici` e di "non più in arrivo". Trovato dal controllo dei tipi:
+l'elenco delle colonne spezzato con "+" toglieva i tipi alle righe lette.
+
 ## 2026-10-16 — Condivisione alimenti: decisioni e migration `alimenti_condivisi`
 
 Branch `condivisione-alimenti`, passi 1 e 2. PUNTO aggiornato con le

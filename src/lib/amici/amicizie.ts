@@ -38,8 +38,9 @@ const ESITI_CHIEDI: readonly string[] = [
 ];
 
 // Una chiamata a una funzione del database che risponde con un testo: un
-// testo fra quelli attesi, altrimenti "errore".
-async function chiama<E extends string>(
+// testo fra quelli attesi, altrimenti "errore". La usa anche
+// alimentiCondivisi.ts.
+export async function chiama<E extends string>(
   supabase: SupabaseClient,
   funzione: string,
   argomenti: Record<string, unknown>,
