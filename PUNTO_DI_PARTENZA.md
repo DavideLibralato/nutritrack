@@ -1248,6 +1248,59 @@ catalogo, si corregge e si fa pulizia.
   Aggiungi da `ripristinaAlimenti`: dal 15/10 anche l'eliminazione
   singola è tutto o niente (prima erano due scritture separate, in un
   ordine scelto perché un guasto a metà lasciasse uno stato visibile).
+- **Mai due alimenti uguali** (decisioni del 16/10, branch
+  `alimenti-doppi`). Stesso nome **e** stessa marca = stesso prodotto.
+  - **Il confronto**: maiuscole e accenti indifferenti (come la ricerca),
+    spazi ai bordi ignorati, spazi doppi interni contati come uno. La
+    marca vuota conta come una marca: due "Banana" senza marca sono
+    doppioni. Mai il solo nome: «Yogurt greco 0% · Fage» e «Yogurt greco
+    0% · Müller» non lo sono. Contano solo gli alimenti **vivi
+    dell'utente**, verificati compresi; non i cancellati e non il
+    catalogo comune (`user_id` null): un alimento verificato non si
+    modifica, se ne crea uno proprio (sezione 10.8), anche con lo stesso
+    nome.
+  - **Scritta una volta sola**: `trovaDoppione` in
+    `src/lib/catalogo/doppioniAlimenti.ts`, con `testoConfronto` (lo
+    stesso confronto di `cercaPerNome` e `filtraPerNome`, che la
+    importano da lì) e `chiaveAlimento`; test permanenti in
+    `doppioniAlimenti.test.ts`. La usa anche la condivisione (sotto,
+    "Condividere un alimento").
+  - **Nel form** (`CreaAlimentoForm`: "Nuovo alimento" e "Modifica
+    alimento", in Aggiungi e qui): mentre si scrive, sotto il nome «Hai
+    già «Pane · Mulino»» (`etichettaAlimento`) in arancio, il campo con il
+    bordo arancio e il Salva spento. Il form legge il catalogo da solo,
+    con `useLiveQuery`: anche un alimento arrivato con la sync compare
+    subito. In Modifica l'alimento stesso non conta, quindi una rinomina
+    che cambia solo maiuscole o accenti ("pane" → "Pane") passa.
+  - **"Apri"**, accanto al messaggio, porta all'alimento che c'è già: in
+    Aggiungi da "Nuovo alimento" apre il suo **sheet quantità** (si stava
+    cercando di registrarlo, come dopo "Crea e scegli la quantità");
+    dalla matita in Aggiungi e da qui apre **"Modifica alimento"** di
+    quello. Se quello non si può modificare (verificato), "Apri" non c'è
+    e resta il messaggio. Le modifiche non salvate si perdono: non si
+    potevano salvare comunque. Qui il form ha una `key` per alimento,
+    così passando a un altro riparte dai suoi valori.
+  - **Al Salva** (`salvaAlimento` in `src/lib/repository/alimenti.ts`):
+    si rilegge il catalogo da Dexie e si scrive **nella stessa
+    transazione** (`alimenti` + `outbox`). Ferma l'alimento uguale
+    arrivato con la sync dopo l'ultimo ridisegno, e il doppio tocco su
+    Salva (le due scritture vanno una dopo l'altra, la seconda trova la
+    prima). In quel caso non si scrive niente e resta il messaggio, che
+    la lettura live ha già visto. Nome e marca si salvano con gli spazi
+    normalizzati (`normalizzaSpazi`, come i nomi dei pasti); una marca
+    vuota diventa null.
+  - **L'Annulla dopo un'eliminazione** non rimette in vita un alimento se
+    nel frattempo ne è nato uno uguale. Restano cancellate anche le sue
+    righe dei pasti salvati (punterebbero a un alimento cancellato), e un
+    pasto salvato che senza di lui tornerebbe vuoto. La barra lo dice con
+    nome e marca: "Non ripristinato: hai già «Pane · Mulino»." oppure
+    "Ripristinati: 2 alimenti. «Pane · Mulino» no: ne hai già uno
+    uguale." (`messaggioDopoRipristino`, con test).
+  - **Solo nell'app, non sul server**: niente indice unico su `alimenti`,
+    che bloccherebbe in silenzio la coda outbox (come l'indice sui nomi
+    dei pasti, tolto il 20/9). Due telefoni offline possono ancora
+    crearne due uguali: caso raro, accettato.
+  - Schema dati invariato: niente migration, niente versione Dexie.
 - **La riga in Impostazioni**: "Alimenti", nel gruppo Alimentazione prima
   di Preferiti, con a destra "46 alimenti", "1 alimento" o "Nessuno",
   contati con la stessa funzione dell'elenco. Con alimenti in arrivo
@@ -1438,7 +1491,10 @@ proposta **B**, scelta il 16/10)
   la marca vuota conta come una marca («Yogurt greco 0% · Fage» e
   «Yogurt greco 0% · Müller» non sono doppioni, due alimenti senza marca
   con lo stesso nome sì). **Mai due alimenti uguali**: "Aggiungi
-  comunque" non esiste. Il messaggio scrive sempre nome e marca.
+  comunque" non esiste. Il messaggio scrive sempre nome e marca. È la
+  stessa regola del catalogo (sopra, "Alimenti", "Mai due alimenti
+  uguali"), già scritta: `trovaDoppione` in
+  `src/lib/catalogo/doppioniAlimenti.ts`, da usare così com'è.
   - **Valori diversi**: "Hai già «nome · marca», con valori diversi.", il
     collegamento **"Confronta i valori"** (una tabella, chiusa
     all'inizio: il tuo e quello in arrivo per kcal, grassi, carboidrati,
@@ -1633,8 +1689,9 @@ prove in un blocco SQL annullato prima, `get_advisors` dopo):
   produzione **Ready** → prove in un blocco SQL annullato → applicazione
   → una registrazione vera;
 - prima, subito dopo il merge di `amici`: il controllo dei doppi nel
-  catalogo quando si crea o si rinomina un alimento (sezione 11,
-  "Difetti e verifiche aperti", "Alimenti doppi nel catalogo");
+  catalogo quando si crea o si rinomina un alimento (branch
+  `alimenti-doppi`, 16/10; sopra, "Alimenti", "Mai due alimenti
+  uguali");
 - branch **`condivisione-alimenti`**: (1) migration `alimenti_condivisi`
   con `rispondi_alimento_condiviso` (anche per più righe insieme) e la
   funzione che riapre una condivisione dopo l'Annulla di "Usa questi
@@ -2469,7 +2526,11 @@ nome non era più riusabile):
    Non si ripristina: un pasto salvato vuoto se nel frattempo ne è nato un
    altro con lo stesso nome (lo dice la barra: niente doppione, niente nome
    inventato), né una riga il cui pasto salvato è stato cancellato durante
-   la finestra. Se l'utente non preme, la cancellazione resta. Lo stesso
+   la finestra. E, dal 16/10, nemmeno l'alimento se nel frattempo ne è
+   nato uno uguale (stesso nome e marca, sezione 3, "Alimenti", "Mai due
+   alimenti uguali"): con lui restano cancellate le sue righe, e il pasto
+   salvato che senza di lui tornerebbe vuoto. Se l'utente non preme, la
+   cancellazione resta. Lo stesso
    Annulla c'è in Impostazioni > Alimenti, anche dopo l'eliminazione di
    più alimenti insieme (sezione 3, "Alimenti").
 
@@ -4993,7 +5054,17 @@ Prove nel blocco annullato 58/58; advisors senza avvisi nuovi; due
 registrazioni vere da app-libra, la seconda con i metadati puliti.
 Verificato da Cowork. Resta da fare il branch `condivisione-alimenti`.
 
-**Test.** 918 test permanenti in 83 file (Vitest), tutti verdi al 16/10.
+**Alimenti doppi nel catalogo** (16/10, branch `alimenti-doppi`; trovato
+da Davide il 16/10, era in "Difetti e verifiche aperti"). Prima, creando
+o rinominando un alimento, non c'era nessun controllo su nome + marca.
+Ora vale "Mai due alimenti uguali" (sezione 3, "Alimenti"): messaggio
+«Hai già …» con "Apri" e Salva spento nel form, controllo di nuovo al
+Salva nella stessa transazione della scrittura (chiude anche il doppio
+tocco), e l'Annulla dopo un'eliminazione che non rimette in vita un
+doppione. Al 16/10 nei dati non c'era nessun doppione (verificato da
+Cowork, e di nuovo con la chiave nuova). Schema invariato.
+
+**Test.** 940 test permanenti in 86 file (Vitest), tutti verdi al 16/10.
 
 ### Non ancora costruito
 
@@ -5022,16 +5093,6 @@ Verificato da Cowork. Resta da fare il branch `condivisione-alimenti`.
   fare: riconoscere quel caso nella Server Action (per esempio
   richiamando `username_disponibile` dopo l'errore) e dare il messaggio
   giusto
-
-- **Alimenti doppi nel catalogo** (trovato da Davide il 16/10). Creando o
-  rinominando un alimento (Aggiungi, Impostazioni > Alimenti) non c'è
-  nessun controllo su nome + marca: si possono avere due alimenti
-  uguali. Al 16/10 nei dati non c'è nessun doppione (verificato da
-  Cowork). Si fa **subito dopo il merge di `amici`, prima di
-  `condivisione-alimenti`**, con la stessa regola di doppione decisa per
-  gli alimenti in arrivo (sezione 3, "Condividere un alimento": stesso
-  nome e stessa marca, maiuscole, accenti e spazi ai bordi indifferenti,
-  marca vuota come marca)
 
 - **Redirect URL su Supabase: solo voci esatte** (Authentication → URL
   Configuration; regola dal 10/10). Mai un jolly sui sottodomini

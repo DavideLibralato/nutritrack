@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Mai due alimenti uguali nel catalogo
+
+Branch `alimenti-doppi`. Creando o rinominando un alimento non c'era
+nessun controllo su nome + marca (trovato da Davide su iPhone). Ora la
+regola sta in `trovaDoppione` (`src/lib/catalogo/doppioniAlimenti.ts`,
+la stessa normalizzazione della ricerca, che la importa da lì): nel form
+«Hai già «Pane · Mulino»» con "Apri" e Salva spento; al Salva
+`salvaAlimento` rilegge e scrive in una transazione, il che chiude anche
+il doppio tocco su Salva, che prima poteva creare due righe. Nome e marca
+si salvano con gli spazi doppi ridotti. L'Annulla dopo un'eliminazione non
+rimette in vita un doppione. Trovato strada facendo: con l'alimento non
+ripristinato restano cancellate anche le sue righe dei pasti salvati e il
+pasto che tornerebbe vuoto. Aggiunta la `key` mancante sul form in
+Impostazioni > Alimenti. 940 test, 4 file nuovi o estesi. Schema
+invariato. Prova su iPhone ancora da fare.
+
 ## 2026-10-16 — Amici: passo 8 completato, trigger di registrazione attivi
 
 Su main, solo documenti e le due migration. `trigger_registrazione`

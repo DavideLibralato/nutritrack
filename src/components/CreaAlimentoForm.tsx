@@ -16,10 +16,19 @@
 // chiamante passa `alimentoDaModificare`: i campi partono dai valori reali,
 // il salvataggio fa aggiorna() sulla stessa riga, e compare l'eliminazione
 // (logica, deleted_at) con la stessa conferma inline usata per le voci.
+//
+// Mai due alimenti uguali (stesso nome e stessa marca, regola in
+// src/lib/catalogo/doppioniAlimenti.ts): mentre si scrive il form guarda il
+// catalogo e, se c'è già, scrive sotto il nome «Hai già «Pane · Mulino»»
+// con "Apri" accanto, e spegne il Salva. Al Salva salvaAlimento rilegge il
+// catalogo e scrive nella stessa transazione. Cosa fa "Apri" lo decide il
+// chiamante (`onApriEsistente`, `puoAprire`).
 
 import { useState } from "react";
-import { repositoryAlimenti } from "@/lib/repository";
+import { useLiveQuery } from "dexie-react-hooks";
+import { catalogoLocale, etichettaAlimento, salvaAlimento } from "@/lib/repository/alimenti";
 import { eliminaAlimenti, type TracciaRimozione } from "@/lib/repository/composizioni";
+import { trovaDoppione } from "@/lib/catalogo/doppioniAlimenti";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { validaValoriAlimento, type CampoAlimento } from "@/lib/inserimento/valoriAlimento";
@@ -49,6 +58,13 @@ interface Props {
   etichettaCrea: string;
   onAnnulla: () => void;
   onCreato: (alimento: Alimento) => void;
+  // "Apri" accanto a «Hai già …»: porta all'alimento che c'è già. In
+  // Aggiungi, da "Nuovo alimento", apre il suo sheet quantità (l'utente
+  // voleva registrarlo); altrove apre "Modifica alimento" di quello.
+  // `puoAprire` dice se quell'alimento si può aprire (in Modifica solo se
+  // modificabile): se no, il messaggio resta e "Apri" non compare.
+  onApriEsistente: (alimento: Alimento) => void;
+  puoAprire: (alimento: Alimento) => boolean;
   // --- Solo in modifica di un alimento esistente ---
   alimentoDaModificare?: Alimento;
   onModificato?: () => void;
@@ -65,6 +81,8 @@ export default function CreaAlimentoForm({
   etichettaCrea,
   onAnnulla,
   onCreato,
+  onApriEsistente,
+  puoAprire,
   alimentoDaModificare,
   onModificato,
   onEliminato,
@@ -95,7 +113,16 @@ export default function CreaAlimentoForm({
     ...(nome.trim() === "" ? ["nome"] : []),
     ...validazione.mancanti.map((c) => ETICHETTE_MANCANTI[c]),
   ];
-  const salvabile = validazione.valori !== null && nome.trim() !== "";
+  // Il catalogo dell'utente, letto con useLiveQuery: un hook di Dexie che
+  // rilegge e ridisegna da solo quando IndexedDB cambia, anche per un
+  // alimento arrivato con la sync da un altro telefono. undefined finché
+  // la prima lettura non è pronta: lì il controllo lo fa solo il Salva.
+  const catalogo = useLiveQuery(() => catalogoLocale(userId), [userId]);
+  const doppione = catalogo
+    ? trovaDoppione(catalogo, { nome, marca }, { userId, escludiId: a?.id })
+    : null;
+
+  const salvabile = validazione.valori !== null && nome.trim() !== "" && doppione === null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -106,10 +133,11 @@ export default function CreaAlimentoForm({
 
     // Ordine dei macro come sulle etichette reali dei prodotti: Kcal, Grassi,
     // Carboidrati, Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro").
-    // Valori già arrotondati a due decimali, come li terrà il server.
+    // Valori già arrotondati a due decimali, come li terrà il server. Gli
+    // spazi di nome e marca li sistema salvaAlimento.
     const campi = {
-      nome: nome.trim(),
-      marca: marca.trim() || null,
+      nome,
+      marca,
       kcal_100g: valori.kcal_100g,
       grassi_100g: valori.grassi_100g,
       carboidrati_100g: valori.carboidrati_100g,
@@ -119,26 +147,16 @@ export default function CreaAlimentoForm({
 
     setInCorso(true);
     try {
-      if (alimentoDaModificare) {
-        // Stessa riga (stesso id): aggiorna(), non crea(). `verificato`,
-        // `fonte`, `barcode` restano quelli che erano; `marca` ora è
-        // modificabile qui (voce 5).
-        await repositoryAlimenti.aggiorna(alimentoDaModificare.id, campi);
-        onModificato?.();
-      } else {
-        const alimento = await repositoryAlimenti.crea({
-          user_id: userId,
-          barcode: null,
-          ...campi,
-          zuccheri_100g: null,
-          fibre_100g: null,
-          saturi_100g: null,
-          sale_100g: null,
-          fonte: "manuale",
-          verificato: false,
-        });
-        onCreato(alimento);
+      const esito = await salvaAlimento(userId, campi, alimentoDaModificare?.id);
+      if (esito.esito === "doppione") {
+        // Nato fra l'ultimo ridisegno e il tocco (un altro dispositivo, o
+        // il secondo di un doppio tocco): niente scritto. Il messaggio
+        // «Hai già …» lo mostra la lettura live, che l'ha già visto.
+        setInCorso(false);
+        return;
       }
+      if (alimentoDaModificare) onModificato?.();
+      else onCreato(esito.alimento);
     } catch {
       setInCorso(false);
       setErrore(
@@ -198,8 +216,28 @@ export default function CreaAlimentoForm({
           type="text"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+          aria-invalid={doppione !== null}
+          aria-describedby={doppione ? "crea-nome-doppione" : undefined}
+          className={`w-full rounded-lg border p-2 ${doppione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
         />
+        {/* Sotto il nome anche quando a renderlo doppione è la marca: è
+            la coppia che conta, e il nome è il campo che si guarda. */}
+        {doppione && (
+          <div className="mt-1 flex items-baseline justify-between gap-3">
+            <p id="crea-nome-doppione" className="text-sm text-warning">
+              Hai già «{etichettaAlimento(doppione)}»
+            </p>
+            {puoAprire(doppione) && (
+              <button
+                type="button"
+                onClick={() => onApriEsistente(doppione)}
+                className={`shrink-0 rounded text-sm font-medium text-accent underline ${CLASSE_FOCUS}`}
+              >
+                Apri
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div>

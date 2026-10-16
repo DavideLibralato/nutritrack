@@ -533,17 +533,17 @@ function AggiungiContenuto() {
     setBarra(null);
 
     try {
-      const { pastiNonRipristinati } = await ripristinaAlimentoEliminato(
+      const esito = await ripristinaAlimentoEliminato(
         userId,
         annullabile.alimento.id,
         annullabile.traccia
       );
-      // "Ripristinato: Mela", o la frase intera se un pasto salvato non è
-      // tornato (testi in testiAlimentiCancellati.ts, gli stessi di
-      // Impostazioni > Alimenti).
+      // "Ripristinato: Mela", o la frase intera se l'alimento o un pasto
+      // salvato non è tornato (testi in testiAlimentiCancellati.ts, gli
+      // stessi di Impostazioni > Alimenti).
       setBarra({
         id: crypto.randomUUID(),
-        ...messaggioDopoRipristino([annullabile.alimento.nome], pastiNonRipristinati),
+        ...messaggioDopoRipristino([annullabile.alimento.nome], esito),
       });
     } catch {
       // Si ripropone l'Annulla: ripristinaAlimentoEliminato salta ciò che è
@@ -609,6 +609,19 @@ function AggiungiContenuto() {
                 setCreando(false);
                 scegli(a);
               }}
+              // "Apri" sull'alimento che c'è già: da "Nuovo alimento" il suo
+              // sheet quantità, come dopo "Crea e scegli la quantità";
+              // dalla matita "Modifica alimento" di quello (la `key` cambia,
+              // il form riparte dai suoi valori).
+              onApriEsistente={(esistente) => {
+                if (alimentoInModifica) {
+                  setAlimentoInModifica(esistente);
+                } else {
+                  setCreando(false);
+                  scegli(esistente);
+                }
+              }}
+              puoAprire={(esistente) => !alimentoInModifica || eModificabile(esistente, userId)}
               onModificato={() => setAlimentoInModifica(null)}
               onEliminato={onAlimentoEliminato}
             />

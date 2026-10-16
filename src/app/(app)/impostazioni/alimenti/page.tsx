@@ -39,7 +39,7 @@ import {
   type TracciaEliminazioneAlimenti,
   type TracciaRimozione,
 } from "@/lib/repository/composizioni";
-import { alimentiModificabili } from "@/lib/catalogo/alimentiModificabili";
+import { alimentiModificabili, eModificabile } from "@/lib/catalogo/alimentiModificabili";
 import {
   contaUsi,
   ordinaCatalogo,
@@ -260,8 +260,8 @@ export default function AlimentiPage() {
     if (!userId || !annullabile) return;
     setBarra(null);
     try {
-      const { pastiNonRipristinati } = await ripristinaAlimenti(userId, annullabile.traccia);
-      mostra(messaggioDopoRipristino(annullabile.nomi, pastiNonRipristinati));
+      const esito = await ripristinaAlimenti(userId, annullabile.traccia);
+      mostra(messaggioDopoRipristino(annullabile.nomi, esito));
     } catch {
       mostra({ testo: testoRipristinoNonRiuscito(annullabile.nomi) }, annullabile);
     }
@@ -277,6 +277,8 @@ export default function AlimentiPage() {
         userId={userId}
         modulo={modulo}
         onChiudi={() => setModulo(null)}
+        onApri={(a) => setModulo({ tipo: "modifica", alimento: a })}
+        puoAprire={(a) => eModificabile(a, userId)}
         onCreato={(a) => {
           setModulo(null);
           mostra(messaggioAlimentoCreato(a.nome));
@@ -484,12 +486,16 @@ function SchermataModulo({
   userId,
   modulo,
   onChiudi,
+  onApri,
+  puoAprire,
   onCreato,
   onEliminato,
 }: {
   userId: string;
   modulo: Modulo;
   onChiudi: () => void;
+  onApri: (alimento: Alimento) => void;
+  puoAprire: (alimento: Alimento) => boolean;
   onCreato: (alimento: Alimento) => void;
   onEliminato: (alimento: Alimento, traccia: TracciaRimozione) => void;
 }) {
@@ -511,7 +517,10 @@ function SchermataModulo({
         <h1 className="font-display text-2xl font-bold">Alimenti</h1>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-5">
+        {/* La `key` fa ripartire il form da capo quando "Apri" passa a un
+            altro alimento: senza, React terrebbe i campi già scritti. */}
         <CreaAlimentoForm
+          key={modulo.tipo === "modifica" ? modulo.alimento.id : "nuovo"}
           userId={userId}
           nomeIniziale=""
           etichettaIndietro="Torna al catalogo"
@@ -519,6 +528,8 @@ function SchermataModulo({
           alimentoDaModificare={modulo.tipo === "modifica" ? modulo.alimento : undefined}
           onAnnulla={onChiudi}
           onCreato={onCreato}
+          onApriEsistente={onApri}
+          puoAprire={puoAprire}
           onModificato={onChiudi}
           onEliminato={onEliminato}
         />

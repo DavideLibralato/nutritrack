@@ -5,7 +5,8 @@
 
 import { db } from "../db/database";
 import { repositoryAlimenti, repositoryComposizioni, repositoryComposizioniVoci } from "./index";
-import { catalogoLocale } from "./alimenti";
+import { catalogoLocale, etichettaAlimento } from "./alimenti";
+import { trovaDoppione } from "../catalogo/doppioniAlimenti";
 import {
   pastoSalvatoVisibile,
   separaVociPerCatalogo,
@@ -334,7 +335,18 @@ export async function eliminaAlimenti(
 // guasto a metà non lascia niente; l'ordine resta perché i controlli dei
 // passi dopo leggono ciò che i passi prima hanno già rimesso in vita.
 //
-// Due casi in cui qualcosa NON si ripristina, decisi il 2026-09-25:
+// Casi in cui qualcosa NON si ripristina:
+// - un alimento, se nel frattempo ne è nato un altro con lo stesso nome e
+//   la stessa marca (regola del doppione, src/lib/catalogo/doppioniAlimenti.ts;
+//   decisa il 16/10): mai due alimenti uguali nel catalogo. Resta
+//   cancellato, e torna in `alimentiNonRipristinati` perché il chiamante
+//   lo dica. Con lui restano
+//   cancellate le sue righe dei pasti salvati (punterebbero a un alimento
+//   cancellato), e un pasto salvato che senza di lui sarebbe vuoto non torna:
+//   niente guscio vuoto (il bug del 22/09). Quel pasto non va in
+//   `pastiNonRipristinati`: il motivo è l'alimento, già detto;
+//
+// e due decisi il 2026-09-25:
 // - un pasto salvato cancellato perché era rimasto vuoto, se nel frattempo
 //   è nato un altro pasto salvato con lo stesso nome: niente doppione
 //   silenzioso e niente nome inventato ("Cena (2)"). Resta cancellato, e il
@@ -348,8 +360,18 @@ export async function ripristinaAlimentoEliminato(
   userId: string,
   alimentoId: string,
   traccia: TracciaRimozione
-): Promise<{ pastiNonRipristinati: string[] }> {
+): Promise<EsitoRipristino> {
   return ripristinaAlimenti(userId, { ...traccia, idAlimenti: [alimentoId] });
+}
+
+// Cosa non è tornato, per la barra (messaggioDopoRipristino).
+export interface EsitoRipristino {
+  // Gli alimenti rimasti cancellati perché ne esiste già uno uguale: il
+  // nome (per toglierlo dall'elenco dei ripristinati) e l'etichetta
+  // ("Pane · Mulino") da scrivere nella barra.
+  alimentiNonRipristinati: { nome: string; etichetta: string }[];
+  // Nomi dei pasti salvati rimasti cancellati perché il nome è già preso.
+  pastiNonRipristinati: string[];
 }
 
 // L'"Annulla" dopo eliminaAlimenti, per uno o più alimenti: le stesse
@@ -363,7 +385,7 @@ export async function ripristinaAlimentoEliminato(
 export async function ripristinaAlimenti(
   userId: string,
   traccia: TracciaEliminazioneAlimenti
-): Promise<{ pastiNonRipristinati: string[] }> {
+): Promise<EsitoRipristino> {
   return db.transaction(
     "rw",
     [db.alimenti, db.composizioni, db.composizioni_voci, db.outbox],
@@ -380,11 +402,21 @@ export async function ripristinaAlimenti(
 async function ripristinaNellaTransazione(
   userId: string,
   traccia: TracciaEliminazioneAlimenti
-): Promise<{ pastiNonRipristinati: string[] }> {
+): Promise<EsitoRipristino> {
+  // Il controllo del doppione guarda il catalogo vivo PIÙ gli alimenti
+  // rimessi in vita qui, uno dopo l'altro: due alimenti uguali nella
+  // stessa traccia (possibile solo con dati vecchi) non tornano entrambi.
+  const alimentiNonRipristinati: EsitoRipristino["alimentiNonRipristinati"] = [];
+  const catalogoPrima = await catalogoLocale(userId);
   for (const id of traccia.idAlimenti) {
     const alimento = await repositoryAlimenti.ottieniPerId(id);
     if (!alimento || alimento.deleted_at === null) continue;
-    await repositoryAlimenti.aggiorna(id, { deleted_at: null });
+    if (trovaDoppione(catalogoPrima, alimento, { userId, escludiId: id })) {
+      alimentiNonRipristinati.push({ nome: alimento.nome, etichetta: etichettaAlimento(alimento) });
+      continue;
+    }
+    const ripristinato = await repositoryAlimenti.aggiorna(id, { deleted_at: null });
+    catalogoPrima.push(ripristinato);
   }
 
   const pastiNonRipristinati: string[] = [];
@@ -393,6 +425,16 @@ async function ripristinaNellaTransazione(
     repositoryComposizioni.ottieniTutti(userId),
     repositoryComposizioniVoci.ottieniTutti(userId),
   ]);
+  const idAlimentiVivi = new Set(catalogo.map((a) => a.id));
+
+  // Le righe della traccia, lette una volta: servono sia per sapere se un
+  // pasto salvato tornerebbe vuoto, sia al passo delle righe.
+  const righeTraccia = (
+    await Promise.all(traccia.idComposizioniVoci.map((id) => repositoryComposizioniVoci.ottieniPerId(id)))
+  ).filter((v): v is ComposizioneVoce => v !== undefined && v.deleted_at !== null);
+  // Una riga torna solo se il suo alimento è vivo (ripristinato, o mai
+  // toccato): mai una riga viva che punta a un alimento cancellato.
+  const righeDaRipristinare = righeTraccia.filter((v) => idAlimentiVivi.has(v.alimento_id));
 
   // In sequenza, non in parallelo: due pasti da ripristinare con lo stesso
   // nome (possibile solo con dati vecchi) non devono passare entrambi il
@@ -405,6 +447,9 @@ async function ripristinaNellaTransazione(
   for (const id of traccia.idComposizioni) {
     const composizione = await repositoryComposizioni.ottieniPerId(id);
     if (!composizione || composizione.deleted_at === null) continue;
+    // Era stato cancellato perché rimasto vuoto: torna solo se almeno una
+    // delle sue righe torna (vedi sopra, alimenti non ripristinati).
+    if (!righeDaRipristinare.some((v) => v.composizione_id === id)) continue;
 
     const nome = composizione.nome.trim();
     if (
@@ -420,13 +465,11 @@ async function ripristinaNellaTransazione(
   }
 
   await Promise.all(
-    traccia.idComposizioniVoci.map(async (id) => {
-      const voce = await repositoryComposizioniVoci.ottieniPerId(id);
-      if (!voce || voce.deleted_at === null) return;
+    righeDaRipristinare.map(async (voce) => {
       if (!idComposizioniVive.has(voce.composizione_id)) return;
-      await repositoryComposizioniVoci.aggiorna(id, { deleted_at: null });
+      await repositoryComposizioniVoci.aggiorna(voce.id, { deleted_at: null });
     })
   );
 
-  return { pastiNonRipristinati };
+  return { alimentiNonRipristinati, pastiNonRipristinati };
 }

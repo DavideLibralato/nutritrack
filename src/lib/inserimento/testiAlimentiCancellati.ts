@@ -7,6 +7,7 @@
 // Aggiungi e in Impostazioni > Alimenti.
 
 import { messaggioRipristinato, type MessaggioBarra } from "./testiBarra";
+import type { EsitoRipristino } from "../repository/composizioni";
 
 // «a» / «a» e «b» / «a», «b» e «c». Nomi ripetuti (lo stesso alimento
 // inserito due volte) compaiono una volta sola.
@@ -43,24 +44,54 @@ export function testoGiaSalvato(nomePasto: string, nomiEsclusi: string[]): strin
 // ripristinaAlimenti. Caso normale: "Ripristinato: Mela", su una riga. Se
 // un pasto salvato non è tornato (il suo nome nel frattempo è stato preso),
 // serve la frase intera, che può andare a capo. `nomi`: gli alimenti
-// ripristinati, uno solo (Aggiungi, o il form del catalogo) o più di uno
+// dell'Annulla, uno solo (Aggiungi, o il form del catalogo) o più di uno
 // (selezione in Impostazioni > Alimenti: "Ripristinati: 3 alimenti").
-export function messaggioDopoRipristino(
-  nomi: string[],
-  pastiNonRipristinati: string[]
-): MessaggioBarra {
-  const piu = nomi.length > 1;
-  const [verbo, nome] = piu ? ["Ripristinati:", `${nomi.length} alimenti`] : ["Ripristinato:", nomi[0]];
-  if (pastiNonRipristinati.length === 0) {
+//
+// Un alimento che non è tornato perché nel frattempo ne è nato uno uguale
+// (stesso nome e marca, regola del doppione) si dice con nome e marca:
+// "Non ripristinato: hai già «Pane · Mulino»." se non è tornato niente,
+// altrimenti dopo i ripristinati ("Ripristinati: 2 alimenti. «Pane ·
+// Mulino» no: ne hai già uno uguale.").
+export function messaggioDopoRipristino(nomi: string[], esito: EsitoRipristino): MessaggioBarra {
+  const { alimentiNonRipristinati, pastiNonRipristinati } = esito;
+  // I ripristinati: `nomi` meno, una volta ciascuno, i non ripristinati.
+  const ripristinati = [...nomi];
+  for (const { nome } of alimentiNonRipristinati) {
+    const i = ripristinati.indexOf(nome);
+    if (i >= 0) ripristinati.splice(i, 1);
+  }
+  const piu = ripristinati.length > 1;
+  const [verbo, nome] = piu
+    ? ["Ripristinati:", `${ripristinati.length} alimenti`]
+    : ["Ripristinato:", ripristinati[0]];
+  if (alimentiNonRipristinati.length === 0 && pastiNonRipristinati.length === 0) {
     return piu ? { testo: verbo, nome, icona: "spunta" } : messaggioRipristinato(nome);
   }
-  let testo = `${verbo} ${nome}.`;
-  if (pastiNonRipristinati.length === 1) {
-    testo += ` Il pasto salvato ${elencoNomi(pastiNonRipristinati)} no: ne hai già un altro con lo stesso nome.`;
+
+  const frasi: string[] = [];
+  const etichette = elencoNomi(alimentiNonRipristinati.map((a) => a.etichetta));
+  const unNonRipristinato = new Set(alimentiNonRipristinati.map((a) => a.etichetta)).size === 1;
+  if (ripristinati.length === 0) {
+    frasi.push(`${unNonRipristinato ? "Non ripristinato" : "Non ripristinati"}: hai già ${etichette}.`);
   } else {
-    testo += ` I pasti salvati ${elencoNomi(pastiNonRipristinati)} no: hai già altri pasti con gli stessi nomi.`;
+    frasi.push(`${verbo} ${nome}.`);
+    if (alimentiNonRipristinati.length > 0) {
+      frasi.push(
+        unNonRipristinato
+          ? `${etichette} no: ne hai già uno uguale.`
+          : `${etichette} no: ne hai già di uguali.`
+      );
+    }
   }
-  return { testo };
+  if (pastiNonRipristinati.length > 0) frasi.push(frasePastiNonRipristinati(pastiNonRipristinati));
+  return { testo: frasi.join(" ") };
+}
+
+function frasePastiNonRipristinati(pastiNonRipristinati: string[]): string {
+  if (pastiNonRipristinati.length === 1) {
+    return `Il pasto salvato ${elencoNomi(pastiNonRipristinati)} no: ne hai già un altro con lo stesso nome.`;
+  }
+  return `I pasti salvati ${elencoNomi(pastiNonRipristinati)} no: hai già altri pasti con gli stessi nomi.`;
 }
 
 // Il ripristino non è riuscito: la barra lo dice e ripropone l'Annulla

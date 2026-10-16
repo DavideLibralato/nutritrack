@@ -286,6 +286,54 @@ describe("ripristinaAlimenti", () => {
     expect(await vivo("composizioni_voci", "cena-latte")).toBe(true);
   });
 
+  it("un alimento uguale nato nel frattempo: quello cancellato non torna, né le sue righe né il pasto rimasto vuoto", async () => {
+    // Si eliminano avena e latte; durante la finestra dell'Annulla nasce
+    // un altro "latte" (stesso nome, maiuscole diverse, nessuna marca).
+    const traccia = await eliminaAlimenti(USER, ["avena", "latte"]);
+    await db.alimenti.put(alimento("latte-nuovo", { nome: "LATTE" }));
+
+    const esito = await ripristinaAlimenti(USER, traccia);
+
+    expect(esito.alimentiNonRipristinati).toEqual([{ nome: "latte", etichetta: "latte" }]);
+    expect(esito.pastiNonRipristinati).toEqual([]);
+    expect(await vivo("alimenti", "avena")).toBe(true);
+    expect(await vivo("alimenti", "latte")).toBe(false);
+    // Le righe del latte restano cancellate: punterebbero a un alimento
+    // cancellato. Quella dell'avena torna, e con lei la Colazione.
+    expect(await vivo("composizioni_voci", "colazione-latte")).toBe(false);
+    expect(await vivo("composizioni_voci", "cena-latte")).toBe(false);
+    expect(await vivo("composizioni_voci", "colazione-avena")).toBe(true);
+    expect(await vivo("composizioni", "colazione")).toBe(true);
+  });
+
+  it("un pasto salvato che tornerebbe vuoto, perché il suo alimento non torna, resta cancellato", async () => {
+    // Spuntino ha solo la mela: eliminandola, sparisce anche lui.
+    const traccia = await eliminaAlimenti(USER, ["mela"]);
+    expect(traccia.idComposizioni).toEqual(["spuntino"]);
+    await db.alimenti.put(alimento("mela-2", { nome: "Mela" }));
+
+    const esito = await ripristinaAlimenti(USER, traccia);
+
+    expect(esito.alimentiNonRipristinati.map((a) => a.nome)).toEqual(["mela"]);
+    // Il motivo è l'alimento, già detto: il pasto non va nell'elenco.
+    expect(esito.pastiNonRipristinati).toEqual([]);
+    expect(await vivo("alimenti", "mela")).toBe(false);
+    expect(await vivo("composizioni", "spuntino")).toBe(false);
+    expect(await vivo("composizioni_voci", "spuntino-mela")).toBe(false);
+    expect(await nomiPastiSalvati()).toEqual(["Cena", "Colazione"]);
+  });
+
+  it("un alimento uguale ma di un'altra marca non blocca il ripristino", async () => {
+    const traccia = await eliminaAlimenti(USER, ["pane"]);
+    await db.alimenti.put(alimento("pane-mulino", { nome: "pane", marca: "Mulino" }));
+
+    const esito = await ripristinaAlimenti(USER, traccia);
+
+    expect(esito.alimentiNonRipristinati).toEqual([]);
+    expect(await vivo("alimenti", "pane")).toBe(true);
+    expect(await vivo("composizioni_voci", "cena-pane")).toBe(true);
+  });
+
   it("tutto o niente: un guasto a metà lascia tutto ancora cancellato, e riprovare converge", async () => {
     const traccia = await eliminaAlimenti(USER, ["avena", "latte"]);
     await db.outbox.clear();
