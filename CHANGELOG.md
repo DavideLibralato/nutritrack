@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Prova di diagnosi: "username" tolto da Aggiungi un amico
+
+Branch `ritocchi-username`. Con `type="search"` la proposta "Accedi con
+la password" compariva ancora in Cambia username e Aggiungi un amico
+(prova su iPhone del 16/10). Ipotesi: iOS legge i testi intorno al campo.
+Solo in Aggiungi un amico la parola "username" è tolta dai testi:
+- la frase sopra il campo ora è "Scrivi il suo nome esatto, quello che ha
+  scelto in Libra.";
+- l'`aria-label` ora è "Nome dell'amico".
+
+Cambia username resta com'è, come confronto. Non toccati i messaggi di
+esito (vuoti quando si tocca il campo, alcuni condivisi).
+
 ## 2026-10-16 — Campi username nei fogli: type="search"
 
 Branch `ritocchi-username`. Prova su iPhone del 16/10: il messaggio del

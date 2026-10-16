@@ -85,7 +85,8 @@ export default function SheetAggiungiAmico({ onChiudi, onCambiato }: Props) {
             Aggiungi un amico
           </h2>
           <p className="mt-2 text-sm text-muted">
-            Scrivi il suo username esatto. Gli arriverà una richiesta da accettare.
+            Scrivi il suo nome esatto, quello che ha scelto in Libra. Gli arriverà una
+            richiesta da accettare.
           </p>
 
           <div className="relative mt-4">
@@ -98,12 +99,17 @@ export default function SheetAggiungiAmico({ onChiudi, onCambiato }: Props) {
             {/* type="search", perché iPhone non proponga le password
                 salvate: il perché in SheetUsername. Qui si scrive lo
                 username di un altro, quindi autoComplete="off" e non
-                "nickname" (che proporrebbe il proprio soprannome). */}
+                "nickname" (che proporrebbe il proprio soprannome).
+                PROVA DI DIAGNOSI (16/10), solo in questo foglio: con
+                type="search" la proposta compariva ancora. Ipotesi: iOS
+                legge i testi intorno al campo, e "username" gli fa
+                pensare a un accesso. Per questo la parola non c'è né
+                nell'aria-label né nella frase sopra il campo. */}
             <input
               ref={rifInput}
               type="search"
               enterKeyHint="send"
-              aria-label="Username"
+              aria-label="Nome dell'amico"
               value={valore}
               onChange={(e) => {
                 setValore(e.target.value.toLowerCase());
