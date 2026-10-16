@@ -1505,20 +1505,32 @@ del 15/10.
   cancellata): **la pagina lo tratta come "già fatto"**, ricarica
   l'elenco e non mostra nessun errore (passo 6). L'amicizia
   finisce per tutti e due. Le copie già aggiunte restano. Dopo, tutti e
-  due possono richiedere subito. Gli alimenti ancora in attesa fra i due
-  diventano `annullato`: **non ancora**, perché `alimenti_condivisi` non
-  esiste; la migration `alimenti_condivisi` (branch
-  `condivisione-alimenti`) ridefinirà la funzione con `create or
-  replace` per farlo.
+  due possono richiedere subito. Gli alimenti ancora in attesa fra i due,
+  in tutte e due le direzioni, diventano `annullato`: lo fa la
+  ridefinizione della funzione (`create or replace`, stessa firma e
+  stessi permessi) nella migration `alimenti_condivisi` (branch
+  `condivisione-alimenti`, sezione 4).
 
 **Condividere un alimento** (branch `condivisione-alimenti`; decisioni
 del 15/10 e del 16/10; mockup `docs/mockups/alimenti-in-arrivo.html`,
 proposta **B**, scelta il 16/10)
 - **Da dove**: Impostazioni > Alimenti, selezione multipla. L'icona
   condividi nella barra di selezione apre lo sheet **"Condividi con"**
-  con gli amici da spuntare. Serve la connessione. **Senza amici** l'icona
+  con gli amici da spuntare (mockup `docs/mockups/amici.html`, schermata
+  6: titolo "Condividi 2 alimenti", pulsante "Manda a 1 amico", spento
+  senza amici spuntati). Serve la connessione. **Senza amici** l'icona
   c'è lo stesso: il foglio dice "Non hai ancora amici", con un
   collegamento ad Amici.
+- **L'invio è una chiamata sola, tutto o niente** (`manda_alimenti`,
+  sezione 4; deciso il 16/10): tutti gli alimenti a tutti gli amici
+  spuntati, oppure niente. Se nel frattempo uno degli amici non lo è più
+  (`non_amici`) non parte niente, e il foglio rilegge gli amici. Il
+  tentativo ripetuto dopo una risposta persa non crea doppie righe (un id
+  per ogni tocco su "Manda", tenuto nei tentativi). Dopo l'invio il
+  foglio si chiude, si esce dalla selezione e la barra dice "Mandati 2
+  alimenti a @sara_c." (la stessa forma con un alimento o più amici).
+  Niente insert diretto nella tabella: il secondo invio deve chiudere la
+  riga vecchia, e solo una funzione lo fa insieme all'invio nuovo.
 - **Lo stesso alimento mandato due volte alla stessa persona**, prima che
   risponda: il secondo invio sostituisce il primo, chi riceve ne vede uno
   solo, con i valori più recenti.
@@ -1540,6 +1552,20 @@ proposta **B**, scelta il 16/10)
   nel foglio c'è spazio per i valori, utili per decidere. **Solo con la
   rete**: offline la riga non c'è e il catalogo funziona come oggi. Dopo
   Aggiungi l'alimento compare nel catalogo appena arriva dal server.
+  - **La riga c'è anche con il catalogo vuoto**, sopra il riquadro
+    "Ancora nessun alimento" (deciso il 16/10): è il caso del primo
+    giorno (sezione 10.1), quello in cui un alimento mandato serve di
+    più.
+  - **Sotto il titolo, chi li manda** (deciso il 16/10): con un mittente
+    "Da @sara_c", con due "Da @sara_c e @paolo_a", con tre o più "Da 3
+    amici". Il mockup scrive "Da @sara_c · tocca per vederli" anche con
+    due mittenti: vale questa regola.
+  - **Dopo Aggiungi** la barra dice "Aggiunti: 3 alimenti" (con uno solo
+    "Aggiunto: Pane"), **senza Annulla** (deciso il 16/10): l'alimento
+    aggiunto si elimina dal catalogo come gli altri. L'app fa partire la
+    sincronizzazione e rilegge l'elenco quando la discesa ha portato le
+    copie nuove: fino ad allora non saprebbe che sono doppioni degli
+    altri in arrivo (sotto, "Due alimenti in arrivo uguali fra loro").
 - **Doppione** = stesso nome e stessa marca di un alimento vivo del
   proprio catalogo, con maiuscole, accenti e spazi ai bordi indifferenti;
   la marca vuota conta come una marca («Yogurt greco 0% · Fage» e
@@ -1553,21 +1579,60 @@ proposta **B**, scelta il 16/10)
     collegamento **"Confronta i valori"** (una tabella, chiusa
     all'inizio: il tuo e quello in arrivo per kcal, grassi, carboidrati,
     proteine e porzione, i valori diversi in arancio) e i pulsanti **"Usa
-    questi valori"** e **"Tieni i miei"** (= Rifiuta).
+    questi valori"** e **"Tieni i miei"** (= Rifiuta). Sotto le cinque
+    righe fisse, una riga per zuccheri, fibre, saturi o sale **solo
+    quando è diverso** (deciso il 16/10). I numeri fino a due decimali:
+    una differenza in arancio deve vedersi.
+  - **Uguali o diversi: tutti e nove i valori** che "Usa questi valori"
+    scriverebbe (kcal, grassi, carboidrati, proteine, zuccheri, fibre,
+    saturi, sale, porzione; deciso il 16/10), confrontati **in
+    centesimi** (la precisione di `numeric(7,2)` e del form): 3,30 e
+    3,31 sono diversi, nessun'altra tolleranza. Un valore assente non è
+    uguale a 0. Confrontare solo i cinque della tabella farebbe
+    sparire, con l'Ok, una differenza negli zuccheri che nessuno ha
+    visto.
   - **"Usa questi valori"** aggiorna il **proprio** alimento, con lo
-    stesso id: tutti i valori nutrizionali e la porzione, non nome, marca
-    e barcode. Passa da Dexie e dalla coda come ogni modifica (§9.2); il
-    server chiude solo la condivisione. Valgono le regole di una modifica
-    (sezione 4): da ora e nei pasti salvati, il diario non cambia. Dopo,
-    la barra con **Annulla**: rimette i valori di prima **e** riapre la
-    condivisione, che torna in attesa. Per riaprirla serve una funzione
-    nel database, solo per il destinatario e solo su una condivisione
-    chiusa con "Usa questi valori": da progettare nella migration
-    `alimenti_condivisi` (sezione 4).
+    stesso id: tutti i valori nutrizionali e la porzione, non nome, marca,
+    barcode e `fonte`. Passa da Dexie e dalla coda come ogni modifica
+    (§9.2); il server chiude solo la condivisione. Valgono le regole di
+    una modifica (sezione 4): da ora e nei pasti salvati, il diario non
+    cambia. Dopo, la barra con **Annulla**: rimette i valori di prima
+    **e** riapre la condivisione, che torna in attesa
+    (`riapri_alimento_condiviso`, sezione 4). Se il proprio alimento non
+    si può modificare (verificato: oggi non succede, la RLS non lo
+    permette a un utente) "Usa questi valori" non c'è, resta "Tieni i
+    miei".
+  - **L'ordine delle due scritture** (deciso il 16/10). "Usa questi
+    valori": **prima Dexie, poi il server**. Una transazione Dexie
+    (`alimenti` + `outbox`) rilegge il proprio alimento, controlla che
+    sia vivo e ancora diverso, tiene i valori di prima per l'Annulla e
+    scrive i nuovi; poi `rispondi_alimenti_condivisi` con
+    `valori_usati`. Se la rete cade fra le due, i valori sono già
+    aggiornati e la condivisione resta in attesa: alla rilettura il
+    foglio la mostra come "valori identici", con solo Ok, e si sistema
+    da sola. La barra con Annulla compare in tutti e due i casi; se la
+    chiusura non è arrivata lo dice. L'ordine opposto, se si perde la
+    scrittura locale, lascerebbe la condivisione chiusa e i valori nuovi
+    persi. **Annulla: prima il server, poi Dexie.** Prima
+    `riapri_alimento_condiviso`; se non risponde non si tocca niente, la
+    barra dice di riprovare e l'Annulla resta. Riaperta, si rimettono i
+    valori di prima (transazione Dexie, con la coda). Con la risposta
+    persa il server ha già riaperto: ripremere dà `ok` (la funzione
+    accetta la ripetizione) e poi rimette i valori. L'ordine opposto,
+    con la rete che cade, lascerebbe la condivisione chiusa per sempre.
   - **Valori identici**: "Hai già questo alimento, con gli stessi
     valori." e solo **Ok**, che chiude la condivisione.
-  - Il confronto (doppione sì o no, valori uguali o diversi) è una
-    funzione pura con test permanente.
+  - **Due alimenti in arrivo uguali fra loro** (stesso nome e marca, da
+    due amici o due prodotti dello stesso amico; deciso il 16/10):
+    nessuno dei due è un doppione del catalogo, ma aggiungerli tutti e
+    due farebbe due alimenti uguali. Nella selezione multipla **se ne
+    spunta uno solo per chiave** (`chiaveAlimento`); dopo l'Aggiungi e
+    la discesa l'altro diventa un doppione normale, con le sue scelte.
+  - Il confronto (doppione sì o no, valori uguali o diversi, uguale a un
+    altro in arrivo) e le righe della tabella sono funzioni pure con test
+    permanente (`src/lib/catalogo/alimentiInArrivo.ts`). Il doppione lo
+    controlla solo l'app (con Dexie, subito prima di chiamare il server),
+    come al Salva di un alimento: la regola sta in JS, non nel database.
 - **Selezione multipla nel foglio**: "Seleziona" in alto, oppure tieni
   premuto su un alimento. Quadratini a sinistra, "Seleziona tutti" /
   "Deseleziona tutti", barra in fondo con **Rifiuta** e **Aggiungi**. I
@@ -1575,7 +1640,7 @@ proposta **B**, scelta il 16/10)
   scelte. Con più di un alimento selezionato si chiede conferma, sia per
   Aggiungi sia per Rifiuta; con uno solo no. In blocco è **una sola
   chiamata, tutto o niente**. Niente selezione multipla in Amici.
-- **La copia nasce sul server**, in `rispondi_alimento_condiviso`, in una
+- **La copia nasce sul server**, in `rispondi_alimenti_condivisi`, in una
   transazione: inserisce in `alimenti` con l'id calcolato dalla
   condivisione (UUID v5, `uuid-ossp` è già installata), `user_id` di chi
   accetta, `verificato = false`, `fonte` del mittente (`ricetta` diventa
@@ -1585,8 +1650,8 @@ proposta **B**, scelta il 16/10)
   crea una seconda copia. Poi l'app fa partire una discesa e l'alimento
   compare nel catalogo come gli altri. Nessuna foreign key da `alimenti`
   verso la condivisione: la copia è indipendente da tutto. Con la
-  selezione multipla la stessa cosa vale per più righe insieme, in una
-  transazione (forma della funzione da progettare nella migration).
+  selezione multipla la stessa funzione riceve più righe insieme, in una
+  transazione (forma in sezione 4).
 
 **Il pallino** (dal 16/10, branch `amici`, passo 7; codice in
 `src/lib/amici/novita.ts`)
@@ -1594,8 +1659,14 @@ proposta **B**, scelta il 16/10)
   una sola, le **richieste di amicizia ricevute in attesa**
   (`contaRichiesteRicevute`: solo il numero, con `head: true`, filtrato
   dalla RLS). "Non accettata" non è una novità: è la risposta a una
-  richiesta propria. Il secondo termine, gli alimenti in arrivo, arriva
-  con il branch `condivisione-alimenti`; la somma è pronta per riceverlo.
+  richiesta propria. Il secondo termine, gli **alimenti in arrivo**
+  (`alimentiInArrivo`, contati come le richieste: solo il numero, con
+  `head: true`, filtrato dalla RLS), arriva con il branch
+  `condivisione-alimenti`. Le due parti si aggiornano **ciascuna per
+  conto suo**: la rilettura della pagina Amici scrive solo le richieste,
+  quella della pagina Alimenti solo gli alimenti, e nessuna azzera
+  l'altra. Se uno dei due conteggi non risponde, quella parte resta
+  l'ultima nota.
   Il pallino della tab conta il totale; **la riga Amici conta solo le
   richieste** (`richiesteRicevute`), non il totale. Gli alimenti in
   arrivo (decisione del 16/10) hanno il loro numero sulla **riga
@@ -1616,7 +1687,9 @@ proposta **B**, scelta il 16/10)
   utente (`nutritrack:amici:novita:<id>`), il JSON delle parti
   (`{"richiesteRicevute":2}`): offline la tab e la riga hanno ciascuna il
   suo numero. Accesso protetto (`try/catch`) come le altre chiavi; un
-  valore rovinato vale "nessuna novità". Lo sovrascrive il primo contatto
+  valore rovinato vale "nessuna novità". Con gli alimenti in arrivo il
+  JSON ha anche `alimentiInArrivo`; un valore salvato prima, senza
+  quella chiave, vale 0 alimenti (e le sue richieste restano). Lo sovrascrive il primo contatto
   riuscito; se la risposta non arriva resta l'ultimo noto. Lo cancellano
   **Esci**, nel blocco "sempre" (anche quando la sessione è scaduta e i
   dati restano: le novità non sono modifiche da salvare), ed **Elimina
@@ -1626,9 +1699,10 @@ proposta **B**, scelta il 16/10)
   arancio (9.2), e lo screen reader legge solo "sincronizzazione da
   controllare"; altrimenti, con delle novità, il pallino nel colore
   principale (`bg-accent`), e lo screen reader legge "Impostazioni, 2
-  novità in Amici" ("novità" non cambia al plurale). Il testo vale finché
-  c'è solo il termine delle richieste: con gli alimenti in arrivo si
-  deciderà un testo comune.
+  novità in Amici" ("novità" non cambia al plurale). Con gli alimenti in
+  arrivo (branch `condivisione-alimenti`, deciso il 16/10) il testo
+  diventa **"Impostazioni, N novità"**, con N la somma: le novità non
+  stanno più tutte in Amici.
 - **Nella riga Amici**, con richieste ricevute, a destra "2 nuove" ("1
   nuova") in colore principale con lo stesso pallino, al posto del numero
   di amici; senza, "N amici" come prima.
@@ -1746,15 +1820,23 @@ prove in un blocco SQL annullato prima, `get_advisors` dopo):
   catalogo quando si crea o si rinomina un alimento (branch
   `alimenti-doppi`, 16/10; sopra, "Alimenti", "Mai due alimenti
   uguali");
-- branch **`condivisione-alimenti`**: (1) migration `alimenti_condivisi`
-  con `rispondi_alimento_condiviso` (anche per più righe insieme) e la
-  funzione che riapre una condivisione dopo l'Annulla di "Usa questi
-  valori"; (2) icona condividi e sheet "Condividi con", anche senza amici;
-  (3) nella pagina Alimenti la riga "N alimenti in arrivo" e il suo
-  foglio, con il doppione ("Usa questi valori" / "Tieni i miei" e
-  Annulla, valori identici con Ok) e la selezione multipla; (4) riga
-  Alimenti "N in arrivo", pallino della tab esteso agli alimenti, testo di
-  Elimina account; (5) prova della cascata.
+- branch **`condivisione-alimenti`** (passi rivisti il 16/10, dopo
+  l'analisi): (1) questo documento; (2) migration `alimenti_condivisi`
+  (sezione 4: tabella, `manda_alimenti`, `rispondi_alimenti_condivisi`,
+  `riapri_alimento_condiviso`, `annulla_o_rimuovi_amicizia` ridefinita)
+  con il blocco di prova annullato, che contiene anche la prova della
+  cascata di Elimina account; (3) `src/lib/amici/alimentiCondivisi.ts`
+  (chiamate e letture), le funzioni pure del confronto e i testi, con i
+  test; (4) icona condividi e sheet "Condividi con", anche senza amici →
+  **prova dell'invio su iPhone**; (5) nella pagina Alimenti la riga "N
+  alimenti in arrivo", il foglio, il confronto, "Usa questi valori" /
+  "Tieni i miei" con l'Annulla, valori identici con Ok; (6) la
+  selezione multipla nel foglio → **prova della ricezione completa su
+  iPhone**; (7) novità e pallino estesi agli alimenti, riga Alimenti "N
+  in arrivo", testo di Elimina account; (8) prova finale con A e B, poi
+  la cascata vera con Elimina account (sezione 11, "Account di prova").
+  Le prove le fa Davide sull'anteprima Vercel del branch, in Safari, con
+  A (`@amici_uno`) e B (`@amici_due_b`), già amici.
 
 **Prove con due utenti**: due account usa e getta creati da Davide
 dall'app (per esempio `davidemancon02+amici1@…` e `+amici2@…`), eliminati
@@ -2622,8 +2704,15 @@ Stato delle migration: **`nomi_utente` applicata il 15/10** (versione
 advisors solo con i WARN accettati in 9.6; tipo `NomeUtente` in
 `tipi.ts`). **`amicizie` applicata il 15/10** (versione 20261015184017,
 `apply_migration`; prove in un blocco annullato 90/90, advisors solo con i
-WARN accettati in 9.6; tipo `Amicizia` in `tipi.ts`). `alimenti_condivisi`
-da scrivere; il trigger su `auth.users` dopo il merge (9.1).
+WARN accettati in 9.6; tipo `Amicizia` in `tipi.ts`). Il trigger su
+`auth.users` è applicato dal 16/10 (`trigger_registrazione` e
+`registrazione_pulizia_codice`, 9.1). **`alimenti_condivisi` applicata
+il 16/10** (versione 20261016180308, `apply_migration` da Cowork, branch
+`condivisione-alimenti`; prove in un blocco annullato 150/150, con la
+cascata di Elimina account; advisors: sicurezza solo i tre WARN
+accettati in 9.6 per le funzioni nuove, performance solo "unused index"
+sui due indici nuovi, a tabella vuota; tipo `AlimentoCondiviso` in
+`tipi.ts`).
 
 Tre tabelle per Amici (sezione 3). **Non sono local-first**: non stanno in
 Dexie, non passano dalla coda né dalla discesa, non entrano in
@@ -2692,41 +2781,81 @@ funzioni (sotto), non da `insert`/`update` diretti, salvo dove è detto.
   `unique_violation`, rilegge la riga che ora c'è e decide su quella
   (`accettata` o `gia_chiesta`). La riga trovata si legge con `for
   update`. Al massimo tre giri, poi l'errore vero
-- `annulla_o_rimuovi_amicizia` oggi tocca solo `amicizie`: la migration
-  `alimenti_condivisi` la ridefinirà (`create or replace`) per segnare
-  `annullato` gli alimenti in attesa fra i due
+- `annulla_o_rimuovi_amicizia` nella migration `amicizie` tocca solo
+  `amicizie`: la migration `alimenti_condivisi` la ridefinisce (`create or
+  replace`, stessa firma, i permessi restano) per segnare `annullato` gli
+  alimenti in attesa fra i due, in tutte e due le direzioni
 
 **`alimenti_condivisi`** — un alimento mandato, una riga per alimento ×
-destinatario, `user_id` = chi manda
-- `id` generato dal client, `destinatario_id`, la **copia dei valori**
-  presa al momento dell'invio (le stesse colonne di `alimenti`: nome,
-  marca, barcode, valori per 100 g, porzione, `fonte`; nome e marca al
-  massimo 200 caratteri), `stato` (`in_attesa` | `aggiunto` |
-  `rifiutato` | `annullato`), `risposta_il`
-- RLS, lettura: **solo il destinatario** (chi manda non vede l'esito,
-  decisione del 15/10). Inserimento diretto: `user_id = uid`, `stato =
-  'in_attesa'` e un'amicizia accettata fra i due. Nessun update o delete
-  diretto
-- indici su `destinatario_id` (le righe in attesa) e `user_id`
+destinatario, `user_id` = chi manda (decisa il 16/10; file
+`supabase/migrations/alimenti_condivisi.sql`)
+- `id` calcolato da `manda_alimenti` (sotto), `destinatario_id`,
+  **`alimento_origine_id`** (l'id dell'alimento del mittente, **senza
+  foreign key**: il mittente può cancellarlo; serve a riconoscere lo
+  stesso alimento mandato di nuovo), la **copia dei valori** presa dal
+  telefono di chi manda al momento dell'invio (le stesse colonne e gli
+  stessi tipi di `alimenti`: nome, marca, barcode, i quattro valori,
+  zuccheri, fibre, saturi, sale, porzione, `fonte`; nome da 1 a 200
+  caratteri, marca al massimo 200, barcode al massimo 100, valori ≥ 0,
+  porzione > 0), `stato`, `risposta_il` (quando è uscita da
+  `in_attesa`), `creato_il` e le quattro colonne obbligatorie.
+  `deleted_at` c'è ma non si usa: lo stato basta
+- **sette stati** (deciso il 16/10): `in_attesa` (l'unico che il
+  destinatario vede), `aggiunto` (Aggiungi: la copia è nata),
+  `rifiutato` (Rifiuta e Tieni i miei), `uguale` (Ok sui valori
+  identici), `valori_usati` ("Usa questi valori": il destinatario ha
+  aggiornato il suo alimento; l'unico stato che si riapre), `sostituito`
+  (chiusa da un secondo invio dello stesso alimento alla stessa
+  persona), `annullato` (l'amicizia è finita con la condivisione in
+  attesa). Le righe in attesa **non scadono**
+- **indice unico parziale** su (mittente, destinatario, alimento
+  d'origine) per le righe in attesa: chi riceve ne vede al massimo una
+  per alimento, la più recente. Indici su (`destinatario_id`, `stato`) e
+  su `user_id`, che coprono anche le due foreign key verso
+  `auth.users` (tutte e due `ON DELETE CASCADE`)
+- RLS, lettura: **solo il destinatario, solo le righe in attesa** (chi
+  manda non vede niente, nemmeno i suoi invii: decisione del 15/10).
+  **Nessuna policy e nessun grant di scrittura** (deciso il 16/10: niente
+  insert diretto, perché il secondo invio deve chiudere la riga vecchia
+  e l'invio a più amici è tutto o niente); `anon` nessun permesso. Lo
+  username di chi manda si legge con la policy di `nomi_utente` che c'è
+  già: una riga in attesa esiste solo con un'amicizia accettata
 - l'alimento creato dall'accettazione ha come id un UUID v5 di questa
   riga, ma **nessuna foreign key** la lega: la copia è indipendente
-- **da progettare nella migration**, per le decisioni del 16/10
-  (sezione 3, "Condividere un alimento"):
-  - uno stato per la condivisione chiusa con **"Usa questi valori"**
-    (il destinatario ha aggiornato il proprio alimento, nessuna copia
-    nuova) e una funzione che la **riapre** (torna `in_attesa`) per
-    l'Annulla: solo il destinatario, solo su una condivisione chiusa in
-    quel modo;
-  - lo **stesso alimento mandato due volte** alla stessa persona prima
-    della risposta: il secondo sostituisce il primo. Serve sapere da quale
-    alimento del mittente viene la copia (per esempio una colonna con il
-    suo id, senza foreign key: il mittente può cancellarlo) e un modo per
-    chiudere la riga vecchia quando arriva la nuova;
-  - `rispondi_alimento_condiviso` per **più righe insieme**, in una
-    transazione (la selezione multipla del foglio: tutto o niente);
-  - "Ok" su valori identici chiude la condivisione senza toccare
-    `alimenti`;
-  - le righe in attesa **non scadono**
+- **le funzioni** (esiti di solo testo; senza utente autenticato →
+  errore):
+  - `manda_alimenti(p_invio uuid, p_destinatari uuid[], p_alimenti
+    jsonb)` → `ok`, `non_amici`, `non_valido`. Tutto o niente.
+    `p_invio` è un uuid che il telefono genera a ogni tocco su "Manda" e
+    ripete nei tentativi; l'id di ogni riga è il v5 di
+    "invio:origine:destinatario", quindi un tentativo dopo una risposta
+    persa trova le righe già fatte e non ne crea altre. `non_valido`:
+    elenchi vuoti o troppo lunghi (50 amici, 200 alimenti), un amico
+    ripetuto o uguale a chi manda, lo stesso alimento due volte, un
+    campo mancante o fuori dai limiti. `non_amici`: almeno un
+    destinatario senza amicizia accettata, e non parte niente. Per ogni
+    coppia: la riga in attesa dello stesso alimento per la stessa
+    persona diventa `sostituito`, poi nasce quella nuova; una riga già
+    risposta non si tocca (il nuovo invio sarà un doppione da decidere).
+    Due invii dello stesso mittente insieme vanno in fila (advisory lock
+    per mittente); le amicizie si leggono con `FOR SHARE`, così un invio
+    e una rimozione insieme non lasciano righe in attesa fra due che non
+    sono più amici;
+  - `rispondi_alimenti_condivisi(p_ids uuid[], p_risposta text)` con
+    `aggiungi` | `rifiuta` | `uguale` | `valori_usati` → `ok`,
+    `non_trovata`, `non_valido`. Tutto o niente: le righe si bloccano
+    (in ordine di id) e si controllano tutte prima di scrivere. Una riga
+    già nello stato chiesto conta come fatta (ripetizione dopo una
+    risposta persa); una riga non sua, inesistente o chiusa in un altro
+    modo → `non_trovata` e non cambia niente. Aggiungi crea la copia
+    (sezione 3, "La copia nasce sul server");
+  - `riapri_alimento_condiviso(p_id uuid)` → `ok`, `non_trovata`.
+    L'Annulla di "Usa questi valori": solo il destinatario, solo da
+    `valori_usati` a `in_attesa`, solo con l'amicizia ancora accettata.
+    Già in attesa → `ok`. Se nel frattempo lo stesso alimento è
+    arrivato di nuovo dallo stesso amico, la riga resta chiusa e la
+    risposta è `ok`: quella più recente è già in attesa;
+  - `annulla_o_rimuovi_amicizia` ridefinita (sopra, "`amicizie`")
 
 **Le funzioni** (tutte `security definer`, `search_path = ''`, controlli
 espliciti dentro, `revoke` da `public`; `grant` solo ad `authenticated`,
@@ -2735,11 +2864,13 @@ pagina Registrati: risponde solo sì o no sul nome esatto),
 `imposta_username(text)`, `chiedi_amicizia(text)`,
 `rispondi_amicizia(uuid, bool)`, `annulla_o_rimuovi_amicizia(uuid)`,
 `chiudi_rifiuto(uuid)` (l'Ok su "Non accettata"),
-`rispondi_alimento_condiviso` (forma da decidere: dal 16/10 anche per più
-righe insieme) e la funzione che riapre una condivisione dopo l'Annulla
-di "Usa questi valori"; più la funzione del trigger
-su `auth.users` (9.1), non chiamabile da nessuno. Gli avvisi degli
-advisors che danno sono accettati (9.6).
+`manda_alimenti(uuid, uuid[], jsonb)`,
+`rispondi_alimenti_condivisi(uuid[], text)` e
+`riapri_alimento_condiviso(uuid)` (sopra, "`alimenti_condivisi`"); più
+le funzioni dei trigger su `auth.users` (9.1) e
+`valore_condiviso_valido` (il controllo di un valore numerico dentro
+`manda_alimenti`, non security definer), non chiamabili da nessuno. Gli
+avvisi degli advisors che danno sono accettati (9.6).
 
 ### Campi tecnici obbligatori su ogni tabella
 
@@ -4233,9 +4364,15 @@ costruzione e non per attenzione.
   attesa da quel mittente spariscono in silenzio; **le copie già
   aggiunte restano**, sono righe sue di `alimenti` senza legami. Lo
   username liberato può prenderlo un altro, ma la vecchia amicizia non
-  passa a lui. Il testo della pagina va aggiornato ("amici e username")
-  e la prova nel blocco annullato va rifatta contando anche le tabelle
-  nuove (branch `condivisione-alimenti`, sezione 3)
+  passa a lui. Il testo della pagina si aggiorna (deciso il 16/10,
+  branch `condivisione-alimenti`) con una voce in più: **"I tuoi amici e
+  il tuo nome su Libra"**, dettaglio "Gli alimenti mandati e non ancora
+  accettati spariscono; le copie già aggiunte dagli amici restano." Mai
+  "username": la pagina ha un campo da solo (scrivi ELIMINA), e vale la
+  regola di iPhone (sezione 3, "Lo username"). La prova della cascata
+  con le tabelle nuove sta nel blocco annullato della migration
+  `alimenti_condivisi` (le 14 tabelle a zero per chi elimina, la copia
+  dell'amico viva, il nome di nuovo libero)
 - **File in Storage**: oggi zero. Quando ci saranno file dell'utente (la
   foto profilo), `elimina_mio_account` o il flusso che la chiama dovrà
   cancellare anche quelli: le foreign key non toccano i file

@@ -272,3 +272,46 @@ export interface Amicizia extends RigaBase {
   rifiuto_visto: boolean; // default false: chi ha chiesto ha toccato Ok su "Non accettata"
   creato_il: string; // ISO 8601, default now() sul server
 }
+
+export type StatoAlimentoCondiviso =
+  | "in_attesa"
+  | "aggiunto"
+  | "rifiutato"
+  | "uguale"
+  | "valori_usati"
+  | "sostituito"
+  | "annullato";
+
+// Un alimento mandato a un amico (migration `alimenti_condivisi`, versione
+// 20261016180308). Una riga per alimento × destinatario; user_id = chi
+// manda. Dentro c'è la copia dei valori presa dal telefono di chi manda al
+// momento dell'invio, con gli stessi nomi e tipi di Alimento. Confrontato
+// il 16/10 con information_schema.columns: NOT NULL tutte tranne marca,
+// barcode, i quattro valori facoltativi, risposta_il e deleted_at. Il
+// destinatario legge solo le righe in_attesa (RLS), chi manda non ne legge
+// nessuna; si scrive solo con le funzioni del database (PUNTO_DI_PARTENZA.md
+// §4, "alimenti_condivisi").
+export interface AlimentoCondiviso extends RigaBase {
+  user_id: string; // NOT NULL qui, a differenza di RigaBase
+  destinatario_id: string;
+  // L'id dell'alimento di chi manda, senza foreign key: riconosce lo
+  // stesso alimento mandato di nuovo.
+  alimento_origine_id: string;
+  nome: string;
+  marca: string | null;
+  barcode: string | null;
+  kcal_100g: number;
+  proteine_100g: number;
+  carboidrati_100g: number;
+  grassi_100g: number;
+  zuccheri_100g: number | null;
+  fibre_100g: number | null;
+  saturi_100g: number | null;
+  sale_100g: number | null;
+  porzione_default_g: number;
+  fonte: FonteAlimento; // quella di chi manda; `ricetta` diventa `manuale` solo nella copia aggiunta
+  stato: StatoAlimentoCondiviso; // check sul database, default 'in_attesa'
+  risposta_il: string | null; // ISO 8601: quando è uscita da in_attesa
+  creato_il: string; // ISO 8601, default now() sul server
+  // deleted_at (da RigaBase) c'è ma non si usa: lo stato basta.
+}

@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Condivisione alimenti: decisioni e migration `alimenti_condivisi`
+
+Branch `condivisione-alimenti`, passi 1 e 2. PUNTO aggiornato con le
+decisioni dell'analisi: invio solo dalla funzione `manda_alimenti` (niente
+insert diretto), sette stati, "valori identici" su tutti e 9 i valori in
+centesimi, ordine delle scritture per "Usa questi valori" (prima Dexie) e
+per l'Annulla (prima il server), sottotitolo con i mittenti, due alimenti
+in arrivo uguali fra loro, riga anche col catalogo vuoto, pallino a due
+termini con "Impostazioni, N novità", testo di Elimina account, passi con
+due prove su iPhone a metà strada.
+
+Migration `alimenti_condivisi` (tabella con RLS di sola lettura per il
+destinatario, `manda_alimenti`, `rispondi_alimenti_condivisi`,
+`riapri_alimento_condiviso`, `annulla_o_rimuovi_amicizia` ridefinita):
+blocco di prova annullato 150/150 nel SQL Editor, cascata di Elimina
+account compresa; applicata da Cowork, versione 20261016180308; advisors
+solo con gli avvisi attesi. Tipo `AlimentoCondiviso` in `tipi.ts`.
+
+Bug trovati nel blocco di prova prima di dartelo, eseguendolo in un
+Postgres locale (PGlite): una funzione di prova scritta in SQL leggeva la
+tabella prima che esistesse, e tre controlli mettevano scrittura e
+lettura nella stessa istruzione. Corretti; nessun difetto nella migration.
+
 ## 2026-10-16 — Ritocchi username e doppione: provato su iPhone
 
 Branch `ritocchi-username`. Provato da Davide il 16/10 sull'anteprima
