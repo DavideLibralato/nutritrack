@@ -15,6 +15,7 @@ import {
   selezionaTutti,
   selezioneValida,
   spunta,
+  usernameMittenti,
   valoriIdentici,
   type VoceInArrivo,
 } from "./alimentiInArrivo";
@@ -201,6 +202,18 @@ describe("confrontaInArrivo", () => {
     const verificato = [mio("v", "Latte", null, { verificato: true })];
     const c = confrontaInArrivo(verificato, inArrivo("a", "Latte", null, { kcal_100g: 64 }), IO);
     expect(c.tipo === "diverso" && c.modificabile).toBe(false);
+  });
+});
+
+describe("usernameMittenti", () => {
+  it("uno per mittente, nell'ordine dell'elenco, null se il nome manca", () => {
+    const righe = [
+      inArrivo("a", "Pane", null, { user_id: "sara" }),
+      inArrivo("b", "Skyr", null, { user_id: "paolo" }),
+      inArrivo("c", "Hummus", null, { user_id: "sara" }),
+      inArrivo("d", "Riso", null, { user_id: "senza_nome" }),
+    ];
+    expect(usernameMittenti(righe, { sara: "sara_c", paolo: "paolo_a" })).toEqual(["sara_c", "paolo_a", null]);
   });
 });
 

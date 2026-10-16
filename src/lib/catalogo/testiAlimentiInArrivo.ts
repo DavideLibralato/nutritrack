@@ -137,6 +137,27 @@ export function messaggioAlimentiAggiunti(nomi: string[]): MessaggioBarra {
   return { testo: "Aggiunti:", nome: alimentiN(nomi.length), icona: "spunta" };
 }
 
+// Dopo "Usa questi valori", con Annulla: "Valori aggiornati: Yogurt ·
+// Fage". Se la chiusura non è arrivata lo dice: alla rilettura l'alimento
+// resta fra quelli in arrivo, con gli stessi valori e solo Ok.
+export function messaggioValoriAggiornati(nome: string, chiusuraRiuscita: boolean): MessaggioBarra {
+  return {
+    testo: "Valori aggiornati:",
+    nome,
+    coda: chiusuraRiuscita ? undefined : "(resta fra quelli in arrivo)",
+    icona: "spunta",
+  };
+}
+
+// L'Annulla non è riuscito (la riapertura non ha risposto): non è cambiato
+// niente, e la barra offre di nuovo Annulla.
+export const TESTO_ANNULLA_NON_RIUSCITO =
+  "Non sono riuscito ad annullare. Controlla la connessione e riprova.";
+
+// "Usa questi valori" su un alimento proprio che nel frattempo non c'è più
+// (eliminato, anche da un altro telefono): non è cambiato niente.
+export const TESTO_MIO_ALIMENTO_SPARITO = "Il tuo alimento non c'è più: non è cambiato niente.";
+
 // Dopo l'invio: "Mandati 2 alimenti a @sara_c.", con la stessa forma per
 // un alimento ("Mandato 1 alimento a …") e per più amici ("… a @sara_c e
 // @paolo_a.", "… a 3 amici."). Uno username non arrivato (null) non si

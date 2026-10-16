@@ -10,6 +10,8 @@
 import { db } from "../db/database";
 import type { Alimento } from "../db/tipi";
 import { normalizzaSpazi, testoConfronto, trovaDoppione } from "../catalogo/doppioniAlimenti";
+import { campiDiversi, valoriDi, type ValoriAlimento } from "../catalogo/alimentiInArrivo";
+import { eModificabile } from "../catalogo/alimentiModificabili";
 import { repositoryAlimenti } from "./index";
 
 // Il catalogo locale visibile all'utente: i suoi alimenti privati più quelli
@@ -133,4 +135,88 @@ export function etichettaAlimento(a: {
 }): string {
   const marca = a.marca?.trim();
   return marca ? `${a.nome} · ${marca}` : a.nome;
+}
+
+// --- "Usa questi valori" e il suo Annulla (PUNTO_DI_PARTENZA.md §3
+// "Amici", "Condividere un alimento", "L'ordine delle due scritture") ---
+//
+// Due scritture in due posti: il proprio alimento in Dexie (con la coda,
+// come ogni modifica) e la condivisione sul server. Non possono stare in
+// una transazione sola, quindi l'ordine decide cosa resta se la rete cade
+// fra le due:
+// - "Usa questi valori": PRIMA Dexie, POI il server. Se la chiusura non
+//   arriva, i valori sono già aggiornati e la condivisione resta in
+//   attesa: alla rilettura il foglio la mostra come "valori identici", con
+//   solo Ok, e si sistema da sola;
+// - Annulla: PRIMA il server (riapre la condivisione), POI Dexie (rimette i
+//   valori di prima). Se la riapertura non risponde non si tocca niente, e
+//   si può riprovare: riaprire una condivisione già riaperta risponde ok.
+//
+// Le chiamate al server le passa chi chiama (`chiudi`, `riapri`): qui si
+// decide solo l'ordine, e i test lo provano senza rete.
+
+export type EsitoChiusuraInArrivo = "ok" | "non_trovata" | "errore";
+
+// Cosa serve all'Annulla: l'alimento, i valori di prima e come è andata la
+// chiusura (per il messaggio della barra).
+export interface TracciaValoriInArrivo {
+  idAlimento: string;
+  precedenti: ValoriAlimento;
+  chiusura: EsitoChiusuraInArrivo;
+}
+
+export type EsitoUsaValori =
+  | { esito: "fatto"; traccia: TracciaValoriInArrivo }
+  // Il proprio alimento non c'è più o non si può modificare: non si è
+  // scritto niente e il server non è stato chiamato.
+  | { esito: "non_trovato" };
+
+export async function usaValoriInArrivo(
+  userId: string,
+  idAlimento: string,
+  valori: ValoriAlimento,
+  chiudi: () => Promise<EsitoChiusuraInArrivo>
+): Promise<EsitoUsaValori> {
+  const precedenti = await db.transaction(
+    "rw",
+    [db.alimenti, db.outbox],
+    async (): Promise<ValoriAlimento | null> => {
+      const mio = await db.alimenti.get(idAlimento);
+      if (!mio || mio.deleted_at !== null || !eModificabile(mio, userId)) return null;
+      const prima = valoriDi(mio);
+      // Già uguali (un tentativo precedente ha scritto, poi la chiusura non
+      // è arrivata): niente da scrivere, si chiude e basta.
+      if (campiDiversi(prima, valori).length > 0) {
+        await repositoryAlimenti.aggiorna(idAlimento, valoriDi(valori));
+      }
+      return prima;
+    }
+  );
+  if (!precedenti) return { esito: "non_trovato" };
+  const chiusura = await chiudi();
+  return { esito: "fatto", traccia: { idAlimento, precedenti, chiusura } };
+}
+
+export type EsitoAnnullaValori = "ripristinato" | "errore";
+
+// La riapertura si chiede SEMPRE, anche se la chiusura sembrava fallita:
+// con la risposta persa il server potrebbe averla chiusa lo stesso, e
+// riaprire una condivisione già in attesa risponde ok. "non_trovata"
+// (l'amicizia è finita, o è arrivato un invio più recente) non ferma il
+// ripristino dei valori: la condivisione non si può riaprire, ma l'utente
+// ha chiesto i suoi valori di prima.
+export async function annullaValoriInArrivo(
+  userId: string,
+  traccia: TracciaValoriInArrivo,
+  riapri: () => Promise<"ok" | "non_trovata" | "errore">
+): Promise<EsitoAnnullaValori> {
+  if ((await riapri()) === "errore") return "errore";
+  await db.transaction("rw", [db.alimenti, db.outbox], async () => {
+    const mio = await db.alimenti.get(traccia.idAlimento);
+    if (!mio || mio.deleted_at !== null || !eModificabile(mio, userId)) return;
+    if (campiDiversi(mio, traccia.precedenti).length > 0) {
+      await repositoryAlimenti.aggiorna(traccia.idAlimento, valoriDi(traccia.precedenti));
+    }
+  });
+  return "ripristinato";
 }

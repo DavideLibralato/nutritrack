@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  messaggioValoriAggiornati,
   etichettaManda,
   titoloCondividi,
   messaggioAlimentiAggiunti,
@@ -100,6 +101,16 @@ describe("conferme e barre", () => {
       nome: "3 alimenti",
       icona: "spunta",
     });
+  });
+
+  it("dopo Usa questi valori, con e senza la chiusura arrivata", () => {
+    expect(messaggioValoriAggiornati("Yogurt · Fage", true)).toEqual({
+      testo: "Valori aggiornati:",
+      nome: "Yogurt · Fage",
+      coda: undefined,
+      icona: "spunta",
+    });
+    expect(messaggioValoriAggiornati("Yogurt · Fage", false).coda).toBe("(resta fra quelli in arrivo)");
   });
 
   it("dopo l'invio", () => {

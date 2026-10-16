@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Condivisione alimenti: riga e foglio degli alimenti in arrivo
+
+Branch `condivisione-alimenti`, passo 5 (senza la selezione multipla, che
+è il passo 6). In Impostazioni > Alimenti la riga "N alimenti in arrivo"
+(anche con il catalogo vuoto, non offline né in selezione) e il foglio:
+Aggiungi / Rifiuta, doppione con "Confronta i valori", "Usa questi
+valori" / "Tieni i miei", valori identici con Ok. "Usa questi valori" e
+il suo Annulla in `repository/alimenti.ts` (prima Dexie poi il server;
+l'Annulla prima il server poi Dexie), con 10 test permanenti, provati
+rompendo l'ordine tre volte (un primo tentativo di rottura non era
+entrato per le fine riga miste del file: rifatto una rottura alla volta).
+Testi nuovi nel PUNTO. Registrata anche la prova su iPhone del passo 4
+(invio A → B, secondo invio, foglio offline; verificata da Cowork).
+990 test, build verde; da provare su iPhone dopo il passo 6.
+
 ## 2026-10-16 — Condivisione alimenti: icona Condividi e foglio "Condividi con"
 
 Branch `condivisione-alimenti`, passo 4. Nella barra di selezione di

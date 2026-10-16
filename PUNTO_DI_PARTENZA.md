@@ -1526,7 +1526,11 @@ proposta **B**, scelta il 16/10)
   leggere i tuoi amici. Controlla la connessione e riprova." con
   Riprova. Gli amici sono quelli della pagina Amici, in ordine
   alfabetico, con la spunta a quadratino; "Annulla" chiude. Il foglio
-  è `SheetCondividiCon` (passo 4, 16/10).
+  è `SheetCondividiCon` (passo 4, 16/10). **Provato su iPhone il 16/10**
+  da Davide (anteprima in Safari, account A → B, build `c47f275`): invio
+  di 2 alimenti, secondo invio dello stesso alimento, foglio offline;
+  verificato da Cowork sul database (la riga in attesa con i valori
+  giusti, il primo invio del Pane `sostituito`, il secondo in attesa).
 - **L'invio è una chiamata sola, tutto o niente** (`manda_alimenti`,
   sezione 4; deciso il 16/10): tutti gli alimenti a tutti gli amici
   spuntati, oppure niente. Se nel frattempo uno degli amici non lo è più
@@ -1581,6 +1585,25 @@ proposta **B**, scelta il 16/10)
     sincronizzazione e rilegge l'elenco quando la discesa ha portato le
     copie nuove: fino ad allora non saprebbe che sono doppioni degli
     altri in arrivo (sotto, "Due alimenti in arrivo uguali fra loro").
+  - **Com'è fatto** (passo 5, 16/10). La riga (`RigaAlimentiInArrivo`)
+    sta sopra la ricerca, o sopra "Ancora nessun alimento"; **non in
+    selezione**, dove un tocco lì confonderebbe le due cose. Il foglio
+    (`SheetAlimentiInArrivo`): "In arrivo dagli amici", la frase del
+    mockup, l'elenco dal più recente, "Chiudi"; si chiude da solo quando
+    non resta niente. Ogni riga (`RigaAlimentoInArrivo`): "Nome · Marca",
+    "Da @…", "259 kcal · G 3,3 · C 45 · P 9 g", e a destra i pulsanti in
+    colonna come nel mockup (Aggiungi pieno sopra, Rifiuta sotto;
+    "Usa questi valori" pieno sopra "Tieni i miei"). Una risposta alla
+    volta: durante un'azione tutti i pulsanti del foglio sono spenti.
+    Rifiuta, Tieni i miei e Ok non hanno barra: la riga sparisce. La
+    barra con l'Annulla di "Usa questi valori" è della pagina e, con il
+    foglio aperto, sale sopra il velo: resta anche se il foglio si chiude
+    perché era l'ultimo alimento. Testi: "Valori aggiornati: Yogurt ·
+    Fage" (con "(resta fra quelli in arrivo)" se la chiusura non è
+    arrivata), dopo l'Annulla "Ripristinato: Yogurt · Fage", Annulla non
+    riuscito "Non sono riuscito ad annullare. Controlla la connessione e
+    riprova." (con di nuovo Annulla), il proprio alimento sparito nel
+    frattempo "Il tuo alimento non c'è più: non è cambiato niente."
 - **Doppione** = stesso nome e stessa marca di un alimento vivo del
   proprio catalogo, con maiuscole, accenti e spazi ai bordi indifferenti;
   la marca vuota conta come una marca («Yogurt greco 0% · Fage» e

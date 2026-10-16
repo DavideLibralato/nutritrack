@@ -59,6 +59,31 @@ const CAMPI_SE_DIVERSI: readonly CampoValore[] = [
   "sale_100g",
 ];
 
+// I nove valori di un alimento (o di una copia in arrivo), e niente altro:
+// quello che "Usa questi valori" scrive.
+export function valoriDi(a: ValoriAlimento): ValoriAlimento {
+  const valori = {} as Record<CampoValore, number | null>;
+  for (const c of CAMPI_VALORI) valori[c] = a[c];
+  return valori as ValoriAlimento;
+}
+
+// Gli username di chi manda, uno per mittente, nell'ordine dell'elenco
+// (dal più recente): il sottotitolo della riga "N alimenti in arrivo".
+// null se lo username non è arrivato.
+export function usernameMittenti(
+  righe: AlimentoCondiviso[],
+  nomi: Record<string, string>
+): (string | null)[] {
+  const visti = new Set<string>();
+  const username: (string | null)[] = [];
+  for (const r of righe) {
+    if (visti.has(r.user_id)) continue;
+    visti.add(r.user_id);
+    username.push(nomi[r.user_id] ?? null);
+  }
+  return username;
+}
+
 // Un valore in centesimi, intero. toPrecision toglie l'errore della
 // moltiplicazione in virgola mobile (380.555 * 100 = 38055.49999…), così
 // l'arrotondamento è quello di numeric(7,2): 380,555 → 380,56.

@@ -22,6 +22,13 @@
 //   Elimina apre SheetConferma con cosa verrà toccato oltre al catalogo
 //   (confermaEliminazione.ts), poi tutto o niente in una transazione
 //   (eliminaAlimenti) e la barra con "Annulla" (ripristinaAlimenti).
+// - Gli alimenti in arrivo dagli amici (solo online): in cima, anche con il
+//   catalogo vuoto e non in selezione, la riga "N alimenti in arrivo" che
+//   apre il foglio (SheetAlimentiInArrivo). Il confronto con il catalogo
+//   si rifà a ogni ridisegno, sul catalogo letto live da Dexie: una copia
+//   appena arrivata con la sync cambia subito le scelte degli altri. La
+//   barra dopo "Usa questi valori", con il suo Annulla, è della pagina:
+//   con il foglio aperto sale sopra il velo.
 
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -56,8 +63,20 @@ import {
 import {
   messaggioAlimentiEliminati,
   messaggioAlimentoCreato,
+  messaggioRipristinato,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
+import { useOnline } from "@/lib/useOnline";
+import { createClient } from "@/lib/supabase/client";
+import { useAlimentiInArrivo } from "@/lib/amici/useAlimentiInArrivo";
+import { riapriAlimentoCondiviso } from "@/lib/amici/alimentiCondivisi";
+import {
+  confrontaInArrivo,
+  usernameMittenti,
+  type VoceInArrivo,
+} from "@/lib/catalogo/alimentiInArrivo";
+import { TESTO_ANNULLA_NON_RIUSCITO } from "@/lib/catalogo/testiAlimentiInArrivo";
+import { annullaValoriInArrivo } from "@/lib/repository/alimenti";
 import { useTieniPremuto, type RigaPremuta } from "@/lib/tieniPremuto";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
@@ -68,6 +87,8 @@ import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import SheetConferma from "@/components/SheetConferma";
 import SheetCondividiCon from "@/components/SheetCondividiCon";
+import RigaAlimentiInArrivo from "@/components/RigaAlimentiInArrivo";
+import SheetAlimentiInArrivo, { type AnnullaValori } from "@/components/SheetAlimentiInArrivo";
 
 const ORDINI: { valore: OrdineCatalogo; etichetta: string }[] = [
   { valore: "piu-usati", etichetta: "Più usati" },
@@ -93,6 +114,8 @@ type Barra = MessaggioBarra & {
   // Presente solo dopo un'eliminazione: cosa rimettere con "Annulla", e i
   // nomi per i messaggi.
   annullabile?: { nomi: string[]; traccia: TracciaEliminazioneAlimenti };
+  // Presente solo dopo "Usa questi valori": cosa rimettere con "Annulla".
+  annullaValori?: AnnullaValori;
 };
 
 // Lo sheet di conferma dell'eliminazione dalla selezione. Gli id e i nomi
@@ -142,6 +165,10 @@ export default function AlimentiPage() {
   const [conferma, setConferma] = useState<Conferma | null>(null);
   // Il foglio "Condividi con": gli id degli alimenti, fissati all'apertura.
   const [condividi, setCondividi] = useState<string[] | null>(null);
+  // Il foglio degli alimenti in arrivo.
+  const [foglioInArrivo, setFoglioInArrivo] = useState(false);
+  const inArrivo = useAlimentiInArrivo(userId ?? null);
+  const online = useOnline();
 
   // Il tieni premuto entra in selezione con quella riga spuntata (o la
   // aggiunge, se si è già in selezione). Tutti e due i rami del gesto
@@ -155,7 +182,7 @@ export default function AlimentiPage() {
   }
   const { rif: rifLista } = useTieniPremuto({
     tipi: TIPI_RIGA,
-    attivo: conferma === null && condividi === null,
+    attivo: conferma === null && condividi === null && !foglioInArrivo,
     onMenu: seleziona,
     onTrascinamento: { inizio: seleziona, movimento: () => {}, fine: () => {} },
   });
@@ -191,8 +218,47 @@ export default function AlimentiPage() {
   const perId = new Map(miei.map((a) => [a.id, a]));
   const selezionati = selezione ? [...selezione].filter((id) => perId.has(id)) : [];
 
+  // Gli alimenti in arrivo, ognuno con il suo confronto con il catalogo.
+  // Solo online e solo con una lettura riuscita: offline la riga non c'è e
+  // il catalogo funziona come sempre.
+  const righeInArrivo = online && inArrivo.stato.esito === "ok" ? inArrivo.stato.righe : [];
+  const nomiInArrivo = inArrivo.stato.esito === "ok" ? inArrivo.stato.nomi : {};
+  const vociInArrivo: VoceInArrivo[] = righeInArrivo.map((riga) => ({
+    riga,
+    confronto: confrontaInArrivo(catalogo, riga, userId),
+  }));
+  // Il foglio si chiude da solo quando non resta niente da decidere.
+  const foglioVisibile = foglioInArrivo && vociInArrivo.length > 0;
+
   function mostra(messaggio: MessaggioBarra, annullabile?: Barra["annullabile"]) {
     setBarra({ id: crypto.randomUUID(), ...messaggio, annullabile });
+  }
+
+  function mostraDalFoglio(messaggio: MessaggioBarra, annullaValori?: AnnullaValori) {
+    setBarra({ id: crypto.randomUUID(), ...messaggio, annullaValori });
+  }
+
+  // "Annulla" nella barra dopo "Usa questi valori": prima riapre la
+  // condivisione sul server, poi rimette i valori (annullaValoriInArrivo).
+  // Se la riapertura non risponde non è cambiato niente, e la barra offre
+  // di nuovo Annulla.
+  async function annullaValori() {
+    const dati = barra?.annullaValori;
+    if (!userId || !dati) return;
+    setBarra(null);
+    try {
+      const esito = await annullaValoriInArrivo(userId, dati.traccia, () =>
+        riapriAlimentoCondiviso(createClient(), dati.idCondivisione)
+      );
+      if (esito === "errore") {
+        mostraDalFoglio({ testo: TESTO_ANNULLA_NON_RIUSCITO }, dati);
+        return;
+      }
+      await inArrivo.ricarica();
+      mostraDalFoglio(messaggioRipristinato(dati.nome));
+    } catch {
+      mostraDalFoglio({ testo: TESTO_ANNULLA_NON_RIUSCITO }, dati);
+    }
   }
 
   function apri(m: Modulo) {
@@ -301,6 +367,20 @@ export default function AlimentiPage() {
     <main className={CLASSE_PAGINA}>
       <IntestazioneSottopagina titolo="Alimenti" />
 
+      {/* Anche con il catalogo vuoto: è il primo giorno, quando un alimento
+          mandato serve di più. Non in selezione, dove un tocco qui
+          confonderebbe le due cose. */}
+      {vociInArrivo.length > 0 && !selezione && (
+        <RigaAlimentiInArrivo
+          numero={vociInArrivo.length}
+          mittenti={usernameMittenti(righeInArrivo, nomiInArrivo)}
+          onApri={() => {
+            setBarra(null);
+            setFoglioInArrivo(true);
+          }}
+        />
+      )}
+
       {miei.length === 0 ? (
         <div className="rounded-[20px] border border-border bg-surface px-[18px] py-[22px]">
           <h2 className="font-semibold">Ancora nessun alimento</h2>
@@ -395,7 +475,9 @@ export default function AlimentiPage() {
       <div
         data-pulsante-aggiungi
         data-nascondi-mentre-scrivi
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-30 mx-auto max-w-md"
+        className={`pointer-events-none fixed inset-x-0 bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] mx-auto max-w-md ${
+          foglioVisibile ? "z-[60]" : "z-30"
+        }`}
       >
         {barra && (
           <BarraAnnulla
@@ -408,13 +490,15 @@ export default function AlimentiPage() {
             azione={
               barra.annullabile
                 ? { etichetta: "Annulla", onClick: () => void annullaEliminazione() }
-                : undefined
+                : barra.annullaValori
+                  ? { etichetta: "Annulla", onClick: () => void annullaValori() }
+                  : undefined
             }
             sopra
             onChiudi={() => setBarra(null)}
           />
         )}
-        {!selezione && (
+        {!selezione && !foglioVisibile && (
           <div className="flex justify-end px-4">
             <button
               type="button"
@@ -499,6 +583,17 @@ export default function AlimentiPage() {
             setSelezione(null);
             mostra(messaggio);
           }}
+        />
+      )}
+
+      {foglioVisibile && (
+        <SheetAlimentiInArrivo
+          userId={userId}
+          voci={vociInArrivo}
+          nomi={nomiInArrivo}
+          onChiudi={() => setFoglioInArrivo(false)}
+          ricarica={inArrivo.ricarica}
+          mostra={mostraDalFoglio}
         />
       )}
     </main>
