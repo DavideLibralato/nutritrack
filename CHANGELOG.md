@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-16 — Merge di `condivisione-alimenti` su main
+
+Fast-forward: main avanza all'ultimo commit del branch, quello di questa
+voce. tsc, lint, 995 test e build verdi sul branch prima del merge.
+Schema dati: solo la migration `alimenti_condivisi`, già applicata
+(20261016180308); nessuna versione Dexie nuova.
+
+## 2026-10-16 — Condivisione alimenti: provata tutta, branch chiuso
+
+Branch `condivisione-alimenti`. Passo 7 provato da Davide su iPhone:
+pallino della tab con soli alimenti in arrivo, riga Alimenti "2 in
+arrivo" (anche offline, con l'ultimo numero noto), pallino spento dopo
+le risposte, testo di Elimina account. Passo 8 fatto con Cowork: A
+eliminato con Elimina il mio account vero, con due condivisioni in
+attesa nei due sensi; sul database sparito tutto di A (utente, alimenti,
+pasti, voci, condivisioni, amicizie, nome), B senza più alimenti in
+arrivo, le copie già aggiunte da B rimaste, `@amici_uno` di nuovo
+libero, nessun altro utente toccato. Poi eliminati anche B e i tre
+account del trigger: restano 6 utenti, nessuna riga orfana. PUNTO:
+"Fatto" con la condivisione, account di prova eliminati, test a 995,
+tolto Amici da "Non ancora costruito", fra i difetti aperti le fine riga
+da uniformare (commit a parte). Solo documenti.
+
 ## 2026-10-16 — Condivisione alimenti: pallino, riga Alimenti, Elimina account
 
 Branch `condivisione-alimenti`, passo 7. Le novità hanno due parti

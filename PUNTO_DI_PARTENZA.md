@@ -1317,7 +1317,7 @@ catalogo, si corregge e si fa pulizia.
 - **Schema dati invariato**: niente migration Supabase, niente nuova
   versione Dexie.
 
-### Amici (dal 15/10, branch `amici` e poi `condivisione-alimenti`, in costruzione)
+### Amici (dal 15/10, branch `amici` e poi `condivisione-alimenti`, chiusi il 16/10)
 
 Serve a una cosa sola: **mandare a un amico una copia di un alimento** del
 proprio catalogo, così chi mangia le stesse cose non le riscrive a mano
@@ -1911,7 +1911,10 @@ prove in un blocco SQL annullato prima, `get_advisors` dopo):
   in arrivo", testo di Elimina account; (8) prova finale con A e B, poi
   la cascata vera con Elimina account (sezione 11, "Account di prova").
   Le prove le fa Davide sull'anteprima Vercel del branch, in Safari, con
-  A (`@amici_uno`) e B (`@amici_due_b`), già amici.
+  A (`@amici_uno`) e B (`@amici_due_b`), già amici. **Tutti e otto i
+  passi fatti il 16/10**, provati su iPhone e verificati da Cowork sul
+  database; il passo 8 con Elimina il mio account vero (sezione 11,
+  "Fatto", "Condivisione degli alimenti").
 
 **Prove con due utenti**: due account usa e getta creati da Davide
 dall'app (per esempio `davidemancon02+amici1@…` e `+amici2@…`), eliminati
@@ -4447,7 +4450,10 @@ costruzione e non per attenzione.
   regola di iPhone (sezione 3, "Lo username"). La prova della cascata
   con le tabelle nuove sta nel blocco annullato della migration
   `alimenti_condivisi` (le 14 tabelle a zero per chi elimina, la copia
-  dell'amico viva, il nome di nuovo libero)
+  dell'amico viva, il nome di nuovo libero), e il 16/10 anche la prova
+  vera: A eliminato con due condivisioni in attesa nei due sensi, tutto
+  di A sparito, le copie già aggiunte da B rimaste, `@amici_uno` di nuovo
+  libero, nessun altro utente toccato (verificato da Cowork)
 - **File in Storage**: oggi zero. Quando ci saranno file dell'utente (la
   foto profilo), `elimina_mio_account` o il flusso che la chiama dovrà
   cancellare anche quelli: le foreign key non toccano i file
@@ -4799,10 +4805,15 @@ Dal 16/10 anche **due account usa e getta del trigger di registrazione**
 - davidemancon02+trigger@gmail.com, username `@test`;
 - davidemancon02+trigger2@gmail.com, username `@prova_trigger2`.
 
-Al 15/10 A e B sono amici. **A, B e i due account del trigger si
-eliminano con Elimina il mio account alla fine del branch
-`condivisione-alimenti`**, che così prova anche la cascata sulle tabelle
-di Amici (sezione 9.6).
+Più un terzo, davidemancon02+trigger3@gmail.com, username `test3`, nato
+dalla prova di `nomeUtente` (branch `ritocchi-username`).
+
+**Il 16/10, a fine branch `condivisione-alimenti`, sono stati tutti
+eliminati** con Elimina il mio account, che così ha provato la cascata
+sulle tabelle di Amici (sezione 9.6): prima A, con due condivisioni in
+attesa nei due sensi, poi B e i tre account del trigger. Restano 6
+utenti, nessuna riga orfana (verificato da Cowork). Per altre prove con
+due utenti servono account nuovi; l'account di prova fisso resta.
 
 ### Fatto
 
@@ -5319,7 +5330,7 @@ di `nomi_utente`) e `registrazione_pulizia_codice` (20261016113910,
 BEFORE UPDATE: toglie `codice_invito` quando GoTrue riscrive i metadati).
 Prove nel blocco annullato 58/58; advisors senza avvisi nuovi; due
 registrazioni vere da app-libra, la seconda con i metadati puliti.
-Verificato da Cowork. Resta da fare il branch `condivisione-alimenti`.
+Verificato da Cowork. Poi il branch `condivisione-alimenti` (sotto).
 
 **Alimenti doppi nel catalogo** (16/10, branch `alimenti-doppi`; trovato
 da Davide il 16/10, era in "Difetti e verifiche aperti"). Prima, creando
@@ -5351,7 +5362,34 @@ il campo si chiama `nomeUtente`, con `autoComplete="nickname"` (sezione
 Aggiungi un amico senza la proposta, e una registrazione vera con
 `nomeUtente` (+trigger3, `test3`), verificata da Cowork.
 
-**Test.** 940 test permanenti in 86 file (Vitest), tutti verdi al 16/10.
+**Condivisione degli alimenti** (16/10, branch `condivisione-alimenti`,
+chiuso; sezione 3, "Amici", "Condividere un alimento" e "Il pallino";
+sezione 4, "`alimenti_condivisi`"). Mandare uno o più alimenti a uno o
+più amici dalla selezione del catalogo (icona Condividi, foglio
+"Condividi con"); riceverli nella pagina Alimenti (riga "N alimenti in
+arrivo" e foglio) con Aggiungi / Rifiuta, il doppione con "Confronta i
+valori", "Usa questi valori" con Annulla o "Tieni i miei", Ok sui valori
+identici, la selezione multipla; il pallino della tab che somma
+richieste e alimenti, la riga Alimenti di Impostazioni "N in arrivo",
+il testo di Elimina account. Migration `alimenti_condivisi`
+(20261016180308; prove nel blocco annullato 150/150, con la cascata;
+advisors solo con gli avvisi attesi). **Provato su iPhone il 16/10**
+sull'anteprima in Safari, con A → B: invio, secondo invio e foglio
+offline (passo 4); riga, foglio, confronto, "Usa questi valori" con
+Annulla, Ok, Aggiungi singolo, selezione e Aggiungi / Rifiuta multipli
+con conferma (passi 5 e 6); pallino con soli alimenti in arrivo, riga
+Alimenti "2 in arrivo" anche offline, pallino spento dopo le risposte,
+testo di Elimina account (passo 7). Verificato da Cowork sul database
+dopo ogni prova (stati, copie su B, lo Yogurt di B aggiornato sullo
+stesso id). **Passo 8, la cascata vera**: A eliminato con Elimina il
+mio account, con due condivisioni in attesa nei due sensi; sparito tutto
+di A (utente, alimenti, pasti, voci, condivisioni, amicizie, nome), B
+senza più alimenti in arrivo, le copie già aggiunte da B rimaste,
+`@amici_uno` di nuovo libero, nessun altro utente toccato. Non provato a
+mano, coperto dai test: due alimenti in arrivo con lo stesso nome e la
+stessa marca (servirebbe un terzo utente).
+
+**Test.** 995 test permanenti in 90 file (Vitest), tutti verdi al 16/10.
 
 ### Non ancora costruito
 
@@ -5360,15 +5398,21 @@ Aggiungi un amico senza la proposta, e una registrazione vera con
   (fase 5)
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
-- **Amici e condivisione degli alimenti** (sezione 3, "Amici"): i passi
-  1–8 di Amici sono fatti e su main (sopra, "Fatto"; il passo 8 è il
-  trigger su `auth.users`, §9.1); resta il branch
-  `condivisione-alimenti` (decisioni del 15 e del 16/10)
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Uniformare le fine riga** (trovato al passo 5 di
+  `condivisione-alimenti`, 16/10; da fare in un commit a parte). Una
+  sostituzione automatica su più righe non entrava in
+  `src/lib/repository/alimenti.ts`, che nella copia di lavoro aveva
+  righe miste (Windows e Unix). Al 16/10, a branch chiuso, nessun file
+  risulta misto (`git ls-files --eol`): nel repository sono tutti LF,
+  perché `core.autocrlf=true` li normalizza al commit. Nella copia di
+  lavoro però convivono file con fine riga Windows (278) e Unix (184):
+  innocuo per l'app, ma fa inciampare le modifiche su più righe.
 
 - **"Username appena preso, scegline un altro" non esiste ancora**
   (16/10, passo 8). La sezione 3 ("Lo username") lo prevede per due
