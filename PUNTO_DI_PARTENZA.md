@@ -1029,8 +1029,9 @@ da uno stato React che può essere indietro (stessa regola di
 **Stato al 17/10: costruito tutto, da provare su iPhone.** La parte senza
 interfaccia (logica pura, segno nei metadati, chiave locale, ripresa,
 attesa della discesa), la pagina `/onboarding` con i cinque passi e la
-fine, il segno `da_fare` alla registrazione, il redirect a `/onboarding`,
-la guardia nel layout e la scheda di Oggi. In questa sottosezione "fatto"
+fine, il segno `da_fare` alla registrazione, il caricamento completo di
+`/onboarding` dopo "Crea account", la guardia nel layout e la scheda di
+Oggi. In questa sottosezione "fatto"
 vuol dire costruito e coperto dai test, **non provato**: le prove su
 iPhone sono in sezione 11, "Prove su iPhone dell'onboarding". Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
@@ -1139,7 +1140,8 @@ salvati: stanno nella pagina, non nei componenti dei passi.
    Libra. Quattro domande veloci e ti propongo quante calorie, grassi,
    carboidrati e proteine puntare ogni giorno." Pulsante "Iniziamo".
    Qui niente "Dopo" e niente Indietro. Il nome viene dai metadati
-   (`useNomeUtente`), c'è già dopo il redirect della Server Action.
+   (`useNomeUtente`), c'è già quando la pagina si carica dopo "Crea
+   account".
    Finché il nome non è letto, o se manca, il titolo è "Ciao!": mai
    "Ciao ."
 2. **"Parlami un po' di te"** ("Servono solo per il calcolo."): sesso a
@@ -1353,9 +1355,12 @@ worker, redirect dopo la registrazione e guardia fatti il 17/10).
 gruppo `(app)`, come `/aggiungi`: niente tab bar e niente guardiano delle
 modifiche. È in `PAGINE_APP` del service worker, per riaprirsi anche
 offline. Chi ha il segno `da_fare` ci arriva:
-- subito dopo "Crea account": la Server Action `registrati` fa il
-  redirect a `/onboarding` invece che a "/", dopo `impostaUsername`.
-  Solo con la sessione: con la conferma email accesa resta il messaggio
+- subito dopo "Crea account": la Server Action `registrati`, dopo
+  `impostaUsername`, risponde "registrato" (non più `redirect("/")`), e
+  la pagina Registrati fa un **caricamento completo** di `/onboarding`
+  (`caricaPaginaDaCapo` in `src/lib/caricamentoCompleto.ts`, con
+  `window.location.replace`: "indietro" non torna a `/register`). Solo
+  con la sessione: con la conferma email accesa resta il messaggio
   "Account creato: controlla la tua email…", e all'onboarding porta la
   guardia al primo accesso;
 - negli altri casi, da una **guardia nel client** (`GuardiaOnboarding`
@@ -1373,6 +1378,32 @@ offline. Chi ha il segno `da_fare` ci arriva:
   l'onboarding (chiave locale "fatto", metadati ancora `da_fare`) non
   riporta indietro; con `da_fare` e i dati non ancora noti porta alla
   pagina, che aspetta la discesa.
+
+**Perché un caricamento completo e non `redirect()`** (bug trovato nelle
+prove su iPhone del 17/10, account A e B: dopo "Crea account"
+`/onboarding` restava su "Caricamento...", e con un refresh funzionava
+tutto). La sessione nasce sul server, nella Server Action, e arriva al
+browser solo nei cookie. `redirect()` di una Server Action è una
+navigazione interna di Next.js: il layout radice resta montato. I suoi
+componenti (`Sincronizzazione`, `RegistraServiceWorker` e le riprese) si
+erano montati su `/register` senza utente, e il client Supabase del
+browser non manda nessun evento quando una sessione compare nei cookie
+dall'esterno: emette `SIGNED_IN` solo per un accesso fatto nel browser
+(`signInWithPassword`, come il login, che infatti funzionava). Chi chiede
+la sessione dopo la trova, perché il client rilegge il cookie a ogni
+chiamata, ma chi era già montato resta "senza utente". Così la
+sincronizzazione non partiva, la discesa non riusciva mai, e la pagina
+aspettava per sempre. Verificato leggendo `@supabase/auth-js` e con un
+test temporaneo, poi cancellato. Con il caricamento completo tutto si
+rimonta e nasce già con la sessione.
+
+Il problema c'era anche prima del branch, quando la registrazione portava
+a Oggi, ma non si vedeva. Oggi crea i pasti predefiniti da sé
+(`usePastiIniziali`, che non passa dalla sincronizzazione), quindi
+"Preparo i tuoi pasti…" finiva lo stesso. Mancava solo la
+sincronizzazione della prima sessione: le modifiche restavano nella coda
+di Dexie e partivano alla riapertura successiva dell'app. Nessun dato
+perso, e nessun segno visibile.
 
 **Non dal middleware** (correzione dell'analisi del 17/10). Offline la
 richiesta non arriva al server: risponde il service worker con la copia
@@ -1833,7 +1864,9 @@ del 15/10.
   della registrazione), quindi dopo `signUp` c'è subito la sessione: la
   Server Action chiama `imposta_username`, che con lo stesso nome già
   scritto dal trigger non riscrive niente (resta come rete di sicurezza),
-  e poi porta a `/onboarding` (fino al 17/10 a Oggi). L'account non si
+  e poi risponde "registrato": la pagina Registrati fa un caricamento
+  completo di `/onboarding` (fino al 17/10 un redirect a Oggi; perché non
+  un redirect: sezione 3, "Onboarding"). L'account non si
   annulla per lo username: se mancasse, lo chiede Amici. Il ramo "senza
   sessione" della Server Action ("controlla la tua email") resta nel
   codice per il giorno in cui la conferma si accendesse: lo username lo
@@ -4012,8 +4045,9 @@ Conseguenze:
   `onboarding: "da_fare"`, scritto da `registrati` in `signUp` dal 17/10,
   branch `onboarding`; sezione 3, "Onboarding"). Il trigger di
   registrazione lo lascia passare: toglie solo `codice_invito` e riscrive
-  solo `username`. Con la sessione la Server Action porta a
-  `/onboarding`. Se un giorno si riaccende la conferma email, `signUp`
+  solo `username`. Con la sessione la pagina Registrati fa un
+  caricamento completo di `/onboarding`. Se un giorno si riaccende la
+  conferma email, `signUp`
   non dà una sessione e la Server Action non può portare all'onboarding:
   il segno resta `da_fare` nei metadati, e l'onboarding parte al primo
   accesso, dalla guardia nel client (fatta il 17/10)

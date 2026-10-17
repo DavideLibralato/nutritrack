@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: dopo "Crea account" un caricamento completo
+
+Branch `onboarding`. Bug trovato nelle prove su iPhone (account A e B):
+dopo "Crea account" `/onboarding` restava su "Caricamento...", e con un
+refresh funzionava. Causa verificata leggendo `@supabase/auth-js` e con
+un test temporaneo (poi cancellato): `redirect()` della Server Action è
+una navigazione interna, il layout radice resta montato, e i suoi
+componenti, montati su `/register` senza utente, non ricevono nessun
+evento quando la sessione nasce sul server nei cookie (il client emette
+`SIGNED_IN` solo per un accesso fatto nel browser). Senza utente
+`Sincronizzazione` non partiva e la discesa non riusciva mai. C'era già
+prima del branch, invisibile: Oggi crea i pasti da sé, e la prima sessione
+dopo la registrazione semplicemente non sincronizzava, fino alla
+riapertura. Corretto: con la sessione `registrati` risponde "registrato"
+invece di `redirect`, e la pagina Registrati fa
+`caricaPaginaDaCapo("/onboarding")` (`window.location.replace`, in
+`src/lib/caricamentoCompleto.ts`); il pulsante resta spento intanto. Il
+resto della Server Action e il caso senza sessione non cambiano. Test
+della Server Action aggiornati (con la sessione nessun `redirect`, esito
+"registrato"), test nuovo della pagina Registrati; provati rompendo le
+copie in cinque punti. PUNTO §3 "Onboarding": il perché, più le frasi in
+§3 "Lo username" e §9.1. 1139 test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: costruito, la lista delle prove
 
 Branch `onboarding`. Solo documenti. Il branch in breve: chi si registra

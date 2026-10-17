@@ -4,8 +4,9 @@
 // Action: niente onSubmit/fetch manuale, il form chiama registrati() da
 // solo. `stato` è quello che l'ultima chiamata ha restituito, `inCorso`
 // diventa true mentre la Server Action sta girando sul server.
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { registrati, type StatoRegistrazione } from "@/lib/actions/auth";
+import { caricaPaginaDaCapo } from "@/lib/caricamentoCompleto";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { useDisponibilitaUsername } from "@/lib/amici/useDisponibilitaUsername";
 import { TESTO_USERNAME_REGOLE, testoStatoUsername } from "@/lib/amici/testiUsername";
@@ -48,6 +49,18 @@ export default function RegisterPage() {
     setStatoVisto(stato);
     setTentativo((n) => n + 1);
   }
+
+  // Registrato e con la sessione: un caricamento completo di /onboarding,
+  // non una navigazione interna di Next.js. La sessione è nata sul server,
+  // nei cookie, e i componenti del layout radice montati qui senza utente
+  // (la sincronizzazione, le riprese) non lo saprebbero mai: con la
+  // navigazione interna /onboarding restava su "Caricamento..." (prove del
+  // 17/10). Ricaricando, nascono già con la sessione. In un effetto, non
+  // durante il disegno: cambiare pagina è un'azione verso il browser.
+  const registrato = stato.registrato === true;
+  useEffect(() => {
+    if (registrato) caricaPaginaDaCapo("/onboarding");
+  }, [registrato]);
 
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
@@ -185,10 +198,12 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          disabled={inCorso || usernameDaCorreggere}
+          // Spento anche da registrato, mentre la pagina si ricarica: un
+          // secondo invio proverebbe a creare lo stesso account.
+          disabled={inCorso || registrato || usernameDaCorreggere}
           className={`w-full rounded-lg bg-accent-strong p-2 text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
         >
-          {inCorso ? "Attendere..." : "Crea account"}
+          {inCorso || registrato ? "Attendere..." : "Crea account"}
         </button>
 
         <p className="text-sm text-muted">

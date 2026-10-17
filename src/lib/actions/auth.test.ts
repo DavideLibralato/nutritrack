@@ -1,8 +1,16 @@
 // La Server Action della registrazione (registrati, src/lib/actions/auth.ts;
 // dal 17/10 porta all'onboarding). Sbaglia in silenzio: un segno mancante
 // nei metadati e chi si registra non vede mai l'onboarding; un campo di
-// troppo finisce nei metadati di ogni account; un redirect sbagliato con la
-// conferma email accesa manda dentro chi non ha ancora una sessione.
+// troppo finisce nei metadati di ogni account; un "registrato" sbagliato con
+// la conferma email accesa manda dentro chi non ha ancora una sessione.
+//
+// Con la sessione la Server Action NON fa redirect (dal 17/10): risponde
+// "registrato", e la pagina Registrati fa un caricamento completo di
+// /onboarding. Con redirect() la navigazione resta interna a Next.js e i
+// componenti del layout radice restano senza utente ("Caricamento..." che
+// non finisce, prove su iPhone del 17/10). redirect è finto proprio per
+// controllare che non venga mai chiamato.
+//
 // Finti: il client Supabase del server, le due funzioni dello username e
 // redirect di Next.js. Nessuna registrazione vera.
 
@@ -82,18 +90,26 @@ describe("registrati", () => {
     });
   });
 
-  it("con la sessione: redirect a /onboarding, dopo impostaUsername", async () => {
-    await registrati(STATO_INIZIALE, modulo());
+  it("con la sessione: dopo impostaUsername risponde «registrato», senza redirect di Next", async () => {
+    const stato = await registrati(STATO_INIZIALE, modulo());
 
     expect(finti.impostaUsername).toHaveBeenCalledTimes(1);
-    expect(finti.redirect).toHaveBeenCalledTimes(1);
-    expect(finti.redirect).toHaveBeenCalledWith("/onboarding");
-    expect(finti.impostaUsername.mock.invocationCallOrder[0]).toBeLessThan(
-      finti.redirect.mock.invocationCallOrder[0]
-    );
+    expect(stato).toEqual({
+      errore: null,
+      messaggio: null,
+      valori: { nome: "Giulia", username: "giulia_92", email: "giulia@esempio.it" },
+      registrato: true,
+    });
+    expect(finti.redirect).not.toHaveBeenCalled();
   });
 
-  it("senza sessione (conferma email accesa): nessun redirect, lo stesso messaggio di prima", async () => {
+  it("con la sessione, se impostaUsername non risponde «ok», si entra lo stesso", async () => {
+    finti.impostaUsername.mockResolvedValueOnce("errore");
+    const stato = await registrati(STATO_INIZIALE, modulo());
+    expect(stato.registrato).toBe(true);
+  });
+
+  it("senza sessione (conferma email accesa): niente «registrato», lo stesso messaggio di prima", async () => {
     finti.signUp.mockResolvedValue(SENZA_SESSIONE);
 
     const stato = await registrati(STATO_INIZIALE, modulo());
@@ -107,7 +123,7 @@ describe("registrati", () => {
     expect(finti.impostaUsername).not.toHaveBeenCalled();
   });
 
-  it("con un errore di signUp: il messaggio tradotto di prima, nessun redirect", async () => {
+  it("con un errore di signUp: il messaggio tradotto di prima, niente «registrato»", async () => {
     finti.signUp.mockResolvedValue({
       data: { user: null, session: null },
       error: { message: "User already registered" },
@@ -117,6 +133,7 @@ describe("registrati", () => {
 
     expect(stato.errore).toBe("Esiste già un account con questa email.");
     expect(stato.messaggio).toBeNull();
+    expect(stato.registrato).toBeUndefined();
     expect(finti.redirect).not.toHaveBeenCalled();
     expect(finti.impostaUsername).not.toHaveBeenCalled();
   });
@@ -124,6 +141,7 @@ describe("registrati", () => {
   it("codice di invito sbagliato: niente signUp, come prima", async () => {
     const stato = await registrati(STATO_INIZIALE, modulo({ codiceInvito: "altro" }));
     expect(stato.errore).toBe("Codice di invito non valido.");
+    expect(stato.registrato).toBeUndefined();
     expect(finti.signUp).not.toHaveBeenCalled();
     expect(finti.redirect).not.toHaveBeenCalled();
   });

@@ -6,7 +6,6 @@
 // segreto lato server, non una variabile NEXT_PUBLIC_): riceve solo il
 // risultato.
 
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida, normalizzaUsername, usernameValido } from "@/lib/validazione";
@@ -23,6 +22,10 @@ const SEGNO_ALLA_REGISTRAZIONE: SegnoMetadati = "da_fare";
 export interface StatoRegistrazione {
   errore: string | null;
   messaggio: string | null;
+  // Registrato e con la sessione: la pagina Registrati fa un caricamento
+  // completo di /onboarding (src/lib/caricamentoCompleto.ts). Non un
+  // redirect da qui: vedi la fine di registrati().
+  registrato?: true;
   // Nome, username ed email inseriti nell'ultimo tentativo, per ripopolare
   // il form dopo un errore senza dover far riscrivere tutto da capo. La
   // password non torna mai indietro, nemmeno in caso di errore.
@@ -126,5 +129,12 @@ export async function registrati(
   await impostaUsername(supabase, username);
 
   // Dentro, si parte dall'onboarding (dal 17/10; prima si andava a Oggi).
-  redirect("/onboarding");
+  // Non con redirect(): sarebbe una navigazione interna di Next.js, e i
+  // componenti del layout radice, montati su /register senza sessione,
+  // resterebbero senza utente, perché la sessione nata qui sul server non
+  // manda nessun evento al client del browser. Senza utente la
+  // sincronizzazione non parte, la discesa non riesce mai e /onboarding
+  // resta su "Caricamento..." (trovato nelle prove su iPhone del 17/10).
+  // Si risponde "registrato", e la pagina fa un caricamento completo.
+  return { errore: null, messaggio: null, valori, registrato: true };
 }
