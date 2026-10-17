@@ -5,12 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
-## 2026-10-16 — Merge di `condivisione-alimenti` su main
+## 2026-10-17 — Onboarding: le decisioni nel documento
 
-Fast-forward: main avanza all'ultimo commit del branch, quello di questa
-voce. tsc, lint, 995 test e build verdi sul branch prima del merge.
-Schema dati: solo la migration `alimenti_condivisi`, già applicata
-(20261016180308); nessuna versione Dexie nuova.
+Branch `onboarding`. Solo documenti, nessun codice. Aggiunto il mockup
+`docs/mockups/onboarding.html` (vale lo stile B, "Di benvenuto"). PUNTO
+§3: sottosezione nuova "Onboarding", con le decisioni del 17/10 scritte
+come regole: il segno `onboarding` nei metadati dell'account (assente,
+`da_fare`, `rimandato`, `fatto`), la chiave locale che vince offline,
+"c'è già un obiettivo → fatto", i 5 passi e i loro testi, Avanti spento,
+salvataggio dei passi 2 e 3 con Avanti e dei passi 4 e 5 insieme alla
+fine, l'attesa della discesa (`profili` ha `UNIQUE(user_id)`), la scheda
+solo con `rimandato`, in cima alla lista dei pasti, la ripresa, la guardia
+nel client invece del middleware, il sesso "Non indicato" al passo 5, la
+grafica. §9.1: il segno nei metadati e la conferma email. §11:
+aggiornato al 17/10, onboarding in "Non ancora costruito" e in cima ai
+"Prossimi passi", poi `login-ritocchi` e `cambia-password`. Mockup:
+la simulazione del passo 5 ora chiede tutti e 4 i numeri, non solo le
+kcal. Il passo 4 parte senza obiettivo scelto, come il sesso: vale il
+documento, il mockup lo mostra già scelto.
+
+## 2026-10-17 — Merge di `condivisione-alimenti` su main
+
+Unito su main il 17/10 con un fast-forward, da `ec86f72` a `f2c034a`.
+Deploy di produzione Ready. Branch cancellato in locale e su GitHub.
+tsc, lint, 995 test e build verdi sul branch prima del merge. Schema
+dati: solo la migration `alimenti_condivisi`, già applicata
+(20261016180308); nessuna versione Dexie nuova. Questa voce sostituisce
+quella scritta sul branch il 16/10, prima del merge.
 
 ## 2026-10-16 — Condivisione alimenti: provata tutta, branch chiuso
 

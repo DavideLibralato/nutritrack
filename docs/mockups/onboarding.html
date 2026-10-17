@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Onboarding Libra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Mockup dell'onboarding dopo la registrazione (17/10).
+   SCELTO DA DAVIDE IL 17/10: stile B ("Di benvenuto"). Lo stile A resta
+   nel file solo per confronto. Decisi anche: Avanti spento finché il passo
+   non è completo; peso obiettivo facoltativo nel passo 4; "Continua" della
+   scheda in Oggi riapre l'onboarding dal primo passo non completato.
+   Colori: gli stessi token di src/app/globals.css (palette "minimal
+   caratteristico", accento verde), valori chiari e scuri. Font: Bricolage
+   Grotesque per titoli e numeri, Hanken Grotesk per il testo, come l'app.
+   Layout: una fila di telefoni, uno per passo, con i dati condivisi fra i
+   telefoni (cambiando il sesso al passo 2 cambia la proposta al passo 5). */
+:root{
+  --background:#faf7f2; --foreground:#1f1b16; --linea:#e7e0d2; --tenue:#78705f;
+  --accento:#3f7d4c; --accento-pieno:#3f7d4c; --avviso:#b5533c;
+  --superficie:#ffffff; --su-pieno:#faf7f2; --segmento-attivo:#ffffff;
+  --capsula:color-mix(in srgb, var(--accento) 12%, transparent);
+  --ombra:0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
+  --cornice:#e9e4da;
+  --icona-fondo:#1b1815; --icona-segno:#7bb887;
+  --f-titoli:'Bricolage Grotesque', 'Hanken Grotesk', system-ui, sans-serif;
+  --f-testo:'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]):not([data-tema="chiaro"]){
+    --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+    --accento:#7bb887; --accento-pieno:#3f7d4c; --avviso:#e8916f;
+    --superficie:#26221e; --su-pieno:#ffffff; --segmento-attivo:#4a433a;
+    --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+    --ombra:0 4px 16px color-mix(in srgb, #000 45%, transparent);
+    --cornice:#0f0d0b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"], :root[data-tema="scuro"]{
+  --background:#1b1815; --foreground:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+  --accento:#7bb887; --accento-pieno:#3f7d4c; --avviso:#e8916f;
+  --superficie:#26221e; --su-pieno:#ffffff; --segmento-attivo:#4a433a;
+  --capsula:color-mix(in srgb, var(--accento) 16%, transparent);
+  --ombra:0 4px 16px color-mix(in srgb, #000 45%, transparent);
+  --cornice:#0f0d0b;
+  color-scheme:dark;
+}
+:root[data-tema="chiaro"]{
+  --background:#faf7f2; --foreground:#1f1b16; --linea:#e7e0d2; --tenue:#78705f;
+  --accento:#3f7d4c; --accento-pieno:#3f7d4c; --avviso:#b5533c;
+  --superficie:#ffffff; --su-pieno:#faf7f2; --segmento-attivo:#ffffff;
+  --capsula:color-mix(in srgb, var(--accento) 12%, transparent);
+  --ombra:0 4px 16px color-mix(in srgb, var(--foreground) 12%, transparent);
+  --cornice:#e9e4da;
+  color-scheme:light;
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+body{
+  margin:0; background:var(--cornice); color:var(--foreground);
+  font-family:var(--f-testo); font-size:15px;
+  padding-block:24px 56px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.pagina{max-width:1240px; margin:0 auto; display:flex; flex-direction:column; gap:20px}
+h1.ttl{font-family:var(--f-titoli); font-size:28px; margin:0; text-wrap:balance}
+.lede{margin:0; max-width:72ch; line-height:1.5; color:color-mix(in srgb, var(--foreground) 82%, var(--cornice))}
+button,input,select{font:inherit; color:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accento); outline-offset:2px}
+
+/* Interruttori */
+.toolbar{display:flex; flex-direction:column; gap:10px; padding:12px; background:var(--superficie); border:1px solid var(--linea); border-radius:16px; max-width:760px}
+.tb-riga{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.tb-riga > span{font-size:12px; color:var(--tenue); text-transform:uppercase; letter-spacing:.08em; font-weight:600; min-width:96px}
+.seg{display:flex; gap:2px; background:var(--background); border:1px solid var(--linea); border-radius:999px; padding:2px; flex-wrap:wrap}
+.seg button{border:0; background:transparent; color:var(--tenue); font-weight:600; font-size:13px; padding:6px 12px; border-radius:999px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--superficie); color:var(--foreground); box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.stile-spiega{font-size:13.5px; line-height:1.45; color:var(--tenue); margin:0; max-width:72ch}
+
+/* Telefoni */
+.griglia{display:flex; flex-wrap:wrap; gap:28px 24px; align-items:flex-start}
+.colonna{width:340px; max-width:100%; display:flex; flex-direction:column; gap:8px; min-width:0}
+.didascalia{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; margin:0 6px}
+.spiega{font-size:13px; line-height:1.45; color:color-mix(in srgb, var(--foreground) 78%, var(--cornice)); margin:0 6px 4px; min-height:57px}
+.phone{position:relative; width:340px; max-width:100%; height:720px; overflow:hidden; background:var(--background); color:var(--foreground); border-radius:38px; box-shadow:0 18px 40px -16px rgba(0,0,0,.45); border:1px solid var(--linea)}
+.sb{display:flex; justify-content:space-between; font-weight:600; font-size:14px; padding:12px 26px 6px; font-variant-numeric:tabular-nums}
+.scorre{position:absolute; inset:34px 0 0 0; overflow-y:auto; padding:6px 18px 110px}
+.fondo{position:absolute; left:0; right:0; bottom:0; padding:14px 18px 26px; background:linear-gradient(to top, var(--background) 70%, transparent); display:flex; flex-direction:column; gap:10px}
+
+/* Icona di Libra: la bilancia verde su fondo scuro, uguale nei due temi */
+.icona{display:inline-flex; background:var(--icona-fondo); border-radius:22%; flex:none}
+.icona svg{width:100%; height:100%}
+
+/* Pezzi comuni */
+.btn{width:100%; min-height:50px; border:0; border-radius:14px; background:var(--accento-pieno); color:var(--su-pieno); font-weight:600; font-size:16px; cursor:pointer}
+.btn[disabled]{opacity:.45; cursor:default}
+.link{background:none; border:0; padding:0; color:var(--accento); font-weight:600; cursor:pointer; font-size:15px}
+.nota{font-size:13.5px; line-height:1.45; color:var(--tenue); margin:0}
+.segmenti{display:flex; background:color-mix(in srgb, var(--tenue) 16%, transparent); border-radius:10px; padding:2px; gap:2px}
+.segmenti button{flex:1; border:0; background:transparent; border-radius:8px; padding:7px 4px; font-size:14px; font-weight:500; cursor:pointer; color:var(--foreground)}
+.segmenti button[aria-pressed="true"]{background:var(--segmento-attivo); box-shadow:0 1px 3px rgba(0,0,0,.14); font-weight:600}
+
+/* ---------- STILE A: sobrio, come Impostazioni ---------- */
+.A .barra{display:flex; justify-content:space-between; align-items:center; min-height:40px}
+.A .indietro{display:inline-flex; align-items:center; gap:6px; color:var(--accento); font-size:16px; background:none; border:0; padding:0; cursor:pointer}
+.A .dopo{color:var(--tenue); font-size:15px; background:none; border:0; padding:0; cursor:pointer}
+.A .avanz{display:flex; gap:4px; margin:6px 2px 4px}
+.A .avanz i{flex:1; height:4px; border-radius:2px; background:var(--linea)}
+.A .avanz i.si{background:var(--accento)}
+.A .passo{font-size:12px; color:var(--tenue); text-transform:uppercase; letter-spacing:.1em; font-weight:500; margin:8px 4px 2px}
+.A .titolo{font-family:var(--f-titoli); font-size:30px; font-weight:700; line-height:1.15; margin:2px 4px 6px; text-wrap:balance}
+.A .sotto{margin:0 4px 18px; color:var(--tenue); line-height:1.45; font-size:15px}
+.A .gruppo{margin:0 0 18px}
+.A .gt{font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:.1em; color:var(--tenue); margin:0 16px 8px}
+.A .scatola{background:var(--superficie); border:1px solid var(--linea); border-radius:20px; overflow:hidden}
+.A .riga{position:relative; display:flex; align-items:center; gap:10px; min-height:52px; padding:8px 16px; font-size:16px}
+.A .riga + .riga::before{content:""; position:absolute; top:0; right:0; left:16px; border-top:1px solid var(--linea)}
+.A .riga.col{flex-direction:column; align-items:stretch; gap:8px; padding:12px 16px}
+.A .riga label{flex:1; min-width:0}
+.A .riga input{width:112px; text-align:right; border:0; background:transparent; font-size:16px; padding:4px 0; font-variant-numeric:tabular-nums}
+.A .riga input[type="date"]{width:150px}
+.A .riga .u{color:var(--tenue); font-size:15px; min-width:28px}
+.A .riga select{width:100%; border:1px solid var(--linea); border-radius:10px; background:var(--background); padding:9px 10px; font-size:16px}
+.A .benv .icona{width:64px; height:64px; margin:18px 4px 18px}
+.A .elenco{counter-reset:p; list-style:none; margin:0; padding:0}
+.A .elenco li{counter-increment:p; display:flex; align-items:center; gap:12px}
+.A .elenco li::before{content:counter(p); width:26px; height:26px; border-radius:50%; background:var(--capsula); color:var(--accento); font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; flex:none}
+.A .proposta{display:flex; align-items:center; gap:8px; margin:0 4px 12px; padding:10px 12px; border-radius:14px; background:var(--capsula); color:var(--foreground); font-size:14px; line-height:1.4}
+
+/* ---------- STILE B: di benvenuto, una domanda per schermata ---------- */
+.B .barra{display:flex; align-items:center; justify-content:space-between; min-height:44px}
+.B .tondo{width:38px; height:38px; border-radius:50%; border:1px solid var(--linea); background:var(--superficie); display:flex; align-items:center; justify-content:center; color:var(--foreground); cursor:pointer; padding:0}
+.B .tondo[hidden]{display:none}
+.B .puntini{display:flex; gap:6px}
+.B .puntini i{width:8px; height:8px; border-radius:4px; background:var(--linea); transition:width .2s}
+.B .puntini i.si{background:var(--accento)}
+.B .puntini i.ora{width:22px; background:var(--accento)}
+.B .dopo{color:var(--tenue); font-size:14px; background:none; border:0; cursor:pointer; padding:0; min-width:38px; text-align:right}
+.B .domanda{font-family:var(--f-titoli); font-size:36px; font-weight:700; line-height:1.08; letter-spacing:-.01em; margin:22px 0 10px; text-wrap:balance}
+.B .sotto{margin:0 0 24px; color:var(--tenue); line-height:1.45; font-size:15.5px}
+.B .etich{font-size:13px; font-weight:600; color:var(--tenue); margin:0 2px 8px}
+.B .blocco{margin:0 0 20px}
+.B .campo{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--superficie); border:1px solid var(--linea); border-radius:16px; padding:12px 16px; min-height:54px}
+.B .campo input{border:0; background:transparent; font-size:17px; width:100%; min-width:0; font-variant-numeric:tabular-nums}
+.B .campo .u{color:var(--tenue)}
+.B .campo select{border:0; background:transparent; font-size:16px; width:100%}
+.B .tessere{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.B .tessera{border:1px solid var(--linea); background:var(--superficie); border-radius:16px; padding:12px 6px; font-size:15px; font-weight:600; cursor:pointer; color:var(--foreground)}
+.B .tessera[aria-pressed="true"]{border-color:var(--accento); background:var(--capsula); color:var(--accento); box-shadow:inset 0 0 0 1px var(--accento)}
+.B .grande{display:flex; align-items:baseline; justify-content:center; gap:8px; margin:34px 0 10px}
+.B .grande input{font-family:var(--f-titoli); font-size:80px; font-weight:700; width:180px; text-align:center; border:0; border-bottom:2px solid var(--linea); background:transparent; padding:0; font-variant-numeric:tabular-nums; line-height:1}
+.B .grande input:focus{border-bottom-color:var(--accento); outline:none}
+.B .grande .u{font-family:var(--f-titoli); font-size:28px; color:var(--tenue)}
+.B .scelte{display:flex; flex-direction:column; gap:10px}
+.B .scelta{display:flex; flex-direction:column; gap:3px; text-align:left; border:1px solid var(--linea); background:var(--superficie); border-radius:18px; padding:14px 16px; cursor:pointer; color:var(--foreground)}
+.B .scelta b{font-size:17px}
+.B .scelta span{font-size:13.5px; color:var(--tenue); line-height:1.4}
+.B .scelta[aria-pressed="true"]{border-color:var(--accento); box-shadow:inset 0 0 0 1px var(--accento); background:var(--capsula)}
+.B .kcal{display:flex; align-items:baseline; gap:8px; margin:10px 0 4px}
+.B .kcal input{font-family:var(--f-titoli); font-size:64px; font-weight:700; width:200px; border:0; border-bottom:2px solid var(--linea); background:transparent; padding:0; line-height:1; font-variant-numeric:tabular-nums}
+.B .kcal input:focus{border-bottom-color:var(--accento); outline:none}
+.B .kcal .u{font-family:var(--f-titoli); font-size:22px; color:var(--tenue)}
+.B .macro{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0 14px}
+.B .macro label{display:flex; flex-direction:column; gap:4px; background:var(--superficie); border:1px solid var(--linea); border-radius:16px; padding:10px 12px; font-size:12.5px; color:var(--tenue); font-weight:600}
+.B .macro input{border:0; background:transparent; font-family:var(--f-titoli); font-size:24px; font-weight:700; width:100%; padding:0; color:var(--foreground); font-variant-numeric:tabular-nums}
+.B .benv{display:flex; flex-direction:column; gap:0; padding-top:40px}
+.B .benv .icona{width:92px; height:92px; margin:0 0 28px}
+.B .benv .domanda{font-size:44px; margin:0 0 14px}
+.B .btn{border-radius:999px}
+
+/* Oggi con la scheda "Completa il tuo profilo" */
+.oggi .data{font-size:14px; color:var(--tenue); margin:10px 2px 0}
+.oggi .titolo-oggi{font-family:var(--f-titoli); font-size:34px; font-weight:700; margin:0 2px 14px}
+.scheda{background:var(--superficie); border:1px solid var(--linea); border-radius:20px; padding:16px; display:flex; flex-direction:column; gap:10px; margin:0 0 18px; box-shadow:var(--ombra)}
+.scheda h3{margin:0; font-family:var(--f-titoli); font-size:19px}
+.scheda p{margin:0; font-size:14px; line-height:1.45; color:var(--tenue)}
+.scheda .mancano{display:flex; flex-wrap:wrap; gap:6px}
+.scheda .mancano span{font-size:12.5px; font-weight:600; padding:4px 10px; border-radius:999px; background:var(--capsula); color:var(--accento)}
+.scheda .btn{min-height:44px; font-size:15px}
+.pasto{display:flex; justify-content:space-between; align-items:center; padding:14px 4px; border-bottom:1px solid var(--linea); font-size:16px}
+.pasto span{color:var(--tenue); font-variant-numeric:tabular-nums; font-size:14px}
+.tabbar{position:absolute; left:18px; right:18px; bottom:22px; height:60px; border-radius:30px; background:color-mix(in srgb, var(--superficie) 85%, transparent); border:1px solid var(--linea); box-shadow:var(--ombra); display:flex; justify-content:space-around; align-items:center; font-size:12px; color:var(--tenue)}
+.tabbar b{color:var(--accento); background:var(--capsula); padding:8px 14px; border-radius:20px}
+
+/* Domande ancora aperte */
+.aperte{background:var(--superficie); border:1px solid var(--linea); border-radius:16px; padding:16px 18px; max-width:760px}
+.aperte h2{font-family:var(--f-titoli); font-size:19px; margin:0 0 10px}
+.aperte ol{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px; line-height:1.5}
+
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <h1 class="ttl">Onboarding di Libra</h1>
+  <p class="lede">I cinque passi che vede chi si è appena registrato, più la scheda in Oggi per chi ha scelto "Lo faccio dopo". I campi funzionano: cambiando i dati nei passi 2-4 la proposta del passo 5 si ricalcola con la stessa formula dell'app (<code>calcolaFabbisogno</code>). I dati di esempio sono inventati.</p>
+
+  <div class="toolbar" role="group" aria-label="Opzioni del mockup">
+    <div class="tb-riga"><span>Stile</span>
+      <div class="seg" id="sel-stile">
+        <button type="button" data-v="A" aria-pressed="false">A · Sobrio</button>
+        <button type="button" data-v="B" aria-pressed="true">B · Di benvenuto</button>
+      </div>
+    </div>
+    <div class="tb-riga"><span>Tema</span>
+      <div class="seg" id="sel-tema">
+        <button type="button" data-v="" aria-pressed="true">Sistema</button>
+        <button type="button" data-v="chiaro" aria-pressed="false">Chiaro</button>
+        <button type="button" data-v="scuro" aria-pressed="false">Scuro</button>
+      </div>
+    </div>
+    <p class="stile-spiega" id="spiega-stile"></p>
+  </div>
+
+  <div class="griglia" id="griglia"></div>
+
+  <section class="aperte" aria-labelledby="aperte-t">
+    <h2 id="aperte-t">Deciso da Davide il 17/10</h2>
+    <ol>
+      <li><b>Stile B</b>, "Di benvenuto".</li>
+      <li><b>Avanti spento</b> finché il passo non è completo. Chi non vuole rispondere usa "Lo faccio dopo".</li>
+      <li><b>Peso obiettivo</b> resta nel passo 4, facoltativo.</li>
+      <li><b>"Continua"</b> nella scheda di Oggi riapre l'onboarding dal primo passo non completato.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const ICONA = (lato) => `<span class="icona" style="width:${lato}px;height:${lato}px" role="img" aria-label="Libra"><svg viewBox="0 0 100 100" aria-hidden="true">
+  <g fill="var(--icona-segno)" stroke="var(--icona-segno)" stroke-linecap="round">
+    <circle cx="50" cy="25" r="5.5" stroke="none"/>
+    <path d="M50 29 V73" stroke-width="6" fill="none"/>
+    <path d="M34 75 H66" stroke-width="7" fill="none"/>
+    <path d="M22 34 H78" stroke-width="6" fill="none"/>
+    <path d="M22 35 L14 55 M22 35 L30 55 M78 35 L70 55 M78 35 L86 55" stroke-width="3" fill="none"/>
+    <path d="M12 55 H32 A10 8 0 0 1 12 55 Z M68 55 H88 A10 8 0 0 1 68 55 Z" stroke="none"/>
+  </g></svg></span>`;
+
+const ATTIVITA = [
+  ["sedentario","Sedentario",1.2],
+  ["leggero","Leggero (1-3 allenamenti a settimana)",1.375],
+  ["moderato","Moderato (3-5 allenamenti a settimana)",1.55],
+  ["attivo","Attivo (6-7 allenamenti a settimana)",1.725],
+  ["molto_attivo","Molto attivo (lavoro fisico o due allenamenti al giorno)",1.9],
+];
+const OBIETTIVI = [
+  ["dimagrire","Dimagrire","Circa 500 kcal sotto il tuo fabbisogno",-500],
+  ["mantenere","Mantenere","Quanto consumi in una giornata normale",0],
+  ["massa","Massa","Circa 300 kcal sopra il tuo fabbisogno",300],
+];
+
+const S = {
+  stile:"B",
+  nome:"Giulia",
+  sesso:"femmina", nascita:"1994-05-12", altezza:"165", attivita:"leggero",
+  peso:"62", obiettivo:"mantenere", pesoObiettivo:"",
+  target:null, modificato:false,
+};
+
+function eta(iso){
+  const n = new Date(iso), o = new Date();
+  let e = o.getFullYear() - n.getFullYear();
+  if (o.getMonth() < n.getMonth() || (o.getMonth() === n.getMonth() && o.getDate() < n.getDate())) e--;
+  return e;
+}
+const num = (v) => parseFloat(String(v).replace(",", "."));
+function proposta(){
+  if (S.sesso === "non_indicato") return null;
+  const p = num(S.peso), h = num(S.altezza), e = eta(S.nascita);
+  if (!(p > 0 && h > 0 && e > 0)) return null;
+  const bas = 10*p + 6.25*h - 5*e + (S.sesso === "maschio" ? 5 : -161);
+  const f = ATTIVITA.find(a => a[0] === S.attivita)[2];
+  const k = Math.max(0, Math.round(bas*f + OBIETTIVI.find(o => o[0] === S.obiettivo)[3]));
+  return { kcal:k, grassi:Math.round(k*.3/9), carboidrati:Math.round(k*.4/4), proteine:Math.round(k*.3/4) };
+}
+function targetCorrente(){
+  if (S.modificato && S.target) return S.target;
+  return proposta() ?? { kcal:"", grassi:"", carboidrati:"", proteine:"" };
+}
+const fmt = (n) => n === "" || n == null ? "" : String(n);
+const kcalIt = (n) => Number(n).toLocaleString("it-IT");
+
+/* Che cosa manca per poter andare avanti */
+const completo = {
+  2: () => S.sesso && S.nascita && num(S.altezza) > 0 && S.attivita,
+  3: () => num(S.peso) > 0,
+  4: () => !!S.obiettivo,
+  5: () => { const t = targetCorrente(); return ["kcal","grassi","carboidrati","proteine"].every(k => num(t[k]) > 0); },
+};
+
+const PASSI = [
+  { n:1, cap:"1 · Benvenuto", spiega:"Subito dopo \"Crea account\". Nessun \"Lo faccio dopo\" qui: il primo tocco è sempre \"Iniziamo\"." },
+  { n:2, cap:"2 · Su di te", spiega:"Gli stessi quattro campi di Profilo. \"Lo faccio dopo\" chiude l'onboarding: restano salvati i passi già confermati con Avanti." },
+  { n:3, cap:"3 · Il tuo peso", spiega:"La prima pesata, scritta con la stessa regola di Impostazioni > Peso." },
+  { n:4, cap:"4 · Il tuo obiettivo", spiega:"Lo stesso selettore di Obiettivi. Il peso obiettivo è facoltativo." },
+  { n:5, cap:"5 · Obiettivi giornalieri", spiega:"La proposta è già scritta nei campi e si può cambiare. Con \"Non indicato\" al passo 2 i campi partono vuoti." },
+  { n:6, cap:"Dopo \"Lo faccio dopo\"", spiega:"In Oggi resta questa scheda finché non ci sono obiettivi. Qui si è usciti al passo 4." },
+];
+
+/* ---------- STILE A ---------- */
+function barraA(n){
+  const seg = [1,2,3,4,5].map(i => `<i class="${i <= n ? "si" : ""}"></i>`).join("");
+  return `<div class="barra">
+      <button type="button" class="indietro"><svg width="9" height="15" viewBox="0 0 9 15" aria-hidden="true"><path d="M7.5 1.5 1.5 7.5l6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Indietro</button>
+      <button type="button" class="dopo">Lo faccio dopo</button>
+    </div>
+    <div class="avanz" aria-hidden="true">${seg}</div>
+    <p class="passo">Passo ${n} di 5</p>`;
+}
+function fondo(n, testo){
+  const ok = completo[n] ? completo[n]() : true;
+  return `<div class="fondo"><button type="button" class="btn" ${ok ? "" : "disabled"}>${testo}</button></div>`;
+}
+function selAttivita(id){
+  return `<select id="${id}" data-k="attivita">${ATTIVITA.map(a => `<option value="${a[0]}" ${a[0] === S.attivita ? "selected" : ""}>${a[1]}</option>`).join("")}</select>`;
+}
+function segSesso(){
+  return `<div class="segmenti" role="group" aria-label="Sesso">${[["maschio","Uomo"],["femmina","Donna"],["non_indicato","Non indicato"]].map(([v,t]) =>
+    `<button type="button" data-set="sesso" data-v="${v}" aria-pressed="${S.sesso === v}">${t}</button>`).join("")}</div>`;
+}
+function segObiettivo(){
+  return `<div class="segmenti" role="group" aria-label="Obiettivo">${OBIETTIVI.map(o =>
+    `<button type="button" data-set="obiettivo" data-v="${o[0]}" aria-pressed="${S.obiettivo === o[0]}">${o[1]}</button>`).join("")}</div>`;
+}
+
+const A = {
+  1: () => `<div class="scorre benv">
+      ${ICONA(64)}
+      <h2 class="titolo">Ciao ${S.nome}, ti do il benvenuto su Libra</h2>
+      <p class="sotto">Libra tiene il conto di quello che mangi, pasto per pasto: calorie, grassi, carboidrati e proteine. Prima di cominciare ti faccio qualche domanda per proporti degli obiettivi su misura. Ci vuole un minuto.</p>
+      <div class="gruppo"><p class="gt">Ti chiederò</p>
+        <ol class="scatola elenco">
+          <li class="riga">Qualcosa su di te</li><li class="riga">Il tuo peso</li><li class="riga">Il tuo obiettivo</li><li class="riga">I tuoi obiettivi giornalieri</li>
+        </ol>
+      </div>
+    </div>${fondo(1, "Iniziamo")}`,
+  2: () => `<div class="scorre">${barraA(2)}
+      <h2 class="titolo">Su di te</h2>
+      <p class="sotto">Servono per calcolare il tuo fabbisogno. Li puoi cambiare quando vuoi in Impostazioni &gt; Profilo.</p>
+      <div class="gruppo"><div class="scatola">
+        <div class="riga col"><span>Sesso</span>${segSesso()}</div>
+        <div class="riga"><label for="a-nascita">Data di nascita</label><input id="a-nascita" type="date" data-k="nascita" value="${S.nascita}"></div>
+        <div class="riga"><label for="a-altezza">Altezza</label><input id="a-altezza" inputmode="numeric" data-k="altezza" value="${S.altezza}"><span class="u">cm</span></div>
+        <div class="riga col"><label for="a-attivita">Livello di attività</label>${selAttivita("a-attivita")}</div>
+      </div></div>
+    </div>${fondo(2, "Avanti")}`,
+  3: () => `<div class="scorre">${barraA(3)}
+      <h2 class="titolo">Il tuo peso</h2>
+      <p class="sotto">Diventa la tua prima pesata. Da qui in poi ne puoi registrare una al giorno in Impostazioni &gt; Peso.</p>
+      <div class="gruppo"><div class="scatola">
+        <div class="riga"><label for="a-peso">Peso di oggi</label><input id="a-peso" inputmode="decimal" data-k="peso" value="${S.peso}"><span class="u">kg</span></div>
+      </div></div>
+    </div>${fondo(3, "Avanti")}`,
+  4: () => `<div class="scorre">${barraA(4)}
+      <h2 class="titolo">Il tuo obiettivo</h2>
+      <p class="sotto">Sposta la proposta del passo dopo: meno calorie per dimagrire, di più per la massa.</p>
+      <div class="gruppo"><div class="scatola">
+        <div class="riga col"><span>Obiettivo</span>${segObiettivo()}</div>
+        <div class="riga"><label for="a-pobi">Peso obiettivo <span class="nota">(facoltativo)</span></label><input id="a-pobi" inputmode="decimal" data-k="pesoObiettivo" value="${S.pesoObiettivo}" placeholder="—"><span class="u">kg</span></div>
+      </div></div>
+    </div>${fondo(4, "Avanti")}`,
+  5: () => {
+    const t = targetCorrente(), p = proposta();
+    const testa = p
+      ? (S.modificato
+          ? `<p class="proposta">Hai cambiato la proposta. <button type="button" class="link" data-azione="ripristina">Torna alla proposta</button></p>`
+          : `<p class="proposta">Proposta calcolata dai tuoi dati. Puoi cambiare ogni numero.</p>`)
+      : `<p class="proposta">Con il sesso non indicato non posso calcolare una proposta. Scrivi i tuoi valori, per esempio quelli del nutrizionista.</p>`;
+    const riga = (k, et, u) => `<div class="riga"><label for="a-t-${k}">${et}</label><input id="a-t-${k}" inputmode="numeric" data-t="${k}" value="${fmt(t[k])}" placeholder="—"><span class="u">${u}</span></div>`;
+    return `<div class="scorre">${barraA(5)}
+      <h2 class="titolo">I tuoi obiettivi giornalieri</h2>
+      ${testa}
+      <div class="gruppo"><div class="scatola">
+        ${riga("kcal","Calorie","kcal")}${riga("grassi","Grassi","g")}${riga("carboidrati","Carboidrati","g")}${riga("proteine","Proteine","g")}
+      </div></div>
+      ${p ? `<p class="nota" style="margin:0 4px 14px"><button type="button" class="link" data-azione="miei">Ho già i miei valori</button> svuota i campi per scriverli a mano.</p>` : ""}
+      <p class="nota" style="margin:0 4px">Giorni di allenamento, pasti e orari, colore dell'app: li trovi in Impostazioni quando ti servono.</p>
+    </div>${fondo(5, "Inizia a usare Libra")}`;
+  },
+};
+
+/* ---------- STILE B ---------- */
+function barraB(n){
+  const p = [1,2,3,4,5].map(i => `<i class="${i < n ? "si" : i === n ? "ora" : ""}"></i>`).join("");
+  return `<div class="barra">
+      <button type="button" class="tondo" aria-label="Indietro"><svg width="9" height="15" viewBox="0 0 9 15" aria-hidden="true"><path d="M7.5 1.5 1.5 7.5l6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="puntini" role="img" aria-label="Passo ${n} di 5">${p}</div>
+      <button type="button" class="dopo">Dopo</button>
+    </div>`;
+}
+const B = {
+  1: () => `<div class="scorre benv">
+      ${ICONA(92)}
+      <h2 class="domanda">Ciao ${S.nome}.</h2>
+      <p class="sotto">Ti do il benvenuto su Libra. Quattro domande veloci e ti propongo quante calorie, grassi, carboidrati e proteine puntare ogni giorno.</p>
+    </div>${fondo(1, "Iniziamo")}`,
+  2: () => `<div class="scorre">${barraB(2)}
+      <h2 class="domanda">Parlami un po' di te</h2>
+      <p class="sotto">Servono solo per il calcolo.</p>
+      <div class="blocco"><p class="etich">Sesso</p>
+        <div class="tessere" role="group" aria-label="Sesso">${[["maschio","Uomo"],["femmina","Donna"],["non_indicato","Non indicato"]].map(([v,t]) =>
+          `<button type="button" class="tessera" data-set="sesso" data-v="${v}" aria-pressed="${S.sesso === v}">${t}</button>`).join("")}</div></div>
+      <div class="blocco"><label class="etich" for="b-nascita">Data di nascita</label>
+        <div class="campo"><input id="b-nascita" type="date" data-k="nascita" value="${S.nascita}"></div></div>
+      <div class="blocco"><label class="etich" for="b-altezza">Altezza</label>
+        <div class="campo"><input id="b-altezza" inputmode="numeric" data-k="altezza" value="${S.altezza}"><span class="u">cm</span></div></div>
+      <div class="blocco"><label class="etich" for="b-attivita">Quanto ti muovi</label>
+        <div class="campo">${selAttivita("b-attivita")}</div></div>
+    </div>${fondo(2, "Avanti")}`,
+  3: () => `<div class="scorre">${barraB(3)}
+      <h2 class="domanda">Quanto pesi oggi?</h2>
+      <p class="sotto">Sarà la tua prima pesata.</p>
+      <div class="grande"><input id="b-peso" inputmode="decimal" data-k="peso" value="${S.peso}" aria-label="Peso in kg"><span class="u">kg</span></div>
+      <p class="nota" style="text-align:center">Ne puoi registrare una al giorno in Impostazioni &gt; Peso.</p>
+    </div>${fondo(3, "Avanti")}`,
+  4: () => `<div class="scorre">${barraB(4)}
+      <h2 class="domanda">Cosa vuoi ottenere?</h2>
+      <div class="scelte blocco" role="group" aria-label="Obiettivo">${OBIETTIVI.map(o =>
+        `<button type="button" class="scelta" data-set="obiettivo" data-v="${o[0]}" aria-pressed="${S.obiettivo === o[0]}"><b>${o[1]}</b><span>${o[2]}</span></button>`).join("")}</div>
+      <div class="blocco"><label class="etich" for="b-pobi">Peso obiettivo (facoltativo)</label>
+        <div class="campo"><input id="b-pobi" inputmode="decimal" data-k="pesoObiettivo" value="${S.pesoObiettivo}" placeholder="—"><span class="u">kg</span></div></div>
+    </div>${fondo(4, "Avanti")}`,
+  5: () => {
+    const t = targetCorrente(), p = proposta();
+    const sotto = p
+      ? (S.modificato
+          ? `Hai cambiato la proposta. <button type="button" class="link" data-azione="ripristina">Torna alla proposta</button>`
+          : `Calcolato dai tuoi dati. Tocca un numero per cambiarlo.`)
+      : `Con il sesso non indicato non posso calcolare una proposta: scrivi i tuoi valori, per esempio quelli del nutrizionista.`;
+    const m = (k, et) => `<label for="b-t-${k}">${et}<input id="b-t-${k}" inputmode="numeric" data-t="${k}" value="${fmt(t[k])}" placeholder="—"></label>`;
+    return `<div class="scorre">${barraB(5)}
+      <h2 class="domanda">${p && !S.modificato ? "Ecco la tua proposta" : "I tuoi obiettivi"}</h2>
+      <p class="sotto" style="margin-bottom:8px">${sotto}</p>
+      <div class="kcal"><input id="b-t-kcal" inputmode="numeric" data-t="kcal" value="${fmt(t.kcal)}" placeholder="—" aria-label="Calorie"><span class="u">kcal al giorno</span></div>
+      <div class="macro">${m("grassi","Grassi g")}${m("carboidrati","Carboidrati g")}${m("proteine","Proteine g")}</div>
+      ${p ? `<p class="nota" style="margin-bottom:12px"><button type="button" class="link" data-azione="miei">Ho già i miei valori</button></p>` : ""}
+      <p class="nota">Giorni di allenamento, pasti e orari e colore dell'app li trovi in Impostazioni.</p>
+    </div>${fondo(5, "Inizia a usare Libra")}`;
+  },
+};
+
+function oggi(){
+  const d = new Date().toLocaleDateString("it-IT", { weekday:"long", day:"numeric", month:"long" });
+  const pasti = [["Colazione"],["Spuntino mattina"],["Pranzo"],["Spuntino pomeriggio"],["Cena"]];
+  return `<div class="scorre oggi">
+      <p class="data">${d}</p>
+      <h2 class="titolo-oggi">Oggi</h2>
+      <div class="scheda">
+        <h3>Completa il tuo profilo</h3>
+        <p>Senza obiettivi non posso dirti quante calorie ti restano oggi.</p>
+        <div class="mancano"><span>Il tuo obiettivo</span><span>Obiettivi giornalieri</span></div>
+        <button type="button" class="btn">Continua</button>
+      </div>
+      ${pasti.map(p => `<div class="pasto">${p[0]}<span>0 kcal</span></div>`).join("")}
+    </div>
+    <div class="tabbar"><b>Oggi</b><span>Statistiche</span><span>Impostazioni</span></div>`;
+}
+
+const SPIEGA_STILE = {
+  A: "A · Sobrio: è fatto come le pagine di Impostazioni (titolo a sinistra, gruppi bianchi, campi nella riga). Chi lo usa poi ritrova gli stessi campi, uguali, in Profilo e Obiettivi.",
+  B: "B · Di benvenuto: una domanda per schermata, con campi grandi e il numero principale in evidenza. Più caldo per chi apre l'app la prima volta, ma diverso dal resto dell'app.",
+};
+
+function disegnaTelefono(n){
+  const corpo = n === 6 ? oggi() : (S.stile === "A" ? A : B)[n]();
+  return `<div class="sb"><span>9:41</span><span>●●● 100%</span></div>${corpo}`;
+}
+function disegna(){
+  document.getElementById("spiega-stile").textContent = SPIEGA_STILE[S.stile];
+  document.getElementById("griglia").innerHTML = PASSI.map(p => `
+    <div class="colonna">
+      <p class="didascalia">${p.cap}</p>
+      <p class="spiega">${p.spiega}</p>
+      <div class="phone ${S.stile}" data-n="${p.n}">${disegnaTelefono(p.n)}</div>
+    </div>`).join("");
+}
+function ridisegnaTranne(n){
+  document.querySelectorAll(".phone").forEach(el => {
+    const m = +el.dataset.n;
+    if (m === n) {
+      // Nel telefono che si sta usando si aggiorna solo il pulsante, per non perdere il fuoco.
+      const b = el.querySelector(".fondo .btn");
+      if (b && completo[m]) b.disabled = !completo[m]();
+      return;
+    }
+    el.innerHTML = disegnaTelefono(m);
+  });
+}
+
+document.addEventListener("input", (e) => {
+  const el = e.target, ph = el.closest(".phone");
+  if (!ph) return;
+  if (el.dataset.k) S[el.dataset.k] = el.value;
+  if (el.dataset.t) {
+    S.target = { ...targetCorrente(), [el.dataset.t]: el.value.replace(/\D/g, "") };
+    S.modificato = true;
+  }
+  ridisegnaTranne(+ph.dataset.n);
+});
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.set) { S[b.dataset.set] = b.dataset.v; if (b.dataset.set === "sesso" && b.dataset.v !== "non_indicato" && !S.target) S.modificato = false; disegna(); return; }
+  if (b.dataset.azione === "ripristina") { S.modificato = false; S.target = null; disegna(); return; }
+  if (b.dataset.azione === "miei") { S.modificato = true; S.target = { kcal:"", grassi:"", carboidrati:"", proteine:"" }; disegna(); return; }
+  const gruppo = b.closest(".seg");
+  if (gruppo) {
+    gruppo.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    if (gruppo.id === "sel-stile") { S.stile = b.dataset.v; disegna(); }
+    if (gruppo.id === "sel-tema") {
+      if (b.dataset.v) document.documentElement.setAttribute("data-tema", b.dataset.v);
+      else document.documentElement.removeAttribute("data-tema");
+    }
+  }
+});
+document.addEventListener("change", (e) => {
+  const el = e.target, ph = el.closest(".phone");
+  if (ph && el.tagName === "SELECT" && el.dataset.k) { S[el.dataset.k] = el.value; ridisegnaTranne(+ph.dataset.n); }
+});
+
+disegna();
+</script>
+</body>
+</html>

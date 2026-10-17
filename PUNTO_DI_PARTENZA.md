@@ -1024,6 +1024,214 @@ più. La pesata del giorno si cerca rileggendo Dexie dentro la funzione, non
 da uno stato React che può essere indietro (stessa regola di
 `salvaProfilo`). Test in `src/lib/repository/misurazioni.test.ts`.
 
+### Onboarding (dal 17/10, branch `onboarding`)
+
+**Stato al 17/10: decisioni prese, codice tutto da fare.** Mockup in
+`docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
+stile A resta nel file solo per confronto. Colori, font e testi del
+mockup valgono, la logica JS dentro è solo una simulazione. Dove il
+mockup e questo documento non coincidono vale il documento: per esempio
+il mockup mostra l'obiettivo del passo 4 già scelto ("Mantenere"),
+mentre qui parte senza scelta.
+
+**Il problema.** Fino al 17/10 chi si registrava finiva su Oggi con un
+diario vuoto e senza obiettivi. L'onboarding è una sequenza guidata di 5
+passi a tutto schermo, subito dopo "Crea account", che porta a Oggi con
+profilo, prima pesata e obiettivi già impostati.
+
+**Chi lo vede: il segno nei metadati dell'account** (da fare). Un campo
+`onboarding` nei metadati di Supabase Auth (`raw_user_meta_data`, come
+`nome` e `username`; nessuna migration). Il trigger di registrazione lo
+lascia passare: toglie solo `codice_invito` e riscrive `username`
+(sezione 9.1). I valori:
+- **assente**: gli utenti registrati prima dell'onboarding. Non vedono
+  mai né l'onboarding né la scheda di Oggi, anche senza obiettivi;
+- **`da_fare`**: lo scrive `registrati` in `signUp`. L'onboarding si
+  apre, e si riapre se l'app viene chiusa a metà;
+- **`rimandato`**: dopo "Lo faccio dopo". L'onboarding non si apre più
+  da solo; in Oggi c'è la scheda "Completa il tuo profilo";
+- **`fatto`**: dopo "Inizia a usare Libra". Niente onboarding, niente
+  scheda.
+
+Il segno **non** si deduce dai dati mancanti: un utente di prima, su un
+telefono nuovo, ha Dexie vuoto finché la discesa non arriva, e
+sembrerebbe nuovo.
+
+Il segno si legge **anche offline**, dalla sessione salvata nel cookie
+(`leggiSessioneSalvata` in `src/lib/supabase/utenteOffline.ts`, la
+stessa strada del nome). Si cambia con `updateUser({ data: { onboarding
+} })`: Supabase unisce la chiave agli altri metadati, e supabase-js
+aggiorna subito la sessione nel cookie (`session.user`). Il token JWT
+porta il valore vecchio fino al rinnovo, ma nessuno lo legge: il
+middleware usa `getUser()`, che chiede al server, e il client legge
+`session.user`.
+
+**La chiave locale, che vince offline** (da fare). `updateUser` senza
+rete fallisce. Per questo l'esito ("fatto" o "rimandato") si scrive
+anche in `localStorage`, una chiave per utente, e **la chiave locale
+vince sui metadati**. Un componente di ripresa (come `RipresaUscita`)
+rimanda `updateUser` all'avvio e al ritorno della rete, e cancella la
+chiave solo dopo una risposta riuscita. **Esci** prova a mandare l'esito
+ancora in sospeso prima di uscire, come fa già con la coda delle
+modifiche (sezione 9.6, "Esci svuota i dati locali").
+
+**La rete di sicurezza: c'è già un obiettivo → fatto.** Un obiettivo vivo
+vale "fatto" qualunque sia il segno, e l'app manda `updateUser` per
+allinearlo. Copre l'onboarding finito offline su un dispositivo e
+riaperto su un altro, dove la chiave locale non c'è.
+
+**I 5 passi** (testi dello stile B). In alto, dal passo 2: il pulsante
+tondo Indietro, i puntini di avanzamento (per gli screen reader "Passo N
+di 5") e "Dopo" (= "Lo faccio dopo").
+1. **Benvenuto**: l'icona, "Ciao <nome>." e "Ti do il benvenuto su
+   Libra. Quattro domande veloci e ti propongo quante calorie, grassi,
+   carboidrati e proteine puntare ogni giorno." Pulsante "Iniziamo".
+   Qui niente "Dopo" e niente Indietro. Il nome viene dai metadati
+   (`useNomeUtente`), c'è già dopo il redirect della Server Action; il
+   titolo non si mostra a metà ("Ciao .") finché il nome non è letto
+2. **"Parlami un po' di te"** ("Servono solo per il calcolo."): sesso a
+   tessere (Uomo / Donna / Non indicato), data di nascita, altezza in
+   cm, "Quanto ti muovi" (il livello di attività). Stessi campi, valori
+   ed etichette di Impostazioni > Profilo. **Il sesso parte senza
+   scelta**: Avanti resta spento finché non se ne tocca uno, anche "Non
+   indicato"
+3. **"Quanto pesi oggi?"** ("Sarà la tua prima pesata."): un campo
+   grande in kg, con la virgola. Nota: "Ne puoi registrare una al giorno
+   in Impostazioni > Peso."
+4. **"Cosa vuoi ottenere?"**: Dimagrire ("Circa 500 kcal sotto il tuo
+   fabbisogno"), Mantenere ("Quanto consumi in una giornata normale"),
+   Massa ("Circa 300 kcal sopra il tuo fabbisogno"), più "Peso obiettivo
+   (facoltativo)" in kg. **L'obiettivo parte senza scelta**, come il
+   sesso: Avanti resta spento finché non se ne tocca uno (deciso da
+   Davide il 17/10; il mockup lo mostra già scelto, vale il documento)
+5. **"Ecco la tua proposta"** (oppure "I tuoi obiettivi" se i numeri sono
+   cambiati o la proposta non c'è): le kcal in grande ("kcal al
+   giorno"), sotto Grassi, Carboidrati, Proteine in g. Sotto il titolo:
+   "Calcolato dai tuoi dati. Tocca un numero per cambiarlo.", e dopo una
+   modifica "Hai cambiato la proposta. Torna alla proposta". Il link
+   **"Ho già i miei valori"** svuota i quattro campi. Nota: "Giorni di
+   allenamento, pasti e orari e colore dell'app li trovi in
+   Impostazioni." Pulsante **"Inizia a usare Libra"** → Oggi
+
+**Avanti spento finché il passo non è completo.**
+- Passo 2: un sesso scelto, la data di nascita, l'altezza (un numero fra
+  1 e 280, come in Profilo), il livello di attività;
+- passo 3: un peso maggiore di 0 e al massimo 500 kg (lo stesso
+  controllo di "Registra peso");
+- passo 4: un obiettivo toccato (si parte senza scelta); il peso
+  obiettivo, se scritto, maggiore di zero;
+- passo 5: **tutti e 4 i numeri**, zero o più, come in Obiettivi
+  (`validaModulo`). Non basta il numero delle kcal.
+
+**Il salvataggio**, con le funzioni che usano già Profilo, Peso e
+Obiettivi, senza duplicare la loro logica:
+- **passo 2**, quando si preme Avanti: `salvaProfilo` con la sola
+  sezione "Dati personali" (`src/lib/profilo/salvataggioProfilo.ts`),
+  che rilegge Dexie e decide da sola se creare o aggiornare il profilo;
+- **passo 3**, quando si preme Avanti: `registraPesoSenzaDuplicati`
+  (sezione "Peso" sopra). Tornare indietro e cambiare il valore aggiorna
+  la pesata del giorno, non ne aggiunge una;
+- **passi 4 e 5 insieme**, con "Inizia a usare Libra" (correzione
+  dell'analisi del 17/10). Il passo 4 non si può salvare da solo: su
+  `obiettivi` le colonne kcal e macro sono `NOT NULL`, e obiettivo e
+  target sono la stessa sezione di `salvaProfilo`. Avanti al passo 4
+  tiene la scelta solo in memoria; chi esce prima del passo 5 la perde,
+  e "Continua" riparte dal passo 4 (deciso da Davide il 17/10).
+  `salvaProfilo` crea il primo periodo con `valido_dal` = oggi, senza la
+  domanda "cambio vero o correzione?": il primo periodo vale "da
+  sempre" per la regola di lettura di `obiettivoValidoPer` (sezione 4,
+  "obiettivi"). Il peso obiettivo va in `obiettivi.peso_obiettivo`. Se
+  nel frattempo è arrivato un obiettivo da un altro dispositivo,
+  `salvaProfilo` risponde "periodo cambiato" e non scrive niente:
+  l'onboarding lo dice e si chiude, con il segno "fatto".
+
+"Lo faccio dopo" non salva il passo a metà: restano salvati solo i passi
+già confermati con Avanti.
+
+**Prima di decidere il passo e di scrivere, si aspetta la discesa**
+(correzione dell'analisi del 17/10; da fare). Su un dispositivo con
+Dexie vuoto (Chrome sul PC dopo Safari, un telefono nuovo) il passo 2
+creerebbe un secondo profilo con un id nuovo, e la sincronizzazione lo
+rifiuterebbe: `profili` ha `UNIQUE(user_id)` su Supabase. In più
+l'onboarding ripartirebbe dal passo 2 anche con un profilo già salvato.
+Regola: il passo si decide, e i pulsanti che scrivono si accendono, solo
+dopo **una discesa riuscita in questa sessione dell'app**, oppure se in
+Dexie ci sono già righe dell'utente. Fino ad allora la pagina dice
+"Caricamento…"; offline su un dispositivo vuoto, "Serve la connessione",
+come il seed dei pasti al primo avvio (sezione 9.2). Oggi la discesa non
+dice se una tabella è stata scaricata almeno una volta in questa
+sessione (il cursore si scrive solo se arrivano righe): serve un segno
+in memoria, in un commit a parte perché tocca la sincronizzazione.
+
+**Il primo passo da fare** (`primoPassoDaFare`, logica pura con test; da
+fare), dai dati in Dexie:
+- un obiettivo vivo → **finito**, qualunque cosa manchi;
+- profilo assente, oppure data di nascita, altezza o livello di attività
+  vuoti → **passo 2**. Il sesso non si controlla: "non indicato" è sia il
+  valore iniziale della colonna sia una risposta valida;
+- nessuna pesata viva → **passo 3**;
+- altrimenti → **passo 4** (il passo 5 segue sempre il 4).
+
+Dalla stessa regola escono le etichette di "cosa manca" nella scheda di
+Oggi: "Su di te", "Il tuo peso", "Il tuo obiettivo", "Obiettivi
+giornalieri" (gli ultimi due sempre insieme).
+
+**La ripresa** (da fare). Chi riapre l'app con il segno `da_fare` torna
+all'onboarding: dal **Benvenuto solo se non è salvato niente** (nessun
+profilo, nessuna pesata, nessun obiettivo), altrimenti dal primo passo
+da fare.
+
+**"Lo faccio dopo" e la scheda in Oggi** (da fare). "Dopo", dal passo 2
+al 5, chiude l'onboarding, mette il segno `rimandato` e porta a Oggi. La
+scheda **"Completa il tuo profilo"** ("Senza obiettivi non posso dirti
+quante calorie ti restano oggi.", le etichette di ciò che manca, il
+pulsante "Continua") si mostra **solo con il segno `rimandato` e 0
+obiettivi** (deciso da Davide il 17/10). Gli utenti senza segno non la
+vedono mai, anche senza obiettivi, e così non c'è nessun lampo per chi
+gli obiettivi li ha ma sta ancora aspettando la discesa. Sta **in cima
+alla lista dei pasti** e scorre con la lista: Oggi è alta esattamente lo
+schermo, e una scheda fissa sotto la testata toglierebbe spazio alla
+lista. "Continua" riapre l'onboarding **sempre dal primo passo da fare,
+mai dal Benvenuto**.
+
+**Dove sta la pagina e perché la guardia è nel client** (da fare).
+`/onboarding` (`src/app/onboarding/page.tsx`) sta fuori dal gruppo
+`(app)`, come `/aggiungi`: niente tab bar e niente guardiano delle
+modifiche. Va in `PAGINE_APP` del service worker, per riaprirsi anche
+offline. Chi ha il segno `da_fare` ci arriva:
+- subito dopo "Crea account": la Server Action `registrati` fa il
+  redirect a `/onboarding` invece che a "/";
+- negli altri casi, da una **guardia nel client** in
+  `src/app/(app)/layout.tsx`, che legge il segno (cookie e chiave
+  locale) e fa `router.replace("/onboarding")`.
+
+**Non dal middleware** (correzione dell'analisi del 17/10). Offline la
+richiesta non arriva al server: risponde il service worker con la copia
+salvata di "/", e il middleware non gira. In più, quando il service
+worker scarica le pagine per l'uso offline, un redirect non si salva,
+quindi Oggi resterebbe senza copia per tutto l'onboarding. Infine il
+middleware leggerebbe il segno del server e ignorerebbe la chiave
+locale: tornata la rete, rimanderebbe all'onboarding chi l'ha finito
+offline. Il prezzo della guardia nel client: alla ripresa Oggi compare
+per un istante prima del redirect; dopo "Crea account" no.
+
+**Sesso "Non indicato" al passo 5.** Mifflin-St Jeor richiede il sesso
+(sezione "Il calcolo del fabbisogno"): niente proposta, i quattro campi
+partono vuoti, niente "Ho già i miei valori", e sotto il titolo "Con il
+sesso non indicato non posso calcolare una proposta: scrivi i tuoi
+valori, per esempio quelli del nutrizionista." I controlli sono gli
+stessi di "Calcola proposta" in Obiettivi, in una funzione pura condivisa
+(`propostaObiettivi`, da fare).
+
+**Grafica.** Stile B del mockup, con le variabili di `globals.css`,
+nessun colore scritto a mano (sezione 7). L'icona del Benvenuto è
+`public/icons/icon-512.png`: è la bilancia del mockup, uguale nei due
+temi, ed è già salvata dal service worker, quindi si vede anche offline.
+Niente SVG nuovo e niente token `--icona-*`. La capsula (tessera scelta,
+etichette della scheda) usa `--capsula-attiva` con il testo
+`--testo-capsula`, non l'accento puro: sulla capsula l'accento fa 4,2:1,
+sotto il 4,5:1 richiesto per il testo (commento in `globals.css`).
+
 ### Aspetto (dal 3/10, passi "tema" e "accento")
 
 In Impostazioni > Aspetto (`/impostazioni/aspetto`), con "‹ Impostazioni".
@@ -3606,6 +3814,13 @@ Conseguenze:
   pubblico va riaccesa, e va riprovato il percorso "username solo nei
   metadati, lo chiede Amici" (sezione 3, "Lo username": dopo `signUp`
   senza sessione la Server Action non può salvarlo)
+- **il segno dell'onboarding sta nei metadati dell'account** (campo
+  `onboarding`, scritto da `registrati` in `signUp`; dal 17/10, branch
+  `onboarding`, da fare; sezione 3, "Onboarding"). Il trigger di
+  registrazione lo lascia passare. Se un giorno si riaccende la conferma
+  email, `signUp` non dà una sessione e la Server Action non può portare
+  all'onboarding: il segno resta `da_fare` nei metadati, e l'onboarding
+  parte al primo accesso, dalla guardia nel client
 
 #### Il codice di invito anche nel database (deciso il 15/10, branch `amici`)
 
@@ -4780,7 +4995,7 @@ dalla lingua). Da rivedere quando l'app si apre agli amici.
 
 ## 11. Stato attuale
 
-Aggiornato al 3 ottobre 2026. È la fotografia di oggi; la storia, commit
+Aggiornato al 17 ottobre 2026. È la fotografia di oggi; la storia, commit
 per commit, sta in `CHANGELOG.md`.
 
 **Account di prova.** Esiste un account di prova fisso,
@@ -5393,6 +5608,8 @@ stessa marca (servirebbe un terzo utente).
 
 ### Non ancora costruito
 
+- **Onboarding** dopo la registrazione: in corso sul branch `onboarding`
+  dal 17/10, per ora solo le decisioni (sezione 3, "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
@@ -5535,14 +5752,18 @@ stessa marca (servirebbe un terzo utente).
 
 ### Prossimi passi
 
-1. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
+1. **Onboarding** dopo la registrazione, branch `onboarding`, in corso
+   dal 17/10 (sezione 3, "Onboarding")
+2. **`login-ritocchi`**, branch da aprire dopo l'onboarding
+3. **`cambia-password`**, branch da aprire dopo `login-ritocchi`
+4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)
-2. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
+5. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
    fatto e provato su iPhone il 10/10, prima della settimana (sopra,
    "Fatto")
-3. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
+6. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
    https://app-libra.vercel.app, con Site URL e Redirect URL su Supabase
    aggiornati (sopra, "Fatto")
-4. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
+7. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
    della bilancia (sezione 7, "Nome e icona"; sopra, "Fatto")
