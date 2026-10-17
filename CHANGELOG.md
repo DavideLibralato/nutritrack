@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: costruito, la lista delle prove
+
+Branch `onboarding`. Solo documenti. Il branch in breve: chi si registra
+passa da `/onboarding` (Benvenuto, dati personali, peso, obiettivo,
+obiettivi giornalieri con la proposta), con il segno `onboarding` nei
+metadati dell'account, la chiave locale che vince offline, la ripresa che
+manda gli esiti in sospeso, l'attesa della discesa su un dispositivo
+vuoto, la guardia nel layout e la scheda "Completa il tuo profilo" per chi
+rimanda. Nessuna chiamata di rete in più per chi non ha un segno. Il
+dettaglio sta nelle voci dei commit qui sotto. PUNTO §3, "Onboarding":
+riletta contro il codice dei commit 1-10, "costruito, da provare" al posto
+di "fatto", e corretti cinque punti che non corrispondevano (il titolo
+"Ciao!" senza nome, il controllo del peso obiettivo, l'altezza, il testo
+della pagina senza rete, l'attesa della discesa ancora "da fare"); in più
+il motivo della ripresa e `invioFallito`, e un paragrafo su costo e rete.
+§11: la lista delle prove su iPhone (19 prove, account A, B, il fisso e C
+dopo il merge) e il primo dei "Prossimi passi" aggiornato.
+
 ## 2026-10-17 — Onboarding: la scheda "Completa il tuo profilo" in Oggi
 
 Branch `onboarding`. `SchedaCompletaProfilo` in cima alla lista dei

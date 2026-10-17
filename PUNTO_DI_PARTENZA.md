@@ -1026,11 +1026,13 @@ da uno stato React che può essere indietro (stessa regola di
 
 ### Onboarding (dal 17/10, branch `onboarding`)
 
-**Stato al 17/10: fatti** la parte senza interfaccia (logica pura, segno
-nei metadati, chiave locale, ripresa, attesa della discesa) e la pagina
-`/onboarding` con tutti e cinque i passi e la fine, il segno `da_fare`
-alla registrazione, il redirect a `/onboarding`, la guardia nel layout e
-la scheda di Oggi. **Da fare**: le prove su iPhone. Mockup in
+**Stato al 17/10: costruito tutto, da provare su iPhone.** La parte senza
+interfaccia (logica pura, segno nei metadati, chiave locale, ripresa,
+attesa della discesa), la pagina `/onboarding` con i cinque passi e la
+fine, il segno `da_fare` alla registrazione, il redirect a `/onboarding`,
+la guardia nel layout e la scheda di Oggi. In questa sottosezione "fatto"
+vuol dire costruito e coperto dai test, **non provato**: le prove su
+iPhone sono in sezione 11, "Prove su iPhone dell'onboarding". Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -1089,11 +1091,16 @@ stesso, e l'esito arriva solo se il server risponde subito.
 - **La ripresa** (`RipresaSegnoOnboarding` nel layout radice, accanto a
   `RipresaUscita`) applica `decidiRipresa` all'avvio, al ritorno della
   rete e a ogni avviso dei giri di sincronizzazione: così vede la prima
-  discesa riuscita e l'utente nuovo dopo un accesso. Al massimo una
-  chiamata a `updateUser` alla volta, e **dopo un invio fallito i giri
-  non ritentano**: ritentano solo il prossimo avvio e il ritorno della
-  rete (evento `online`), altrimenti con la sessione scaduta ogni giro
-  rifarebbe una chiamata destinata a fallire. Utente e segno li
+  discesa riuscita e l'utente nuovo dopo un accesso. Ogni ripresa sa da
+  cosa parte (il motivo: `"avvio"`, `"online"` o `"giro"`). Al massimo
+  una chiamata a `updateUser` alla volta (`ripreseInCorso`: chi arriva
+  mentre una è in corso riceve quella), e **dopo un invio fallito i giri
+  non ritentano**: un invio fallito resta ricordato in memoria per
+  quell'utente (`invioFallito`), e una ripresa con motivo `"giro"` si
+  ferma prima di chiamare `updateUser`. Ritentano solo il prossimo avvio
+  e il ritorno della rete (evento `online`); un invio riuscito toglie il
+  ricordo. Altrimenti con la sessione scaduta ogni giro rifarebbe una
+  chiamata destinata a fallire. Utente e segno li
   legge dal cookie, non con `getUser`: **per un utente senza segno non
   parte nessuna chiamata di rete** (con un test). Le regole di
   `decidiRipresa`: senza segno nei metadati mai niente; chiave uguale ai
@@ -1128,18 +1135,13 @@ finché il passo non è completo. Indietro torna al passo prima, dal 2 al
 Benvenuto, e i valori scritti restano, anche quelli dei passi già
 salvati: stanno nella pagina, non nei componenti dei passi.
 
-**La tastiera di iPhone.** La pagina è alta quanto la parte visibile dello
-schermo (`useAreaVisibile`, come `/aggiungi`), e il pulsante è l'ultimo
-elemento della colonna: con la tastiera aperta resta appena sopra la
-tastiera. Non `data-nascondi-mentre-scrivi`, che nasconde le barre mentre
-si scrive: qui il pulsante è l'azione del passo, e si scrive il peso e
-si tocca Avanti senza chiudere la tastiera.
 1. **Benvenuto**: l'icona, "Ciao <nome>." e "Ti do il benvenuto su
    Libra. Quattro domande veloci e ti propongo quante calorie, grassi,
    carboidrati e proteine puntare ogni giorno." Pulsante "Iniziamo".
    Qui niente "Dopo" e niente Indietro. Il nome viene dai metadati
-   (`useNomeUtente`), c'è già dopo il redirect della Server Action; il
-   titolo non si mostra a metà ("Ciao .") finché il nome non è letto
+   (`useNomeUtente`), c'è già dopo il redirect della Server Action.
+   Finché il nome non è letto, o se manca, il titolo è "Ciao!": mai
+   "Ciao ."
 2. **"Parlami un po' di te"** ("Servono solo per il calcolo."): sesso a
    tessere (Uomo / Donna / Non indicato), data di nascita, altezza in
    cm, "Quanto ti muovi" (il livello di attività). Stessi campi, valori
@@ -1164,13 +1166,22 @@ si tocca Avanti senza chiudere la tastiera.
    allenamento, pasti e orari e colore dell'app li trovi in
    Impostazioni." Pulsante **"Inizia a usare Libra"** → Oggi
 
+**La tastiera di iPhone.** La pagina è alta quanto la parte visibile dello
+schermo (`useAreaVisibile`, come `/aggiungi`), e il pulsante è l'ultimo
+elemento della colonna: con la tastiera aperta resta appena sopra la
+tastiera. Non `data-nascondi-mentre-scrivi`, che nasconde le barre mentre
+si scrive: qui il pulsante è l'azione del passo, e si scrive il peso e
+si tocca Avanti senza chiudere la tastiera.
+
 **Avanti spento finché il passo non è completo.**
-- Passo 2: un sesso scelto, la data di nascita, l'altezza (un numero fra
-  1 e 280, come in Profilo), il livello di attività;
+- Passo 2: un sesso scelto, la data di nascita, l'altezza (maggiore di 0
+  e al massimo 280 cm, come in Profilo: `validaModulo`), il livello di
+  attività (`suDiTeCompleto`);
 - passo 3: un peso maggiore di 0 e al massimo 500 kg (lo stesso
-  controllo di "Registra peso");
+  controllo di "Registra peso": `leggiPesoKg`);
 - passo 4: un obiettivo toccato (si parte senza scelta); il peso
-  obiettivo, se scritto, maggiore di zero;
+  obiettivo vuoto, oppure valido come una pesata (`leggiPesoKg`: maggiore
+  di 0 e al massimo 500 kg; `obiettivoCompleto`);
 - passo 5: **tutti e 4 i numeri**, zero o più, come in Obiettivi
   (`validaModulo`). Non basta il numero delle kcal.
 
@@ -1211,8 +1222,8 @@ niente):
 già confermati con Avanti.
 
 **Prima di decidere il passo e di scrivere, si aspetta la discesa**
-(correzione dell'analisi del 17/10; il segno fatto il 17/10, la pagina
-che aspetta da fare). Su un dispositivo con
+(correzione dell'analisi del 17/10; fatto il 17/10, il segno e la pagina
+che aspetta). Su un dispositivo con
 Dexie vuoto (Chrome sul PC dopo Safari, un telefono nuovo) il passo 2
 creerebbe un secondo profilo con un id nuovo, e la sincronizzazione lo
 rifiuterebbe: `profili` ha `UNIQUE(user_id)` su Supabase. In più
@@ -1220,8 +1231,10 @@ l'onboarding ripartirebbe dal passo 2 anche con un profilo già salvato.
 Regola: il passo si decide, e i pulsanti che scrivono si accendono, solo
 dopo **una discesa riuscita in questa sessione dell'app**, oppure se in
 Dexie ci sono già righe dell'utente. Fino ad allora la pagina dice
-"Caricamento…"; offline su un dispositivo vuoto, "Serve la connessione",
-come il seed dei pasti al primo avvio (sezione 9.2).
+"Caricamento..."; offline su un dispositivo vuoto, "Per continuare serve
+la connessione: prima devono arrivare i tuoi dati su questo
+dispositivo.", come il seed dei pasti al primo avvio che ha bisogno
+della rete (sezione 9.2).
 
 Il cursore della discesa non basta, perché si scrive solo se arrivano
 righe. Per questo c'è un segno in memoria, `discesaRiuscitaPer(userId)` in
@@ -1280,7 +1293,23 @@ e senza sesso scelto; il passo 3 dalla pesata di oggi, se c'è.
 - `da_fare` → dal passo di ripresa;
 - `rimandato` → solo con `?continua=1` (il "Continua" della scheda), dal
   primo passo da fare;
-- senza segno, `fatto`, o `rimandato` senza `?continua=1` → Oggi.
+- senza segno, `fatto`, o `rimandato` senza `?continua=1` → Oggi, con
+  `router.replace`; e così pure se, ai dati noti, risulta già un obiettivo
+  (`passoDiPartenza` dice "finito").
+
+Dentro, la pagina non segue più i cambi del segno: "Dopo" e la fine
+portano fuori da sé.
+
+**Costo e rete.** Per un utente senza segno l'onboarding non aggiunge
+nessuna chiamata di rete e nessuna lettura di Dexie. Ripresa, guardia e
+scheda leggono utente e segno dal cookie della sessione e dalla chiave
+locale (`utenteConSegno("da_fare" | "rimandato")` in
+`segnoOnboarding.ts`, mai `getUser`), e solo con il loro segno leggono
+Dexie (le tre tabelle piccole: profili, misurazioni, obiettivi; mai le
+voci del diario). Lo verificano tre test con una spia sul client
+Supabase o sulle letture: quello della ripresa, quello d'integrazione
+della guardia, quello della scheda in Oggi. Solo la pagina `/onboarding`
+usa `useStatoOnboarding()`, con la sua chiamata `getUser`.
 
 **"Lo faccio dopo" e la scheda in Oggi** (fatti il 17/10: "Dopo" nella
 barra, `SchedaCompletaProfilo` in Oggi). "Dopo", dal passo 2
@@ -5928,10 +5957,85 @@ stessa marca (servirebbe un terzo utente).
   correzione del 22/9), ma la riga esiste. Lo stesso stato resta se un Salva
   che cancella tutto si interrompe fra le righe e la composizione
 
+### Prove su iPhone dell'onboarding (da fare)
+
+Branch `onboarding`, costruito il 17/10 (sezione 3, "Onboarding"). Le
+prove 1-16 si fanno in **Safari sull'anteprima del branch**: l'app
+installata è la produzione e non apre l'anteprima. "Chiudere l'app" vuol
+dire chiudere la scheda di Safari; il "dispositivo nuovo" è **Chrome sul
+PC**. Tastiera e riapertura dalla Home si provano dopo il merge (17-19).
+Le voci **[Cowork]** sono i controlli che fa Claude da Cowork sul
+database, in sola lettura.
+
+Prima di tutto: Impostazioni > Informazioni, la riga Build dice l'ultimo
+commit del branch.
+
+**Account A** (nuovo, registrato da Davide con il codice di invito):
+1. Registrati → si apre "Ciao <nome>." senza tab bar, con il nome
+   giusto.
+2. Iniziamo → passo 2: Avanti spento. Con data, altezza e attività ma
+   senza sesso, resta spento. Tocco Uomo o Donna → si accende. Avanti.
+3. Al passo 3 chiudo la scheda di Safari e la riapro → (lampo di Oggi
+   accettato) l'onboarding riparte dal passo 3, non dal Benvenuto.
+   [Cowork: profilo salvato, con i 4 campi]
+4. Peso "78,4" → Avanti → Indietro → c'è 78,4 → cambio in 78,6 →
+   Avanti. [Cowork: una sola pesata oggi, 78,6]
+5. Passo 4: nessuna scelta, Avanti spento. Peso obiettivo "0" → spento;
+   lo svuoto → scelgo Dimagrire → acceso. Avanti.
+6. Passo 5:
+   - "Ecco la tua proposta" con i numeri;
+   - cambio i grassi → "Hai cambiato la proposta." → "Torna alla
+     proposta" → i numeri tornano;
+   - Indietro → Mantenere → Avanti → la proposta sale di 500 kcal;
+   - "Ho già i miei valori" → campi vuoti, cursore sulle calorie;
+   - scrivo 2000 / 60 / 250 / 120 → "Inizia a usare Libra" → Oggi con
+     gli obiettivi, i 5 pasti, nessuna scheda.
+7. Chiudo e riapro → niente onboarding. [Cowork: metadati
+   `onboarding = fatto`, un periodo di obiettivi Mantenere con quei
+   target]
+8. Chrome sul PC, accedo con A → niente onboarding, nessuna scheda.
+   [Cowork: sempre un solo profilo]
+
+**Account B** (nuovo):
+9. Registrati → Iniziamo → passo 2 con "Non indicato" → Avanti → passo
+   3, peso → Avanti → passo 4.
+10. Chrome sul PC, accedo con B → "Caricamento..." poi l'onboarding dal
+    passo 4, non dal 2. [Cowork: un solo profilo, una sola pesata]
+11. In Safari, al passo 4 → "Dopo" → Oggi con la scheda "Completa il
+    tuo profilo" e le etichette "Il tuo obiettivo" e "Obiettivi
+    giornalieri".
+12. Modalità aereo → chiudo e riapro Safari → la scheda c'è ancora →
+    "Continua" → onboarding dal passo 4 → Mantenere → passo 5 con i
+    campi vuoti e la frase sul sesso non indicato → scrivo i valori →
+    "Inizia a usare Libra" → Oggi senza scheda.
+13. Tolgo la modalità aereo, riapro → niente onboarding né scheda.
+    [Cowork: metadati `fatto`, obiettivi arrivati sul server]
+14. Chrome sul PC (era rimasto al passo 4): ricarico → Oggi, niente
+    onboarding.
+
+**Account di prova fisso** (davidemancon02@gmail.com, Safari
+sull'anteprima):
+15. Oggi normale: niente onboarding, niente scheda nemmeno per un
+    istante.
+16. Profilo: le scelte di sesso e attività uguali a prima. Obiettivi:
+    "Calcola proposta" dà gli stessi messaggi e numeri di prima. Peso:
+    "Registra peso" come prima.
+
+**Dopo il merge** (app installata = produzione), **account C** nuovo:
+17. Registrazione dall'app installata → onboarding. La tastiera non
+    copre Avanti ai passi 2, 3, 4, 5.
+18. Esco a metà (passo 3) chiudendo l'app dal multitasking → la riapro
+    dalla Home → riparte dal passo 3.
+19. Finisco → Oggi.
+
+**Alla fine**: A, B e C si eliminano con Elimina account. [Cowork:
+nessuna riga orfana]
+
 ### Prossimi passi
 
-1. **Onboarding** dopo la registrazione, branch `onboarding`, in corso
-   dal 17/10 (sezione 3, "Onboarding")
+1. **Onboarding** dopo la registrazione, branch `onboarding`: costruito
+   il 17/10, da provare su iPhone (sopra, "Prove su iPhone
+   dell'onboarding"; sezione 3, "Onboarding")
 2. **`login-ritocchi`**, branch da aprire dopo l'onboarding
 3. **`cambia-password`**, branch da aprire dopo `login-ritocchi`
 4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
