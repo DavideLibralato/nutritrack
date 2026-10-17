@@ -57,6 +57,7 @@ describe("scegliStrategia", () => {
       "/impostazioni/sincronizzazione",
       "/impostazioni/informazioni",
       "/impostazioni/elimina-account",
+      "/onboarding",
       "/aggiungi?giorno=2026-09-20",
     ]) {
       expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe("pagina");

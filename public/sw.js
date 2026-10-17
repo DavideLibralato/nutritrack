@@ -35,6 +35,10 @@ importScripts("/sw-strategia.js");
 // 15/10/2026, branch "amici": /impostazioni/amici in PAGINE_APP. Nessuna
 // cache nuova: cambia l'elenco delle pagine, non la forma di ciò che è
 // salvato.
+// 17/10/2026, branch "onboarding": /onboarding in PAGINE_APP, prima della
+// pagina (che arriva nel commit dopo): finché non c'è, il riscaldamento
+// riceve un 404 e la salta, senza toccare le altre. Nessuna cache nuova,
+// come per Amici.
 const {
   PAGINE_APP,
   pagineDaTogliere,

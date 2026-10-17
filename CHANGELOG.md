@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: /onboarding nel service worker
+
+Branch `onboarding`. Commit a parte, prima della pagina: `/onboarding` in
+`PAGINE_APP` (`public/sw-strategia.js`), così chi chiude l'app a metà la
+ritrova anche offline. Controllato prima: la lista non si scarica
+all'installazione (`cache.addAll` prende solo `offline.html` e le icone),
+e il riscaldamento salta le risposte non riuscite, quindi il 404 finché la
+pagina non c'è non blocca niente. Commento datato in `public/sw.js`, che
+cambia il file e fa aggiornare il service worker; nessuna versione di
+cache alzata, come per le pagine aggiunte prima. Lista in
+`swStrategia.test.ts`, provata togliendo `/onboarding` da una copia. 1078
+test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: segno nei metadati, chiave locale e ripresa
 
 Branch `onboarding`. Tocca l'autenticazione all'avvio, quindi è un commit
