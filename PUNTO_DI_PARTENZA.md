@@ -1026,7 +1026,10 @@ da uno stato React che può essere indietro (stessa regola di
 
 ### Onboarding (dal 17/10, branch `onboarding`)
 
-**Stato al 17/10: decisioni prese, codice tutto da fare.** Mockup in
+**Stato al 17/10: fatta la parte senza interfaccia** (logica pura, segno
+nei metadati, chiave locale, ripresa, attesa della discesa); **da fare
+tutto ciò che si vede** (pagina, guardia, scheda di Oggi) e la scrittura
+di `da_fare` alla registrazione. Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -1039,7 +1042,9 @@ diario vuoto e senza obiettivi. L'onboarding è una sequenza guidata di 5
 passi a tutto schermo, subito dopo "Crea account", che porta a Oggi con
 profilo, prima pesata e obiettivi già impostati.
 
-**Chi lo vede: il segno nei metadati dell'account** (da fare). Un campo
+**Chi lo vede: il segno nei metadati dell'account** (lettura e scrittura
+fatte il 17/10 in `src/lib/onboarding/segnoOnboarding.ts`; la scrittura
+di `da_fare` in `registrati` è ancora da fare). Un campo
 `onboarding` nei metadati di Supabase Auth (`raw_user_meta_data`, come
 `nome` e `username`; nessuna migration). Il trigger di registrazione lo
 lascia passare: toglie solo `codice_invito` e riscrive `username`
@@ -1064,21 +1069,51 @@ stessa strada del nome). Si cambia con `updateUser({ data: { onboarding
 aggiorna subito la sessione nel cookie (`session.user`). Il token JWT
 porta il valore vecchio fino al rinnovo, ma nessuno lo legge: il
 middleware usa `getUser()`, che chiede al server, e il client legge
-`session.user`.
+`session.user`. Nel codice: `segnoDellaSessione` legge il cookie (nessuna
+chiamata di rete), `segnoDaiMetadati` (statoOnboarding.ts) lo interpreta,
+e un valore sconosciuto vale assente; nelle pagine i metadati arrivano da
+`useMetadatiUtente` (`src/lib/supabase/useUtente.ts`, la stessa strada di
+`useNomeUtente`), che distingue "non ancora letti" da "non ci sono".
 
-**La chiave locale, che vince offline** (da fare). `updateUser` senza
-rete fallisce. Per questo l'esito ("fatto" o "rimandato") si scrive
-anche in `localStorage`, una chiave per utente, e **la chiave locale
-vince sui metadati**. Un componente di ripresa (come `RipresaUscita`)
-rimanda `updateUser` all'avvio e al ritorno della rete, e cancella la
-chiave solo dopo una risposta riuscita. **Esci** prova a mandare l'esito
-ancora in sospeso prima di uscire, come fa già con la coda delle
-modifiche (sezione 9.6, "Esci svuota i dati locali").
+**La chiave locale, che vince offline** (fatta il 17/10). `updateUser`
+senza rete fallisce. Per questo l'esito ("fatto" o "rimandato") si scrive
+anche in `localStorage`, nella chiave `nutritrack:onboarding:<user_id>`
+(una per utente), e **la chiave locale vince sui metadati**. Ogni lettura
+e scrittura sta in un try/catch: senza `localStorage` l'app funziona lo
+stesso, e l'esito arriva solo se il server risponde subito.
+- **`concludiOnboarding(userId, esito)`**: prima la chiave, poi
+  `updateUser`. Riuscito → la chiave si toglie; non riuscito (rete,
+  sessione) → resta. Non lancia mai. Se la sessione è di un altro utente
+  non manda niente, per non mettere il segno sull'account sbagliato.
+- **La ripresa** (`RipresaSegnoOnboarding` nel layout radice, accanto a
+  `RipresaUscita`) applica `decidiRipresa` all'avvio, al ritorno della
+  rete e a ogni avviso dei giri di sincronizzazione: così vede la prima
+  discesa riuscita e l'utente nuovo dopo un accesso. Al massimo una
+  chiamata a `updateUser` alla volta, e **dopo un invio fallito i giri
+  non ritentano**: ritentano solo il prossimo avvio e il ritorno della
+  rete (evento `online`), altrimenti con la sessione scaduta ogni giro
+  rifarebbe una chiamata destinata a fallire. Utente e segno li
+  legge dal cookie, non con `getUser`: **per un utente senza segno non
+  parte nessuna chiamata di rete** (con un test). Le regole di
+  `decidiRipresa`: senza segno nei metadati mai niente; chiave uguale ai
+  metadati → si toglie; chiave `rimandato` con i metadati `fatto` → si
+  toglie senza mandarla ("fatto" è la fine, e "rimandato" riaccenderebbe
+  la scheda); chiave diversa → si manda; senza chiave, la rete di
+  sicurezza qui sotto.
+- **Esci** prova una volta a mandare l'esito in sospeso, prima di
+  `signOut` (`updateUser` vuole la sessione), come fa già con la coda
+  delle modifiche (sezione 9.6, "Esci svuota i dati locali"). Se non
+  riesce l'uscita va avanti, e **la chiave sopravvive a Esci**: Esci
+  toglie solo le sue chiavi (l'ora dell'ultimo contatto, il segno del
+  reset password, le novità di Amici), e la manda la ripresa al
+  prossimo accesso. **Elimina account** la toglie.
 
-**La rete di sicurezza: c'è già un obiettivo → fatto.** Un obiettivo vivo
-vale "fatto" qualunque sia il segno, e l'app manda `updateUser` per
-allinearlo. Copre l'onboarding finito offline su un dispositivo e
-riaperto su un altro, dove la chiave locale non c'è.
+**La rete di sicurezza: c'è già un obiettivo → fatto** (fatta il 17/10).
+Un obiettivo vivo vale "fatto" qualunque sia il segno, e la ripresa manda
+`updateUser` per allinearlo. Copre l'onboarding finito offline su un
+dispositivo e riaperto su un altro, dove la chiave locale non c'è. Gli
+obiettivi contano solo con i dati noti (discesa riuscita o righe in
+Dexie, sotto): un telefono nuovo con Dexie vuoto non conclude niente.
 
 **I 5 passi** (testi dello stile B). In alto, dal passo 2: il pulsante
 tondo Indietro, i puntini di avanzamento (per gli screen reader "Passo N
@@ -1149,7 +1184,8 @@ Obiettivi, senza duplicare la loro logica:
 già confermati con Avanti.
 
 **Prima di decidere il passo e di scrivere, si aspetta la discesa**
-(correzione dell'analisi del 17/10; da fare). Su un dispositivo con
+(correzione dell'analisi del 17/10; il segno fatto il 17/10, la pagina
+che aspetta da fare). Su un dispositivo con
 Dexie vuoto (Chrome sul PC dopo Safari, un telefono nuovo) il passo 2
 creerebbe un secondo profilo con un id nuovo, e la sincronizzazione lo
 rifiuterebbe: `profili` ha `UNIQUE(user_id)` su Supabase. In più
@@ -1158,13 +1194,30 @@ Regola: il passo si decide, e i pulsanti che scrivono si accendono, solo
 dopo **una discesa riuscita in questa sessione dell'app**, oppure se in
 Dexie ci sono già righe dell'utente. Fino ad allora la pagina dice
 "Caricamento…"; offline su un dispositivo vuoto, "Serve la connessione",
-come il seed dei pasti al primo avvio (sezione 9.2). Oggi la discesa non
-dice se una tabella è stata scaricata almeno una volta in questa
-sessione (il cursore si scrive solo se arrivano righe): serve un segno
-in memoria, in un commit a parte perché tocca la sincronizzazione.
+come il seed dei pasti al primo avvio (sezione 9.2).
 
-**Il primo passo da fare** (`primoPassoDaFare`, logica pura con test; da
-fare), dai dati in Dexie:
+Il cursore della discesa non basta, perché si scrive solo se arrivano
+righe. Per questo c'è un segno in memoria, `discesaRiuscitaPer(userId)` in
+`src/lib/sync/statoSincronizzazione.ts` (hook `useDiscesaRiuscita`):
+`scaricaTutto` lo accende quando `profili`, `misurazioni` e `obiettivi`
+scendono tutte e tre nello stesso giro, anche senza righe. Resta acceso
+anche se un giro dopo fallisce, vale per un utente solo, e lo spegne
+`azzeraStatoGiri` (Esci, Elimina account), così chi rientra aspetta di
+nuovo la sua discesa. Ricaricare la pagina lo azzera, ed è voluto. Le
+**righe dell'utente in Dexie** sono quelle vive delle stesse tre tabelle
+(`righeOnboardingInDexie`): righe di altre tabelle non dicono niente su
+queste, per esempio i pasti predefiniti si creano su un dispositivo nuovo
+anche prima che i profili scendano.
+
+Tutti gli ingressi insieme li dà l'hook `useStatoOnboarding`
+(`src/lib/onboarding/useStatoOnboarding.ts`): metadati, chiave locale,
+obiettivi e righe da Dexie, discesa riuscita, passati a `statoSegno`.
+Restituisce "non ancora noto" finché utente, metadati e Dexie non hanno
+risposto. Lo useranno la pagina, la guardia e la scheda.
+
+**Il primo passo da fare** (`primoPassoDaFare` in
+`src/lib/onboarding/statoOnboarding.ts`, logica pura con test, fatta il
+17/10), dai dati in Dexie:
 - un obiettivo vivo → **finito**, qualunque cosa manchi;
 - profilo assente, oppure data di nascita, altezza o livello di attività
   vuoti → **passo 2**. Il sesso non si controlla: "non indicato" è sia il
@@ -1176,12 +1229,14 @@ Dalla stessa regola escono le etichette di "cosa manca" nella scheda di
 Oggi: "Su di te", "Il tuo peso", "Il tuo obiettivo", "Obiettivi
 giornalieri" (gli ultimi due sempre insieme).
 
-**La ripresa** (da fare). Chi riapre l'app con il segno `da_fare` torna
+**Da dove si riparte** (la regola, `passoDiPartenza`, fatta il 17/10; la
+pagina da fare). Chi riapre l'app con il segno `da_fare` torna
 all'onboarding: dal **Benvenuto solo se non è salvato niente** (nessun
 profilo, nessuna pesata, nessun obiettivo), altrimenti dal primo passo
 da fare.
 
-**"Lo faccio dopo" e la scheda in Oggi** (da fare). "Dopo", dal passo 2
+**"Lo faccio dopo" e la scheda in Oggi** (quando mostrarla lo decide già
+`statoSegno`, fatto il 17/10; pulsante e scheda da fare). "Dopo", dal passo 2
 al 5, chiude l'onboarding, mette il segno `rimandato` e porta a Oggi. La
 scheda **"Completa il tuo profilo"** ("Senza obiettivi non posso dirti
 quante calorie ti restano oggi.", le etichette di ciò che manca, il
@@ -1221,7 +1276,8 @@ partono vuoti, niente "Ho già i miei valori", e sotto il titolo "Con il
 sesso non indicato non posso calcolare una proposta: scrivi i tuoi
 valori, per esempio quelli del nutrizionista." I controlli sono gli
 stessi di "Calcola proposta" in Obiettivi, in una funzione pura condivisa
-(`propostaObiettivi`, da fare).
+(`propostaObiettivi` in `src/lib/profilo/propostaObiettivi.ts`, fatta il
+17/10, con test).
 
 **Grafica.** Stile B del mockup, con le variabili di `globals.css`,
 nessun colore scritto a mano (sezione 7). L'icona del Benvenuto è
@@ -5621,6 +5677,15 @@ stessa marca (servirebbe un terzo utente).
 
 ### Difetti e verifiche aperti
 
+- **Onboarding finito su un dispositivo e riaperto offline su un altro**
+  (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").
+  Inizio l'onboarding in Safari, lo finisco su Chrome, poi riapro Safari
+  **offline**. Safari ha ancora il segno vecchio nel cookie e nessun
+  obiettivo in Dexie, quindi ripropone gli ultimi passi. Se li rifaccio,
+  crea un secondo periodo di obiettivi e una seconda pesata. È raro:
+  servono due dispositivi, l'offline e ignorare di aver già finito.
+  Tornata la rete, la discesa porta l'obiettivo di Chrome e la rete di
+  sicurezza mette "fatto"
 - **Uniformare le fine riga** (trovato al passo 5 di
   `condivisione-alimenti`, 16/10; da fare in un commit a parte). Una
   sostituzione automatica su più righe non entrava in

@@ -36,6 +36,7 @@ import { cancellaNovita } from "../amici/novita";
 import { svuotaPagineSalvate } from "../serviceWorker";
 import { togliSegnoRipristino } from "../segnoRipristinoPassword";
 import { scriviSegnoUscita, togliSegnoUscita } from "./uscitaInCorso";
+import { inviaSegnoInSospeso } from "../onboarding/segnoOnboarding";
 
 export type DecisioneUscita = "svuota" | "conferma-perdita" | "tieni";
 
@@ -92,6 +93,13 @@ export async function eseguiUscita(
 ): Promise<EsitoUscita> {
   const svuota = decisione !== "tieni";
   const supabase = createClient();
+
+  // L'esito dell'onboarding rimasto sul dispositivo (dal 17/10): un
+  // tentativo prima di uscire, finché c'è la sessione. Senza chiave non fa
+  // niente. Se non riesce l'uscita va avanti, e la chiave resta: non è fra
+  // quelle che Esci toglie qui sotto, e la manda la ripresa al prossimo
+  // accesso (segnoOnboarding.ts).
+  await inviaSegnoInSospeso(userId);
 
   // scope "local": esce solo QUESTO dispositivo. Il predefinito ("global")
   // chiuderebbe la sessione anche sugli altri dispositivi dello stesso

@@ -174,3 +174,41 @@ export function statoSegno(ingressi: IngressiSegno): StatoSegno {
   }
   return { segno, mostraOnboarding: false, mostraScheda: datiNoti, attendiDiscesa: !datiNoti };
 }
+
+// --- La ripresa: cosa mandare al server ------------------------------------
+
+export interface DecisioneRipresa {
+  // Il valore da scrivere nei metadati con updateUser; null = niente.
+  manda: "fatto" | "rimandato" | null;
+  // La chiave locale non serve più: il server ha già quel valore.
+  togliLocale: boolean;
+}
+
+const NIENTE_DA_FARE: DecisioneRipresa = { manda: null, togliLocale: false };
+
+// Cosa fa la ripresa all'avvio e al ritorno della rete
+// (RipresaSegnoOnboarding). `ciSonoObiettivi`: null se non si sa ancora (né
+// discesa riuscita né righe dell'utente in Dexie): allora la rete di
+// sicurezza non scatta, perché su un telefono nuovo "0 obiettivi" vuol dire
+// solo "non ancora scaricati". Le regole, in ordine:
+//   1. utente senza segno nei metadati → mai niente, nemmeno una chiamata;
+//   2. chiave locale uguale ai metadati → il server l'ha già: si toglie;
+//   3. chiave locale "rimandato" con i metadati "fatto" → si toglie senza
+//      mandarla: "fatto" è la fine, e "rimandato" sopra di lui
+//      riaccenderebbe la scheda di Oggi a chi ha già finito;
+//   4. chiave locale diversa dai metadati → si manda la chiave;
+//   5. nessuna chiave, metadati da_fare o rimandato e un obiettivo vivo →
+//      si manda "fatto" (la rete di sicurezza).
+export function decidiRipresa(
+  metadati: SegnoMetadati,
+  locale: SegnoLocale,
+  ciSonoObiettivi: boolean | null
+): DecisioneRipresa {
+  if (metadati === null) return NIENTE_DA_FARE;
+  if (locale !== null) {
+    if (locale === metadati || metadati === "fatto") return { manda: null, togliLocale: true };
+    return { manda: locale, togliLocale: false };
+  }
+  if (metadati !== "fatto" && ciSonoObiettivi === true) return { manda: "fatto", togliLocale: false };
+  return NIENTE_DA_FARE;
+}

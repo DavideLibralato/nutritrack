@@ -88,36 +88,42 @@ export function useUsernameDaiMetadati(): string | null {
   return useTestoDaiMetadati("username");
 }
 
-// Un testo dai metadati dell'account, con la stessa strada per tutti:
-// prima la sessione salvata sul dispositivo (senza rete), e con il token
-// scaduto offline il cookie.
+// Un testo dai metadati dell'account (useMetadatiUtente, sotto). null
+// finché i metadati non sono letti, e se il testo non c'è.
 function useTestoDaiMetadati(chiave: string): string | null {
-  const [testo, setTesto] = useState<string | null>(null);
+  const valore = useMetadatiUtente()?.[chiave];
+  return typeof valore === "string" && valore.trim() !== "" ? valore.trim() : null;
+}
+
+// I metadati dell'account, con la stessa strada per tutti: prima la
+// sessione salvata sul dispositivo (senza rete), e con il token scaduto
+// offline il cookie. Si aggiornano da soli con onAuthStateChange, anche
+// dopo un updateUser (evento USER_UPDATED, con la sessione nuova).
+// `undefined` finché non sono letti; `null` se non ci sono (nessuna
+// sessione, o un'uscita). Il segno dell'onboarding ha bisogno di
+// distinguere i due casi: "non ancora letto" non è "utente senza segno".
+export function useMetadatiUtente(): Record<string, unknown> | null | undefined {
+  const [metadati, setMetadati] = useState<Record<string, unknown> | null | undefined>(undefined);
 
   useEffect(() => {
     const supabase = createClient();
 
-    function daMetadati(metadati: Record<string, unknown> | undefined): string | null {
-      const valore = metadati?.[chiave];
-      return typeof valore === "string" && valore.trim() !== "" ? valore.trim() : null;
-    }
-
     supabase.auth.getSession().then(({ data }) => {
-      setTesto(daMetadati(data.session?.user.user_metadata ?? sessioneSalvata()?.metadati));
+      setMetadati(data.session?.user.user_metadata ?? sessioneSalvata()?.metadati ?? null);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((evento, sessione) => {
-      if (sessione) setTesto(daMetadati(sessione.user.user_metadata));
-      else if (evento === "SIGNED_OUT") setTesto(null);
-      else setTesto(daMetadati(sessioneSalvata()?.metadati));
+      if (sessione) setMetadati(sessione.user.user_metadata ?? null);
+      else if (evento === "SIGNED_OUT") setMetadati(null);
+      else setMetadati(sessioneSalvata()?.metadati ?? null);
     });
 
     return () => subscription.unsubscribe();
-  }, [chiave]);
+  }, []);
 
-  return testo;
+  return metadati;
 }
 
 // L'email dell'account, per mostrarla in sola lettura in Impostazioni >

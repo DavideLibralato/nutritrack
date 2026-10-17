@@ -18,6 +18,7 @@ import { db } from "../db/database";
 import type { Pasto } from "../db/tipi";
 import { CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
 import { chiaveNovita } from "../amici/novita";
+import { chiaveSegnoLocale } from "../onboarding/segnoOnboarding";
 import { leggiSegnoEliminazione } from "./eliminazioneInCorso";
 import { eliminaAccount, parolaDiConfermaGiusta } from "./eliminaAccount";
 
@@ -89,6 +90,14 @@ beforeEach(async () => {
 });
 
 describe("eliminaAccount", () => {
+  it("ok del server: toglie l'esito dell'onboarding in sospeso di questo utente, non di un altro", async () => {
+    localStorage.setItem(chiaveSegnoLocale(ID), "fatto");
+    localStorage.setItem(chiaveSegnoLocale(ALTRO), "rimandato");
+    expect(await eliminaAccount(ID)).toBe("eliminato");
+    expect(localStorage.getItem(chiaveSegnoLocale(ID))).toBeNull();
+    expect(localStorage.getItem(chiaveSegnoLocale(ALTRO))).toBe("rimandato");
+  });
+
   it("ok del server: pulisce, lascia il segno confermata, toglie l'ora salvata, chiude la sessione", async () => {
     expect(await eliminaAccount(ID)).toBe("eliminato");
 

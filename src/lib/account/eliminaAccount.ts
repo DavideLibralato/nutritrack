@@ -18,7 +18,8 @@
 //      il prossimo tentativo o il prossimo avvio;
 // 4. pulizia: dati dell'utente in Dexie, pagine salvate dal service
 //    worker, ora dell'ultimo contatto col server, segno del reset password,
-//    stato dei giri in memoria, e per ultima la sessione. Una pulizia
+//    esito dell'onboarding in sospeso, stato dei giri in memoria, e per
+//    ultima la sessione. Una pulizia
 //    fallita non ferma l'uscita: il segno "confermata" resta e il prossimo
 //    avvio la ripete.
 
@@ -29,6 +30,7 @@ import { azzeraStatoGiri, CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizz
 import { cancellaNovita } from "../amici/novita";
 import { conTempoMassimo, SCADUTA } from "../sync/tempoMassimo";
 import { togliSegnoRipristino } from "../segnoRipristinoPassword";
+import { togliSegnoLocale } from "../onboarding/segnoOnboarding";
 import { classificaErroreVerifica } from "../supabase/utenteOffline";
 import {
   classificaVerificaUtente,
@@ -121,6 +123,9 @@ async function confermaEPulisci(idUtente: string): Promise<"eliminato"> {
   togliSegnoRipristino();
   // Le novità di Amici salvate per il pallino offline (dal 15/10).
   cancellaNovita(idUtente);
+  // L'esito dell'onboarding in sospeso (dal 17/10): l'account non c'è più,
+  // non c'è niente a cui mandarlo.
+  togliSegnoLocale(idUtente);
   // Dopo aver tolto l'ora salvata: azzeraStatoGiri la rilegge da lì.
   azzeraStatoGiri();
 

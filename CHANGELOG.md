@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: segno nei metadati, chiave locale e ripresa
+
+Branch `onboarding`. Tocca l'autenticazione all'avvio, quindi è un commit
+a parte; nessuna interfaccia nuova, e per gli utenti di oggi l'app si
+comporta come prima. `src/lib/onboarding/segnoOnboarding.ts`: il segno
+letto dal cookie della sessione (nessuna chiamata di rete), la chiave
+locale `nutritrack:onboarding:<user_id>` in try/catch, `concludiOnboarding`
+(prima la chiave, poi `updateUser`; riuscito toglie la chiave, fallito la
+lascia, non lancia mai, e con la sessione di un altro utente non manda
+niente) e la ripresa. `decidiRipresa`, funzione pura in
+`statoOnboarding.ts`: senza segno mai niente, chiave uguale ai metadati
+tolta, chiave diversa mandata, `rimandato` sopra `fatto` tolto senza
+mandarlo, rete di sicurezza degli obiettivi solo con i dati noti.
+`RipresaSegnoOnboarding` nel layout radice: avvio, ritorno della rete e
+ogni avviso dei giri; prende l'utente dal cookie e non da `useUtenteId`,
+che avrebbe aggiunto una chiamata `getUser` per tutti. Una chiamata a
+`updateUser` alla volta, e dopo un invio fallito i giri non ritentano:
+solo l'avvio e il ritorno della rete. Hook
+`useStatoOnboarding`, che nessuno usa ancora. `useMetadatiUtente` in
+`useUtente.ts` (distingue "non ancora letti" da "non ci sono"), riusato da
+nome e username. Esci prova a mandare la chiave prima di `signOut`, e la
+chiave sopravvive a Esci; Elimina account la toglie. PUNTO: fatto e da
+fare nella sottosezione Onboarding, compresi i pezzi dei commit 2-4, e il
+limite noto "finito su Chrome, riaperto Safari offline" fra i difetti
+aperti. 38 test nuovi, provati rompendo le copie dei file in undici
+punti, più cinque sui nuovi tentativi. 1078 test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: il segno "discesa riuscita in questa sessione"
 
 Branch `onboarding`. Tocca la sincronizzazione, quindi è un commit a

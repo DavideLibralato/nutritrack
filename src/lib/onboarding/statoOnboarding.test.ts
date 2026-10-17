@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cosaManca,
+  decidiRipresa,
   passoDiPartenza,
   primoPassoDaFare,
   segnoDaiMetadati,
@@ -284,5 +285,46 @@ describe("statoSegno", () => {
       expect(stato.mostraScheda).toBe(true);
       expect(stato.attendiDiscesa).toBe(false);
     }
+  });
+});
+
+describe("decidiRipresa", () => {
+  const niente = { manda: null, togliLocale: false };
+
+  it("utente senza segno: mai niente, con o senza chiave e obiettivi", () => {
+    expect(decidiRipresa(null, null, null)).toEqual(niente);
+    expect(decidiRipresa(null, null, true)).toEqual(niente);
+    expect(decidiRipresa(null, "fatto", true)).toEqual(niente);
+  });
+
+  it("chiave locale diversa dai metadati: si manda la chiave", () => {
+    expect(decidiRipresa("da_fare", "fatto", null)).toEqual({ manda: "fatto", togliLocale: false });
+    expect(decidiRipresa("da_fare", "rimandato", null)).toEqual({ manda: "rimandato", togliLocale: false });
+    expect(decidiRipresa("rimandato", "fatto", false)).toEqual({ manda: "fatto", togliLocale: false });
+  });
+
+  it("chiave locale uguale ai metadati: si toglie, niente da mandare", () => {
+    expect(decidiRipresa("fatto", "fatto", null)).toEqual({ manda: null, togliLocale: true });
+    expect(decidiRipresa("rimandato", "rimandato", false)).toEqual({ manda: null, togliLocale: true });
+  });
+
+  it("«rimandato» in locale con «fatto» sul server: si toglie senza mandarlo", () => {
+    expect(decidiRipresa("fatto", "rimandato", null)).toEqual({ manda: null, togliLocale: true });
+  });
+
+  it("rete di sicurezza: da_fare o rimandato con un obiettivo vivo → fatto", () => {
+    expect(decidiRipresa("da_fare", null, true)).toEqual({ manda: "fatto", togliLocale: false });
+    expect(decidiRipresa("rimandato", null, true)).toEqual({ manda: "fatto", togliLocale: false });
+  });
+
+  it("senza obiettivi, o con gli obiettivi non ancora noti: niente", () => {
+    expect(decidiRipresa("da_fare", null, false)).toEqual(niente);
+    expect(decidiRipresa("da_fare", null, null)).toEqual(niente);
+    expect(decidiRipresa("rimandato", null, null)).toEqual(niente);
+  });
+
+  it("già fatto e niente in sospeso: niente", () => {
+    expect(decidiRipresa("fatto", null, true)).toEqual(niente);
+    expect(decidiRipresa("fatto", null, false)).toEqual(niente);
   });
 });

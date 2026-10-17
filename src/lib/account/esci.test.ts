@@ -16,6 +16,9 @@ import { decidiUscita, eseguiUscita, preparaUscita } from "./esci";
 import { CHIAVE_USCITA, leggiSegnoUscita, riprendiUscitaInSospeso } from "./uscitaInCorso";
 import { CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
 import { chiaveNovita } from "../amici/novita";
+import { chiaveSegnoLocale, leggiSegnoLocale } from "../onboarding/segnoOnboarding";
+import { chiaveSessione } from "../supabase/utenteOffline";
+import { stringToBase64URL } from "@supabase/ssr";
 
 // Il server finto: chi risponde getUser, e se dopo signOut la sessione
 // c'è ancora.
@@ -23,6 +26,10 @@ const server = vi.hoisted(() => ({
   getUser: null as unknown as () => { data: { user: { id: string } | null }; error: AuthError | null },
   sessioneDopoSignOut: false,
   signOut: vi.fn(),
+  // updateUser: solo per l'esito dell'onboarding in sospeso (dal 17/10).
+  updateUser: vi.fn<(attributi: unknown) => Promise<{ data: { user: null }; error: unknown }>>(
+    async () => ({ data: { user: null }, error: { message: "Failed to fetch" } })
+  ),
 }));
 
 vi.mock("../supabase/client", () => ({
@@ -34,6 +41,7 @@ vi.mock("../supabase/client", () => ({
         return { error: null };
       },
       getSession: async () => ({ data: { session: server.sessioneDopoSignOut ? { user: {} } : null } }),
+      updateUser: (attributi: unknown) => server.updateUser(attributi),
     },
   }),
 }));
@@ -223,5 +231,44 @@ describe("Esci — quando non si esce", () => {
     expect(await eseguiUscita(utente, "svuota", [])).toBe("sessione-rimasta");
     expect(scrittureSegno).toEqual([]);
     expect(await contaDi(utente)).toEqual({ pasti: 1, coda: 0, cursori: 1 });
+  });
+});
+
+describe("Esci — l'esito dell'onboarding in sospeso (dal 17/10)", () => {
+  const URL_SUPABASE = "https://progetto.supabase.co";
+
+  afterEach(() => {
+    document.cookie = `${chiaveSessione(URL_SUPABASE)}=; path=/; max-age=0`;
+    vi.unstubAllEnvs();
+  });
+
+  it("updateUser fallisce: l'uscita avviene e la chiave resta per il prossimo accesso", async () => {
+    const { utente } = await dispositivo({ conCoda: false });
+    // La sessione salvata nel cookie: è da lì che concludiOnboarding sa chi
+    // è l'utente, perché il getSession finto non risponde con una sessione.
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", URL_SUPABASE);
+    const sessione = "base64-" + stringToBase64URL(JSON.stringify({ user: { id: utente } }));
+    document.cookie = `${chiaveSessione(URL_SUPABASE)}=${sessione}; path=/`;
+    localStorage.setItem(chiaveSegnoLocale(utente), "fatto");
+    server.updateUser.mockClear();
+
+    expect(await eseguiUscita(utente, "svuota", [])).toBe("uscito");
+
+    // Il tentativo c'è stato, prima di signOut.
+    expect(server.updateUser).toHaveBeenCalledWith({ data: { onboarding: "fatto" } });
+    expect(server.updateUser.mock.invocationCallOrder[0]).toBeLessThan(
+      server.signOut.mock.invocationCallOrder[0]
+    );
+    expect(server.signOut).toHaveBeenCalledWith({ scope: "local" });
+    // La chiave sopravvive a Esci.
+    expect(leggiSegnoLocale(utente)).toBe("fatto");
+    expect(await contaDi(utente)).toEqual(VUOTO);
+  });
+
+  it("senza chiave in sospeso: nessuna chiamata a updateUser", async () => {
+    const { utente } = await dispositivo({ conCoda: false });
+    server.updateUser.mockClear();
+    expect(await eseguiUscita(utente, "svuota", [])).toBe("uscito");
+    expect(server.updateUser).not.toHaveBeenCalled();
   });
 });
