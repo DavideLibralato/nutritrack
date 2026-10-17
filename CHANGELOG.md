@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: provato su iPhone
+
+Branch `onboarding`. Solo documenti. Provato da Davide il 17/10
+sull'anteprima del branch, in Safari su iPhone più Chrome sul PC come
+secondo dispositivo: prove 1-16 della lista in PUNTO §11, con i controlli
+di Cowork sul database tutti passati (un solo profilo anche con l'accesso
+da Chrome a metà onboarding, una sola pesata dopo la correzione del peso,
+periodo e target giusti, il segno "fatto" arrivato anche dopo la
+modalità aereo). Dopo la correzione del caricamento completo, la
+registrazione con l'account D: onboarding subito, senza refresh, e i dati
+sul server già nella prima sessione. Restano le prove 17-19 con l'app
+installata, dopo il merge. Coperti dai test e non provati a mano: il
+limite Safari/Chrome offline e i fallimenti ripetuti di `updateUser`.
+PUNTO: stato "provato" nella sottosezione Onboarding, prove 1-16 segnate
+come fatte, "Non ancora costruito" e "Prossimi passi" aggiornati,
+l'account D fra quelli da eliminare.
+
 ## 2026-10-17 — Onboarding: dopo "Crea account" un caricamento completo
 
 Branch `onboarding`. Bug trovato nelle prove su iPhone (account A e B):

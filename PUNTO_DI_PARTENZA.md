@@ -1026,14 +1026,31 @@ da uno stato React che può essere indietro (stessa regola di
 
 ### Onboarding (dal 17/10, branch `onboarding`)
 
-**Stato al 17/10: costruito tutto, da provare su iPhone.** La parte senza
-interfaccia (logica pura, segno nei metadati, chiave locale, ripresa,
-attesa della discesa), la pagina `/onboarding` con i cinque passi e la
-fine, il segno `da_fare` alla registrazione, il caricamento completo di
-`/onboarding` dopo "Crea account", la guardia nel layout e la scheda di
-Oggi. In questa sottosezione "fatto"
-vuol dire costruito e coperto dai test, **non provato**: le prove su
-iPhone sono in sezione 11, "Prove su iPhone dell'onboarding". Mockup in
+**Stato al 17/10: provato su iPhone il 17/10**, sull'anteprima del
+branch, in Safari su iPhone più Chrome sul PC come secondo dispositivo.
+Costruiti: la parte senza interfaccia (logica pura, segno nei metadati,
+chiave locale, ripresa, attesa della discesa), la pagina `/onboarding`
+con i cinque passi e la fine, il segno `da_fare` alla registrazione, il
+caricamento completo di `/onboarding` dopo "Crea account", la guardia nel
+layout e la scheda di Oggi. In questa sottosezione "fatto" vuol dire
+costruito e coperto dai test; cosa è stato provato a mano lo dice questo
+elenco:
+- **provate** le prove 1-16 della lista in sezione 11 ("Prove su iPhone
+  dell'onboarding"), con i controlli Cowork sul database tutti passati:
+  un solo profilo anche con l'accesso da Chrome a metà onboarding, una
+  sola pesata dopo la correzione del peso, periodo e target giusti, il
+  segno "fatto" arrivato anche dopo la modalità aereo;
+- **provata** la registrazione dopo la correzione del caricamento
+  completo (account D): l'onboarding si apre subito, senza refresh, e i
+  dati sono sul server già nella prima sessione;
+- **da provare dopo il merge**: le prove 17-19, con l'app installata e
+  l'account C (tastiera, riapertura dalla Home);
+- **coperti dai test, non provati a mano**: il limite "finito su Chrome,
+  riaperto Safari offline" (sezione 11, "Difetti e verifiche aperti") e
+  i fallimenti ripetuti di `updateUser` (una chiamata alla volta, i giri
+  che non ritentano).
+
+Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -5838,9 +5855,9 @@ stessa marca (servirebbe un terzo utente).
 
 ### Non ancora costruito
 
-- **Onboarding** dopo la registrazione: in corso sul branch `onboarding`
-  dal 17/10: costruito tutto (pagina, redirect dopo la registrazione,
-  guardia, scheda di Oggi); mancano le prove su iPhone (sezione 3,
+- **Onboarding** dopo la registrazione: branch `onboarding`, costruito e
+  provato su iPhone il 17/10 sull'anteprima (prove 1-16 e account D);
+  restano le prove 17-19 con l'app installata, dopo il merge (sezione 3,
   "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
@@ -5991,7 +6008,13 @@ stessa marca (servirebbe un terzo utente).
   correzione del 22/9), ma la riga esiste. Lo stesso stato resta se un Salva
   che cancella tutto si interrompe fra le righe e la composizione
 
-### Prove su iPhone dell'onboarding (da fare)
+### Prove su iPhone dell'onboarding
+
+**Prove 1-16 fatte il 17/10**, tutte passate, con i controlli [Cowork]
+sul database. In più, dopo la correzione del caricamento completo dopo
+"Crea account", la registrazione con l'**account D**: onboarding subito,
+senza refresh, e i dati sul server già nella prima sessione. **Da fare:
+17-19**, dopo il merge.
 
 Branch `onboarding`, costruito il 17/10 (sezione 3, "Onboarding"). Le
 prove 1-16 si fanno in **Safari sull'anteprima del branch**: l'app
@@ -6004,7 +6027,8 @@ database, in sola lettura.
 Prima di tutto: Impostazioni > Informazioni, la riga Build dice l'ultimo
 commit del branch.
 
-**Account A** (nuovo, registrato da Davide con il codice di invito):
+**Account A** (nuovo, registrato da Davide con il codice di invito) —
+**fatte il 17/10**:
 1. Registrati → si apre "Ciao <nome>." senza tab bar, con il nome
    giusto.
 2. Iniziamo → passo 2: Avanti spento. Con data, altezza e attività ma
@@ -6030,7 +6054,7 @@ commit del branch.
 8. Chrome sul PC, accedo con A → niente onboarding, nessuna scheda.
    [Cowork: sempre un solo profilo]
 
-**Account B** (nuovo):
+**Account B** (nuovo) — **fatte il 17/10**:
 9. Registrati → Iniziamo → passo 2 con "Non indicato" → Avanti → passo
    3, peso → Avanti → passo 4.
 10. Chrome sul PC, accedo con B → "Caricamento..." poi l'onboarding dal
@@ -6048,27 +6072,30 @@ commit del branch.
     onboarding.
 
 **Account di prova fisso** (davidemancon02@gmail.com, Safari
-sull'anteprima):
+sull'anteprima) — **fatte il 17/10**:
 15. Oggi normale: niente onboarding, niente scheda nemmeno per un
     istante.
 16. Profilo: le scelte di sesso e attività uguali a prima. Obiettivi:
     "Calcola proposta" dà gli stessi messaggi e numeri di prima. Peso:
     "Registra peso" come prima.
 
-**Dopo il merge** (app installata = produzione), **account C** nuovo:
+**Dopo il merge** (app installata = produzione), **account C** nuovo —
+**da fare**:
 17. Registrazione dall'app installata → onboarding. La tastiera non
     copre Avanti ai passi 2, 3, 4, 5.
 18. Esco a metà (passo 3) chiudendo l'app dal multitasking → la riapro
     dalla Home → riparte dal passo 3.
 19. Finisco → Oggi.
 
-**Alla fine**: A, B e C si eliminano con Elimina account. [Cowork:
+**Alla fine**: A, B, C e D (l'account della prova dopo la correzione del
+caricamento completo) si eliminano con Elimina account. [Cowork:
 nessuna riga orfana]
 
 ### Prossimi passi
 
-1. **Onboarding** dopo la registrazione, branch `onboarding`: costruito
-   il 17/10, da provare su iPhone (sopra, "Prove su iPhone
+1. **Onboarding** dopo la registrazione, branch `onboarding`: costruito e
+   provato su iPhone il 17/10 (prove 1-16 e account D); poi il merge e le
+   prove 17-19 con l'app installata (sopra, "Prove su iPhone
    dell'onboarding"; sezione 3, "Onboarding")
 2. **`login-ritocchi`**, branch da aprire dopo l'onboarding
 3. **`cambia-password`**, branch da aprire dopo `login-ritocchi`
