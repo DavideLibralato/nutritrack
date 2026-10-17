@@ -1028,9 +1028,9 @@ da uno stato React che può essere indietro (stessa regola di
 
 **Stato al 17/10: fatti** la parte senza interfaccia (logica pura, segno
 nei metadati, chiave locale, ripresa, attesa della discesa) e la pagina
-`/onboarding` con tutti e cinque i passi e la fine. **Da fare**: la
-scrittura di `da_fare` alla registrazione, la guardia e la scheda di
-Oggi. Mockup in
+`/onboarding` con tutti e cinque i passi e la fine, il segno `da_fare`
+alla registrazione e il redirect a `/onboarding`. **Da fare**: la guardia
+e la scheda di Oggi. Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -1043,9 +1043,9 @@ diario vuoto e senza obiettivi. L'onboarding è una sequenza guidata di 5
 passi a tutto schermo, subito dopo "Crea account", che porta a Oggi con
 profilo, prima pesata e obiettivi già impostati.
 
-**Chi lo vede: il segno nei metadati dell'account** (lettura e scrittura
-fatte il 17/10 in `src/lib/onboarding/segnoOnboarding.ts`; la scrittura
-di `da_fare` in `registrati` è ancora da fare). Un campo
+**Chi lo vede: il segno nei metadati dell'account** (fatto il 17/10:
+lettura e scrittura in `src/lib/onboarding/segnoOnboarding.ts`, `da_fare`
+in `registrati`, `src/lib/actions/auth.ts`). Un campo
 `onboarding` nei metadati di Supabase Auth (`raw_user_meta_data`, come
 `nome` e `username`; nessuna migration). Il trigger di registrazione lo
 lascia passare: toglie solo `codice_invito` e riscrive `username`
@@ -1291,14 +1291,17 @@ schermo, e una scheda fissa sotto la testata toglierebbe spazio alla
 lista. "Continua" riapre l'onboarding **sempre dal primo passo da fare,
 mai dal Benvenuto**.
 
-**Dove sta la pagina e perché la guardia è nel client** (pagina e
-service worker fatti il 17/10; redirect dopo la registrazione e guardia
-da fare). `/onboarding` (`src/app/onboarding/page.tsx`) sta fuori dal
+**Dove sta la pagina e perché la guardia è nel client** (pagina, service
+worker e redirect dopo la registrazione fatti il 17/10; guardia da fare).
+`/onboarding` (`src/app/onboarding/page.tsx`) sta fuori dal
 gruppo `(app)`, come `/aggiungi`: niente tab bar e niente guardiano delle
 modifiche. È in `PAGINE_APP` del service worker, per riaprirsi anche
 offline. Chi ha il segno `da_fare` ci arriva:
 - subito dopo "Crea account": la Server Action `registrati` fa il
-  redirect a `/onboarding` invece che a "/";
+  redirect a `/onboarding` invece che a "/", dopo `impostaUsername`.
+  Solo con la sessione: con la conferma email accesa resta il messaggio
+  "Account creato: controlla la tua email…", e all'onboarding porta la
+  guardia al primo accesso;
 - negli altri casi, da una **guardia nel client** in
   `src/app/(app)/layout.tsx`, che legge il segno (cookie e chiave
   locale) e fa `router.replace("/onboarding")`.
@@ -1752,17 +1755,21 @@ del 15/10.
 - **All'invio** la Server Action rifà tutto: formato, codice di invito,
   poi `username_disponibile` (se la risposta non arriva si va avanti:
   il nome lo protegge l'indice unico). `signUp` porta nei metadati
-  `nome`, `username` e `codice_invito` (per il trigger che verrà). **Finché
-  il trigger non c'è**: la **conferma email è spenta** sul nostro progetto
-  (scelta di Davide; verificato il 15/10 da Cowork: gli account nuovi
-  risultano confermati nello stesso secondo della registrazione), quindi
-  dopo `signUp` c'è subito la sessione, e la Server Action chiama
-  `imposta_username` e poi entra. Con un esito diverso da `ok` (nome
-  preso nell'istante, rete) entra lo stesso, l'account non si annulla
-  per lo username, e lo username lo chiede Amici. Il ramo "senza
+  `nome`, `username`, `codice_invito` e, dal 17/10, `onboarding:
+  "da_fare"` (sezione 3, "Onboarding"). Dal 16/10 i trigger su
+  `auth.users` (sezione 9.1) controllano il codice e lo username, tolgono
+  `codice_invito` e creano la riga di `nomi_utente`; con un nome già
+  preso `signUp` fallisce ("username già in uso"). La **conferma email è
+  spenta** sul nostro progetto (scelta di Davide; verificato il 15/10 da
+  Cowork: gli account nuovi risultano confermati nello stesso secondo
+  della registrazione), quindi dopo `signUp` c'è subito la sessione: la
+  Server Action chiama `imposta_username`, che con lo stesso nome già
+  scritto dal trigger non riscrive niente (resta come rete di sicurezza),
+  e poi porta a `/onboarding` (fino al 17/10 a Oggi). L'account non si
+  annulla per lo username: se mancasse, lo chiede Amici. Il ramo "senza
   sessione" della Server Action ("controlla la tua email") resta nel
-  codice per il giorno in cui la conferma si accendesse: lì lo username
-  resterebbe solo nei metadati e lo chiederebbe Amici. Regole
+  codice per il giorno in cui la conferma si accendesse: lo username lo
+  crea comunque il trigger, l'onboarding parte al primo accesso. Regole
   in `validazione.ts` (`FORMATO_USERNAME`, `normalizzaUsername`,
   `usernameValido`, con test), chiamate in `src/lib/amici/nomiUtente.ts`,
   testi in `testiUsername.ts`.
@@ -3928,16 +3935,20 @@ Conseguenze:
   "Password dimenticata" non gli funziona, perché il link non arriva. È
   il caso dell'account di prova A di Amici (sezione 11, "Account di
   prova"). **Spenta per la beta**: prima di un'eventuale apertura al
-  pubblico va riaccesa, e va riprovato il percorso "username solo nei
-  metadati, lo chiede Amici" (sezione 3, "Lo username": dopo `signUp`
-  senza sessione la Server Action non può salvarlo)
+  pubblico va riaccesa, e va riprovato il percorso "registrazione senza
+  sessione". Dal 16/10 lo username lo crea il trigger anche senza
+  sessione (con un nome già preso `signUp` fallisce), quindi non resta
+  più solo nei metadati; restano da provare il messaggio "controlla la
+  tua email" e l'onboarding al primo accesso (voce qui sotto)
 - **il segno dell'onboarding sta nei metadati dell'account** (campo
-  `onboarding`, scritto da `registrati` in `signUp`; dal 17/10, branch
-  `onboarding`, da fare; sezione 3, "Onboarding"). Il trigger di
-  registrazione lo lascia passare. Se un giorno si riaccende la conferma
-  email, `signUp` non dà una sessione e la Server Action non può portare
-  all'onboarding: il segno resta `da_fare` nei metadati, e l'onboarding
-  parte al primo accesso, dalla guardia nel client
+  `onboarding: "da_fare"`, scritto da `registrati` in `signUp` dal 17/10,
+  branch `onboarding`; sezione 3, "Onboarding"). Il trigger di
+  registrazione lo lascia passare: toglie solo `codice_invito` e riscrive
+  solo `username`. Con la sessione la Server Action porta a
+  `/onboarding`. Se un giorno si riaccende la conferma email, `signUp`
+  non dà una sessione e la Server Action non può portare all'onboarding:
+  il segno resta `da_fare` nei metadati, e l'onboarding parte al primo
+  accesso, dalla guardia nel client (da fare)
 
 #### Il codice di invito anche nel database (deciso il 15/10, branch `amici`)
 
@@ -5726,8 +5737,8 @@ stessa marca (servirebbe un terzo utente).
 ### Non ancora costruito
 
 - **Onboarding** dopo la registrazione: in corso sul branch `onboarding`
-  dal 17/10: fatti la parte senza interfaccia e la pagina con i cinque
-  passi; mancano il redirect dopo la registrazione, la guardia e la
+  dal 17/10: fatti la parte senza interfaccia, la pagina con i cinque
+  passi e il redirect dopo la registrazione; mancano la guardia e la
   scheda di Oggi (sezione 3, "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**

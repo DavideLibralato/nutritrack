@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: la registrazione porta all'onboarding
+
+Branch `onboarding`. Tocca la registrazione, quindi è un commit a parte.
+`registrati` mette `onboarding: "da_fare"` nei metadati di `signUp`
+(chiave e tipo da `statoOnboarding.ts`, logica pura che si può usare sul
+server) e, con la sessione, dopo `impostaUsername` porta a `/onboarding`
+invece che a "/". Senza sessione (conferma email accesa) il messaggio
+resta identico, e il segno aspetta il primo accesso. Controlli, messaggi
+d'errore e codice di invito invariati. Commenti riscritti su come
+funzionano oggi i trigger, attivi dal 16/10: verificato leggendo dal
+database che `controlla_registrazione` toglie solo `codice_invito` e
+riscrive solo `username`, che con uno username preso `signUp` fallisce, e
+che `imposta_username` con lo stesso nome non riscrive niente. PUNTO
+§9.1 e §3 ("Lo username", "All'invio"): le frasi sulla conferma email e
+sui trigger riportate al vero. Test nuovo `auth.test.ts` (5 casi),
+provato rompendo una copia in sei punti. 1119 test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: i passi 4 e 5, la proposta e la fine
 
 Branch `onboarding`. Tolto il segnaposto del passo 4. `PassoObiettivo`

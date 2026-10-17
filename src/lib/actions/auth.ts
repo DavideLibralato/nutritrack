@@ -12,6 +12,13 @@ import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida, normalizzaUsername, usernameValido } from "@/lib/validazione";
 import { controllaDisponibilita, impostaUsername } from "@/lib/amici/nomiUtente";
 import { TESTO_USERNAME_IN_USO, TESTO_USERNAME_NON_VALIDO } from "@/lib/amici/testiUsername";
+// statoOnboarding.ts è logica pura, senza browser né Dexie: si può usare
+// anche qui, sul server.
+import { CHIAVE_METADATI_ONBOARDING, type SegnoMetadati } from "@/lib/onboarding/statoOnboarding";
+
+// Il segno con cui nasce ogni account nuovo (PUNTO_DI_PARTENZA.md, sezione
+// 3, "Onboarding"): l'onboarding è da fare.
+const SEGNO_ALLA_REGISTRAZIONE: SegnoMetadati = "da_fare";
 
 export interface StatoRegistrazione {
   errore: string | null;
@@ -67,18 +74,26 @@ export async function registrati(
     return { errore: TESTO_USERNAME_IN_USO, messaggio: null, valori };
   }
 
-  // Tutto in raw_user_meta_data. `username` e `codice_invito` servono al
-  // trigger su auth.users (PUNTO_DI_PARTENZA.md §9.1), che arriva dopo il
-  // merge di `amici` e da lì in poi controlla il codice, toglie
-  // `codice_invito` dai metadati e crea la riga di `nomi_utente`. Finché
-  // il trigger non c'è, i due campi restano lì senza effetto (la migration
-  // del trigger toglie `codice_invito` anche dalle righe di chi si è
-  // registrato prima).
+  // Tutto in raw_user_meta_data. `username` e `codice_invito` servono ai
+  // trigger su auth.users, attivi dal 16/10 (PUNTO_DI_PARTENZA.md §9.1):
+  // `controlla_registrazione` rifiuta la registrazione se il codice non è
+  // quello del Vault o lo username non è valido, toglie `codice_invito` dai
+  // metadati e ci riscrive lo username normalizzato; poi
+  // `crea_nome_utente_registrazione` crea la riga di `nomi_utente`. Gli
+  // altri campi li lasciano passare così come sono: `nome` e il segno
+  // dell'onboarding (`onboarding: "da_fare"`, dal 17/10), verificato
+  // leggendo la funzione del trigger, che toglie una sola chiave e ne
+  // riscrive una sola.
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { nome, username, codice_invito: codiceInvito },
+      data: {
+        nome,
+        username,
+        codice_invito: codiceInvito,
+        [CHIAVE_METADATI_ONBOARDING]: SEGNO_ALLA_REGISTRAZIONE,
+      },
     },
   });
 
@@ -86,11 +101,13 @@ export async function registrati(
     return { errore: traduciErroreAuth(error.message), messaggio: null, valori };
   }
 
-  // Se il progetto Supabase ha la conferma email attiva, qui c'è un utente
-  // ma non ancora una sessione: non possiamo mandarlo dentro, deve prima
-  // aprire il link che gli arriva via email. Lo username non si può
-  // salvare ora (imposta_username vuole un utente entrato): lo chiede
-  // Amici alla prima apertura (PUNTO_DI_PARTENZA.md §3).
+  // Se il progetto Supabase ha la conferma email attiva (oggi è spenta,
+  // §9.1), qui c'è un utente ma non ancora una sessione: non possiamo
+  // mandarlo dentro, deve prima aprire il link che gli arriva via email.
+  // Lo username l'ha già creato il trigger: con un nome preso, signUp
+  // sarebbe fallito qui sopra ("username già in uso"). Il segno
+  // dell'onboarding resta nei metadati: al primo accesso la guardia nel
+  // client lo legge e porta all'onboarding.
   if (!data.session) {
     return {
       errore: null,
@@ -99,13 +116,15 @@ export async function registrati(
     };
   }
 
-  // Con la sessione lo username si salva subito, finché il trigger non lo
-  // fa da solo. Qualunque esito si entra lo stesso: l'account esiste già e
-  // non si annulla per lo username. Se il nome è stato preso nel frattempo
-  // ("occupato") o la risposta non arriva, lo username resta da scegliere
-  // e lo chiede Amici alla prima apertura, come per chi è registrato da
-  // prima.
+  // Con la sessione si conferma lo username con imposta_username. La riga di
+  // nomi_utente l'ha già creata il trigger con lo stesso nome, e allora la
+  // funzione non riscrive niente e risponde "ok" (on conflict ... where
+  // is distinct from); resta come rete di sicurezza, nel caso il trigger
+  // un giorno non ci fosse. Qualunque esito si entra lo stesso: l'account
+  // esiste già e non si annulla per lo username. Se mancasse, lo chiede
+  // Amici alla prima apertura (PUNTO_DI_PARTENZA.md §3).
   await impostaUsername(supabase, username);
 
-  redirect("/");
+  // Dentro, si parte dall'onboarding (dal 17/10; prima si andava a Oggi).
+  redirect("/onboarding");
 }
