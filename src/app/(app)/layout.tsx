@@ -36,14 +36,20 @@
 // qui e non in impostazioni/layout.tsx, che non contiene la tab bar.
 // Questo file resta un componente server: GuardianoModifiche è un
 // componente client e le pagine gli passano attraverso come `children`.
+//
+// GuardiaOnboarding (dal 17/10): chi ha l'onboarding da fare e apre una di
+// queste pagine va a /onboarding. Sta qui perché /onboarding è fuori dal
+// gruppo: la guardia non gira sulla pagina dove porta. Non disegna niente.
 
 import type { ReactNode } from "react";
 import BarraNavigazione from "@/components/BarraNavigazione";
 import GuardianoModifiche from "@/components/GuardianoModifiche";
+import GuardiaOnboarding from "@/components/GuardiaOnboarding";
 
 export default function LayoutApp({ children }: { children: ReactNode }) {
   return (
     <GuardianoModifiche>
+      <GuardiaOnboarding />
       <div className="flex flex-1 flex-col">{children}</div>
       <BarraNavigazione />
     </GuardianoModifiche>

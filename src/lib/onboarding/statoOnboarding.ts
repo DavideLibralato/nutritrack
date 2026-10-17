@@ -161,9 +161,17 @@ export interface StatoSegno {
 //      obiettivi e dati noti. Dati noti = una discesa riuscita in questa
 //      sessione, o righe dell'utente già in Dexie: su un dispositivo vuoto
 //      "0 obiettivi" vuol dire solo "non ancora scaricati".
+// Il segno prima della rete di sicurezza: la chiave locale, se c'è, vince sui
+// metadati (regola 1 di statoSegno). Da qui statoSegno parte, e da qui la
+// guardia di (app)/layout.tsx decide se serve leggere Dexie: solo con
+// "da_fare" statoSegno può dire "mostra l'onboarding".
+export function segnoEffettivo(metadati: SegnoMetadati, locale: SegnoLocale): SegnoMetadati {
+  return locale ?? metadati;
+}
+
 export function statoSegno(ingressi: IngressiSegno): StatoSegno {
   const nessuno = { mostraOnboarding: false, mostraScheda: false, attendiDiscesa: false };
-  const segno = ingressi.locale ?? ingressi.metadati;
+  const segno = segnoEffettivo(ingressi.metadati, ingressi.locale);
 
   if (segno === null) return { segno: null, ...nessuno };
   if (ingressi.ciSonoObiettivi || segno === "fatto") return { segno: "fatto", ...nessuno };

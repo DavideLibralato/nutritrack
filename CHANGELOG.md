@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: la guardia nel layout
+
+Branch `onboarding`. Tocca il primo avvio delle pagine con la tab bar,
+quindi è un commit a parte. `GuardiaOnboarding` in `(app)/layout.tsx`:
+non disegna niente, e con `mostraOnboarding` fa `router.replace` verso
+`/onboarding` una volta sola per montaggio. Trovato prima di scriverla:
+`useStatoOnboarding` usa `useUtenteId`, che fa una `getUser` al server a
+ogni montaggio, quindi nel layout avrebbe aggiunto una chiamata per tutti.
+Per questo l'hook ora ha un cuore, `useStatoOnboardingPer(userId, segno)`,
+e la guardia gli passa utente e segno letti dal cookie
+(`utenteConOnboardingDaFare`), solo se il segno effettivo è `da_fare`
+(`segnoEffettivo`, estratta da `statoSegno`): per gli altri utenti niente
+rete e niente Dexie. La pagina `/onboarding` non cambia. Test con lo stato
+finto (4) e d'integrazione con `statoSegno` vero e il client Supabase come
+spia (6), compreso "appena finito" (chiave `fatto`, metadati `da_fare`:
+nessun redirect). Provati rompendo le copie dei file in cinque punti. 1129
+test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: la registrazione porta all'onboarding
 
 Branch `onboarding`. Tocca la registrazione, quindi è un commit a parte.

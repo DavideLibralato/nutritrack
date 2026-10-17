@@ -1029,8 +1029,8 @@ da uno stato React che può essere indietro (stessa regola di
 **Stato al 17/10: fatti** la parte senza interfaccia (logica pura, segno
 nei metadati, chiave locale, ripresa, attesa della discesa) e la pagina
 `/onboarding` con tutti e cinque i passi e la fine, il segno `da_fare`
-alla registrazione e il redirect a `/onboarding`. **Da fare**: la guardia
-e la scheda di Oggi. Mockup in
+alla registrazione, il redirect a `/onboarding` e la guardia nel layout.
+**Da fare**: la scheda di Oggi. Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -1240,7 +1240,12 @@ Tutti gli ingressi insieme li dà l'hook `useStatoOnboarding`
 (`src/lib/onboarding/useStatoOnboarding.ts`): metadati, chiave locale,
 obiettivi e righe da Dexie, discesa riuscita, passati a `statoSegno`.
 Restituisce "non ancora noto" finché utente, metadati e Dexie non hanno
-risposto. Lo useranno la pagina, la guardia e la scheda.
+risposto. Due forme: `useStatoOnboarding()`, che prende utente e
+metadati da supabase-js (`useUtenteId` fa una chiamata `getUser` a ogni
+montaggio: va bene nella pagina `/onboarding`), e il cuore
+`useStatoOnboardingPer(userId, segno)`, con utente e segno già letti da
+chi chiama: la guardia lo usa con quelli del cookie, senza rete. La
+scheda di Oggi lo userà nel commit dopo.
 
 **Il primo passo da fare** (`primoPassoDaFare` in
 `src/lib/onboarding/statoOnboarding.ts`, logica pura con test, fatta il
@@ -1292,7 +1297,7 @@ lista. "Continua" riapre l'onboarding **sempre dal primo passo da fare,
 mai dal Benvenuto**.
 
 **Dove sta la pagina e perché la guardia è nel client** (pagina, service
-worker e redirect dopo la registrazione fatti il 17/10; guardia da fare).
+worker, redirect dopo la registrazione e guardia fatti il 17/10).
 `/onboarding` (`src/app/onboarding/page.tsx`) sta fuori dal
 gruppo `(app)`, come `/aggiungi`: niente tab bar e niente guardiano delle
 modifiche. È in `PAGINE_APP` del service worker, per riaprirsi anche
@@ -1302,9 +1307,21 @@ offline. Chi ha il segno `da_fare` ci arriva:
   Solo con la sessione: con la conferma email accesa resta il messaggio
   "Account creato: controlla la tua email…", e all'onboarding porta la
   guardia al primo accesso;
-- negli altri casi, da una **guardia nel client** in
-  `src/app/(app)/layout.tsx`, che legge il segno (cookie e chiave
-  locale) e fa `router.replace("/onboarding")`.
+- negli altri casi, da una **guardia nel client** (`GuardiaOnboarding`
+  in `src/app/(app)/layout.tsx`), che non disegna niente e non blocca la
+  pagina. Legge utente e segno dal cookie della sessione e dalla chiave
+  locale (`utenteConOnboardingDaFare`), senza nessuna chiamata di rete.
+  Solo se il segno effettivo (`segnoEffettivo`: la chiave locale, se c'è,
+  altrimenti i metadati) è `da_fare` legge Dexie (profili, misurazioni,
+  obiettivi) per la rete di sicurezza; per tutti gli altri non legge
+  niente, perché solo con `da_fare` `statoSegno` può dire "mostra
+  l'onboarding". Con `mostraOnboarding` fa `router.replace("/onboarding")`,
+  una volta sola per montaggio. La decisione è quella di `statoSegno`,
+  la stessa della pagina: la guardia manda lì solo chi la pagina fa
+  entrare, quindi nessun giro fra "/" e "/onboarding". Appena finito
+  l'onboarding (chiave locale "fatto", metadati ancora `da_fare`) non
+  riporta indietro; con `da_fare` e i dati non ancora noti porta alla
+  pagina, che aspetta la discesa.
 
 **Non dal middleware** (correzione dell'analisi del 17/10). Offline la
 richiesta non arriva al server: risponde il service worker con la copia
@@ -3948,7 +3965,7 @@ Conseguenze:
   `/onboarding`. Se un giorno si riaccende la conferma email, `signUp`
   non dà una sessione e la Server Action non può portare all'onboarding:
   il segno resta `da_fare` nei metadati, e l'onboarding parte al primo
-  accesso, dalla guardia nel client (da fare)
+  accesso, dalla guardia nel client (fatta il 17/10)
 
 #### Il codice di invito anche nel database (deciso il 15/10, branch `amici`)
 
@@ -5738,8 +5755,8 @@ stessa marca (servirebbe un terzo utente).
 
 - **Onboarding** dopo la registrazione: in corso sul branch `onboarding`
   dal 17/10: fatti la parte senza interfaccia, la pagina con i cinque
-  passi e il redirect dopo la registrazione; mancano la guardia e la
-  scheda di Oggi (sezione 3, "Onboarding")
+  passi, il redirect dopo la registrazione e la guardia; manca la scheda
+  di Oggi (sezione 3, "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)

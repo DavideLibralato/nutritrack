@@ -24,6 +24,7 @@ import {
   CHIAVE_METADATI_ONBOARDING,
   decidiRipresa,
   segnoDaiMetadati,
+  segnoEffettivo,
   type SegnoLocale,
   type SegnoMetadati,
 } from "./statoOnboarding";
@@ -40,6 +41,19 @@ import {
 export function segnoDellaSessione(userId: string): SegnoMetadati {
   const sessione = sessioneDelCookie();
   return sessione?.id === userId ? segnoDaiMetadati(sessione.metadati) : null;
+}
+
+// Per la guardia di (app)/layout.tsx: l'id dell'utente della sessione
+// salvata se il suo segno effettivo (chiave locale, altrimenti metadati) è
+// "da_fare", altrimenti null. Solo cookie e localStorage: nessuna chiamata
+// di rete, niente Dexie. Con null la guardia non legge altro: per gli
+// utenti di prima, e per chi ha già finito o rimandato, statoSegno non può
+// dire "mostra l'onboarding".
+export function utenteConOnboardingDaFare(): string | null {
+  const sessione = sessioneDelCookie();
+  if (!sessione) return null;
+  const segno = segnoEffettivo(segnoDaiMetadati(sessione.metadati), leggiSegnoLocale(sessione.id));
+  return segno === "da_fare" ? sessione.id : null;
 }
 
 function sessioneDelCookie() {
