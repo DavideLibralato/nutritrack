@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: la logica pura, con test
+
+Branch `onboarding`. `src/lib/onboarding/statoOnboarding.ts`, senza
+interfaccia e senza accesso a Dexie, Supabase o localStorage.
+`primoPassoDaFare` (obiettivo vivo → finito; profilo assente o data di
+nascita, altezza o livello vuoti → 2, il sesso non si controlla; nessuna
+pesata viva → 3; altrimenti 4) e `cosaManca`, che usano la stessa lista
+dei passi mancanti. `passoDiPartenza`: alla ripresa il Benvenuto solo se
+non è salvato niente, con "Continua" mai. `segnoDaiMetadati` (un valore
+sconosciuto vale assente) e `statoSegno`: la chiave locale vince, senza
+segno mai onboarding né scheda, un obiettivo vivo vale "fatto", la scheda
+solo con `rimandato` e 0 obiettivi, e con i dati non ancora noti si
+aspetta. Test `statoOnboarding.test.ts` (25 casi), provato rompendo una
+copia in sei punti, ognuno preso da almeno un test. 1030 test e lint
+verdi.
+
 ## 2026-10-17 — Onboarding: opzioni, proposta e peso in /lib
 
 Branch `onboarding`. Refactor senza cambi visibili, per riusare i pezzi
