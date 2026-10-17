@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: la pagina, con la barra e i passi 1-3
+
+Branch `onboarding`. `src/app/onboarding/page.tsx`, fuori da `(app)`:
+chi entra lo decide `useStatoOnboarding` ("Caricamento...", il testo
+della connessione offline in attesa della discesa, `da_fare` dal passo di
+ripresa, `rimandato` solo con `?continua=1`, tutti gli altri a Oggi). Il
+passo di partenza si decide una volta; poi solo Avanti e Indietro, e i
+valori restano nella pagina. Componenti nuovi: `BarraOnboarding`
+(Indietro, cinque puntini allungati con `transform`, "Dopo"),
+`StrutturaPasso` (contenuto e pulsante a pillola), `TessereScelta`,
+`PassoBenvenuto`, `PassoSuDiTe`, `PassoPeso`. Passo 2 salvato con
+`salvaProfilo` (`passiOnboarding.ts`), passo 3 con
+`registraPesoSenzaDuplicati`. "Dopo" chiama `concludiOnboarding` con
+`rimandato` e torna a Oggi senza aspettare la rete. Tastiera: la pagina è
+alta quanto la parte visibile (`useAreaVisibile`), come `/aggiungi`.
+**Provvisorio fino al commit 7: il passo 4 è un segnaposto**, con il solo
+titolo "Il tuo obiettivo" e il pulsante spento. Test della pagina (16) e
+di `useStatoOnboarding` (7), e `PassoSuDiTe` nel test dei campi data;
+provati rompendo le copie dei file in dodici punti. Un test rifatto
+durante la prova: quello di "Dopo" controllava il profilo prima che un
+salvataggio partito per sbaglio potesse finire. 1101 test, lint e build
+verdi.
+
 ## 2026-10-17 — Onboarding: /onboarding nel service worker
 
 Branch `onboarding`. Commit a parte, prima della pagina: `/onboarding` in

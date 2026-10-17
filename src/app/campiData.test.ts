@@ -35,7 +35,13 @@ describe("campi data", () => {
   });
 
   it("i campi data a tutta larghezza dell'app usano .campo-data", () => {
-    for (const file of ["src/components/SheetDuplica.tsx", "src/components/SheetCambioObiettivo.tsx", "src/components/SheetDaQuando.tsx"]) {
+    for (const file of [
+      "src/components/SheetDuplica.tsx",
+      "src/components/SheetCambioObiettivo.tsx",
+      "src/components/SheetDaQuando.tsx",
+      // Dal 17/10, la data di nascita del passo 2 dell'onboarding.
+      "src/components/PassoSuDiTe.tsx",
+    ]) {
       const campo = leggi(file).match(/type="date"[\s\S]*?className=\{?[`"]([^`"]*)/);
       expect(campo?.[1], file).toMatch(/\bcampo-data\b/);
     }

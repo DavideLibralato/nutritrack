@@ -1026,10 +1026,11 @@ da uno stato React che può essere indietro (stessa regola di
 
 ### Onboarding (dal 17/10, branch `onboarding`)
 
-**Stato al 17/10: fatta la parte senza interfaccia** (logica pura, segno
-nei metadati, chiave locale, ripresa, attesa della discesa); **da fare
-tutto ciò che si vede** (pagina, guardia, scheda di Oggi) e la scrittura
-di `da_fare` alla registrazione. Mockup in
+**Stato al 17/10: fatti** la parte senza interfaccia (logica pura, segno
+nei metadati, chiave locale, ripresa, attesa della discesa) e la pagina
+`/onboarding` con i passi 1-3 (il 4 è un segnaposto). **Da fare**: i passi
+4 e 5, la scrittura di `da_fare` alla registrazione, la guardia e la
+scheda di Oggi. Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -1115,9 +1116,23 @@ dispositivo e riaperto su un altro, dove la chiave locale non c'è. Gli
 obiettivi contano solo con i dati noti (discesa riuscita o righe in
 Dexie, sotto): un telefono nuovo con Dexie vuoto non conclude niente.
 
-**I 5 passi** (testi dello stile B). In alto, dal passo 2: il pulsante
-tondo Indietro, i puntini di avanzamento (per gli screen reader "Passo N
-di 5") e "Dopo" (= "Lo faccio dopo").
+**I 5 passi** (testi dello stile B; passi 1-3 fatti il 17/10, componenti
+`PassoBenvenuto`, `PassoSuDiTe`, `PassoPeso`; 4 e 5 da fare). In alto, dal
+passo 2, la barra (`BarraOnboarding`): il pulsante tondo Indietro, i
+puntini di avanzamento (per gli screen reader "Passo N di 5") e "Dopo"
+(= "Lo faccio dopo"). Il puntino del passo attuale si allunga con
+`transform`, non animando la larghezza, e senza animazione con "riduci
+movimento". In fondo il pulsante a pillola (`StrutturaPasso`), spento
+finché il passo non è completo. Indietro torna al passo prima, dal 2 al
+Benvenuto, e i valori scritti restano, anche quelli dei passi già
+salvati: stanno nella pagina, non nei componenti dei passi.
+
+**La tastiera di iPhone.** La pagina è alta quanto la parte visibile dello
+schermo (`useAreaVisibile`, come `/aggiungi`), e il pulsante è l'ultimo
+elemento della colonna: con la tastiera aperta resta appena sopra la
+tastiera. Non `data-nascondi-mentre-scrivi`, che nasconde le barre mentre
+si scrive: qui il pulsante è l'azione del passo, e si scrive il peso e
+si tocca Avanti senza chiudere la tastiera.
 1. **Benvenuto**: l'icona, "Ciao <nome>." e "Ti do il benvenuto su
    Libra. Quattro domande veloci e ti propongo quante calorie, grassi,
    carboidrati e proteine puntare ogni giorno." Pulsante "Iniziamo".
@@ -1159,7 +1174,9 @@ di 5") e "Dopo" (= "Lo faccio dopo").
   (`validaModulo`). Non basta il numero delle kcal.
 
 **Il salvataggio**, con le funzioni che usano già Profilo, Peso e
-Obiettivi, senza duplicare la loro logica:
+Obiettivi, senza duplicare la loro logica (passi 2 e 3 fatti il 17/10, in
+`src/lib/onboarding/passiOnboarding.ts`; un salvataggio non riuscito
+lascia sul passo con "Salvataggio non riuscito. Riprova."):
 - **passo 2**, quando si preme Avanti: `salvaProfilo` con la sola
   sezione "Dati personali" (`src/lib/profilo/salvataggioProfilo.ts`),
   che rilegge Dexie e decide da sola se creare o aggiornare il profilo;
@@ -1229,11 +1246,26 @@ Dalla stessa regola escono le etichette di "cosa manca" nella scheda di
 Oggi: "Su di te", "Il tuo peso", "Il tuo obiettivo", "Obiettivi
 giornalieri" (gli ultimi due sempre insieme).
 
-**Da dove si riparte** (la regola, `passoDiPartenza`, fatta il 17/10; la
-pagina da fare). Chi riapre l'app con il segno `da_fare` torna
-all'onboarding: dal **Benvenuto solo se non è salvato niente** (nessun
-profilo, nessuna pesata, nessun obiettivo), altrimenti dal primo passo
-da fare.
+**Da dove si riparte** (fatto il 17/10: la regola `passoDiPartenza` e la
+pagina). Chi riapre l'app con il segno `da_fare` torna all'onboarding: dal
+**Benvenuto solo se non è salvato niente** (nessun profilo, nessuna
+pesata, nessun obiettivo), altrimenti dal primo passo da fare. Il passo di
+partenza si decide **una volta**, quando i dati sono noti; poi si muove
+solo con Avanti e Indietro. Ricalcolato a ogni cambio di Dexie, salvare il
+passo 2 farebbe saltare la pagina da sola. I campi partono dai dati
+salvati: il passo 2 dal profilo (sesso compreso) se c'è, altrimenti vuoto
+e senza sesso scelto; il passo 3 dalla pesata di oggi, se c'è.
+
+**Chi entra nella pagina** (fatto il 17/10, `useStatoOnboarding`):
+- non ancora noto, o in attesa della discesa con la rete →
+  "Caricamento...";
+- in attesa della discesa senza rete → "Per continuare serve la
+  connessione: prima devono arrivare i tuoi dati su questo dispositivo."
+  Riparte da sola: al ritorno della rete parte la discesa;
+- `da_fare` → dal passo di ripresa;
+- `rimandato` → solo con `?continua=1` (il "Continua" della scheda), dal
+  primo passo da fare;
+- senza segno, `fatto`, o `rimandato` senza `?continua=1` → Oggi.
 
 **"Lo faccio dopo" e la scheda in Oggi** (quando mostrarla lo decide già
 `statoSegno`, fatto il 17/10; pulsante e scheda da fare). "Dopo", dal passo 2
@@ -1249,10 +1281,11 @@ schermo, e una scheda fissa sotto la testata toglierebbe spazio alla
 lista. "Continua" riapre l'onboarding **sempre dal primo passo da fare,
 mai dal Benvenuto**.
 
-**Dove sta la pagina e perché la guardia è nel client** (da fare).
-`/onboarding` (`src/app/onboarding/page.tsx`) sta fuori dal gruppo
-`(app)`, come `/aggiungi`: niente tab bar e niente guardiano delle
-modifiche. Va in `PAGINE_APP` del service worker, per riaprirsi anche
+**Dove sta la pagina e perché la guardia è nel client** (pagina e
+service worker fatti il 17/10; redirect dopo la registrazione e guardia
+da fare). `/onboarding` (`src/app/onboarding/page.tsx`) sta fuori dal
+gruppo `(app)`, come `/aggiungi`: niente tab bar e niente guardiano delle
+modifiche. È in `PAGINE_APP` del service worker, per riaprirsi anche
 offline. Chi ha il segno `da_fare` ci arriva:
 - subito dopo "Crea account": la Server Action `registrati` fa il
   redirect a `/onboarding` invece che a "/";
@@ -1286,7 +1319,12 @@ temi, ed è già salvata dal service worker, quindi si vede anche offline.
 Niente SVG nuovo e niente token `--icona-*`. La capsula (tessera scelta,
 etichette della scheda) usa `--capsula-attiva` con il testo
 `--testo-capsula`, non l'accento puro: sulla capsula l'accento fa 4,2:1,
-sotto il 4,5:1 richiesto per il testo (commento in `globals.css`).
+sotto il 4,5:1 richiesto per il testo (commento in `globals.css`). Le
+classi comuni ai passi (domanda, sottotitolo, etichette, riquadro dei
+campi) stanno in `src/lib/onboarding/classiOnboarding.ts`. I campi sono a
+17 px (mai sotto i 16, o Safari ingrandisce la pagina), ognuno con la sua
+etichetta, con il focus di `CLASSE_FOCUS`; la data di nascita, a tutta
+larghezza, usa `.campo-data` (`campiData.test.ts`).
 
 ### Aspetto (dal 3/10, passi "tema" e "accento")
 
@@ -5665,7 +5703,9 @@ stessa marca (servirebbe un terzo utente).
 ### Non ancora costruito
 
 - **Onboarding** dopo la registrazione: in corso sul branch `onboarding`
-  dal 17/10, per ora solo le decisioni (sezione 3, "Onboarding")
+  dal 17/10: fatti la parte senza interfaccia e i passi 1-3; mancano i
+  passi 4-5, il redirect dopo la registrazione, la guardia e la scheda di
+  Oggi (sezione 3, "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
