@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/onboarding/segnoOnboarding", () => ({
   iscriviSegnoLocale: () => () => {},
-  utenteConOnboardingDaFare: () => finti.candidato,
+  utenteConSegno: () => finti.candidato,
 }));
 vi.mock("@/lib/onboarding/useStatoOnboarding", () => ({
   useStatoOnboardingPer: (...args: unknown[]) => {

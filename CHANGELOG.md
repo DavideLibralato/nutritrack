@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: la scheda "Completa il tuo profilo" in Oggi
+
+Branch `onboarding`. `SchedaCompletaProfilo` in cima alla lista dei
+pasti, su ogni giorno: titolo, "Senza obiettivi non posso dirti quante
+calorie ti restano oggi.", le etichette di `cosaManca` in capsule
+`--capsula-attiva` / `--testo-capsula`, "Continua" verso
+`/onboarding?continua=1`. Compare solo con `mostraScheda` di
+`statoSegno` (`rimandato`, 0 obiettivi, dati noti) e sparisce da sola con
+un obiettivo. Utente e segno dal cookie con `utenteConSegno`, che prende il
+posto di `utenteConOnboardingDaFare` e serve anche alla guardia: niente
+rete per nessuno, e Dexie letto solo con `rimandato`. Controllati i gesti
+di Oggi: la scheda non è un bersaglio né una riga del tieni premuto, e lo
+swipe la tratta come il resto del pannello. Test in `page.test.tsx` di
+Oggi (6); i 28 test esistenti passano senza ritocchi, cambiato solo il
+router finto del file (`push` ora è una spia). Provati rompendo le copie
+dei file in cinque punti. 1135 test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: la guardia nel layout
 
 Branch `onboarding`. Tocca il primo avvio delle pagine con la tab bar,

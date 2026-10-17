@@ -43,17 +43,20 @@ export function segnoDellaSessione(userId: string): SegnoMetadati {
   return sessione?.id === userId ? segnoDaiMetadati(sessione.metadati) : null;
 }
 
-// Per la guardia di (app)/layout.tsx: l'id dell'utente della sessione
-// salvata se il suo segno effettivo (chiave locale, altrimenti metadati) è
-// "da_fare", altrimenti null. Solo cookie e localStorage: nessuna chiamata
-// di rete, niente Dexie. Con null la guardia non legge altro: per gli
-// utenti di prima, e per chi ha già finito o rimandato, statoSegno non può
-// dire "mostra l'onboarding".
-export function utenteConOnboardingDaFare(): string | null {
+// L'id dell'utente della sessione salvata se il suo segno effettivo (chiave
+// locale, altrimenti metadati) è `segno`, altrimenti null. Solo cookie e
+// localStorage: nessuna chiamata di rete, niente Dexie. Serve a chi deve
+// decidere qualcosa solo per un segno, senza leggere Dexie per tutti gli
+// altri utenti:
+//   - "da_fare": la guardia di (app)/layout.tsx. Solo con "da_fare"
+//     statoSegno può dire "mostra l'onboarding";
+//   - "rimandato": la scheda "Completa il tuo profilo" di Oggi. Solo con
+//     "rimandato" statoSegno può dire "mostra la scheda".
+export function utenteConSegno(segno: "da_fare" | "rimandato"): string | null {
   const sessione = sessioneDelCookie();
   if (!sessione) return null;
-  const segno = segnoEffettivo(segnoDaiMetadati(sessione.metadati), leggiSegnoLocale(sessione.id));
-  return segno === "da_fare" ? sessione.id : null;
+  const effettivo = segnoEffettivo(segnoDaiMetadati(sessione.metadati), leggiSegnoLocale(sessione.id));
+  return effettivo === segno ? sessione.id : null;
 }
 
 function sessioneDelCookie() {

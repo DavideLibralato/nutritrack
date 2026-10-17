@@ -75,6 +75,7 @@ import SheetQuantita from "@/components/SheetQuantita";
 import SheetNome from "@/components/SheetNome";
 import SheetScegliPasto from "@/components/SheetScegliPasto";
 import ServeConnessione from "@/components/ServeConnessione";
+import SchedaCompletaProfilo from "@/components/SchedaCompletaProfilo";
 import SheetDoppioni from "@/components/SheetDoppioni";
 import SheetDuplica from "@/components/SheetDuplica";
 import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
@@ -1272,6 +1273,11 @@ function OggiContenuto() {
           ref={refLista}
           className="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(var(--ingombro-oggi)+1rem)]"
         >
+          {/* "Completa il tuo profilo" (dal 17/10): solo per chi ha scelto
+              "Lo faccio dopo" nell'onboarding e non ha obiettivi. In cima
+              alla lista, su ogni giorno; scorre con i pasti. Decide da sola
+              se comparire, e per gli altri utenti non legge niente. */}
+          <SchedaCompletaProfilo />
           {/* "Nessun pasto" vuol dire nessuna riga in `pasti` per l'utente
               (primo avvio): solo allora "Preparo…" o "Serve la connessione".
               Un giorno in cui nessun pasto vale (tutti nati dopo, per

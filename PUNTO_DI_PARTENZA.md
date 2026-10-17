@@ -1029,8 +1029,8 @@ da uno stato React che può essere indietro (stessa regola di
 **Stato al 17/10: fatti** la parte senza interfaccia (logica pura, segno
 nei metadati, chiave locale, ripresa, attesa della discesa) e la pagina
 `/onboarding` con tutti e cinque i passi e la fine, il segno `da_fare`
-alla registrazione, il redirect a `/onboarding` e la guardia nel layout.
-**Da fare**: la scheda di Oggi. Mockup in
+alla registrazione, il redirect a `/onboarding`, la guardia nel layout e
+la scheda di Oggi. **Da fare**: le prove su iPhone. Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -1244,8 +1244,8 @@ risposto. Due forme: `useStatoOnboarding()`, che prende utente e
 metadati da supabase-js (`useUtenteId` fa una chiamata `getUser` a ogni
 montaggio: va bene nella pagina `/onboarding`), e il cuore
 `useStatoOnboardingPer(userId, segno)`, con utente e segno già letti da
-chi chiama: la guardia lo usa con quelli del cookie, senza rete. La
-scheda di Oggi lo userà nel commit dopo.
+chi chiama: la guardia e la scheda di Oggi lo usano con quelli del
+cookie, senza rete.
 
 **Il primo passo da fare** (`primoPassoDaFare` in
 `src/lib/onboarding/statoOnboarding.ts`, logica pura con test, fatta il
@@ -1282,8 +1282,8 @@ e senza sesso scelto; il passo 3 dalla pesata di oggi, se c'è.
   primo passo da fare;
 - senza segno, `fatto`, o `rimandato` senza `?continua=1` → Oggi.
 
-**"Lo faccio dopo" e la scheda in Oggi** (quando mostrarla lo decide già
-`statoSegno`, fatto il 17/10; pulsante e scheda da fare). "Dopo", dal passo 2
+**"Lo faccio dopo" e la scheda in Oggi** (fatti il 17/10: "Dopo" nella
+barra, `SchedaCompletaProfilo` in Oggi). "Dopo", dal passo 2
 al 5, chiude l'onboarding, mette il segno `rimandato` e porta a Oggi. La
 scheda **"Completa il tuo profilo"** ("Senza obiettivi non posso dirti
 quante calorie ti restano oggi.", le etichette di ciò che manca, il
@@ -1294,7 +1294,29 @@ gli obiettivi li ha ma sta ancora aspettando la discesa. Sta **in cima
 alla lista dei pasti** e scorre con la lista: Oggi è alta esattamente lo
 schermo, e una scheda fissa sotto la testata toglierebbe spazio alla
 lista. "Continua" riapre l'onboarding **sempre dal primo passo da fare,
-mai dal Benvenuto**.
+mai dal Benvenuto** (`/onboarding?continua=1`).
+
+Come è fatta: un riquadro `--superficie` con il bordo `--linea` e lo
+stesso raggio di "Serve la connessione", l'altra scheda di Oggi, e come
+lei senza ombra; il titolo in `font-display`; le etichette di `cosaManca`
+in piccole capsule `--capsula-attiva` con il testo `--testo-capsula`; il
+pulsante "Continua" pieno, della stessa forma di "Riprova". Compare su
+ogni giorno mostrato, perché riguarda il profilo e non il giorno; la
+riga "Nessun obiettivo impostato" della testata resta. Sparisce da sola
+appena c'è un obiettivo (Dexie cambia), e poi la ripresa manda "fatto".
+Costo come la guardia: utente e segno dal cookie e dalla chiave locale
+(`utenteConSegno("rimandato")`), nessuna chiamata di rete, e Dexie letto
+solo con il segno effettivo `rimandato`.
+
+I gesti di Oggi non la toccano. Non ha `data-tieni-premuto`, quindi non
+apre il menu; non ha `data-pasto-id`, quindi non è un bersaglio del
+trascinamento, e rilasciare sopra di lei non fa niente; scorre con la
+lista anche durante lo scorrimento automatico. Lo swipe del giorno parte
+anche da lei, come da tutto il pannello, e blocca da sé il tocco su
+"Continua" che segue uno swipe. Resta visibile anche durante il
+trascinamento: occupa la cima della lista, quindi con la scheda a volte
+bisogna scorrere un po' per vedere il primo pasto, accettato perché c'è
+solo per chi ha rimandato.
 
 **Dove sta la pagina e perché la guardia è nel client** (pagina, service
 worker, redirect dopo la registrazione e guardia fatti il 17/10).
@@ -1310,7 +1332,7 @@ offline. Chi ha il segno `da_fare` ci arriva:
 - negli altri casi, da una **guardia nel client** (`GuardiaOnboarding`
   in `src/app/(app)/layout.tsx`), che non disegna niente e non blocca la
   pagina. Legge utente e segno dal cookie della sessione e dalla chiave
-  locale (`utenteConOnboardingDaFare`), senza nessuna chiamata di rete.
+  locale (`utenteConSegno("da_fare")`), senza nessuna chiamata di rete.
   Solo se il segno effettivo (`segnoEffettivo`: la chiave locale, se c'è,
   altrimenti i metadati) è `da_fare` legge Dexie (profili, misurazioni,
   obiettivi) per la rete di sicurezza; per tutti gli altri non legge
@@ -5754,9 +5776,9 @@ stessa marca (servirebbe un terzo utente).
 ### Non ancora costruito
 
 - **Onboarding** dopo la registrazione: in corso sul branch `onboarding`
-  dal 17/10: fatti la parte senza interfaccia, la pagina con i cinque
-  passi, il redirect dopo la registrazione e la guardia; manca la scheda
-  di Oggi (sezione 3, "Onboarding")
+  dal 17/10: costruito tutto (pagina, redirect dopo la registrazione,
+  guardia, scheda di Oggi); mancano le prove su iPhone (sezione 3,
+  "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)

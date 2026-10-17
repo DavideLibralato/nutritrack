@@ -12,7 +12,7 @@
 //
 // Nessuna chiamata di rete, per nessuno:
 //   - utente e segno vengono dal cookie della sessione e da localStorage
-//     (utenteConOnboardingDaFare), non da getUser;
+//     (utenteConSegno("da_fare")), non da getUser;
 //   - solo se il segno effettivo è "da_fare" passa l'utente al cuore di
 //     useStatoOnboarding, che legge Dexie (profili, misurazioni,
 //     obiettivi) per la rete di sicurezza. Per tutti gli altri passa null,
@@ -26,15 +26,17 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { iscriviSegnoLocale, utenteConOnboardingDaFare } from "@/lib/onboarding/segnoOnboarding";
+import { iscriviSegnoLocale, utenteConSegno } from "@/lib/onboarding/segnoOnboarding";
 import { useStatoOnboardingPer } from "@/lib/onboarding/useStatoOnboarding";
+
+const utenteDaFare = () => utenteConSegno("da_fare");
 
 export default function GuardiaOnboarding() {
   const router = useRouter();
   // Si rilegge quando cambia la chiave locale (per esempio "fatto" appena
   // scritto). Il terzo argomento è il valore durante il disegno sul
   // server, dove cookie e localStorage non ci sono.
-  const candidato = useSyncExternalStore(iscriviSegnoLocale, utenteConOnboardingDaFare, () => null);
+  const candidato = useSyncExternalStore(iscriviSegnoLocale, utenteDaFare, () => null);
   const stato = useStatoOnboardingPer(candidato, candidato ? "da_fare" : null);
 
   const giaPortato = useRef(false);

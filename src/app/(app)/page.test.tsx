@@ -18,6 +18,11 @@ import type { SceltaDoppione } from "@/lib/diario/pianoSpostamento";
 import { SCADENZA_BLOCCO_CLICK_MS } from "@/lib/decisioneSwipe";
 import { formattaDataEstesa, formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
 import type { VoceDiario } from "@/lib/db/tipi";
+import { stringToBase64URL } from "@supabase/ssr";
+import { repositoryMisurazioni, repositoryObiettivi } from "@/lib/repository";
+import { chiaveSessione } from "@/lib/supabase/utenteOffline";
+import { chiaveSegnoLocale } from "@/lib/onboarding/segnoOnboarding";
+import { azzeraStatoGiri, segnaDiscesaRiuscita } from "@/lib/sync/statoSincronizzazione";
 
 // Un utente nuovo per ogni test: il database finto è lo stesso per tutto il
 // file, e i test contano le voci dell'utente.
@@ -39,8 +44,11 @@ let parametri = new URLSearchParams();
 beforeEach(() => {
   parametri = new URLSearchParams();
 });
+// `push` è una spia per il "Continua" della scheda "Completa il tuo profilo"
+// (dal 17/10); per gli altri test non fa niente, come prima.
+const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {} }),
+  useRouter: () => ({ push: router.push, replace: () => {}, refresh: () => {} }),
   useSearchParams: () => parametri,
 }));
 
@@ -928,5 +936,160 @@ describe("Oggi: la barra dopo un inserimento da /aggiungi", () => {
     render(<OggiPage />);
     await screen.findByText("Pane");
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+// --- "Completa il tuo profilo" (dal 17/10, onboarding) -----------------------
+//
+// La scheda in cima alla lista dei pasti, per chi ha scelto "Lo faccio dopo"
+// e non ha obiettivi (PUNTO_DI_PARTENZA.md, sezione 3, "Onboarding").
+// Sbaglia in silenzio: compare per un attimo a chi gli obiettivi li ha (i
+// dati non ancora scesi), non sparisce quando arriva un obiettivo, o fa
+// leggere Dexie a tutti gli utenti. Utente e segno vengono dal cookie della
+// sessione e dalla chiave locale, veri; la discesa riuscita si accende a
+// mano.
+
+describe("Oggi: la scheda «Completa il tuo profilo»", () => {
+  const URL_SUPABASE = "https://progetto.supabase.co";
+
+  function cookieSessione(metadati: Record<string, unknown>) {
+    const valore =
+      "base64-" + stringToBase64URL(JSON.stringify({ user: { id: utenteTest, user_metadata: metadati } }));
+    document.cookie = `${chiaveSessione(URL_SUPABASE)}=${valore}; path=/`;
+  }
+
+  async function obiettivo() {
+    await repositoryObiettivi.crea({
+      user_id: utenteTest,
+      valido_dal: oggiLocale(),
+      tipo: "mantenere",
+      kcal: 2000,
+      proteine_g: 150,
+      carboidrati_g: 200,
+      grassi_g: 70,
+      peso_obiettivo: null,
+    });
+  }
+
+  // I pasti ci sono già (niente seed), così la pagina si apre subito.
+  async function preparaOggi() {
+    await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+  }
+
+  // Lascia rispondere Dexie e girare gli effetti.
+  const unAttimo = () => new Promise((fine) => setTimeout(fine, 80));
+
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", URL_SUPABASE);
+    window.localStorage.clear();
+    azzeraStatoGiri();
+    router.push.mockClear();
+  });
+
+  afterEach(() => {
+    document.cookie = `${chiaveSessione(URL_SUPABASE)}=; path=/; max-age=0`;
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("compare con «rimandato», 0 obiettivi e dati noti, con le etichette di ciò che manca", async () => {
+    await preparaOggi();
+    cookieSessione({ onboarding: "rimandato" });
+    segnaDiscesaRiuscita(utenteTest);
+
+    render(<OggiPage />);
+
+    const scheda = await screen.findByRole("region", { name: "Completa il tuo profilo" });
+    expect(within(scheda).getByText("Senza obiettivi non posso dirti quante calorie ti restano oggi.")).toBeTruthy();
+    const etichette = within(within(scheda).getByRole("list", { name: "Cosa manca" }))
+      .getAllByRole("listitem")
+      .map((li) => li.textContent);
+    expect(etichette).toEqual(["Su di te", "Il tuo peso", "Il tuo obiettivo", "Obiettivi giornalieri"]);
+    // La riga della testata resta.
+    expect(screen.getByText("Nessun obiettivo impostato")).toBeTruthy();
+  });
+
+  it("anche con la sola chiave locale «rimandato» (Dopo offline, metadati ancora da_fare)", async () => {
+    await preparaOggi();
+    cookieSessione({ onboarding: "da_fare" });
+    window.localStorage.setItem(chiaveSegnoLocale(utenteTest), "rimandato");
+    segnaDiscesaRiuscita(utenteTest);
+
+    render(<OggiPage />);
+    expect(await screen.findByRole("region", { name: "Completa il tuo profilo" })).toBeTruthy();
+  });
+
+  it("non compare: senza segno, con «fatto», con un obiettivo, con i dati non noti", async () => {
+    const casi: { nome: string; prepara: () => Promise<void> }[] = [
+      { nome: "senza segno", prepara: async () => cookieSessione({ nome: "Giulia" }) },
+      { nome: "fatto", prepara: async () => cookieSessione({ onboarding: "fatto" }) },
+      {
+        nome: "rimandato con un obiettivo",
+        prepara: async () => {
+          cookieSessione({ onboarding: "rimandato" });
+          await obiettivo();
+        },
+      },
+      {
+        // Nessuna discesa riuscita e niente in Dexie delle tre tabelle: gli
+        // obiettivi potrebbero essere solo "non ancora scesi".
+        nome: "rimandato con i dati non noti",
+        prepara: async () => cookieSessione({ onboarding: "rimandato" }),
+      },
+    ];
+    for (const caso of casi) {
+      utenteTest = `utente-oggi-${crypto.randomUUID()}`;
+      azzeraStatoGiri();
+      await preparaOggi();
+      await caso.prepara();
+      if (caso.nome !== "rimandato con i dati non noti") segnaDiscesaRiuscita(utenteTest);
+
+      render(<OggiPage />);
+      await screen.findByText("Pranzo");
+      await unAttimo();
+      expect(screen.queryByRole("region", { name: "Completa il tuo profilo" }), caso.nome).toBeNull();
+      cleanup();
+    }
+  });
+
+  it("«Continua» porta a /onboarding?continua=1", async () => {
+    await preparaOggi();
+    cookieSessione({ onboarding: "rimandato" });
+    segnaDiscesaRiuscita(utenteTest);
+    render(<OggiPage />);
+
+    const scheda = await screen.findByRole("region", { name: "Completa il tuo profilo" });
+    fireEvent.click(within(scheda).getByRole("button", { name: "Continua" }));
+    expect(router.push).toHaveBeenCalledWith("/onboarding?continua=1");
+  });
+
+  it("sparisce da sola quando arriva un obiettivo in Dexie", async () => {
+    await preparaOggi();
+    cookieSessione({ onboarding: "rimandato" });
+    segnaDiscesaRiuscita(utenteTest);
+    render(<OggiPage />);
+    await screen.findByRole("region", { name: "Completa il tuo profilo" });
+
+    await act(() => obiettivo());
+
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "Completa il tuo profilo" })).toBeNull()
+    );
+  });
+
+  it("chi non ha «rimandato» non fa leggere niente in più a Dexie", async () => {
+    // Oggi da sola non legge mai le misurazioni: ogni lettura qui sarebbe
+    // della scheda.
+    const letture = vi.spyOn(repositoryMisurazioni, "ottieniTutti");
+    for (const metadati of [{ nome: "Giulia" }, { onboarding: "fatto" }, { onboarding: "da_fare" }]) {
+      utenteTest = `utente-oggi-${crypto.randomUUID()}`;
+      await preparaOggi();
+      cookieSessione(metadati);
+      render(<OggiPage />);
+      await screen.findByText("Pranzo");
+      await unAttimo();
+      cleanup();
+    }
+    expect(letture).not.toHaveBeenCalled();
   });
 });
