@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: il segno "discesa riuscita in questa sessione"
+
+Branch `onboarding`. Tocca la sincronizzazione, quindi è un commit a
+parte. Un segno solo in memoria, in `statoSincronizzazione.ts`:
+`scaricaTutto` lo accende per l'utente quando `profili`, `misurazioni` e
+`obiettivi` sono scese tutte e tre nello stesso giro, anche senza righe.
+Resta acceso anche se un giro dopo fallisce, vale per un utente solo e lo
+spegne `azzeraStatoGiri`, che Esci ed Elimina account chiamano già.
+Ricaricare la pagina lo azzera. Si legge con `discesaRiuscitaPer` e con
+l'hook `useDiscesaRiuscita` (useSyncExternalStore, gli stessi ascoltatori
+dello stato dei giri, avvisati solo quando il segno cambia). Nessun cambio
+alla sincronizzazione: tabelle, ordine, cursori, salita, errori ed esito
+del giro restano come prima. Test `discesaRiuscita.test.ts` (10 casi),
+provato rompendo le copie dei due file in sei punti; il test che il segno
+avvisi da solo è stato aggiunto perché la prima volta quella rottura
+passava (l'avviso di fine giro la copriva). 1040 test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: la logica pura, con test
 
 Branch `onboarding`. `src/lib/onboarding/statoOnboarding.ts`, senza

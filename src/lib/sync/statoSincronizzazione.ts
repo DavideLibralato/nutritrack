@@ -114,6 +114,9 @@ function statoIniziale(): StatoGiri {
 // le pagine anche lì) window non c'è.
 let stato: StatoGiri | null = null;
 const ascoltatori = new Set<() => void>();
+// L'utente per cui, in questa sessione dell'app, la discesa delle tabelle
+// dell'onboarding è riuscita almeno una volta (discesaRiuscitaPer, sotto).
+let utenteDiscesaRiuscita: string | null = null;
 
 export function leggiStatoGiri(): StatoGiri {
   stato ??= statoIniziale();
@@ -149,7 +152,38 @@ function aggiorna(nuovo: StatoGiri): void {
 // Per i test, e per quando un utente esce: lo stato di un altro utente non
 // deve restare a schermo. L'ora dell'ultimo successo si rilegge.
 export function azzeraStatoGiri(): void {
+  utenteDiscesaRiuscita = null;
   aggiorna(statoIniziale());
+}
+
+// --- La discesa riuscita in questa sessione (dal 17/10, branch onboarding) --
+//
+// L'onboarding decide il passo e scrive solo quando sa cosa c'è sul server
+// per l'utente (PUNTO_DI_PARTENZA.md, sezione 3, "Onboarding"): su un
+// dispositivo vuoto, prima della discesa, il passo 2 creerebbe un secondo
+// profilo. Il cursore non basta a saperlo, perché si scrive solo se
+// arrivano righe; per questo un segno a parte, che scaricaTutto
+// (discesa.ts) accende quando profili, misurazioni e obiettivi sono scese
+// tutte e tre nello stesso giro, anche vuote.
+//
+// Solo in memoria, come lo stato dei giri: ricaricare la pagina lo azzera,
+// ed è voluto (offline il ripiego sono le righe già in Dexie). Una volta
+// acceso resta acceso, anche se un giro dopo fallisce: ciò che il server
+// aveva è già in Dexie. Vale per un utente solo: per un altro è spento, e
+// azzeraStatoGiri (Esci, Elimina account) lo spegne, così chi rientra
+// aspetta di nuovo la sua discesa.
+//
+// Avvisa gli stessi ascoltatori dello stato dei giri (iscriviStatoGiri),
+// solo quando cambia: useDiscesaRiuscita lo legge con useSyncExternalStore.
+
+export function discesaRiuscitaPer(userId: string | null | undefined): boolean {
+  return userId != null && utenteDiscesaRiuscita === userId;
+}
+
+export function segnaDiscesaRiuscita(userId: string): void {
+  if (utenteDiscesaRiuscita === userId) return;
+  utenteDiscesaRiuscita = userId;
+  for (const ascoltatore of ascoltatori) ascoltatore();
 }
 
 export function segnaInizioGiro(verso: Verso): void {

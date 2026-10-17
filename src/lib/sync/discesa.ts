@@ -16,6 +16,7 @@ import { db } from "../db/database";
 import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
 import {
   esitoDaStatus,
+  segnaDiscesaRiuscita,
   segnaFineGiro,
   segnaInizioGiro,
   type EsitoGiro,
@@ -112,6 +113,11 @@ export const TABELLE_DISCESA: {
   { nome: "misurazioni", tabella: db.misurazioni as unknown as Table<RigaBase, string> },
   { nome: "preferiti", tabella: db.preferiti as unknown as Table<RigaBase, string> },
 ];
+
+// Le tabelle da cui l'onboarding decide il passo (statoOnboarding.ts):
+// quando sono scese tutte e tre nello stesso giro, scaricaTutto accende il
+// segno "discesa riuscita in questa sessione" (statoSincronizzazione.ts).
+export const TABELLE_DATI_ONBOARDING: NomeTabella[] = ["profili", "misurazioni", "obiettivi"];
 
 // L'errore di una richiesta della discesa, con lo status HTTP della
 // risposta (0 = non arrivata). Serve all'indicatore per distinguere la
@@ -400,6 +406,11 @@ export async function scaricaTutto(userId: string): Promise<TabellaNonScaricata[
       nonScaricate.push({ tabella, esito: esitoDaStatus(status) });
     }
   });
+
+  // Solo un segno in più: non cambia né le tabelle scaricate né l'esito.
+  if (TABELLE_DATI_ONBOARDING.every((nome) => !nonScaricate.some((t) => t.tabella === nome))) {
+    segnaDiscesaRiuscita(userId);
+  }
 
   const esiti = nonScaricate.map((t) => t.esito);
   const esito: EsitoGiro = esiti.includes("sessione")
