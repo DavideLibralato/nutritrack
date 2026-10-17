@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: opzioni, proposta e peso in /lib
+
+Branch `onboarding`. Refactor senza cambi visibili, per riusare i pezzi
+nell'onboarding. Le scelte di sesso, attività e obiettivo passano da
+Profilo e Obiettivi a `src/lib/profilo/opzioniProfilo.ts`, con le stesse
+etichette. I controlli di "Calcola proposta" (pesata, sesso non
+indicato, dati mancanti, età a oggi, poi `calcolaFabbisogno`) diventano
+la funzione pura `propostaObiettivi`, che restituisce la proposta o il
+motivo; i messaggi della pagina Obiettivi non cambiano. Il controllo del
+peso (0 < kg ≤ 500) di "Registra peso" diventa `leggiPesoKg`. Test nuovo
+`propostaObiettivi.test.ts` (10 casi), provato rompendo una copia in tre
+punti: controllo del sesso tolto, altezza zero accettata, età calcolata
+con l'orologio invece che con la data passata. La terza rottura all'inizio
+passava, perché la data del test era proprio oggi: spostata al 15/1/2031.
+1005 test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: le decisioni nel documento
 
 Branch `onboarding`. Solo documenti, nessun codice. Aggiunto il mockup

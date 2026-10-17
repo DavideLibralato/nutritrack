@@ -19,7 +19,6 @@
 
 import { useState, type ReactNode } from "react";
 import { useModuloImpostazioni } from "@/lib/profilo/useModuloImpostazioni";
-import { calcolaEta, calcolaFabbisogno } from "@/lib/fabbisogno";
 import { formattaDataBreve } from "@/lib/dataGiorno";
 import {
   numeriUguali,
@@ -28,7 +27,9 @@ import {
   type ValoriModulo,
   type ValoriTarget,
 } from "@/lib/profilo/salvataggioProfilo";
-import type { GiornoSettimana, TipoObiettivo } from "@/lib/db/tipi";
+import { OPZIONI_OBIETTIVO } from "@/lib/profilo/opzioniProfilo";
+import { propostaObiettivi } from "@/lib/profilo/propostaObiettivi";
+import type { GiornoSettimana } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
@@ -41,12 +42,6 @@ import LinkProtetto from "@/components/LinkProtetto";
 import SalvataggioModulo from "@/components/SalvataggioModulo";
 
 type Scheda = "normale" | "allenamento";
-
-const OPZIONI_OBIETTIVO: { valore: TipoObiettivo; etichetta: string }[] = [
-  { valore: "dimagrire", etichetta: "Dimagrire" },
-  { valore: "mantenere", etichetta: "Mantenere" },
-  { valore: "massa", etichetta: "Massa" },
-];
 
 // Le righe dei target, nell'ordine delle etichette dei prodotti: Calorie,
 // Grassi, Carboidrati, Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro").
@@ -128,10 +123,16 @@ export default function ObiettiviPage() {
   // (si cambiano in Profilo) e l'ultima pesata registrata (in Peso).
   function calcolaProposta() {
     setErroreCalcolo(null);
-    const dati = ora.datiPersonali;
+    // I controlli e il calcolo stanno in propostaObiettivi (condivisa con
+    // l'onboarding); qui solo i messaggi.
+    const esito = propostaObiettivi(
+      ora.datiPersonali,
+      ultimaPesata?.valore ?? null,
+      ora.obiettivo.tipo
+    );
 
-    if (!ultimaPesata) return; // il pulsante è già disattivato
-    if (dati.sesso === "non_indicato") {
+    if (esito.esito === "senza-pesata") return; // il pulsante è già disattivato
+    if (esito.esito === "sesso-non-indicato") {
       setErroreCalcolo(
         <>
           Il calcolo automatico richiede il sesso, che si indica in Profilo. Altrimenti scrivi i
@@ -140,8 +141,7 @@ export default function ObiettiviPage() {
       );
       return;
     }
-    const altezza = numeroDaCampo(dati.altezzaCm);
-    if (!dati.dataNascita || Number.isNaN(altezza) || altezza <= 0 || !dati.livelloAttivita) {
+    if (esito.esito === "dati-mancanti") {
       setErroreCalcolo(
         <>
           Per calcolare una proposta servono data di nascita, altezza e livello di attività, in
@@ -151,15 +151,7 @@ export default function ObiettiviPage() {
       return;
     }
 
-    const proposta = calcolaFabbisogno({
-      sesso: dati.sesso,
-      eta: calcolaEta(dati.dataNascita),
-      altezzaCm: altezza,
-      pesoKg: ultimaPesata.valore,
-      livelloAttivita: dati.livelloAttivita,
-      tipoObiettivo: ora.obiettivo.tipo,
-    });
-
+    const { proposta } = esito;
     aggiornaObiettivo({
       target: {
         kcal: String(proposta.kcal),

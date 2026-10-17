@@ -24,9 +24,10 @@ import { useMioUsername } from "@/lib/amici/useMioUsername";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
 import SheetUsername from "@/components/SheetUsername";
 import { useModuloImpostazioni } from "@/lib/profilo/useModuloImpostazioni";
-import type { LivelloAttivita, Sesso } from "@/lib/db/tipi";
+import type { LivelloAttivita } from "@/lib/db/tipi";
 import { oggiLocale, formattaDataBreve } from "@/lib/dataGiorno";
 import { numeriUguali, type ValoriModulo } from "@/lib/profilo/salvataggioProfilo";
+import { OPZIONI_ATTIVITA, OPZIONI_SESSO } from "@/lib/profilo/opzioniProfilo";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
 import IntestazioneProfilo from "@/components/IntestazioneProfilo";
@@ -35,26 +36,6 @@ import RigaCampo from "@/components/RigaCampo";
 import SelettoreSegmenti from "@/components/SelettoreSegmenti";
 import ValorePrecedente from "@/components/ValorePrecedente";
 import SalvataggioModulo from "@/components/SalvataggioModulo";
-
-// "Non indicato" a schermo, per stare nel selettore a tre segmenti; lo
-// screen reader legge la frase intera.
-const OPZIONI_SESSO: { valore: Sesso; etichetta: string; etichettaAccessibile?: string }[] = [
-  { valore: "maschio", etichetta: "Uomo" },
-  { valore: "femmina", etichetta: "Donna" },
-  {
-    valore: "non_indicato",
-    etichetta: "Non indicato",
-    etichettaAccessibile: "Preferisco non indicarlo",
-  },
-];
-
-const OPZIONI_ATTIVITA: { valore: LivelloAttivita; etichetta: string }[] = [
-  { valore: "sedentario", etichetta: "Sedentario" },
-  { valore: "leggero", etichetta: "Leggero (1-3 allenamenti a settimana)" },
-  { valore: "moderato", etichetta: "Moderato (3-5 allenamenti a settimana)" },
-  { valore: "attivo", etichetta: "Attivo (6-7 allenamenti a settimana)" },
-  { valore: "molto_attivo", etichetta: "Molto attivo (lavoro fisico o due allenamenti al giorno)" },
-];
 
 const CLASSE_MAIN =
   "mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))]";

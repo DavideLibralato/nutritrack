@@ -16,7 +16,7 @@
 
 import { useState } from "react";
 import { registraPesoSenzaDuplicati } from "@/lib/repository/misurazioni";
-import { numeroDaCampo } from "@/lib/profilo/salvataggioProfilo";
+import { leggiPesoKg } from "@/lib/profilo/letturaPeso";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 export default function RegistraPeso({ userId }: { userId: string }) {
@@ -27,8 +27,8 @@ export default function RegistraPeso({ userId }: { userId: string }) {
 
   async function registra(e: React.FormEvent) {
     e.preventDefault();
-    const kg = numeroDaCampo(valore);
-    if (Number.isNaN(kg) || kg <= 0 || kg > 500) {
+    const kg = leggiPesoKg(valore);
+    if (kg === null) {
       setStato({ fase: "esito", riuscito: false, testo: "Scrivi il peso in kg, per esempio 78,4." });
       return;
     }
