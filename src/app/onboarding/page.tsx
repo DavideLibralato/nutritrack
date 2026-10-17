@@ -6,7 +6,10 @@
 // modifiche. Nel service worker è fra le PAGINE_APP, quindi si riapre anche
 // offline.
 //
-// Per ora i passi 1-3; il 4 è un segnaposto e il 5 arriva nel commit dopo.
+// I cinque passi: Benvenuto, "Parlami un po' di te" (salvato con Avanti),
+// "Quanto pesi oggi?" (salvato con Avanti), "Cosa vuoi ottenere?" (solo in
+// memoria) e gli obiettivi giornalieri, salvati con il passo 4 da "Inizia a
+// usare Libra".
 //
 // Chi entra (statoSegno, via useStatoOnboarding):
 //   - non ancora noto, o i dati non ancora scesi su questo dispositivo →
@@ -38,15 +41,22 @@ import { passoDiPartenza, type PassoOnboarding, type StatoSegno } from "@/lib/on
 import {
   pesoDaRegistrare,
   pesoIniziale,
+  propostaPasso5,
+  salvaObiettivo,
   salvaSuDiTe,
   suDiTeIniziale,
+  targetDelPasso5,
   type ValoriSuDiTe,
 } from "@/lib/onboarding/passiOnboarding";
-import { CLASSE_DOMANDA } from "@/lib/onboarding/classiOnboarding";
+import type { ValoriTarget } from "@/lib/profilo/salvataggioProfilo";
+import type { TipoObiettivo } from "@/lib/db/tipi";
+import { CLASSE_DOMANDA, CLASSE_SOTTO } from "@/lib/onboarding/classiOnboarding";
 import BarraOnboarding from "@/components/BarraOnboarding";
 import PassoBenvenuto from "@/components/PassoBenvenuto";
 import PassoSuDiTe from "@/components/PassoSuDiTe";
 import PassoPeso from "@/components/PassoPeso";
+import PassoObiettivo from "@/components/PassoObiettivo";
+import PassoTargetGiornalieri from "@/components/PassoTargetGiornalieri";
 import StrutturaPasso from "@/components/StrutturaPasso";
 
 const TESTO_SALVATAGGIO_FALLITO = "Salvataggio non riuscito. Riprova.";
@@ -111,6 +121,15 @@ function Onboarding() {
   const [passo, setPasso] = useState<PassoOnboarding>(1);
   const [suDiTe, setSuDiTe] = useState<ValoriSuDiTe | null>(null);
   const [peso, setPeso] = useState("");
+  // Passo 4: solo in memoria, si salva alla fine del 5. Si parte senza
+  // scelta, e chi esce prima del 5 la perde ("Continua" riparte dal 4).
+  const [tipo, setTipo] = useState<TipoObiettivo | null>(null);
+  const [pesoObiettivo, setPesoObiettivo] = useState("");
+  // Passo 5: null = i numeri seguono la proposta (che cambia con
+  // l'obiettivo); altrimenti quelli scritti dall'utente.
+  const [manuali, setManuali] = useState<ValoriTarget | null>(null);
+  // Nel frattempo è arrivato un obiettivo da un altro dispositivo.
+  const [giaImpostati, setGiaImpostati] = useState(false);
   const [inCorso, setInCorso] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
 
@@ -148,9 +167,13 @@ function Onboarding() {
       <SchermataCentrata testo="Per continuare serve la connessione: prima devono arrivare i tuoi dati su questo dispositivo." />
     );
   }
-  if (avvio === null || suDiTe === null || !userId) {
+  if (avvio === null || suDiTe === null || !userId || dati === undefined) {
     return <SchermataCentrata testo="Caricamento..." />;
   }
+
+  // La proposta del passo 5, dai dati salvati adesso (profilo e pesata dei
+  // passi 2 e 3, letti da Dexie con useLiveQuery) e dall'obiettivo scelto.
+  const proposta = tipo ? propostaPasso5(dati.profilo, dati.misurazioni, tipo) : null;
 
   function vaiA(nuovo: PassoOnboarding) {
     setErrore(null);
@@ -200,6 +223,60 @@ function Onboarding() {
     }
   }
 
+  // "Inizia a usare Libra": passi 4 e 5 insieme, poi l'onboarding è finito.
+  // concludiOnboarding non si aspetta, come per "Dopo": la chiave locale si
+  // scrive subito, e se updateUser non riesce ci pensa la ripresa.
+  async function inizia() {
+    if (!tipo || !proposta) return; // il pulsante non c'è senza obiettivo
+    setInCorso(true);
+    setErrore(null);
+    try {
+      const esito = await salvaObiettivo(userId!, {
+        tipo,
+        pesoObiettivo,
+        target: targetDelPasso5(proposta, manuali),
+      });
+      if (esito.esito === "salvato") {
+        void concludiOnboarding(userId!, "fatto");
+        router.replace("/");
+        return;
+      }
+      if (esito.esito === "periodo-cambiato") {
+        // Non è stato scritto niente, e gli obiettivi ci sono già: per
+        // questo dispositivo l'onboarding è finito.
+        void concludiOnboarding(userId!, "fatto");
+        setGiaImpostati(true);
+        return;
+      }
+      setErrore(esito.errori.obiettivo ?? TESTO_SALVATAGGIO_FALLITO);
+    } catch (e) {
+      console.error("Onboarding: salvataggio degli obiettivi non riuscito.", e);
+      setErrore(TESTO_SALVATAGGIO_FALLITO);
+    } finally {
+      setInCorso(false);
+    }
+  }
+
+  // Obiettivi già impostati altrove: un messaggio e "Vai a Oggi", senza
+  // passare da soli. Un cambio di pagina a tempo toglie lo schermo a chi
+  // sta ancora leggendo (o usa uno screen reader), e qui non c'è fretta:
+  // l'onboarding è già concluso.
+  if (giaImpostati) {
+    return (
+      <main
+        style={{ top: areaVisibile.top, height: areaVisibile.height }}
+        className="fixed inset-x-0 mx-auto flex w-full max-w-md flex-col overflow-hidden bg-background"
+      >
+        <StrutturaPasso etichetta="Vai a Oggi" attivo onAvanti={() => router.replace("/")}>
+          <h1 className={`${CLASSE_DOMANDA} mt-10`}>I tuoi obiettivi</h1>
+          <p role="status" className={CLASSE_SOTTO}>
+            I tuoi obiettivi sono già stati impostati da un altro dispositivo.
+          </p>
+        </StrutturaPasso>
+      </main>
+    );
+  }
+
   return (
     <main
       style={{ top: areaVisibile.top, height: areaVisibile.height }}
@@ -228,11 +305,24 @@ function Onboarding() {
       {passo === 3 && (
         <PassoPeso valore={peso} onCambia={setPeso} onAvanti={avantiPeso} inCorso={inCorso} errore={errore} />
       )}
-      {/* Segnaposto fino al commit 7: obiettivo e obiettivi giornalieri. */}
-      {passo >= 4 && (
-        <StrutturaPasso etichetta="Avanti" attivo={false} onAvanti={() => {}}>
-          <h1 className={CLASSE_DOMANDA}>Il tuo obiettivo</h1>
-        </StrutturaPasso>
+      {passo === 4 && (
+        <PassoObiettivo
+          tipo={tipo}
+          pesoObiettivo={pesoObiettivo}
+          onScegliTipo={setTipo}
+          onCambiaPeso={setPesoObiettivo}
+          onAvanti={() => vaiA(5)}
+        />
+      )}
+      {passo === 5 && proposta && (
+        <PassoTargetGiornalieri
+          proposta={proposta}
+          manuali={manuali}
+          onCambiaManuali={setManuali}
+          onInizia={inizia}
+          inCorso={inCorso}
+          errore={errore}
+        />
       )}
     </main>
   );

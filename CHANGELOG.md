@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-17 — Onboarding: i passi 4 e 5, la proposta e la fine
+
+Branch `onboarding`. Tolto il segnaposto del passo 4. `PassoObiettivo`
+con `SchedeObiettivo` (tre schede, si parte senza scelta; le righe sotto
+prendono 500 e 300 da `AGGIUSTAMENTO_KCAL_OBIETTIVO`, ora esportato da
+`fabbisogno.ts`) e il peso obiettivo facoltativo, valido per
+`leggiPesoKg`; Avanti non salva. `PassoTargetGiornalieri`: la proposta di
+`propostaObiettivi`, che segue l'obiettivo finché i numeri non si
+toccano, "Torna alla proposta", "Ho già i miei valori", i testi per sesso
+non indicato e dati mancanti, il pulsante acceso con i controlli di
+`validaModulo`. "Inizia a usare Libra" salva i passi 4 e 5 con
+`salvaProfilo` (sezione obiettivo, periodo visto nessuno), poi
+`concludiOnboarding` "fatto" e Oggi. Con un obiettivo arrivato nel
+frattempo: messaggio, "fatto" e il pulsante "Vai a Oggi", senza passaggio
+a tempo. 13 test nuovi nella pagina, provati rompendo le copie dei file in
+dodici punti. 1114 test, lint e build verdi.
+
 ## 2026-10-17 — Onboarding: la pagina, con la barra e i passi 1-3
 
 Branch `onboarding`. `src/app/onboarding/page.tsx`, fuori da `(app)`:

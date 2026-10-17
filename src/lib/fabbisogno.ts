@@ -40,7 +40,9 @@ const MOLTIPLICATORE_ATTIVITA: Record<LivelloAttivita, number> = {
 // Correzione del mantenimento in base all'obiettivo. -500/+300 kcal al
 // giorno sono valori comuni (circa 0,4-0,5 kg a settimana in deficit), non
 // numeri presenti nel documento: modificabili, qui e a mano dopo il calcolo.
-const AGGIUSTAMENTO_KCAL_OBIETTIVO: Record<TipoObiettivo, number> = {
+// Esportato per i testi del passo 4 dell'onboarding ("Circa 500 kcal sotto il
+// tuo fabbisogno"): cambiando un numero qui, cambia anche il testo.
+export const AGGIUSTAMENTO_KCAL_OBIETTIVO: Record<TipoObiettivo, number> = {
   dimagrire: -500,
   mantenere: 0,
   massa: 300,

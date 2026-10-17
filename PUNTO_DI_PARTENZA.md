@@ -1028,9 +1028,9 @@ da uno stato React che può essere indietro (stessa regola di
 
 **Stato al 17/10: fatti** la parte senza interfaccia (logica pura, segno
 nei metadati, chiave locale, ripresa, attesa della discesa) e la pagina
-`/onboarding` con i passi 1-3 (il 4 è un segnaposto). **Da fare**: i passi
-4 e 5, la scrittura di `da_fare` alla registrazione, la guardia e la
-scheda di Oggi. Mockup in
+`/onboarding` con tutti e cinque i passi e la fine. **Da fare**: la
+scrittura di `da_fare` alla registrazione, la guardia e la scheda di
+Oggi. Mockup in
 `docs/mockups/onboarding.html`: vale lo **stile B, "Di benvenuto"**; lo
 stile A resta nel file solo per confronto. Colori, font e testi del
 mockup valgono, la logica JS dentro è solo una simulazione. Dove il
@@ -1116,8 +1116,9 @@ dispositivo e riaperto su un altro, dove la chiave locale non c'è. Gli
 obiettivi contano solo con i dati noti (discesa riuscita o righe in
 Dexie, sotto): un telefono nuovo con Dexie vuoto non conclude niente.
 
-**I 5 passi** (testi dello stile B; passi 1-3 fatti il 17/10, componenti
-`PassoBenvenuto`, `PassoSuDiTe`, `PassoPeso`; 4 e 5 da fare). In alto, dal
+**I 5 passi** (testi dello stile B; fatti il 17/10, componenti
+`PassoBenvenuto`, `PassoSuDiTe`, `PassoPeso`, `PassoObiettivo` con
+`SchedeObiettivo`, `PassoTargetGiornalieri`). In alto, dal
 passo 2, la barra (`BarraOnboarding`): il pulsante tondo Indietro, i
 puntini di avanzamento (per gli screen reader "Passo N di 5") e "Dopo"
 (= "Lo faccio dopo"). Il puntino del passo attuale si allunga con
@@ -1174,9 +1175,10 @@ si tocca Avanti senza chiudere la tastiera.
   (`validaModulo`). Non basta il numero delle kcal.
 
 **Il salvataggio**, con le funzioni che usano già Profilo, Peso e
-Obiettivi, senza duplicare la loro logica (passi 2 e 3 fatti il 17/10, in
+Obiettivi, senza duplicare la loro logica (fatto il 17/10, in
 `src/lib/onboarding/passiOnboarding.ts`; un salvataggio non riuscito
-lascia sul passo con "Salvataggio non riuscito. Riprova."):
+lascia sul passo con "Salvataggio non riuscito. Riprova." e non conclude
+niente):
 - **passo 2**, quando si preme Avanti: `salvaProfilo` con la sola
   sezione "Dati personali" (`src/lib/profilo/salvataggioProfilo.ts`),
   che rilegge Dexie e decide da sola se creare o aggiornare il profilo;
@@ -1192,10 +1194,18 @@ lascia sul passo con "Salvataggio non riuscito. Riprova."):
   `salvaProfilo` crea il primo periodo con `valido_dal` = oggi, senza la
   domanda "cambio vero o correzione?": il primo periodo vale "da
   sempre" per la regola di lettura di `obiettivoValidoPer` (sezione 4,
-  "obiettivi"). Il peso obiettivo va in `obiettivi.peso_obiettivo`. Se
-  nel frattempo è arrivato un obiettivo da un altro dispositivo,
-  `salvaProfilo` risponde "periodo cambiato" e non scrive niente:
-  l'onboarding lo dice e si chiude, con il segno "fatto".
+  "obiettivi"). Il peso obiettivo va in `obiettivi.peso_obiettivo`.
+  Riuscito il salvataggio: `concludiOnboarding(userId, "fatto")`, poi
+  Oggi. Mentre salva il pulsante dice "Salvataggio…" ed è spento. Il
+  periodo visto è sempre "nessuno" (`salvaObiettivo`), perché
+  l'onboarding esiste solo senza obiettivi: se nel frattempo ne è
+  arrivato uno da un altro dispositivo, `salvaProfilo` risponde "periodo
+  cambiato" e non scrive niente. Allora la pagina dice "I tuoi obiettivi
+  sono già stati impostati da un altro dispositivo.", mette il segno
+  "fatto" e mostra il pulsante "Vai a Oggi". **Niente passaggio a tempo**
+  (scelta del 17/10): toglierebbe lo schermo a chi sta ancora leggendo, o
+  usa uno screen reader, e qui non c'è fretta, l'onboarding è già
+  concluso.
 
 "Lo faccio dopo" non salva il passo a metà: restano salvati solo i passi
 già confermati con Avanti.
@@ -1310,7 +1320,20 @@ sesso non indicato non posso calcolare una proposta: scrivi i tuoi
 valori, per esempio quelli del nutrizionista." I controlli sono gli
 stessi di "Calcola proposta" in Obiettivi, in una funzione pura condivisa
 (`propostaObiettivi` in `src/lib/profilo/propostaObiettivi.ts`, fatta il
-17/10, con test).
+17/10, con test). Gli altri motivi senza proposta non dovrebbero capitare
+(`primoPassoDaFare` garantisce profilo e pesata), ma per sicurezza hanno
+il loro testo: "Non ho tutti i dati per una proposta: scrivi i tuoi
+valori.", con i campi vuoti.
+
+**La proposta al passo 5** (fatta il 17/10): dal profilo e dall'ultima
+pesata salvati, letti da Dexie, e dall'obiettivo del passo 4. Finché
+l'utente non tocca i numeri, li segue: tornando al 4 e cambiando
+obiettivo si ricalcola. Dopo una modifica a mano restano i suoi. "Torna
+alla proposta" rimette i numeri calcolati; "Ho già i miei valori" svuota
+i quattro campi e mette il fuoco sulle calorie. Le righe sotto gli
+obiettivi del passo 4 ("Circa 500 kcal sotto il tuo fabbisogno") prendono
+i numeri da `AGGIUSTAMENTO_KCAL_OBIETTIVO` in `src/lib/fabbisogno.ts`:
+cambiando lì un numero, cambia anche il testo.
 
 **Grafica.** Stile B del mockup, con le variabili di `globals.css`,
 nessun colore scritto a mano (sezione 7). L'icona del Benvenuto è
@@ -5703,9 +5726,9 @@ stessa marca (servirebbe un terzo utente).
 ### Non ancora costruito
 
 - **Onboarding** dopo la registrazione: in corso sul branch `onboarding`
-  dal 17/10: fatti la parte senza interfaccia e i passi 1-3; mancano i
-  passi 4-5, il redirect dopo la registrazione, la guardia e la scheda di
-  Oggi (sezione 3, "Onboarding")
+  dal 17/10: fatti la parte senza interfaccia e la pagina con i cinque
+  passi; mancano il redirect dopo la registrazione, la guardia e la
+  scheda di Oggi (sezione 3, "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
