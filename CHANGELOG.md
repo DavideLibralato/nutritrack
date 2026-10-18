@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — "Non spostarlo" e "Non duplicarlo" valgono anche se il doppione sparisce
+
+Branch `doppioni`, commit 1 di 8 (i "doppioni rimasti", caso 2). Se la
+riga in doppione veniva cancellata fra il foglio e la conferma (per
+esempio da un altro dispositivo), Sposta e Duplica spostavano o
+copiavano lo stesso l'alimento escluso; Aggiungi no. Ora la regola è una
+sola, `togliEsclusi` in `pianoSpostamento.ts`, chiamata dentro
+`pianoSpostamento` e `pianoInserimento` (quindi anche Duplica): Aggiungi
+non ha più la sua copia in `vociDiario.ts`. Test nuovi in
+`vociDiario.test.ts` (Sposta di un pasto e di una voce sola, Duplica,
+ognuno con "escludi" e con "somma" dopo la sparizione); visti fallire
+rompendo `togliEsclusi`, insieme a quello di Aggiungi già esistente.
+**Da provare su iPhone** (serve un secondo dispositivo). PUNTO: §3 e §11
+aggiornati; il caso "aggiunta di un alimento già presente" non è più un
+difetto, l'unico percorso rimasto è il cambio di pasto dallo sheet di
+modifica (caso 1, più avanti su questo branch); prova del reset in
+produzione fatta e Redirect URL dell'anteprima tolta.
+
+## 2026-10-18 — Merge di `reset-ovunque` su main
+
+Fast-forward `8c44218` → `ac90ca9`. Provato in produzione dall'app
+installata il 18/10: Password dimenticata → Mail → Safari → nuova
+password → accesso dall'app. Tolta da Supabase la Redirect URL
+dell'anteprima del branch (resta solo `https://app-libra.vercel.app/**`).
+
 ## 2026-10-18 — Documenti del reset da qualunque browser
 
 Branch `reset-ovunque`, provato su iPhone il 18/10 (anteprima, account di

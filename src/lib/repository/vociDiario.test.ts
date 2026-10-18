@@ -362,6 +362,86 @@ describe("sposta e annulla", () => {
     }
     expect(await diario(userId)).toEqual(prima);
   });
+
+  // Caso 2 dei "doppioni rimasti" (18/10): la Mela a pranzo, l'unico
+  // doppione che l'utente ha visto, viene cancellata fra il foglio e la
+  // conferma (un altro dispositivo). Prima la Mela si spostava lo stesso,
+  // contro il "Non spostarlo"; ora vale come in Aggiungi.
+  describe("il doppione visto è sparito prima della conferma", () => {
+    async function preparaDoppioneSparito(userId: string) {
+      await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
+      await creaVoce(userId, "Pane", { pastoId: "colazione", quantita: 50 });
+      const melaPranzo = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+      const origine = { tipo: "pasto" as const, pastoId: "colazione" };
+      const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+      if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+      expect(primo.doppioni.map((d) => d.nome)).toEqual(["Mela"]);
+      await repositoryVociDiario.elimina(melaPranzo.id);
+      return { origine, doppioniVisti: primo.doppioni };
+    }
+
+    it("«Non spostarlo» vale lo stesso: la Mela resta a colazione, il Pane si sposta", async () => {
+      const userId = crypto.randomUUID();
+      const { origine, doppioniVisti } = await preparaDoppioneSparito(userId);
+
+      const esito = await spostaNelPasto({
+        userId,
+        data: GIORNO,
+        origine,
+        pastoDestinazioneId: "pranzo",
+        scelte: { "alimento-Mela": { tipo: "escludi" } },
+        doppioniVisti,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(await diario(userId)).toEqual(["colazione: Mela 150 g", "pranzo: Pane 50 g"]);
+      expect(esito.piano.spostati).toEqual(["Pane"]);
+      expect(esito.piano.esclusi).toEqual(["Mela"]);
+    });
+
+    it("una voce sola con «Non spostarlo»: niente scritto, la Mela fra gli esclusi", async () => {
+      const userId = crypto.randomUUID();
+      const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
+      const melaPranzo = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+      const origine = { tipo: "voce" as const, id: mela.id };
+      const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+      if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+      await repositoryVociDiario.elimina(melaPranzo.id);
+      const prima = await diario(userId);
+
+      const esito = await spostaNelPasto({
+        userId,
+        data: GIORNO,
+        origine,
+        pastoDestinazioneId: "pranzo",
+        scelte: { "alimento-Mela": { tipo: "escludi" } },
+        doppioniVisti: primo.doppioni,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(await diario(userId)).toEqual(prima);
+      expect(esito.piano).toEqual({ scritture: [], spostati: [], esclusi: ["Mela"] });
+      expect(esito.fotografia).toEqual({ prima: [], idCreate: [] });
+    });
+
+    it("con Somma si sposta senza foglio: non c'è più niente da sommare", async () => {
+      const userId = crypto.randomUUID();
+      const { origine, doppioniVisti } = await preparaDoppioneSparito(userId);
+
+      const esito = await spostaNelPasto({
+        userId,
+        data: GIORNO,
+        origine,
+        pastoDestinazioneId: "pranzo",
+        scelte: { "alimento-Mela": { tipo: "somma" } },
+        doppioniVisti,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(await diario(userId)).toEqual(["pranzo: Mela 150 g", "pranzo: Pane 50 g"]);
+      expect(esito.piano.esclusi).toEqual([]);
+    });
+  });
 });
 
 describe("duplica e annulla", () => {
@@ -477,6 +557,66 @@ describe("duplica e annulla", () => {
     await annullaOperazione(esito.fotografia);
     expect((await db.voci_diario.get(altra.id))?.quantita_g).toBe(100);
     expect(await db.voci_diario.get(mela.id)).toEqual(mela);
+  });
+
+  // Caso 2 dei "doppioni rimasti" (18/10), come per Sposta: l'altra Mela a
+  // pranzo sparisce fra il foglio e la conferma. Prima si copiava lo
+  // stesso, contro il "Non duplicarlo".
+  describe("il doppione visto è sparito prima della conferma", () => {
+    async function preparaDoppioneSparito(userId: string) {
+      await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
+      await creaVoce(userId, "Pane", { pastoId: "colazione", quantita: 50 });
+      const melaPranzo = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
+      const base = {
+        userId,
+        dataPartenza: GIORNO,
+        origine: { tipo: "pasto" as const, pastoId: "colazione" },
+        dataDestinazione: GIORNO,
+        pastoDestinazioneId: "pranzo",
+        profilo: null,
+        adesso: ADESSO,
+      };
+      const primo = await duplicaNelPasto(base);
+      if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+      expect(primo.doppioni.map((d) => d.nome)).toEqual(["Mela"]);
+      await repositoryVociDiario.elimina(melaPranzo.id);
+      return { base, doppioniVisti: primo.doppioni };
+    }
+
+    it("«Non duplicarlo» vale lo stesso: si copia solo il Pane", async () => {
+      const userId = crypto.randomUUID();
+      const { base, doppioniVisti } = await preparaDoppioneSparito(userId);
+      const prima = await diario(userId);
+
+      const esito = await duplicaNelPasto({
+        ...base,
+        scelte: { "alimento-Mela": { tipo: "escludi" } },
+        doppioniVisti,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(await diario(userId)).toEqual([...prima, `${GIORNO} pranzo: Pane 50 g`].sort());
+      expect(esito.piano.duplicati).toEqual(["Pane"]);
+      expect(esito.piano.esclusi).toEqual(["Mela"]);
+    });
+
+    it("con Somma si copia senza foglio: non c'è più niente da sommare", async () => {
+      const userId = crypto.randomUUID();
+      const { base, doppioniVisti } = await preparaDoppioneSparito(userId);
+      const prima = await diario(userId);
+
+      const esito = await duplicaNelPasto({
+        ...base,
+        scelte: { "alimento-Mela": { tipo: "somma" } },
+        doppioniVisti,
+      });
+
+      if (esito.esito !== "fatto") throw new Error("atteso fatto");
+      expect(await diario(userId)).toEqual(
+        [...prima, `${GIORNO} pranzo: Mela 150 g`, `${GIORNO} pranzo: Pane 50 g`].sort()
+      );
+      expect(esito.piano.esclusi).toEqual([]);
+    });
   });
 
   it("fino a oggi + 7 si duplica: senza ora del consumo, il giorno si classifica", async () => {

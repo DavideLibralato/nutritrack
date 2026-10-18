@@ -18,7 +18,8 @@
 // - scrivi: una riga sola con i grammi scritti a mano, che non tengono
 //   conto né della partenza né della destinazione;
 // - escludi ("Non spostarlo"): le righe di quell'alimento restano dove
-//   sono; il resto si sposta comunque.
+//   sono; il resto si sposta comunque. Vale anche se alla conferma non è
+//   più un doppione (togliEsclusi).
 // Più righe dello stesso alimento (dopo un "Tieni separati", decisione 3):
 // le quantità si sommano per alimento, e somma/scrivi riducono TUTTE le
 // righe di quell'alimento, di partenza e di destinazione, a una sola.
@@ -91,6 +92,25 @@ function perAlimento<T extends RigaPerAlimento>(voci: T[]): Map<string, T[]> {
   return mappa;
 }
 
+// Toglie le righe degli alimenti con "Non spostarlo" / "Non duplicarlo" /
+// "Non aggiungerlo" PRIMA del piano, e ne restituisce i nomi (uno per
+// alimento, nell'ordine delle righe). Va fatto sempre, non solo per gli
+// alimenti che alla conferma sono ancora doppioni: se il doppione sparisce
+// fra il foglio e la conferma (cancellato da un altro dispositivo), un "no"
+// esplicito dell'utente vale più di un cambiamento arrivato da altrove
+// (regola del 10/10). La usano pianoSpostamento e pianoInserimento (quindi
+// anche Duplica): Sposta, Duplica e Aggiungi seguono la stessa regola.
+export function togliEsclusi<T extends RigaPerAlimento>(
+  righe: T[],
+  scelte: Record<string, SceltaDoppione>
+): { restano: T[]; esclusi: string[] } {
+  const escluso = (v: T) => v.alimento_id !== null && scelte[v.alimento_id]?.tipo === "escludi";
+  return {
+    restano: righe.filter((v) => !escluso(v)),
+    esclusi: [...new Set(righe.filter(escluso).map((v) => v.nome_alimento))],
+  };
+}
+
 // La riga di destinazione che resta, quando un doppione si riduce a una
 // riga sola: la più vecchia (creato_il, poi id), così la scelta non dipende
 // dall'ordine in cui Dexie restituisce le righe.
@@ -146,12 +166,12 @@ export function pianoSpostamento({
 }): PianoSpostamento {
   const scritture: Scrittura[] = [];
   const spostati: string[] = [];
-  const esclusi: string[] = [];
+  const { restano, esclusi } = togliEsclusi(partenza, scelte);
   const inDestinazione = perAlimento(destinazione);
   const giaDecisi = new Set<string>();
 
   // Le righe che sono già nel pasto di destinazione non si muovono.
-  const daSpostare = partenza.filter((v) => v.pasto_id !== pastoDestinazioneId);
+  const daSpostare = restano.filter((v) => v.pasto_id !== pastoDestinazioneId);
 
   for (const voce of daSpostare) {
     const k = chiave(voce);
@@ -174,7 +194,7 @@ export function pianoSpostamento({
 
     switch (scelta.tipo) {
       case "escludi":
-        esclusi.push(voce.nome_alimento);
+        // Non arriva qui: le righe escluse le ha già tolte togliEsclusi.
         break;
       case "separati":
         for (const v of arrivano) {

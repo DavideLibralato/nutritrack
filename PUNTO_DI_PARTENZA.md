@@ -790,8 +790,9 @@ premuto", sopra, "Doppioni"):
 - **"Non aggiungerlo" vale anche se il doppione sparisce** fra il foglio e
   la conferma (per esempio cancellato da un altro dispositivo): un "no"
   esplicito vale più di un cambiamento arrivato da altrove (regola del
-  10/10). Vale solo per Aggiungi: Sposta e Duplica, nello stesso caso,
-  spostano o copiano (sotto, sezione 11, "Difetti e verifiche aperti");
+  10/10). Dal 18/10 (branch `doppioni`) vale anche per Sposta e Duplica:
+  la regola è una sola, `togliEsclusi` in `pianoSpostamento.ts`, chiamata
+  dentro i due piani prima di decidere;
 - **niente aggiunto = si resta su /aggiungi senza barra.** Succede con
   Annulla, con il tocco fuori, con Esc, o con tutto su "Non aggiungerlo";
 - **un blocco contro il doppio tocco** ("aggiunta in corso", un `useRef`
@@ -6008,8 +6009,8 @@ unito a main (fast-forward, `0eef1c1`, deploy di produzione Ready) e
 prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
-**Test.** 1174 test permanenti in 107 file (Vitest), tutti verdi al 18/10
-su main; 1187 in 108 file sul branch `reset-ovunque`.
+**Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
+su main; 1192 in 108 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6065,10 +6066,10 @@ su main; 1187 in 108 file sul branch `reset-ovunque`.
   ignorato in silenzio: il link porta al Site URL, quindi un reset chiesto
   dall'anteprima di un branch senza la sua voce porta su app-libra
 - **Un reset chiesto dall'app installata su iPhone non poteva riuscire**
-  (limite noto dal 10/10): **risolto sul branch `reset-ovunque`, provato
-  il 18/10 sull'anteprima** (Chrome sul PC → Safari su iPhone); resta da
-  provare in produzione dall'app installata, dopo il merge (sotto, "Prove
-  su iPhone del reset da qualunque browser"). Il link dell'email si apre
+  (limite noto dal 10/10): **risolto con `reset-ovunque`, provato il
+  18/10 sull'anteprima** (Chrome sul PC → Safari su iPhone) **e, dopo il
+  merge, in produzione dall'app installata** lo stesso giorno (sotto,
+  "Prove su iPhone del reset da qualunque browser"). Il link dell'email si apre
   sempre in Safari, mentre il code verifier del flusso PKCE stava nei
   cookie dell'app. Ora la richiesta parte con il flusso implicito e il
   link porta la sessione nel frammento, senza verifier (§9.1, "Il
@@ -6095,18 +6096,26 @@ su main; 1187 in 108 file sul branch `reset-ovunque`.
 
 - **Sposta e Duplica ignorano "Non spostarlo" / "Non duplicarlo" se il
   doppione sparisce** fra il foglio e la conferma (11/10, visto facendo i
-  doppioni in Aggiungi). Se la riga in doppione viene cancellata nel
-  frattempo, per esempio da un altro dispositivo, alla conferma non c'è più
-  niente da decidere: `spostaNelPasto` e `duplicaNelPasto` controllano le
-  scelte solo quando ci sono ancora dei doppioni, e l'alimento si sposta o
-  si copia lo stesso, contro il "no" dell'utente. Aggiungi invece lo
-  rispetta (sezione 3, "Doppioni in Aggiungi"). Raro; il rimedio è lo
-  stesso di Aggiungi: togliere gli esclusi prima del piano
+  doppioni in Aggiungi): **corretto sul branch `doppioni` il 18/10, da
+  provare su iPhone**. Se la riga in doppione veniva cancellata nel
+  frattempo, per esempio da un altro dispositivo, `spostaNelPasto` e
+  `duplicaNelPasto` controllavano le scelte solo quando c'erano ancora dei
+  doppioni, e l'alimento si spostava o si copiava lo stesso, contro il "no"
+  dell'utente. Ora la regola di Aggiungi (togliere gli esclusi prima del
+  piano) è una sola, `togliEsclusi` in `pianoSpostamento.ts`, e la usano
+  tutti e tre (sezione 3, "Doppioni in Aggiungi"). Test in
+  `vociDiario.test.ts`
 - **Il cambio di pasto dallo sheet di modifica in Oggi non controlla i
-  doppioni** (11/10). Cambiando il pasto di una voce dal suo sheet, la
+  doppioni** (11/10; in lavorazione sul branch `doppioni`). Cambiando il
+  pasto di una voce dal suo sheet, la
   voce va nel pasto nuovo con l'`update` diretto di `pasto_id`, senza
   passare da `spostaNelPasto`: se lì c'è già lo stesso alimento si
-  ritrovano due righe, senza foglio. Il menu "Sposta" invece lo controlla
+  ritrovano due righe, senza foglio. Il menu "Sposta" invece lo controlla.
+  È l'**unico percorso** rimasto in cui un doppione nasce senza foglio
+  (verificato il 18/10): aggiungere un alimento già presente nel pasto
+  non lo è più, perché tutti i percorsi di /aggiungi passano da
+  `aggiungiNelPasto` (provato l'11/10, sezione 3, "Doppioni in
+  Aggiungi")
 
 - **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
   (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi
@@ -6274,13 +6283,14 @@ Claude da Cowork:
   chiusa; il token di recupero consumato. Dopo, l'accesso dal PC con la
   password nuova funziona.
 
-**Da provare dopo il merge**, in produzione: il reset chiesto dall'app
-installata (in fondo a questa sezione).
+**Provata il 18/10 in produzione**, dopo il merge (fast-forward
+`8c44218` → `ac90ca9`): il reset chiesto dall'app installata (in fondo a
+questa sezione).
 
-**Dopo il merge** va tolta da Supabase (Authentication → URL
-Configuration) la Redirect URL dell'anteprima
+**Tolta il 18/10** da Supabase (Authentication → URL Configuration) la
+Redirect URL dell'anteprima
 `https://nutritrack-git-reset-ovunque-davide-libralato-personale.vercel.app/**`
-(la toglie Davide dalla dashboard).
+(da Davide, dalla dashboard): resta solo `https://app-libra.vercel.app/**`.
 
 La procedura usata, per rifarla. Branch `reset-ovunque` (§9.1, "Il
 ripristino della password"). Da fare sull'**anteprima del branch**, con
@@ -6324,7 +6334,7 @@ l'anteprima.
     chiedere di rientrare (stato "sessione scaduta"). Se resta collegato
     più a lungo, la riga "Sicurezza, il prezzo" in §9.1 va corretta.
 
-Dopo il merge, in produzione (**da provare**): una prova dall'app
+Dopo il merge, in produzione (**provata il 18/10**): una prova dall'app
 installata (Password dimenticata → Mail → Safari → modulo → nuova
 password → accesso dall'app). È il caso per cui è nato il branch;
 un'email in più.

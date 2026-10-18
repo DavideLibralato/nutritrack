@@ -17,7 +17,8 @@
 // - scrivi: la riga di destinazione prende i grammi scritti; nessuna riga
 //   nuova;
 // - separati: le righe nuove si creano accanto;
-// - escludi ("Non duplicarlo", "Non aggiungerlo"): niente.
+// - escludi ("Non duplicarlo", "Non aggiungerlo"): niente, anche se alla
+//   conferma non è più un doppione (togliEsclusi, in pianoSpostamento.ts).
 // Più righe dello stesso alimento a destinazione: somma e scrivi le
 // riducono a una (la più vecchia, rigaCheResta), come in Sposta.
 
@@ -26,6 +27,7 @@ import {
   arrotondaGrammi,
   rigaCheResta,
   sommaGrammi,
+  togliEsclusi,
   trovaDoppioni,
   type Doppione,
   type SceltaDoppione,
@@ -63,11 +65,11 @@ export function pianoInserimento({
 }): PianoInserimento {
   const scritture: Scrittura[] = [];
   const inseriti: string[] = [];
-  const esclusi: string[] = [];
+  const { restano, esclusi } = togliEsclusi(nuove, scelte);
   const aggiornati: PianoInserimento["aggiornati"] = [];
   const giaDecisi = new Set<string>();
 
-  for (const dati of nuove) {
+  for (const dati of restano) {
     const k = dati.alimento_id;
     const esistenti = k === null ? [] : destinazione.filter((v) => v.alimento_id === k);
 
@@ -83,11 +85,11 @@ export function pianoInserimento({
     giaDecisi.add(k!);
     const scelta = scelte[k!];
     if (!scelta) throw new Error(`Manca la scelta per il doppione ${k}`);
-    const arrivano = nuove.filter((n) => n.alimento_id === k);
+    const arrivano = restano.filter((n) => n.alimento_id === k);
 
     switch (scelta.tipo) {
       case "escludi":
-        esclusi.push(dati.nome_alimento);
+        // Non arriva qui: le righe escluse le ha già tolte togliEsclusi.
         break;
       case "separati":
         for (const n of arrivano) scritture.push({ tipo: "crea", dati: n });

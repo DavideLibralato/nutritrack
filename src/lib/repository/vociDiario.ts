@@ -228,7 +228,10 @@ export type EsitoSpostaNelPasto =
 // al momento della conferma, non si prendono da quelle che la pagina
 // mostrava. Se ci sono doppioni e le scelte non ci sono ancora, o sono
 // state fatte per un elenco di doppioni diverso da quello di adesso, non si
-// scrive niente e si restituiscono i doppioni da chiedere.
+// scrive niente e si restituiscono i doppioni da chiedere. Se invece i
+// doppioni visti sono spariti tutti, si sposta senza foglio, ma "Non
+// spostarlo" vale lo stesso (togliEsclusi, dentro il piano), come in
+// Aggiungi.
 export async function spostaNelPasto({
   userId,
   data,
@@ -277,7 +280,8 @@ export type EsitoDuplicaNelPasto =
 // pasto intero di `dataPartenza` nel pasto e giorno scelti. Le righe si
 // rileggono da Dexie qui, al momento della conferma; le regole sono in
 // src/lib/diario/pianoDuplica.ts (l'originale non si tocca mai, e non è mai
-// doppione di se stesso). Se nasce almeno una copia, il giorno di
+// doppione di se stesso; "Non duplicarlo" vale anche se il doppione è
+// sparito nel frattempo, come in Aggiungi). Se nasce almeno una copia, il giorno di
 // destinazione si classifica come per il primo inserimento in /aggiungi
 // (garantisciGiornoPerPrimaVoce, decisione 8): non fa niente se il giorno
 // è già scritto o se i giorni differenziati sono spenti. Come in /aggiungi,
@@ -391,9 +395,9 @@ export type EsitoAggiungiNelPasto =
 // c'è più niente da decidere. Tranne "Non aggiungerlo": quell'alimento non
 // si aggiunge MAI, nemmeno se il suo doppione è sparito — un "no" esplicito
 // dell'utente vale più di un cambiamento arrivato da un altro dispositivo
-// (regola del 10/10). Per questo le righe escluse si tolgono qui, prima del
-// piano, e non solo quando sono ancora doppioni. La regola vale solo per
-// Aggiungi: Sposta e Duplica, nello stesso caso, spostano o copiano.
+// (regola del 10/10). Le righe escluse le toglie il piano prima di
+// decidere (togliEsclusi, in pianoSpostamento.ts), non solo quando sono
+// ancora doppioni. La stessa regola vale per Sposta e Duplica.
 export async function aggiungiNelPasto({
   userId,
   data,
@@ -448,15 +452,7 @@ export async function aggiungiNelPasto({
     if (!stessiDoppioni(doppioni, doppioniVisti)) return { esito: "cambiati", doppioni };
   }
 
-  const escluso = (n: DatiVoce) => n.alimento_id !== null && scelte?.[n.alimento_id]?.tipo === "escludi";
-  const nomiEsclusi = [...new Set(nuove.filter(escluso).map((n) => n.nome_alimento))];
-  const piano = pianoInserimento({
-    nuove: nuove.filter((n) => !escluso(n)),
-    destinazione,
-    scelte: scelte ?? {},
-  });
-  // Le escluse non sono arrivate al piano: i loro nomi si rimettono qui.
-  piano.esclusi = nomiEsclusi;
+  const piano = pianoInserimento({ nuove, destinazione, scelte: scelte ?? {} });
   if (piano.scritture.some((s) => s.tipo === "crea")) {
     await garantisciGiornoPerPrimaVoce(userId, data, profilo);
   }

@@ -17,7 +17,8 @@
 //   duplicata), con i suoi valori; nessuna copia;
 // - scrivi: la riga di destinazione prende i grammi scritti; nessuna copia;
 // - separati: la copia si crea accanto;
-// - escludi ("Non duplicarlo"): niente.
+// - escludi ("Non duplicarlo"): niente, anche se alla conferma l'altra riga
+//   non c'è più (togliEsclusi, dentro pianoInserimento).
 // Più righe dello stesso alimento a destinazione: somma e scrivi le
 // riducono a una (la più vecchia), come nel passo C.
 //
