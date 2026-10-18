@@ -30,28 +30,50 @@ type EsitoFrammento =
 // token non restano nell'indirizzo nemmeno se poi qualcosa fallisce. Poi
 // setSession sul client dell'app: verifica il token con il server e salva
 // la sessione nei cookie, dove la vedono il middleware e il resto
-// dell'app.
+// dell'app. Infine il rinnovo (refreshSession), che rende inutile il
+// refresh token passato dall'indirizzo.
 function raccogliSessioneDalFrammento(): Promise<EsitoFrammento> {
   const sessione = leggiFrammentoRipristino(window.location.hash);
   if (!sessione) return Promise.resolve({ tipo: "nessuno" });
   togliFrammento();
 
   return (async (): Promise<EsitoFrammento> => {
-    const { data, error } = await createClient().auth.setSession(sessione);
+    const supabase = createClient();
+    const { error } = await supabase.auth.setSession(sessione);
     if (error) {
       // Rete assente o richiesta scaduta: il link può essere ancora buono,
       // ma i token sono già stati tolti dall'indirizzo, quindi serve
       // comunque un link nuovo. Qualunque altro errore: il server ha
       // rifiutato i token.
-      return {
-        tipo: "errore",
-        testo: isAuthRetryableFetchError(error) ? ERRORE_CONNESSIONE : LINK_NON_VALIDO,
-      };
+      return { tipo: "errore", testo: testoErrore(error) };
     }
-    const utente = data.user;
+
+    // Il rinforzo: un rinnovo subito, prima del modulo. Il server dà un
+    // refresh token nuovo e quello passato dall'indirizzo diventa "già
+    // usato": se qualcuno lo ritrovasse più tardi (cronologia di Safari,
+    // sincronizzata su iCloud) non varrebbe più, e il server, vedendolo
+    // riusato, chiuderebbe anche questa sessione.
+    const rinnovo = await supabase.auth.refreshSession({ refresh_token: sessione.refresh_token });
+    if (rinnovo.error || !rinnovo.data.session) {
+      // Rinnovo non riuscito: niente modulo e niente sessione. Il token
+      // dell'indirizzo non si è potuto rendere inutile, e se il server lo
+      // rifiuta come già usato può averlo usato qualcun altro. La libreria
+      // in questo caso CONSERVA la sessione (l'access token vale ancora),
+      // quindi la si toglie qui: signOut "local" la cancella sempre da
+      // questo browser, anche senza rete, e con la rete chiede al server
+      // di chiudere proprio questa sessione. Costa un link nuovo.
+      await supabase.auth.signOut({ scope: "local" });
+      return { tipo: "errore", testo: rinnovo.error ? testoErrore(rinnovo.error) : LINK_NON_VALIDO };
+    }
+
+    const utente = rinnovo.data.session.user;
     if (!utente?.email) return { tipo: "errore", testo: LINK_NON_VALIDO };
     return { tipo: "riuscito", idUtente: utente.id, email: utente.email };
   })();
+}
+
+function testoErrore(errore: Error): string {
+  return isAuthRetryableFetchError(errore) ? ERRORE_CONNESSIONE : LINK_NON_VALIDO;
 }
 
 // useSearchParams() richiede una <Suspense> attorno (stesso motivo di /login).

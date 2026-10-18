@@ -53,7 +53,20 @@ const server = {
   verificheUtente: [] as { autorizzazione: string; hash: string }[],
   // La rete cade alla verifica dei token del frammento.
   reteGiuAllaVerifica: false,
+  // Il rinnovo subito dopo setSession (POST /token?grant_type=refresh_token):
+  // il refresh token ricevuto e se in quel momento il modulo era già a
+  // schermo.
+  rinnovi: [] as { refreshToken: string; moduloVisibile: boolean }[],
+  // Come risponde il server al rinnovo.
+  rinnovo: "ok" as "ok" | "rifiutato" | "rete giù",
+  // Le uscite (POST /logout), con lo scope.
+  uscite: [] as string[],
 };
+
+// Il refresh token che il server dà al rinnovo, diverso da quello del link.
+function refreshRuotato(utente: { id: string }): string {
+  return `ruotato-${utente.id}`;
+}
 
 // Un utente che il server non conosce: i suoi token vengono rifiutati.
 const UTENTE_SCONOSCIUTO = { id: "33333333-3333-4333-8333-333333333333", email: "sconosciuto@esempio.it" };
@@ -124,6 +137,30 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
   }
 
   if (metodo === "POST" && url === `${AUTH}/token?grant_type=password`) return json(sessione(UTENTE_PROVA));
+
+  // Il rinnovo della sessione nata dal frammento: refresh token nuovo,
+  // stesso access token (quello che la rete finta sa riconoscere).
+  if (metodo === "POST" && url === `${AUTH}/token?grant_type=refresh_token`) {
+    server.rinnovi.push({
+      refreshToken: corpo.refresh_token,
+      moduloVisibile: screen.queryByText("Imposta una nuova password") !== null,
+    });
+    if (server.rinnovo === "rete giù") throw new TypeError("Failed to fetch");
+    if (server.rinnovo === "rifiutato") {
+      return json({ code: 400, error_code: "refresh_token_already_used", msg: "Invalid Refresh Token: Already Used" }, 400);
+    }
+    for (const utente of [UTENTE_VERO, UTENTE_PROVA]) {
+      if (corpo.refresh_token === `refresh-${utente.id}`) {
+        return json({ ...sessione(utente), access_token: tokenDelLink(utente), refresh_token: refreshRuotato(utente) });
+      }
+    }
+  }
+
+  if (metodo === "POST" && url.split("?")[0] === `${AUTH}/logout`) {
+    server.uscite.push(new URL(url).searchParams.get("scope") ?? "");
+    if (server.rinnovo === "rete giù") throw new TypeError("Failed to fetch");
+    return new Response(null, { status: 204 });
+  }
 
   // GET: chi è l'utente. PUT: il salvataggio della password nuova
   // (updateUser), annotato con l'account su cui finisce.
@@ -259,6 +296,9 @@ beforeEach(() => {
   server.impreviste = [];
   server.verificheUtente = [];
   server.reteGiuAllaVerifica = false;
+  server.rinnovi = [];
+  server.rinnovo = "ok";
+  server.uscite = [];
   routerFinto.push.mockClear();
   routerFinto.replace.mockClear();
   cancellaCookie();
@@ -582,5 +622,67 @@ describe("/reimposta-password, link con la sessione nel frammento", () => {
     expect(await screen.findByText(ERRORE)).toBeTruthy();
     expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
     expect(screen.queryByText(MODULO)).toBeNull();
+  });
+});
+
+// --- Il rinforzo: rinnovo subito dopo setSession (dal 18/10/2026) ---------
+//
+// Il refresh token passato dall'indirizzo non deve restare quello della
+// sessione: subito dopo setSession la pagina chiede un rinnovo, e il
+// server ne dà uno nuovo. Se il rinnovo fallisce, niente modulo e niente
+// sessione in questo browser.
+
+async function refreshTokenNeiCookie(): Promise<string | undefined> {
+  const lettore = createBrowserClient(URL_SUPABASE, CHIAVE, {
+    isSingleton: false,
+    auth: { detectSessionInUrl: false, autoRefreshToken: false },
+  });
+  const { data } = await lettore.auth.getSession();
+  return data.session?.refresh_token;
+}
+
+describe("/reimposta-password, rinnovo dopo il link con il frammento", () => {
+  it("rinnovo dopo la verifica e prima del modulo; la sessione finale non ha il refresh token dell'indirizzo", async () => {
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+    // Prima la verifica dei token (setSession), poi il rinnovo, con il
+    // refresh token dell'indirizzo, quando il modulo non c'era ancora.
+    expect(verificheDelLink(UTENTE_VERO)).toHaveLength(1);
+    expect(server.rinnovi).toEqual([{ refreshToken: `refresh-${UTENTE_VERO.id}`, moduloVisibile: false }]);
+    const finale = await refreshTokenNeiCookie();
+    expect(finale).toBe(refreshRuotato(UTENTE_VERO));
+    expect(finale).not.toBe(`refresh-${UTENTE_VERO.id}`);
+    expect(server.uscite).toEqual([]);
+  });
+
+  it("rinnovo rifiutato dal server: link non valido, nessuna sessione nei cookie, sessione chiusa sul server", async () => {
+    server.rinnovo = "rifiutato";
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+    expect(await utenteNeiCookie()).toBeUndefined();
+    expect(server.uscite).toEqual(["local"]);
+  });
+
+  // La libreria ripete il rinnovo senza rete per una trentina di secondi
+  // (200, 400, 800 ms...): orologio finto, fatto avanzare a mano.
+  it("rete assente al rinnovo: testo di connessione, nessuna sessione nei cookie", async () => {
+    vi.useFakeTimers();
+    try {
+      server.rinnovo = "rete giù";
+      apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(screen.getByText(ERRORE)).toBeTruthy();
+      expect(screen.getByText(TESTO_CONNESSIONE)).toBeTruthy();
+      expect(screen.queryByText(MODULO)).toBeNull();
+      expect(server.rinnovi.length).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(await utenteNeiCookie()).toBeUndefined();
   });
 });

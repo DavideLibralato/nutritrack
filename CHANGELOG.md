@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Rinnovo della sessione subito dopo il link
+
+Branch `reset-ovunque`. Subito dopo `setSession`, prima del modulo, la
+pagina chiede un rinnovo (`refreshSession` con il refresh token del
+frammento): il server ne dà uno nuovo, e quello passato dall'indirizzo
+non vale più. Se qualcuno lo ritrovasse (cronologia di Safari) e lo
+riusasse, il server chiuderebbe la sessione. Se il rinnovo fallisce
+niente modulo: `signOut({ scope: "local" })` toglie la sessione da questo
+browser (la libreria la conserverebbe, perché l'access token vale
+ancora) e, con la rete, la chiude sul server; testo di connessione se
+manca la rete, altrimenti link non valido. 3 test nuovi (rinnovo con il
+token dell'indirizzo e prima del modulo, refresh token finale diverso;
+rinnovo rifiutato; rete assente, con l'orologio finto perché la libreria
+ripete per circa 30 secondi). La rete finta risponde in più a rinnovo e
+`/logout`. Tre rotture della pagina prese dai test; una quarta ("modulo
+anche con il rinnovo fallito" togliendo il controllo sull'errore) non
+cambia il comportamento, perché `refreshSession` fallito restituisce
+sempre anche la sessione vuota. 1187 test, tsc, lint e build verdi.
+
 ## 2026-10-18 — /reimposta-password raccoglie la sessione dal frammento
 
 Branch `reset-ovunque`. Il link chiesto con il flusso implicito torna con
