@@ -1026,8 +1026,9 @@ da uno stato React che può essere indietro (stessa regola di
 
 ### Onboarding (dal 17/10, branch `onboarding`)
 
-**Stato al 17/10: provato su iPhone il 17/10**, sull'anteprima del
-branch, in Safari su iPhone più Chrome sul PC come secondo dispositivo.
+**Stato al 17/10: provato su iPhone e unito a main il 17/10.** Le prime
+prove sull'anteprima del branch, in Safari su iPhone più Chrome sul PC
+come secondo dispositivo; le ultime in produzione, dall'app installata.
 Costruiti: la parte senza interfaccia (logica pura, segno nei metadati,
 chiave locale, ripresa, attesa della discesa), la pagina `/onboarding`
 con i cinque passi e la fine, il segno `da_fare` alla registrazione, il
@@ -1043,8 +1044,9 @@ elenco:
 - **provata** la registrazione dopo la correzione del caricamento
   completo (account D): l'onboarding si apre subito, senza refresh, e i
   dati sono sul server già nella prima sessione;
-- **da provare dopo il merge**: le prove 17-19, con l'app installata e
-  l'account C (tastiera, riapertura dalla Home);
+- **provate** in produzione dopo il merge, il 17/10, le prove 17-19 con
+  l'app installata e l'account C (tastiera, riapertura dal multitasking
+  a metà onboarding, fine → Oggi);
 - **coperti dai test, non provati a mano**: il limite "finito su Chrome,
   riaperto Safari offline" (sezione 11, "Difetti e verifiche aperti") e
   i fallimenti ripetuti di `updateUser` (una chiamata alla volta, i giri
@@ -4732,7 +4734,9 @@ e il profilo nasce solo al primo Salva.
 Nessuna quantità approssimata: la quantità è **sempre in grammi**.
 
 Per non pagare l'attrito su ogni pasto:
-- il campo grammi è precompilato con `porzione_default_g` e **già selezionato**
+- il campo grammi è precompilato con `porzione_default_g` e **già selezionato**,
+  con la virgola come nel resto dell'app ("12,5", "100"; `grammiPerCampo`
+  in `src/lib/inserimento/grammi.ts`)
 - valore giusto → confermi (due tap in tutto)
 - valore diverso → digiti il numero direttamente, senza cancellare nulla
 - tastierino numerico, nessun menu a tendina
@@ -5242,7 +5246,7 @@ dalla lingua). Da rivedere quando l'app si apre agli amici.
 
 ## 11. Stato attuale
 
-Aggiornato al 17 ottobre 2026. È la fotografia di oggi; la storia, commit
+Aggiornato al 18 ottobre 2026. È la fotografia di oggi; la storia, commit
 per commit, sta in `CHANGELOG.md`.
 
 **Account di prova.** Esiste un account di prova fisso,
@@ -5851,14 +5855,18 @@ senza più alimenti in arrivo, le copie già aggiunte da B rimaste,
 mano, coperto dai test: due alimenti in arrivo con lo stesso nome e la
 stessa marca (servirebbe un terzo utente).
 
-**Test.** 995 test permanenti in 90 file (Vitest), tutti verdi al 16/10.
+**Onboarding dopo la registrazione** (17/10, branch `onboarding`; sezione
+3, "Onboarding"). Chi si registra passa da `/onboarding` (cinque passi e
+la fine), con la scheda "Completa il tuo profilo" in Oggi per chi
+rimanda. Provato il 17/10: prove 1-16 sull'anteprima e l'account D, poi
+unito a main (fast-forward, `0eef1c1`, deploy di produzione Ready) e
+prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
+dell'onboarding"). Account di prova eliminati lo stesso giorno.
+
+**Test.** 1143 test permanenti in 102 file (Vitest), tutti verdi al 18/10.
 
 ### Non ancora costruito
 
-- **Onboarding** dopo la registrazione: branch `onboarding`, costruito e
-  provato su iPhone il 17/10 sull'anteprima (prove 1-16 e account D);
-  restano le prove 17-19 con l'app installata, dopo il merge (sezione 3,
-  "Onboarding")
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
@@ -6010,11 +6018,11 @@ stessa marca (servirebbe un terzo utente).
 
 ### Prove su iPhone dell'onboarding
 
-**Prove 1-16 fatte il 17/10**, tutte passate, con i controlli [Cowork]
-sul database. In più, dopo la correzione del caricamento completo dopo
-"Crea account", la registrazione con l'**account D**: onboarding subito,
-senza refresh, e i dati sul server già nella prima sessione. **Da fare:
-17-19**, dopo il merge.
+**Tutte e 19 fatte il 17/10**, tutte passate: 1-16 sull'anteprima, con
+i controlli [Cowork] sul database; 17-19 in produzione dopo il merge,
+dall'app installata. In più, dopo la correzione del caricamento completo
+dopo "Crea account", la registrazione con l'**account D**: onboarding
+subito, senza refresh, e i dati sul server già nella prima sessione.
 
 Branch `onboarding`, costruito il 17/10 (sezione 3, "Onboarding"). Le
 prove 1-16 si fanno in **Safari sull'anteprima del branch**: l'app
@@ -6080,7 +6088,7 @@ sull'anteprima) — **fatte il 17/10**:
     "Registra peso" come prima.
 
 **Dopo il merge** (app installata = produzione), **account C** nuovo —
-**da fare**:
+**fatte da Davide il 17/10** in produzione, dall'app installata:
 17. Registrazione dall'app installata → onboarding. La tastiera non
     copre Avanti ai passi 2, 3, 4, 5.
 18. Esco a metà (passo 3) chiudendo l'app dal multitasking → la riapro
@@ -6088,15 +6096,14 @@ sull'anteprima) — **fatte il 17/10**:
 19. Finisco → Oggi.
 
 **Alla fine**: A, B, C e D (l'account della prova dopo la correzione del
-caricamento completo) si eliminano con Elimina account. [Cowork:
-nessuna riga orfana]
+caricamento completo) **eliminati il 17/10** con Elimina account. Restano
+6 utenti, nessuna riga orfana (verificato da Cowork).
 
 ### Prossimi passi
 
-1. **Onboarding** dopo la registrazione, branch `onboarding`: costruito e
-   provato su iPhone il 17/10 (prove 1-16 e account D); poi il merge e le
-   prove 17-19 con l'app installata (sopra, "Prove su iPhone
-   dell'onboarding"; sezione 3, "Onboarding")
+1. ~~**Onboarding** dopo la registrazione~~ fatto: provato il 17/10,
+   unito a main lo stesso giorno, prove 17-19 in produzione (sopra,
+   "Fatto" e "Prove su iPhone dell'onboarding"; sezione 3, "Onboarding")
 2. **`login-ritocchi`**, branch da aprire dopo l'onboarding
 3. **`cambia-password`**, branch da aprire dopo `login-ritocchi`
 4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La

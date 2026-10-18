@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AlimentoPerSheet } from "@/lib/inserimento/alimentoPerSheet";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import { leggiGrammi } from "@/lib/inserimento/grammi";
+import { grammiPerCampo, leggiGrammi } from "@/lib/inserimento/grammi";
 
 interface Props {
   alimento: AlimentoPerSheet;
@@ -67,8 +67,9 @@ export default function SheetQuantita({
   onCambiaPasto,
   onElimina,
 }: Props) {
+  // Con la virgola ("12,5"), come il resto dell'app e come si riscrive.
   const [grammi, setGrammi] = useState(
-    String(grammiIniziali ?? alimento.porzione_default_g)
+    grammiPerCampo(grammiIniziali ?? alimento.porzione_default_g)
   );
   const rifInput = useRef<HTMLInputElement>(null);
   // Ancorato al VISUAL viewport, non al layout viewport: su iOS la tastiera

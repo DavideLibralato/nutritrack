@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Sheet quantità: i grammi si precompilano con la virgola
+
+Su main. Il campo dei grammi si apriva con `String(...)`: una voce da
+12,5 g mostrava "12.5", come una porzione predefinita decimale. Ora usa
+`grammiPerCampo` (nuova, in `src/lib/inserimento/grammi.ts`), che ha le
+stesse cifre di `formattaGrammi` ma senza "g" e senza il punto delle
+migliaia: riusare `formattaGrammi` così com'era avrebbe aperto 12.500 g
+con "12.500", che `leggiGrammi` legge come 12,5 — un Salva senza
+guardare avrebbe cambiato la quantità. Valori interi identici a prima.
+Test permanente nuovo (`SheetQuantita.test.tsx`: 12,5, 100, 0,5 e
+12500,25 mostrati e risalvati uguali), provato rompendo una copia del
+componente in due modi (`String()` e `formattaGrammi`). Lasciati com'erano
+e segnalati gli altri campi precompilati con `String()`. PUNTO §5: la
+virgola nel campo; §3 e §11: onboarding unito e provato in produzione
+(prove 17-19), account A-D eliminati. 1143 test, lint e build verdi.
+
+## 2026-10-17 — Merge di `onboarding` in main
+
+Unito il 17/10 con fast-forward, da `f2c034a` a `0eef1c1`; deploy di
+produzione Ready. Branch cancellato in locale e su GitHub. 1139 test.
+Dopo il merge Davide ha fatto le prove 17-19 in produzione, dall'app
+installata, con l'account C (tastiera, riapertura dal multitasking a
+metà onboarding, fine → Oggi); poi gli account A, B, C e D eliminati
+con Elimina account: restano 6 utenti, nessuna riga orfana (verificato
+da Cowork).
+
 ## 2026-10-17 — Onboarding: provato su iPhone
 
 Branch `onboarding`. Solo documenti. Provato da Davide il 17/10

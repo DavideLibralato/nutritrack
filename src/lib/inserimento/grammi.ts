@@ -21,12 +21,23 @@ const MESSAGGI: Record<ErroreDecimale, string> = {
   "sotto-minimo": "Deve essere maggiore di zero",
 };
 
+// Fino a due decimali, come numeric(7,2); niente zeri inutili ("100", non
+// "100,00"). Le stesse cifre per il testo e per il campo.
+const CIFRE_GRAMMI: Intl.NumberFormatOptions = { maximumFractionDigits: 2 };
+
 // Una quantità in grammi come la legge l'utente: virgola decimale, al
 // massimo due decimali, "g" in coda ("80 g", "12,5 g"). Senza, JavaScript
 // stamperebbe "12.5". Il punto delle migliaia compare solo da 10.000 in su
 // ("12.500 g"), come vuole la convenzione italiana di Intl.
 export function formattaGrammi(g: number): string {
-  return `${g.toLocaleString("it-IT", { maximumFractionDigits: 2 })} g`;
+  return `${g.toLocaleString("it-IT", CIFRE_GRAMMI)} g`;
+}
+
+// La stessa quantità come testo di partenza di un campo: solo il numero
+// ("12,5", "100"), senza "g" e senza il punto delle migliaia — leggiGrammi
+// leggerebbe "12.500" come 12,5.
+export function grammiPerCampo(g: number): string {
+  return g.toLocaleString("it-IT", { ...CIFRE_GRAMMI, useGrouping: false });
 }
 
 export function leggiGrammi(valore: string): LetturaGrammi {
