@@ -13,6 +13,10 @@
 //   totale ("Somma (150 g)"); la quarta scelta ha l'etichetta passata da
 //   fuori ("Non spostarlo" qui, "Non duplicarlo" per Duplica) e, quando è
 //   scelta, il colore d'avviso;
+//   Se il totale supera 99999,99 g (il massimo di numeric(7,2)) Somma è
+//   spenta, il blocco parte da "Tieni separati" e sotto la griglia c'è
+//   "La somma supera 99999,99 g: scegli un'altra opzione." (caso 5 dei
+//   doppioni rimasti, 18/10; la rete è nei piani, grammiRigaCheResta);
 // - con "Scrivi quantità", sotto il blocco il campo "Quantità __ g";
 // - una riga con l'esito ("→ Una riga da 150 g"…, testoEsitoDoppione),
 //   nel colore d'avviso per la quarta scelta.
@@ -36,7 +40,12 @@ import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { formattaGrammi, leggiGrammi } from "@/lib/inserimento/grammi";
 import { testoEsitoDoppione } from "@/lib/diario/testiSpostamento";
-import { arrotondaGrammi, type Doppione, type SceltaDoppione } from "@/lib/diario/pianoSpostamento";
+import {
+  oltreIlMassimo,
+  totaleSomma,
+  type Doppione,
+  type SceltaDoppione,
+} from "@/lib/diario/pianoSpostamento";
 
 type TipoScelta = SceltaDoppione["tipo"];
 
@@ -95,11 +104,14 @@ export default function SheetDoppioni({
     if (daFocalizzare) rifCampi.current[daFocalizzare]?.focus({ preventScroll: true });
   }, [daFocalizzare]);
 
-  const tipoDi = (id: string): TipoScelta => tipi[id] ?? "somma";
+  // Somma è spenta se il totale supera il massimo (numeric(7,2)): il
+  // blocco parte allora da "Tieni separati", e Somma non si può scegliere.
+  const sommaSpenta = (d: Doppione) => oltreIlMassimo(totaleSomma(d.grammiEsistenti, d.grammiInArrivo));
+  const tipoDi = (d: Doppione): TipoScelta => tipi[d.alimentoId] ?? (sommaSpenta(d) ? "separati" : "somma");
   const letture = Object.fromEntries(
     doppioni.map((d) => [d.alimentoId, leggiGrammi(valori[d.alimentoId] ?? "")])
   );
-  const conScrivi = doppioni.filter((d) => tipoDi(d.alimentoId) === "scrivi");
+  const conScrivi = doppioni.filter((d) => tipoDi(d) === "scrivi");
   const mancanti = conScrivi
     .filter((d) => (valori[d.alimentoId] ?? "").trim() === "")
     .map((d) => d.nome);
@@ -115,7 +127,7 @@ export default function SheetDoppioni({
     if (!puoConfermare) return;
     const scelte: Record<string, SceltaDoppione> = {};
     for (const d of doppioni) {
-      const tipo = tipoDi(d.alimentoId);
+      const tipo = tipoDi(d);
       scelte[d.alimentoId] =
         tipo === "scrivi" ? { tipo, grammi: letture[d.alimentoId].grammi! } : { tipo };
     }
@@ -150,13 +162,14 @@ export default function SheetDoppioni({
           {/* I blocchi sono l'unica parte che scorre. */}
           <ul className="mt-3 min-h-0 overflow-y-auto">
             {doppioni.map((d) => {
-              const tipo = tipoDi(d.alimentoId);
+              const tipo = tipoDi(d);
               const lettura = letture[d.alimentoId];
               const valore = valori[d.alimentoId] ?? "";
               const idCampo = `doppione-${d.alimentoId}`;
-              // Lo stesso arrotondamento del Salva (pianoInserimento,
-              // pianoSpostamento): il numero mostrato è quello che si scrive.
-              const totale = arrotondaGrammi(d.grammiEsistenti + d.grammiInArrivo);
+              // La stessa funzione del Salva (totaleSomma, usata dai piani):
+              // il numero mostrato è quello che si scriverebbe.
+              const totale = totaleSomma(d.grammiEsistenti, d.grammiInArrivo);
+              const spenta = sommaSpenta(d);
               const opzioni: { tipo: TipoScelta; etichetta: string }[] = [
                 { tipo: "somma", etichetta: `Somma (${formattaGrammi(totale)})` },
                 { tipo: "separati", etichetta: "Tieni separati" },
@@ -191,7 +204,7 @@ export default function SheetDoppioni({
                           role="radio"
                           aria-checked={scelto}
                           onClick={() => scegli(d.alimentoId, o.tipo)}
-                          disabled={inCorso}
+                          disabled={inCorso || (o.tipo === "somma" && spenta)}
                           className={`min-h-11 rounded-lg border p-2 text-sm disabled:opacity-50 ${
                             avvisoScelto
                               ? "border-warning font-medium text-warning"
@@ -205,6 +218,11 @@ export default function SheetDoppioni({
                       );
                     })}
                   </div>
+                  {spenta && (
+                    <p className="mt-2 text-sm text-muted">
+                      La somma supera 99999,99 g: scegli un&apos;altra opzione.
+                    </p>
+                  )}
 
                   {tipo === "scrivi" && (
                     <div className="mt-2">

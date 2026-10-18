@@ -19,6 +19,7 @@
 //     quanti altri ("«Yogurt», «Mela» e altri 2").
 
 import type { MessaggioBarra } from "../inserimento/testiBarra";
+import { totaleSomma } from "./pianoSpostamento";
 
 export const MASSIMO_PASTO = 16;
 export const MASSIMO_ALIMENTO = 22;
@@ -114,7 +115,7 @@ export function testoEsitoDoppione(
   const g = (n: number) => `${n.toLocaleString("it-IT", { maximumFractionDigits: 2 })} g`;
   switch (tipo) {
     case "somma":
-      return `→ Una riga da ${g(Math.round((d.grammiEsistenti + d.grammiInArrivo) * 100) / 100)}`;
+      return `→ Una riga da ${g(totaleSomma(d.grammiEsistenti, d.grammiInArrivo))}`;
     case "separati": {
       const righe = d.righeEsistenti + d.righeInArrivo;
       return righe === 2

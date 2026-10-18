@@ -430,7 +430,10 @@ alimento (quantità esistente = somma delle righe di destinazione, in
 arrivo = somma di quelle di partenza) e quattro scelte: **Somma**
 (predefinita, una riga sola; resta la riga di destinazione con i **suoi**
 valori copiati, anche se quelli della partenza erano diversi per una
-correzione del catalogo), **Tieni separati**, **Scrivi quantità** (una
+correzione del catalogo; **spenta se il totale supera 99999,99 g**, il
+massimo di `numeric(7,2)`: il blocco parte allora da Tieni separati, con
+sotto "La somma supera 99999,99 g: scegli un'altra opzione.", regola del
+18/10), **Tieni separati**, **Scrivi quantità** (una
 riga sola col numero scritto; campo vuoto → "Per salvare mancano: …"),
 **Non spostarlo / Non duplicarlo**. Somma e Scrivi riducono a una riga
 anche più righe dello stesso alimento. Annulla o tocco fuori annullano
@@ -6010,7 +6013,7 @@ prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1199 in 108 file sul branch `doppioni`.
+su main; 1202 in 109 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6026,8 +6029,8 @@ su main; 1199 in 108 file sul branch `doppioni`.
 ### Difetti e verifiche aperti
 
 - **"Somma" dei doppioni oltre 99999,99 g** (trovato il 18/10,
-  improbabile; in lavorazione sul branch `doppioni`). Il foglio dei
-  doppioni non controlla il massimo
+  improbabile): **corretto sul branch `doppioni` il 18/10, da provare su
+  iPhone**. Il foglio dei doppioni non controllava il massimo
   di `numeric(7,2)` sulla somma: due voci da 50.000 g dello stesso
   alimento sommate farebbero 100.000 g, che Dexie salva e il server
   rifiuta, con la voce accantonata dopo 5 tentativi. Per arrivarci serve
@@ -6036,8 +6039,11 @@ su main; 1199 in 108 file sul branch `doppioni`.
   trascinamento, Duplica e Aggiungi) rifiutano oltre `GRAMMI_MASSIMI` i
   grammi della riga che resta, con Somma o con Scrivi quantità: niente
   scritto, niente in outbox, la pagina mostra il suo messaggio d'errore.
-  Resta da fare: spegnere "Somma" nel foglio quando il totale supera il
-  massimo. Lo stesso rischio non c'è altrove: i pasti salvati copiano i
+  **Foglio fatto** (18/10): Somma spenta oltre il massimo, il blocco parte
+  da "Tieni separati" con il testo "La somma supera 99999,99 g: scegli
+  un'altra opzione." (sezione 3, "Doppioni"); il totale del foglio e
+  quello dei piani sono la stessa funzione, `totaleSomma`. **Da provare
+  su iPhone.** Lo stesso rischio non c'è altrove: i pasti salvati copiano i
   grammi 1:1 e la modifica di un pasto salvato non somma.
 - **Onboarding finito su un dispositivo e riaperto offline su un altro**
   (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").

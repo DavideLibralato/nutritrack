@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Foglio dei doppioni: Somma spenta oltre 99999,99 g
+
+Branch `doppioni`, commit 3 di 8 (caso 5, seconda metà). In
+`SheetDoppioni`, se il totale supera il massimo, "Somma (… g)" è spenta,
+il blocco parte da "Tieni separati" e sotto la griglia compare "La somma
+supera 99999,99 g: scegli un'altra opzione."; gli altri blocchi non
+cambiano. Il totale del foglio, quello della riga d'esito
+(`testoEsitoDoppione`, che aveva un suo arrotondamento) e quello dei
+piani sono ora la stessa funzione, `totaleSomma`. Vale per Sposta,
+trascinamento, Duplica e Aggiungi, che usano lo stesso foglio. Test nuovo
+`SheetDoppioni.test.tsx` (oltre il massimo, limite esatto, un blocco solo
+spento); visti fallire con il blocco che parte sempre da Somma e con Somma
+non spenta. **Da provare su iPhone**: due voci dello stesso alimento da
+50.000 g, poi Sposta, Duplica e "+" in Aggiungi.
+
 ## 2026-10-18 — Rete del massimo di 99999,99 g nei piani dei doppioni
 
 Branch `doppioni`, commit 2 di 8 (caso 5, prima metà). Il totale di
