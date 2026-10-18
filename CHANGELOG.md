@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Pagine di accesso provate su iPhone
+
+Branch `login-ritocchi`, commit 6 (solo documenti). **Provato su iPhone il
+18/10**, dalle 18:27 alle 18:36, sull'anteprima del branch (Build
+`731fe3b`): prove 0-15, tutte passate. Le prove 4 e 5 sono state fatte
+con l'account vero di Davide, non con quello di prova: solo accessi e
+uscite, e il colore principale si salva solo sul telefono, quindi
+nessuna scrittura su Supabase. Il reset (9-15) con l'account di prova.
+Esiti delle cose da annotare:
+- Portachiavi: ha proposto di salvare la password inviata da visibile.
+  "Torna nascosta all'invio" basta;
+- bilancia nel titolo: va bene, non va ispessita;
+- spazio fra il marchio in cima e il titolo (Password dimenticata): va
+  bene;
+- password nascoste dopo "Le due password non coincidono." (prova 12):
+  non danno fastidio, la scelta del commit 2 resta;
+- username preso fra il controllo e l'invio: coperto solo dai test; su
+  iPhone provato il "già in uso" mentre si scrive.
+
+Verificato da Claude sui log di Auth, in sola lettura: tutte le
+richieste partono dall'anteprima. Link chiesto alle 18:31:37, aperto con
+la sessione rinnovata alle 18:31:57-58, password cambiata alle 18:32:53
+(PUT /user), link riusato rifiutato alle 18:35:36 ("Link non valido"),
+uscita e accesso con la password nuova alle 18:35:45-58. PUNTO: §9.1
+(Portachiavi provato), §7 (marchio provato), §11 ("Fatto", "Pagine di
+accesso"; "Username appena preso" coperto solo dai test) e "Prossimi
+passi" (passo 2 fatto; dopo il merge va tolta da Supabase la Redirect URL
+dell'anteprima).
+
 ## 2026-10-18 — Pagine di accesso: riepilogo del branch e prove su iPhone
 
 Branch `login-ritocchi`, commit 5 di 5 (solo documenti). Il branch

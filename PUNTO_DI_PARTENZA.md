@@ -3813,7 +3813,9 @@ Confermate dai mockup, con una correzione.
   della Home. I titoli delle quattro pagine sono a 32 px con le righe
   equilibrate (`CLASSE_TITOLO_ACCESSO`, `src/lib/classiAccesso.ts`); i
   testi dei moduli restano quelli del codice anche dove il mockup è
-  diverso
+  diverso. **Provato su iPhone il 18/10**: la bilancia nel titolo va
+  bene così (non va ispessita), lo spazio fra il marchio in cima e il
+  titolo va bene, e il marchio segue tema e colore principale
 
 ### Tema chiaro / scuro / sistema
 
@@ -4186,7 +4188,11 @@ Conseguenze:
   non invii il modulo. Il tocco non toglie il fuoco al campo (su iPhone
   la tastiera resta aperta) e il cursore resta dov'era. All'invio la
   password torna nascosta, così il Portachiavi iCloud trova un campo
-  password (che serva davvero va provato su iPhone). Correzione
+  password: **provato su iPhone il 18/10**, il Portachiavi ha proposto di
+  salvare la password inviata da visibile, quindi basta. Si nasconde a
+  ogni invio, anche quando il modulo si ferma per un errore ("Le due
+  password non coincidono."): provato, non dà fastidio, la scelta resta.
+  Il tocco sull'occhio tiene la tastiera aperta (provato). Correzione
   automatica e maiuscola iniziale spente, perché da visibile il campo è
   di testo. In Registrati il campo resta non controllato: la password
   non entra mai nello stato di React. Niente campo "conferma password"
@@ -6148,6 +6154,21 @@ in vita lo stesso pasto (stesso id), nessuna "Non salvate online". Resta
 come lavoro futuro il CHECK `quantita_g > 0` (sotto, "Difetti e
 verifiche aperti").
 
+**Pagine di accesso** (18/10, branch `login-ritocchi`). Le quattro pagine (Accedi, Registrati, Password dimenticata,
+Reimposta password) hanno l'occhio sui campi password (§9.1, "le quattro
+pagine di accesso") e il marchio di Libra (§7, "Il marchio nelle pagine
+di accesso"). **Provato su iPhone il 18/10**, dalle 18:27 alle 18:36,
+sull'anteprima del branch: prove 0-15 del CHANGELOG, tutte passate. Le
+prove 4 e 5 (accessi, uscite e colore principale) sono state fatte con
+l'account vero di Davide, non con quello di prova: solo accessi e
+uscite, e il colore principale si salva solo sul telefono, quindi
+nessuna scrittura su Supabase. Il reset (prove 9-15) con l'account di
+prova. Verificato da Claude sui log di Auth, in sola lettura: tutte le
+richieste partono dall'anteprima; link chiesto alle 18:31:37, aperto con
+la sessione rinnovata alle 18:31:57, password cambiata alle 18:32:53,
+link riusato rifiutato alle 18:35:36 ("Link non valido"), uscita e
+accesso con la password nuova fra 18:35:45 e 18:35:58.
+
 **Username appena preso** (18/10, branch `login-ritocchi`; era in
 "Difetti e verifiche aperti"). Con il nome preso fra il controllo e
 `signUp` si leggeva "Si è verificato un errore. Riprova tra poco.". Ora
@@ -6156,8 +6177,9 @@ più, un difetto già in produzione: dopo quell'errore, e anche dopo il
 "già in uso" del controllo prima di `signUp`, la riga sotto il campo
 restava su "Disponibile". Ora dice "già in uso" e "Crea account" si
 spegne finché il nome non cambia. Il caso non si provoca a mano (servono
-due registrazioni nello stesso istante): lo coprono i test di
-`auth.test.ts` e `register/page.test.tsx`.
+due registrazioni nello stesso istante): lo coprono **solo i test**, di
+`auth.test.ts` e `register/page.test.tsx`. Su iPhone il 18/10 è stato
+provato il "già in uso" mentre si scrive (prova 8), come regressione.
 
 **Test.** 1240 test permanenti in 109 file (Vitest), tutti verdi al 18/10
 su main (dal merge di `doppioni`); 1249 in 110 file sul branch
@@ -6454,11 +6476,10 @@ un'email in più.
 1. ~~**Onboarding** dopo la registrazione~~ fatto: provato il 17/10,
    unito a main lo stesso giorno, prove 17-19 in produzione (sopra,
    "Fatto" e "Prove su iPhone dell'onboarding"; sezione 3, "Onboarding")
-2. **`login-ritocchi`**, aperto il 18/10 e costruito, da provare su
-   iPhone (lista delle prove nel CHANGELOG, voce "Pagine di accesso:
-   riepilogo del branch"): l'occhio sui campi password (§9.1, "le quattro
-   pagine di accesso"), il marchio di Libra (§7, "Il marchio nelle pagine
-   di accesso") e lo username appena preso (sopra, "Fatto")
+2. ~~**`login-ritocchi`**~~ fatto: provato su iPhone il 18/10
+   sull'anteprima (sopra, "Fatto", "Pagine di accesso" e "Username
+   appena preso"). Dopo il merge su main va tolta da Supabase la Redirect
+   URL dell'anteprima del branch
 3. **`cambia-password`**, branch da aprire dopo `login-ritocchi`
 4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
