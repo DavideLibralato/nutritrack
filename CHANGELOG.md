@@ -5,6 +5,99 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Pagine di accesso: riepilogo del branch e prove su iPhone
+
+Branch `login-ritocchi`, commit 5 di 5 (solo documenti). Il branch
+sistema le quattro pagine di accesso: Accedi, Registrati, Password
+dimenticata e Reimposta password. **Da provare su iPhone.**
+- l'occhio sui quattro campi password, `CampoPassword` (commit 2), e in
+  Accedi l'email ripulita come negli altri moduli: non era un difetto,
+  il campo `type="email"` toglie già gli spazi;
+- il marchio di Libra, `MarchioLibra` e `PaginaAccesso`, con i titoli a
+  32 px (commit 3);
+- lo username appena preso, con il messaggio giusto e la riga sotto il
+  campo che non resta su "Disponibile" (commit 4; questa seconda parte
+  era un difetto già in produzione).
+
+PUNTO: "Prossimi passi" (passo 2) e il conteggio dei test in §11.
+Nessun cambio di schema, né Supabase né Dexie. 1249 test.
+
+**Prove su iPhone, in ordine.** Anteprima del branch in Safari, con
+l'account di prova. Si parte **usciti dall'account**. Non serve creare
+account: in Registrati non si invia niente. Serve una sola email di
+reset.
+
+0. **La versione giusta.** L'indirizzo in Safari deve essere l'anteprima
+   di `login-ritocchi`, non quelle vecchie di `reset-ovunque` o
+   `doppioni`: chiudi le schede vecchie. Al primo accesso (prova 4),
+   Impostazioni > Informazioni > Build deve mostrare i primi 7 caratteri
+   dell'hash del commit 5 di questo branch, quello di questa voce. Se non
+   corrisponde, fermati: stai provando un altro codice.
+
+A. **Accedi**:
+1. si vede "Accedi a ⚖ Libra": bilancia e parola nel colore principale,
+   l'occhio a destra nel campo Password. Cambia il tema del telefono
+   (Centro di Controllo): marchio e pagina seguono. Annota se la bilancia
+   sembra troppo sottile accanto alle lettere in grassetto (si può
+   ispessire dopo);
+2. con i campi vuoti tocca l'occhio → nessun messaggio ("Inserisci la
+   tua email." vuol dire che il modulo è partito);
+3. tocca Password e scrivi "abc", poi tocca l'occhio → si legge "abc", la
+   **tastiera resta aperta** e il cursore resta in fondo. Scrivi "d" →
+   "abcd", senza maiuscola iniziale né correzione. Tocca di nuovo → di
+   nuovo i pallini;
+4. cancella. Email dell'account di prova (anche dal suggerimento sopra la
+   tastiera), password **scritta a mano** con l'occhio aperto → Accedi →
+   Oggi. Controlla la Build (prova 0). Annota se Safari propone di
+   salvare o aggiornare la password nel Portachiavi. Se la password è già
+   salvata e uguale, può non chiedere niente: va annotato com'è andata,
+   non è un errore;
+5. Impostazioni > Aspetto → colore Blu → Esci → Accedi con marchio e
+   pulsante blu. Rimetti il colore di prima (serve rientrare).
+
+B. **Registrati** (da "Registrati", senza inviare):
+6. il titolo è "Crea il tuo account ⚖ Libra" su due righe, e la bilancia
+   resta attaccata a "Libra";
+7. scrivi una password, tocca l'occhio due volte → il testo c'è ancora;
+8. Username: scrivi quello dell'account di prova → dopo un attimo "Questo
+   username è già in uso." in arancio, "Crea account" spento (come
+   prima). Il caso "preso fra il controllo e l'invio" non si provoca a
+   mano: lo coprono i test.
+
+C. **Password dimenticata e Reimposta**. *Prima*: su Supabase
+(Authentication → URL Configuration) aggiungi la Redirect URL esatta
+dell'anteprima, dalla dashboard: con ogni probabilità
+`https://nutritrack-git-login-ritocchi-davide-libralato-personale.vercel.app/**`
+(da controllare su Vercel). Senza, il link dell'email porta su
+app-libra, e le prove 11-14 girano sul codice di main (PUNTO §11,
+"Redirect URL su Supabase: solo voci esatte"). Va tolta dopo il merge.
+9. "Password dimenticata?" → marchio piccolo in cima a sinistra (solo la
+   bilancia colorata, "Libra" nel colore del testo), sotto il titolo
+   "Password dimenticata". Annota se lo spazio vuoto fra il marchio e il
+   titolo stona;
+10. email dell'account di prova → Invia link → "Controlla la tua email",
+    con il marchio **nello stesso punto**;
+11. apri il link dell'email in Safari → "Verifica del link in corso...",
+    poi il modulo: il marchio non si muove. "Imposta una nuova password"
+    su due righe equilibrate. Due occhi indipendenti: aprire quello di
+    "Nuova password" non mostra "Conferma password";
+12. "Nuova password" e "Conferma password" **diverse**, con tutti e due
+    gli occhi aperti → Salva nuova password → "Le due password non
+    coincidono." e le due password tornano nascoste. Annota se dà
+    fastidio: la scelta del commit 2 è nasconderle a ogni invio, anche
+    quando il modulo si ferma per un errore;
+13. nuova password con il primo occhio aperto, la stessa nel secondo →
+    Salva nuova password → Oggi. Annota se Safari propone di aggiornare
+    la password salvata;
+14. riapri lo stesso link dall'email → "Link non valido", con il marchio
+    in cima;
+15. Esci → Accedi con la nuova password → Oggi.
+
+*Alla fine.* Il Portachiavi (Impostazioni di iOS > Password): annota
+quale password risulta salvata per l'anteprima. Le prove 4 e 13 dicono
+se "torna nascosta all'invio" basta al Portachiavi (PUNTO §9.1, "da
+provare su iPhone").
+
 ## 2026-10-18 — Username appena preso: il messaggio giusto
 
 Branch `login-ritocchi`, commit 4. Lavoretto di Amici (PUNTO §11). Con

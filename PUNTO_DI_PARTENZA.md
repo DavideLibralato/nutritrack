@@ -6159,8 +6159,9 @@ spegne finché il nome non cambia. Il caso non si provoca a mano (servono
 due registrazioni nello stesso istante): lo coprono i test di
 `auth.test.ts` e `register/page.test.tsx`.
 
-**Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1240 in 109 file sul branch `doppioni`.
+**Test.** 1240 test permanenti in 109 file (Vitest), tutti verdi al 18/10
+su main (dal merge di `doppioni`); 1249 in 110 file sul branch
+`login-ritocchi`.
 
 ### Non ancora costruito
 
@@ -6453,7 +6454,11 @@ un'email in più.
 1. ~~**Onboarding** dopo la registrazione~~ fatto: provato il 17/10,
    unito a main lo stesso giorno, prove 17-19 in produzione (sopra,
    "Fatto" e "Prove su iPhone dell'onboarding"; sezione 3, "Onboarding")
-2. **`login-ritocchi`**, branch da aprire dopo l'onboarding
+2. **`login-ritocchi`**, aperto il 18/10 e costruito, da provare su
+   iPhone (lista delle prove nel CHANGELOG, voce "Pagine di accesso:
+   riepilogo del branch"): l'occhio sui campi password (§9.1, "le quattro
+   pagine di accesso"), il marchio di Libra (§7, "Il marchio nelle pagine
+   di accesso") e lo username appena preso (sopra, "Fatto")
 3. **`cambia-password`**, branch da aprire dopo `login-ritocchi`
 4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
