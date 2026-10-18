@@ -4,6 +4,7 @@ import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/re
 import ProfiloPage from "./page";
 import { repositoryProfili } from "@/lib/repository";
 import { db } from "@/lib/db/database";
+import GuardianoModifiche from "@/components/GuardianoModifiche";
 
 const USER_ID = "utente-test-refresh";
 
@@ -135,4 +136,57 @@ describe("Barra Salva del Profilo", () => {
       timeout: 4000,
     });
   }, 10000);
+});
+
+// La riga "Password" e il ritorno da Cambia password (dal 18/10/2026).
+// Casi fissati: la riga passa dal guardiano delle modifiche non salvate;
+// "Password aggiornata." compare con ?password=aggiornata, il segno sparisce
+// subito dall'indirizzo e un ricaricamento non la fa ricomparire.
+describe("Password in Profilo", () => {
+  async function apriProfiloCaricato(conGuardiano = false) {
+    await db.profili.clear();
+    await repositoryProfili.crea({
+      user_id: USER_ID,
+      nome: null,
+      sesso: "maschio",
+      data_nascita: "1990-05-05",
+      altezza_cm: 180,
+      livello_attivita: "moderato",
+      differenzia_giorni: false,
+      giorni_allenamento_default: null,
+    });
+    render(conGuardiano ? <GuardianoModifiche><ProfiloPage /></GuardianoModifiche> : <ProfiloPage />);
+    const altezza = (await screen.findByLabelText("Altezza")) as HTMLInputElement;
+    await waitFor(() => expect(altezza.value).toBe("180"));
+    return altezza;
+  }
+
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("la riga Password porta a Cambia password", async () => {
+    await apriProfiloCaricato();
+    const riga = screen.getByRole("link", { name: /Password.*Cambia/ });
+    expect(riga.getAttribute("href")).toBe("/impostazioni/password");
+  });
+
+  it("con modifiche non salvate la riga Password chiede prima «Esci senza salvare?»", async () => {
+    const altezza = await apriProfiloCaricato(true);
+    fireEvent.change(altezza, { target: { value: "181" } });
+    fireEvent.click(screen.getByRole("link", { name: /Password.*Cambia/ }));
+    expect(await screen.findByText("Esci senza salvare?")).toBeTruthy();
+  });
+
+  it("?password=aggiornata: la barra, il segno tolto, e un ricaricamento non la rifà", async () => {
+    window.history.replaceState(null, "", "/impostazioni/profilo?password=aggiornata");
+    await apriProfiloCaricato();
+
+    expect(await screen.findByText("Password aggiornata.")).toBeTruthy();
+    expect(window.location.pathname).toBe("/impostazioni/profilo");
+    expect(window.location.search).toBe("");
+
+    // Ricaricamento: stessa pagina, indirizzo com'è adesso.
+    cleanup();
+    await apriProfiloCaricato();
+    expect(screen.queryByText("Password aggiornata.")).toBeNull();
+  });
 });

@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Cambia password: la riga in Profilo e la conferma
+
+Branch `cambia-password`, commit 4. In fondo al gruppo Account di
+Profilo c'è la riga "Password · Cambia ›" verso `/impostazioni/password`.
+`RigaImpostazioni` ora passa da `LinkProtetto`: con modifiche non salvate
+in Profilo chiede prima "Esci senza salvare?", nelle altre pagine si
+comporta come prima (verificato dai loro test). Al ritorno da Cambia
+password, Profilo mostra "Password aggiornata." con `BarraAnnulla`, letta
+da `?password=aggiornata` (nuovo `src/lib/account/passwordAggiornata.ts`)
+e tolta subito dall'indirizzo con `history.replaceState`, così un
+ricaricamento non la fa ricomparire. Test permanenti in
+`passwordAggiornata.test.ts` e nel test di Profilo, visti fallire con 4
+guasti (segno non tolto, riga con un `Link` normale, barra non mostrata,
+segno accettato con qualunque valore).
+
 ## 2026-10-18 — Cambia password: la pagina
 
 Branch `cambia-password`, commit 3. Nuova pagina `/impostazioni/password`

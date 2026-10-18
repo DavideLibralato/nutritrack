@@ -145,3 +145,9 @@ export const MESSAGGIO_SALVATO: MessaggioBarra = {
   testo: "Salvato.",
   icona: "spunta",
 };
+
+// Profilo, dopo Cambia password (src/lib/account/passwordAggiornata.ts).
+export const MESSAGGIO_PASSWORD_AGGIORNATA: MessaggioBarra = {
+  testo: "Password aggiornata.",
+  icona: "spunta",
+};

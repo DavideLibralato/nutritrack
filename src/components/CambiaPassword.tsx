@@ -23,6 +23,7 @@ import {
   testoEsitoCambio,
   type EsitoCambio,
 } from "@/lib/account/cambiaPassword";
+import { PROFILO_CON_PASSWORD_AGGIORNATA } from "@/lib/account/passwordAggiornata";
 import { AVVISO_ALTRI_DISPOSITIVI, SENZA_RETE_CAMBIO_PASSWORD } from "@/lib/erroriAuth";
 import CampoPassword from "./CampoPassword";
 
@@ -54,7 +55,7 @@ export default function CambiaPassword() {
     const esito = await cambiaPassword(attuale, nuova).catch((): EsitoCambio => "risposta-persa");
     if (esito === "ok") {
       // replace: "indietro" da Profilo non deve riportare qui.
-      router.replace("/impostazioni/profilo?password=aggiornata");
+      router.replace(PROFILO_CON_PASSWORD_AGGIORNATA);
       return;
     }
     setErrore(testoEsitoCambio(esito, esitoServer));

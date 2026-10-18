@@ -11,8 +11,14 @@
 // l'etichetta è rossa (--pericolo): solo per le azioni che non si possono
 // annullare ("Elimina il mio account", sezione 7).
 
-import Link from "next/link";
+//
+// Il link passa dal guardiano delle modifiche non salvate (LinkProtetto,
+// dal 18/10/2026): la riga "Password" sta in Profilo, che ha un modulo, e
+// con modifiche da salvare deve chiedere "Esci senza salvare?" come
+// "‹ Impostazioni". Nelle pagine senza modulo si comporta come un Link.
+
 import type { CSSProperties, ReactNode } from "react";
+import LinkProtetto from "./LinkProtetto";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 export default function RigaImpostazioni({
@@ -51,9 +57,9 @@ export default function RigaImpostazioni({
 
   if (href) {
     return (
-      <Link href={href} style={stile} className={`${classe} ${CLASSE_FOCUS}`}>
+      <LinkProtetto href={href} style={stile} className={`${classe} ${CLASSE_FOCUS}`}>
         {contenuto}
-      </Link>
+      </LinkProtetto>
     );
   }
   if (onClick) {

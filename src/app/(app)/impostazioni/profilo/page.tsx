@@ -9,6 +9,9 @@
 // Obiettivi (passo "obiettivi"), la pesata in Impostazioni > Peso (passo
 // "peso").
 //
+// Dal 18/10, in fondo al gruppo Account, la riga "Password" verso Cambia
+// password (/impostazioni/password); al ritorno, "Password aggiornata.".
+//
 // Stile a gruppi come l'elenco, con i campi nella riga (decisione B).
 //
 // UN SOLO SALVA, nella barra in fondo: stato, esiti e guardiano delle
@@ -36,6 +39,9 @@ import RigaCampo from "@/components/RigaCampo";
 import SelettoreSegmenti from "@/components/SelettoreSegmenti";
 import ValorePrecedente from "@/components/ValorePrecedente";
 import SalvataggioModulo from "@/components/SalvataggioModulo";
+import BarraAnnulla from "@/components/BarraAnnulla";
+import { MESSAGGIO_PASSWORD_AGGIORNATA } from "@/lib/inserimento/testiBarra";
+import { usePasswordAggiornata } from "@/lib/account/passwordAggiornata";
 
 const CLASSE_MAIN =
   "mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))]";
@@ -55,6 +61,10 @@ export default function ProfiloPage() {
   // unico della pagina (PUNTO_DI_PARTENZA.md §3, "Amici").
   const mioUsername = useMioUsername();
   const [foglioUsername, setFoglioUsername] = useState(false);
+  // Si torna qui da Cambia password con ?password=aggiornata. La barra solo
+  // a pagina caricata: nel ramo "Caricamento..." verrebbe poi smontata e il
+  // suo tempo ripartirebbe da capo.
+  const passwordAggiornata = usePasswordAggiornata();
 
   if (!modulo.pronto || !modulo.prima || !modulo.ora || !modulo.m) {
     return (
@@ -102,6 +112,10 @@ export default function ProfiloPage() {
         ) : (
           <RigaImpostazioni etichetta="Username" valore="…" />
         )}
+        {/* Dal 18/10: la pagina a sé Cambia password. È un LinkProtetto
+            (dentro RigaImpostazioni): con modifiche non salvate chiede
+            prima "Esci senza salvare?". */}
+        <RigaImpostazioni etichetta="Password" valore="Cambia" href="/impostazioni/password" />
       </GruppoImpostazioni>
 
       {foglioUsername && mioUsername.stato.esito === "ok" && (
@@ -196,6 +210,18 @@ export default function ProfiloPage() {
       </GruppoImpostazioni>
 
       <SalvataggioModulo modulo={modulo} />
+      <BarraPasswordAggiornata {...passwordAggiornata} />
     </main>
+  );
+}
+
+// "Password aggiornata." dopo Cambia password: stessa barra e stesso punto
+// di "Salvato." (SalvataggioModulo).
+function BarraPasswordAggiornata({ visibile, chiudi }: { visibile: boolean; chiudi: () => void }) {
+  if (!visibile) return null;
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-[var(--ingombro-tab-bar)] z-40 mx-auto max-w-md">
+      <BarraAnnulla {...MESSAGGIO_PASSWORD_AGGIORNATA} onChiudi={chiudi} />
+    </div>
   );
 }
