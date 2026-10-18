@@ -1,0 +1,22 @@
+# Fine riga: LF nel repository e nella copia di lavoro, su ogni sistema.
+# Vale più di core.autocrlf, che su questo PC è true nella
+# configurazione di sistema di Git per Windows.
+* text=auto eol=lf
+
+# Binari: mai convertiti, mai confrontati riga per riga.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.zip   binary
+
+# Script che Windows esegue bene solo con CRLF (oggi nel repo non ce ne sono).
+*.bat   text eol=crlf
+*.cmd   text eol=crlf

@@ -4049,9 +4049,9 @@ quello nel repository devono restare uguali.
 - **Prettier è configurato ma non ancora applicato a tutto il codice.**
   `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
   doppi apici, punto e virgola, righe fino a 100, virgole finali "es5",
-  fine riga lasciato com'è (`auto`, perché Git su Windows li converte in
-  CRLF sul disco). `.prettierignore` esclude i documenti `.md` (a capo a
-  mano), `.next`, `node_modules`, `.claude` e i file generati
+  fine riga LF (`lf`, dal 18/10, come tutto il repository: sotto).
+  `.prettierignore` esclude i documenti `.md` (a capo a mano), `.next`,
+  `node_modules`, `.claude` e i file generati
 - Lanciarlo oggi cambierebbe 128 file su 208 in `src`, più
   `next.config.ts` e `tsconfig.json`: **il primo lancio
   sarà un commit separato, solo di formattazione, deciso a parte**. Fino
@@ -4060,6 +4060,15 @@ quello nel repository devono restare uguali.
 - Non è collegato a ESLint (`eslint-config-prettier`): le regole attive
   non hanno conflitti con Prettier (verificato l'11/10). Si aggiunge se
   ne compare uno
+- **Fine riga: LF ovunque** (dal 18/10). `.gitattributes` con
+  `* text=auto eol=lf`: LF nel repository **e** nella copia di lavoro,
+  anche su Windows. Vale più di `core.autocrlf=true`, che su questo PC sta
+  nella configurazione di sistema di Git per Windows e non va toccato
+  (riguarda anche gli altri repository). I binari (immagini, icone, font,
+  PDF) sono elencati come `binary`; `.bat` e `.cmd`, se arriveranno,
+  restano CRLF. `.vscode/settings.json` (`"files.eol": "\n"`) fa nascere
+  LF anche i file nuovi creati da VS Code. Vercel compila su Linux dal
+  repository, che era già LF: nessun effetto
 
 Rinunce accettate rispetto al nativo: accesso ad Apple Health e discoverability
 dello store. Nessuna delle due serve all'MVP.
@@ -5933,15 +5942,6 @@ dell'onboarding"). Account di prova eliminati lo stesso giorno.
   servono due dispositivi, l'offline e ignorare di aver già finito.
   Tornata la rete, la discesa porta l'obiettivo di Chrome e la rete di
   sicurezza mette "fatto"
-- **Uniformare le fine riga** (trovato al passo 5 di
-  `condivisione-alimenti`, 16/10; da fare in un commit a parte). Una
-  sostituzione automatica su più righe non entrava in
-  `src/lib/repository/alimenti.ts`, che nella copia di lavoro aveva
-  righe miste (Windows e Unix). Al 16/10, a branch chiuso, nessun file
-  risulta misto (`git ls-files --eol`): nel repository sono tutti LF,
-  perché `core.autocrlf=true` li normalizza al commit. Nella copia di
-  lavoro però convivono file con fine riga Windows (278) e Unix (184):
-  innocuo per l'app, ma fa inciampare le modifiche su più righe.
 
 - **"Username appena preso, scegline un altro" non esiste ancora**
   (16/10, passo 8). La sezione 3 ("Lo username") lo prevede per due

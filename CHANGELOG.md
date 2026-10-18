@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Fine riga LF ovunque
+
+Su main. Nel repository i file erano già tutti LF, ma nella copia di
+lavoro sul PC convivevano CRLF (scritti dal checkout con
+`core.autocrlf=true`, dalla configurazione di sistema di Git per
+Windows) e LF (file scritti da Claude Code e dagli script): oggi 322 CRLF,
+180 LF e un file misto (`modificaPastoSalvato.test.ts`, misto per un
+`cat >>` di Claude in questa sessione). Nuovo `.gitattributes`
+(`* text=auto eol=lf`, binari espliciti, `.bat`/`.cmd` CRLF),
+`.vscode/settings.json` con `"files.eol": "\n"`, `.prettierrc` con
+`"endOfLine": "lf"`. `git add --renormalize .` non ha cambiato nessun file:
+nel repository nessun contenuto cambia. I 323 file non LF sono stati
+riestratti da git con le regole nuove, dopo una copia di sicurezza
+completa (`.git` e file non tracciati compresi), verificata byte per byte.
+Controlli dopo: `git ls-files --eol` con 504 file LF/LF e 8 binari, nessun
+CRLF né misto; `git diff HEAD` solo sui file nuovi; contenuto identico alla
+copia a parte le fine riga (323 file diversi byte per byte, zero
+ignorando il CR); binari e file non tracciati identici. PUNTO: la regola
+in §8, tolto "Uniformare le fine riga" dai difetti aperti in §11. 1174
+test, lint e build verdi.
+
 ## 2026-10-18 — Si arrotonda ai decimali della colonna prima di scrivere
 
 Su main. Corretto il difetto trovato col lavoro precedente: altezza e peso
