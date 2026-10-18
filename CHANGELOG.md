@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Cambia password: il codice vero della password attuale sbagliata
+
+Branch `cambia-password`, commit 6. **Difetto trovato su iPhone** nella
+prova 5, sull'anteprima del branch: con la password attuale sbagliata
+compariva "Si è verificato un errore. Riprova tra poco." invece di "La
+password attuale non è corretta.". Nei log di Auth (sola lettura, 18/10,
+22:27-22:33, richieste dall'anteprima) il server risponde 400 con
+`current_password_invalid`; il codice si aspettava
+`current_password_mismatch`, preso dal sorgente di supabase/auth, che il
+server di produzione non manda. Il rifiuto funzionava (la password non
+cambiava, interruttore acceso): sbagliava solo la traduzione. Ora
+`classificaErroreCambio` accetta tutti e due i codici. Test con il codice
+vero in `cambiaPassword.test.ts` e nel server finto di
+`CambiaPassword.test.tsx`, compreso il testo speciale dopo una risposta
+persa. Visti fallire togliendo la correzione da una copia (4 test rossi,
+con lo stesso testo generico visto su iPhone). PUNTO §9.1: il codice
+vero, preso dai log di produzione e non dal sorgente; §11: la prova 5 da
+rifare.
+
 ## 2026-10-18 — Cambia password: decisioni e prove su iPhone
 
 Branch `cambia-password`, commit 5 (solo documenti). Nel PUNTO:

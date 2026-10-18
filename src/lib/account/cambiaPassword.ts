@@ -15,7 +15,12 @@
 //   18/10): spenta, il campo verrebbe ignorato senza errori. Le sessioni
 //   nate da un link di Reimposta sono esentate;
 // - "attuale mancante" e "attuale sbagliata" hanno lo STESSO testo
-//   inglese: si decide dal codice, mai dal testo;
+//   inglese: si decide dal codice, mai dal testo. Il codice di "attuale
+//   sbagliata" l'hanno dato i LOG DI PRODUZIONE (prove su iPhone del
+//   18/10, 400 con `current_password_invalid`), non il sorgente: nel
+//   sorgente di supabase/auth si chiama `current_password_mismatch`, che
+//   il server di produzione non manda. Si accettano tutti e due, per le
+//   versioni diverse del server;
 // - la sessione di questo dispositivo resta, con gli stessi token (niente
 //   refreshSession); quelle degli altri dispositivi le chiude il server
 //   (LogoutAllExceptMe), che lì finiscono in "sessione scaduta" entro
@@ -69,6 +74,9 @@ export function classificaErroreCambio(errore: AuthError): EsitoCambio {
   if (isAuthSessionMissingError(errore)) return "sessione";
 
   switch (errore.code) {
+    // Il primo è quello di produzione (log del 18/10), il secondo quello
+    // del sorgente: vedi in cima.
+    case "current_password_invalid":
     case "current_password_mismatch":
       return "attuale-sbagliata";
     case "current_password_required":

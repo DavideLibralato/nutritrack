@@ -4539,8 +4539,17 @@ Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
   della password attuale (`session.IsRecovery()`): chi ha il link ha
   già dimostrato di avere l'email.
 - **Gli errori, dal codice e non dal testo.** "Attuale mancante"
-  (`current_password_required`) e "attuale sbagliata"
-  (`current_password_mismatch`) hanno lo stesso testo inglese.
+  (`current_password_required`) e "attuale sbagliata" hanno lo stesso
+  testo inglese ("Current password required when setting new
+  password."). Il codice di "attuale sbagliata" l'hanno dato **i log di
+  produzione**, non il sorgente: il server risponde 400 con
+  **`current_password_invalid`** (log di Auth delle prove su iPhone, 18/10,
+  22:27-22:33). Nel sorgente di supabase/auth si chiama
+  `current_password_mismatch`, e su quello era stato scritto il codice:
+  la prova 5 mostrava "Si è verificato un errore. Riprova tra poco." (il
+  rifiuto c'era, la password non cambiava; sbagliava solo il testo).
+  Corretto nel commit 6 del branch; si accettano tutti e due i codici,
+  per versioni diverse del server.
   `same_password` → "uguale a quella attuale"; `weak_password` con
   "length" → "almeno 6 caratteri", con altri motivi → "troppo facile";
   401/403/404 o nessuna sessione → "Esci e rientra"; rete dopo l'invio →
@@ -6274,10 +6283,13 @@ provato il "già in uso" mentre si scrive (prova 8), come regressione.
 iPhone**: sotto, "Prove su iPhone di Cambia password"). La riga
 "Password" in Profilo e la sottopagina con password attuale e nuova
 (§9.1, "Cambia password"; §3, "Profilo"). `RigaImpostazioni` passa ora
-dal guardiano delle modifiche non salvate (`LinkProtetto`).
+dal guardiano delle modifiche non salvate (`LinkProtetto`). Difetto
+trovato su iPhone nella prova 5 e corretto nel commit 6: con la password
+attuale sbagliata il testo era quello generico, perché il codice vero di
+produzione (`current_password_invalid`) non era quello del sorgente.
 
 **Test.** 1249 test permanenti in 110 file (Vitest), tutti verdi al 18/10
-su main (dal merge di `login-ritocchi`); 1289 in 113 file sul branch
+su main (dal merge di `login-ritocchi`); 1290 in 113 file sul branch
 `cambia-password`.
 
 ### Non ancora costruito
@@ -6594,7 +6606,12 @@ loro esiti.
    current password" è acceso): attuale sbagliata, nuova valida →
    "La password attuale non è corretta.", e la password **non cambia**.
    La prova 7 lo conferma: lì come attuale funziona ancora quella di
-   prima.
+   prima. **Da rifare dopo il commit 6**: la prima volta (18/10) il
+   rifiuto c'era, ma il testo era "Si è verificato un errore. Riprova tra
+   poco.", perché il server manda `current_password_invalid` e il codice
+   si aspettava `current_password_mismatch` (§9.1, "Cambia password").
+   Dopo la prova, Claude controlla nei log che il codice sia ancora
+   quello.
 6. Senza rete (modalità aereo): riquadro "Serve la connessione",
    pulsante spento, niente "Reimpostala via email". Torna la rete →
    pulsante attivo, i campi scritti sono ancora lì.

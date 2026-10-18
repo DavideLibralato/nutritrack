@@ -1,6 +1,8 @@
 // "Cambia password" (cambiaPassword.ts). Casi fissati per sempre:
 // - l'esito si decide dal CODICE del server: "attuale mancante" e "attuale
-//   sbagliata" hanno lo stesso testo inglese;
+//   sbagliata" hanno lo stesso testo inglese. "Sbagliata" in produzione è
+//   `current_password_invalid` (difetto trovato su iPhone il 18/10: il
+//   codice del sorgente, `current_password_mismatch`, non arriva);
 // - la password attuale parte come `current_password` (il nome che legge il
 //   server), non `currentPassword` (quello della guida);
 // - senza risposta del server prima della chiamata la richiesta non parte
@@ -73,14 +75,18 @@ describe("controllaPrimaDellInvio", () => {
 });
 
 describe("classificaErroreCambio", () => {
-  it("stesso testo, codici diversi: sbagliata e mancante restano distinte", () => {
-    expect(classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, "current_password_mismatch"))).toBe(
-      "attuale-sbagliata"
-    );
-    expect(classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, "current_password_required"))).toBe(
-      "attuale-mancante"
-    );
-  });
+  // current_password_invalid: il codice che manda il server di produzione
+  // (log di Auth, prove su iPhone del 18/10). current_password_mismatch:
+  // quello del sorgente di supabase/auth, tenuto per altre versioni.
+  it.each(["current_password_invalid", "current_password_mismatch"])(
+    "stesso testo, codici diversi: %s è «sbagliata», non «mancante»",
+    (codice) => {
+      expect(classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, codice))).toBe("attuale-sbagliata");
+      expect(classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, "current_password_required"))).toBe(
+        "attuale-mancante"
+      );
+    }
+  );
 
   it.each<[string, AuthError, EsitoCambio]>([
     [
@@ -146,10 +152,10 @@ describe("cambiaPassword", () => {
     expect(await cambiaPassword("vecchia1", "nuova123")).toBe("risposta-persa");
   });
 
-  it("password attuale sbagliata: l'esito dal codice", async () => {
+  it("password attuale sbagliata (codice di produzione): l'esito dal codice", async () => {
     rispostaCambio = {
       data: { user: null },
-      error: new AuthApiError(TESTO_ATTUALE, 400, "current_password_mismatch"),
+      error: new AuthApiError(TESTO_ATTUALE, 400, "current_password_invalid"),
     };
     expect(await cambiaPassword("sbagliata", "nuova123")).toBe("attuale-sbagliata");
   });

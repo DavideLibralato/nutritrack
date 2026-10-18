@@ -53,8 +53,10 @@ function json(corpo: unknown, status = 200): Response {
 // --- La rete finta --------------------------------------------------------
 
 // Come risponde il server a PUT /user, una voce per richiesta (l'ultima si
-// ripete): "ok", il codice d'errore, o "rete giù".
-let risposteCambio: ("ok" | "current_password_mismatch" | "rete giù")[] = [];
+// ripete): "ok", il codice d'errore, o "rete giù". current_password_invalid
+// è il codice che manda il server di produzione con la password attuale
+// sbagliata (log di Auth, prove su iPhone del 18/10).
+let risposteCambio: ("ok" | "current_password_invalid" | "rete giù")[] = [];
 const cambi: Record<string, unknown>[] = [];
 const impreviste: string[] = [];
 
@@ -151,7 +153,7 @@ describe("CambiaPassword", () => {
   });
 
   it("password attuale sbagliata: il messaggio, si resta sulla pagina", async () => {
-    risposteCambio = ["current_password_mismatch"];
+    risposteCambio = ["current_password_invalid"];
     render(<CambiaPassword />);
 
     compila("sbagliata", "nuova123");
@@ -163,7 +165,7 @@ describe("CambiaPassword", () => {
   });
 
   it("risposta persa, poi campo vuoto, poi attuale sbagliata: il testo che spiega", async () => {
-    risposteCambio = ["rete giù", "current_password_mismatch"];
+    risposteCambio = ["rete giù", "current_password_invalid"];
     render(<CambiaPassword />);
 
     compila("vecchia1", "nuova123");
