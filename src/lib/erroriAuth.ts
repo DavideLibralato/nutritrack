@@ -30,6 +30,15 @@ export const TESTI_CAMBIO_PASSWORD = {
   errore: ERRORE_GENERICO,
 } as const;
 
+// Sotto il pulsante: il server chiude le sessioni degli altri dispositivi
+// (LogoutAllExceptMe, cambiaPassword.ts).
+export const AVVISO_ALTRI_DISPOSITIVI = "Sugli altri dispositivi dovrai rientrare con la nuova password.";
+// Il riquadro in cima alla pagina senza rete.
+export const SENZA_RETE_CAMBIO_PASSWORD = {
+  titolo: "Serve la connessione",
+  testo: "Per cambiare la password devi essere online. Il modulo resta qui: riprova quando torna la rete.",
+} as const;
+
 // "Password attuale sbagliata" subito dopo una risposta persa: il tentativo
 // di prima può essere arrivato, e allora l'attuale è già quella nuova.
 export const ATTUALE_SBAGLIATA_DOPO_RISPOSTA_PERSA =

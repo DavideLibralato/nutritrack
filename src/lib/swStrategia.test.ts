@@ -57,6 +57,7 @@ describe("scegliStrategia", () => {
       "/impostazioni/sincronizzazione",
       "/impostazioni/informazioni",
       "/impostazioni/elimina-account",
+      "/impostazioni/password",
       "/onboarding",
       "/aggiungi?giorno=2026-09-20",
     ]) {

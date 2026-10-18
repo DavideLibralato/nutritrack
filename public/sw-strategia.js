@@ -33,6 +33,7 @@
     "/impostazioni/sincronizzazione",
     "/impostazioni/informazioni",
     "/impostazioni/elimina-account",
+    "/impostazioni/password",
     // Fuori dalla tab bar, come /aggiungi: deve riaprirsi anche offline
     // per chi chiude l'app a metà onboarding.
     "/onboarding",

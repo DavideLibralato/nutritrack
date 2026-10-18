@@ -46,7 +46,10 @@ export const LUNGHEZZA_MINIMA_PASSWORD = 6;
 
 // 1. Prima di chiamare il server. Le password non si accorciano agli spazi
 // ai bordi: uno spazio può far parte della password.
-export function controllaPrimaDellInvio(attuale: string, nuova: string): EsitoCambio | null {
+export function controllaPrimaDellInvio(
+  attuale: string,
+  nuova: string
+): Exclude<EsitoCambio, "ok"> | null {
   if (!attuale) return "attuale-mancante";
   if (!nuova) return "nuova-mancante";
   if (nuova.length < LUNGHEZZA_MINIMA_PASSWORD) return "troppo-corta";

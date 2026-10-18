@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Cambia password: la pagina
+
+Branch `cambia-password`, commit 3. Nuova pagina `/impostazioni/password`
+(componente server) con dentro `CambiaPassword.tsx`, che mostra
+l'account, la password attuale e la nuova con l'occhio, "Salva nuova
+password", la riga "Sugli altri dispositivi dovrai rientrare con la nuova
+password." e il rimando a Password dimenticata. Per il Portachiavi c'è
+l'email in un campo nascosto (`sr-only`) con `autoComplete="username"`.
+Senza rete compare il riquadro "Serve la connessione" e il pulsante è
+spento. Dopo l'ok si torna a Profilo con `?password=aggiornata`; Profilo
+lo leggerà dal commit 4. `IntestazioneSottopagina` ha la prop facoltativa
+`indietro` ("‹ Profilo"). La pagina è in `PAGINE_APP` del service worker.
+Test permanenti in `CambiaPassword.test.tsx`, con il client Supabase vero
+e la rete finta, visti fallire con 4 guasti (invio senza rete,
+`currentPassword` nella richiesta vera, `push` invece di `replace`,
+ricordo della risposta persa cancellato da un controllo sul dispositivo).
+Ancora nessuna riga in Profilo: per ora ci si arriva solo dall'indirizzo.
+
 ## 2026-10-18 — Cambia password: la logica in /lib
 
 Branch `cambia-password`, commit 2. Nuovo `src/lib/account/cambiaPassword.ts`:

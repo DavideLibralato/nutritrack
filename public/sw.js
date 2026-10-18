@@ -39,6 +39,9 @@ importScripts("/sw-strategia.js");
 // pagina (che arriva nel commit dopo): finché non c'è, il riscaldamento
 // riceve un 404 e la salta, senza toccare le altre. Nessuna cache nuova,
 // come per Amici.
+// 18/10/2026, branch "cambia-password": /impostazioni/password in
+// PAGINE_APP, perché anche offline si veda "Serve la connessione" e non la
+// pagina "Sei offline". Nessuna cache nuova, come per Amici.
 const {
   PAGINE_APP,
   pagineDaTogliere,
