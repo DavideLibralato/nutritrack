@@ -5807,8 +5807,7 @@ Provati:
 
 Com'è fatto: sezione 3, "Doppioni in Aggiungi". I due difetti allora
 rimasti aperti, di Sposta e Duplica e dello sheet di modifica, sono
-corretti sul branch `doppioni` il 18/10, da provare (sotto, "Difetti e
-verifiche aperti"). Test: `pianoInserimento.test.ts`,
+corretti e provati su iPhone il 18/10 (sotto, "Doppioni rimasti"). Test: `pianoInserimento.test.ts`,
 `vociDiario.test.ts`, `testiBarra.test.ts`, la pagina Aggiungi e la
 pagina Oggi.
 
@@ -6062,8 +6061,45 @@ unito a main (fast-forward, `0eef1c1`, deploy di produzione Ready) e
 prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
+**Doppioni rimasti** (18/10, branch `doppioni`; erano in "Difetti e
+verifiche aperti"). Cinque casi, più un difetto trovato strada facendo:
+- **cambio di pasto dallo sheet di modifica in Oggi** (caso 1): prima un
+  `update` diretto di `pasto_id`, con un doppione senza foglio e nessun
+  Annulla. Ora passa da Sposta con i grammi nuovi, e i soli grammi hanno
+  Annulla (sezione 3, "Doppioni", "Dallo sheet di modifica in Oggi"). Il
+  18/10 su Supabase c'erano 3 gruppi di voci vive con stesso alimento,
+  pasto e giorno (lettura di Claude): non si sa se da "Tieni separati",
+  voluto, o da questo difetto; non si toccano;
+- **"Non spostarlo" / "Non duplicarlo" con il doppione sparito** (caso 2):
+  Sposta e Duplica spostavano o copiavano lo stesso. Ora la regola di
+  Aggiungi è una sola, `togliEsclusi` (sezione 3, "Doppioni");
+- **segnalibro pieno** (caso 3): toglieva il pasto salvato senza conferma
+  né Annulla. Ora c'è Annulla, e l'eliminazione è in transazione (sezione
+  3, "Togliere un pasto salvato dal segnalibro pieno"); da Preferiti la
+  conferma resta;
+- **aggiunta di un alimento già presente** (caso 4): non era più un
+  difetto, Aggiungi lo gestisce dall'11/10;
+- **Somma oltre 99999,99 g** (caso 5): Somma spenta nel foglio e rete nei
+  piani (sezione 3, "Doppioni");
+- **un trascinamento fallito senza foglio spegneva i gesti di Oggi**
+  (difetto già in produzione): ora l'errore va nella barra e i gesti
+  restano attivi (sezione 3, "Tieni premuto").
+
+**Provato su iPhone il 18/10** sull'anteprima del branch, account di
+prova in Safari, dalle 16:39 alle 17:02: le prove 1-20 del CHANGELOG più
+la 17b, tutte passate. Una prima prova 14 era stata fatta per errore
+sull'anteprima di `reset-ovunque`, con il codice di prima (lo dicevano i
+log di Supabase: le scritture partivano da quell'indirizzo); rifatta su
+`doppioni`, passata. L'errore del trascinamento non si provoca a mano: è
+coperto dai test, e su iPhone è stata provata la regressione. Verificato
+da Claude su Supabase in sola lettura: nessuna voce oltre 99999,99 g,
+nessuna riga orfana nei pasti salvati, l'Annulla del segnalibro rimette
+in vita lo stesso pasto (stesso id), nessuna "Non salvate online". Resta
+come lavoro futuro il CHECK `quantita_g > 0` (sotto, "Difetti e
+verifiche aperti").
+
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1239 in 109 file sul branch `doppioni`.
+su main; 1240 in 109 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6078,28 +6114,6 @@ su main; 1239 in 109 file sul branch `doppioni`.
 
 ### Difetti e verifiche aperti
 
-- **"Somma" dei doppioni oltre 99999,99 g** (trovato il 18/10,
-  improbabile): **corretto sul branch `doppioni` il 18/10, da provare su
-  iPhone**. Il foglio dei doppioni non controllava il massimo
-  di `numeric(7,2)` sulla somma: due voci da 50.000 g dello stesso
-  alimento sommate facevano 100.000 g, che Dexie salva e il server
-  rifiuta, con la voce accantonata dopo 5 tentativi. Per arrivarci serve
-  scrivere a mano due quantità assurde. Ora, in due strati:
-  - **il foglio** spegne Somma oltre il massimo: il blocco parte da
-    "Tieni separati", con "La somma supera 99999,99 g: scegli un'altra
-    opzione." (sezione 3, "Doppioni"). Il totale del foglio, della riga
-    d'esito e dei piani è la stessa funzione, `totaleSomma`;
-  - **la rete nei piani** (`grammiRigaCheResta` in `pianoSpostamento.ts`,
-    comune a Sposta, trascinamento, Duplica e Aggiungi): oltre
-    `GRAMMI_MASSIMI` i grammi della riga che resta, con Somma o con
-    Scrivi quantità, sono un errore prima di ogni scrittura. Niente
-    scritto, niente in outbox, la pagina mostra il suo messaggio
-    d'errore. Serve perché alla conferma le righe si rileggono e possono
-    essere cambiate.
-  Lo stesso rischio non c'è altrove: i pasti salvati copiano i grammi 1:1
-  e la modifica di un pasto salvato non somma. Test in
-  `vociDiario.test.ts`, `pianoSpostamento.test.ts` e
-  `SheetDoppioni.test.tsx`
 - **CHECK `quantita_g > 0` su `voci_diario` e `composizioni_voci`**
   (lavoro futuro, deciso da Davide il 18/10: migration a parte, solo con
   il suo "ok migration"). Rete di sicurezza contro un bug del client: il
@@ -6170,46 +6184,6 @@ su main; 1239 in 109 file sul branch `doppioni`.
   del piano gratuito, sezione 10.9). Da tenere presente nelle prove del
   reset: oltre il limite la richiesta fallisce con "Troppi tentativi"
 
-- **Sposta e Duplica ignorano "Non spostarlo" / "Non duplicarlo" se il
-  doppione sparisce** fra il foglio e la conferma (11/10, visto facendo i
-  doppioni in Aggiungi): **corretto sul branch `doppioni` il 18/10, da
-  provare su iPhone**. Se la riga in doppione veniva cancellata nel
-  frattempo, per esempio da un altro dispositivo, `spostaNelPasto` e
-  `duplicaNelPasto` controllavano le scelte solo quando c'erano ancora dei
-  doppioni, e l'alimento si spostava o si copiava lo stesso, contro il "no"
-  dell'utente. Ora la regola di Aggiungi (togliere gli esclusi prima del
-  piano) è una sola, `togliEsclusi` in `pianoSpostamento.ts`, e la usano
-  tutti e tre (sezione 3, "Doppioni in Aggiungi"). Test in
-  `vociDiario.test.ts`
-- **Un trascinamento fallito senza doppioni spegneva i gesti di Oggi**
-  (difetto già in produzione, trovato il 18/10 preparando il caso 1):
-  **corretto sul branch `doppioni`, da provare su iPhone**. Se lo
-  spostamento falliva (un guasto di Dexie, una voce sparita nel giro di
-  millisecondi) quando non c'era un foglio aperto, lo stato dello
-  spostamento restava con l'errore dentro ma nessun foglio lo mostrava:
-  `gestiAttivi` restava falso, e swipe, tieni premuto e trascinamento
-  erano spenti fino a una ricarica o al cambio di giorno. Ora in quel
-  caso lo stato si azzera e l'errore va nella barra, senza Annulla, come
-  per Elimina dal menu; con un foglio aperto l'errore resta nel foglio.
-  Niente scritto, come prima. Raro. Test in `page.test.tsx`
-  ("trascinare un alimento su un altro pasto")
-- **Il cambio di pasto dallo sheet di modifica in Oggi non controllava i
-  doppioni** (11/10): **corretto sul branch `doppioni` il 18/10, da
-  provare su iPhone**. Cambiando il pasto di una voce dal suo sheet, la
-  voce andava nel pasto nuovo con l'`update` diretto di `pasto_id`, senza
-  passare da `spostaNelPasto`: se lì c'era già lo stesso alimento si
-  ritrovavano due righe, senza foglio, e nessun salvataggio dallo sheet
-  aveva Annulla. Era l'**unico percorso** rimasto in cui un doppione
-  nasceva senza foglio (verificato il 18/10): aggiungere un alimento già
-  presente nel pasto non lo è più, perché tutti i percorsi di /aggiungi
-  passano da `aggiungiNelPasto` (provato l'11/10, sezione 3, "Doppioni in
-  Aggiungi"). Com'è fatto ora: sezione 3, "Doppioni", "Dallo sheet di
-  modifica in Oggi". Test in `vociDiario.test.ts`, `page.test.tsx`,
-  `testiSpostamento.test.ts` e `testiBarra.test.ts`. Il 18/10 su Supabase
-  c'erano **3 gruppi** di voci vive con stesso alimento, pasto e giorno
-  (lettura di Claude): non si sa se nati da "Tieni separati", che è
-  voluto, o da questo difetto. Non si toccano
-
 - **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
   (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi
   viene prima della domanda "da quando", quindi non sa ancora se si
@@ -6254,32 +6228,6 @@ su main; 1239 in 109 file sul branch `doppioni`.
   solo se la discesa arriva prima. Vale per ogni tabella; è raro (serve
   modificare proprio la riga cancellata). Da affrontare a parte
 
-- **Eliminare un pasto salvato: due garanzie diverse** (incoerenza nota,
-  11/10). In Oggi il segnalibro pieno di un pasto, ritoccato, elimina
-  subito tutti i pasti salvati con quel contenuto, senza conferma e senza
-  Annulla (`toggleSalvaPreferito`). Dalla modifica del pasto salvato,
-  aperta da Aggiungi o da Impostazioni > Preferiti, "Elimina pasto" chiede
-  conferma. Stessa azione, due livelli di protezione: un tocco per sbaglio
-  sul segnalibro perde il pasto. **Deciso da Davide il 18/10: Annulla,
-  non conferma** (azione rapida e reversibile); da Preferiti la conferma
-  resta. **Corretto sul branch `doppioni` il 18/10, da provare su
-  iPhone** (caso 3; com'è fatto: sezione 3, "Togliere un pasto salvato dal
-  segnalibro pieno"). Il repository (commit 6): `eliminaPastiSalvati` toglie uno o più
-  pasti salvati e le loro righe in **una sola transazione** (prima in
-  parallelo e fuori transazione: un guasto a metà poteva lasciare un pasto
-  vivo senza alimenti) e restituisce la traccia; `eliminaComposizione`, che
-  usa Elimina da Preferiti, passa da lì senza cambiare niente per chi la
-  usa. `ripristinaPastiSalvati` rimette pasti e righe dalla traccia, con le
-  regole dell'Annulla di un alimento cancellato (la parte comune è
-  `ripristinaPastiNellaTransazione`) più il controllo del contenuto: un
-  pasto non torna se nel frattempo ne è nato un altro con lo stesso nome
-  ("nome"), con gli stessi alimenti e grammi ("contenuto"), o se nessuno dei
-  suoi alimenti è più nel catalogo ("vuoto"). Con più pasti e conflitti solo
-  su alcuni, tornano gli altri, come per gli alimenti. La pagina (commit
-  7): la barra di Oggi annulla voci del diario oppure pasti salvati (tipo
-  `Annullabile`), e il segnalibro pieno usa la seconda. Test in
-  `composizioni.test.ts`, `page.test.tsx` e
-  `testiAlimentiCancellati.test.ts`
 - Il gesto "indietro" nella modifica di un pasto salvato esce senza avviso
   di modifiche non salvate: accettato per ora. In Impostazioni il cambio di
   scheda ora avvisa (il guardiano, sezione 3); resta scoperto solo il gesto

@@ -5,11 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Doppioni rimasti provati su iPhone; test di pagina su Aggiungi
+
+Branch `doppioni`, commit 9. **Provato su iPhone il 18/10**
+sull'anteprima del branch, account di prova in Safari, dalle 16:39 alle
+17:02: prove 1-20 più la 17b, tutte passate. Una prima prova 14 era
+stata fatta per errore sull'anteprima di `reset-ovunque`, con il codice
+di prima: Somma sceglibile e una riga da 100.000 g, rifiutata dal server
+(400) e rimasta solo in quel browser. I log di Supabase mostravano le
+scritture partire da quell'indirizzo, mentre il deploy di `doppioni` era
+pronto dalle 14:07. Rifatta su `doppioni`, passata. Verificato da Claude
+su Supabase in sola lettura: nessuna voce oltre 99999,99 g, nessuna riga
+orfana nei pasti salvati, l'Annulla del segnalibro rimette in vita lo
+stesso pasto (stesso id), nessuna "Non salvate online". Nuovo test di
+pagina in `src/app/aggiungi/page.test.tsx` sul percorso della prova 14
+(tocco sul nome, sheet quantità, 50.000 + 50.000 g: Somma spenta, Tieni
+separati, il testo, due righe da 50.000 g); visto fallire con Somma mai
+spenta e con il blocco che parte sempre da Somma. PUNTO §11: i casi del
+branch passano da "Difetti e verifiche aperti" a "Fatto" ("Doppioni
+rimasti"); resta il CHECK `quantita_g > 0` come lavoro futuro. 1240 test.
+
 ## 2026-10-18 — Doppioni rimasti: riepilogo del branch e prove su iPhone
 
 Branch `doppioni`, commit 8 di 8 (solo documenti). Il branch chiude i
-"doppioni rimasti" di PUNTO §11, tutti **corretti sul branch, da provare
-su iPhone**:
+"doppioni rimasti" di PUNTO §11, tutti corretti e **provati su iPhone il
+18/10** (casi 1, 2, 3 e 5; il 4b, l'errore del trascinamento, non si
+provoca a mano: coperto dai test, su iPhone provata solo la regressione;
+dettagli nella voce del commit 9):
 - caso 1, il cambio di pasto dallo sheet di modifica in Oggi passa da
   Sposta, con i grammi nuovi, e i soli grammi hanno Annulla (commit 4 e
   5);

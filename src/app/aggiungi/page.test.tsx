@@ -270,6 +270,35 @@ describe("Aggiungi: doppioni e aggiunta in corso", () => {
     expect(prendiInserimento()?.messaggio).toMatchObject({ testo: "Sommato:", nome: "Mela", coda: "→ 200 g" });
   });
 
+  // Caso 5 dei "doppioni rimasti" (18/10) sul percorso della prova 14 su
+  // iPhone: tocco sul NOME (sheet quantità, non il "+" rapido), un alimento
+  // già nel pasto da 50.000 g e un secondo inserimento da 50.000 g. Somma
+  // farebbe 100.000 g, oltre il massimo di numeric(7,2): il foglio la
+  // spegne e parte da "Tieni separati".
+  it("sheet quantità, 50.000 + 50.000 g: Somma spenta, Tieni separati, due righe da 50.000 g", async () => {
+    const pranzo = await preparaPranzo();
+    const pane = await creaAlimento("Pane", 270);
+    await creaVoce(pane, pranzo.id, oggiLocale(), 50000);
+    render(<AggiungiPage />);
+
+    // Il nome in Recenti apre lo sheet quantità.
+    fireEvent.click((await screen.findByText("Pane")).closest("button")!);
+    const sheet = await screen.findByRole("dialog");
+    fireEvent.change(within(sheet).getByLabelText("Quantità (g)"), { target: { value: "50000" } });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Aggiungi" }));
+
+    const foglio = await screen.findByRole("dialog", { name: "«Pane» c'è già in «Pranzo»" });
+    const somma = within(foglio).getByRole("radio", { name: "Somma (100.000 g)" }) as HTMLButtonElement;
+    expect(somma.disabled).toBe(true);
+    expect(within(foglio).getByRole("radio", { name: "Tieni separati" }).getAttribute("aria-checked")).toBe("true");
+    expect(within(foglio).getByText("La somma supera 99999,99 g: scegli un'altra opzione.")).toBeTruthy();
+    expect(await vociDiOggi()).toHaveLength(1);
+
+    fireEvent.click(within(foglio).getByRole("button", { name: "Aggiungi" }));
+    await waitFor(() => expect(navigazione.replace).toHaveBeenCalledWith(`/?giorno=${oggiLocale()}`));
+    expect((await vociDiOggi()).map((v) => v.quantita_g)).toEqual([50000, 50000]);
+  });
+
   it("«Non aggiungerlo»: si resta su /aggiungi, niente scritto, e il «+» risponde di nuovo subito", async () => {
     const pranzo = await preparaPranzo();
     const mela = await creaAlimento("Mela", 52);
