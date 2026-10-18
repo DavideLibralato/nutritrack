@@ -62,7 +62,10 @@ beforeEach(() => {
   vi.stubEnv("CODICE_INVITO", CODICE);
   finti.signUp.mockReset();
   finti.signUp.mockResolvedValue(CON_SESSIONE);
-  finti.controllaDisponibilita.mockClear();
+  // mockReset e non mockClear: svuota anche le risposte "Once" rimaste da
+  // un test, che altrimenti passerebbero al test dopo.
+  finti.controllaDisponibilita.mockReset();
+  finti.controllaDisponibilita.mockResolvedValue("disponibile");
   finti.impostaUsername.mockClear();
   finti.redirect.mockReset();
 });
@@ -136,6 +139,78 @@ describe("registrati", () => {
     expect(stato.registrato).toBeUndefined();
     expect(finti.redirect).not.toHaveBeenCalled();
     expect(finti.impostaUsername).not.toHaveBeenCalled();
+  });
+
+  // Lo username preso fra il controllo e signUp: il trigger rifiuta la
+  // registrazione e GoTrue manda solo l'errore generico del database
+  // (verificato sulla funzione `crea_nome_utente_registrazione` e sulla
+  // migration trigger_registrazione.sql, 18/10).
+  const ERRORE_DATABASE = {
+    data: { user: null, session: null },
+    error: { message: "Database error saving new user", code: "unexpected_failure", status: 500 },
+  };
+
+  it("username preso fra il controllo e signUp: il testo dello username, con il nome preso", async () => {
+    finti.controllaDisponibilita.mockResolvedValueOnce("disponibile").mockResolvedValueOnce("in_uso");
+    finti.signUp.mockResolvedValue(ERRORE_DATABASE);
+
+    const stato = await registrati(STATO_INIZIALE, modulo());
+
+    expect(finti.controllaDisponibilita).toHaveBeenCalledTimes(2);
+    expect(stato).toEqual({
+      errore: "Questo username è già in uso.",
+      messaggio: null,
+      valori: { nome: "Giulia", username: "giulia_92", email: "giulia@esempio.it" },
+      usernamePreso: "giulia_92",
+    });
+    expect(finti.impostaUsername).not.toHaveBeenCalled();
+  });
+
+  // Anche il codice di invito rifiutato dal trigger (cambiato nel Vault ma
+  // non in CODICE_INVITO) arriva come errore generico: lo username è
+  // libero, e non va detto che è preso.
+  it("errore generico del database con lo username libero: il messaggio generico", async () => {
+    finti.controllaDisponibilita.mockResolvedValueOnce("disponibile").mockResolvedValueOnce("disponibile");
+    finti.signUp.mockResolvedValue(ERRORE_DATABASE);
+
+    const stato = await registrati(STATO_INIZIALE, modulo());
+
+    expect(finti.controllaDisponibilita).toHaveBeenCalledTimes(2);
+    expect(stato.errore).toBe("Si è verificato un errore. Riprova tra poco.");
+    expect(stato.usernamePreso).toBeUndefined();
+  });
+
+  it("errore generico del database senza risposta al secondo controllo: il messaggio generico", async () => {
+    finti.controllaDisponibilita.mockResolvedValueOnce("disponibile").mockResolvedValueOnce("errore");
+    finti.signUp.mockResolvedValue(ERRORE_DATABASE);
+
+    const stato = await registrati(STATO_INIZIALE, modulo());
+
+    expect(stato.errore).toBe("Si è verificato un errore. Riprova tra poco.");
+    expect(stato.usernamePreso).toBeUndefined();
+  });
+
+  it("un altro errore di signUp: nessun secondo controllo dello username", async () => {
+    finti.signUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: "User already registered", code: "user_already_exists", status: 422 },
+    });
+
+    const stato = await registrati(STATO_INIZIALE, modulo());
+
+    expect(finti.controllaDisponibilita).toHaveBeenCalledTimes(1);
+    expect(stato.errore).toBe("Esiste già un account con questa email.");
+    expect(stato.usernamePreso).toBeUndefined();
+  });
+
+  it("username già preso al primo controllo: niente signUp, con il nome preso", async () => {
+    finti.controllaDisponibilita.mockResolvedValueOnce("in_uso");
+
+    const stato = await registrati(STATO_INIZIALE, modulo());
+
+    expect(finti.signUp).not.toHaveBeenCalled();
+    expect(stato.errore).toBe("Questo username è già in uso.");
+    expect(stato.usernamePreso).toBe("giulia_92");
   });
 
   it("codice di invito sbagliato: niente signUp, come prima", async () => {

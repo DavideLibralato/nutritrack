@@ -14,6 +14,7 @@ import PaginaAccesso from "@/components/PaginaAccesso";
 import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
 import { useDisponibilitaUsername } from "@/lib/amici/useDisponibilitaUsername";
 import { TESTO_USERNAME_REGOLE, testoStatoUsername } from "@/lib/amici/testiUsername";
+import { normalizzaUsername } from "@/lib/validazione";
 
 const STATO_INIZIALE: StatoRegistrazione = {
   errore: null,
@@ -30,7 +31,16 @@ export default function RegisterPage() {
   // verrà salvato: la lunghezza non cambia, quindi il cursore resta dov'è.
   // Gli spazi ai bordi li toglie la normalizzazione, non il campo.
   const [username, setUsername] = useState(stato.valori.username);
-  const statoUsername = useDisponibilitaUsername(username);
+  const statoMentreScrivi = useDisponibilitaUsername(username);
+  // Se all'invio la Server Action ha trovato il nome preso (stato.usernamePreso),
+  // vale la sua risposta, più recente di quella avuta mentre si scriveva,
+  // che per lo stesso nome non si richiede e direbbe ancora "Disponibile".
+  // Solo finché il campo contiene quel nome: cambiandolo, torna il
+  // controllo mentre si scrive.
+  const statoUsername =
+    stato.usernamePreso !== undefined && normalizzaUsername(username) === stato.usernamePreso
+      ? "in_uso"
+      : statoMentreScrivi;
   const testoUsername = testoStatoUsername(statoUsername);
   // Si blocca l'invio solo quando si sa già che non va: formato sbagliato o
   // nome preso. "Controllo…" ed "errore" non bloccano: la Server Action

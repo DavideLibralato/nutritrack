@@ -1942,9 +1942,17 @@ del 15/10.
   garantisce il database**: il trigger su `auth.users` (sezione 9.1)
   crea la riga in `nomi_utente`; con il nome preso nel frattempo o un
   formato sbagliato la registrazione fallisce tutta, mai un account senza
-  username. Due persone che scelgono lo stesso nome nello stesso istante:
-  GoTrue risponde con un errore generico, che la Server Action traduce in
-  "Username appena preso, scegline un altro". Il trigger si applica dopo
+  username. Due persone che scelgono lo stesso nome nello stesso istante
+  (dal 18/10, branch `login-ritocchi`): il trigger
+  `crea_nome_utente_registrazione` rifiuta la seconda, e GoTrue all'app
+  manda solo l'errore generico del database ("Database error saving new
+  user", codice `unexpected_failure`). Solo con quell'errore la Server
+  Action richiede `username_disponibile`. Se il nome risulta preso
+  risponde "Questo username è già in uso." (lo stesso testo del controllo
+  prima dell'invio) e la riga sotto il campo passa a "già in uso" finché
+  il nome non cambia. Se è libero o la risposta non arriva, resta il
+  messaggio generico: è un altro rifiuto del trigger, per esempio il
+  codice di invito. Il trigger si applica dopo
   il merge di `amici` (9.1, "ordine dei rilasci"): fino ad allora lo
   username di chi si registra lo salva la Server Action con
   `imposta_username` (sotto, "All'invio").
@@ -6140,6 +6148,17 @@ in vita lo stesso pasto (stesso id), nessuna "Non salvate online". Resta
 come lavoro futuro il CHECK `quantita_g > 0` (sotto, "Difetti e
 verifiche aperti").
 
+**Username appena preso** (18/10, branch `login-ritocchi`; era in
+"Difetti e verifiche aperti"). Con il nome preso fra il controllo e
+`signUp` si leggeva "Si è verificato un errore. Riprova tra poco.". Ora
+si legge "Questo username è già in uso." (sezione 3, "Lo username"). In
+più, un difetto già in produzione: dopo quell'errore, e anche dopo il
+"già in uso" del controllo prima di `signUp`, la riga sotto il campo
+restava su "Disponibile". Ora dice "già in uso" e "Crea account" si
+spegne finché il nome non cambia. Il caso non si provoca a mano (servono
+due registrazioni nello stesso istante): lo coprono i test di
+`auth.test.ts` e `register/page.test.tsx`.
+
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
 su main; 1240 in 109 file sul branch `doppioni`.
 
@@ -6173,17 +6192,6 @@ su main; 1240 in 109 file sul branch `doppioni`.
   servono due dispositivi, l'offline e ignorare di aver già finito.
   Tornata la rete, la discesa porta l'obiettivo di Chrome e la rete di
   sicurezza mette "fatto"
-
-- **"Username appena preso, scegline un altro" non esiste ancora**
-  (16/10, passo 8). La sezione 3 ("Lo username") lo prevede per due
-  persone che scelgono lo stesso nome nello stesso istante: il trigger
-  rifiuta la seconda registrazione, ma GoTrue all'app manda solo un
-  errore generico, e `traduciErroreAuth` lo trasforma in "Si è
-  verificato un errore. Riprova tra poco." Raro: la pagina Registrati e
-  la Server Action controllano prima con `username_disponibile`. Da
-  fare: riconoscere quel caso nella Server Action (per esempio
-  richiamando `username_disponibile` dopo l'errore) e dare il messaggio
-  giusto
 
 - **Redirect URL su Supabase: solo voci esatte** (Authentication → URL
   Configuration; regola dal 10/10). Mai un jolly sui sottodomini

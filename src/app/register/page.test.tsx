@@ -79,6 +79,35 @@ describe("Registrati", () => {
     expect(finti.carica).not.toHaveBeenCalled();
   });
 
+  // Il controllo mentre si scrive (qui finto) ha detto "Disponibile", poi
+  // all'invio la Server Action trova il nome preso. La riga sotto il campo
+  // deve dire "già in uso", non restare su "Disponibile": per lo stesso
+  // nome il controllo mentre si scrive non richiede (difetto trovato il
+  // 18/10, branch login-ritocchi).
+  it("username preso all'invio: la riga sotto il campo dice «già in uso» e Crea account si spegne", async () => {
+    finti.risposta = {
+      errore: "Questo username è già in uso.",
+      messaggio: null,
+      valori: VALORI,
+      usernamePreso: "giulia_92",
+    };
+    render(<RegisterPage />);
+    const campo = screen.getByLabelText("Username");
+    fireEvent.change(campo, { target: { value: "Giulia_92" } });
+    expect(screen.getByRole("status").textContent).toBe("Disponibile");
+
+    creaAccount();
+
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Questo username è già in uso."));
+    expect(campo.getAttribute("aria-invalid")).toBe("true");
+    expect((screen.getByRole("button", { name: "Crea account" }) as HTMLButtonElement).disabled).toBe(true);
+
+    // Cambiato il nome torna il controllo mentre si scrive.
+    fireEvent.change(campo, { target: { value: "giulia_93" } });
+    expect(screen.getByRole("status").textContent).toBe("Disponibile");
+    expect((screen.getByRole("button", { name: "Crea account" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("con un errore: il messaggio, e nessun caricamento", async () => {
     finti.risposta = { errore: "Codice di invito non valido.", messaggio: null, valori: VALORI };
     render(<RegisterPage />);

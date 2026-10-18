@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Username appena preso: il messaggio giusto
+
+Branch `login-ritocchi`, commit 4. Lavoretto di Amici (PUNTO §11). Con
+lo username preso fra il controllo e `signUp`, GoTrue risponde solo
+"Database error saving new user" (`unexpected_failure`). Il rifiuto lo dà
+`crea_nome_utente_registrazione`, non `controlla_registrazione` come
+diceva il commento in `auth.ts`: verificato sulla funzione, in sola
+lettura. Ora, solo con quell'errore, `registrati` richiede
+`username_disponibile`: con il nome preso risponde "Questo username è già
+in uso." e `usernamePreso`; con il nome libero (per esempio un codice di
+invito rifiutato dal trigger) o senza risposta resta il messaggio
+generico. **Difetto già in produzione**, corretto: dopo il "già in uso"
+dato all'invio, la riga sotto il campo restava su "Disponibile". Ora
+dice "già in uso" e "Crea account" si spegne finché il nome non cambia.
+Commento di `auth.ts` corretto. Test in `auth.test.ts` (5 nuovi) e
+`register/page.test.tsx` (1), visti fallire senza il secondo controllo,
+con il secondo controllo dopo ogni errore, ignorandone la risposta e
+senza `usernamePreso` nella pagina. In `auth.test.ts` il `beforeEach` usa
+`mockReset` e non più `mockClear`: le risposte "Once" non consumate
+passavano al test dopo. PUNTO §3 ("Lo username", al posto di "Username
+appena preso, scegline un altro") e §11 (da "Difetti e verifiche aperti"
+a "Fatto"). 1249 test, lint e build verdi.
+
 ## 2026-10-18 — Il marchio di Libra nelle pagine di accesso
 
 Branch `login-ritocchi`, commit 3. Proposta 3 del mockup
