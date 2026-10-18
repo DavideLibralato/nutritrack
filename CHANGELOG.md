@@ -5,6 +5,100 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Doppioni rimasti: riepilogo del branch e prove su iPhone
+
+Branch `doppioni`, commit 8 di 8 (solo documenti). Il branch chiude i
+"doppioni rimasti" di PUNTO §11, tutti **corretti sul branch, da provare
+su iPhone**:
+- caso 1, il cambio di pasto dallo sheet di modifica in Oggi passa da
+  Sposta, con i grammi nuovi, e i soli grammi hanno Annulla (commit 4 e
+  5);
+- caso 2, "Non spostarlo" / "Non duplicarlo" valgono anche se il doppione
+  sparisce (commit 1);
+- caso 3, il segnalibro pieno toglie il pasto salvato con Annulla, in
+  transazione (commit 6 e 7);
+- caso 4, non era più un difetto (Aggiungi lo gestisce dall'11/10);
+- caso 5, Somma mai oltre 99999,99 g: foglio e rete nei piani (commit 2 e
+  3);
+- in più il commit 4b: un trascinamento fallito senza foglio non spegne
+  più i gesti di Oggi (difetto già in produzione).
+
+PUNTO: §3 e §11 ricontrollati per tutto il branch; in §11 il CHECK
+`quantita_g > 0` come lavoro futuro (migration a parte, solo con "ok
+migration") e i 3 gruppi di voci uguali trovati su Supabase il 18/10.
+Nessun cambio di schema, né Supabase né Dexie. 1239 test.
+
+**Prove su iPhone, in ordine** (anteprima del branch, account di prova in
+Safari; per la parte C serve anche Chrome sul PC con lo stesso account).
+Dopo ogni prova con Annulla il diario deve tornare com'era.
+
+*Preparazione.* Oggi: Colazione con Yogurt 125 g, Pranzo con Yogurt
+100 g e Mela 150 g, Cena vuota (alimenti del catalogo, aggiunti da
+Aggiungi).
+
+A. **Sheet di modifica** (caso 1), toccando lo Yogurt di Colazione:
+1. solo i grammi a 150 → "Aggiornato: Yogurt → 150 g"; Annulla → 125 g;
+2. Salva senza cambiare niente → lo sheet si chiude, nessuna barra;
+3. pasto Cena e 150 g → "Spostato: Yogurt → Cena, 150 g"; Annulla →
+   Colazione 125 g;
+4. pasto Pranzo e 150 g → foglio "«Yogurt» c'è già in «Pranzo»" con
+   "Pranzo 100 g · Colazione 150 g" e "Somma (250 g)"; Sposta →
+   "Spostato: Yogurt → Pranzo, 250 g"; Annulla;
+5. come 4, Tieni separati → due righe a Pranzo, 100 e 150 g; Annulla;
+6. come 4, Scrivi quantità 200 → "Spostato: Yogurt → Pranzo, 200 g";
+   Annulla;
+7. come 4, Non spostarlo → esito "→ Resta in Colazione con 150 g", barra
+   "«Yogurt» resta in «Colazione» con 150 g."; Annulla → 125 g;
+8. come 4, poi Annulla nel foglio → niente cambiato, grammi compresi.
+
+B. **Sposta e trascinamento** (regressione dei commit 4 e 4b):
+9. menu sullo Yogurt di Colazione → Sposta → Pranzo: foglio, Somma →
+   "Spostato: Yogurt → Pranzo" (senza grammi); Annulla;
+10. trascina lo Yogurt di Colazione su Cena → "Spostato: Yogurt → Cena";
+    Annulla; poi swipe del giorno e tieni premuto funzionano;
+11. trascina lo Yogurt di Colazione su Pranzo → si apre il foglio dei
+    doppioni; Annulla nel foglio.
+
+C. **Doppione sparito prima della conferma** (caso 2, due dispositivi):
+12. iPhone: aggiungi una Mela da 80 g a Cena. Menu sulla Mela di Pranzo →
+    Sposta → Cena → nel foglio "Non spostarlo", **senza confermare**. PC:
+    cancella la Mela di Cena. iPhone: esci da Safari e rientra (la sync
+    parte al ritorno in primo piano), il foglio è ancora aperto → Sposta
+    → la Mela resta a Pranzo, barra "«Mela» resta in «Pranzo», non
+    spostato.";
+13. come 12 con Duplica (Mela di Pranzo → Cena, "Non duplicarlo") →
+    nessuna copia in Cena, barra "Nessuna copia: «Mela» c'è già in
+    «Cena»." (il testo di sempre: dice il motivo della scelta).
+
+D. **Somma oltre 99999,99 g** (caso 5):
+14. Aggiungi → Colazione → tocca il **nome** di un alimento (per esempio
+    Pane, non il "+" rapido) → 50000 g → Aggiungi. Di nuovo il nome del
+    Pane → 50000 g → foglio: "Somma (100.000 g)" spenta, "Tieni separati"
+    già scelto, sotto "La somma supera 99999,99 g: scegli un'altra
+    opzione."; Aggiungi → due righe da 50.000 g;
+15. aggiungi Pane 50000 g anche a Pranzo con lo sheet quantità. Menu su
+    un Pane di Colazione → Sposta → Pranzo → stesso foglio, Somma spenta;
+    Tieni separati → Sposta; Annulla;
+16. menu su un Pane di Colazione → Duplica → Pranzo, oggi → stesso foglio;
+    chiudi;
+17. togli tutti i Pane da 50.000 g (Elimina dal menu).
+
+E. **Segnalibro pieno** (caso 3), sulla Colazione con lo Yogurt 125 g:
+18. segnalibro vuoto → salva come "Colazione prova" → pieno. Toccalo →
+    "Tolto dai preferiti: Colazione prova", nessuna conferma; Annulla →
+    "Annullato.", segnalibro pieno, il pasto è in Aggiungi > Preferiti;
+19. toccalo di nuovo → barra; subito il segnalibro (ora vuoto) → salva
+    come "Colazione bis"; poi Annulla nella barra (il dito sulla barra
+    ferma il conto) → "Non ripristinato: hai già un altro pasto salvato
+    con gli stessi alimenti."; in Preferiti c'è solo "Colazione bis";
+20. Impostazioni > Preferiti → "Colazione bis" → Elimina pasto → chiede
+    conferma come prima → Sì, elimina.
+
+*Alla fine.* Impostazioni > Sincronizzazione: nessuna "Non salvate
+online". Da Cowork (sola lettura) su Supabase: nessuna voce oltre
+99999,99 g, nessuna riga orfana nei pasti salvati. Poi la pulizia dei dati
+di prova.
+
 ## 2026-10-18 — Segnalibro pieno in Oggi: «Tolto dai preferiti» con Annulla
 
 Branch `doppioni`, commit 7 di 8 (caso 3, seconda metà). Il tocco sul

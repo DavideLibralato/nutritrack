@@ -495,7 +495,10 @@ Costruito col passo C:
   `src/lib/repository/vociDiario.ts`). Se gli alimenti in doppione non
   sono più quelli che l'utente ha visto (un altro dispositivo nel
   frattempo), non si scrive niente e il foglio si riapre con l'elenco
-  nuovo e un avviso.
+  nuovo e un avviso. Se invece i doppioni visti sono spariti tutti, si
+  sposta (o duplica) senza foglio, ma "Non spostarlo" / "Non duplicarlo"
+  valgono lo stesso: quell'alimento resta dov'è (dal 18/10, branch
+  `doppioni`; `togliEsclusi`, la stessa regola di Aggiungi).
 - **Annulla**: le scritture passano dalla fotografia del passo B, quindi
   "Annulla" riporta anche i grammi sommati o scritti a mano. Se non si è
   scritto niente (tutto escluso) la barra non ha "Annulla".
@@ -5802,8 +5805,9 @@ Provati:
 - Duplica con un doppione, dopo il refactoring di `pianoInserimento`,
   funziona come prima.
 
-Com'è fatto: sezione 3, "Doppioni in Aggiungi". Restano aperti i due
-difetti di Sposta, Duplica e dello sheet di modifica (sotto, "Difetti e
+Com'è fatto: sezione 3, "Doppioni in Aggiungi". I due difetti allora
+rimasti aperti, di Sposta e Duplica e dello sheet di modifica, sono
+corretti sul branch `doppioni` il 18/10, da provare (sotto, "Difetti e
 verifiche aperti"). Test: `pianoInserimento.test.ts`,
 `vociDiario.test.ts`, `testiBarra.test.ts`, la pagina Aggiungi e la
 pagina Oggi.
@@ -6078,19 +6082,32 @@ su main; 1239 in 109 file sul branch `doppioni`.
   improbabile): **corretto sul branch `doppioni` il 18/10, da provare su
   iPhone**. Il foglio dei doppioni non controllava il massimo
   di `numeric(7,2)` sulla somma: due voci da 50.000 g dello stesso
-  alimento sommate farebbero 100.000 g, che Dexie salva e il server
+  alimento sommate facevano 100.000 g, che Dexie salva e il server
   rifiuta, con la voce accantonata dopo 5 tentativi. Per arrivarci serve
-  scrivere a mano due quantità assurde. **Rete già fatta** (18/10): i due
-  piani (`grammiRigaCheResta` in `pianoSpostamento.ts`, comune a Sposta,
-  trascinamento, Duplica e Aggiungi) rifiutano oltre `GRAMMI_MASSIMI` i
-  grammi della riga che resta, con Somma o con Scrivi quantità: niente
-  scritto, niente in outbox, la pagina mostra il suo messaggio d'errore.
-  **Foglio fatto** (18/10): Somma spenta oltre il massimo, il blocco parte
-  da "Tieni separati" con il testo "La somma supera 99999,99 g: scegli
-  un'altra opzione." (sezione 3, "Doppioni"); il totale del foglio e
-  quello dei piani sono la stessa funzione, `totaleSomma`. **Da provare
-  su iPhone.** Lo stesso rischio non c'è altrove: i pasti salvati copiano i
-  grammi 1:1 e la modifica di un pasto salvato non somma.
+  scrivere a mano due quantità assurde. Ora, in due strati:
+  - **il foglio** spegne Somma oltre il massimo: il blocco parte da
+    "Tieni separati", con "La somma supera 99999,99 g: scegli un'altra
+    opzione." (sezione 3, "Doppioni"). Il totale del foglio, della riga
+    d'esito e dei piani è la stessa funzione, `totaleSomma`;
+  - **la rete nei piani** (`grammiRigaCheResta` in `pianoSpostamento.ts`,
+    comune a Sposta, trascinamento, Duplica e Aggiungi): oltre
+    `GRAMMI_MASSIMI` i grammi della riga che resta, con Somma o con
+    Scrivi quantità, sono un errore prima di ogni scrittura. Niente
+    scritto, niente in outbox, la pagina mostra il suo messaggio
+    d'errore. Serve perché alla conferma le righe si rileggono e possono
+    essere cambiate.
+  Lo stesso rischio non c'è altrove: i pasti salvati copiano i grammi 1:1
+  e la modifica di un pasto salvato non somma. Test in
+  `vociDiario.test.ts`, `pianoSpostamento.test.ts` e
+  `SheetDoppioni.test.tsx`
+- **CHECK `quantita_g > 0` su `voci_diario` e `composizioni_voci`**
+  (lavoro futuro, deciso da Davide il 18/10: migration a parte, solo con
+  il suo "ok migration"). Rete di sicurezza contro un bug del client: il
+  tipo `numeric(7,2)` accetta 0 e i negativi, e il client li rifiuta già
+  (`leggiGrammi`). Al 18/10 i dati lo rispettano (minimo 10 g nel diario,
+  20 g nei pasti salvati). Un CHECK `<= 99999,99` invece non serve:
+  `numeric(7,2)` lo impedisce già. Non toglie il problema lato app: una
+  riga rifiutata finisce comunque fra le modifiche accantonate
 - **Onboarding finito su un dispositivo e riaperto offline su un altro**
   (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").
   Inizio l'onboarding in Safari, lo finisco su Chrome, poi riapro Safari
@@ -6188,7 +6205,10 @@ su main; 1239 in 109 file sul branch `doppioni`.
   passano da `aggiungiNelPasto` (provato l'11/10, sezione 3, "Doppioni in
   Aggiungi"). Com'è fatto ora: sezione 3, "Doppioni", "Dallo sheet di
   modifica in Oggi". Test in `vociDiario.test.ts`, `page.test.tsx`,
-  `testiSpostamento.test.ts` e `testiBarra.test.ts`
+  `testiSpostamento.test.ts` e `testiBarra.test.ts`. Il 18/10 su Supabase
+  c'erano **3 gruppi** di voci vive con stesso alimento, pasto e giorno
+  (lettura di Claude): non si sa se nati da "Tieni separati", che è
+  voluto, o da questo difetto. Non si toccano
 
 - **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
   (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi
