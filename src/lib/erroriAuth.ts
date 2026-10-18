@@ -8,6 +8,32 @@ export const LINK_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.
 // Il server ha rifiutato il link.
 export const LINK_SCADUTO = "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
 export const ERRORE_CONNESSIONE = "Errore di connessione. Controlla la tua connessione e riprova.";
+export const PASSWORD_TROPPO_CORTA = "La password deve avere almeno 6 caratteri.";
+const ERRORE_GENERICO = "Si è verificato un errore. Riprova tra poco.";
+
+// Impostazioni > Profilo > Cambia password (cambiaPassword.ts): un testo
+// per ogni esito che lascia l'utente sulla pagina. "ok" non c'è: si torna
+// a Profilo con "Password aggiornata".
+export const TESTI_CAMBIO_PASSWORD = {
+  "attuale-mancante": "Inserisci la password attuale.",
+  "nuova-mancante": "Inserisci la nuova password.",
+  "attuale-sbagliata": "La password attuale non è corretta.",
+  uguale: "La nuova password è uguale a quella attuale: scegline una diversa.",
+  "troppo-corta": PASSWORD_TROPPO_CORTA,
+  debole: "Questa password è troppo facile da indovinare: scegline un'altra.",
+  riautenticazione:
+    "Il server chiede una verifica via email per cambiare la password. Usa \"Reimpostala via email\" qui sotto.",
+  sessione: "Il server non riconosce più la tua sessione. Esci e rientra, poi riprova.",
+  rete: "Non riuscito: il server non risponde. La password non è cambiata. Riprova.",
+  "risposta-persa":
+    "Non so se è andata: la connessione si è interrotta prima della risposta. La password potrebbe essere già quella nuova.",
+  errore: ERRORE_GENERICO,
+} as const;
+
+// "Password attuale sbagliata" subito dopo una risposta persa: il tentativo
+// di prima può essere arrivato, e allora l'attuale è già quella nuova.
+export const ATTUALE_SBAGLIATA_DOPO_RISPOSTA_PERSA =
+  "La password attuale non è corretta. Il tentativo di prima forse è riuscito: prova a scrivere come attuale quella nuova.";
 
 // Traduce i messaggi di errore di Supabase Auth (che arrivano in inglese)
 // in italiano, cosi anche gli amici non tecnici che usano l'app capiscono
@@ -17,7 +43,7 @@ const MAPPA_ERRORI: Record<string, string> = {
   "invalid login credentials": "Email o password non corrette.",
   "email not confirmed": "Devi confermare la tua email prima di accedere: controlla la posta.",
   "user already registered": "Esiste già un account con questa email.",
-  "password should be at least 6 characters": "La password deve avere almeno 6 caratteri.",
+  "password should be at least 6 characters": PASSWORD_TROPPO_CORTA,
   "unable to validate email address": "L'indirizzo email non è valido.",
   "email rate limit exceeded": "Troppi tentativi in poco tempo: riprova tra qualche minuto.",
   "signup requires a valid password": "Inserisci una password valida.",
@@ -37,7 +63,7 @@ export function traduciErroreAuth(messaggio: string | undefined | null): string 
   );
   if (trovato) return trovato[1];
 
-  return "Si è verificato un errore. Riprova tra poco.";
+  return ERRORE_GENERICO;
 }
 
 // Codici con cui il server rifiuta il link. bad_code_verifier: il

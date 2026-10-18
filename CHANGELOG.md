@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Cambia password: la logica in /lib
+
+Branch `cambia-password`, commit 2. Nuovo `src/lib/account/cambiaPassword.ts`:
+controlli sul dispositivo, verifica col server (`getUser`) prima di
+inviare, poi `updateUser({ password, current_password })`. Il nome è
+`current_password` e non `currentPassword` della guida Supabase: il
+server legge solo il primo. Ogni errore diventa un esito, deciso dal
+codice e non dal testo (con la password attuale mancante o sbagliata il
+server manda lo stesso testo inglese). "Attuale sbagliata" dopo una
+risposta persa ha un testo suo, perché la password può essere già
+cambiata. Testi in `erroriAuth.ts`. Test permanenti in
+`cambiaPassword.test.ts`, visti fallire con 4 guasti (esito dal testo,
+`currentPassword`, niente testo speciale, chiamata senza risposta da
+`getUser`). Nessuna interfaccia ancora.
+
 ## 2026-10-18 — Merge di `login-ritocchi` su main
 
 Fast-forward `d3906e8` → `f9d7b26`, 6 commit. Branch cancellato in
