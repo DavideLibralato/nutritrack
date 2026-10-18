@@ -4517,9 +4517,11 @@ Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
   `autoComplete="username"` in sola lettura dice al gestore delle
   password a quale account salvare quella nuova. Qui è fuori schermo
   (`sr-only`, non `type="hidden"`, che iOS ignora), con `aria-hidden` e
-  `tabIndex={-1}`. **Da provare su iPhone**: se il Portachiavi non lo
-  riconosce, si torna al campo visibile in sola lettura come in
-  Reimposta.
+  `tabIndex={-1}`. **Provato su iPhone il 18/10**: il Portachiavi
+  propone la password salvata nel campo "Password attuale" (prova 3) e,
+  dopo il cambio, propone di aggiornare quella salvata per l'email
+  giusta (prova 7). Il campo nascosto basta: la via di riserva (campo
+  visibile in sola lettura come in Reimposta) non serve.
 - **La chiamata** (`src/lib/account/cambiaPassword.ts`):
   `updateUser({ password, current_password })`. Il nome è
   `current_password`, non `currentPassword` come nella guida
@@ -4550,7 +4552,16 @@ Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
   rifiuto c'era, la password non cambiava; sbagliava solo il testo).
   Corretto nel commit 6 del branch; si accettano tutti e due i codici,
   per versioni diverse del server.
-  `same_password` → "uguale a quella attuale"; `weak_password` con
+  `same_password` → "uguale a quella attuale": **verificato dai log**
+  (18/10, 22:32:46, 422 `same_password`, con una nuova uguale alla
+  password salvata). **L'ordine vero dei controlli** in produzione è
+  diverso da quello del sorgente: "nuova uguale alla vecchia" viene
+  **prima** della password attuale. Con l'attuale sbagliata e la nuova
+  uguale a quella salvata si legge quindi "uguale a quella attuale", non
+  "attuale non corretta". Non dice niente di nuovo a chi tenta: chi
+  indovina la password salvata può già scriverla come attuale.
+  `reauthentication_needed` resta **non verificato** (solo dal sorgente;
+  con "Secure password change" spenta non può arrivare). `weak_password` con
   "length" → "almeno 6 caratteri", con altri motivi → "troppo facile";
   401/403/404 o nessuna sessione → "Esci e rientra"; rete dopo l'invio →
   "Non so se è andata". Se subito dopo arriva "attuale sbagliata", il
@@ -6279,8 +6290,9 @@ due registrazioni nello stesso istante): lo coprono **solo i test**, di
 `auth.test.ts` e `register/page.test.tsx`. Su iPhone il 18/10 è stato
 provato il "già in uso" mentre si scrive (prova 8), come regressione.
 
-**Cambia password** (18/10, branch `cambia-password`, **da provare su
-iPhone**: sotto, "Prove su iPhone di Cambia password"). La riga
+**Cambia password** (18/10, branch `cambia-password`; **provato su
+iPhone il 18/10** sull'anteprima: sotto, "Prove su iPhone di Cambia
+password"). La riga
 "Password" in Profilo e la sottopagina con password attuale e nuova
 (§9.1, "Cambia password"; §3, "Profilo"). `RigaImpostazioni` passa ora
 dal guardiano delle modifiche non salvate (`LinkProtetto`). Difetto
@@ -6580,12 +6592,32 @@ un'email in più.
 
 ### Prove su iPhone di Cambia password
 
-**Da fare** sull'anteprima del branch, con l'**account di prova**
-(davidemancon02@gmail.com) in Safari; l'app installata resta
-sull'account vero. Le prove cambiano la password dell'account di prova:
-alla fine resta quella dell'ultima prova riuscita. Dopo, Claude
-verifica sui log di Auth, in sola lettura, le richieste `PUT /user` e i
-loro esiti.
+**Provate il 18/10** sull'anteprima del branch, con l'**account di
+prova** (davidemancon02@gmail.com) in Safari: **prove 0-10 passate**. La
+5 è stata rifatta alle 23:11 con la Build `1399140` (commit 6) e ora dà
+"La password attuale non è corretta.". La prova 11 (facoltativa) non è
+stata fatta. Portachiavi: alla prova 3 propone la password salvata, alla
+7 propone di aggiornarla per l'email giusta.
+
+Verificato da Claude sui log di Auth, in sola lettura; tutte le
+richieste partono dall'anteprima:
+- 22:27-22:28, quattro `PUT /user` rifiutati con 400
+  `current_password_invalid` (prova 5 col codice di prima): password
+  non cambiata;
+- 22:29:11, `PUT /user` 200 (prova 7);
+- 22:29:59, accesso con la password vecchia rifiutato
+  (`invalid_credentials`); 22:30:16, accesso con la nuova (prova 9);
+- 22:31:33 `/recover`, 22:31:47 `/verify`, 22:31:58 `PUT /user` 200
+  (prova 10): il reset funziona con "Require current password" acceso;
+- 22:32:46, `PUT /user` 422 `same_password`, con una nuova uguale alla
+  password salvata: il controllo "uguale alla vecchia" viene prima di
+  quello sulla password attuale (§9.1, "Cambia password");
+- 23:11:31, `PUT /user` 400 `current_password_invalid` (prova 5 col
+  commit 6);
+- 22:33, un accesso e un'uscita con l'account vero di Davide
+  sull'anteprima, senza scritture.
+
+Le prove, come erano state scritte:
 
 0. Prima: in Informazioni si legge la Build dell'anteprima. Su
    Supabase va aggiunta la Redirect URL dell'anteprima del branch, che
@@ -6606,12 +6638,12 @@ loro esiti.
    current password" è acceso): attuale sbagliata, nuova valida →
    "La password attuale non è corretta.", e la password **non cambia**.
    La prova 7 lo conferma: lì come attuale funziona ancora quella di
-   prima. **Da rifare dopo il commit 6**: la prima volta (18/10) il
-   rifiuto c'era, ma il testo era "Si è verificato un errore. Riprova tra
-   poco.", perché il server manda `current_password_invalid` e il codice
-   si aspettava `current_password_mismatch` (§9.1, "Cambia password").
-   Dopo la prova, Claude controlla nei log che il codice sia ancora
-   quello.
+   prima. **Rifatta alle 23:11 dopo il commit 6, passata**: la prima
+   volta (18/10) il rifiuto c'era, ma il testo era "Si è verificato un
+   errore. Riprova tra poco.", perché il server manda
+   `current_password_invalid` e il codice si aspettava
+   `current_password_mismatch` (§9.1, "Cambia password"). Nei log, alle
+   23:11:31, il codice è ancora `current_password_invalid`.
 6. Senza rete (modalità aereo): riquadro "Serve la connessione",
    pulsante spento, niente "Reimpostala via email". Torna la rete →
    pulsante attivo, i campi scritti sono ancora lì.
@@ -6646,9 +6678,10 @@ dell'anteprima.
    sull'anteprima (sopra, "Fatto", "Pagine di accesso" e "Username
    appena preso"), unito a main il 18/10; Redirect URL dell'anteprima
    tolta da Supabase lo stesso giorno
-3. **`cambia-password`**: codice fatto sul branch il 18/10 (§9.1,
-   "Cambia password"); restano le prove su iPhone (sopra, "Prove su
-   iPhone di Cambia password") e il merge
+3. **`cambia-password`**: provato su iPhone il 18/10 sull'anteprima
+   (sopra, "Fatto" e "Prove su iPhone di Cambia password"). Restano il
+   merge su main e, dopo, la Redirect URL dell'anteprima da togliere da
+   Supabase
 4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)

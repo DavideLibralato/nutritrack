@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Cambia password provato su iPhone
+
+Branch `cambia-password`, commit 7 (solo documenti). **Provato su iPhone
+il 18/10** sull'anteprima del branch, account di prova: prove 0-10
+passate. La 5 è stata rifatta alle 23:11 con la Build `1399140` (commit
+6): "La password attuale non è corretta.". La prova 11 (facoltativa) non
+è stata fatta. Portachiavi: propone la password salvata (prova 3) e
+propone di aggiornarla per l'email giusta (prova 7). Il campo email
+nascosto basta, quindi nessun difetto aperto.
+
+Verificato da Claude sui log di Auth, in sola lettura, tutte le
+richieste dall'anteprima:
+- quattro `PUT /user` rifiutati con 400 `current_password_invalid`
+  (22:27-22:28, password non cambiata);
+- cambio riuscito alle 22:29:11;
+- accesso con la password vecchia rifiutato e con la nuova riuscito
+  (22:29:59 e 22:30:16);
+- reset completo con "Require current password" acceso (22:31:33-58);
+- 422 `same_password` alle 22:32:46;
+- 400 `current_password_invalid` alle 23:11:31 col commit 6;
+- alle 22:33 un accesso e un'uscita con l'account vero di Davide, senza
+  scritture.
+
+Trovato: in produzione il controllo "nuova uguale alla vecchia" viene
+**prima** di quello sulla password attuale. PUNTO §9.1: `same_password`
+verificato dai log, con l'ordine vero dei controlli;
+`reauthentication_needed` resta non verificato. §11: "Fatto", le prove
+con gli esiti, "Prossimi passi".
+
 ## 2026-10-18 — Cambia password: il codice vero della password attuale sbagliata
 
 Branch `cambia-password`, commit 6. **Difetto trovato su iPhone** nella
