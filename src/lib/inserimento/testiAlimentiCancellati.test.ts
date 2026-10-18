@@ -5,7 +5,12 @@
 // tornato.
 
 import { describe, it, expect } from "vitest";
-import { messaggioDopoRipristino } from "./testiAlimentiCancellati";
+import {
+  messaggioDopoRipristino,
+  messaggioDopoRipristinoPasti,
+  messaggioToltiDaiPreferiti,
+} from "./testiAlimentiCancellati";
+import { MESSAGGIO_ANNULLATO } from "./testiBarra";
 
 const NESSUNO = { alimentiNonRipristinati: [], pastiNonRipristinati: [] };
 const pane = { nome: "Pane", etichetta: "Pane · Mulino" };
@@ -52,5 +57,46 @@ describe("messaggioDopoRipristino", () => {
     expect(messaggioDopoRipristino(["Mela"], { ...NESSUNO, pastiNonRipristinati: ["Cena"] })).toEqual({
       testo: "Ripristinato: Mela. Il pasto salvato «Cena» no: ne hai già un altro con lo stesso nome.",
     });
+  });
+});
+
+// Il segnalibro pieno in Oggi e il suo Annulla (18/10, caso 3 dei "doppioni
+// rimasti"): le stesse parole dell'Annulla degli alimenti.
+describe("messaggioToltiDaiPreferiti", () => {
+  it("uno: il testo di Impostazioni > Preferiti; più di uno: quanti", () => {
+    expect(messaggioToltiDaiPreferiti(["Colazione"])).toEqual({ testo: "Tolto dai preferiti:", nome: "Colazione" });
+    expect(messaggioToltiDaiPreferiti(["Colazione", "Colazione bis"])).toEqual({
+      testo: "Tolti dai preferiti:",
+      nome: "2 pasti salvati",
+    });
+  });
+});
+
+describe("messaggioDopoRipristinoPasti", () => {
+  it("tutto tornato: «Annullato.», come ogni Annulla di Oggi", () => {
+    expect(messaggioDopoRipristinoPasti({ ripristinati: ["Colazione"], nonRipristinati: [] })).toBe(MESSAGGIO_ANNULLATO);
+  });
+
+  it("un pasto solo non tornato: il motivo, per ciascuno dei tre", () => {
+    const testo = (motivo: "nome" | "contenuto" | "vuoto") =>
+      messaggioDopoRipristinoPasti({ ripristinati: [], nonRipristinati: [{ nome: "Colazione", motivo }] }).testo;
+    expect(testo("nome")).toBe("Non ripristinato: hai già un altro pasto salvato con lo stesso nome.");
+    expect(testo("contenuto")).toBe("Non ripristinato: hai già un altro pasto salvato con gli stessi alimenti.");
+    expect(testo("vuoto")).toBe("Non ripristinato: i suoi alimenti non sono più nel catalogo.");
+  });
+
+  it("in parte: i ripristinati, poi quelli rimasti tolti con il loro motivo", () => {
+    const m = messaggioDopoRipristinoPasti({
+      ripristinati: ["Colazione"],
+      nonRipristinati: [
+        { nome: "Pranzo", motivo: "nome" },
+        { nome: "Cena", motivo: "contenuto" },
+        { nome: "Merenda", motivo: "contenuto" },
+      ],
+    });
+    expect(m.testo).toBe(
+      "Ripristinato: «Colazione». Il pasto salvato «Pranzo» no: ne hai già un altro con lo stesso nome. " +
+        "I pasti salvati «Cena» e «Merenda» no: hai già altri pasti con gli stessi alimenti."
+    );
   });
 });

@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Segnalibro pieno in Oggi: «Tolto dai preferiti» con Annulla
+
+Branch `doppioni`, commit 7 di 8 (caso 3, seconda metà). Il tocco sul
+segnalibro pieno toglie i pasti salvati con `eliminaPastiSalvati` (commit
+6) e mostra "Tolto dai preferiti: Colazione" (lo stesso testo di
+Impostazioni > Preferiti; con più pasti "Tolti dai preferiti: 2 pasti
+salvati") con Annulla, che li ripristina: "Annullato." e segnalibro di
+nuovo pieno, oppure "Non ripristinato: hai già un altro pasto salvato con
+gli stessi alimenti." (o con lo stesso nome, o i suoi alimenti non più
+nel catalogo; `messaggioDopoRipristinoPasti`, con le parole dell'Annulla
+degli alimenti). Prima un errore era silenzioso: ora "Operazione non
+riuscita. Riprova." e niente cambia. La barra di Oggi annulla voci del
+diario oppure pasti salvati (`Annullabile`); i casi di prima sono gli
+stessi. Test: 3 sulla pagina (tocco, Annulla, segnalibro di nuovo pieno;
+risalvato prima di Annulla, rifiutato con il testo; errore) e i testi in
+`testiAlimentiCancellati.test.ts`; visti fallire con la barra senza
+Annulla, con l'Annulla che dice sempre "Annullato.", con l'errore
+silenzioso e con il motivo "contenuto" detto come "nome". **Da provare
+su iPhone** (elenco nel commit 8).
+
 ## 2026-10-18 — Pasti salvati: eliminazione in transazione e ripristino dalla traccia
 
 Branch `doppioni`, commit 6 di 8 (caso 3, prima metà; solo repository).

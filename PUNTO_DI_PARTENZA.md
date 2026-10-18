@@ -636,6 +636,23 @@ apposta, lo si **promuove da una giornata già registrata**. Sulla riga del past
 in Oggi: "Salva come preferito". Registri la colazione una volta con calma, e da
 lì in poi è un tap. Nessun lavoro di configurazione, nessuna schermata nuova.
 
+**Togliere un pasto salvato dal segnalibro pieno** (dal 18/10, branch
+`doppioni`, caso 3 dei "doppioni rimasti"; decisione di Davide: Annulla,
+non conferma). Il tocco sul segnalibro pieno di un pasto in Oggi toglie
+subito tutti i pasti salvati con quel contenuto, in una transazione
+(`eliminaPastiSalvati`), e mostra la barra "Tolto dai preferiti:
+Colazione" (lo stesso testo di Impostazioni > Preferiti; con più pasti
+"Tolti dai preferiti: 2 pasti salvati") con **Annulla**. Annulla li rimette
+(`ripristinaPastiSalvati`) e il segnalibro torna pieno: "Annullato.". Un
+pasto non torna se nel frattempo è nato un altro pasto salvato con lo
+stesso nome o con gli stessi alimenti (per esempio il segnalibro ritoccato
+e risalvato con un altro nome prima di Annulla), o se nessuno dei suoi
+alimenti è più nel catalogo; la barra lo dice con le parole dell'Annulla
+degli alimenti: "Non ripristinato: hai già un altro pasto salvato con gli
+stessi alimenti." (`messaggioDopoRipristinoPasti`). Un errore dà
+"Operazione non riuscita. Riprova." e niente cambia. Da Preferiti
+"Elimina pasto" chiede conferma, come prima.
+
 **Modificare un pasto salvato** (deciso il 2026-09-26). La matita sulla sua
 riga in Preferiti (separata dal tap sulla riga, che lo aggiunge subito) apre
 una schermata di modifica dentro Aggiungi, a tutta altezza con una testata
@@ -6042,7 +6059,7 @@ prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1232 in 109 file sul branch `doppioni`.
+su main; 1239 in 109 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6225,8 +6242,9 @@ su main; 1232 in 109 file sul branch `doppioni`.
   conferma. Stessa azione, due livelli di protezione: un tocco per sbaglio
   sul segnalibro perde il pasto. **Deciso da Davide il 18/10: Annulla,
   non conferma** (azione rapida e reversibile); da Preferiti la conferma
-  resta. In lavorazione sul branch `doppioni` (caso 3). **Fatto il
-  repository** (18/10, commit 6): `eliminaPastiSalvati` toglie uno o più
+  resta. **Corretto sul branch `doppioni` il 18/10, da provare su
+  iPhone** (caso 3; com'è fatto: sezione 3, "Togliere un pasto salvato dal
+  segnalibro pieno"). Il repository (commit 6): `eliminaPastiSalvati` toglie uno o più
   pasti salvati e le loro righe in **una sola transazione** (prima in
   parallelo e fuori transazione: un guasto a metà poteva lasciare un pasto
   vivo senza alimenti) e restituisce la traccia; `eliminaComposizione`, che
@@ -6237,8 +6255,11 @@ su main; 1232 in 109 file sul branch `doppioni`.
   pasto non torna se nel frattempo ne è nato un altro con lo stesso nome
   ("nome"), con gli stessi alimenti e grammi ("contenuto"), o se nessuno dei
   suoi alimenti è più nel catalogo ("vuoto"). Con più pasti e conflitti solo
-  su alcuni, tornano gli altri, come per gli alimenti. Resta da fare: la
-  barra di Oggi e il segnalibro (commit 7)
+  su alcuni, tornano gli altri, come per gli alimenti. La pagina (commit
+  7): la barra di Oggi annulla voci del diario oppure pasti salvati (tipo
+  `Annullabile`), e il segnalibro pieno usa la seconda. Test in
+  `composizioni.test.ts`, `page.test.tsx` e
+  `testiAlimentiCancellati.test.ts`
 - Il gesto "indietro" nella modifica di un pasto salvato esce senza avviso
   di modifiche non salvate: accettato per ora. In Impostazioni il cambio di
   scheda ora avvisa (il guardiano, sezione 3); resta scoperto solo il gesto

@@ -100,10 +100,17 @@ import {
   pastoSalvatoCoiSoliValidi,
   separaVociPerCatalogo,
 } from "@/lib/inserimento/pastiSalvati";
-import { testoAvvisoEsclusi, testoGiaSalvato } from "@/lib/inserimento/testiAlimentiCancellati";
+import {
+  messaggioDopoRipristinoPasti,
+  messaggioToltiDaiPreferiti,
+  testoAvvisoEsclusi,
+  testoGiaSalvato,
+} from "@/lib/inserimento/testiAlimentiCancellati";
 import {
   salvaPastoComeComposizione,
-  eliminaComposizione,
+  eliminaPastiSalvati,
+  ripristinaPastiSalvati,
+  type TracciaRimozione,
 } from "@/lib/repository/composizioni";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { prendiInserimento } from "@/lib/inserimento/ultimoInserimento";
@@ -136,6 +143,14 @@ import CopiaTrascinata from "@/components/CopiaTrascinata";
 // il nome del pasto ("pasto"). Fuori dal componente: un elenco nuovo a ogni
 // ridisegno non cambierebbe niente, ma così è chiaro che è fisso.
 const TIPI_RIGA_OGGI: readonly TipoRiga[] = ["voce", "pasto"];
+
+// Cosa riporta indietro l'"Annulla" della barra: voci del diario (la
+// fotografia di vociDiario.ts: inserimenti, Sposta, Duplica, Elimina,
+// grammi) oppure pasti salvati tolti dal segnalibro (la traccia di
+// eliminaPastiSalvati, dal 18/10).
+type Annullabile =
+  | { tipo: "voci"; fotografia: FotografiaVoci }
+  | { tipo: "pasti-salvati"; traccia: TracciaRimozione };
 
 // "Sposta" (sezione 3, "Tieni premuto"): cosa si sposta e a che punto si è.
 // `sceltaPasto`: si sta scegliendo il pasto nel foglio (Sposta dal menu); col
@@ -374,13 +389,14 @@ function OggiContenuto() {
   // - Elimina dal menu contestuale, con "Annulla" (sezione 3, "Tieni
   //   premuto");
   // - il tocco della stella su un pasto il cui contenuto valido è già
-  //   salvato, senza azione.
-  // `fotografia`: com'erano le voci prima dell'operazione
-  // (src/lib/repository/vociDiario.ts). Se c'è, la barra ha "Annulla".
+  //   salvato, senza azione;
+  // - il segnalibro pieno, che toglie il pasto dai preferiti, con "Annulla"
+  //   (dal 18/10).
+  // `annulla`: cosa riporta indietro "Annulla". Se c'è, la barra lo mostra.
   const [barra, setBarra] = useState<
     | (MessaggioBarra & {
         id: string;
-        fotografia?: FotografiaVoci;
+        annulla?: Annullabile;
         // Duplica su un altro giorno: il giorno che "Vedi" mostra.
         vediGiorno?: string;
       })
@@ -404,22 +420,30 @@ function OggiContenuto() {
     const { fotografia, messaggio } = inserimento;
     if (fotografia.prima.length === 0 && fotografia.idCreate.length === 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sincronizzazione con una sorgente esterna (il modulo in memoria), una volta al montaggio
-    setBarra({ id: crypto.randomUUID(), ...messaggio, fotografia });
+    setBarra({ id: crypto.randomUUID(), ...messaggio, annulla: { tipo: "voci", fotografia } });
   }, []);
 
-  // "Annulla" nella barra: riporta le voci a com'erano prima
-  // dell'operazione (annullaOperazione, che le rilegge da Dexie e passa dal
-  // repository, quindi anche dall'outbox; scrive solo in avanti). La barra
-  // si toglie PRIMA di scrivere, così un secondo tocco ravvicinato non
-  // lancia un secondo annullamento.
+  // "Annulla" nella barra. Per le voci del diario le riporta a com'erano
+  // prima dell'operazione (annullaOperazione, che le rilegge da Dexie e
+  // passa dal repository, quindi anche dall'outbox; scrive solo in avanti).
+  // Per i pasti salvati tolti dal segnalibro li rimette in vita dalla
+  // traccia (ripristinaPastiSalvati): quelli il cui nome o contenuto è
+  // ormai preso restano tolti, e la barra lo dice. La barra si toglie
+  // PRIMA di scrivere, così un secondo tocco ravvicinato non lancia un
+  // secondo annullamento.
   async function annullaUltimaOperazione() {
-    const fotografia = barra?.fotografia;
-    if (!fotografia) return;
+    const annulla = barra?.annulla;
+    if (!annulla || !userId) return;
     const precedente = barra;
     setBarra(null);
     try {
-      await annullaOperazione(fotografia);
-      setBarra({ id: crypto.randomUUID(), ...MESSAGGIO_ANNULLATO });
+      if (annulla.tipo === "voci") {
+        await annullaOperazione(annulla.fotografia);
+        setBarra({ id: crypto.randomUUID(), ...MESSAGGIO_ANNULLATO });
+      } else {
+        const esito = await ripristinaPastiSalvati(userId, annulla.traccia);
+        setBarra({ id: crypto.randomUUID(), ...messaggioDopoRipristinoPasti(esito) });
+      }
     } catch {
       // Si ripropone l'Annulla: quello che è già stato rimesso a posto
       // viene saltato, quindi riprovare dopo un guasto a metà converge.
@@ -681,9 +705,8 @@ function OggiContenuto() {
     try {
       await scriviTipoGiornoScelto(userId, giorno, tipo);
     } catch {
-      // Azione istantanea senza sheet aperto (come toggleSalvaPreferito qui
-      // sotto): nessun posto dove mostrare un errore. L'utente vede la
-      // pastiglia non cambiare e può riprovare.
+      // Azione istantanea senza sheet aperto: l'utente vede la pastiglia non
+      // cambiare e può riprovare.
     }
   }
 
@@ -814,7 +837,7 @@ function OggiContenuto() {
           duplicati: piano.duplicati.length,
           esclusi: piano.esclusi,
         }),
-        fotografia: scritto ? fotografia : undefined,
+        annulla: scritto ? { tipo: "voci", fotografia } : undefined,
         vediGiorno: altroGiorno && scritto ? dataDestinazione : undefined,
       });
     } catch {
@@ -902,7 +925,7 @@ function OggiContenuto() {
               ? grammiInDestinazione(piano, s.origine.id)
               : null,
         }),
-        fotografia: scritto ? fotografia : undefined,
+        annulla: scritto ? { tipo: "voci", fotografia } : undefined,
       });
     } catch {
       // applicaScritture ha già rimesso a posto quello che aveva scritto.
@@ -939,7 +962,7 @@ function OggiContenuto() {
         setBarra({
           id: crypto.randomUUID(),
           ...messaggioEliminato(nomePasto, fotografia.prima.length),
-          fotografia,
+          annulla: { tipo: "voci", fotografia },
         });
       }
     } catch {
@@ -959,7 +982,7 @@ function OggiContenuto() {
     setBarra({
       id: crypto.randomUUID(),
       ...messaggioEliminato(fotografia.prima[0].nome_alimento),
-      fotografia,
+      annulla: { tipo: "voci", fotografia },
     });
   }
 
@@ -1022,7 +1045,7 @@ function OggiContenuto() {
         { tipo: "aggiorna", id: voce.id, modifiche: { quantita_g: grammi } },
       ]);
       chiudiModifica();
-      setBarra({ id: crypto.randomUUID(), ...messaggioAggiornato(voce.nome_alimento, grammi), fotografia });
+      setBarra({ id: crypto.randomUUID(), ...messaggioAggiornato(voce.nome_alimento, grammi), annulla: { tipo: "voci", fotografia } });
     } catch {
       setSalvataggioVoce("errore");
     }
@@ -1046,8 +1069,10 @@ function OggiContenuto() {
   // già a un pasto salvato, apre SheetNome per il nome — non window.prompt(),
   // non disponibile in alcuni ambienti (webview integrate, alcune PWA
   // installate). Se invece la stella è già piena, ripremerla lo toglie
-  // subito dai preferiti, senza sheet: stessa immediatezza della stella sugli
-  // alimenti singoli in SheetQuantita.
+  // subito dai preferiti, senza sheet né conferma: un tocco, con "Annulla"
+  // nella barra (decisione di Davide del 18/10, caso 3 dei "doppioni
+  // rimasti"; prima non c'era nessun modo di tornare indietro). Da
+  // Preferiti invece "Elimina pasto" chiede conferma, e resta così.
   async function toggleSalvaPreferito(pasto: Pasto) {
     if (!userId || !composizioni || !composizioniVoci || !catalogo) return;
     const vociPasto = vociGiorno.filter((v) => v.pasto_id === pasto.id);
@@ -1061,13 +1086,19 @@ function OggiContenuto() {
     );
     if (idsCorrispondenti.length > 0) {
       try {
-        await Promise.all(
-          idsCorrispondenti.map((id) => eliminaComposizione(userId, id))
-        );
+        // Tutti quelli che corrispondono, in una transazione: o tutti o
+        // nessuno. La traccia dice quali sono stati tolti davvero.
+        const traccia = await eliminaPastiSalvati(userId, idsCorrispondenti);
+        if (traccia.idComposizioni.length === 0) return;
+        const nomi = traccia.idComposizioni.map((id) => composizioni.find((c) => c.id === id)?.nome ?? "");
+        setBarra({
+          id: crypto.randomUUID(),
+          ...messaggioToltiDaiPreferiti(nomi),
+          annulla: { tipo: "pasti-salvati", traccia },
+        });
       } catch {
-        // Azione istantanea senza sheet aperto: nessun posto dove mostrare un
-        // errore. Come toggleStellaAlimentoScelto in /aggiungi, un fallimento
-        // qui lascia solo la stella ancora piena — l'utente può riprovare.
+        // Non si è scritto niente (transazione): il segnalibro resta pieno.
+        setBarra({ id: crypto.randomUUID(), testo: "Operazione non riuscita. Riprova." });
       }
       return;
     }
@@ -1527,7 +1558,7 @@ function OggiContenuto() {
             icona={barra.icona}
             durataMs={barra.durataMs}
             azione={
-              barra.fotografia
+              barra.annulla
                 ? { etichetta: "Annulla", onClick: annullaUltimaOperazione }
                 : undefined
             }

@@ -10,7 +10,13 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { act, render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import OggiPage from "./page";
-import { repositoryPasti, repositoryVociDiario } from "@/lib/repository";
+import {
+  repositoryAlimenti,
+  repositoryComposizioni,
+  repositoryComposizioniVoci,
+  repositoryPasti,
+  repositoryVociDiario,
+} from "@/lib/repository";
 import { aggiungiNelPasto, idVoceRicreata } from "@/lib/repository/vociDiario";
 import { segnaInserimento } from "@/lib/inserimento/ultimoInserimento";
 import { messaggioAggiunto, messaggioInserimento } from "@/lib/inserimento/testiBarra";
@@ -471,6 +477,86 @@ describe("Oggi: modifica di una voce dallo sheet", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(await firme()).toEqual(prima);
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+// Caso 3 dei "doppioni rimasti" (18/10): il segnalibro pieno toglie il pasto
+// dai preferiti senza conferma, con Annulla nella barra. Prima lo toglieva e
+// basta, senza nessun modo di tornare indietro.
+describe("Oggi: segnalibro pieno, Tolto dai preferiti e Annulla", () => {
+  async function prepara() {
+    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
+    const yogurt = await repositoryAlimenti.crea({
+      user_id: utenteTest, nome: "Yogurt", marca: null, barcode: null,
+      kcal_100g: 60, proteine_100g: 4, carboidrati_100g: 5, grassi_100g: 2,
+      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
+      porzione_default_g: 125, fonte: "manuale", verificato: false,
+    });
+    await repositoryVociDiario.crea({
+      user_id: utenteTest, alimento_id: yogurt.id, pasto_id: colazione.id, gruppo_id: null,
+      quantita_g: 125, data: oggiLocale(), creato_il: "2026-10-06T08:00:00.000Z", consumato_alle: null,
+      nome_alimento: "Yogurt", kcal_100g: 60, proteine_100g: 4, carboidrati_100g: 5, grassi_100g: 2,
+    });
+    const salvato = await repositoryComposizioni.crea({ user_id: utenteTest, nome: "Colazione", tipo: "pasto_salvato", alimento_id: null });
+    await repositoryComposizioniVoci.crea({
+      user_id: utenteTest, composizione_id: salvato.id, alimento_id: yogurt.id, quantita_g: 125, ordine: 0,
+    });
+    const pastiSalvatiVivi = async () =>
+      (await repositoryComposizioni.ottieniTutti(utenteTest)).map((c) => c.nome).sort();
+
+    render(<OggiPage />);
+    const pieno = await screen.findByRole("button", { name: "Togli Colazione dai preferiti" });
+    return { salvato, pieno, pastiSalvatiVivi };
+  }
+
+  it("tocco: «Tolto dai preferiti» senza conferma; Annulla: segnalibro di nuovo pieno e pasto salvato tornato", async () => {
+    const { salvato, pieno, pastiSalvatiVivi } = await prepara();
+
+    fireEvent.click(pieno);
+
+    await testoBarra("Tolto dai preferiti: Colazione");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await screen.findByRole("button", { name: "Salva Colazione come preferito" });
+    expect(await pastiSalvatiVivi()).toEqual([]);
+
+    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "Annulla" }));
+
+    await screen.findByText("Annullato.");
+    await screen.findByRole("button", { name: "Togli Colazione dai preferiti" });
+    expect(await pastiSalvatiVivi()).toEqual(["Colazione"]);
+    expect((await repositoryComposizioni.ottieniPerId(salvato.id))?.deleted_at).toBeNull();
+  });
+
+  it("risalvato prima di Annulla: il ripristino è rifiutato e la barra dice perché", async () => {
+    const { pieno, pastiSalvatiVivi } = await prepara();
+    fireEvent.click(pieno);
+    await testoBarra("Tolto dai preferiti: Colazione");
+
+    // Segnalibro di nuovo, con un altro nome: stesso contenuto.
+    fireEvent.click(await screen.findByRole("button", { name: "Salva Colazione come preferito" }));
+    const sheet = await screen.findByRole("dialog");
+    fireEvent.change(within(sheet).getByRole("textbox"), { target: { value: "Colazione di oggi" } });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Salva" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(await pastiSalvatiVivi()).toEqual(["Colazione di oggi"]);
+
+    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "Annulla" }));
+
+    await testoBarra("Non ripristinato: hai già un altro pasto salvato con gli stessi alimenti.");
+    expect(await pastiSalvatiVivi()).toEqual(["Colazione di oggi"]);
+  });
+
+  it("errore: «Operazione non riuscita», niente cambiato, segnalibro ancora pieno", async () => {
+    const { pastiSalvatiVivi } = await prepara();
+    const guasto = vi.spyOn(repositoryComposizioni, "elimina").mockRejectedValue(new Error("Guasto finto"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Togli Colazione dai preferiti" }));
+
+    await testoBarra("Operazione non riuscita. Riprova.");
+    guasto.mockRestore();
+    expect(within(screen.getByRole("status")).queryByRole("button", { name: "Annulla" })).toBeNull();
+    expect(await pastiSalvatiVivi()).toEqual(["Colazione"]);
+    screen.getByRole("button", { name: "Togli Colazione dai preferiti" });
   });
 });
 

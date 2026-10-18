@@ -6,8 +6,17 @@
 // frasi della barra dopo l'Annulla di una cancellazione, che compaiono in
 // Aggiungi e in Impostazioni > Alimenti.
 
-import { messaggioRipristinato, type MessaggioBarra } from "./testiBarra";
-import type { EsitoRipristino } from "../repository/composizioni";
+import {
+  MESSAGGIO_ANNULLATO,
+  messaggioRipristinato,
+  messaggioToltoDaiPreferiti,
+  type MessaggioBarra,
+} from "./testiBarra";
+import type {
+  EsitoRipristino,
+  EsitoRipristinoPasti,
+  MotivoPastoNonRipristinato,
+} from "../repository/composizioni";
 
 // «a» / «a» e «b» / «a», «b» e «c». Nomi ripetuti (lo stesso alimento
 // inserito due volte) compaiono una volta sola.
@@ -101,4 +110,65 @@ function frasePastiNonRipristinati(pastiNonRipristinati: string[]): string {
 export function testoRipristinoNonRiuscito(nomi: string[]): string {
   const cosa = nomi.length > 1 ? `${nomi.length} alimenti` : elencoNomi(nomi);
   return `Non è stato possibile ripristinare ${cosa}.`;
+}
+
+// Il segnalibro pieno in Oggi (dal 18/10, caso 3 dei "doppioni rimasti"):
+// toglie dai preferiti i pasti salvati con il contenuto del pasto, di
+// solito uno. Uno: "Tolto dai preferiti: Colazione", lo stesso testo di
+// Impostazioni > Preferiti. Più di uno (stesso contenuto, nomi diversi):
+// "Tolti dai preferiti: 2 pasti salvati", come "Ripristinati: 3 alimenti".
+export function messaggioToltiDaiPreferiti(nomi: string[]): MessaggioBarra {
+  const unici = [...new Set(nomi)];
+  if (unici.length === 1) return messaggioToltoDaiPreferiti(unici[0]);
+  return { testo: "Tolti dai preferiti:", nome: `${unici.length} pasti salvati` };
+}
+
+const MOTIVI: Record<MotivoPastoNonRipristinato, { uno: string; piu: string; soloUno: string }> = {
+  nome: {
+    uno: "ne hai già un altro con lo stesso nome",
+    piu: "hai già altri pasti con gli stessi nomi",
+    soloUno: "hai già un altro pasto salvato con lo stesso nome",
+  },
+  contenuto: {
+    uno: "ne hai già un altro con gli stessi alimenti",
+    piu: "hai già altri pasti con gli stessi alimenti",
+    soloUno: "hai già un altro pasto salvato con gli stessi alimenti",
+  },
+  vuoto: {
+    uno: "i suoi alimenti non sono più nel catalogo",
+    piu: "i loro alimenti non sono più nel catalogo",
+    soloUno: "i suoi alimenti non sono più nel catalogo",
+  },
+};
+
+// La barra dopo l'"Annulla" del segnalibro, dall'esito di
+// ripristinaPastiSalvati, con le parole dell'Annulla degli alimenti
+// (messaggioDopoRipristino, sopra):
+// - tutto tornato: "Annullato.", come ogni Annulla di Oggi;
+// - un pasto solo, non tornato: "Non ripristinato: hai già un altro pasto
+//   salvato con gli stessi alimenti." (o "con lo stesso nome", o "i suoi
+//   alimenti non sono più nel catalogo");
+// - altrimenti i ripristinati e poi, per motivo, quelli rimasti tolti:
+//   "Ripristinato: «Colazione». Il pasto salvato «Pranzo» no: ne hai già un
+//   altro con lo stesso nome."
+export function messaggioDopoRipristinoPasti(esito: EsitoRipristinoPasti): MessaggioBarra {
+  const { ripristinati, nonRipristinati } = esito;
+  if (nonRipristinati.length === 0) return MESSAGGIO_ANNULLATO;
+  if (ripristinati.length === 0 && nonRipristinati.length === 1) {
+    return { testo: `Non ripristinato: ${MOTIVI[nonRipristinati[0].motivo].soloUno}.` };
+  }
+  const frasi: string[] = [];
+  if (ripristinati.length > 0) {
+    frasi.push(`${ripristinati.length > 1 ? "Ripristinati" : "Ripristinato"}: ${elencoNomi(ripristinati)}.`);
+  }
+  for (const motivo of ["nome", "contenuto", "vuoto"] as const) {
+    const nomi = nonRipristinati.filter((p) => p.motivo === motivo).map((p) => p.nome);
+    if (nomi.length === 0) continue;
+    frasi.push(
+      nomi.length === 1
+        ? `Il pasto salvato ${elencoNomi(nomi)} no: ${MOTIVI[motivo].uno}.`
+        : `I pasti salvati ${elencoNomi(nomi)} no: ${MOTIVI[motivo].piu}.`
+    );
+  }
+  return { testo: frasi.join(" ") };
 }
