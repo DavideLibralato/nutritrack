@@ -2509,6 +2509,13 @@ sono in Obiettivi, la pesata in Peso.
   foglio si chiude e la riga mostra il nome nuovo. Fuori dal Salva unico e
   dal guardiano: il foglio salva da sé. L'email resta nell'intestazione,
   non nel gruppo come nel mockup, per non mostrarla due volte
+- **Password** (dal 18/10, branch `cambia-password`; mockup
+  `docs/mockups/cambia-password.html`): ultima riga del gruppo Account,
+  "Password" e a destra "Cambia ›". Porta alla sottopagina Cambia
+  password (§9.1, "Cambia password"). Passa dal guardiano: con modifiche
+  non salvate chiede prima "Esci senza salvare?". Al ritorno dopo il
+  salvataggio, in fondo alla pagina la barra **"Password aggiornata."**,
+  nello stesso punto di "Salvato."
 - **Dati personali** (per il calcolo): sesso, data di nascita, altezza, livello di attività.
   Non sono dati "in più": senza di loro il fabbisogno non è calcolabile (vedi
   sotto). Il sesso ammette "preferisco non indicarlo" (a schermo "Non
@@ -4489,6 +4496,88 @@ cookie intatti) e `reimpostaPassword.test.tsx` (client Supabase vero,
 rete finta: PKCE, T1–T9, frammento, rinnovo). I limiti noti stanno in
 §11, "Difetti e verifiche aperti".
 
+#### Cambia password (dal 18/10, branch `cambia-password`)
+
+Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
+`docs/mockups/cambia-password.html`, approvato il 18/10.
+
+- **Dove.** Riga "Password" in fondo al gruppo Account di Profilo (§3,
+  "Profilo") → sottopagina `/impostazioni/password`, con "‹ Profilo" per
+  tornare (`IntestazioneSottopagina` con `indietro`). È in `PAGINE_APP`
+  del service worker: offline si apre e mostra l'avviso, non "Sei
+  offline".
+- **Il modulo.** In alto "Account <email>". Due campi con l'occhio
+  (`CampoPassword`): "Password attuale" (`current-password`) e "Nuova
+  password" (`new-password`, "Almeno 6 caratteri"). Niente "Conferma":
+  per controllare c'è l'occhio. Poi "Salva nuova password", sotto la riga
+  "Sugli altri dispositivi dovrai rientrare con la nuova password." e
+  "Non la ricordi? Reimpostala via email", che porta a Password
+  dimenticata (si apre anche con la sessione aperta, middleware).
+- **Portachiavi.** Come in Reimposta, un campo email con
+  `autoComplete="username"` in sola lettura dice al gestore delle
+  password a quale account salvare quella nuova. Qui è fuori schermo
+  (`sr-only`, non `type="hidden"`, che iOS ignora), con `aria-hidden` e
+  `tabIndex={-1}`. **Da provare su iPhone**: se il Portachiavi non lo
+  riconosce, si torna al campo visibile in sola lettura come in
+  Reimposta.
+- **La chiamata** (`src/lib/account/cambiaPassword.ts`):
+  `updateUser({ password, current_password })`. Il nome è
+  `current_password`, non `currentPassword` come nella guida
+  "Password-based Auth": auth-js 2.115.0 manda gli attributi così come
+  sono, e il server legge solo `current_password`. Prima della chiamata
+  `getUser`: se il server non risponde la richiesta non parte ("la
+  password non è cambiata"). Entrambe con `conTempoMassimo`.
+- **Gli interruttori di Auth** (dashboard, controllati da Davide il
+  18/10). **"Require current password when updating" ACCESA**: il
+  server controlla la password attuale solo con questa accesa; spenta,
+  il campo verrebbe ignorato senza errori, e chiunque avesse il telefono
+  sbloccato cambierebbe la password. Non va mai spenta. **"Secure
+  password change" SPENTA**: accesa, con una sessione più vecchia di 24
+  ore il server chiederebbe un codice via email
+  (`reauthentication_needed`), cioè quasi sempre nell'app installata.
+  Le sessioni nate da un link di Reimposta sono esentate dal controllo
+  della password attuale (`session.IsRecovery()`): chi ha il link ha
+  già dimostrato di avere l'email.
+- **Gli errori, dal codice e non dal testo.** "Attuale mancante"
+  (`current_password_required`) e "attuale sbagliata"
+  (`current_password_mismatch`) hanno lo stesso testo inglese.
+  `same_password` → "uguale a quella attuale"; `weak_password` con
+  "length" → "almeno 6 caratteri", con altri motivi → "troppo facile";
+  401/403/404 o nessuna sessione → "Esci e rientra"; rete dopo l'invio →
+  "Non so se è andata". Se subito dopo arriva "attuale sbagliata", il
+  testo dice che il tentativo di prima forse è riuscito. Campi vuoti,
+  meno di 6 caratteri e nuova uguale all'attuale si fermano prima di
+  chiamare il server. Testi in `erroriAuth.ts`.
+- **Senza rete**, come Elimina account (`useOnline`): riquadro "Serve la
+  connessione" in cima, pulsante spento, il modulo resta compilabile,
+  niente rimando a Password dimenticata.
+- **Dopo il salvataggio** si torna a Profilo con
+  `router.replace("/impostazioni/profilo?password=aggiornata")`. Profilo
+  mostra "Password aggiornata." e toglie subito il segno dall'indirizzo
+  (`history.replaceState`, `src/lib/account/passwordAggiornata.ts`): un
+  ricaricamento non la fa ricomparire. Nessuna email "password
+  cambiata". Minimo 6 caratteri, come il server.
+- **Le sessioni.** Su questo dispositivo la sessione resta, con gli
+  stessi token: niente `refreshSession`, la sincronizzazione continua.
+  **Le sessioni sugli altri dispositivi si chiudono**: le chiude il
+  server a ogni cambio di password (`LogoutAllExceptMe`, nessuna
+  impostazione per evitarlo; deciso il 18/10 di accettarlo). Lì l'app
+  resta collegata finché vale l'access token (al massimo un'ora circa),
+  poi passa a "sessione scaduta" e chiede di rientrare. **Le modifiche
+  in coda non si perdono**: con la sessione scaduta Esci non svuota
+  niente (§9.6), e rientrando partono.
+
+Codice: `src/lib/account/cambiaPassword.ts`,
+`src/lib/account/passwordAggiornata.ts`, `src/components/CambiaPassword.tsx`,
+`src/app/(app)/impostazioni/password/page.tsx`, la riga in
+`src/app/(app)/impostazioni/profilo/page.tsx`. Test:
+`cambiaPassword.test.ts` (esiti dal codice, `current_password`, rete
+prima e dopo l'invio, testo dopo una risposta persa),
+`CambiaPassword.test.tsx` (client Supabase vero, rete finta: senza rete
+nessuna richiesta, il corpo di `PUT /user`, `replace`),
+`passwordAggiornata.test.ts` e il test di Profilo (riga, guardiano,
+barra, segno tolto).
+
 ### 9.2 Offline — local-first completo
 
 **IndexedDB è la fonte di verità.** La UI legge e scrive sempre in locale;
@@ -6181,9 +6270,15 @@ due registrazioni nello stesso istante): lo coprono **solo i test**, di
 `auth.test.ts` e `register/page.test.tsx`. Su iPhone il 18/10 è stato
 provato il "già in uso" mentre si scrive (prova 8), come regressione.
 
-**Test.** 1240 test permanenti in 109 file (Vitest), tutti verdi al 18/10
-su main (dal merge di `doppioni`); 1249 in 110 file sul branch
-`login-ritocchi`.
+**Cambia password** (18/10, branch `cambia-password`, **da provare su
+iPhone**: sotto, "Prove su iPhone di Cambia password"). La riga
+"Password" in Profilo e la sottopagina con password attuale e nuova
+(§9.1, "Cambia password"; §3, "Profilo"). `RigaImpostazioni` passa ora
+dal guardiano delle modifiche non salvate (`LinkProtetto`).
+
+**Test.** 1249 test permanenti in 110 file (Vitest), tutti verdi al 18/10
+su main (dal merge di `login-ritocchi`); 1289 in 113 file sul branch
+`cambia-password`.
 
 ### Non ancora costruito
 
@@ -6471,6 +6566,60 @@ installata (Password dimenticata → Mail → Safari → modulo → nuova
 password → accesso dall'app). È il caso per cui è nato il branch;
 un'email in più.
 
+### Prove su iPhone di Cambia password
+
+**Da fare** sull'anteprima del branch, con l'**account di prova**
+(davidemancon02@gmail.com) in Safari; l'app installata resta
+sull'account vero. Le prove cambiano la password dell'account di prova:
+alla fine resta quella dell'ultima prova riuscita. Dopo, Claude
+verifica sui log di Auth, in sola lettura, le richieste `PUT /user` e i
+loro esiti.
+
+0. Prima: in Informazioni si legge la Build dell'anteprima. Su
+   Supabase va aggiunta la Redirect URL dell'anteprima del branch, che
+   serve alla prova 10.
+1. Profilo: in fondo al gruppo Account la riga "Password · Cambia ›".
+   Tocco → "Cambia password", con "‹ Profilo" in alto e l'email
+   dell'account di prova.
+2. Guardiano: in Profilo cambia l'altezza senza salvare, poi tocca
+   Password → "Esci senza salvare?" → Annulla, resti su Profilo con la
+   modifica. Annulla modifiche.
+3. Occhio: ogni campo mostra e nasconde solo la sua password. Il
+   Portachiavi propone la password salvata nel campo "Password
+   attuale".
+4. Controlli sul telefono, senza richieste al server: campi vuoti →
+   "Inserisci la password attuale."; nuova di 5 caratteri → "almeno 6
+   caratteri"; nuova uguale all'attuale → "uguale a quella attuale".
+5. **Password attuale sbagliata** (conferma che l'interruttore "Require
+   current password" è acceso): attuale sbagliata, nuova valida →
+   "La password attuale non è corretta.", e la password **non cambia**.
+   La prova 7 lo conferma: lì come attuale funziona ancora quella di
+   prima.
+6. Senza rete (modalità aereo): riquadro "Serve la connessione",
+   pulsante spento, niente "Reimpostala via email". Torna la rete →
+   pulsante attivo, i campi scritti sono ancora lì.
+7. Cambio vero: attuale giusta e nuova valida → si torna a Profilo con
+   "Password aggiornata.", e nell'indirizzo non c'è `?password=`.
+   **Portachiavi**: deve proporre di aggiornare la password salvata per
+   l'email dell'account di prova. Se non lo fa, il campo email nascosto
+   (`sr-only`) non basta e si torna a quello visibile come in Reimposta.
+8. Ricarica Profilo → la barra non ricompare.
+9. Esci, poi Accedi con la password nuova → entra. Con quella vecchia →
+   "Email o password non corrette."
+10. **Reset completo dopo l'accensione dell'interruttore**: da Cambia
+    password, "Reimpostala via email" → Password dimenticata → link
+    nella Mail → Safari → modulo di Reimposta → nuova password → Oggi.
+    Conferma che le sessioni di recovery sono esentate dal controllo
+    della password attuale (§9.1, "Cambia password").
+11. *(Facoltativa)* Account di prova aperto anche in Chrome sul PC. Dopo
+    il cambio da iPhone, sul PC una modifica (per esempio un alimento in
+    Oggi). Entro un'ora circa il PC passa a "sessione scaduta", e la
+    modifica resta in coda. Si rientra con la password nuova e la
+    modifica parte, senza perdere niente.
+
+Dopo il merge su main va tolta da Supabase la Redirect URL
+dell'anteprima.
+
 ### Prossimi passi
 
 1. ~~**Onboarding** dopo la registrazione~~ fatto: provato il 17/10,
@@ -6478,9 +6627,11 @@ un'email in più.
    "Fatto" e "Prove su iPhone dell'onboarding"; sezione 3, "Onboarding")
 2. ~~**`login-ritocchi`**~~ fatto: provato su iPhone il 18/10
    sull'anteprima (sopra, "Fatto", "Pagine di accesso" e "Username
-   appena preso"). Dopo il merge su main va tolta da Supabase la Redirect
-   URL dell'anteprima del branch
-3. **`cambia-password`**, branch da aprire dopo `login-ritocchi`
+   appena preso"), unito a main il 18/10; Redirect URL dell'anteprima
+   tolta da Supabase lo stesso giorno
+3. **`cambia-password`**: codice fatto sul branch il 18/10 (§9.1,
+   "Cambia password"); restano le prove su iPhone (sopra, "Prove su
+   iPhone di Cambia password") e il merge
 4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)

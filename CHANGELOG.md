@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Cambia password: decisioni e prove su iPhone
+
+Branch `cambia-password`, commit 5 (solo documenti). Nel PUNTO:
+- §9.1, nuova "Cambia password": la chiamata con `current_password`, i
+  due interruttori di Auth ("Require current password when updating"
+  accesa, "Secure password change" spenta, controllati da Davide il
+  18/10), gli errori decisi dal codice, il caso senza rete, la conferma
+  in Profilo e il Portachiavi;
+- **decisione corretta sulle sessioni**: quelle sugli altri dispositivi
+  si chiudono, perché le chiude il server (`LogoutAllExceptMe`) e non
+  c'è modo di evitarlo; le modifiche in coda non si perdono;
+- §3 Profilo, la riga Password; §11 "Fatto", il conteggio dei test e
+  "Prossimi passi" (merge di `login-ritocchi` fatto);
+- §11, nuove "Prove su iPhone di Cambia password", 0-11, con la password
+  attuale sbagliata (prova 5), il reset completo dopo l'accensione
+  dell'interruttore (10) e, facoltativa, la sessione chiusa su Chrome
+  senza perdere modifiche (11).
+
 ## 2026-10-18 — Cambia password: la riga in Profilo e la conferma
 
 Branch `cambia-password`, commit 4. In fondo al gruppo Account di
