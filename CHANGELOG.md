@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Sposta accetta i grammi nuovi di una voce (repository)
+
+Branch `doppioni`, commit 4 di 8 (caso 1, prima metà; tocca il percorso
+di Sposta e del trascinamento). `spostaNelPasto` accetta
+`origine: { tipo: "voce", id, grammi }`: la voce in arrivo vale con i
+grammi nuovi nel foglio dei doppioni, in Somma e nella rete del massimo.
+Il piano (`idGrammiNuovi`) scrive una sola volta per riga: pasto e
+grammi nello stesso `aggiorna` se la voce si sposta, niente sulla voce
+che Somma o Scrivi quantità cancellano, i soli grammi con "Non
+spostarlo". Senza grammi, o con gli stessi, scritture identiche a prima.
+Test in `vociDiario.test.ts`: le quattro scelte e il caso senza
+doppione, ognuno con Annulla che riporta pasto e grammi; il massimo
+superato con Somma; i grammi uguali. I test esistenti di Sposta e
+trascinamento passano senza modifiche. Visti fallire con il piano che
+ignora i grammi nuovi, con il repository che non li applica e con il
+confronto dei grammi tolto. La pagina non lo usa ancora (commit 5):
+niente da provare su iPhone per ora; Sposta e trascinamento **da
+riprovare** su iPhone insieme al commit 5.
+
 ## 2026-10-18 — Foglio dei doppioni: Somma spenta oltre 99999,99 g
 
 Branch `doppioni`, commit 3 di 8 (caso 5, seconda metà). In

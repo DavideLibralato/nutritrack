@@ -29,6 +29,7 @@ import { db } from "../db/database";
 import { scaricaTabella } from "../sync/discesa";
 import type { Pasto, Profilo, VoceDiario } from "../db/tipi";
 import { idGiorno } from "./giorni";
+import type { SceltaDoppione } from "../diario/pianoSpostamento";
 
 // Rete assente, come negli altri test dei repository: si esercita solo la
 // parte locale (tabella + outbox). Il test sulla discesa sostituisce questa
@@ -1135,4 +1136,140 @@ describe("Somma oltre il massimo di 99999,99 g", () => {
       expect(vive.map((v) => v.quantita_g)).toEqual([99999.99]);
     });
   }
+});
+
+// Caso 1 dei "doppioni rimasti" (18/10): dallo sheet di modifica di Oggi si
+// cambia il pasto di una voce e, insieme, i grammi. Passa da spostaNelPasto
+// con `origine.grammi`: la voce in arrivo vale già con i grammi nuovi (nel
+// foglio, in Somma, nella rete del massimo), una scrittura sola per riga, e
+// Annulla riporta pasto e grammi di prima.
+describe("sposta con i grammi nuovi (sheet di modifica)", () => {
+  async function diario(userId: string) {
+    const vive = await repositoryVociDiario.ottieniTutti(userId);
+    return vive.map((v) => `${v.pasto_id}: ${v.nome_alimento} ${v.quantita_g} g`).sort();
+  }
+
+  // La Mela a colazione, 100 g, che si porta a pranzo con 120 g; a pranzo,
+  // se serve, un'altra Mela da 50 g.
+  async function prepara(userId: string, { conDoppione }: { conDoppione: boolean }) {
+    const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 100 });
+    const altra = conDoppione ? await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 50 }) : null;
+    return { mela, altra, origine: { tipo: "voce" as const, id: mela.id, grammi: 120 } };
+  }
+
+  async function spostaConScelta(userId: string, origine: { tipo: "voce"; id: string; grammi: number }, scelta: SceltaDoppione) {
+    const base = { userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" };
+    const primo = await spostaNelPasto(base);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+    // Il foglio mostra i grammi nuovi in arrivo, non quelli salvati.
+    expect(primo.doppioni[0]).toMatchObject({ grammiEsistenti: 50, grammiInArrivo: 120 });
+    const esito = await spostaNelPasto({ ...base, scelte: { "alimento-Mela": scelta }, doppioniVisti: primo.doppioni });
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    return esito;
+  }
+
+  it("senza doppione: un solo aggiorna con pasto e grammi; Annulla riporta tutti e due", async () => {
+    const userId = crypto.randomUUID();
+    const { mela, origine } = await prepara(userId, { conDoppione: false });
+    const prima = await diario(userId);
+
+    const esito = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    expect(esito.piano.scritture).toEqual([
+      { tipo: "aggiorna", id: mela.id, modifiche: { pasto_id: "pranzo", quantita_g: 120 } },
+    ]);
+    expect(await diario(userId)).toEqual(["pranzo: Mela 120 g"]);
+    await annullaOperazione(esito.fotografia);
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("Somma: la riga di pranzo prende 50 + 120; la Mela spostata si cancella senza aggiornarla prima", async () => {
+    const userId = crypto.randomUUID();
+    const { mela, altra, origine } = await prepara(userId, { conDoppione: true });
+    const prima = await diario(userId);
+
+    const esito = await spostaConScelta(userId, origine, { tipo: "somma" });
+
+    expect(esito.piano.scritture).toEqual([
+      { tipo: "aggiorna", id: altra!.id, modifiche: { quantita_g: 170 } },
+      { tipo: "elimina", id: mela.id },
+    ]);
+    expect(await diario(userId)).toEqual(["pranzo: Mela 170 g"]);
+    await annullaOperazione(esito.fotografia);
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("Tieni separati: pasto e grammi nello stesso aggiorna, la riga di pranzo non si tocca", async () => {
+    const userId = crypto.randomUUID();
+    const { mela, origine } = await prepara(userId, { conDoppione: true });
+    const prima = await diario(userId);
+
+    const esito = await spostaConScelta(userId, origine, { tipo: "separati" });
+
+    expect(esito.piano.scritture).toEqual([
+      { tipo: "aggiorna", id: mela.id, modifiche: { pasto_id: "pranzo", quantita_g: 120 } },
+    ]);
+    expect(await diario(userId)).toEqual(["pranzo: Mela 120 g", "pranzo: Mela 50 g"]);
+    await annullaOperazione(esito.fotografia);
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("Scrivi quantità: vale il numero scritto nel foglio, la Mela spostata si cancella", async () => {
+    const userId = crypto.randomUUID();
+    const { mela, altra, origine } = await prepara(userId, { conDoppione: true });
+    const prima = await diario(userId);
+
+    const esito = await spostaConScelta(userId, origine, { tipo: "scrivi", grammi: 200 });
+
+    expect(esito.piano.scritture).toEqual([
+      { tipo: "aggiorna", id: altra!.id, modifiche: { quantita_g: 200 } },
+      { tipo: "elimina", id: mela.id },
+    ]);
+    expect(await diario(userId)).toEqual(["pranzo: Mela 200 g"]);
+    await annullaOperazione(esito.fotografia);
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("Non spostarlo: resta a colazione con i grammi nuovi; Annulla li riporta", async () => {
+    const userId = crypto.randomUUID();
+    const { mela, origine } = await prepara(userId, { conDoppione: true });
+    const prima = await diario(userId);
+
+    const esito = await spostaConScelta(userId, origine, { tipo: "escludi" });
+
+    expect(esito.piano.scritture).toEqual([{ tipo: "aggiorna", id: mela.id, modifiche: { quantita_g: 120 } }]);
+    expect(esito.piano.esclusi).toEqual(["Mela"]);
+    expect(await diario(userId)).toEqual(["colazione: Mela 120 g", "pranzo: Mela 50 g"]);
+    await annullaOperazione(esito.fotografia);
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("grammi nuovi che con Somma superano il massimo: rifiutato, niente scritto", async () => {
+    const userId = crypto.randomUUID();
+    const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 100 });
+    await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 50000 });
+    const prima = await diario(userId);
+    const base = { userId, data: GIORNO, origine: { tipo: "voce" as const, id: mela.id, grammi: 50000 }, pastoDestinazioneId: "pranzo" };
+    const primo = await spostaNelPasto(base);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+
+    await expect(
+      spostaNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni })
+    ).rejects.toThrow(/oltre il massimo/);
+
+    expect(await diario(userId)).toEqual(prima);
+  });
+
+  it("grammi uguali a quelli salvati: le stesse scritture di uno Sposta senza grammi", async () => {
+    const userId = crypto.randomUUID();
+    const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 100 });
+
+    const esito = await spostaNelPasto({
+      userId, data: GIORNO, origine: { tipo: "voce", id: mela.id, grammi: 100 }, pastoDestinazioneId: "pranzo",
+    });
+
+    if (esito.esito !== "fatto") throw new Error("atteso fatto");
+    expect(esito.piano.scritture).toEqual([{ tipo: "aggiorna", id: mela.id, modifiche: { pasto_id: "pranzo" } }]);
+  });
 });

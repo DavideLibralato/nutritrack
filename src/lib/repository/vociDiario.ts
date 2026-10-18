@@ -45,6 +45,8 @@ import {
   type PianoInserimento,
 } from "../diario/pianoInserimento";
 import {
+  arrotondaGrammi,
+  oltreIlMassimo,
   pianoSpostamento,
   stessiDoppioni,
   trovaDoppioni,
@@ -216,6 +218,13 @@ export type OrigineSpostamento =
   | { tipo: "voce"; id: string }
   | { tipo: "pasto"; pastoId: string };
 
+// Solo per Sposta: una voce sola può arrivare con i grammi nuovi scritti
+// nello sheet di modifica di Oggi (cambio di pasto, caso 1 dei "doppioni
+// rimasti", 18/10). Duplica non li ha.
+export type OrigineSposta =
+  | OrigineSpostamento
+  | { tipo: "voce"; id: string; grammi?: number };
+
 export type EsitoSpostaNelPasto =
   // Servono (di nuovo) le scelte per i doppioni: la prima volta, o perché
   // nel frattempo gli alimenti in doppione sono cambiati. Niente scritto.
@@ -232,6 +241,13 @@ export type EsitoSpostaNelPasto =
 // doppioni visti sono spariti tutti, si sposta senza foglio, ma "Non
 // spostarlo" vale lo stesso (togliEsclusi, dentro il piano), come in
 // Aggiungi.
+//
+// Con `origine.grammi` (una voce sola, dallo sheet di modifica) la voce in
+// arrivo vale già con i grammi nuovi: nel foglio dei doppioni ("in arrivo
+// 120 g"), nel totale di Somma e nella rete del massimo. Il piano li
+// scrive insieme al resto (pianoSpostamento, `idGrammiNuovi`), tutto da
+// applicaScritture: o tutto o niente, e Annulla riporta pasto e grammi di
+// prima. Grammi uguali a quelli salvati, o assenti: come prima.
 export async function spostaNelPasto({
   userId,
   data,
@@ -242,15 +258,27 @@ export async function spostaNelPasto({
 }: {
   userId: string;
   data: string;
-  origine: OrigineSpostamento;
+  origine: OrigineSposta;
   pastoDestinazioneId: string;
   scelte?: Record<string, SceltaDoppione>;
   doppioniVisti?: Doppione[];
 }): Promise<EsitoSpostaNelPasto> {
   let partenza: VoceDiario[];
+  let idGrammiNuovi: string | null = null;
   if (origine.tipo === "voce") {
     const voce = await repositoryVociDiario.ottieniPerId(origine.id);
     partenza = voce && voce.deleted_at === null ? [voce] : [];
+    if (partenza.length === 1 && "grammi" in origine && origine.grammi !== undefined) {
+      const grammi = arrotondaGrammi(origine.grammi);
+      // Lo sheet li ha già controllati (leggiGrammi): qui solo la rete.
+      if (!(grammi > 0) || oltreIlMassimo(grammi)) {
+        throw new Error(`Grammi non validi per Sposta: ${origine.grammi}`);
+      }
+      if (grammi !== partenza[0].quantita_g) {
+        partenza = [{ ...partenza[0], quantita_g: grammi }];
+        idGrammiNuovi = partenza[0].id;
+      }
+    }
   } else {
     partenza = await vociDelPasto(userId, data, origine.pastoId);
   }
@@ -266,6 +294,7 @@ export async function spostaNelPasto({
     destinazione,
     pastoDestinazioneId,
     scelte: scelte ?? {},
+    idGrammiNuovi,
   });
   const fotografia = await applicaScritture(piano.scritture);
   return { esito: "fatto", piano, fotografia };

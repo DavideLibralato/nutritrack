@@ -190,7 +190,45 @@ export function stessiDoppioni(a: Doppione[], b: Doppione[]): boolean {
 // Il piano: quali righe aggiornare e quali cancellare. `scelte` per
 // alimentoId; un doppione senza scelta è un errore di chi chiama (le scelte
 // vengono dal foglio, che le chiede tutte).
+//
+// `idGrammiNuovi` (cambio di pasto dallo sheet di modifica in Oggi, caso 1
+// dei "doppioni rimasti", 18/10): quella riga di `partenza` porta già i
+// grammi scritti nello sheet, diversi da quelli salvati, e vanno scritti
+// anche loro. Una scrittura sola per riga, mai una su una riga che poi si
+// cancella:
+// - si sposta (nessun doppione, Tieni separati): lo stesso `aggiorna` porta
+//   pasto e grammi;
+// - Somma o Scrivi quantità: la riga si cancella, e i suoi grammi nuovi
+//   sono già nel totale della riga che resta;
+// - Non spostarlo: resta dov'è con i grammi nuovi, un `aggiorna` dei soli
+//   grammi (decisione di Davide del 18/10).
 export function pianoSpostamento({
+  partenza,
+  destinazione,
+  pastoDestinazioneId,
+  scelte,
+  idGrammiNuovi = null,
+}: {
+  partenza: VoceDiario[];
+  destinazione: VoceDiario[];
+  pastoDestinazioneId: string;
+  scelte: Record<string, SceltaDoppione>;
+  idGrammiNuovi?: string | null;
+}): PianoSpostamento {
+  const piano = pianoSenzaGrammiNuovi({ partenza, destinazione, pastoDestinazioneId, scelte });
+  const conGrammi = idGrammiNuovi === null ? undefined : partenza.find((v) => v.id === idGrammiNuovi);
+  if (!conGrammi) return piano;
+
+  const sua = piano.scritture.find((s) => s.tipo !== "crea" && s.id === conGrammi.id);
+  if (!sua) {
+    piano.scritture.unshift({ tipo: "aggiorna", id: conGrammi.id, modifiche: { quantita_g: conGrammi.quantita_g } });
+  } else if (sua.tipo === "aggiorna") {
+    sua.modifiche = { ...sua.modifiche, quantita_g: conGrammi.quantita_g };
+  }
+  return piano;
+}
+
+function pianoSenzaGrammiNuovi({
   partenza,
   destinazione,
   pastoDestinazioneId,

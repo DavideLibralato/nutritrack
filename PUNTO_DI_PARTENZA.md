@@ -6013,7 +6013,7 @@ prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1202 in 109 file sul branch `doppioni`.
+su main; 1209 in 109 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6128,7 +6128,17 @@ su main; 1202 in 109 file sul branch `doppioni`.
   (verificato il 18/10): aggiungere un alimento già presente nel pasto
   non lo è più, perché tutti i percorsi di /aggiungi passano da
   `aggiungiNelPasto` (provato l'11/10, sezione 3, "Doppioni in
-  Aggiungi")
+  Aggiungi"). **Fatto il repository** (18/10, commit 4 del branch):
+  `spostaNelPasto` accetta `origine: { tipo: "voce", id, grammi }`. La
+  voce in arrivo vale già con i grammi nuovi nel foglio, in Somma e nella
+  rete del massimo, e il piano (`idGrammiNuovi` in `pianoSpostamento.ts`)
+  li scrive con **una scrittura sola per riga**: lo stesso `aggiorna` con
+  pasto e grammi se si sposta (nessun doppione, Tieni separati), niente
+  sulla riga che Somma o Scrivi quantità cancellano (i suoi grammi nuovi
+  sono già nel totale), un `aggiorna` dei soli grammi con "Non spostarlo"
+  (resta nel pasto di partenza con i grammi nuovi, decisione di Davide
+  del 18/10). Annulla riporta pasto e grammi. Senza grammi, o con gli
+  stessi grammi, come prima. Resta da fare: la pagina (commit 5)
 
 - **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
   (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi
