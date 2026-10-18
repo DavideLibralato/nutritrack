@@ -4312,10 +4312,10 @@ e i modelli sono bloccati senza SMTP personalizzato (§10.9). Quindi:
   browser che l'aveva chiesto; ora chi ha l'email entra, come con
   qualunque link magico. Il prefetch dei filtri antispam brucia il link
   come prima (il link resta `/verify` di Supabase). Il cambio della
-  password chiude le altre sessioni dell'utente (dal codice del server di
-  Auth, da confermare nelle prove): l'app installata resta collegata
-  finché il suo access token vale (al massimo un'ora circa), poi finisce
-  in "sessione scaduta".
+  password chiude le altre sessioni dell'utente (confermato nelle prove
+  del 18/10: la sessione di Chrome risultava chiusa sul database): l'app
+  installata resta collegata finché il suo access token vale (al massimo
+  un'ora circa), poi finisce in "sessione scaduta".
   **Limite residuo del rinforzo**: il rinnovo rende inutile il refresh
   token rimasto nell'indirizzo, ma l'access token dell'indirizzo resta
   valido fino alla sua scadenza, 3600 secondi su questo progetto
@@ -6065,13 +6065,15 @@ su main; 1187 in 108 file sul branch `reset-ovunque`.
   ignorato in silenzio: il link porta al Site URL, quindi un reset chiesto
   dall'anteprima di un branch senza la sua voce porta su app-libra
 - **Un reset chiesto dall'app installata su iPhone non poteva riuscire**
-  (limite noto dal 10/10): **risolto sul branch `reset-ovunque`, da
-  provare** (sotto, "Prove su iPhone del reset da qualunque browser"). Il
-  link dell'email si apre sempre in Safari, mentre il code verifier del
-  flusso PKCE stava nei cookie dell'app. Ora la richiesta parte con il
-  flusso implicito e il link porta la sessione nel frammento, senza
-  verifier (§9.1, "Il ripristino della password"). Non con `token_hash` e
-  `verifyOtp`: servirebbe cambiare il modello dell'email, bloccato senza
+  (limite noto dal 10/10): **risolto sul branch `reset-ovunque`, provato
+  il 18/10 sull'anteprima** (Chrome sul PC → Safari su iPhone); resta da
+  provare in produzione dall'app installata, dopo il merge (sotto, "Prove
+  su iPhone del reset da qualunque browser"). Il link dell'email si apre
+  sempre in Safari, mentre il code verifier del flusso PKCE stava nei
+  cookie dell'app. Ora la richiesta parte con il flusso implicito e il
+  link porta la sessione nel frammento, senza verifier (§9.1, "Il
+  ripristino della password"). Non con `token_hash` e `verifyOtp`:
+  servirebbe cambiare il modello dell'email, bloccato senza
   SMTP personalizzato (§10.9)
 - **Togliere il ramo PKCE di `/reimposta-password` e `LINK_ALTRO_BROWSER`**
   (lavoro futuro, branch a parte). Dopo il rilascio di `reset-ovunque`
@@ -6256,8 +6258,33 @@ caricamento completo) **eliminati il 17/10** con Elimina account. Restano
 
 ### Prove su iPhone del reset da qualunque browser
 
-Branch `reset-ovunque` (§9.1, "Il ripristino della password"). Da fare
-sull'**anteprima del branch**, con l'**account di prova**. Il reset si
+**Provate il 18/10 sull'anteprima** del branch, account di prova
+(davidemancon02@gmail.com), tutte passate; il database l'ha verificato
+Claude da Cowork:
+- **Email 1** (12:00): il link aperto su iPhone in Safari apre il
+  modulo; la password nuova si salva e le altre sessioni si chiudono.
+  Poi l'accesso da Chrome sul PC con la password nuova funziona.
+- **Email 2 e 3** (14:00), con un **altro account** entrato in Safari
+  su iPhone; reset chiesto due volte da Chrome sul PC, a più di 60
+  secondi di distanza. Il link della 2 dice che è scaduto o già usato.
+  Il link della 3 apre il modulo dell'**account di prova**, non
+  dell'altro, e la password si salva. Sul database: una sola sessione
+  nuova su iPhone, con 2 refresh token, uno revocato e uno vivo (il
+  rinnovo dopo `setSession` è avvenuto); la vecchia sessione di Chrome
+  chiusa; il token di recupero consumato. Dopo, l'accesso dal PC con la
+  password nuova funziona.
+
+**Da provare dopo il merge**, in produzione: il reset chiesto dall'app
+installata (in fondo a questa sezione).
+
+**Dopo il merge** va tolta da Supabase (Authentication → URL
+Configuration) la Redirect URL dell'anteprima
+`https://nutritrack-git-reset-ovunque-davide-libralato-personale.vercel.app/**`
+(la toglie Davide dalla dashboard).
+
+La procedura usata, per rifarla. Branch `reset-ovunque` (§9.1, "Il
+ripristino della password"). Da fare sull'**anteprima del branch**, con
+l'**account di prova**. Il reset si
 chiede da **Chrome sul PC** e il link si apre sull'**iPhone, da Mail →
 Safari**: due browser diversi, che con il flusso PKCE davano "altro
 browser". L'app installata non si tocca. **3 email**, con il servizio
@@ -6297,9 +6324,10 @@ l'anteprima.
     chiedere di rientrare (stato "sessione scaduta"). Se resta collegato
     più a lungo, la riga "Sicurezza, il prezzo" in §9.1 va corretta.
 
-Dopo il merge, in produzione: una prova dall'app installata (Password
-dimenticata → Mail → Safari → modulo → nuova password → accesso
-dall'app). È il caso per cui è nato il branch; un'email in più.
+Dopo il merge, in produzione (**da provare**): una prova dall'app
+installata (Password dimenticata → Mail → Safari → modulo → nuova
+password → accesso dall'app). È il caso per cui è nato il branch;
+un'email in più.
 
 ### Prossimi passi
 
