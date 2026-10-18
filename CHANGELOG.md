@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Documenti del reset da qualunque browser
+
+Branch `reset-ovunque`. PUNTO: §9.1 "Il ripristino della password" con il
+flusso nuovo (perché implicito solo per la richiesta, il client a parte,
+la sessione nel frammento raccolta dalla pagina, il rinforzo con il
+rinnovo, il prezzo in sicurezza e il limite residuo: l'access token
+dell'indirizzo vale fino a 3600 secondi, e il riuso del refresh token è
+riconosciuto solo con "Detect and revoke potentially compromised refresh
+tokens" attivo, verificati da Davide il 18/10), con il ramo PKCE
+descritto come transitorio. §10.9: i modelli delle email sono bloccati senza SMTP
+personalizzato (verificato da Davide sulla dashboard il 18/10), e il
+blocco "solo indirizzi del team" che sembra non valere per questo
+progetto. §11: il limite "un reset chiesto dall'app installata non può
+riuscire" è risolto sul branch, da provare; nuovo difetto aperto
+"togliere il ramo PKCE e `LINK_ALTRO_BROWSER`" come lavoro futuro;
+nuova sezione "Prove su iPhone del reset da qualunque browser" (11
+passi, 3 email, account di prova: reset chiesto da Chrome sul PC, link
+aperto su iPhone da Mail → Safari) più la prova in produzione dall'app
+installata dopo il merge. Solo documenti.
+
 ## 2026-10-18 — Rinnovo della sessione subito dopo il link
 
 Branch `reset-ovunque`. Subito dopo `setSession`, prima del modulo, la

@@ -4253,14 +4253,89 @@ Fra il passo 3 e il 4 i due valori sono diversi e nessuno si registra:
 pochi minuti, accettabile per una beta di amici. I passi si fanno uno
 dopo l'altro, senza lasciare la procedura a metà.
 
-#### Il ripristino della password (dal 10/10, branch `reset-password`)
+#### Il ripristino della password (dal 10/10, branch `reset-password`; flusso implicito dal 18/10, branch `reset-ovunque`)
 
-`/password-dimenticata` chiede il link (`resetPasswordForEmail`, flusso
-PKCE: il browser salva un "code verifier" nei cookie). Il link
-dell'email passa dal server di Auth e torna a `/reimposta-password`:
-con `?code=` se il link è buono, **senza** `?code=` e con l'errore
-nell'indirizzo (query e hash, `error_code=otp_expired`) se è già usato o
-scaduto. Le regole della pagina:
+**Il link funziona da qualunque browser** (branch `reset-ovunque`). Fino
+al 18/10 la richiesta partiva con il flusso PKCE: il browser salvava un
+"code verifier" nei cookie, e il link funzionava solo lì. Su iPhone i
+link delle email si aprono sempre in Safari, che non vede i cookie
+dell'app installata: un reset chiesto dall'app non poteva riuscire. La
+soluzione raccomandata da Supabase (link con `token_hash` verso una
+pagina nostra e `verifyOtp`) richiede di cambiare il modello dell'email,
+e i modelli sono bloccati senza SMTP personalizzato (§10.9). Quindi:
+
+- **Implicito solo per la richiesta.** `/password-dimenticata` chiede il
+  link con un client Supabase a parte
+  (`src/lib/supabase/clientRichiestaReset.ts`, che esporta solo
+  `chiediLinkRipristino`): flusso implicito, nessuna memoria
+  (`persistSession: false`), non legge l'indirizzo, non rinnova token. La
+  richiesta parte senza `code_challenge`, quindi il server non lega il
+  link a nessun browser e niente finisce nei cookie: la sessione aperta,
+  se c'è, resta com'è. Il client dell'app non può farlo, perché
+  `@supabase/ssr` impone `flowType: "pkce"` sopra le nostre opzioni.
+  Modello dell'email invariato (`{{ .ConfirmationURL }}`), stesso
+  `redirectTo` (`origin + /reimposta-password`).
+- **La sessione arriva nel frammento.** Dopo il server di Auth il link
+  torna a `/reimposta-password#access_token=…&refresh_token=…&type=recovery`;
+  se è già usato o scaduto, `#error=…&error_code=otp_expired` solo nel
+  frammento. Il frammento (la parte dopo `#`) non arriva mai al server:
+  niente token nei log di Vercel. Ma è una sessione vera, non un codice
+  da scambiare.
+- **La pagina la raccoglie, il client dell'app no.** Il client dell'app
+  è PKCE: vede un indirizzo "implicito" e rinuncia con l'errore "Not a
+  valid PKCE flow url". La pagina, per prima cosa
+  (`src/lib/frammentoRipristino.ts`): legge `access_token` e
+  `refresh_token` solo con `type=recovery`; **toglie subito il
+  frammento** (`history.replaceState`, prima di qualunque chiamata, anche
+  se poi qualcosa fallisce); chiama `setSession` sul client dell'app, che
+  verifica i token con il server e salva la sessione nei cookie. L'errore
+  "Not a valid PKCE flow url" di `initialize()` (il client nato prima che
+  il frammento venisse tolto, per esempio da `useUtenteId` nel layout
+  radice) si ignora solo in questo caso. La raccolta parte una volta per
+  caricamento (una `useRef`: StrictMode non la ripete).
+- **Il rinforzo: rinnovo subito.** Dopo `setSession`, prima del modulo,
+  `refreshSession` con il refresh token del frammento: il server ne dà
+  uno nuovo, e quello passato dall'indirizzo diventa "già usato". Se
+  qualcuno lo ritrovasse (cronologia di Safari, sincronizzata su iCloud)
+  non varrebbe più, e un suo riuso fa chiudere la sessione al server. Se
+  il rinnovo fallisce: niente modulo, `signOut({ scope: "local" })` (la
+  libreria conserverebbe la sessione, perché l'access token vale ancora;
+  così sparisce da questo browser anche senza rete, e con la rete il
+  server chiude proprio quella sessione), serve un link nuovo.
+- **Errori del frammento**: rete (verifica o rinnovo) → "Errore di
+  connessione"; token o rinnovo rifiutati → "Link non valido o scaduto";
+  `otp_expired` → "link scaduto, già usato o superato".
+- Poi tutto come per PKCE: il segno in `sessionStorage`, il modulo con
+  l'email dell'account del link, `updateUser` su quell'account anche se
+  nel browser era aperto un altro account (che esce da quel browser).
+- **Sicurezza, il prezzo.** Con PKCE un link rubato non serviva senza il
+  browser che l'aveva chiesto; ora chi ha l'email entra, come con
+  qualunque link magico. Il prefetch dei filtri antispam brucia il link
+  come prima (il link resta `/verify` di Supabase). Il cambio della
+  password chiude le altre sessioni dell'utente (dal codice del server di
+  Auth, da confermare nelle prove): l'app installata resta collegata
+  finché il suo access token vale (al massimo un'ora circa), poi finisce
+  in "sessione scaduta".
+  **Limite residuo del rinforzo**: il rinnovo rende inutile il refresh
+  token rimasto nell'indirizzo, ma l'access token dell'indirizzo resta
+  valido fino alla sua scadenza, 3600 secondi su questo progetto
+  (verificato da Davide sulla dashboard il 18/10): un access token già
+  emesso non si può revocare. Il frammento si toglie subito, quindi il
+  rischio è solo che sopravviva da qualche parte (cronologia,
+  sincronizzazione di Safari). Il riuso del refresh token vecchio è
+  riconosciuto perché sulla dashboard è attivo "Detect and revoke
+  potentially compromised refresh tokens", con un intervallo di riuso di
+  10 secondi (verificato il 18/10): se un giorno si spegne, il rinforzo
+  perde metà del suo effetto.
+
+**I link PKCE già spediti** (chiesti prima del rilascio) tornano ancora
+con `?code=`: il ramo PKCE della pagina resta com'era, con le regole qui
+sotto. Si toglie più avanti (§11, "Difetti e verifiche aperti").
+
+Il ramo PKCE: il link dell'email passa dal server di Auth e torna a
+`/reimposta-password` con `?code=` se il link è buono, **senza** `?code=`
+e con l'errore nell'indirizzo (query e hash, `error_code=otp_expired`) se
+è già usato o scaduto. Le regole della pagina:
 
 - **Lo scambio del codice lo fa la libreria, la pagina ne legge solo
   l'esito.** Il client Supabase è uno solo per pagina e appena nasce
@@ -4296,10 +4371,14 @@ scaduto. Le regole della pagina:
   (middleware): da loggati non rimandano alla home. Chiedere un reset è
   già possibile a chiunque.
 
-Codice: `src/app/reimposta-password/page.tsx`, `src/lib/erroriAuth.ts`,
-`src/lib/segnoRipristinoPassword.ts`. Test:
-`reimpostaPassword.test.tsx` (client Supabase vero, rete finta). I
-limiti noti stanno in §11, "Difetti e verifiche aperti".
+Codice: `src/app/password-dimenticata/page.tsx`,
+`src/lib/supabase/clientRichiestaReset.ts`,
+`src/app/reimposta-password/page.tsx`, `src/lib/frammentoRipristino.ts`,
+`src/lib/erroriAuth.ts`, `src/lib/segnoRipristinoPassword.ts`. Test:
+`passwordDimenticata.test.tsx` (la richiesta senza `code_challenge`, i
+cookie intatti) e `reimpostaPassword.test.tsx` (client Supabase vero,
+rete finta: PKCE, T1–T9, frammento, rinnovo). I limiti noti stanno in
+§11, "Difetti e verifiche aperti".
 
 ### 9.2 Offline — local-first completo
 
@@ -5290,6 +5369,24 @@ Emails → SMTP Settings), quindi rimandata: **le email restano in inglese per
 ora**, il reset password funziona comunque (link e flusso sono indipendenti
 dalla lingua). Da rivedere quando l'app si apre agli amici.
 
+**I modelli delle email sono bloccati senza SMTP personalizzato**
+(verificato da Davide sulla dashboard il 18/10: Authentication → Emails →
+Templates dice "Set up custom SMTP to edit templates"). Non solo il testo:
+nemmeno il link si può cambiare. Per questo il reset che funziona da
+qualunque browser usa il flusso implicito con il modello di base, e non il
+link `token_hash` verso una pagina nostra raccomandato da Supabase
+(§9.1, "Il ripristino della password"). Con un SMTP personalizzato (Resend,
+Brevo: gratuiti, ma un servizio in più) si potrebbe tornare a quella
+strada, con in più la pagina con il pulsante "Continua" che protegge dal
+prefetch dei filtri antispam.
+
+Il servizio di base, secondo la documentazione, consegna solo agli
+indirizzi del team dell'organizzazione; nel team c'è solo
+davidelibralato02@gmail.com, ma il 10/10 le email di reset arrivavano
+all'account di prova davidemancon02@gmail.com. Per questo progetto il
+blocco sembra non valere; da ricontrollare quando un amico chiede un
+reset.
+
 ---
 
 ## 11. Stato attuale
@@ -5911,7 +6008,8 @@ unito a main (fast-forward, `0eef1c1`, deploy di produzione Ready) e
 prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
-**Test.** 1174 test permanenti in 107 file (Vitest), tutti verdi al 18/10.
+**Test.** 1174 test permanenti in 107 file (Vitest), tutti verdi al 18/10
+su main; 1187 in 108 file sul branch `reset-ovunque`.
 
 ### Non ancora costruito
 
@@ -5966,18 +6064,29 @@ dell'onboarding"). Account di prova eliminati lo stesso giorno.
   e la si toglie dopo il merge. Un `redirectTo` non in elenco viene
   ignorato in silenzio: il link porta al Site URL, quindi un reset chiesto
   dall'anteprima di un branch senza la sua voce porta su app-libra
-- **Un reset chiesto dall'app installata su iPhone non può riuscire**
-  (limite noto, 10/10). Il link dell'email si apre sempre in Safari,
-  mentre il code verifier sta nei cookie dell'app, che sono separati. La
-  pagina lo spiega ("funziona solo nel browser da cui l'hai chiesto…") e
-  si richiede il link da Safari. Soluzione possibile in futuro: link con
-  `token_hash` e `verifyOtp` lato server, che non ha bisogno del
-  verifier; cambia il modello dell'email "Reset Password" su Supabase
-  (dalla dashboard, fuori da git)
-- **Errore di rete durante lo scambio del link** (10/10, raro). La
-  libreria cancella comunque il verifier: si vede "Errore di
-  connessione", e ricaricando compare il testo "altro browser". Serve un
-  link nuovo
+- **Un reset chiesto dall'app installata su iPhone non poteva riuscire**
+  (limite noto dal 10/10): **risolto sul branch `reset-ovunque`, da
+  provare** (sotto, "Prove su iPhone del reset da qualunque browser"). Il
+  link dell'email si apre sempre in Safari, mentre il code verifier del
+  flusso PKCE stava nei cookie dell'app. Ora la richiesta parte con il
+  flusso implicito e il link porta la sessione nel frammento, senza
+  verifier (§9.1, "Il ripristino della password"). Non con `token_hash` e
+  `verifyOtp`: servirebbe cambiare il modello dell'email, bloccato senza
+  SMTP personalizzato (§10.9)
+- **Togliere il ramo PKCE di `/reimposta-password` e `LINK_ALTRO_BROWSER`**
+  (lavoro futuro, branch a parte). Dopo il rilascio di `reset-ovunque`
+  le richieste nuove sono tutte implicite: il ramo `?code=` serve solo ai
+  link chiesti prima, che scadono entro il tempo di validità dei link
+  (di solito un'ora). Da togliere dopo qualche giorno dal merge, con i
+  test PKCE di `reimpostaPassword.test.tsx` e le voci `flow_state_*`,
+  `bad_code_verifier` e "code verifier" di `erroriAuth.ts`. Resta la
+  gestione di `otp_expired`, che serve anche al frammento
+- **Errore di rete durante lo scambio del link** (10/10, raro, solo per i
+  link PKCE). La libreria cancella comunque il verifier: si vede "Errore
+  di connessione", e ricaricando compare il testo "altro browser". Serve
+  un link nuovo. Con i link nuovi (frammento) un errore di rete alla
+  verifica o al rinnovo dà "Errore di connessione" e serve comunque un
+  link nuovo: il frammento è già stato tolto dall'indirizzo
 - **Email di Supabase gratuite: circa 2 all'ora** (il servizio interno
   del piano gratuito, sezione 10.9). Da tenere presente nelle prove del
   reset: oltre il limite la richiesta fallisce con "Troppi tentativi"
@@ -6144,6 +6253,53 @@ sull'anteprima) — **fatte il 17/10**:
 **Alla fine**: A, B, C e D (l'account della prova dopo la correzione del
 caricamento completo) **eliminati il 17/10** con Elimina account. Restano
 6 utenti, nessuna riga orfana (verificato da Cowork).
+
+### Prove su iPhone del reset da qualunque browser
+
+Branch `reset-ovunque` (§9.1, "Il ripristino della password"). Da fare
+sull'**anteprima del branch**, con l'**account di prova**. Il reset si
+chiede da **Chrome sul PC** e il link si apre sull'**iPhone, da Mail →
+Safari**: due browser diversi, che con il flusso PKCE davano "altro
+browser". L'app installata non si tocca. **3 email**, con il servizio
+gratuito a circa 2 all'ora (e almeno 60 secondi fra due richieste):
+la prima subito, le altre due un'ora dopo circa.
+
+**Prima**: su Supabase (Authentication → URL Configuration) aggiungere
+la Redirect URL esatta dell'anteprima,
+`https://nutritrack-git-reset-ovunque-…vercel.app/**` (regola sotto,
+"Redirect URL su Supabase: solo voci esatte"), da togliere dopo il
+merge. Senza la voce il link porta su app-libra, che non ha ancora il
+codice nuovo. In Safari su iPhone serve l'accesso a Vercel per aprire
+l'anteprima.
+
+1. **Email 1.** Chrome sul PC, anteprima: Password dimenticata → email
+   dell'account di prova → Invia link.
+2. iPhone, Mail → link → si apre Safari sull'anteprima: modulo con
+   l'email dell'account di prova; nell'indirizzo nessun `#access_token`.
+3. Ricarica la pagina prima di salvare → il modulo resta.
+4. Nuova password → Salva → Oggi dell'anteprima, con l'account di
+   prova; "indietro" non riporta al modulo.
+5. Riapri il link dell'email 1 → "Link non valido" con il testo "Il link
+   è scaduto, è già stato usato…", niente modulo.
+6. Chrome sul PC: accesso con la password nuova → entra. Restando
+   collegati qui si può osservare il punto 11.
+7. **Email 2 e 3** (un'ora dopo circa, a più di 60 secondi l'una
+   dall'altra), da Chrome sul PC come al punto 1.
+8. Prima di aprirle: in Safari sull'anteprima, accesso con **un altro
+   account** (il tuo vero, o uno usa e getta da creare apposta).
+9. Link dell'**email 2** → "link scaduto…" (superato dalla 3), niente
+   modulo; resti collegato con l'altro account.
+10. Link dell'**email 3** → modulo con l'email dell'**account di prova**,
+    non dell'altro → Salva → Oggi con l'account di prova. L'altro
+    account è uscito da Safari, non dagli altri dispositivi.
+11. Il cambio chiude le altre sessioni? Chrome sul PC, collegato dal
+    punto 6 con l'account di prova: entro un'ora circa dal punto 10 deve
+    chiedere di rientrare (stato "sessione scaduta"). Se resta collegato
+    più a lungo, la riga "Sicurezza, il prezzo" in §9.1 va corretta.
+
+Dopo il merge, in produzione: una prova dall'app installata (Password
+dimenticata → Mail → Safari → modulo → nuova password → accesso
+dall'app). È il caso per cui è nato il branch; un'email in più.
 
 ### Prossimi passi
 
