@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — La richiesta del link di reset parte con il flusso implicito
+
+Branch `reset-ovunque`. Primo passo del reset che funziona da qualunque
+browser: `/password-dimenticata` chiede il link con un client Supabase a
+parte (`src/lib/supabase/clientRichiestaReset.ts`, flusso implicito, senza
+memoria), invece del client dell'app che usa sempre PKCE. La richiesta
+parte senza `code_challenge`, quindi il link non è più legato al browser
+che l'ha chiesto e nessun "code verifier" finisce nei cookie. Stesso
+`redirectTo` di prima. Il file esporta solo `chiediLinkRipristino`: il
+client non si può usare per altro. La pagina `/reimposta-password` non
+raccoglie ancora la sessione dal frammento (passo successivo): da solo
+questo commit non va in produzione. Test nuovi in
+`passwordDimenticata.test.tsx` (nessun `code_challenge`, nessun verifier,
+cookie della sessione aperta identici), rossi tutti e 3 con il client
+PKCE. 1177 test, tsc, lint e build verdi.
+
 ## 2026-10-18 — Fine riga LF ovunque
 
 Su main. Nel repository i file erano già tutti LF, ma nella copia di

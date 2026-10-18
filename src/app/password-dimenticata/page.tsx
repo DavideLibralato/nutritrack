@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { chiediLinkRipristino } from "@/lib/supabase/clientRichiestaReset";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida } from "@/lib/validazione";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
@@ -28,10 +28,12 @@ export default function PasswordDimenticataPage() {
 
     setCaricamento(true);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(emailPulita, {
-      redirectTo: `${window.location.origin}/reimposta-password`,
-    });
+    // Flusso implicito: il link funziona da qualunque browser
+    // (clientRichiestaReset.ts).
+    const { error } = await chiediLinkRipristino(
+      emailPulita,
+      `${window.location.origin}/reimposta-password`
+    );
 
     setCaricamento(false);
 
