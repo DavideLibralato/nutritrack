@@ -5,6 +5,15 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Merge di `login-ritocchi` su main
+
+Fast-forward `d3906e8` → `f9d7b26`, 6 commit. Branch cancellato in
+locale e su GitHub. Tolta da Supabase la Redirect URL dell'anteprima del
+branch e vista la Build `f9d7b26` nell'app installata, confermate da
+Davide alle 20:51. Nello stesso commit il mockup del branch successivo,
+`docs/mockups/cambia-password.html` (approvato il 18/10).
+Branch `cambia-password`.
+
 ## 2026-10-18 — Pagine di accesso provate su iPhone
 
 Branch `login-ritocchi`, commit 6 (solo documenti). **Provato su iPhone il
