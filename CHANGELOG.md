@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — /reimposta-password raccoglie la sessione dal frammento
+
+Branch `reset-ovunque`. Il link chiesto con il flusso implicito torna con
+la sessione nel frammento (`#access_token=…&type=recovery`). La pagina lo
+legge per prima cosa, lo toglie subito dall'indirizzo
+(`history.replaceState`, anche se poi qualcosa fallisce) e chiama
+`setSession` sul client dell'app, che salva la sessione nei cookie. Poi
+scrive il segno e mostra il modulo dell'account del link. Errori: rete →
+testo di connessione; token rifiutati → link non valido; `otp_expired`
+nel frammento → link scaduto. L'errore "Not a valid PKCE flow url" di
+`initialize()` (il client nato prima che il frammento venisse tolto) si
+ignora solo con una sessione di recovery nel frammento. La raccolta parte
+una volta per caricamento (una ref: StrictMode non la ripete). Ramo PKCE
+(`?code=`) invariato per i link già spediti. Nuovi:
+`src/lib/frammentoRipristino.ts`, `ERRORE_CONNESSIONE` in `erroriAuth.ts`.
+7 test nuovi in `reimpostaPassword.test.tsx`; nei casi di prima nessun
+ritocco, la rete finta riconosce in più il token del link (firma base64url
+valida: `setSession` la controlla, lo scambio PKCE no). Cinque rotture
+della pagina, ognuna presa da almeno un test. 1184 test, tsc, lint e build
+verdi.
+
 ## 2026-10-18 — La richiesta del link di reset parte con il flusso implicito
 
 Branch `reset-ovunque`. Primo passo del reset che funziona da qualunque

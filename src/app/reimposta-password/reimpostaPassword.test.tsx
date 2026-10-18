@@ -48,7 +48,23 @@ const server = {
   scambi: 0,
   passwordCambiate: [] as string[],
   impreviste: [] as string[],
+  // Flusso implicito: ogni GET /user (setSession verifica così i token del
+  // frammento), con il frammento dell'indirizzo in quel momento.
+  verificheUtente: [] as { autorizzazione: string; hash: string }[],
+  // La rete cade alla verifica dei token del frammento.
+  reteGiuAllaVerifica: false,
 };
+
+// Un utente che il server non conosce: i suoi token vengono rifiutati.
+const UTENTE_SCONOSCIUTO = { id: "33333333-3333-4333-8333-333333333333", email: "sconosciuto@esempio.it" };
+
+// Il token del link implicito. setSession controlla che ogni pezzo del JWT
+// sia base64url valido, e la firma "firma" di token() non lo è (5
+// caratteri): lo scambio PKCE non la controllava, quindi token() resta
+// com'è per i casi di prima. Qui la firma è codificata davvero.
+function tokenDelLink(utente: { id: string }): string {
+  return token(utente).replace(/\.firma$/, `.${base64url("firma")}`);
+}
 
 function base64url(testo: string): string {
   return Buffer.from(testo).toString("base64url");
@@ -113,8 +129,18 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
   // (updateUser), annotato con l'account su cui finisce.
   if ((metodo === "GET" || metodo === "PUT") && url === `${AUTH}/user`) {
     const autorizzazione = new Headers(init?.headers).get("Authorization") ?? "";
+    if (metodo === "GET") {
+      server.verificheUtente.push({ autorizzazione, hash: window.location.hash });
+      if (server.reteGiuAllaVerifica) throw new TypeError("Failed to fetch");
+      if (autorizzazione === `Bearer ${tokenDelLink(UTENTE_SCONOSCIUTO)}`) {
+        return json({ code: 401, error_code: "bad_jwt", msg: "invalid JWT" }, 401);
+      }
+    }
     for (const utente of [UTENTE_VERO, UTENTE_PROVA]) {
-      if (autorizzazione === `Bearer ${token(utente)}`) {
+      if (
+        autorizzazione === `Bearer ${token(utente)}` ||
+        autorizzazione === `Bearer ${tokenDelLink(utente)}`
+      ) {
         if (metodo === "PUT") server.passwordCambiate.push(utente.email);
         return json(utenteSupabase(utente));
       }
@@ -231,6 +257,8 @@ beforeEach(() => {
   server.scambi = 0;
   server.passwordCambiate = [];
   server.impreviste = [];
+  server.verificheUtente = [];
+  server.reteGiuAllaVerifica = false;
   routerFinto.push.mockClear();
   routerFinto.replace.mockClear();
   cancellaCookie();
@@ -424,6 +452,135 @@ describe("/reimposta-password", () => {
     ricarica();
 
     expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+  });
+});
+
+// --- Flusso implicito (dal 18/10/2026, branch reset-ovunque) --------------
+//
+// Il link chiesto da /password-dimenticata senza code_challenge
+// (clientRichiestaReset.ts) torna qui con la sessione nel frammento:
+// #access_token=...&refresh_token=...&type=recovery. Nessun verifier: vale
+// in qualunque browser. Regole: il frammento si toglie prima di qualunque
+// chiamata; la sessione nasce dai token del frammento (setSession) e
+// finisce nei cookie; il modulo è dell'account del link, anche con un'altra
+// sessione aperta.
+
+const TESTO_CONNESSIONE = "Errore di connessione. Controlla la tua connessione e riprova.";
+
+// Il frammento come lo scrive il server di Auth per un link implicito
+// buono (i campi che auth-js legge dall'indirizzo).
+function frammentoLink(utente: { id: string; email: string }): string {
+  const s = sessione(utente);
+  return (
+    `#access_token=${tokenDelLink(utente)}&expires_at=${s.expires_at}&expires_in=${s.expires_in}` +
+    `&refresh_token=${s.refresh_token}&token_type=bearer&type=recovery`
+  );
+}
+
+// Le verifiche dei token del link (GET /user con il suo access token).
+function verificheDelLink(utente: { id: string }) {
+  return server.verificheUtente.filter((v) => v.autorizzazione === `Bearer ${tokenDelLink(utente)}`);
+}
+
+// La sessione salvata nei cookie, letta da un client nuovo: come la
+// vedrebbero il middleware e il resto dell'app.
+async function utenteNeiCookie(): Promise<string | undefined> {
+  const lettore = createBrowserClient(URL_SUPABASE, CHIAVE, {
+    isSingleton: false,
+    auth: { detectSessionInUrl: false, autoRefreshToken: false },
+  });
+  const { data } = await lettore.auth.getSession();
+  return data.session?.user.id;
+}
+
+describe("/reimposta-password, link con la sessione nel frammento", () => {
+  it("nessuna sessione aperta: modulo dell'account del link, frammento tolto prima della verifica, sessione nei cookie", async () => {
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+    expect(campoAccount().value).toBe(UTENTE_VERO.email);
+    expect(window.location.hash).toBe("");
+    // Una sola verifica anche con StrictMode, e già senza token
+    // nell'indirizzo quando è partita.
+    expect(verificheDelLink(UTENTE_VERO)).toEqual([
+      { autorizzazione: `Bearer ${tokenDelLink(UTENTE_VERO)}`, hash: "" },
+    ]);
+    expect(await utenteNeiCookie()).toBe(UTENTE_VERO.id);
+    expect(server.scambi).toBe(0);
+  });
+
+  it("sessione di un altro account aperta: modulo e password nuova sull'account del link", async () => {
+    await entraConAccountDiProva();
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+    expect(campoAccount().value).toBe(UTENTE_VERO.email);
+
+    fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
+    fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
+    fireEvent.click(screen.getByText("Salva nuova password"));
+    await waitFor(() => expect(routerFinto.replace).toHaveBeenCalledWith("/"));
+    expect(server.passwordCambiate).toEqual([UTENTE_VERO.email]);
+    expect(await utenteNeiCookie()).toBe(UTENTE_VERO.id);
+  });
+
+  // Il client nato prima della pagina vede i token nell'indirizzo e
+  // rinuncia con "Not a valid PKCE flow url": la pagina deve ignorarlo.
+  it("client creato prima della pagina (layout radice): modulo", async () => {
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`, { clientPrimaDellaPagina: true });
+
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+    expect(campoAccount().value).toBe(UTENTE_VERO.email);
+    expect(window.location.hash).toBe("");
+  });
+
+  it("token rifiutati dal server: errore di link non valido, frammento tolto, nessuna sessione", async () => {
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_SCONOSCIUTO)}`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+    expect(window.location.hash).toBe("");
+    expect(await utenteNeiCookie()).toBeUndefined();
+  });
+
+  it("rete assente alla verifica: testo di connessione, frammento tolto", async () => {
+    server.reteGiuAllaVerifica = true;
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_CONNESSIONE)).toBeTruthy();
+    expect(screen.queryByText(MODULO)).toBeNull();
+    expect(window.location.hash).toBe("");
+  });
+
+  // Link implicito già usato o scaduto: l'errore arriva solo nel
+  // frammento (con PKCE anche nella query, T1).
+  it("errore otp_expired solo nel frammento, nessuna sessione: testo del link scaduto", async () => {
+    apriPagina(`/reimposta-password#${ERRORE_SERVER}&sb=`);
+
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_SCADUTO)).toBeTruthy();
+  });
+
+  it("ricaricamento prima del salvataggio: modulo; dopo il salvataggio: errore", async () => {
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+
+    ricarica();
+    expect(await screen.findByText(MODULO)).toBeTruthy();
+    expect(campoAccount().value).toBe(UTENTE_VERO.email);
+
+    fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
+    fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
+    fireEvent.click(screen.getByText("Salva nuova password"));
+    await waitFor(() => expect(routerFinto.replace).toHaveBeenCalledWith("/"));
+    expect(server.passwordCambiate).toEqual([UTENTE_VERO.email]);
+
+    ricarica();
+    expect(await screen.findByText(ERRORE)).toBeTruthy();
+    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
     expect(screen.queryByText(MODULO)).toBeNull();
   });
 });

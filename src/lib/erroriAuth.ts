@@ -7,6 +7,7 @@ export const LINK_ALTRO_BROWSER =
 export const LINK_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.";
 // Il server ha rifiutato il link.
 export const LINK_SCADUTO = "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
+export const ERRORE_CONNESSIONE = "Errore di connessione. Controlla la tua connessione e riprova.";
 
 // Traduce i messaggi di errore di Supabase Auth (che arrivano in inglese)
 // in italiano, cosi anche gli amici non tecnici che usano l'app capiscono
@@ -21,8 +22,8 @@ const MAPPA_ERRORI: Record<string, string> = {
   "email rate limit exceeded": "Troppi tentativi in poco tempo: riprova tra qualche minuto.",
   "signup requires a valid password": "Inserisci una password valida.",
   "for security purposes": "Per sicurezza, riprova tra qualche istante.",
-  "network": "Errore di connessione. Controlla la tua connessione e riprova.",
-  "failed to fetch": "Errore di connessione. Controlla la tua connessione e riprova.",
+  "network": ERRORE_CONNESSIONE,
+  "failed to fetch": ERRORE_CONNESSIONE,
   "flow state": LINK_SCADUTO,
   "code verifier": LINK_ALTRO_BROWSER,
 };

@@ -1,9 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
+  ERRORE_CONNESSIONE,
   LINK_ALTRO_BROWSER,
   LINK_NON_VALIDO,
   traduciErroreAuth,
@@ -14,7 +16,43 @@ import {
   scriviSegnoRipristino,
   togliSegnoRipristino,
 } from "@/lib/segnoRipristinoPassword";
+import { leggiFrammentoRipristino, togliFrammento } from "@/lib/frammentoRipristino";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+
+// L'esito della raccolta della sessione dal frammento (link chiesti con il
+// flusso implicito, dal 18/10/2026: frammentoRipristino.ts).
+type EsitoFrammento =
+  | { tipo: "nessuno" } // nessuna sessione nel frammento: si va avanti come prima
+  | { tipo: "riuscito"; idUtente: string; email: string }
+  | { tipo: "errore"; testo: string };
+
+// Legge il frammento e lo toglie SUBITO, prima di qualunque attesa: i
+// token non restano nell'indirizzo nemmeno se poi qualcosa fallisce. Poi
+// setSession sul client dell'app: verifica il token con il server e salva
+// la sessione nei cookie, dove la vedono il middleware e il resto
+// dell'app.
+function raccogliSessioneDalFrammento(): Promise<EsitoFrammento> {
+  const sessione = leggiFrammentoRipristino(window.location.hash);
+  if (!sessione) return Promise.resolve({ tipo: "nessuno" });
+  togliFrammento();
+
+  return (async (): Promise<EsitoFrammento> => {
+    const { data, error } = await createClient().auth.setSession(sessione);
+    if (error) {
+      // Rete assente o richiesta scaduta: il link può essere ancora buono,
+      // ma i token sono già stati tolti dall'indirizzo, quindi serve
+      // comunque un link nuovo. Qualunque altro errore: il server ha
+      // rifiutato i token.
+      return {
+        tipo: "errore",
+        testo: isAuthRetryableFetchError(error) ? ERRORE_CONNESSIONE : LINK_NON_VALIDO,
+      };
+    }
+    const utente = data.user;
+    if (!utente?.email) return { tipo: "errore", testo: LINK_NON_VALIDO };
+    return { tipo: "riuscito", idUtente: utente.id, email: utente.email };
+  })();
+}
 
 // useSearchParams() richiede una <Suspense> attorno (stesso motivo di /login).
 export default function ReimpostaPasswordPage() {
@@ -41,7 +79,18 @@ function ReimpostaPasswordForm() {
   const [errore, setErrore] = useState<string | null>(null);
   const [caricamento, setCaricamento] = useState(false);
 
-  // Il link dell'email porta qui con ?code=..., che va scambiato con una
+  // La raccolta dal frammento parte una volta sola per caricamento della
+  // pagina. In sviluppo (StrictMode) React fa girare l'effect due volte, e
+  // l'effect può ripartire se cambiano i parametri: la seconda volta
+  // troverebbe l'indirizzo già pulito, e un secondo setSession sarebbe una
+  // chiamata inutile. Una ref (useRef) è una scatola che sopravvive ai
+  // nuovi giri del componente senza farlo ridisegnare: tiene la stessa
+  // promessa per tutti.
+  const raccolta = useRef<Promise<EsitoFrammento> | null>(null);
+
+  // Il link dell'email porta qui con la sessione nel frammento (link
+  // chiesti dal 18/10/2026, sopra) oppure, per i link chiesti prima, con
+  // ?code=..., che va scambiato con una
   // sessione vera prima di poter cambiare la password (flusso PKCE).
   //
   // Lo scambio NON lo facciamo noi: lo fa da solo il client Supabase appena
@@ -58,6 +107,10 @@ function ReimpostaPasswordForm() {
   // password sarebbe cambiarla all'account sbagliato.
   useEffect(() => {
     const code = searchParams.get("code");
+    // Il frammento si legge prima di creare il client e prima di guardare
+    // l'esito di initialize().
+    raccolta.current ??= raccogliSessioneDalFrammento();
+    const esitoFrammento = raccolta.current;
     const supabase = createClient();
 
     function mostraErrore(testo: string) {
@@ -68,6 +121,27 @@ function ReimpostaPasswordForm() {
     // initialize() non rifà il lavoro: restituisce l'esito dell'avvio già
     // partito, scambio compreso.
     supabase.auth.initialize().then(async ({ error }) => {
+      // 0. Sessione nel frammento (flusso implicito). Se il client è nato
+      // prima che la pagina togliesse il frammento (useUtenteId nel layout
+      // radice), ha visto i token e ha rinunciato con "Not a valid PKCE
+      // flow url": quell'errore, e solo quello, qui è atteso e si ignora.
+      const frammento = await esitoFrammento;
+      if (frammento.tipo !== "nessuno") {
+        if (error && error.name !== "AuthPKCEGrantCodeExchangeError") {
+          mostraErrore(traduciErroreLinkRipristino(error));
+          return;
+        }
+        if (frammento.tipo === "errore") {
+          mostraErrore(frammento.testo);
+          return;
+        }
+        // Come dopo uno scambio riuscito: il segno per un ricaricamento.
+        scriviSegnoRipristino(frammento.idUtente);
+        setEmailAccount(frammento.email);
+        setStatoSessione("pronto");
+        return;
+      }
+
       // 1. Errore: il server ha rifiutato il codice, o ha rimandato qui con
       // l'errore nell'indirizzo (link già usato o scaduto: ?error=... e
       // #error=..., SENZA ?code=), o la rete. Prima di tutto il resto,
