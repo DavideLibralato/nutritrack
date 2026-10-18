@@ -6,6 +6,7 @@
 import { describe, it, expect } from "vitest";
 import {
   arrotondaGrammi,
+  grammiInDestinazione,
   pianoSpostamento,
   stessiDoppioni,
   trovaDoppioni,
@@ -197,5 +198,36 @@ describe("arrotondaGrammi", () => {
     expect(arrotondaGrammi(1.005)).toBe(1.01);
     expect(arrotondaGrammi(12.345)).toBe(12.35);
     expect(arrotondaGrammi(150)).toBe(150);
+  });
+});
+
+// Per la barra del cambio di pasto dallo sheet di modifica (18/10): con
+// quali grammi la voce si ritrova nel pasto di destinazione.
+describe("grammiInDestinazione", () => {
+  const arriva = () => voce("Mela", COLAZIONE, 120);
+  const conGrammi = (a: VoceDiario, dest: VoceDiario[], scelta?: SceltaDoppione) =>
+    pianoSpostamento({
+      partenza: [a],
+      destinazione: dest,
+      pastoDestinazioneId: PRANZO,
+      scelte: scelta ? { "alimento-Mela": scelta } : {},
+      idGrammiNuovi: a.id,
+    });
+
+  it("spostata (nessun doppione o Tieni separati): i suoi grammi nuovi", () => {
+    const a = arriva();
+    expect(grammiInDestinazione(conGrammi(a, []), a.id)).toBe(120);
+    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "separati" }), a.id)).toBe(120);
+  });
+
+  it("Somma e Scrivi quantità: i grammi della riga che resta", () => {
+    const a = arriva();
+    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "somma" }), a.id)).toBe(170);
+    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "scrivi", grammi: 200 }), a.id)).toBe(200);
+  });
+
+  it("Non spostarlo: null, la voce resta dov'era", () => {
+    const a = arriva();
+    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "escludi" }), a.id)).toBeNull();
   });
 });

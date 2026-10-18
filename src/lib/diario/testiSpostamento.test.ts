@@ -10,6 +10,7 @@ import {
   MASSIMO_PASTO,
   messaggioSpostamento,
   testoEsitoDoppione,
+  esitoNonSpostarlo,
   messaggioDuplicazione,
 } from "./testiSpostamento";
 
@@ -138,5 +139,34 @@ describe("messaggioDuplicazione", () => {
     const pasto = messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 0, esclusi: ["Mela", "Pane"] });
     expect(frase(pasto)).toBe("Nessuna copia: «Mela» e «Pane» ci sono già in «Pranzo».");
     expect(frase(voce) + frase(pasto)).not.toMatch(/Duplicato/);
+  });
+});
+
+// Dallo sheet di modifica di Oggi con i grammi cambiati (caso 1 dei
+// "doppioni rimasti", 18/10): "Non spostarlo" lascia la voce dov'era con i
+// grammi nuovi, e i testi lo dicono.
+describe("Non spostarlo con i grammi nuovi", () => {
+  it("la riga d'esito del foglio dice i grammi nuovi; senza, come prima", () => {
+    expect(esitoNonSpostarlo("Colazione", 120)).toBe("Resta in Colazione con 120 g");
+    expect(esitoNonSpostarlo("Colazione", 12.5)).toBe("Resta in Colazione con 12,5 g");
+    expect(esitoNonSpostarlo("Colazione")).toBe("Resta in Colazione, non si sposta");
+  });
+
+  it("la barra: resta in Colazione con 120 g, con la spunta (qualcosa è cambiato)", () => {
+    const m = messaggioSpostamento({
+      ...base, tipo: "voce", nomeAlimento: "Yogurt", spostati: 0, esclusi: ["Yogurt"], grammiNuovi: 120,
+    });
+    expect(frase(m)).toBe("«Yogurt» resta in «Colazione» con 120 g.");
+    expect(m.icona).toBe("spunta");
+  });
+});
+
+// Pasto e grammi cambiati insieme dallo sheet di modifica (18/10): la barra
+// dice anche i grammi della riga in destinazione.
+describe("Spostato con i grammi in destinazione", () => {
+  it("«Spostato: Yogurt → Pranzo, 150 g»; senza grammi il testo di Sposta", () => {
+    const voce = { ...base, tipo: "voce" as const, nomeAlimento: "Yogurt", spostati: 1, esclusi: [] };
+    expect(frase(messaggioSpostamento({ ...voce, grammiInDestinazione: 150 }))).toBe("Spostato: Yogurt → Pranzo, 150 g");
+    expect(frase(messaggioSpostamento({ ...voce, grammiInDestinazione: null }))).toBe("Spostato: Yogurt → Pranzo");
   });
 });

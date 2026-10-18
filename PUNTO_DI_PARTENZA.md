@@ -443,6 +443,32 @@ anche più righe dello stesso alimento. Annulla o tocco fuori annullano
 tutto: si scrive solo alla conferma, e il piano si ricalcola sulle righe
 rilette da Dexie.
 
+**Dallo sheet di modifica in Oggi** (dal 18/10, branch `doppioni`, caso 1
+dei "doppioni rimasti"). Il Salva dello sheet di una voce:
+- **niente di cambiato**: si chiude, niente scritto, niente barra;
+- **solo i grammi**: la stessa riga prende i grammi nuovi, con la barra
+  "Aggiornato: Mela → 120 g" (lo stesso testo di Scrivi quantità in
+  Aggiungi, `messaggioAggiornato`) e Annulla, che riporta i grammi di
+  prima. Un errore resta nello sheet;
+- **il pasto** (con o senza grammi nuovi): lo sheet si chiude e parte lo
+  stesso Sposta del menu (`spostaNelPasto` con `origine.grammi`), con i
+  grammi nuovi già in arrivo: nel foglio dei doppioni ("Pranzo 100 g ·
+  Colazione 150 g"), nel totale di Somma e nella rete del massimo. "Non
+  spostarlo" lascia la voce nel pasto di partenza **con i grammi nuovi**
+  (decisione di Davide del 18/10): esito "→ Resta in Colazione con 150 g",
+  barra "«Yogurt» resta in «Colazione» con 150 g." con Annulla. Se la
+  voce si sposta con i grammi nuovi la barra dice anche i grammi della
+  riga in destinazione: "Spostato: Yogurt → Pranzo, 150 g" (con Somma o
+  Scrivi quantità quelli della riga che resta, `grammiInDestinazione`);
+  senza grammi nuovi resta il testo di Sposta. Chiudere
+  il foglio senza confermare non cambia niente, grammi compresi. Un
+  errore va nella barra. Il piano (`idGrammiNuovi` in
+  `pianoSpostamento.ts`) scrive **una volta sola per riga**: pasto e
+  grammi nello stesso `aggiorna` se la voce si sposta, niente sulla voce
+  che Somma o Scrivi quantità cancellano (i suoi grammi nuovi sono già nel
+  totale), i soli grammi con "Non spostarlo". Annulla riporta pasto e
+  grammi.
+
 Costruito col passo C:
 - **Una scelta per alimento** (mockup approvato il 5/10, "Opzione A,
   completa"). Ogni alimento in comune ha il suo blocco nel foglio
@@ -6016,7 +6042,7 @@ prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1210 in 109 file sul branch `doppioni`.
+su main; 1224 in 109 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6133,27 +6159,19 @@ su main; 1210 in 109 file sul branch `doppioni`.
   per Elimina dal menu; con un foglio aperto l'errore resta nel foglio.
   Niente scritto, come prima. Raro. Test in `page.test.tsx`
   ("trascinare un alimento su un altro pasto")
-- **Il cambio di pasto dallo sheet di modifica in Oggi non controlla i
-  doppioni** (11/10; in lavorazione sul branch `doppioni`). Cambiando il
-  pasto di una voce dal suo sheet, la
-  voce va nel pasto nuovo con l'`update` diretto di `pasto_id`, senza
-  passare da `spostaNelPasto`: se lì c'è già lo stesso alimento si
-  ritrovano due righe, senza foglio. Il menu "Sposta" invece lo controlla.
-  È l'**unico percorso** rimasto in cui un doppione nasce senza foglio
-  (verificato il 18/10): aggiungere un alimento già presente nel pasto
-  non lo è più, perché tutti i percorsi di /aggiungi passano da
-  `aggiungiNelPasto` (provato l'11/10, sezione 3, "Doppioni in
-  Aggiungi"). **Fatto il repository** (18/10, commit 4 del branch):
-  `spostaNelPasto` accetta `origine: { tipo: "voce", id, grammi }`. La
-  voce in arrivo vale già con i grammi nuovi nel foglio, in Somma e nella
-  rete del massimo, e il piano (`idGrammiNuovi` in `pianoSpostamento.ts`)
-  li scrive con **una scrittura sola per riga**: lo stesso `aggiorna` con
-  pasto e grammi se si sposta (nessun doppione, Tieni separati), niente
-  sulla riga che Somma o Scrivi quantità cancellano (i suoi grammi nuovi
-  sono già nel totale), un `aggiorna` dei soli grammi con "Non spostarlo"
-  (resta nel pasto di partenza con i grammi nuovi, decisione di Davide
-  del 18/10). Annulla riporta pasto e grammi. Senza grammi, o con gli
-  stessi grammi, come prima. Resta da fare: la pagina (commit 5)
+- **Il cambio di pasto dallo sheet di modifica in Oggi non controllava i
+  doppioni** (11/10): **corretto sul branch `doppioni` il 18/10, da
+  provare su iPhone**. Cambiando il pasto di una voce dal suo sheet, la
+  voce andava nel pasto nuovo con l'`update` diretto di `pasto_id`, senza
+  passare da `spostaNelPasto`: se lì c'era già lo stesso alimento si
+  ritrovavano due righe, senza foglio, e nessun salvataggio dallo sheet
+  aveva Annulla. Era l'**unico percorso** rimasto in cui un doppione
+  nasceva senza foglio (verificato il 18/10): aggiungere un alimento già
+  presente nel pasto non lo è più, perché tutti i percorsi di /aggiungi
+  passano da `aggiungiNelPasto` (provato l'11/10, sezione 3, "Doppioni in
+  Aggiungi"). Com'è fatto ora: sezione 3, "Doppioni", "Dallo sheet di
+  modifica in Oggi". Test in `vociDiario.test.ts`, `page.test.tsx`,
+  `testiSpostamento.test.ts` e `testiBarra.test.ts`
 
 - **Pasti e orari: il Salva controlla nome e ora con le regole "da oggi"**
   (10/10, passo 5, accettato per ora). Il controllo al Salva dei campi

@@ -20,6 +20,7 @@
 
 import type { MessaggioBarra } from "../inserimento/testiBarra";
 import { totaleSomma } from "./pianoSpostamento";
+import { formattaGrammi } from "../inserimento/grammi";
 
 export const MASSIMO_PASTO = 16;
 export const MASSIMO_ALIMENTO = 22;
@@ -50,23 +51,50 @@ export interface EsitoSpostamento {
   spostati: number;
   // Nomi degli alimenti rimasti dov'erano ("Non spostarlo").
   esclusi: string[];
+  // Solo per una voce dallo sheet di modifica di Oggi: i grammi nuovi, se
+  // diversi da quelli di prima. Con "Non spostarlo" la voce resta dov'era
+  // ma con questi grammi, e il messaggio lo dice.
+  grammiNuovi?: number | null;
+  // Sempre solo da lì, quando la voce si è spostata: i grammi della riga
+  // che ora la contiene nel pasto di destinazione (i grammi nuovi, o con
+  // Somma e Scrivi quantità quelli della riga che resta). Il messaggio
+  // diventa "Spostato: Yogurt → Pranzo, 150 g" (decisione di Davide del
+  // 18/10). Senza grammi nuovi resta il testo di Sposta.
+  grammiInDestinazione?: number | null;
+}
+
+// La riga d'esito di "Non spostarlo" nel foglio dei doppioni: "Resta in
+// Pranzo, non si sposta", oppure, dallo sheet di modifica con i grammi
+// cambiati, "Resta in Pranzo con 120 g" (decisione di Davide del 18/10).
+export function esitoNonSpostarlo(pastoPartenza: string, grammiNuovi: number | null = null): string {
+  return grammiNuovi === null
+    ? `Resta in ${pastoPartenza}, non si sposta`
+    : `Resta in ${pastoPartenza} con ${formattaGrammi(grammiNuovi)}`;
 }
 
 export function messaggioSpostamento(e: EsitoSpostamento): MessaggioBarra {
   const plurale = new Set(e.esclusi).size > 1;
 
   if (e.tipo === "voce") {
-    // Escluso l'unico alimento: non si è mosso niente.
+    // Escluso l'unico alimento: non si è mosso niente. Con i grammi nuovi
+    // dallo sheet di modifica qualcosa è cambiato (e c'è Annulla).
+    if (e.spostati === 0 && e.grammiNuovi != null) {
+      return {
+        testo: `${alimento(e.nomeAlimento ?? e.esclusi[0] ?? "")} resta in ${pasto(e.pastoPartenza)} con ${formattaGrammi(e.grammiNuovi)}.`,
+        icona: "spunta",
+      };
+    }
     if (e.spostati === 0) {
       return {
         testo: `${alimento(e.nomeAlimento ?? e.esclusi[0] ?? "")} resta in ${pasto(e.pastoPartenza)}, non spostato.`,
         icona: "info",
       };
     }
+    const grammi = e.grammiInDestinazione != null ? `, ${formattaGrammi(e.grammiInDestinazione)}` : "";
     return {
       testo: "Spostato:",
       nome: e.nomeAlimento ?? "",
-      coda: `→ ${accorcia(e.pastoDestinazione, MASSIMO_PASTO)}`,
+      coda: `→ ${accorcia(e.pastoDestinazione, MASSIMO_PASTO)}${grammi}`,
       icona: "spunta",
     };
   }

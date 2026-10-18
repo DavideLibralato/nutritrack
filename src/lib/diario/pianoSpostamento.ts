@@ -228,6 +228,21 @@ export function pianoSpostamento({
   return piano;
 }
 
+// I grammi con cui una voce spostata si ritrova nel pasto di destinazione,
+// letti dal piano: quelli dell'aggiorna che la sposta (pasto e grammi
+// insieme), o quelli della riga che resta con Somma o Scrivi quantità.
+// null se il piano non scrive grammi in destinazione (Non spostarlo, o
+// spostamento dei soli pasti). Serve al messaggio della barra.
+export function grammiInDestinazione(piano: PianoSpostamento, idVoce: string): number | null {
+  for (const s of piano.scritture) {
+    if (s.tipo !== "aggiorna" || s.modifiche.quantita_g === undefined) continue;
+    // La voce stessa con i soli grammi è "Non spostarlo": resta dov'era.
+    if (s.id === idVoce && s.modifiche.pasto_id === undefined) continue;
+    return s.modifiche.quantita_g;
+  }
+  return null;
+}
+
 function pianoSenzaGrammiNuovi({
   partenza,
   destinazione,

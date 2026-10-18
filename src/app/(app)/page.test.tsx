@@ -331,6 +331,149 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
   });
 });
 
+// Caso 1 dei "doppioni rimasti" (18/10): dallo sheet di modifica di una
+// voce. Prima cambiare il pasto scriveva pasto_id con un aggiorna diretto
+// (doppione senza foglio) e nessun salvataggio aveva Annulla. Ora: solo i
+// grammi → "Aggiornato" con Annulla; il pasto → lo stesso Sposta del menu,
+// con i grammi nuovi in arrivo.
+describe("Oggi: modifica di una voce dallo sheet", () => {
+  async function prepara({ yogurtAPranzo }: { yogurtAPranzo: boolean }) {
+    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    const voce = (pastoId: string, quantita_g: number) =>
+      repositoryVociDiario.crea({
+        user_id: utenteTest,
+        alimento_id: "alimento-yogurt",
+        pasto_id: pastoId,
+        gruppo_id: null,
+        quantita_g,
+        data: oggiLocale(),
+        creato_il: "2026-10-06T08:00:00.000Z",
+        consumato_alle: null,
+        nome_alimento: "Yogurt",
+        kcal_100g: 60,
+        proteine_100g: 4,
+        carboidrati_100g: 5,
+        grassi_100g: 2,
+      });
+    await voce(colazione.id, 125);
+    if (yogurtAPranzo) await voce(pranzo.id, 100);
+    const diario = async () =>
+      (await repositoryVociDiario.ottieniTutti(utenteTest))
+        .map((v) => `${v.pasto_id === pranzo.id ? "Pranzo" : "Colazione"} ${v.quantita_g}`)
+        .sort();
+    const firme = async () =>
+      (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
+
+    render(<OggiPage />);
+    const righe = await screen.findAllByText("Yogurt");
+    const riga = righe.map((el) => el.closest("button")!).find((b) => b.closest(`[data-pasto-id="${colazione.id}"]`))!;
+    // Tocco sulla voce di colazione: lo sheet in modifica.
+    fireEvent.click(riga);
+    await screen.findByLabelText("Pasto");
+    return { pranzo, diario, firme };
+  }
+
+  function compila({ grammi, pastoId }: { grammi?: string; pastoId?: string }) {
+    if (pastoId) fireEvent.change(screen.getByLabelText("Pasto"), { target: { value: pastoId } });
+    if (grammi) fireEvent.change(screen.getByLabelText("Quantità (g)"), { target: { value: grammi } });
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+  }
+
+  it("niente di cambiato: si chiude, niente scritto, niente barra", async () => {
+    const { firme } = await prepara({ yogurtAPranzo: false });
+    const prima = await firme();
+
+    compila({});
+
+    await waitFor(() => expect(screen.queryByLabelText("Pasto")).toBeNull());
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(await firme()).toEqual(prima);
+  });
+
+  it("solo i grammi: «Aggiornato: Yogurt → 150 g» con Annulla, che riporta i grammi", async () => {
+    const { diario } = await prepara({ yogurtAPranzo: false });
+
+    compila({ grammi: "150" });
+
+    await testoBarra("Aggiornato: Yogurt → 150 g");
+    expect(await diario()).toEqual(["Colazione 150"]);
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual(["Colazione 125"]);
+  });
+
+  it("pasto e grammi, senza doppione: «Spostato», e Annulla riporta pasto e grammi", async () => {
+    const { pranzo, diario } = await prepara({ yogurtAPranzo: false });
+
+    compila({ grammi: "150", pastoId: pranzo.id });
+
+    await testoBarra("Spostato: Yogurt → Pranzo, 150 g");
+    expect(await diario()).toEqual(["Pranzo 150"]);
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual(["Colazione 125"]);
+  });
+
+  it("pasto con un doppione: il foglio con i grammi nuovi; Non spostarlo tiene i grammi nuovi", async () => {
+    const { pranzo, diario } = await prepara({ yogurtAPranzo: true });
+    const prima = await diario();
+
+    compila({ grammi: "150", pastoId: pranzo.id });
+
+    await screen.findByText("«Yogurt» c'è già in «Pranzo»");
+    const yogurt = screen.getByRole("group", { name: "Yogurt" });
+    within(yogurt).getByText("Pranzo 100 g · Colazione 150 g");
+    within(yogurt).getByRole("radio", { name: "Somma (250 g)" });
+    fireEvent.click(within(yogurt).getByRole("radio", { name: "Non spostarlo" }));
+    within(yogurt).getByText("→ Resta in Colazione con 150 g");
+    expect(await diario()).toEqual(prima); // finché non si conferma, niente
+
+    fireEvent.click(screen.getByRole("button", { name: "Sposta" }));
+
+    await testoBarra("«Yogurt» resta in «Colazione» con 150 g.");
+    expect(await diario()).toEqual(["Colazione 150", "Pranzo 100"]);
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    await screen.findByText("Annullato.");
+    expect(await diario()).toEqual(prima);
+  });
+
+  it("pasto con un doppione, Somma: una riga da 250 g a pranzo", async () => {
+    const { pranzo, diario } = await prepara({ yogurtAPranzo: true });
+
+    compila({ grammi: "150", pastoId: pranzo.id });
+    await screen.findByText("«Yogurt» c'è già in «Pranzo»");
+    fireEvent.click(screen.getByRole("button", { name: "Sposta" }));
+
+    await testoBarra("Spostato: Yogurt → Pranzo, 250 g");
+    expect(await diario()).toEqual(["Pranzo 250"]);
+  });
+
+  it("solo il pasto, grammi uguali: il testo di Sposta, senza grammi", async () => {
+    const { pranzo, diario } = await prepara({ yogurtAPranzo: true });
+
+    compila({ pastoId: pranzo.id });
+    await screen.findByText("«Yogurt» c'è già in «Pranzo»");
+    fireEvent.click(screen.getByRole("button", { name: "Sposta" }));
+
+    await testoBarra("Spostato: Yogurt → Pranzo");
+    expect(await diario()).toEqual(["Pranzo 225"]);
+  });
+
+  it("chiudere il foglio dei doppioni non cambia niente, grammi compresi", async () => {
+    const { pranzo, firme } = await prepara({ yogurtAPranzo: true });
+    const prima = await firme();
+
+    compila({ grammi: "150", pastoId: pranzo.id });
+    await screen.findByText("«Yogurt» c'è già in «Pranzo»");
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(await firme()).toEqual(prima);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
 // Il trascinamento (passo D) sulla pagina vera. jsdom non calcola il layout
 // (ogni elemento è largo e alto 0): i rettangoli dei pasti, della lista e
 // della fascia di "+ Aggiungi" li diamo noi. Colazione da y 100 a 200,

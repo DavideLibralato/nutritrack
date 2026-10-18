@@ -10,6 +10,7 @@
 
 import { accorcia, elencoAlimenti, MASSIMO_ALIMENTO } from "../diario/testiSpostamento";
 import type { PianoInserimento } from "../diario/pianoInserimento";
+import { formattaGrammi } from "./grammi";
 
 // L'icona nel cerchio a sinistra della barra (BarraAnnulla):
 // - "spunta": è andato a buon fine (Aggiunto, Salvato, Ripristinato);
@@ -77,13 +78,8 @@ export function messaggioInserimento(
   if (tipo === "alimento") {
     const aggiornato = piano.aggiornati[0];
     if (!aggiornato) return messaggioAggiunto(nome, null);
-    const grammi = `${aggiornato.grammi.toLocaleString("it-IT", { maximumFractionDigits: 2 })} g`;
-    return {
-      testo: aggiornato.tipo === "somma" ? "Sommato:" : "Aggiornato:",
-      nome,
-      coda: `→ ${grammi}`,
-      icona: "spunta",
-    };
+    if (aggiornato.tipo === "scrivi") return messaggioAggiornato(nome, aggiornato.grammi);
+    return { testo: "Sommato:", nome, coda: `→ ${formattaGrammi(aggiornato.grammi)}`, icona: "spunta" };
   }
 
   if (piano.esclusi.length === 0) return messaggioAggiunto(nome, piano.inseriti.length);
@@ -94,6 +90,13 @@ export function messaggioInserimento(
       `(tranne ${elencoAlimenti(piano.esclusi)}, che ${plurale ? "c'erano" : "c'era"} già).`,
     icona: "spunta",
   };
+}
+
+// Una riga che ha preso i grammi scritti a mano: "Aggiornato: Mela → 120 g".
+// Lo usano "Scrivi quantità" in /aggiungi (messaggioInserimento, sopra) e
+// il cambio dei soli grammi dallo sheet di modifica in Oggi (dal 18/10).
+export function messaggioAggiornato(nome: string, grammi: number): MessaggioBarra {
+  return { testo: "Aggiornato:", nome, coda: `→ ${formattaGrammi(grammi)}`, icona: "spunta" };
 }
 
 // `numeroAlimenti`: null per una cosa sola (un alimento del catalogo in

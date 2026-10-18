@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Sheet di modifica in Oggi: cambio di pasto via Sposta, Annulla sui grammi
+
+Branch `doppioni`, commit 5 di 8 (caso 1, seconda metà). `confermaModifica`
+non scrive più pasto e grammi con un `aggiorna` diretto, che cambiando
+pasto creava un doppione senza foglio e non aveva Annulla. Niente di
+cambiato: si chiude e basta. Solo i grammi: `applicaScritture` e la barra
+"Aggiornato: Mela → 120 g" con Annulla (`messaggioAggiornato`, ora
+condiviso con Scrivi quantità in Aggiungi). Il pasto: lo stesso Sposta
+del menu con i grammi nuovi in arrivo (commit 4), foglio dei doppioni se
+serve; "Non spostarlo" dice "→ Resta in Colazione con 150 g" nel foglio e
+"«Yogurt» resta in «Colazione» con 150 g." nella barra
+(`esitoNonSpostarlo`, `grammiNuovi` in `messaggioSpostamento`). Se la
+voce si sposta con i grammi nuovi: "Spostato: Yogurt → Pranzo, 150 g"
+(con Somma o Scrivi quantità i grammi della riga che resta,
+`grammiInDestinazione` in `pianoSpostamento.ts`); senza grammi nuovi il
+testo di Sposta. Test: 7 sulla pagina (niente cambiato, solo grammi con
+Annulla, pasto senza doppione con Annulla, Non spostarlo con i grammi
+nuovi e Annulla, Somma, solo il pasto senza grammi nel testo, foglio
+chiuso senza scritture) e i testi in `pianoSpostamento.test.ts`,
+`testiSpostamento.test.ts` e `testiBarra.test.ts`; visti fallire con il
+ramo del pasto spento, con la barra senza fotografia, senza i grammi
+nuovi nei testi, con `esitoNonSpostarlo` che li ignora, senza l'uscita
+"niente di cambiato", con la barra senza grammi in destinazione, con i
+grammi anche senza grammi nuovi e con "Non spostarlo" non riconosciuto.
+**Da provare su iPhone**: solo i grammi e Annulla; cambio di pasto senza
+doppione; con doppione Somma, Tieni separati, Scrivi quantità, Non
+spostarlo e Annulla; foglio chiuso senza confermare; più Sposta dal menu
+e trascinamento, che passano dallo stesso codice (commit 4 e 4b).
+
 ## 2026-10-18 — Trascinamento fallito: errore nella barra, gesti di nuovo attivi
 
 Branch `doppioni`, commit 4b (fuori dal piano a 8, chiesto da Davide

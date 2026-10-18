@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   messaggioAggiunto,
+  messaggioAggiornato,
   messaggioInserimento,
   messaggioEliminato,
   messaggioRipristinato,
@@ -180,5 +181,15 @@ describe("messaggioInserimento", () => {
         piano({ inseriti: ["Pane"], esclusi: ["Yogurt greco intero biologico"] })
       )?.testo
     ).toBe("Aggiunto: «Colazione proteica de…» (tranne «Yogurt greco intero b…», che c'era già).");
+  });
+});
+
+// Lo stesso testo di "Scrivi quantità" in /aggiungi, per il cambio dei soli
+// grammi dallo sheet di modifica di Oggi (18/10): le parti separate, così
+// la barra tronca solo il nome.
+describe("messaggioAggiornato", () => {
+  it("«Aggiornato: Mela → 120 g», con il formato italiano dei grammi", () => {
+    expect(messaggioAggiornato("Mela", 120)).toEqual({ testo: "Aggiornato:", nome: "Mela", coda: "→ 120 g", icona: "spunta" });
+    expect(messaggioAggiornato("Riso", 12500.5).coda).toBe("→ 12.500,5 g");
   });
 });

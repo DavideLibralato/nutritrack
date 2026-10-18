@@ -78,9 +78,15 @@ import ServeConnessione from "@/components/ServeConnessione";
 import SchedaCompletaProfilo from "@/components/SchedaCompletaProfilo";
 import SheetDoppioni from "@/components/SheetDoppioni";
 import SheetDuplica from "@/components/SheetDuplica";
-import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
+import {
+  arrotondaGrammi,
+  grammiInDestinazione,
+  type Doppione,
+  type SceltaDoppione,
+} from "@/lib/diario/pianoSpostamento";
 import {
   accorcia,
+  esitoNonSpostarlo,
   MASSIMO_ALIMENTO,
   MASSIMO_PASTO,
   messaggioDuplicazione,
@@ -102,16 +108,19 @@ import {
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { prendiInserimento } from "@/lib/inserimento/ultimoInserimento";
 import {
+  messaggioAggiornato,
   messaggioEliminato,
   MESSAGGIO_ANNULLATO,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
 import {
   annullaOperazione,
+  applicaScritture,
   eliminaPastoDelGiorno,
   eliminaVoci,
   spostaNelPasto,
   duplicaNelPasto,
+  type OrigineSposta,
   type OrigineSpostamento,
   type FotografiaVoci,
 } from "@/lib/repository/vociDiario";
@@ -132,8 +141,12 @@ const TIPI_RIGA_OGGI: readonly TipoRiga[] = ["voce", "pasto"];
 // `sceltaPasto`: si sta scegliendo il pasto nel foglio (Sposta dal menu); col
 // trascinamento la destinazione la dà il rilascio, e il foglio dei pasti non
 // si apre mai. Con `doppioni` è aperto il foglio dei doppioni.
+// `grammiNuovi`: solo dal cambio di pasto nello sheet di modifica, i grammi
+// scritti lì se diversi da quelli di prima (anche in `origine.grammi`):
+// servono ai testi di "Non spostarlo" ("Resta in Pranzo con 120 g").
 interface StatoSpostamento {
-  origine: OrigineSpostamento;
+  origine: OrigineSposta;
+  grammiNuovi: number | null;
   // Il nome dell'alimento o del pasto che si sposta, per i titoli.
   nome: string;
   sceltaPasto: boolean;
@@ -698,7 +711,9 @@ function OggiContenuto() {
   // null se la riga non c'è più. `sceltaPasto`: dal menu si sceglie il pasto
   // nel foglio; trascinando il pasto è già deciso dal rilascio.
   function nuovoSpostamento(tipo: TipoRiga, id: string, sceltaPasto: boolean): StatoSpostamento | null {
-    const vuoto = { sceltaPasto, pastoDestinazioneId: null, doppioni: null, avviso: null, inCorso: false, errore: null };
+    const vuoto = {
+      sceltaPasto, grammiNuovi: null, pastoDestinazioneId: null, doppioni: null, avviso: null, inCorso: false, errore: null,
+    };
     if (tipo === "voce") {
       const voce = vociGiorno.find((v) => v.id === id);
       if (!voce) return null;
@@ -879,6 +894,13 @@ function OggiContenuto() {
           pastoDestinazione: nomePasto(pastoDestinazioneId),
           spostati: piano.spostati.length,
           esclusi: piano.esclusi,
+          grammiNuovi: s.grammiNuovi,
+          // Solo con i grammi nuovi dallo sheet di modifica: "Spostato:
+          // Yogurt → Pranzo, 150 g". Altrimenti il testo di Sposta.
+          grammiInDestinazione:
+            s.grammiNuovi !== null && s.origine.tipo === "voce"
+              ? grammiInDestinazione(piano, s.origine.id)
+              : null,
         }),
         fotografia: scritto ? fotografia : undefined,
       });
@@ -954,17 +976,53 @@ function OggiContenuto() {
     setSalvataggioVoce("inattivo");
   }
 
+  // Salva dallo sheet di modifica (caso 1 dei "doppioni rimasti", 18/10).
+  // Prima scriveva pasto e grammi con un aggiorna diretto: cambiando pasto
+  // nasceva un doppione senza foglio, e non c'era Annulla. Ora tre casi:
+  // - niente di cambiato: si chiude, niente scritto, niente barra;
+  // - solo i grammi: la stessa riga prende i grammi nuovi, da
+  //   applicaScritture (la fotografia per Annulla), con la barra
+  //   "Aggiornato: Mela → 120 g". Un errore resta nello sheet, come prima;
+  // - il pasto (con o senza grammi nuovi): lo sheet si chiude e si passa da
+  //   eseguiSpostamento, cioè lo stesso Sposta del menu, con i grammi nuovi
+  //   in arrivo (spostaNelPasto, `origine.grammi`): foglio dei doppioni se
+  //   serve, barra e Annulla. Chiudere il foglio senza confermare non
+  //   cambia niente, grammi compresi. Un errore va nella barra
+  //   (eseguiSpostamento, senza foglio aperto).
   async function confermaModifica(grammi: number) {
     if (!voceInModifica) return;
+    const voce = voceInModifica;
+    const pastoNuovo = pastoModificaId || voce.pasto_id;
+    const grammiCambiati = arrotondaGrammi(grammi) !== voce.quantita_g;
+
+    if (pastoNuovo && pastoNuovo !== voce.pasto_id) {
+      const s = nuovoSpostamento("voce", voce.id, false);
+      chiudiModifica();
+      if (!s) return;
+      void eseguiSpostamento(
+        {
+          ...s,
+          origine: { tipo: "voce", id: voce.id, grammi },
+          grammiNuovi: grammiCambiati ? arrotondaGrammi(grammi) : null,
+        },
+        pastoNuovo
+      );
+      return;
+    }
+
+    if (!grammiCambiati) {
+      chiudiModifica();
+      return;
+    }
+
     setSalvataggioVoce("in-corso");
     try {
-      // Stessa riga (stesso id): aggiorna(), non crea(). Il pasto può essere
-      // cambiato (spostare la voce di pasto, sezione 5).
-      await repositoryVociDiario.aggiorna(voceInModifica.id, {
-        quantita_g: grammi,
-        pasto_id: pastoModificaId || voceInModifica.pasto_id,
-      });
+      // Stessa riga (stesso id): un aggiorna, non una riga nuova.
+      const fotografia = await applicaScritture([
+        { tipo: "aggiorna", id: voce.id, modifiche: { quantita_g: grammi } },
+      ]);
       chiudiModifica();
+      setBarra({ id: crypto.randomUUID(), ...messaggioAggiornato(voce.nome_alimento, grammi), fotografia });
     } catch {
       setSalvataggioVoce("errore");
     }
@@ -1606,7 +1664,10 @@ function OggiContenuto() {
           nomeDestinazione={pasti.find((p) => p.id === spostamento.pastoDestinazioneId)?.nome ?? ""}
           nomePartenza={pasti.find((p) => p.id === spostamento.pastoPartenzaId)?.nome ?? ""}
           etichettaEscludi="Non spostarlo"
-          esitoEscludi={`Resta in ${pasti.find((p) => p.id === spostamento.pastoPartenzaId)?.nome ?? ""}, non si sposta`}
+          esitoEscludi={esitoNonSpostarlo(
+            pasti.find((p) => p.id === spostamento.pastoPartenzaId)?.nome ?? "",
+            spostamento.grammiNuovi
+          )}
           etichettaConferma="Sposta"
           avviso={spostamento.avviso}
           inCorso={spostamento.inCorso}
