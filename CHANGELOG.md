@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Mockup della testata delle pagine di accesso
+
+Branch `login-ritocchi`, commit 1. Aggiunto `docs/mockups/testata-login.html`:
+le quattro pagine di accesso con il modulo di oggi, l'occhio sui campi
+password e tre proposte per il marchio di Libra. Scelta di Davide: la
+proposta 3, "Nel titolo" ("Accedi a ⚖ Libra"; marchio piccolo in cima
+dove Libra non è nel titolo). Nel campo "Account" di Reimposta l'email
+dell'account di prova è sostituita da `tuonome@esempio.it`. Solo
+documenti.
+
+## 2026-10-18 — Merge di `doppioni` su main
+
+Fast-forward `ac90ca9` → `d3906e8`, 10 commit. Branch cancellato in
+locale e su GitHub.
+
 ## 2026-10-18 — Doppioni rimasti provati su iPhone; test di pagina su Aggiungi
 
 Branch `doppioni`, commit 9. **Provato su iPhone il 18/10**
