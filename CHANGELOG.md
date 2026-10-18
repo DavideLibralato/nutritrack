@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — L'occhio sui campi password
+
+Branch `login-ritocchi`, commit 2. Nuovo `src/components/CampoPassword.tsx`
+sui quattro campi password (Accedi, Registrati, i due di Reimposta):
+pulsante da 40×40 px nel campo, etichetta fissa "Mostra password" con
+`aria-pressed`, il fuoco resta nel campo, all'invio la password torna
+nascosta (per il Portachiavi iCloud, da provare su iPhone). Registrati
+resta non controllato. In Accedi l'email si ripulisce dagli spazi come
+negli altri moduli: non era un difetto, il campo `type="email"` li toglie
+già da solo (trovato con un test che non sapeva fallire, poi tolto).
+Test permanente `CampoPassword.test.tsx`, visto fallire senza
+`type="button"`, senza il ritorno a nascosta all'invio e con il campo
+sempre controllato. PUNTO §9.1, "le quattro pagine di accesso". 1243 test,
+lint e build verdi.
+
 ## 2026-10-18 — Mockup della testata delle pagine di accesso
 
 Branch `login-ritocchi`, commit 1. Aggiunto `docs/mockups/testata-login.html`:

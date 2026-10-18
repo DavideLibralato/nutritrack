@@ -18,6 +18,7 @@ import {
 } from "@/lib/segnoRipristinoPassword";
 import { leggiFrammentoRipristino, togliFrammento } from "@/lib/frammentoRipristino";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import CampoPassword from "@/components/CampoPassword";
 
 // L'esito della raccolta della sessione dal frammento (link chiesti con il
 // flusso implicito, dal 18/10/2026: frammentoRipristino.ts).
@@ -294,35 +295,24 @@ function ReimpostaPasswordForm() {
           />
         </div>
 
-        <div>
-          <label htmlFor="reset-password" className="block text-sm font-medium mb-1">
-            Nuova password
-          </label>
-          <input
-            id="reset-password"
-            type="password"
-            autoComplete="new-password"
-            placeholder="Almeno 6 caratteri"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
-          />
-        </div>
+        {/* Un occhio per campo: ognuno mostra solo la sua password. */}
+        <CampoPassword
+          id="reset-password"
+          etichetta="Nuova password"
+          autoComplete="new-password"
+          placeholder="Almeno 6 caratteri"
+          value={password}
+          onChange={setPassword}
+        />
 
-        <div>
-          <label htmlFor="reset-conferma" className="block text-sm font-medium mb-1">
-            Conferma password
-          </label>
-          <input
-            id="reset-conferma"
-            type="password"
-            autoComplete="new-password"
-            placeholder="Ripetila"
-            value={confermaPassword}
-            onChange={(e) => setConfermaPassword(e.target.value)}
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
-          />
-        </div>
+        <CampoPassword
+          id="reset-conferma"
+          etichetta="Conferma password"
+          autoComplete="new-password"
+          placeholder="Ripetila"
+          value={confermaPassword}
+          onChange={setConfermaPassword}
+        />
 
         {errore && <p className="text-sm text-warning">{errore}</p>}
 

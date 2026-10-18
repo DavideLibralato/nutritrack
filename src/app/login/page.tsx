@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida } from "@/lib/validazione";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import CampoPassword from "@/components/CampoPassword";
 
 // useSearchParams() (sotto, in LoginForm) puo' andare in stallo durante il
 // primo render sul server se non e' avvolto in una <Suspense>: Next.js lo
@@ -34,11 +35,17 @@ function LoginForm() {
     // Validazione in italiano: senza noValidate sul form, il browser
     // mostrerebbe qui i suoi messaggi nativi, che sono nella lingua del
     // browser (spesso inglese) e non in quella dell'app.
-    if (!email.trim()) {
+    //
+    // Il campo email toglie già gli spazi ai bordi (lo standard HTML per
+    // type="email"); qui si ripulisce per coerenza con gli altri moduli
+    // (Registrati, Password dimenticata), e la stessa email pulita va a
+    // signInWithPassword. Le maiuscole le porta in minuscolo Supabase Auth.
+    const emailPulita = email.trim();
+    if (!emailPulita) {
       setErrore("Inserisci la tua email.");
       return;
     }
-    if (!emailValida(email)) {
+    if (!emailValida(emailPulita)) {
       setErrore("Inserisci un indirizzo email valido.");
       return;
     }
@@ -52,7 +59,7 @@ function LoginForm() {
     const supabase = createClient();
 
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: emailPulita,
       password,
     });
 
@@ -101,20 +108,14 @@ function LoginForm() {
           />
         </div>
 
-        <div>
-          <label htmlFor="login-password" className="block text-sm font-medium mb-1">
-            Password
-          </label>
-          <input
-            id="login-password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="La tua password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
-          />
-        </div>
+        <CampoPassword
+          id="login-password"
+          etichetta="Password"
+          autoComplete="current-password"
+          placeholder="La tua password"
+          value={password}
+          onChange={setPassword}
+        />
 
         {errore && <p className="text-sm text-warning">{errore}</p>}
 

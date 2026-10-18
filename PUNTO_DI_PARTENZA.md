@@ -4143,6 +4143,23 @@ Conseguenze:
 - **pagina di login vera dal primo giorno** (Supabase Auth, email + password).
   Non è una schermata "finta" da rifare dopo: è la stessa che servirà se un
   giorno l'app viene aperta a tutti
+- **le quattro pagine di accesso** (Accedi, Registrati, Password
+  dimenticata, Reimposta password; dal 18/10, branch `login-ritocchi`,
+  mockup `docs/mockups/testata-login.html`). **L'occhio**: ogni campo
+  password ha dentro, a destra, un pulsante da 40×40 px che mostra e
+  nasconde la password (`src/components/CampoPassword.tsx`, uno per
+  campo: in Reimposta due). Etichetta fissa "Mostra password" con
+  `aria-pressed`, non un'etichetta che cambia. `type="button"`, perché
+  non invii il modulo. Il tocco non toglie il fuoco al campo (su iPhone
+  la tastiera resta aperta) e il cursore resta dov'era. All'invio la
+  password torna nascosta, così il Portachiavi iCloud trova un campo
+  password (che serva davvero va provato su iPhone). Correzione
+  automatica e maiuscola iniziale spente, perché da visibile il campo è
+  di testo. In Registrati il campo resta non controllato: la password
+  non entra mai nello stato di React. Niente campo "conferma password"
+  in Registrati. L'email di Accedi si ripulisce dagli spazi come negli
+  altri moduli; il campo `type="email"` li toglie già da solo, e le
+  maiuscole le porta in minuscolo Supabase Auth
 - in fase beta la **registrazione è chiusa**: chi si iscrive deve inserire un
   codice di invito, oppure la sua email deve essere in una allowlist. È un
   controllo di una riga, che si toglie senza toccare nient'altro il giorno in

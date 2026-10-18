@@ -8,6 +8,7 @@ import { useActionState, useEffect, useState } from "react";
 import { registrati, type StatoRegistrazione } from "@/lib/actions/auth";
 import { caricaPaginaDaCapo } from "@/lib/caricamentoCompleto";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import CampoPassword from "@/components/CampoPassword";
 import { useDisponibilitaUsername } from "@/lib/amici/useDisponibilitaUsername";
 import { TESTO_USERNAME_REGOLE, testoStatoUsername } from "@/lib/amici/testiUsername";
 
@@ -162,19 +163,14 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div>
-          <label htmlFor="register-password" className="block text-sm font-medium mb-1">
-            Password
-          </label>
-          <input
-            id="register-password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            placeholder="Almeno 6 caratteri"
-            className={`w-full rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
-          />
-        </div>
+        {/* Non controllato, come prima: solo name, niente value. */}
+        <CampoPassword
+          id="register-password"
+          name="password"
+          etichetta="Password"
+          autoComplete="new-password"
+          placeholder="Almeno 6 caratteri"
+        />
 
         <div>
           <label htmlFor="register-codice-invito" className="block text-sm font-medium mb-1">
