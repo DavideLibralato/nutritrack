@@ -682,6 +682,22 @@ arrotondamento, massimo 99999,99) sta in `leggiNumeroDecimale`, in
 `src/lib/numeriDecimali.ts`. La usano sia `leggiGrammi` sia i valori
 dell'alimento, qui sotto.
 
+**Ogni campo numerico si precompila con la virgola** (deciso il
+2026-10-18). Quando un campo riparte da un valore salvato (sheet
+quantità, modifica di un alimento o di un pasto salvato, altezza e peso
+obiettivo in Profilo, Obiettivi e onboarding) il testo è quello che
+scriverebbe l'utente: "12,5", non "12.5"; niente zeri inutili ("100", non
+"100,00"); al massimo i decimali della colonna (2 per `numeric(7,2)`, 1
+per altezza e peso obiettivo, `numeric(5,1)`). **Mai il punto delle
+migliaia**: la lettura prende il punto per una virgola, quindi un
+"12.500" lasciato com'è tornerebbe come 12,5. Una funzione sola,
+`numeroPerCampo` in `src/lib/numeriDecimali.ts`; `grammiPerCampo` la usa
+per i grammi. Dopo il Salva di Profilo e Obiettivi i campi si riscrivono
+allo stesso modo (`normalizza`), così "72,5" resta "72,5". I target
+(kcal e macro) sono `integer` e non hanno decimali. I testi fuori dai
+campi ("12,5 g", "12.500 g") restano a `formattaGrammi`, con il punto
+delle migliaia.
+
 **Valori dell'alimento** (deciso il 2026-09-26). "Nuovo alimento" e
 "Modifica alimento" (`CreaAlimentoForm`) passano da `validaValoriAlimento`,
 in `src/lib/inserimento/valoriAlimento.ts`. In `alimenti`, kcal, macro per
@@ -4735,8 +4751,8 @@ Nessuna quantità approssimata: la quantità è **sempre in grammi**.
 
 Per non pagare l'attrito su ogni pasto:
 - il campo grammi è precompilato con `porzione_default_g` e **già selezionato**,
-  con la virgola come nel resto dell'app ("12,5", "100"; `grammiPerCampo`
-  in `src/lib/inserimento/grammi.ts`)
+  con la virgola come ogni campo numerico ("12,5", "100"; sezione 3,
+  "Ogni campo numerico si precompila con la virgola")
 - valore giusto → confermi (due tap in tutto)
 - valore diverso → digiti il numero direttamente, senza cancellare nulla
 - tastierino numerico, nessun menu a tendina
@@ -5863,7 +5879,7 @@ unito a main (fast-forward, `0eef1c1`, deploy di produzione Ready) e
 prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
-**Test.** 1143 test permanenti in 102 file (Vitest), tutti verdi al 18/10.
+**Test.** 1159 test permanenti in 106 file (Vitest), tutti verdi al 18/10.
 
 ### Non ancora costruito
 
@@ -5878,6 +5894,15 @@ dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 ### Difetti e verifiche aperti
 
+- **Altezza e peso obiettivo accettano più di un decimale** (trovato il
+  18/10, non corretto). Le colonne sono `numeric(5,1)`, ma la validazione
+  di Profilo, Obiettivi e onboarding (`validaModulo`) non arrotonda e non
+  rifiuta "175,55": Dexie tiene 175,55, il server 175,6. È la divergenza
+  che `leggiNumeroDecimale` evita per i `numeric(7,2)`. I campi, e quindi
+  la proposta che parte da loro, mostrano già "175,6" dopo il Salva e alla
+  riapertura (`numeroPerCampo` con un decimale); la riga in Dexie no, fino
+  alla prossima discesa. Rimedio probabile: arrotondare a un decimale
+  prima di scrivere, come i grammi.
 - **Onboarding finito su un dispositivo e riaperto offline su un altro**
   (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").
   Inizio l'onboarding in Safari, lo finisco su Chrome, poi riapro Safari

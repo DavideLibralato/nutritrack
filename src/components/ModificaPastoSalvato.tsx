@@ -30,6 +30,7 @@ import ValorePrecedente from "@/components/ValorePrecedente";
 import { cercaPerNome, etichettaAlimento } from "@/lib/repository/alimenti";
 import { eliminaComposizione } from "@/lib/repository/composizioni";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
+import { formattaGrammi } from "@/lib/inserimento/grammi";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
 import { kcalPastoSalvato, sottotitoloPastoSalvato } from "@/lib/inserimento/pastiSalvati";
 import { useAreaVisibile } from "@/lib/areaVisibile";
@@ -578,7 +579,9 @@ function RigaAlimento({
       ) : prima === null ? (
         <p className="mt-1 text-sm text-accent">Nuovo</p>
       ) : (
-        <ValorePrecedente visibile={grammiCambiati} valore={`${prima.grammi} g`} />
+        // `prima` viene da Dexie (moduloDaDati), quindi i suoi grammi sono
+        // sempre validi.
+        <ValorePrecedente visibile={grammiCambiati} valore={formattaGrammi(grammiValidi(prima.grammi)!)} />
       )}
     </li>
   );

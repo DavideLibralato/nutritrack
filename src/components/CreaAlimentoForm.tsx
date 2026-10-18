@@ -33,6 +33,8 @@ import { testoDoppione, trovaDoppione } from "@/lib/catalogo/doppioniAlimenti";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { validaValoriAlimento, type CampoAlimento } from "@/lib/inserimento/valoriAlimento";
+import { grammiPerCampo } from "@/lib/inserimento/grammi";
+import { numeroPerCampo } from "@/lib/numeriDecimali";
 
 // Come si chiamano i campi nell'elenco "Per salvare mancano: ...".
 const ETICHETTE_MANCANTI: Record<CampoAlimento, string> = {
@@ -96,11 +98,13 @@ export default function CreaAlimentoForm({
   // diversi (PUNTO_DI_PARTENZA.md §4, `alimenti`). La colonna
   // `alimenti.marca` esiste già.
   const [marca, setMarca] = useState(a?.marca ?? "");
-  const [kcal, setKcal] = useState(a ? String(a.kcal_100g) : "");
-  const [proteine, setProteine] = useState(a ? String(a.proteine_100g) : "");
-  const [carboidrati, setCarboidrati] = useState(a ? String(a.carboidrati_100g) : "");
-  const [grassi, setGrassi] = useState(a ? String(a.grassi_100g) : "");
-  const [porzione, setPorzione] = useState(a ? String(a.porzione_default_g) : "100");
+  // In modifica i campi partono dai valori salvati, con la virgola ("0,9"):
+  // colonne numeric(7,2), quindi fino a due decimali.
+  const [kcal, setKcal] = useState(a ? numeroPerCampo(a.kcal_100g, 2) : "");
+  const [proteine, setProteine] = useState(a ? numeroPerCampo(a.proteine_100g, 2) : "");
+  const [carboidrati, setCarboidrati] = useState(a ? numeroPerCampo(a.carboidrati_100g, 2) : "");
+  const [grassi, setGrassi] = useState(a ? numeroPerCampo(a.grassi_100g, 2) : "");
+  const [porzione, setPorzione] = useState(a ? grammiPerCampo(a.porzione_default_g) : "100");
   const [errore, setErrore] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
   const [confermaElim, setConfermaElim] = useState(false);

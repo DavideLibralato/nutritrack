@@ -27,6 +27,7 @@ import {
   validaModulo,
   salvaProfilo,
   ribasaModulo,
+  dopoSalvataggio,
   type ValoriModulo,
   type SceltaPeriodo,
 } from "./salvataggioProfilo";
@@ -536,5 +537,60 @@ describe("ribasaModulo", () => {
     expect(ribasati.obiettivo.target.kcal).toBe("2200");
     // Toccato dall'utente: resta il suo.
     expect(ribasati.obiettivo.target.proteine).toBe("170");
+  });
+});
+
+describe("Altezza e peso obiettivo con la virgola", () => {
+  it("si aprono con la virgola, e un Salva senza toccare non scrive niente", async () => {
+    const profilo = { ...PROFILO, altezza_cm: 175.5 };
+    const periodo = { ...PERIODO, peso_obiettivo: 72.5 };
+    await db.profili.put(profilo);
+    await db.obiettivi.put(periodo);
+    await db.obiettivi_target.bulkPut(TARGET);
+
+    const caricati = valoriDaDati(profilo, periodo, TARGET);
+    expect(caricati.datiPersonali.altezzaCm).toBe("175,5");
+    expect(caricati.obiettivo.pesoObiettivo).toBe("72,5");
+    // Interi: come String().
+    expect(valoriDaDati(PROFILO, PERIODO, TARGET).datiPersonali.altezzaCm).toBe("180");
+
+    expect(sezioniModificate(caricati, caricati)).toEqual([]);
+    await salva(caricati, caricati, { periodoVistoId: periodo.id });
+    expect(await tabelleInOutbox()).toEqual([]);
+  });
+
+  it("dopo il Salva di «72,5» il campo resta «72,5» e la barra Salva non torna", async () => {
+    await conDatiEsistenti();
+    const caricati = valoriDaDati(PROFILO, PERIODO, TARGET);
+    const attuali: ValoriModulo = {
+      ...caricati,
+      datiPersonali: { ...caricati.datiPersonali, altezzaCm: "175,5" },
+      obiettivo: { ...caricati.obiettivo, pesoObiettivo: "72,5" },
+    };
+
+    const esito = await salva(caricati, attuali, {
+      periodoVistoId: PERIODO.id,
+      scelta: { tipo: "correzione" },
+    });
+    expect(esito.esito).toBe("salvato");
+    expect((await db.profili.get(PROFILO.id))?.altezza_cm).toBe(175.5);
+    expect((await db.obiettivi.get(PERIODO.id))?.peso_obiettivo).toBe(72.5);
+
+    // Quello che la pagina mette nei campi e nei "caricati" dopo il Salva.
+    const nuovi = dopoSalvataggio(caricati, attuali);
+    expect(nuovi.datiPersonali.altezzaCm).toBe("175,5");
+    expect(nuovi.obiettivo.pesoObiettivo).toBe("72,5");
+    expect(sezioniModificate(nuovi, nuovi)).toEqual([]);
+
+    // Riaprendo la pagina, da Dexie riletto: gli stessi testi, niente
+    // modificato.
+    const riletti = valoriDaDati(
+      (await db.profili.get(PROFILO.id))!,
+      (await db.obiettivi.get(PERIODO.id))!,
+      await db.obiettivi_target.toArray()
+    );
+    expect(riletti.datiPersonali.altezzaCm).toBe(nuovi.datiPersonali.altezzaCm);
+    expect(riletti.obiettivo.pesoObiettivo).toBe(nuovi.obiettivo.pesoObiettivo);
+    expect(sezioniModificate(riletti, nuovi)).toEqual([]);
   });
 });

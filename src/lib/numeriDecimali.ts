@@ -36,6 +36,17 @@ function arrotondaCentesimi(n: number): number {
   return Number((Math.round(Number(`${n}e2`)) / 100).toFixed(2));
 }
 
+// Il contrario di leggiNumeroDecimale: un numero salvato come testo di
+// partenza di un campo, come lo scriverebbe l'utente. Virgola decimale
+// ("12,5", non "12.5"), niente zeri inutili ("100", non "100,00"), al
+// massimo `decimaliMassimi` cifre dopo la virgola (quelle della colonna:
+// 2 per numeric(7,2), 1 per numeric(5,1)). Niente punto delle migliaia:
+// questa stessa lettura prende il punto per una virgola, quindi "12.500"
+// tornerebbe indietro come 12,5. Vale per ogni campo numerico dell'app.
+export function numeroPerCampo(n: number, decimaliMassimi: number): string {
+  return n.toLocaleString("it-IT", { maximumFractionDigits: decimaliMassimi, useGrouping: false });
+}
+
 // La virgola vale come separatore decimale. `zeroAmmesso`: 0 è un valore
 // valido (una kcal o un macro possono essere zero, una quantità no).
 export function leggiNumeroDecimale(

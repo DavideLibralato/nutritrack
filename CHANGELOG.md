@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Ogni campo numerico si precompila con la virgola
+
+Su main. Dopo lo sheet quantità, gli altri campi che ripartivano da un
+valore salvato con `String()` e mostravano "0.9", "12.5", "72.5": i
+valori e la porzione nel form dell'alimento, i grammi della modifica di
+un pasto salvato, altezza e peso obiettivo in Profilo e Obiettivi (anche
+dopo il Salva, `normalizza`), l'altezza dell'onboarding. Una funzione
+sola, `numeroPerCampo` in `src/lib/numeriDecimali.ts` (virgola, niente
+zeri inutili né punto delle migliaia, decimali scelti dal chiamante);
+`grammiPerCampo` e il peso dell'onboarding la usano. "Prima: …" della
+modifica pasto passa a `formattaGrammi`. Target integer non toccati.
+Controllato: i confronti "modificato" di Profilo, Obiettivi e pasto
+salvato sono numerici (`numeriUguali`, `stessiGrammi`), quindi "72.5"
+contro "72,5" non risultava e non risulta modificato. Test permanenti
+nuovi (funzione, form alimento, pasto salvato, Profilo con Salva e
+riapertura, onboarding), provati rompendo le copie in nove punti; i test
+esistenti passano senza ritocchi. Difetto trovato e lasciato aperto:
+altezza e peso obiettivo accettano due decimali, Dexie tiene 175,55 e il
+server (`numeric(5,1)`) 175,6. PUNTO §3: la regola. 1159 test, lint e
+build verdi.
+
 ## 2026-10-18 — Sheet quantità: i grammi si precompilano con la virgola
 
 Su main. Il campo dei grammi si apriva con `String(...)`: una voce da

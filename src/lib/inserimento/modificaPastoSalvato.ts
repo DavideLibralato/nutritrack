@@ -17,7 +17,7 @@
 import { repositoryComposizioni, repositoryComposizioniVoci } from "../repository";
 import { catalogoLocale } from "../repository/alimenti";
 import { esisteComposizioneConNome } from "../repository/composizioni";
-import { leggiGrammi } from "./grammi";
+import { grammiPerCampo, leggiGrammi } from "./grammi";
 import type { Alimento, Composizione, ComposizioneVoce } from "../db/tipi";
 
 // --- Il modulo --------------------------------------------------------------
@@ -63,7 +63,7 @@ export function moduloDaDati(
           voceId: v.id,
           alimentoId: v.alimento_id,
           nomeAlimento: alimento.nome,
-          grammi: String(v.quantita_g),
+          grammi: grammiPerCampo(v.quantita_g),
         },
       ];
     });
@@ -97,7 +97,7 @@ export function aggiungiAlimento(
   const indice = modulo.righe.findIndex((r) => r.alimentoId === alimento.id);
   if (indice >= 0) {
     const righe = [...modulo.righe];
-    righe[indice] = { ...righe[indice], grammi: String(grammi) };
+    righe[indice] = { ...righe[indice], grammi: grammiPerCampo(grammi) };
     return { ...modulo, righe };
   }
   return {
@@ -109,7 +109,7 @@ export function aggiungiAlimento(
         voceId: null,
         alimentoId: alimento.id,
         nomeAlimento: alimento.nome,
-        grammi: String(grammi),
+        grammi: grammiPerCampo(grammi),
       },
     ],
   };

@@ -451,3 +451,33 @@ describe("moduloModificato", () => {
     expect(moduloModificato(caricati, conGrammi(caricati, burro.id, "21"))).toBe(true);
   });
 });
+
+describe("grammi con la virgola nei campi del modulo", () => {
+  it("un pasto con 12,5 g si apre con «12,5» e un Salva senza toccare non riscrive niente", async () => {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const burro = await creaAlimento(userId, "Burro");
+    const composizioneId = await creaPastoSalvato(userId, "Merenda", [{ alimento: burro, grammi: 12.5 }]);
+    const caricati = (await caricaModuloPasto(userId, composizioneId))!;
+    expect(caricati.righe[0].grammi).toBe("12,5");
+
+    const prima = await istantanea(userId);
+    const esito = await salvaModificaPasto({ userId, composizioneId, caricati, attuali: caricati });
+    expect(esito).toEqual({ esito: "salvato", esclusi: [] });
+    expect(await istantanea(userId)).toEqual(prima);
+    expect((await righeDelPasto(composizioneId))[0].quantita_g).toBe(12.5);
+  });
+
+  it("dalla ricerca, riga nuova o sostituita: «12,5», salvato come 12,5 g", async () => {
+    const { userId, burro, composizioneId, caricati } = await preparaColazione();
+    const latte = await creaAlimento(userId, "Latte");
+
+    const modulo = aggiungiAlimento(aggiungiAlimento(caricati, burro, 12.5), latte, 0.5);
+    expect(modulo.righe.find((r) => r.alimentoId === burro.id)?.grammi).toBe("12,5");
+    expect(modulo.righe.find((r) => r.alimentoId === latte.id)?.grammi).toBe("0,5");
+
+    await salvaModificaPasto({ userId, composizioneId, caricati, attuali: modulo });
+    const righe = await righeDelPasto(composizioneId);
+    expect(righe.find((r) => r.alimento_id === burro.id)?.quantita_g).toBe(12.5);
+    expect(righe.find((r) => r.alimento_id === latte.id)?.quantita_g).toBe(0.5);
+  });
+});

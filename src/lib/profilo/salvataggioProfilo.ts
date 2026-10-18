@@ -35,6 +35,7 @@ import {
 import { salvaTarget, targetPerTipo } from "../repository/obiettiviTarget";
 import { giornoSuccessivo } from "../dataGiorno";
 import { periodoInCorso } from "../totaliDiario";
+import { numeroPerCampo } from "../numeriDecimali";
 import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "../db/tipi";
 import type {
   GiornoSettimana,
@@ -87,6 +88,11 @@ export const ETICHETTE_SEZIONI: Record<Sezione, string> = {
 
 const TARGET_VUOTO: ValoriTarget = { kcal: "", grassi: "", carboidrati: "", proteine: "" };
 
+// Altezza e peso obiettivo sono numeric(5,1) su Supabase: nei campi al
+// massimo un decimale, con la virgola ("175,5"; numeroPerCampo). I target
+// sono integer e restano String().
+const DECIMALI_CM_KG = 1;
+
 function targetDaRiga(riga: {
   kcal: number;
   proteine_g: number;
@@ -123,12 +129,13 @@ export function valoriDaDati(
     datiPersonali: {
       sesso: profilo?.sesso ?? "non_indicato",
       dataNascita: profilo?.data_nascita ?? "",
-      altezzaCm: profilo?.altezza_cm != null ? String(profilo.altezza_cm) : "",
+      altezzaCm: profilo?.altezza_cm != null ? numeroPerCampo(profilo.altezza_cm, DECIMALI_CM_KG) : "",
       livelloAttivita: profilo?.livello_attivita ?? "",
     },
     obiettivo: {
       tipo: periodo?.tipo ?? "mantenere",
-      pesoObiettivo: periodo?.peso_obiettivo != null ? String(periodo.peso_obiettivo) : "",
+      pesoObiettivo:
+        periodo?.peso_obiettivo != null ? numeroPerCampo(periodo.peso_obiettivo, DECIMALI_CM_KG) : "",
       target: targetNormale,
     },
     giorni: {
@@ -345,7 +352,8 @@ function numeroONull(valore: string): number | null {
 }
 
 // I valori come li vedrà il modulo dopo il salvataggio (numeri arrotondati,
-// virgola → punto): la pagina li usa come nuovi "caricati" e come nuovi
+// scritti come li scrive valoriDaDati: "72,5" resta "72,5", "180,0"
+// diventa "180"): la pagina li usa come nuovi "caricati" e come nuovi
 // valori dei campi, così dopo il Salva la barra torna inerte.
 export function normalizza(v: ValoriModulo): ValoriModulo {
   const t = (x: ValoriTarget): ValoriTarget => {
@@ -361,7 +369,7 @@ export function normalizza(v: ValoriModulo): ValoriModulo {
   };
   const numero = (s: string) => {
     const n = numeroDaCampo(s);
-    return Number.isNaN(n) ? s : String(n);
+    return Number.isNaN(n) ? s : numeroPerCampo(n, DECIMALI_CM_KG);
   };
   return {
     datiPersonali: { ...v.datiPersonali, altezzaCm: numero(v.datiPersonali.altezzaCm) },

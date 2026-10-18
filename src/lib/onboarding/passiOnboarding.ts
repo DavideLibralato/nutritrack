@@ -7,6 +7,7 @@
 import { repositoryObiettivi, repositoryObiettiviTarget, repositoryProfili } from "../repository";
 import { oggiLocale } from "../dataGiorno";
 import { periodoInCorso } from "../totaliDiario";
+import { numeroPerCampo } from "../numeriDecimali";
 import {
   salvaProfilo,
   validaModulo,
@@ -92,7 +93,8 @@ export function suDiTeIniziale(profilo: Profilo | null): ValoriSuDiTe {
   return {
     sesso: profilo.sesso,
     dataNascita: profilo.data_nascita ?? "",
-    altezzaCm: profilo.altezza_cm != null ? String(profilo.altezza_cm) : "",
+    // Come la scrive Profilo ("172,5"), con la stessa funzione.
+    altezzaCm: valoriDaDati(profilo, null, []).datiPersonali.altezzaCm,
     livelloAttivita: profilo.livello_attivita ?? "",
   };
 }
@@ -110,7 +112,7 @@ export function pesoDaRegistrare(valore: string): number | null {
 // virgola ("78,4"); altrimenti vuoto.
 export function pesoIniziale(misurazioni: Misurazione[], giorno: string = oggiLocale()): string {
   const diOggi = misurazioni.find((m) => m.tipo === "peso" && m.data === giorno && m.deleted_at === null);
-  return diOggi ? diOggi.valore.toLocaleString("it-IT", { maximumFractionDigits: 1, useGrouping: false }) : "";
+  return diOggi ? numeroPerCampo(diOggi.valore, 1) : "";
 }
 
 // --- Passo 4, "Cosa vuoi ottenere?" -------------------------------------------
