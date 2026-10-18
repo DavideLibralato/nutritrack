@@ -178,6 +178,16 @@ describe("pianoSpostamento — dettagli", () => {
   });
 });
 
+describe("pianoSpostamento — il massimo di 99999,99 g (numeric(7,2))", () => {
+  it("Scrivi quantità oltre il massimo è un errore, non una scrittura", () => {
+    const arriva = voce("Mela", COLAZIONE, 100);
+    const resta = voce("Mela", PRANZO, 100);
+    expect(() =>
+      piano([arriva], [resta], { "alimento-Mela": { tipo: "scrivi", grammi: 100000 } })
+    ).toThrow(/oltre il massimo/);
+  });
+});
+
 describe("arrotondaGrammi", () => {
   // La somma dei doppioni e il totale mostrato nel foglio passano da qui:
   // stessa regola di ogni numero scritto (arrotondaDecimali, due decimali

@@ -6010,7 +6010,7 @@ prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1192 in 108 file sul branch `doppioni`.
+su main; 1199 in 108 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6025,13 +6025,20 @@ su main; 1192 in 108 file sul branch `doppioni`.
 
 ### Difetti e verifiche aperti
 
-- **"Somma" dei doppioni oltre 99999,99 g** (trovato il 18/10, non
-  corretto, improbabile). Il foglio dei doppioni non controlla il massimo
+- **"Somma" dei doppioni oltre 99999,99 g** (trovato il 18/10,
+  improbabile; in lavorazione sul branch `doppioni`). Il foglio dei
+  doppioni non controlla il massimo
   di `numeric(7,2)` sulla somma: due voci da 50.000 g dello stesso
   alimento sommate farebbero 100.000 g, che Dexie salva e il server
   rifiuta, con la voce accantonata dopo 5 tentativi. Per arrivarci serve
-  scrivere a mano due quantità assurde. Rimedio: spegnere "Somma" quando il
-  totale supera `GRAMMI_MASSIMI`.
+  scrivere a mano due quantità assurde. **Rete già fatta** (18/10): i due
+  piani (`grammiRigaCheResta` in `pianoSpostamento.ts`, comune a Sposta,
+  trascinamento, Duplica e Aggiungi) rifiutano oltre `GRAMMI_MASSIMI` i
+  grammi della riga che resta, con Somma o con Scrivi quantità: niente
+  scritto, niente in outbox, la pagina mostra il suo messaggio d'errore.
+  Resta da fare: spegnere "Somma" nel foglio quando il totale supera il
+  massimo. Lo stesso rischio non c'è altrove: i pasti salvati copiano i
+  grammi 1:1 e la modifica di un pasto salvato non somma.
 - **Onboarding finito su un dispositivo e riaperto offline su un altro**
   (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").
   Inizio l'onboarding in Safari, lo finisco su Chrome, poi riapro Safari

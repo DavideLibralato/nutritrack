@@ -24,9 +24,8 @@
 
 import type { VoceDiario } from "../db/tipi";
 import {
-  arrotondaGrammi,
+  grammiRigaCheResta,
   rigaCheResta,
-  sommaGrammi,
   togliEsclusi,
   trovaDoppioni,
   type Doppione,
@@ -98,10 +97,7 @@ export function pianoInserimento({
       case "somma":
       case "scrivi": {
         const resta = rigaCheResta(esistenti);
-        const grammi =
-          scelta.tipo === "somma"
-            ? arrotondaGrammi(sommaGrammi(esistenti) + sommaGrammi(arrivano))
-            : arrotondaGrammi(scelta.grammi);
+        const grammi = grammiRigaCheResta(scelta, esistenti, arrivano);
         scritture.push({ tipo: "aggiorna", id: resta.id, modifiche: { quantita_g: grammi } });
         for (const v of esistenti) {
           if (v.id !== resta.id) scritture.push({ tipo: "elimina", id: v.id });

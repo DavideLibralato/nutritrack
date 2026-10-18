@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Rete del massimo di 99999,99 g nei piani dei doppioni
+
+Branch `doppioni`, commit 2 di 8 (caso 5, prima metà). Il totale di
+"Somma" poteva superare il massimo di `numeric(7,2)`: Dexie lo salvava,
+il server lo rifiutava e la sync accantonava la riga. Ora
+`grammiRigaCheResta` in `pianoSpostamento.ts`, comune a `pianoSpostamento`
+e `pianoInserimento` (Sposta, trascinamento, Duplica, Aggiungi), lancia
+un errore oltre `GRAMMI_MASSIMI` prima di qualsiasi scrittura; le pagine
+mostrano il loro messaggio d'errore di sempre. Il controllo vale per i
+grammi finali, quindi anche per "Scrivi quantità" (il foglio già non lo
+accetta: rete in più). `totaleSomma` è la funzione del totale che userà
+anche il foglio (commit 3). Test in `vociDiario.test.ts` (per i tre
+percorsi: 50.000 + 50.000 rifiutato senza scritture né outbox, 99999,99
+esatti che passano) e in `pianoSpostamento.test.ts`; visti fallire
+spostando il limite in su e con `>=` al posto di `>`. Nessuna prova su
+iPhone a sé: si vedrà con il foglio, nel commit 3.
+
 ## 2026-10-18 — "Non spostarlo" e "Non duplicarlo" valgono anche se il doppione sparisce
 
 Branch `doppioni`, commit 1 di 8 (i "doppioni rimasti", caso 2). Se la

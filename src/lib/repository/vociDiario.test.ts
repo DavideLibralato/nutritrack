@@ -1049,3 +1049,90 @@ describe("aggiungi nel pasto", () => {
     });
   });
 });
+
+// Caso 5 dei "doppioni rimasti" (18/10): il totale di "Somma" non deve mai
+// superare 99999,99 g (numeric(7,2)). Dexie lo salverebbe, il server lo
+// rifiuterebbe e la sync accantonerebbe la riga. Il foglio spegne Somma
+// prima, ma alla conferma le righe si rileggono: qui la rete di sicurezza
+// nei piani, per Sposta (e quindi il trascinamento), Duplica e Aggiungi.
+describe("Somma oltre il massimo di 99999,99 g", () => {
+  const ADESSO = new Date(2026, 9, 2, 13, 0, 0);
+
+  beforeEach(async () => {
+    const base = { user_id: "condiviso-nei-test", ora_inizio: "12:00", ordine: 0, updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null };
+    await db.pasti.bulkPut([
+      { ...base, id: "colazione", nome: "Colazione" },
+      { ...base, id: "pranzo", nome: "Pranzo" },
+    ]);
+  });
+
+  // Tutto quello che l'operazione potrebbe aver toccato: le righe del
+  // diario e le voci dell'outbox, cioè quello che la sync manderebbe.
+  async function stato(userId: string) {
+    const voci = await db.voci_diario.filter((v) => v.user_id === userId).toArray();
+    const ids = new Set(voci.map((v) => v.id));
+    const outbox = await db.outbox.filter((o) => ids.has(o.record_id)).count();
+    return { voci: perNome(voci).map((v) => `${v.pasto_id} ${v.quantita_g} ${v.deleted_at}`), outbox };
+  }
+
+  // La Mela a colazione (in arrivo) e a pranzo (destinazione).
+  async function prepara(userId: string, inArrivo: number, aPranzo: number) {
+    const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: inArrivo });
+    await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: aPranzo });
+    return mela;
+  }
+
+  const sposta = async (userId: string, melaId: string) => {
+    const base = { userId, data: GIORNO, origine: { tipo: "voce" as const, id: melaId }, pastoDestinazioneId: "pranzo" };
+    const primo = await spostaNelPasto(base);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+    return spostaNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni });
+  };
+  const duplica = async (userId: string, melaId: string) => {
+    const base = {
+      userId, dataPartenza: GIORNO, origine: { tipo: "voce" as const, id: melaId },
+      dataDestinazione: GIORNO, pastoDestinazioneId: "pranzo", profilo: null, adesso: ADESSO,
+    };
+    const primo = await duplicaNelPasto(base);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+    return duplicaNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni });
+  };
+  // Aggiungi: la quantità in arrivo è quella della Mela a colazione.
+  const aggiungi = async (userId: string, melaId: string) => {
+    const grammi = (await db.voci_diario.get(melaId))!.quantita_g;
+    const base = {
+      userId, data: GIORNO, pastoId: "pranzo", inGruppo: false, profilo: null, adesso: ADESSO,
+      alimenti: [{ alimento: { id: "alimento-Mela", nome: "Mela", kcal_100g: 100, proteine_100g: 1, carboidrati_100g: 2, grassi_100g: 3 }, grammi }],
+    };
+    const primo = await aggiungiNelPasto(base);
+    if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
+    return aggiungiNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni });
+  };
+
+  for (const [nome, operazione] of [
+    ["Sposta", sposta],
+    ["Duplica", duplica],
+    ["Aggiungi", aggiungi],
+  ] as const) {
+    it(`${nome}: 50.000 + 50.000 g è rifiutato, niente scritto e niente in outbox`, async () => {
+      const userId = crypto.randomUUID();
+      const mela = await prepara(userId, 50000, 50000);
+      const prima = await stato(userId);
+
+      await expect(operazione(userId, mela.id)).rejects.toThrow(/oltre il massimo/);
+
+      expect(await stato(userId)).toEqual(prima);
+    });
+
+    it(`${nome}: 50.000 + 49.999,99 g fa esattamente 99999,99 g e passa`, async () => {
+      const userId = crypto.randomUUID();
+      const mela = await prepara(userId, 49999.99, 50000);
+
+      const esito = await operazione(userId, mela.id);
+
+      expect(esito.esito).toBe("fatto");
+      const vive = (await repositoryVociDiario.ottieniTutti(userId)).filter((v) => v.pasto_id === "pranzo");
+      expect(vive.map((v) => v.quantita_g)).toEqual([99999.99]);
+    });
+  }
+});

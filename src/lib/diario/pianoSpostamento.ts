@@ -26,6 +26,7 @@
 
 import type { VoceDiario } from "../db/tipi";
 import { arrotondaDecimali } from "../numeriDecimali";
+import { GRAMMI_MASSIMI } from "../inserimento/grammi";
 
 export type SceltaDoppione =
   | { tipo: "somma" }
@@ -74,6 +75,42 @@ type RigaPerAlimento = Pick<VoceDiario, "alimento_id" | "quantita_g" | "nome_ali
 
 export function sommaGrammi(voci: RigaPerAlimento[]): number {
   return arrotondaGrammi(voci.reduce((t, v) => t + v.quantita_g, 0));
+}
+
+// Il totale di "Somma" per un doppione: quello che il foglio mostra
+// ("Somma (150 g)", SheetDoppioni) e quello che i piani scrivono. Una
+// funzione sola, così i due numeri non possono divergere.
+export function totaleSomma(grammiEsistenti: number, grammiInArrivo: number): number {
+  return arrotondaGrammi(grammiEsistenti + grammiInArrivo);
+}
+
+// Oltre 99999,99 g (numeric(7,2), GRAMMI_MASSIMI): Dexie salverebbe la
+// riga, il server la rifiuterebbe e la sync la accantonerebbe dopo 5
+// tentativi.
+export function oltreIlMassimo(grammi: number): boolean {
+  return grammi > GRAMMI_MASSIMI;
+}
+
+// I grammi della riga che resta con Somma o Scrivi quantità, comuni a
+// pianoSpostamento e pianoInserimento. Il foglio spegne già Somma oltre il
+// massimo e "Scrivi quantità" non lo accetta, ma alla conferma le righe si
+// rileggono da Dexie e possono essere cambiate (un altro dispositivo): qui
+// è la rete di sicurezza. Oltre il massimo è un errore, e il piano non
+// produce scritture: la pagina mostra il suo messaggio d'errore e alla
+// sync non arriva niente.
+export function grammiRigaCheResta(
+  scelta: Extract<SceltaDoppione, { tipo: "somma" | "scrivi" }>,
+  esistenti: RigaPerAlimento[],
+  arrivano: RigaPerAlimento[]
+): number {
+  const grammi =
+    scelta.tipo === "somma"
+      ? totaleSomma(sommaGrammi(esistenti), sommaGrammi(arrivano))
+      : arrotondaGrammi(scelta.grammi);
+  if (oltreIlMassimo(grammi)) {
+    throw new Error(`Quantità oltre il massimo di ${GRAMMI_MASSIMI} g: ${grammi} g`);
+  }
+  return grammi;
 }
 
 // Chiave di raggruppamento: l'alimento del catalogo. Le voci senza
@@ -205,10 +242,7 @@ export function pianoSpostamento({
       case "somma":
       case "scrivi": {
         const resta = rigaCheResta(esistenti);
-        const grammi =
-          scelta.tipo === "somma"
-            ? arrotondaGrammi(sommaGrammi(esistenti) + sommaGrammi(arrivano))
-            : arrotondaGrammi(scelta.grammi);
+        const grammi = grammiRigaCheResta(scelta, esistenti, arrivano);
         scritture.push({ tipo: "aggiorna", id: resta.id, modifiche: { quantita_g: grammi } });
         for (const v of [...esistenti, ...arrivano]) {
           if (v.id !== resta.id) scritture.push({ tipo: "elimina", id: v.id });
