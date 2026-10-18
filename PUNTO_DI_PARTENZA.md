@@ -682,6 +682,29 @@ arrotondamento, massimo 99999,99) sta in `leggiNumeroDecimale`, in
 `src/lib/numeriDecimali.ts`. La usano sia `leggiGrammi` sia i valori
 dell'alimento, qui sotto.
 
+**Si arrotonda ai decimali della colonna prima di scrivere** (deciso il
+2026-10-18, vale per ogni numero decimale scritto dall'utente). Il server
+arrotonda da sé, quindi senza questo passaggio Dexie terrebbe "175,55" e
+il server 175,6. Una funzione sola, `arrotondaDecimali` in
+`src/lib/numeriDecimali.ts`: "mezzo per eccesso" come Postgres, senza gli
+errori di `Math.round(n * 100) / 100` (1,005 → 1,01, non 1), e con lo
+stesso risultato di `numeroPerCampo`, quindi il campo mostra quello che
+si è salvato. Dove si usa:
+- **due decimali, `numeric(7,2)`**: grammi di voci e pasti salvati
+  (`leggiGrammi`), valori e porzione dell'alimento
+  (`validaValoriAlimento`), somma dei doppioni (`arrotondaGrammi`);
+- **un decimale**: altezza e peso obiettivo, `numeric(5,1)`
+  (`altezzaOPesoDaCampo` in `salvataggioProfilo.ts`); la pesata, per
+  scelta ("78,4 kg"; la colonna `misurazioni.valore` è `numeric(7,2)`),
+  in `leggiPesoKg`.
+
+Si controlla il numero **già arrotondato**: "0,04" cm o kg farebbe 0 e non
+vale. Si arrotonda solo il valore che si sta scrivendo: una riga già
+salvata non si riscrive se l'utente non salva la sua sezione. I target
+(kcal e macro) sono `integer` e si arrotondano all'intero
+(`targetNumerico`). Gli alimenti ricevuti da un amico arrivano già
+arrotondati dalla riga di chi li manda.
+
 **Ogni campo numerico si precompila con la virgola** (deciso il
 2026-10-18). Quando un campo riparte da un valore salvato (sheet
 quantità, modifica di un alimento o di un pasto salvato, altezza e peso
@@ -5879,7 +5902,7 @@ unito a main (fast-forward, `0eef1c1`, deploy di produzione Ready) e
 prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
-**Test.** 1159 test permanenti in 106 file (Vitest), tutti verdi al 18/10.
+**Test.** 1174 test permanenti in 107 file (Vitest), tutti verdi al 18/10.
 
 ### Non ancora costruito
 
@@ -5894,15 +5917,13 @@ dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 ### Difetti e verifiche aperti
 
-- **Altezza e peso obiettivo accettano più di un decimale** (trovato il
-  18/10, non corretto). Le colonne sono `numeric(5,1)`, ma la validazione
-  di Profilo, Obiettivi e onboarding (`validaModulo`) non arrotonda e non
-  rifiuta "175,55": Dexie tiene 175,55, il server 175,6. È la divergenza
-  che `leggiNumeroDecimale` evita per i `numeric(7,2)`. I campi, e quindi
-  la proposta che parte da loro, mostrano già "175,6" dopo il Salva e alla
-  riapertura (`numeroPerCampo` con un decimale); la riga in Dexie no, fino
-  alla prossima discesa. Rimedio probabile: arrotondare a un decimale
-  prima di scrivere, come i grammi.
+- **"Somma" dei doppioni oltre 99999,99 g** (trovato il 18/10, non
+  corretto, improbabile). Il foglio dei doppioni non controlla il massimo
+  di `numeric(7,2)` sulla somma: due voci da 50.000 g dello stesso
+  alimento sommate farebbero 100.000 g, che Dexie salva e il server
+  rifiuta, con la voce accantonata dopo 5 tentativi. Per arrivarci serve
+  scrivere a mano due quantità assurde. Rimedio: spegnere "Somma" quando il
+  totale supera `GRAMMI_MASSIMI`.
 - **Onboarding finito su un dispositivo e riaperto offline su un altro**
   (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").
   Inizio l'onboarding in Safari, lo finisco su Chrome, poi riapro Safari

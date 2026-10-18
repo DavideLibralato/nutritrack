@@ -5,7 +5,7 @@
 // riscrive il profilo.
 
 import { describe, it, expect } from "vitest";
-import { pesoIniziale, suDiTeIniziale } from "./passiOnboarding";
+import { obiettivoCompleto, pesoDaRegistrare, pesoIniziale, suDiTeIniziale } from "./passiOnboarding";
 import { modifiche, numeroDaCampo, valoriDaDati } from "../profilo/salvataggioProfilo";
 import type { Misurazione, Profilo } from "../db/tipi";
 
@@ -54,5 +54,19 @@ describe("pesoIniziale", () => {
     });
     expect(pesoIniziale([pesata(78.4)], "2026-10-17")).toBe("78,4");
     expect(pesoIniziale([pesata(78)], "2026-10-17")).toBe("78");
+  });
+});
+
+describe("pesoDaRegistrare e peso obiettivo", () => {
+  it("la pesata del passo 3 arrotondata a un decimale prima di scrivere", () => {
+    expect(pesoDaRegistrare("78,46")).toBe(78.5);
+    expect(pesoDaRegistrare("78,44")).toBe(78.4);
+    expect(pesoDaRegistrare("78")).toBe(78);
+  });
+
+  it("un peso che arrotondato fa 0 non vale, né come pesata né come obiettivo", () => {
+    expect(pesoDaRegistrare("0,04")).toBeNull();
+    expect(obiettivoCompleto("dimagrire", "0,04")).toBe(false);
+    expect(obiettivoCompleto("dimagrire", "72,55")).toBe(true);
   });
 });

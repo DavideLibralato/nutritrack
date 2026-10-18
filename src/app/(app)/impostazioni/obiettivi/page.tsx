@@ -23,7 +23,7 @@ import { formattaDataBreve } from "@/lib/dataGiorno";
 import {
   numeriUguali,
   giorniUguali,
-  numeroDaCampo,
+  altezzaOPesoDaCampo,
   type ValoriModulo,
   type ValoriTarget,
 } from "@/lib/profilo/salvataggioProfilo";
@@ -173,7 +173,7 @@ export default function ObiettiviPage() {
   // normali: va sotto il gruppo del campo sbagliato.
   const pesoNonValido = (() => {
     const peso = ob.ora.pesoObiettivo;
-    const n = numeroDaCampo(peso);
+    const n = altezzaOPesoDaCampo(peso);
     return peso.trim() !== "" && (Number.isNaN(n) || n <= 0);
   })();
   const errorePeso = errori.obiettivo && pesoNonValido ? errori.obiettivo : null;

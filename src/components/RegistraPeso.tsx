@@ -35,7 +35,8 @@ export default function RegistraPeso({ userId }: { userId: string }) {
 
     setStato({ fase: "in-corso" });
     try {
-      await registraPesoSenzaDuplicati(userId, Math.round(kg * 10) / 10);
+      // kg è già arrotondato a un decimale (leggiPesoKg).
+      await registraPesoSenzaDuplicati(userId, kg);
       setValore("");
       setStato({
         fase: "esito",

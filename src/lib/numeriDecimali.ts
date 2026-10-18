@@ -27,13 +27,27 @@ export type LetturaDecimale =
   | { valore: number; errore: null }
   | { valore: null; errore: ErroreDecimale };
 
-// Arrotondamento a 2 decimali "mezzo per eccesso", come numeric di Postgres
-// sui positivi. Il passaggio dalla notazione "e2" evita gli errori della
-// virgola mobile di Math.round(n * 100) / 100 (1.005 * 100 = 100.49999...).
-// Solo per n ≥ 0.005: sotto, JavaScript può scrivere il numero in forma
-// esponenziale ("1e-7") e "1e-7e2" non si legge. I chiamanti lo garantiscono.
-function arrotondaCentesimi(n: number): number {
-  return Number((Math.round(Number(`${n}e2`)) / 100).toFixed(2));
+// Si arrotonda ai decimali della colonna PRIMA di scrivere in Dexie: il
+// server arrotonda da sé (numeric(7,2): 12,345 → 12,35; numeric(5,1):
+// 175,55 → 175,6), e senza questo passaggio Dexie terrebbe il valore
+// lungo e il server quello corto. È l'unica funzione di arrotondamento dei
+// numeri decimali scritti dall'utente: la usano leggiNumeroDecimale (qui
+// sotto), altezza e peso obiettivo (salvataggioProfilo.ts), la pesata
+// (letturaPeso.ts) e la somma dei doppioni (pianoSpostamento.ts).
+// Si arrotonda solo il valore che si sta scrivendo, mai una riga già
+// salvata riletta da Dexie.
+//
+// "Mezzo per eccesso", come numeric di Postgres sui positivi (tutti i
+// valori qui sono ≥ 0). Il passaggio dalla notazione "e2" evita gli errori
+// della virgola mobile di Math.round(n * 100) / 100 (1.005 * 100 =
+// 100.49999..., che darebbe 1 invece di 1,01), e dà lo stesso risultato di
+// toLocaleString, quindi di numeroPerCampo: il campo mostra quello che si
+// è salvato. Sotto 0,000001 JavaScript scrive il numero in forma
+// esponenziale ("1e-7") e "1e-7e2" non si legge: lì il risultato è
+// comunque 0.
+export function arrotondaDecimali(n: number, decimali: number): number {
+  if (Math.abs(n) < 1e-6) return 0;
+  return Number((Math.round(Number(`${n}e${decimali}`)) / 10 ** decimali).toFixed(decimali));
 }
 
 // Il contrario di leggiNumeroDecimale: un numero salvato come testo di
@@ -60,12 +74,11 @@ export function leggiNumeroDecimale(
     return { valore: null, errore: "oltre-massimo" };
   }
   if (n < 0) return { valore: null, errore: "sotto-minimo" };
-  // Sotto 0,005 l'arrotondamento dà 0 (controllo PRIMA di arrotondare,
-  // vedi arrotondaCentesimi).
+  // Sotto 0,005 l'arrotondamento dà 0.
   if (n < 0.005) {
     return opzioni.zeroAmmesso
       ? { valore: 0, errore: null }
       : { valore: null, errore: "sotto-minimo" };
   }
-  return { valore: arrotondaCentesimi(n), errore: null };
+  return { valore: arrotondaDecimali(n, 2), errore: null };
 }

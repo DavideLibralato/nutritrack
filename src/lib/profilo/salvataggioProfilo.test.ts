@@ -594,3 +594,92 @@ describe("Altezza e peso obiettivo con la virgola", () => {
     expect(sezioniModificate(riletti, nuovi)).toEqual([]);
   });
 });
+
+// numeric(5,1): il server arrotonda 175,55 a 175,6. Se Dexie tenesse
+// 175,55, dispositivo e server avrebbero due altezze diverse (e la proposta
+// partirebbe da quella sbagliata fino alla prossima discesa).
+describe("Altezza e peso obiettivo: arrotondati a un decimale prima di scrivere", () => {
+  it("profilo esistente: «175,55» → 175,6 in Dexie e nella coda verso Supabase", async () => {
+    await conDatiEsistenti();
+    const caricati = valoriDaDati(PROFILO, PERIODO, TARGET);
+    const attuali: ValoriModulo = {
+      ...caricati,
+      datiPersonali: { ...caricati.datiPersonali, altezzaCm: "175,55" },
+    };
+    await salva(caricati, attuali, { periodoVistoId: PERIODO.id });
+
+    expect((await db.profili.get(PROFILO.id))?.altezza_cm).toBe(175.6);
+    const [voce] = await db.outbox.where("tabella").equals("profili").toArray();
+    expect((voce.dati as Profilo).altezza_cm).toBe(175.6);
+    expect(dopoSalvataggio(caricati, attuali).datiPersonali.altezzaCm).toBe("175,6");
+  });
+
+  it("profilo nuovo: «175,55» → 175,6", async () => {
+    const caricati = valoriDaDati(null, null, []);
+    const attuali: ValoriModulo = {
+      ...caricati,
+      datiPersonali: {
+        sesso: "femmina",
+        dataNascita: "1990-01-10",
+        altezzaCm: "175,55",
+        livelloAttivita: "moderato",
+      },
+    };
+    await salva(caricati, attuali, { periodoVistoId: null });
+    const [profilo] = await db.profili.toArray();
+    expect(profilo.altezza_cm).toBe(175.6);
+  });
+
+  it("peso obiettivo «72,55» → 72,6, sia correggendo sia con un periodo nuovo", async () => {
+    await conDatiEsistenti();
+    const caricati = valoriDaDati(PROFILO, PERIODO, TARGET);
+    const attuali: ValoriModulo = {
+      ...caricati,
+      obiettivo: { ...caricati.obiettivo, pesoObiettivo: "72,55" },
+    };
+
+    await salva(caricati, attuali, { periodoVistoId: PERIODO.id, scelta: { tipo: "correzione" } });
+    expect((await db.obiettivi.get(PERIODO.id))?.peso_obiettivo).toBe(72.6);
+
+    await salva(caricati, { ...attuali, obiettivo: { ...attuali.obiettivo, pesoObiettivo: "70,04" } }, {
+      periodoVistoId: PERIODO.id,
+      scelta: { tipo: "nuovo", validoDal: OGGI },
+    });
+    const nuovo = (await db.obiettivi.toArray()).find((o) => o.id !== PERIODO.id)!;
+    expect(nuovo.peso_obiettivo).toBe(70);
+  });
+
+  it("si controlla il numero arrotondato: «0,04» darebbe 0, quindi non vale", async () => {
+    await conDatiEsistenti();
+    const caricati = valoriDaDati(PROFILO, PERIODO, TARGET);
+    const attuali: ValoriModulo = {
+      ...caricati,
+      datiPersonali: { ...caricati.datiPersonali, altezzaCm: "0,04" },
+      obiettivo: { ...caricati.obiettivo, pesoObiettivo: "0,04" },
+    };
+    const esito = await salva(caricati, attuali, {
+      periodoVistoId: PERIODO.id,
+      scelta: { tipo: "correzione" },
+    });
+    expect(esito.esito).toBe("da-correggere");
+    expect(await tabelleInOutbox()).toEqual([]);
+  });
+
+  it("un'altezza lunga già in Dexie non si tocca se si salva un'altra sezione", async () => {
+    // Una riga scritta prima di questa regola: resta com'è finché l'utente
+    // non salva i dati personali.
+    const vecchio = { ...PROFILO, altezza_cm: 175.55 };
+    await db.profili.put(vecchio);
+    await db.obiettivi.put(PERIODO);
+    await db.obiettivi_target.bulkPut(TARGET);
+    const caricati = valoriDaDati(vecchio, PERIODO, TARGET);
+    const attuali: ValoriModulo = {
+      ...caricati,
+      obiettivo: { ...caricati.obiettivo, pesoObiettivo: "79" },
+    };
+    await salva(caricati, attuali, { periodoVistoId: PERIODO.id, scelta: { tipo: "correzione" } });
+
+    expect(await db.profili.get(PROFILO.id)).toEqual(vecchio);
+    expect(await tabelleInOutbox()).not.toContain("profili");
+  });
+});

@@ -35,7 +35,7 @@ import {
 import { salvaTarget, targetPerTipo } from "../repository/obiettiviTarget";
 import { giornoSuccessivo } from "../dataGiorno";
 import { periodoInCorso } from "../totaliDiario";
-import { numeroPerCampo } from "../numeriDecimali";
+import { arrotondaDecimali, numeroPerCampo } from "../numeriDecimali";
 import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "../db/tipi";
 import type {
   GiornoSettimana,
@@ -159,6 +159,16 @@ export function valoriDaDati(
 export function numeroDaCampo(valore: string): number {
   const pulito = valore.trim().replace(",", ".");
   return pulito === "" ? NaN : Number(pulito);
+}
+
+// Altezza o peso obiettivo dal campo, già arrotondati a un decimale come
+// li terrà il server (numeric(5,1): "175,55" → 175,6). Validazione,
+// scrittura e normalizza leggono da qui, così si controlla esattamente il
+// numero che si scriverà ("0,04" diventa 0, e 0 non vale). NaN come
+// numeroDaCampo.
+export function altezzaOPesoDaCampo(valore: string): number {
+  const n = numeroDaCampo(valore);
+  return Number.isNaN(n) ? NaN : arrotondaDecimali(n, DECIMALI_CM_KG);
 }
 
 // Due valori numerici sono uguali se lo sono come numeri ("2500" e "2500.0"),
@@ -303,7 +313,7 @@ export function validaModulo(
       : "Prima di salvare i giorni di allenamento, completa il tuo profilo con il livello di attività.";
   } else if (m.datiPersonali) {
     const altezza = attuali.datiPersonali.altezzaCm;
-    const n = numeroDaCampo(altezza);
+    const n = altezzaOPesoDaCampo(altezza);
     if (altezza.trim() !== "" && (Number.isNaN(n) || n <= 0 || n > 280)) {
       errori.datiPersonali = "L'altezza deve essere un numero di centimetri fra 1 e 280.";
     }
@@ -311,7 +321,7 @@ export function validaModulo(
 
   if (m.obiettivo) {
     const peso = attuali.obiettivo.pesoObiettivo;
-    const n = numeroDaCampo(peso);
+    const n = altezzaOPesoDaCampo(peso);
     if (!targetValido(attuali.obiettivo.target)) {
       errori.obiettivo = "Calorie e macro devono essere numeri, zero o più.";
     } else if (peso.trim() !== "" && (Number.isNaN(n) || n <= 0)) {
@@ -346,8 +356,9 @@ function targetNumerico(t: ValoriTarget) {
   };
 }
 
-function numeroONull(valore: string): number | null {
-  const n = numeroDaCampo(valore);
+// Altezza e peso obiettivo come si scrivono: arrotondati, null se vuoti.
+function altezzaOPesoONull(valore: string): number | null {
+  const n = altezzaOPesoDaCampo(valore);
   return Number.isNaN(n) ? null : n;
 }
 
@@ -368,7 +379,7 @@ export function normalizza(v: ValoriModulo): ValoriModulo {
       : x;
   };
   const numero = (s: string) => {
-    const n = numeroDaCampo(s);
+    const n = altezzaOPesoDaCampo(s);
     return Number.isNaN(n) ? s : numeroPerCampo(n, DECIMALI_CM_KG);
   };
   return {
@@ -521,7 +532,7 @@ async function scriviProfilo(r: RichiestaSalvataggio, stato: StatoLocale, m: Mod
   if (m.datiPersonali) {
     campi.sesso = attuali.datiPersonali.sesso;
     campi.data_nascita = attuali.datiPersonali.dataNascita || null;
-    campi.altezza_cm = numeroONull(attuali.datiPersonali.altezzaCm);
+    campi.altezza_cm = altezzaOPesoONull(attuali.datiPersonali.altezzaCm);
     campi.livello_attivita = attuali.datiPersonali.livelloAttivita as LivelloAttivita;
   }
   if (m.giorniProfilo) {
@@ -546,7 +557,7 @@ async function scriviProfilo(r: RichiestaSalvataggio, stato: StatoLocale, m: Mod
     nome: null,
     sesso: attuali.datiPersonali.sesso,
     data_nascita: attuali.datiPersonali.dataNascita || null,
-    altezza_cm: numeroONull(attuali.datiPersonali.altezzaCm),
+    altezza_cm: altezzaOPesoONull(attuali.datiPersonali.altezzaCm),
     livello_attivita: attuali.datiPersonali.livelloAttivita as LivelloAttivita,
     differenzia_giorni: attuali.giorni.differenzia,
     giorni_allenamento_default:
@@ -576,7 +587,7 @@ async function creaPeriodo(
     valido_dal: validoDal,
     tipo: attuali.obiettivo.tipo,
     ...normale,
-    peso_obiettivo: numeroONull(attuali.obiettivo.pesoObiettivo),
+    peso_obiettivo: altezzaOPesoONull(attuali.obiettivo.pesoObiettivo),
   });
 
   await repositoryObiettiviTarget.crea({
@@ -624,7 +635,7 @@ async function correggiPeriodo(
     await repositoryObiettivi.aggiorna(periodo.id, {
       tipo: attuali.obiettivo.tipo,
       ...normale,
-      peso_obiettivo: numeroONull(attuali.obiettivo.pesoObiettivo),
+      peso_obiettivo: altezzaOPesoONull(attuali.obiettivo.pesoObiettivo),
     });
     await salvaTarget(r.userId, periodo.id, TIPO_GIORNO_NORMALE, normale, stato.righeTarget);
   }

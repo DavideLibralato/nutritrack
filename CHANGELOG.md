@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Si arrotonda ai decimali della colonna prima di scrivere
+
+Su main. Corretto il difetto trovato col lavoro precedente: altezza e peso
+obiettivo (`numeric(5,1)`) si scrivevano in Dexie come digitati ("175,55"),
+mentre il server teneva 175,6. Ora passano da `altezzaOPesoDaCampo`, già
+arrotondata, usata da validazione, scrittura e `normalizza`; "0,04" fa 0
+e non vale. Una regola sola, `arrotondaDecimali` in `numeriDecimali.ts`
+(mezzo per eccesso, senza gli errori di `Math.round(n * 100) / 100`, uguale
+a `numeroPerCampo`), usata anche da `leggiNumeroDecimale`, dalla pesata
+(`leggiPesoKg`, che ora arrotonda da sé e controlla il valore arrotondato)
+e da `arrotondaGrammi` dei doppioni, con il totale del foglio. Controllati
+gli altri numeri: grammi e valori dell'alimento erano già arrotondati,
+pesata e somme dei doppioni non potevano divergere (un decimale in una
+colonna a due, somme di valori a due decimali), alimenti ricevuti già
+arrotondati, target integer. Test permanenti nuovi, provati rompendo le
+copie in sette punti; i test esistenti passano senza ritocchi. Trovato e
+lasciato aperto: la "Somma" dei doppioni non controlla il massimo
+99999,99. PUNTO §3: la regola; "Difetti e verifiche aperti": tolto
+quello corretto, aggiunto quello nuovo. 1174 test, lint e build verdi.
+
 ## 2026-10-18 — Ogni campo numerico si precompila con la virgola
 
 Su main. Dopo lo sheet quantità, gli altri campi che ripartivano da un

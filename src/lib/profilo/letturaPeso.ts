@@ -4,13 +4,22 @@
 // separatore decimale (numeroDaCampo).
 
 import { numeroDaCampo } from "./salvataggioProfilo";
+import { arrotondaDecimali } from "../numeriDecimali";
 
 export const PESO_MASSIMO_KG = 500;
 
-// Il peso in kg, così come è scritto (l'arrotondamento a un decimale lo fa
-// chi registra), oppure null se non è un numero maggiore di 0 e al massimo
-// PESO_MASSIMO_KG.
+// Un decimale: la pesata si registra così ("78,4 kg"; misurazioni.valore è
+// numeric(7,2), quindi il server la tiene uguale), e il peso obiettivo è
+// numeric(5,1).
+const DECIMALI_PESO = 1;
+
+// Il peso in kg come si scriverà, già arrotondato a un decimale
+// (arrotondaDecimali: "78,46" → 78,5), oppure null se non è un numero
+// maggiore di 0 e al massimo PESO_MASSIMO_KG. Il controllo è sul valore
+// arrotondato: "0,04" darebbe 0 kg.
 export function leggiPesoKg(valore: string): number | null {
-  const kg = numeroDaCampo(valore);
-  return Number.isNaN(kg) || kg <= 0 || kg > PESO_MASSIMO_KG ? null : kg;
+  const n = numeroDaCampo(valore);
+  if (Number.isNaN(n)) return null;
+  const kg = arrotondaDecimali(n, DECIMALI_PESO);
+  return kg <= 0 || kg > PESO_MASSIMO_KG ? null : kg;
 }

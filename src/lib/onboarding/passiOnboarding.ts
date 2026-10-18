@@ -102,10 +102,9 @@ export function suDiTeIniziale(profilo: Profilo | null): ValoriSuDiTe {
 // --- Passo 3, "Quanto pesi oggi?" -------------------------------------------
 
 // Il peso da registrare, arrotondato a un decimale come "Registra peso", o
-// null se il campo non è un peso valido (leggiPesoKg).
+// null se il campo non è un peso valido. L'arrotondamento lo fa leggiPesoKg.
 export function pesoDaRegistrare(valore: string): number | null {
-  const kg = leggiPesoKg(valore);
-  return kg === null ? null : Math.round(kg * 10) / 10;
+  return leggiPesoKg(valore);
 }
 
 // Il campo del passo 3 all'apertura: la pesata di oggi, se c'è, con la

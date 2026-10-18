@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import {
+  arrotondaGrammi,
   pianoSpostamento,
   stessiDoppioni,
   trovaDoppioni,
@@ -174,5 +175,17 @@ describe("pianoSpostamento — dettagli", () => {
 
   it("un doppione senza scelta è un errore di chi chiama, non una scelta inventata", () => {
     expect(() => piano([voce("Mela", COLAZIONE, 100)], [voce("Mela", PRANZO, 50)])).toThrow();
+  });
+});
+
+describe("arrotondaGrammi", () => {
+  // La somma dei doppioni e il totale mostrato nel foglio passano da qui:
+  // stessa regola di ogni numero scritto (arrotondaDecimali, due decimali
+  // come numeric(7,2)), anche dove Math.round(g * 100) / 100 sbaglia.
+  it("due decimali, mezzo per eccesso come il server", () => {
+    expect(arrotondaGrammi(10.1 + 20.2)).toBe(30.3);
+    expect(arrotondaGrammi(1.005)).toBe(1.01);
+    expect(arrotondaGrammi(12.345)).toBe(12.35);
+    expect(arrotondaGrammi(150)).toBe(150);
   });
 });

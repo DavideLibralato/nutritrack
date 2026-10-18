@@ -36,7 +36,7 @@ import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { formattaGrammi, leggiGrammi } from "@/lib/inserimento/grammi";
 import { testoEsitoDoppione } from "@/lib/diario/testiSpostamento";
-import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
+import { arrotondaGrammi, type Doppione, type SceltaDoppione } from "@/lib/diario/pianoSpostamento";
 
 type TipoScelta = SceltaDoppione["tipo"];
 
@@ -154,7 +154,9 @@ export default function SheetDoppioni({
               const lettura = letture[d.alimentoId];
               const valore = valori[d.alimentoId] ?? "";
               const idCampo = `doppione-${d.alimentoId}`;
-              const totale = Math.round((d.grammiEsistenti + d.grammiInArrivo) * 100) / 100;
+              // Lo stesso arrotondamento del Salva (pianoInserimento,
+              // pianoSpostamento): il numero mostrato è quello che si scrive.
+              const totale = arrotondaGrammi(d.grammiEsistenti + d.grammiInArrivo);
               const opzioni: { tipo: TipoScelta; etichetta: string }[] = [
                 { tipo: "somma", etichetta: `Somma (${formattaGrammi(totale)})` },
                 { tipo: "separati", etichetta: "Tieni separati" },

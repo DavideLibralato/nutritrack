@@ -24,6 +24,7 @@
 // righe di quell'alimento, di partenza e di destinazione, a una sola.
 
 import type { VoceDiario } from "../db/tipi";
+import { arrotondaDecimali } from "../numeriDecimali";
 
 export type SceltaDoppione =
   | { tipo: "somma" }
@@ -60,9 +61,10 @@ export interface PianoSpostamento {
 }
 
 // I grammi hanno due decimali (numeric(7,2), src/lib/inserimento/grammi.ts):
-// 10,1 + 20,2 in virgola mobile fa 30,299999999999997.
+// 10,1 + 20,2 in virgola mobile fa 30,299999999999997. Stessa regola di
+// ogni numero scritto (arrotondaDecimali).
 export function arrotondaGrammi(g: number): number {
-  return Math.round(g * 100) / 100;
+  return arrotondaDecimali(g, 2);
 }
 
 // Quello che serve per raggruppare e sommare: va bene sia una riga già
