@@ -7,6 +7,9 @@ import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida } from "@/lib/validazione";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import CampoPassword from "@/components/CampoPassword";
+import MarchioLibra from "@/components/MarchioLibra";
+import PaginaAccesso from "@/components/PaginaAccesso";
+import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
 
 // useSearchParams() (sotto, in LoginForm) puo' andare in stallo durante il
 // primo render sul server se non e' avvolto in una <Suspense>: Next.js lo
@@ -79,7 +82,7 @@ function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
+    <PaginaAccesso>
       <form noValidate onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         {/* Dopo "Elimina il mio account" (EliminaAccount.tsx porta qui con
             ?eliminato=1). role="status": letto dagli screen reader. */}
@@ -91,7 +94,10 @@ function LoginForm() {
             </p>
           </div>
         )}
-        <h1 className="text-2xl font-display font-bold">Accedi</h1>
+        {/* Il marchio è parte del titolo: si legge "Accedi a Libra". */}
+        <h1 className={CLASSE_TITOLO_ACCESSO}>
+          Accedi a <MarchioLibra variante="titolo" />
+        </h1>
 
         <div>
           <label htmlFor="login-email" className="block text-sm font-medium mb-1">
@@ -139,6 +145,6 @@ function LoginForm() {
           </a>
         </p>
       </form>
-    </main>
+    </PaginaAccesso>
   );
 }

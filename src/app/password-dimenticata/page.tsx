@@ -5,6 +5,8 @@ import { chiediLinkRipristino } from "@/lib/supabase/clientRichiestaReset";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida } from "@/lib/validazione";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
+import PaginaAccesso from "@/components/PaginaAccesso";
 
 export default function PasswordDimenticataPage() {
   const [email, setEmail] = useState("");
@@ -47,9 +49,9 @@ export default function PasswordDimenticataPage() {
 
   if (inviato) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-4">
+      <PaginaAccesso marchioInCima>
         <div className="w-full max-w-sm space-y-4">
-          <h1 className="text-2xl font-display font-bold">Controlla la tua email</h1>
+          <h1 className={CLASSE_TITOLO_ACCESSO}>Controlla la tua email</h1>
           <p className="text-sm text-muted">
             Se esiste un account con questa email, ti abbiamo inviato un link per
             reimpostare la password.
@@ -58,14 +60,14 @@ export default function PasswordDimenticataPage() {
             Torna al login
           </a>
         </div>
-      </main>
+      </PaginaAccesso>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
+    <PaginaAccesso marchioInCima>
       <form noValidate onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-display font-bold">Password dimenticata</h1>
+        <h1 className={CLASSE_TITOLO_ACCESSO}>Password dimenticata</h1>
         <p className="text-sm text-muted">
           Inserisci la tua email: ti mandiamo un link per sceglierne una nuova.
         </p>
@@ -101,6 +103,6 @@ export default function PasswordDimenticataPage() {
           </a>
         </p>
       </form>
-    </main>
+    </PaginaAccesso>
   );
 }

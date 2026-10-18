@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Il marchio di Libra nelle pagine di accesso
+
+Branch `login-ritocchi`, commit 3. Proposta 3 del mockup
+`testata-login.html`. Nuovo `MarchioLibra.tsx`: bilancia SVG in
+`currentColor`, in em, con `role="img"` e "Libra". Due varianti: nel
+titolo tutto in accento, piccolo in cima solo la bilancia in accento.
+Accedi ("Accedi a ⚖ Libra") e Registrati ("Crea il tuo account ⚖ Libra")
+lo hanno nel titolo; Password dimenticata e Reimposta lo hanno piccolo in
+cima su tutte le schermate. Nuovo `PaginaAccesso.tsx` al posto degli otto
+`<main>` scritti a mano. Titoli a 32 px con `text-balance`
+(`classiAccesso.ts`). Guardato nel browser a 390 px, dal dev server
+locale e senza account: Accedi (anche con "Account eliminato"),
+Registrati, Password dimenticata, "Link non valido", in chiaro e in
+scuro, e Accedi con l'accento viola e con il blu. Nessun test: è solo
+grafica. PUNTO §7, "Il marchio nelle pagine di accesso".
+
 ## 2026-10-18 — L'occhio sui campi password
 
 Branch `login-ritocchi`, commit 2. Nuovo `src/components/CampoPassword.tsx`

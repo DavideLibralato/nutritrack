@@ -9,6 +9,9 @@ import { registrati, type StatoRegistrazione } from "@/lib/actions/auth";
 import { caricaPaginaDaCapo } from "@/lib/caricamentoCompleto";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import CampoPassword from "@/components/CampoPassword";
+import MarchioLibra from "@/components/MarchioLibra";
+import PaginaAccesso from "@/components/PaginaAccesso";
+import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
 import { useDisponibilitaUsername } from "@/lib/amici/useDisponibilitaUsername";
 import { TESTO_USERNAME_REGOLE, testoStatoUsername } from "@/lib/amici/testiUsername";
 
@@ -64,9 +67,11 @@ export default function RegisterPage() {
   }, [registrato]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
+    <PaginaAccesso>
       <form noValidate action={azioneForm} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-display font-bold">Registrati</h1>
+        <h1 className={CLASSE_TITOLO_ACCESSO}>
+          Crea il tuo account <MarchioLibra variante="titolo" />
+        </h1>
         <p className="text-sm text-muted">
           Beta chiusa: serve il codice di invito che ti hanno dato.
         </p>
@@ -209,6 +214,6 @@ export default function RegisterPage() {
           </a>
         </p>
       </form>
-    </main>
+    </PaginaAccesso>
   );
 }

@@ -3781,6 +3781,31 @@ Confermate dai mockup, con una correzione.
   l'utente
 - **Le email di Supabase non contengono il nome dell'app**: sul piano
   gratuito i modelli non si personalizzano (sezione 10.9)
+- **Il marchio nelle pagine di accesso** (dal 18/10, branch
+  `login-ritocchi`; mockup `docs/mockups/testata-login.html`, proposta 3
+  "Nel titolo", scelta di Davide). La bilancia accanto alla parola
+  "Libra" (`src/components/MarchioLibra.tsx`). **Il glifo** è lo stesso
+  disegno dell'icona, ridisegnato con tratti più spessi e senza il
+  quadrato scuro, perché stia alto come le maiuscole di "Libra" (0,78em).
+  È un SVG nel componente, in `currentColor`: si ricava dal mockup
+  testata-login, non dai PNG, che hanno fondo scuro e colore fisso.
+  Segue l'accento scelto in Aspetto e il tema (`--accento`), a
+  differenza dell'icona dell'app. Senza un account il colore principale
+  non si cambia: le pagine di accesso mostrano quello salvato su quel
+  dispositivo, e il verde se non ce n'è uno. **Dove sta**: dentro il
+  titolo di Accedi ("Accedi a ⚖ Libra") e di Registrati ("Crea il tuo
+  account ⚖ Libra"), con bilancia e parola in accento; piccolo e fisso in
+  cima (`src/components/PaginaAccesso.tsx`, `marchioInCima`) su tutte le
+  schermate di Password dimenticata e Reimposta password, compresi
+  "Controlla la tua email", "Link non valido" e "Verifica del link in
+  corso...", con solo la bilancia in accento e la parola nel colore del
+  testo. In cima sta sempre nello stesso punto, così passando da una
+  schermata all'altra non si muove. **Dove no**: dentro l'app, dopo
+  l'accesso. Lì il nome sta già nel titolo della scheda e nell'icona
+  della Home. I titoli delle quattro pagine sono a 32 px con le righe
+  equilibrate (`CLASSE_TITOLO_ACCESSO`, `src/lib/classiAccesso.ts`); i
+  testi dei moduli restano quelli del codice anche dove il mockup è
+  diverso
 
 ### Tema chiaro / scuro / sistema
 

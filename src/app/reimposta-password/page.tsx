@@ -19,6 +19,8 @@ import {
 import { leggiFrammentoRipristino, togliFrammento } from "@/lib/frammentoRipristino";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import CampoPassword from "@/components/CampoPassword";
+import PaginaAccesso from "@/components/PaginaAccesso";
+import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
 
 // L'esito della raccolta della sessione dal frammento (link chiesti con il
 // flusso implicito, dal 18/10/2026: frammentoRipristino.ts).
@@ -249,17 +251,17 @@ function ReimpostaPasswordForm() {
 
   if (statoSessione === "verifica") {
     return (
-      <main className="flex min-h-screen items-center justify-center p-4">
+      <PaginaAccesso marchioInCima>
         <p className="text-sm text-muted">Verifica del link in corso...</p>
-      </main>
+      </PaginaAccesso>
     );
   }
 
   if (statoSessione === "errore") {
     return (
-      <main className="flex min-h-screen items-center justify-center p-4">
+      <PaginaAccesso marchioInCima>
         <div className="w-full max-w-sm space-y-4">
-          <h1 className="text-2xl font-display font-bold">Link non valido</h1>
+          <h1 className={CLASSE_TITOLO_ACCESSO}>Link non valido</h1>
           <p className="text-sm text-warning">{erroreSessione}</p>
           <a
             href="/password-dimenticata"
@@ -268,14 +270,14 @@ function ReimpostaPasswordForm() {
             Richiedi un nuovo link
           </a>
         </div>
-      </main>
+      </PaginaAccesso>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
+    <PaginaAccesso marchioInCima>
       <form noValidate onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-display font-bold">Imposta una nuova password</h1>
+        <h1 className={CLASSE_TITOLO_ACCESSO}>Imposta una nuova password</h1>
 
         {/* L'account a cui cambia la password: si vede subito se è quello
             sbagliato. autoComplete="username" fa salvare al gestore delle
@@ -324,6 +326,6 @@ function ReimpostaPasswordForm() {
           {caricamento ? "Salvataggio..." : "Salva nuova password"}
         </button>
       </form>
-    </main>
+    </PaginaAccesso>
   );
 }
