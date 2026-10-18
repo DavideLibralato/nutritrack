@@ -6042,7 +6042,7 @@ prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1224 in 109 file sul branch `doppioni`.
+su main; 1232 in 109 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6223,8 +6223,22 @@ su main; 1224 in 109 file sul branch `doppioni`.
   Annulla (`toggleSalvaPreferito`). Dalla modifica del pasto salvato,
   aperta da Aggiungi o da Impostazioni > Preferiti, "Elimina pasto" chiede
   conferma. Stessa azione, due livelli di protezione: un tocco per sbaglio
-  sul segnalibro perde il pasto. Da decidere a parte se il segnalibro
-  debba chiedere conferma o offrire l'Annulla
+  sul segnalibro perde il pasto. **Deciso da Davide il 18/10: Annulla,
+  non conferma** (azione rapida e reversibile); da Preferiti la conferma
+  resta. In lavorazione sul branch `doppioni` (caso 3). **Fatto il
+  repository** (18/10, commit 6): `eliminaPastiSalvati` toglie uno o più
+  pasti salvati e le loro righe in **una sola transazione** (prima in
+  parallelo e fuori transazione: un guasto a metà poteva lasciare un pasto
+  vivo senza alimenti) e restituisce la traccia; `eliminaComposizione`, che
+  usa Elimina da Preferiti, passa da lì senza cambiare niente per chi la
+  usa. `ripristinaPastiSalvati` rimette pasti e righe dalla traccia, con le
+  regole dell'Annulla di un alimento cancellato (la parte comune è
+  `ripristinaPastiNellaTransazione`) più il controllo del contenuto: un
+  pasto non torna se nel frattempo ne è nato un altro con lo stesso nome
+  ("nome"), con gli stessi alimenti e grammi ("contenuto"), o se nessuno dei
+  suoi alimenti è più nel catalogo ("vuoto"). Con più pasti e conflitti solo
+  su alcuni, tornano gli altri, come per gli alimenti. Resta da fare: la
+  barra di Oggi e il segnalibro (commit 7)
 - Il gesto "indietro" nella modifica di un pasto salvato esce senza avviso
   di modifiche non salvate: accettato per ora. In Impostazioni il cambio di
   scheda ora avvisa (il guardiano, sezione 3); resta scoperto solo il gesto

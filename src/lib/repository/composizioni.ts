@@ -164,19 +164,85 @@ export async function salvaPastoComeComposizione(
   return { esito: "salvato" };
 }
 
-// Toglie un pasto salvato dai preferiti (sezione 3, punto 3 delle
-// correzioni: ripremere la stella già piena lo rimuove). Cancellazione
-// logica su composizione e sue voci insieme — altrimenti le voci restano
-// "vive" ma orfane, invisibili nella UI ma comunque righe in giro.
-// Le righe si rileggono da Dexie qui dentro, non da uno stato React del
-// chiamante: una riga aggiunta un istante prima (sync, o un Salva appena
-// fatto) resterebbe fuori e viva, orfana. Prima le righe, per ultima la
-// composizione (vedi salvaModificaPasto per il perché di quest'ordine).
+// Toglie uno o più pasti salvati (sezione 3: "Elimina pasto" da Preferiti,
+// e il segnalibro pieno in Oggi, che toglie tutti quelli che corrispondono
+// al pasto). Cancellazione logica su composizione e sue voci insieme —
+// altrimenti le voci restano "vive" ma orfane, invisibili nella UI ma
+// comunque righe in giro. Le righe si rileggono da Dexie qui dentro, non da
+// uno stato React del chiamante: una riga aggiunta un istante prima (sync,
+// o un Salva appena fatto) resterebbe fuori e viva, orfana. Prima le righe,
+// per ultima la composizione (vedi salvaModificaPasto per il perché di
+// quest'ordine).
+//
+// **Tutto o niente**, in una sola transazione Dexie (dal 18/10, caso 3 dei
+// "doppioni rimasti"): prima le scritture erano in parallelo e fuori
+// transazione, e un guasto a metà poteva lasciare un pasto salvato vivo ma
+// senza alimenti. Restituisce la traccia di cosa ha cancellato davvero,
+// per l'Annulla (ripristinaPastiSalvati): un pasto già cancellato, o che
+// non c'è, si salta e non entra nella traccia.
+export async function eliminaPastiSalvati(
+  userId: string,
+  composizioneIds: string[]
+): Promise<TracciaRimozione> {
+  return db.transaction(
+    "rw",
+    [db.composizioni, db.composizioni_voci, db.outbox],
+    // `async` necessario: vedi ripristinaAlimenti (PrematureCommitError).
+    async () => {
+      const traccia: TracciaRimozione = { idComposizioniVoci: [], idComposizioni: [] };
+      const composizioniVoci = await repositoryComposizioniVoci.ottieniTutti(userId);
+      for (const id of new Set(composizioneIds)) {
+        const composizione = await repositoryComposizioni.ottieniPerId(id);
+        if (!composizione || composizione.deleted_at !== null) continue;
+        for (const voce of composizioniVoci.filter((v) => v.composizione_id === id)) {
+          await repositoryComposizioniVoci.elimina(voce.id);
+          traccia.idComposizioniVoci.push(voce.id);
+        }
+        await repositoryComposizioni.elimina(id);
+        traccia.idComposizioni.push(id);
+      }
+      return traccia;
+    }
+  );
+}
+
+// "Elimina pasto" da Preferiti (ModificaPastoSalvato): un pasto solo, la
+// stessa transazione. Lì c'è la conferma prima, e niente Annulla dopo.
 export async function eliminaComposizione(userId: string, composizioneId: string): Promise<void> {
-  const composizioniVoci = await repositoryComposizioniVoci.ottieniTutti(userId);
-  const voci = composizioniVoci.filter((v) => v.composizione_id === composizioneId);
-  await Promise.all(voci.map((v) => repositoryComposizioniVoci.elimina(v.id)));
-  await repositoryComposizioni.elimina(composizioneId);
+  await eliminaPastiSalvati(userId, [composizioneId]);
+}
+
+// Perché un pasto salvato della traccia non è tornato con l'Annulla:
+// - "nome": nel frattempo è nato un altro pasto salvato con lo stesso nome;
+// - "contenuto": nel frattempo è nato un altro pasto salvato con gli stessi
+//   alimenti e grammi (per esempio il segnalibro ritoccato e risalvato
+//   prima di Annulla): sarebbero due pasti uguali;
+// - "vuoto": nessuno dei suoi alimenti è più nel catalogo, tornerebbe un
+//   guscio vuoto (il bug del 22/09).
+export type MotivoPastoNonRipristinato = "nome" | "contenuto" | "vuoto";
+
+export interface EsitoRipristinoPasti {
+  // Nell'ordine della traccia.
+  ripristinati: string[];
+  nonRipristinati: { nome: string; motivo: MotivoPastoNonRipristinato }[];
+}
+
+// L'"Annulla" di eliminaPastiSalvati: rimette in vita i pasti salvati e le
+// loro righe della traccia, con le stesse regole dell'Annulla di un
+// alimento cancellato (ripristinaPastiNellaTransazione, sotto), più il
+// controllo del contenuto. Come lì, se solo alcuni pasti sono in conflitto
+// tornano gli altri, e quelli rimasti cancellati tornano in
+// `nonRipristinati` perché il chiamante lo dica. Una transazione sola: o
+// torna tutto ciò che si può, o niente (e la barra ripropone l'Annulla).
+export async function ripristinaPastiSalvati(
+  userId: string,
+  traccia: TracciaRimozione
+): Promise<EsitoRipristinoPasti> {
+  return db.transaction(
+    "rw",
+    [db.alimenti, db.composizioni, db.composizioni_voci, db.outbox],
+    async () => await ripristinaPastiNellaTransazione(userId, traccia, { controllaContenuto: true })
+  );
 }
 
 // Cosa ha cancellato DAVVERO una chiamata a rimuoviAlimentoDaPastiSalvati:
@@ -419,7 +485,40 @@ async function ripristinaNellaTransazione(
     catalogoPrima.push(ripristinato);
   }
 
-  const pastiNonRipristinati: string[] = [];
+  // Un pasto rimasto vuoto perché il suo alimento non torna non si dice qui:
+  // il motivo è l'alimento, già detto in alimentiNonRipristinati.
+  const nonRipristinati = (
+    await ripristinaPastiNellaTransazione(userId, traccia, { controllaContenuto: false })
+  ).nonRipristinati;
+  const pastiNonRipristinati = nonRipristinati.filter((p) => p.motivo === "nome").map((p) => p.nome);
+
+  return { alimentiNonRipristinati, pastiNonRipristinati };
+}
+
+// I pasti salvati e le righe di una traccia, dentro una transazione già
+// aperta: la parte comune all'Annulla di un alimento cancellato
+// (ripristinaAlimenti) e a quello di un pasto salvato tolto
+// (ripristinaPastiSalvati). Le regole:
+// - una riga torna solo se il suo alimento è vivo: mai una riga viva che
+//   punta a un alimento cancellato;
+// - un pasto torna solo se almeno una delle sue righe torna (niente guscio
+//   vuoto), e se nel frattempo non è nato un altro pasto salvato con lo
+//   stesso nome; con `controllaContenuto`, nemmeno se ne è nato uno con gli
+//   stessi alimenti e grammi (composizioniCorrispondenti, la regola della
+//   stella);
+// - una riga il cui pasto non è vivo non torna (orfana).
+// Ogni pasto torna subito con le sue righe, in sequenza: così il controllo
+// del nome e del contenuto del pasto dopo vede anche quelli appena tornati
+// (due pasti uguali nella stessa traccia, possibile solo con dati vecchi,
+// non tornano entrambi). In nessun momento una riga viva punta a un pasto
+// cancellato: il pasto torna prima delle sue righe.
+async function ripristinaPastiNellaTransazione(
+  userId: string,
+  traccia: TracciaRimozione,
+  { controllaContenuto }: { controllaContenuto: boolean }
+): Promise<EsitoRipristinoPasti> {
+  const ripristinati: string[] = [];
+  const nonRipristinati: EsitoRipristinoPasti["nonRipristinati"] = [];
   const [catalogo, composizioniVive, vociVive] = await Promise.all([
     catalogoLocale(userId),
     repositoryComposizioni.ottieniTutti(userId),
@@ -427,49 +526,49 @@ async function ripristinaNellaTransazione(
   ]);
   const idAlimentiVivi = new Set(catalogo.map((a) => a.id));
 
-  // Le righe della traccia, lette una volta: servono sia per sapere se un
-  // pasto salvato tornerebbe vuoto, sia al passo delle righe.
+  // Le righe della traccia ancora cancellate, lette una volta.
   const righeTraccia = (
     await Promise.all(traccia.idComposizioniVoci.map((id) => repositoryComposizioniVoci.ottieniPerId(id)))
   ).filter((v): v is ComposizioneVoce => v !== undefined && v.deleted_at !== null);
-  // Una riga torna solo se il suo alimento è vivo (ripristinato, o mai
-  // toccato): mai una riga viva che punta a un alimento cancellato.
   const righeDaRipristinare = righeTraccia.filter((v) => idAlimentiVivi.has(v.alimento_id));
 
-  // In sequenza, non in parallelo: due pasti da ripristinare con lo stesso
-  // nome (possibile solo con dati vecchi) non devono passare entrambi il
-  // controllo del nome guardando lo stesso elenco.
-  // I pasti ripristinati qui non hanno ancora righe vive (tornano solo al
-  // passo dopo), quindi esisteComposizioneConNome non li vedrebbe: i loro
-  // nomi si tengono a parte.
-  const nomiRipristinati = new Set<string>();
-  const idComposizioniVive = new Set(composizioniVive.map((c) => c.id));
+  async function rimettiRiga(voce: ComposizioneVoce) {
+    const viva = await repositoryComposizioniVoci.aggiorna(voce.id, { deleted_at: null });
+    vociVive.push(viva);
+  }
+
   for (const id of traccia.idComposizioni) {
     const composizione = await repositoryComposizioni.ottieniPerId(id);
     if (!composizione || composizione.deleted_at === null) continue;
-    // Era stato cancellato perché rimasto vuoto: torna solo se almeno una
-    // delle sue righe torna (vedi sopra, alimenti non ripristinati).
-    if (!righeDaRipristinare.some((v) => v.composizione_id === id)) continue;
-
-    const nome = composizione.nome.trim();
-    if (
-      nomiRipristinati.has(nome) ||
-      esisteComposizioneConNome(nome, catalogo, composizioniVive, vociVive)
-    ) {
-      pastiNonRipristinati.push(composizione.nome);
+    const sueRighe = righeDaRipristinare.filter((v) => v.composizione_id === id);
+    if (sueRighe.length === 0) {
+      nonRipristinati.push({ nome: composizione.nome, motivo: "vuoto" });
       continue;
     }
-    await repositoryComposizioni.aggiorna(id, { deleted_at: null });
-    nomiRipristinati.add(nome);
-    idComposizioniVive.add(id);
+    if (esisteComposizioneConNome(composizione.nome, catalogo, composizioniVive, vociVive)) {
+      nonRipristinati.push({ nome: composizione.nome, motivo: "nome" });
+      continue;
+    }
+    if (
+      controllaContenuto &&
+      composizioniCorrispondenti(sueRighe, catalogo, composizioniVive, vociVive).length > 0
+    ) {
+      nonRipristinati.push({ nome: composizione.nome, motivo: "contenuto" });
+      continue;
+    }
+    composizioniVive.push(await repositoryComposizioni.aggiorna(id, { deleted_at: null }));
+    for (const voce of sueRighe) await rimettiRiga(voce);
+    ripristinati.push(composizione.nome);
   }
 
-  await Promise.all(
-    righeDaRipristinare.map(async (voce) => {
-      if (!idComposizioniVive.has(voce.composizione_id)) return;
-      await repositoryComposizioniVoci.aggiorna(voce.id, { deleted_at: null });
-    })
-  );
+  // Le righe di pasti che non erano stati cancellati (l'alimento tolto da un
+  // pasto che aveva anche altri alimenti): tornano se il pasto è vivo.
+  const idComposizioniVive = new Set(composizioniVive.map((c) => c.id));
+  for (const voce of righeDaRipristinare) {
+    if (traccia.idComposizioni.includes(voce.composizione_id)) continue;
+    if (!idComposizioniVive.has(voce.composizione_id)) continue;
+    await rimettiRiga(voce);
+  }
 
-  return { alimentiNonRipristinati, pastiNonRipristinati };
+  return { ripristinati, nonRipristinati };
 }

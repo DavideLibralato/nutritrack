@@ -16,17 +16,20 @@
 // salvati: è un caso diverso, verificato qui sotto per non confonderlo di
 // nuovo con quello sopra.
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   rimuoviAlimentoDaPastiSalvati,
   esisteComposizioneConNome,
   salvaPastoComeComposizione,
   ripristinaAlimentoEliminato,
   eliminaComposizione,
+  eliminaPastiSalvati,
+  ripristinaPastiSalvati,
   eliminaAlimenti,
 } from "./composizioni";
 import { repositoryAlimenti, repositoryComposizioni, repositoryComposizioniVoci, repositoryVociDiario } from "./index";
 import { catalogoLocale } from "./alimenti";
+import { db } from "../db/database";
 import {
   pastiSalvati,
   pastoGiaSalvato,
@@ -461,5 +464,144 @@ describe("regola Alimenti cancellati", () => {
         expect((await repositoryComposizioniVoci.ottieniPerId(id))?.deleted_at).not.toBeNull();
       }
     });
+  });
+});
+
+// Caso 3 dei "doppioni rimasti" (18/10): il segnalibro pieno in Oggi toglie
+// i pasti salvati subito, con Annulla dopo. Per questo l'eliminazione è in
+// una transazione (prima scriveva in parallelo, e un guasto a metà poteva
+// lasciare un pasto vivo senza alimenti) e ha un ripristino dalla traccia,
+// che non rimette in vita un doppione di nome o di contenuto.
+describe("eliminaPastiSalvati e ripristinaPastiSalvati", () => {
+  async function vivo(tabella: "composizioni" | "composizioni_voci", id: string) {
+    const riga = await db.table(tabella).get(id);
+    return riga !== undefined && riga.deleted_at === null;
+  }
+  async function righeDi(userId: string, composizioneId: string) {
+    return (await repositoryComposizioniVoci.ottieniTutti(userId))
+      .filter((v) => v.composizione_id === composizioneId)
+      .map((v) => `${v.alimento_id} ${v.quantita_g}`)
+      .sort();
+  }
+
+  async function prepara() {
+    const userId = `utente-${crypto.randomUUID()}`;
+    const yogurt = await creaAlimento(userId, "Yogurt");
+    const avena = await creaAlimento(userId, "Avena");
+    const pane = await creaAlimento(userId, "Pane");
+    const colazioneId = await creaPastoSalvato(userId, "Colazione", [yogurt, avena]);
+    const pranzoId = await creaPastoSalvato(userId, "Pranzo", [pane]);
+    return { userId, yogurt, avena, pane, colazioneId, pranzoId };
+  }
+
+  it("tutto o niente: un guasto a metà non lascia niente di cancellato, né voci in coda", async () => {
+    const { userId, colazioneId, pranzoId } = await prepara();
+    const righePrima = (await repositoryComposizioniVoci.ottieniTutti(userId)).map((v) => v.id);
+    const outboxPrima = await db.outbox.count();
+    const originale = repositoryComposizioni.elimina;
+    let chiamate = 0;
+    const spia = vi.spyOn(repositoryComposizioni, "elimina").mockImplementation(async (id) => {
+      chiamate++;
+      if (chiamate === 2) throw new Error("guasto a metà");
+      return originale(id);
+    });
+
+    await expect(eliminaPastiSalvati(userId, [colazioneId, pranzoId])).rejects.toThrow("guasto a metà");
+    spia.mockRestore();
+
+    expect(await vivo("composizioni", colazioneId)).toBe(true);
+    expect(await vivo("composizioni", pranzoId)).toBe(true);
+    for (const id of righePrima) expect(await vivo("composizioni_voci", id)).toBe(true);
+    expect(await db.outbox.count()).toBe(outboxPrima);
+  });
+
+  it("la traccia ha solo quello che ha cancellato davvero; poi il ripristino rimette pasti e righe", async () => {
+    const { userId, colazioneId, pranzoId } = await prepara();
+    const righeColazione = await righeDi(userId, colazioneId);
+    await eliminaPastiSalvati(userId, [pranzoId]); // già cancellato prima
+
+    const traccia = await eliminaPastiSalvati(userId, [colazioneId, pranzoId]);
+
+    expect(traccia.idComposizioni).toEqual([colazioneId]);
+    expect(traccia.idComposizioniVoci).toHaveLength(2);
+    expect(await vivo("composizioni", colazioneId)).toBe(false);
+    expect(await righeDi(userId, colazioneId)).toEqual([]);
+
+    const esito = await ripristinaPastiSalvati(userId, traccia);
+
+    expect(esito).toEqual({ ripristinati: ["Colazione"], nonRipristinati: [] });
+    expect(await vivo("composizioni", colazioneId)).toBe(true);
+    expect(await righeDi(userId, colazioneId)).toEqual(righeColazione);
+    // Pranzo era stato cancellato prima: non è suo, non torna.
+    expect(await vivo("composizioni", pranzoId)).toBe(false);
+  });
+
+  it("ripristinare due volte non scrive niente la seconda: niente operazioni inutili verso il server", async () => {
+    const { userId, colazioneId } = await prepara();
+    const traccia = await eliminaPastiSalvati(userId, [colazioneId]);
+    await ripristinaPastiSalvati(userId, traccia);
+    const outbox = await db.outbox.count();
+
+    const secondo = await ripristinaPastiSalvati(userId, traccia);
+
+    expect(secondo).toEqual({ ripristinati: [], nonRipristinati: [] });
+    expect(await db.outbox.count()).toBe(outbox);
+  });
+
+  it("nel frattempo un altro pasto salvato con lo stesso nome: non torna, motivo «nome»", async () => {
+    const { userId, colazioneId, pane } = await prepara();
+    const traccia = await eliminaPastiSalvati(userId, [colazioneId]);
+    await creaPastoSalvato(userId, "Colazione", [pane]);
+
+    const esito = await ripristinaPastiSalvati(userId, traccia);
+
+    expect(esito).toEqual({ ripristinati: [], nonRipristinati: [{ nome: "Colazione", motivo: "nome" }] });
+    expect(await vivo("composizioni", colazioneId)).toBe(false);
+    for (const id of traccia.idComposizioniVoci) expect(await vivo("composizioni_voci", id)).toBe(false);
+  });
+
+  it("nel frattempo un altro pasto salvato con lo stesso contenuto: non torna, motivo «contenuto»", async () => {
+    const { userId, colazioneId, yogurt, avena } = await prepara();
+    const traccia = await eliminaPastiSalvati(userId, [colazioneId]);
+    // Il segnalibro ritoccato e risalvato con un altro nome, prima di Annulla.
+    await creaPastoSalvato(userId, "Colazione di oggi", [yogurt, avena]);
+
+    const esito = await ripristinaPastiSalvati(userId, traccia);
+
+    expect(esito).toEqual({ ripristinati: [], nonRipristinati: [{ nome: "Colazione", motivo: "contenuto" }] });
+    expect(await vivo("composizioni", colazioneId)).toBe(false);
+  });
+
+  it("due pasti, uno in conflitto: torna l'altro, come per gli alimenti", async () => {
+    const { userId, colazioneId, pranzoId, avena } = await prepara();
+    const traccia = await eliminaPastiSalvati(userId, [colazioneId, pranzoId]);
+    await creaPastoSalvato(userId, "Pranzo", [avena]);
+
+    const esito = await ripristinaPastiSalvati(userId, traccia);
+
+    expect(esito).toEqual({ ripristinati: ["Colazione"], nonRipristinati: [{ nome: "Pranzo", motivo: "nome" }] });
+    expect(await vivo("composizioni", colazioneId)).toBe(true);
+    expect(await vivo("composizioni", pranzoId)).toBe(false);
+  });
+
+  it("nessuno dei suoi alimenti è più nel catalogo: non torna, motivo «vuoto»", async () => {
+    const { userId, pranzoId, pane } = await prepara();
+    const traccia = await eliminaPastiSalvati(userId, [pranzoId]);
+    await repositoryAlimenti.elimina(pane.id);
+
+    const esito = await ripristinaPastiSalvati(userId, traccia);
+
+    expect(esito).toEqual({ ripristinati: [], nonRipristinati: [{ nome: "Pranzo", motivo: "vuoto" }] });
+    expect(await vivo("composizioni", pranzoId)).toBe(false);
+  });
+
+  it("Elimina da Preferiti (eliminaComposizione) toglie come prima il pasto e tutte le sue righe", async () => {
+    const { userId, colazioneId, pranzoId } = await prepara();
+
+    await eliminaComposizione(userId, colazioneId);
+
+    expect(await vivo("composizioni", colazioneId)).toBe(false);
+    expect(await righeDi(userId, colazioneId)).toEqual([]);
+    expect(await vivo("composizioni", pranzoId)).toBe(true);
   });
 });

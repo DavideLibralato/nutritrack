@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Pasti salvati: eliminazione in transazione e ripristino dalla traccia
+
+Branch `doppioni`, commit 6 di 8 (caso 3, prima metà; solo repository).
+`eliminaPastiSalvati` toglie uno o più pasti salvati con le loro righe in
+una sola transazione Dexie (prima in parallelo e fuori transazione) e
+restituisce la traccia; `eliminaComposizione` (Elimina da Preferiti) passa
+da lì, con la stessa firma. `ripristinaPastiSalvati` rimette in vita dalla
+traccia, ma non un pasto il cui nome o contenuto è ormai preso, né uno
+rimasto senza alimenti nel catalogo; con conflitti solo su alcuni pasti
+tornano gli altri (come per gli alimenti). La parte comune con l'Annulla
+di un alimento è ora `ripristinaPastiNellaTransazione`: il comportamento
+degli alimenti non cambia (i loro test passano invariati). Test in
+`composizioni.test.ts`: tutto o niente, traccia, ripristino riuscito,
+ripristino ripetuto senza scritture, nome preso, contenuto presente, due
+pasti con un conflitto, pasto vuoto, Elimina da Preferiti invariata. Visti
+fallire senza la transazione, senza il controllo del contenuto, con la
+traccia che include pasti già cancellati e senza il controllo del pasto
+vuoto (lì fallisce anche un test degli alimenti già esistente). La pagina
+non lo usa ancora (commit 7): **da provare su iPhone** solo Elimina da
+Preferiti, che deve restare com'era.
+
 ## 2026-10-18 — Sheet di modifica in Oggi: cambio di pasto via Sposta, Annulla sui grammi
 
 Branch `doppioni`, commit 5 di 8 (caso 1, seconda metà). `confermaModifica`
