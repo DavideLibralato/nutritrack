@@ -470,6 +470,34 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
     expect(await firme()).toEqual(prima);
   });
 
+  // Difetto trovato il 18/10, già in produzione: un trascinamento senza
+  // doppioni che falliva lasciava lo spostamento in sospeso senza nessun
+  // foglio a mostrarlo, e i gesti restavano spenti fino a una ricarica.
+  it("rilascio senza doppioni che fallisce: errore nella barra, niente scritto, i gesti tornano attivi", async () => {
+    const { riga, lista, firme } = await prepara();
+    // A pranzo niente più yogurt: il rilascio sposta subito, senza foglio.
+    const yogurtPranzo = (await repositoryVociDiario.ottieniTutti(utenteTest)).find((v) => v.quantita_g === 100)!;
+    await repositoryVociDiario.elimina(yogurtPranzo.id);
+    await waitFor(() => expect(screen.getAllByText("Yogurt")).toHaveLength(1));
+    const prima = await firme();
+    const guasto = vi.spyOn(repositoryVociDiario, "aggiorna").mockRejectedValue(new Error("Guasto finto"));
+
+    await iniziaTrascinamento(riga, lista);
+    puntatore("pointermove", lista, 100, 250);
+    puntatore("pointerup", lista, 100, 250);
+
+    await testoBarra("Operazione non riuscita. Riprova.");
+    expect(within(screen.getByRole("status")).queryByRole("button", { name: "Annulla" })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    guasto.mockRestore();
+    expect(await firme()).toEqual(prima);
+
+    // I gesti sono di nuovo attivi: tenendo premuto, la riga si solleva.
+    puntatore("pointerdown", riga, 100, 150);
+    await waitFor(() => expect(riga.hasAttribute("data-sollevato")).toBe(true), { interval: 5, timeout: 3000 });
+    puntatore("pointercancel", lista, 100, 150);
+  });
+
   it("dito fermo nella fascia bassa: la lista scorre da sola e il pasto sotto il dito cambia", async () => {
     const { riga, lista, cena } = await prepara();
     // jsdom non calcola le altezze: contenuto di 2000 px in una lista di 600.

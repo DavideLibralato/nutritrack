@@ -884,7 +884,18 @@ function OggiContenuto() {
       });
     } catch {
       // applicaScritture ha già rimesso a posto quello che aveva scritto.
-      setSpostamento({ ...s, pastoDestinazioneId, inCorso: false, errore: "Operazione non riuscita. Riprova." });
+      // Con un foglio aperto (elenco dei pasti, o doppioni) l'errore va lì,
+      // e il foglio si chiude con Annulla. Senza foglio (un trascinamento
+      // senza doppioni) nessuno lo mostrerebbe, e lo spostamento rimasto
+      // in sospeso terrebbe spenti i gesti (gestiAttivi) fino a una
+      // ricarica: difetto trovato il 18/10. Lì lo spostamento si azzera e
+      // l'errore va nella barra, senza Annulla, come per Elimina dal menu.
+      if (s.sceltaPasto || s.doppioni !== null) {
+        setSpostamento({ ...s, pastoDestinazioneId, inCorso: false, errore: "Operazione non riuscita. Riprova." });
+      } else {
+        setSpostamento(null);
+        setBarra({ id: crypto.randomUUID(), testo: "Operazione non riuscita. Riprova." });
+      }
     }
   }
 

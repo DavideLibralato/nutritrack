@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-18 — Trascinamento fallito: errore nella barra, gesti di nuovo attivi
+
+Branch `doppioni`, commit 4b (fuori dal piano a 8, chiesto da Davide
+prima del commit 5). Difetto **già in produzione**, trovato preparando il
+caso 1: se un trascinamento senza doppioni falliva, lo spostamento
+restava in sospeso con l'errore ma senza nessun foglio a mostrarlo, e
+`gestiAttivi` teneva spenti swipe, tieni premuto e trascinamento fino a
+una ricarica. Ora, senza un foglio aperto, lo spostamento si azzera e
+"Operazione non riuscita. Riprova." va nella barra senza Annulla, come
+per Elimina dal menu; con un foglio aperto l'errore resta nel foglio.
+Niente scritto, come prima. Test in `page.test.tsx` (guasto finto su
+`aggiorna`: barra, niente Annulla né foglio, niente scritto, la riga si
+solleva di nuovo); visto fallire con il codice di prima e con lo stato
+non azzerato. **Da provare su iPhone** (difficile da provocare: serve un
+guasto vero di Dexie; basta riprovare che il trascinamento normale
+funzioni).
+
 ## 2026-10-18 — Sposta accetta i grammi nuovi di una voce (repository)
 
 Branch `doppioni`, commit 4 di 8 (caso 1, prima metà; tocca il percorso

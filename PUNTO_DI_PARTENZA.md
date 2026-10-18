@@ -416,7 +416,10 @@ decisioni pure in `decisioneTrascinamento.ts`):
   bersaglio.
 - **Rilascio su un altro pasto:** lo stesso spostamento di Sposta dal menu,
   con il foglio dei doppioni se serve, il messaggio e Annulla. Il foglio
-  dei pasti non si apre.
+  dei pasti non si apre. Se lo spostamento fallisce senza un foglio aperto
+  (nessun doppione), "Operazione non riuscita. Riprova." va nella barra,
+  senza Annulla, e i gesti restano attivi (dal 18/10; prima restavano
+  spenti fino a una ricarica).
 - **Rilascio altrove, o gesto interrotto dal sistema** (`pointercancel`:
   una chiamata, l'app in background): niente si scrive, e la copia torna
   verso la riga e sparisce. Con "Riduci movimento" sparisce subito.
@@ -6013,7 +6016,7 @@ prove 17-19 in produzione dall'app installata (sotto, "Prove su iPhone
 dell'onboarding"). Account di prova eliminati lo stesso giorno.
 
 **Test.** 1187 test permanenti in 108 file (Vitest), tutti verdi al 18/10
-su main; 1209 in 109 file sul branch `doppioni`.
+su main; 1210 in 109 file sul branch `doppioni`.
 
 ### Non ancora costruito
 
@@ -6118,6 +6121,18 @@ su main; 1209 in 109 file sul branch `doppioni`.
   piano) è una sola, `togliEsclusi` in `pianoSpostamento.ts`, e la usano
   tutti e tre (sezione 3, "Doppioni in Aggiungi"). Test in
   `vociDiario.test.ts`
+- **Un trascinamento fallito senza doppioni spegneva i gesti di Oggi**
+  (difetto già in produzione, trovato il 18/10 preparando il caso 1):
+  **corretto sul branch `doppioni`, da provare su iPhone**. Se lo
+  spostamento falliva (un guasto di Dexie, una voce sparita nel giro di
+  millisecondi) quando non c'era un foglio aperto, lo stato dello
+  spostamento restava con l'errore dentro ma nessun foglio lo mostrava:
+  `gestiAttivi` restava falso, e swipe, tieni premuto e trascinamento
+  erano spenti fino a una ricarica o al cambio di giorno. Ora in quel
+  caso lo stato si azzera e l'errore va nella barra, senza Annulla, come
+  per Elimina dal menu; con un foglio aperto l'errore resta nel foglio.
+  Niente scritto, come prima. Raro. Test in `page.test.tsx`
+  ("trascinare un alimento su un altro pasto")
 - **Il cambio di pasto dallo sheet di modifica in Oggi non controlla i
   doppioni** (11/10; in lavorazione sul branch `doppioni`). Cambiando il
   pasto di una voce dal suo sheet, la
