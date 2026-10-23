@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Scelta dello username in un hook; suggerimento tolto
+
+Branch `username-dopo-accesso`, commit 2. La logica di "Scegli il tuo
+nome su Libra" esce da SceltaUsername: `useSceltaUsername` (valore,
+esito mentre si scrive, quando si può salvare, `imposta_username`) e
+`CampoUsername` (il campo con la "@" e la riga d'esito), pronti per il
+passo dell'onboarding. Amici ha lo stesso aspetto e funziona come
+prima. Tolto il suggerimento dai metadati (`useUsernameDaiMetadati` e
+il campo già scritto): il campo parte vuoto. Tolti i 3 test del
+suggerimento; i 2 del salvataggio ora scrivono il nome nel campo, e uno
+nuovo controlla il campo vuoto all'apertura.
+
+Migration `registrazione_username_facoltativo` **applicata il 23/10,
+versione 20261023175118**, dopo il commit 1: "RESOCONTO 31 su 31 ok"
+nel SQL Editor (Davide, verificato anche da Cowork), poi
+`apply_migration` da Claude. Verificati: `list_migrations`, permessi e
+trigger invariati, advisors senza avvisi nuovi. PUNTO §9.1 e §11
+aggiornati.
+
 ## 2026-10-23 — Username dopo l'accesso: decisioni e migration 1
 
 Branch `username-dopo-accesso`, commit 1 (documenti e file della

@@ -4390,8 +4390,11 @@ definer` e `search_path = ''`):
     o non oggetto lasciati come sono. Nella stessa migration la pulizia
     dell'account che aveva ancora la chiave.
 - **Username facoltativo** (branch `username-dopo-accesso`, migration
-  `registrazione_username_facoltativo`, **non ancora applicata**: file
-  in `supabase/migrations/`). I due trigger di registrazione lasciano
+  `registrazione_username_facoltativo`, **applicata il 23/10, versione
+  20261023175118**, con `apply_migration` da Claude dopo il blocco di
+  prove annullato eseguito da Davide nel SQL Editor: "RESOCONTO 31 su 31
+  ok"; poi `list_migrations`, permessi e trigger invariati, advisors
+  senza avvisi nuovi). I due trigger di registrazione lasciano
   nascere l'account anche senza username: assente, null o vuoto →
   nessuna riga in `nomi_utente`, e la chiave `username` si toglie dai
   metadati insieme a `codice_invito`. Con lo username presente tutto
@@ -6841,8 +6844,8 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
    chiede più in Registrati ma in un passo dell'onboarding (sezione 3,
    Amici, "Lo username dopo l'accesso"). Due migration: la prima
    (username facoltativo nei trigger) prima delle prove sull'anteprima,
-   la seconda (`username_disponibile` tolta ad `anon`) solo dopo il
-   deploy di produzione
+   applicata il 23/10 (9.1); la seconda (`username_disponibile` tolta
+   ad `anon`) solo dopo il deploy di produzione
 6. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)

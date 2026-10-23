@@ -77,17 +77,6 @@ export function useNomeUtente(): string | null {
   return useTestoDaiMetadati("nome");
 }
 
-// Lo username scritto alla registrazione (`options.data.username` in
-// src/lib/actions/auth.ts). Sul nostro progetto la conferma email è spenta:
-// la Server Action lo salva subito in `nomi_utente` con imposta_username.
-// Resta solo qui quando quel salvataggio non risponde "ok" (o se un giorno
-// la conferma si accendesse): Amici lo propone già scritto in "Scegli il
-// tuo username" (PUNTO_DI_PARTENZA.md §3). È solo un suggerimento: lo
-// username vero sta in `nomi_utente`. null se non c'è.
-export function useUsernameDaiMetadati(): string | null {
-  return useTestoDaiMetadati("username");
-}
-
 // Un testo dai metadati dell'account (useMetadatiUtente, sotto). null
 // finché i metadati non sono letti, e se il testo non c'è.
 function useTestoDaiMetadati(chiave: string): string | null {

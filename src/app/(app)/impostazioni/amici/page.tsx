@@ -7,8 +7,7 @@
 // Che cosa si vede, in ordine:
 // - offline: "Serve la connessione", che si toglie da solo quando torna la
 //   rete (useOnline, e le letture ripartono con l'evento "online");
-// - senza username: "Scegli il tuo username" (SceltaUsername), con quello
-//   dei metadati già scritto se c'è;
+// - senza username: "Scegli il tuo nome su Libra" (SceltaUsername);
 // - la pagina: "Aggiungi un amico" (SheetAggiungiAmico), poi le sezioni non
 //   vuote: Richieste ricevute (Rifiuta / Accetta), Richieste inviate ("In
 //   attesa che accetti" con Annulla, "Non accettata" con Ok), I tuoi amici
@@ -25,7 +24,6 @@
 import { useRef, useState } from "react";
 import { useOnline } from "@/lib/useOnline";
 import { createClient } from "@/lib/supabase/client";
-import { useUsernameDaiMetadati } from "@/lib/supabase/useUtente";
 import { useMioUsername } from "@/lib/amici/useMioUsername";
 import { useAmicizie } from "@/lib/amici/useAmicizie";
 import {
@@ -59,7 +57,6 @@ const TESTO_SENZA_RETE =
 export default function AmiciPage() {
   const online = useOnline();
   const mioUsername = useMioUsername();
-  const suggerito = useUsernameDaiMetadati();
   const { stato, ricarica } = useAmicizie();
 
   const [foglioAggiungi, setFoglioAggiungi] = useState(false);
@@ -134,7 +131,6 @@ export default function AmiciPage() {
       <main className={CLASSE_MAIN}>
         <IntestazioneSottopagina titolo="Amici" />
         <SceltaUsername
-          suggerito={suggerito}
           onScelto={(username) => {
             mioUsername.impostato(username);
             void ricarica();
