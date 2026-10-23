@@ -209,7 +209,7 @@ function Onboarding() {
   }
 
   function iniziamo() {
-    const mostra = mostraPassoUsername(mioUsername.stato, online, conUsername);
+    const mostra = mostraPassoUsername(mioUsername.stato, conUsername);
     setConUsername(mostra);
     vaiA(mostra ? "username" : 2);
   }

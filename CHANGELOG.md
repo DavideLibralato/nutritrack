@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Il passo dello username non guarda più la rete al tocco
+
+Branch `username-dopo-accesso`, commit 6. Trovato da Davide nella prova
+9 su iPhone (Build `f1780b4`, account B): con la modalità aereo accesa
+sul Benvenuto, "Iniziamo" mostrava il passo dello username con il testo
+senza rete, invece di andare dritto a "Su di te". Causa: la decisione
+guardava anche `useOnline` (`navigator.onLine`), che su Safari arriva
+quando Safari se ne accorge. Al tocco risultava ancora online, subito
+dopo offline. Nei log edge la lettura di `nomi_utente` di B è riuscita
+anche alle 21:21:28 e 21:21:50, 12 e 34 secondi dopo l'apertura.
+
+Scelta di Davide, strada (a): `mostraPassoUsername` non riceve più la
+rete. Il passo compare quando la lettura all'apertura dice "nessuno
+username"; se si è offline lo dice da sé con "Lo scelgo dopo". Si salta
+ancora con la lettura non arrivata o fallita. Test aggiornato (2
+controlli), visto fallire rompendo la funzione da una copia due volte
+(senza il controllo dello username; con la risposta non arrivata
+trattata come "nessuno username"), poi ripristinata dalla copia. PUNTO
+§3 con la regola e il perché (anche il pulsante di Cambia password ed
+Elimina account può restare acceso qualche secondo, senza danni) e
+prove 9-10 riscritte.
+
 ## 2026-10-23 — Username dopo l'accesso: documenti e prove su iPhone
 
 Branch `username-dopo-accesso`, commit 5. Il testo offline della card di

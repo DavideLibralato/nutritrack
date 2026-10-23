@@ -1,7 +1,9 @@
 // Il passo dello username nell'onboarding (PUNTO_DI_PARTENZA.md §3, Amici,
 // "Lo username dopo l'accesso"). Test permanente: la regola più importante
 // è che chi ha già uno username non veda mai il passo, e che senza una
-// risposta sicura dal server il passo si salti invece di bloccare.
+// risposta sicura dal server il passo si salti invece di bloccare. La rete
+// al momento del tocco non conta (dal 23/10): offline il passo compare e
+// lo dice da sé, con "Lo scelgo dopo".
 
 import { describe, expect, it } from "vitest";
 import { mostraPassoUsername, passoPrecedente, posizioneNellaBarra } from "./passoUsername";
@@ -12,24 +14,22 @@ const ERRORE = { esito: "errore" } as const;
 const CARICAMENTO = { esito: "caricamento" } as const;
 
 describe("mostraPassoUsername", () => {
-  it("senza username e con la rete: compare", () => {
-    expect(mostraPassoUsername(SENZA, true, false)).toBe(true);
+  it("senza username: compare, anche se nel frattempo la rete è caduta", () => {
+    expect(mostraPassoUsername(SENZA, false)).toBe(true);
   });
 
-  it("con lo username già scelto: mai, nemmeno con la rete", () => {
-    expect(mostraPassoUsername(CON, true, false)).toBe(false);
-    expect(mostraPassoUsername(CON, false, false)).toBe(false);
+  it("con lo username già scelto: mai", () => {
+    expect(mostraPassoUsername(CON, false)).toBe(false);
   });
 
-  it("senza una risposta sicura si salta: errore, risposta non arrivata, offline", () => {
-    expect(mostraPassoUsername(ERRORE, true, false)).toBe(false);
-    expect(mostraPassoUsername(CARICAMENTO, true, false)).toBe(false);
-    expect(mostraPassoUsername(SENZA, false, false)).toBe(false);
+  it("senza una risposta sicura si salta: errore (offline all'apertura), risposta non arrivata", () => {
+    expect(mostraPassoUsername(ERRORE, false)).toBe(false);
+    expect(mostraPassoUsername(CARICAMENTO, false)).toBe(false);
   });
 
   it("già comparso in questo giro: resta, anche con il nome ormai salvato", () => {
-    expect(mostraPassoUsername(CON, true, true)).toBe(true);
-    expect(mostraPassoUsername(ERRORE, false, true)).toBe(true);
+    expect(mostraPassoUsername(CON, true)).toBe(true);
+    expect(mostraPassoUsername(ERRORE, true)).toBe(true);
   });
 });
 

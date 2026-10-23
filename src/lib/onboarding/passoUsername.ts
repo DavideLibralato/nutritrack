@@ -20,16 +20,18 @@ export type PassoPagina = PassoOnboarding | "username";
 // Si decide al tocco su "Iniziamo" del Benvenuto.
 //   - già comparso in questo giro della pagina (anche con il nome salvato)
 //     → resta: tornando al Benvenuto e rifacendo "Iniziamo" non sparisce;
-//   - altrimenti solo con la risposta "nessuno username" e la rete. Con
-//     lo username già scelto mai; con la risposta non ancora arrivata, un
-//     errore o offline si salta, e lo chiede Amici alla prima apertura.
-export function mostraPassoUsername(
-  lettura: StatoMioUsername,
-  online: boolean,
-  giaNelGiro: boolean
-): boolean {
+//   - altrimenti solo con la risposta "nessuno username". Con lo username
+//     già scelto mai; con la risposta non ancora arrivata o un errore
+//     (offline già all'apertura) si salta, e lo chiede Amici alla prima
+//     apertura.
+// La rete in quel momento NON conta (deciso il 23/10, dopo la prova 9 su
+// iPhone): navigator.onLine su Safari non è una fotografia dell'istante.
+// Il passo compariva o no a seconda di quando Safari si accorgeva della
+// modalità aereo. Se si è offline, il passo lo dice da sé, con "Lo scelgo
+// dopo" (PassoUsername).
+export function mostraPassoUsername(lettura: StatoMioUsername, giaNelGiro: boolean): boolean {
   if (giaNelGiro) return true;
-  return online && lettura.esito === "ok" && lettura.username === null;
+  return lettura.esito === "ok" && lettura.username === null;
 }
 
 // Il passo prima di questo, per Indietro. Dal Benvenuto non si torna

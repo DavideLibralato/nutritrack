@@ -1982,11 +1982,24 @@ del 15/10.
     passo è obbligatorio), Indietro torna al Benvenuto.
   - **Quando compare**: lo decide il tocco su "Iniziamo", con la lettura
     di `nomi_utente` (`leggiMioUsername`) fatta all'apertura della
-    pagina. Solo con la risposta "nessuno username" e la connessione;
-    con lo username già scelto non compare mai. Se la risposta non è
-    ancora arrivata, è un errore o si è offline, si salta: lo username
-    lo chiede Amici alla prima apertura, come oggi per chi non ce l'ha
-    (offline non si può sapere se il nome è libero). Chi riprende
+    pagina. Solo con la risposta "nessuno username"; con lo username già
+    scelto non compare mai. Se la risposta non è ancora arrivata o è un
+    errore (offline già all'apertura), si salta: lo username lo chiede
+    Amici alla prima apertura, come oggi per chi non ce l'ha. **La rete
+    al momento del tocco non conta** (deciso da Davide il 23/10, dopo la
+    prova 9 su iPhone): se si è offline il passo compare lo stesso e lo
+    dice da sé, con il testo senza rete e "Lo scelgo dopo". Prima la
+    decisione guardava anche `useOnline` (cioè `navigator.onLine`), ma
+    su Safari quel valore arriva quando Safari se ne accorge: con la
+    modalità aereo appena accesa il passo compariva o no a seconda
+    dell'istante del tocco. Nei log di quella prova la lettura di
+    `nomi_utente` dell'account B è riuscita anche 12 e 34 secondi dopo
+    l'apertura, quindi in quei momenti il telefono aveva ancora (o di
+    nuovo) la rete. Lo stesso ritardo può tenere acceso per qualche
+    secondo il pulsante di Cambia password o di Elimina account dopo la
+    modalità aereo; nessun danno, perché tutti e due fanno comunque una
+    chiamata vera prima di agire e senza rete mostrano il loro errore.
+    Chi riprende
     l'onboarding da "Su di te" in poi non lo vede. Il passo non entra
     nella logica dei passi di Dexie (`passiMancanti`, la scheda di
     Oggi): i passi da 1 a 5 restano numerati così, e la barra conta 6
@@ -6926,15 +6939,22 @@ branch.
    Salva → la riga mostra il nome nuovo. Su iPhone, aprendo il foglio,
    non deve comparire la proposta della password salvata.
 9. **Senza rete al momento di "Iniziamo"** (account B, registrato con
-   la rete): sul Benvenuto, modalità aereo → "Iniziamo" →
-   **direttamente "Su di te", 5 puntini**, nessun passo dello
-   username.
-10. **Senza rete sul passo** (sempre B): Indietro → Benvenuto, togli la
-    modalità aereo, "Iniziamo" → il passo dello username (6 puntini).
-    Modalità aereo → sotto il campo "Senza connessione non posso
-    controllare se il nome è libero: te lo chiederò in Amici.",
-    "Avanti" spento e il link **"Lo scelgo dopo"** → "Su di te". Lì
-    "Dopo" → Oggi.
+   la rete): sul Benvenuto, modalità aereo, aspetta qualche secondo →
+   "Iniziamo" → **il passo dello username** (6 puntini, niente "Dopo")
+   con sotto il campo "Senza connessione non posso controllare se il
+   nome è libero: te lo chiederò in Amici.", "Avanti" spento e il link
+   **"Lo scelgo dopo"** → "Su di te" (6 puntini, terzo acceso).
+   (Cambiata il 23/10. Con la Build `f1780b4` questa prova si aspettava
+   "direttamente Su di te", ma è comparso il passo con il testo senza
+   rete: la decisione dipendeva dall'istante in cui Safari si accorge
+   della modalità aereo. Da qui la regola "la rete al tocco non conta",
+   sezione 3. Va rifatta con la Build nuova.)
+10. **La rete che cade sul passo** (sempre B): Indietro due volte →
+    Benvenuto, togli la modalità aereo, "Iniziamo" → il passo con
+    l'esito normale sotto il campo. Modalità aereo → dopo qualche
+    secondo, senza toccare niente, sotto il campo compare il testo
+    senza rete e il link **"Lo scelgo dopo"** → "Su di te". Lì "Dopo" →
+    Oggi.
 11. **Amici chiede il nome** (B, con la rete): Impostazioni → Amici →
     "Scegli il tuo nome su Libra" con il campo **vuoto** (niente nome
     già scritto). Un nome libero → "Continua" → la pagina Amici.
