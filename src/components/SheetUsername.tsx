@@ -8,7 +8,8 @@
 //
 // Stessa struttura visiva di SheetNome (sfondo scurito, pannello in basso
 // ancorato all'area visibile, riga Annulla / Salva). Sotto il campo, come
-// in Registrati, l'esito mentre si scrive (useDisponibilitaUsername), con
+// in "Scegli il tuo nome su Libra", l'esito mentre si scrive
+// (useDisponibilitaUsername), con
 // un caso in più: il proprio nome attuale (foglioUsername.ts).
 
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +23,7 @@ import { impostaUsername } from "@/lib/amici/nomiUtente";
 import { puoSalvareUsername, statoNelFoglio } from "@/lib/amici/foglioUsername";
 import {
   TESTO_USERNAME_AMICI_RESTANO,
-  TESTO_USERNAME_IN_USO,
+  TESTO_NOME_IN_USO,
   TESTO_USERNAME_NON_SALVATO,
   TESTO_USERNAME_NON_VALIDO,
   TESTO_USERNAME_REGOLE,
@@ -77,7 +78,7 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
     const esito = await impostaUsername(createClient(), valore);
     setInCorso(false);
     if (esito === "ok") onSalvato(normalizzaUsername(valore));
-    else if (esito === "occupato") setErrore(TESTO_USERNAME_IN_USO);
+    else if (esito === "occupato") setErrore(TESTO_NOME_IN_USO);
     else if (esito === "non_valido") setErrore(TESTO_USERNAME_NON_VALIDO);
     else setErrore(TESTO_USERNAME_NON_SALVATO);
   }
@@ -121,9 +122,8 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
                 la prova su iPhone del 16/10 in Aggiungi un amico (§3 "Lo
                 username"). type="search" ed enterKeyHint restano: non
                 danno fastidio e aiutano; la "×" nativa la toglie
-                globals.css. Lo stesso in SceltaUsername e
-                SheetAggiungiAmico. In Registrati la parola resta: lì c'è
-                l'email, e iOS prende quella per l'accesso. */}
+                globals.css. Lo stesso in CampoUsername (Amici e
+                onboarding) e SheetAggiungiAmico. */}
             <input
               ref={rifInput}
               type="search"

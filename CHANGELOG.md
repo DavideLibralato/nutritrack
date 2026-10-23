@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Registrati senza username; un solo testo per il nome preso
+
+Branch `username-dopo-accesso`, commit 4. Registrati chiede solo nome,
+email, password e codice di invito. Tolti dalla pagina il campo
+Username, il controllo mentre si scrive e il caso "username preso
+all'invio" (`usernamePreso`); dalla Server Action la validazione dello
+username, i due controlli con `username_disponibile` (prima di `signUp`
+e dopo "Database error saving new user"), `imposta_username` e la
+chiave `username` nei metadati di `signUp`. L'errore del database ora
+dà sempre il messaggio generico.
+
+Test: tolti "username preso all'invio" (pagina) e 6 test della Server
+Action sullo username; cambiati quello dei metadati esatti (senza
+`username`) e quello "con la sessione" (nessuna chiamata allo
+username). Nuovi: "errore del database → messaggio generico, nessuna
+chiamata a username_disponibile" e "uno username mandato da una pagina
+vecchia non arriva nei metadati".
+
+Un solo testo per il nome preso, "Questo nome è già in uso.", anche nel
+foglio di Profilo: tolti `TESTO_USERNAME_IN_USO` e il terzo parametro di
+`testoStatoUsername`, il cui `quando` ora è obbligatorio. Prima
+verificato che il testo vecchio non lo usasse nessun altro. Aggiornati i
+commenti che parlavano dello username in Registrati. Screenshot di
+Registrati a 390 px da un HTML temporaneo in `public/icons/` (fuori dal
+middleware), poi cancellato. PUNTO §3: la regola dei testi.
+
 ## 2026-10-23 — Passo dello username nell'onboarding
 
 Branch `username-dopo-accesso`, commit 3. Dopo il Benvenuto, per chi

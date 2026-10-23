@@ -6,7 +6,9 @@
 // navigazione interna restavano senza utente, la discesa non riusciva mai
 // e /onboarding restava su "Caricamento..." (prove su iPhone del 17/10).
 // Finti: la Server Action, il caricamento completo, il router (spia, non
-// deve servire) e il controllo dello username mentre si scrive.
+// deve servire). Dal branch username-dopo-accesso la pagina non ha più il
+// campo Username: con lui sono spariti il controllo mentre si scrive e il
+// test "username preso all'invio".
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
@@ -31,9 +33,8 @@ vi.mock("@/lib/caricamentoCompleto", () => ({ caricaPaginaDaCapo: (p: string) =>
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: finti.push, replace: finti.replace, refresh: () => {} }),
 }));
-vi.mock("@/lib/amici/useDisponibilitaUsername", () => ({ useDisponibilitaUsername: () => "disponibile" }));
 
-const VALORI = { nome: "Giulia", username: "giulia_92", email: "giulia@esempio.it" };
+const VALORI = { nome: "Giulia", email: "giulia@esempio.it" };
 
 beforeEach(() => {
   finti.registrati.mockReset();
@@ -77,35 +78,6 @@ describe("Registrati", () => {
       await screen.findByText("Account creato: controlla la tua email per confermarlo prima di accedere.")
     ).toBeTruthy();
     expect(finti.carica).not.toHaveBeenCalled();
-  });
-
-  // Il controllo mentre si scrive (qui finto) ha detto "Disponibile", poi
-  // all'invio la Server Action trova il nome preso. La riga sotto il campo
-  // deve dire "già in uso", non restare su "Disponibile": per lo stesso
-  // nome il controllo mentre si scrive non richiede (difetto trovato il
-  // 18/10, branch login-ritocchi).
-  it("username preso all'invio: la riga sotto il campo dice «già in uso» e Crea account si spegne", async () => {
-    finti.risposta = {
-      errore: "Questo username è già in uso.",
-      messaggio: null,
-      valori: VALORI,
-      usernamePreso: "giulia_92",
-    };
-    render(<RegisterPage />);
-    const campo = screen.getByLabelText("Username");
-    fireEvent.change(campo, { target: { value: "Giulia_92" } });
-    expect(screen.getByRole("status").textContent).toBe("Disponibile");
-
-    creaAccount();
-
-    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("Questo username è già in uso."));
-    expect(campo.getAttribute("aria-invalid")).toBe("true");
-    expect((screen.getByRole("button", { name: "Crea account" }) as HTMLButtonElement).disabled).toBe(true);
-
-    // Cambiato il nome torna il controllo mentre si scrive.
-    fireEvent.change(campo, { target: { value: "giulia_93" } });
-    expect(screen.getByRole("status").textContent).toBe("Disponibile");
-    expect((screen.getByRole("button", { name: "Crea account" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("con un errore: il messaggio, e nessun caricamento", async () => {

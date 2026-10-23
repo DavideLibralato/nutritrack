@@ -12,40 +12,18 @@ import CampoPassword from "@/components/CampoPassword";
 import MarchioLibra from "@/components/MarchioLibra";
 import PaginaAccesso from "@/components/PaginaAccesso";
 import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
-import { useDisponibilitaUsername } from "@/lib/amici/useDisponibilitaUsername";
-import { TESTO_USERNAME_REGOLE, testoStatoUsername } from "@/lib/amici/testiUsername";
-import { normalizzaUsername } from "@/lib/validazione";
 
+// Niente username (dal branch username-dopo-accesso, PUNTO_DI_PARTENZA.md
+// §3, "Lo username dopo l'accesso"): lo si sceglie nell'onboarding, dopo
+// l'accesso.
 const STATO_INIZIALE: StatoRegistrazione = {
   errore: null,
   messaggio: null,
-  valori: { nome: "", username: "", email: "" },
+  valori: { nome: "", email: "" },
 };
 
 export default function RegisterPage() {
   const [stato, azioneForm, inCorso] = useActionState(registrati, STATO_INIZIALE);
-
-  // Lo username è l'unico campo "controllato" (il valore sta nello stato di
-  // React, non solo nel campo): serve per chiedere mentre si scrive se è
-  // libero (useDisponibilitaUsername). Si scrive già in minuscolo, come
-  // verrà salvato: la lunghezza non cambia, quindi il cursore resta dov'è.
-  // Gli spazi ai bordi li toglie la normalizzazione, non il campo.
-  const [username, setUsername] = useState(stato.valori.username);
-  const statoMentreScrivi = useDisponibilitaUsername(username);
-  // Se all'invio la Server Action ha trovato il nome preso (stato.usernamePreso),
-  // vale la sua risposta, più recente di quella avuta mentre si scriveva,
-  // che per lo stesso nome non si richiede e direbbe ancora "Disponibile".
-  // Solo finché il campo contiene quel nome: cambiandolo, torna il
-  // controllo mentre si scrive.
-  const statoUsername =
-    stato.usernamePreso !== undefined && normalizzaUsername(username) === stato.usernamePreso
-      ? "in_uso"
-      : statoMentreScrivi;
-  const testoUsername = testoStatoUsername(statoUsername);
-  // Si blocca l'invio solo quando si sa già che non va: formato sbagliato o
-  // nome preso. "Controllo…" ed "errore" non bloccano: la Server Action
-  // ricontrolla comunque. Campo vuoto: lo dice "Compila tutti i campi."
-  const usernameDaCorreggere = statoUsername === "non_valido" || statoUsername === "in_uso";
 
   // Contatore di tentativi: cambia ogni volta che la Server Action
   // risponde. Usato come key sul campo codice invito per farlo rimontare
@@ -106,64 +84,6 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="register-nome-utente" className="block text-sm font-medium mb-1">
-            Username
-          </label>
-          <div className="relative">
-            {/* La "@" sta dentro il campo ma non fa parte del valore. */}
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted"
-            >
-              @
-            </span>
-            {/* Né id né name dicono "username", e autoComplete="nickname"
-                (lo standard HTML: "un nome breve o handle, al posto del
-                nome completo"): iPhone scambiava il campo per quello di
-                accesso e proponeva la password salvata (16/10). Il campo
-                di accesso vero è l'email, con la password: quelli restano
-                riconosciuti come tali (autoComplete "email" e
-                "new-password"). Qui basta (prova su iPhone del 16/10:
-                iOS vede email e password nello stesso modulo). Gli altri
-                tre campi username, da soli in un foglio, no: lì serve
-                type="search" (commento in SheetUsername). */}
-            <input
-              id="register-nome-utente"
-              name="nomeUtente"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              autoCapitalize="none"
-              autoCorrect="off"
-              autoComplete="nickname"
-              spellCheck={false}
-              aria-describedby="register-username-esito register-username-regole"
-              aria-invalid={usernameDaCorreggere}
-              className={`w-full rounded-lg border border-border p-2 pl-7 ${CLASSE_FOCUS}`}
-            />
-          </div>
-          {/* role="status": uno screen reader legge l'esito quando cambia.
-              Altezza minima fissa: l'esito che compare e scompare non fa
-              saltare i campi sotto. */}
-          <p
-            id="register-username-esito"
-            role="status"
-            className={`mt-1 min-h-5 text-sm ${
-              statoUsername === "disponibile"
-                ? "text-accent"
-                : usernameDaCorreggere
-                  ? "text-warning"
-                  : "text-muted"
-            }`}
-          >
-            {testoUsername}
-          </p>
-          <p id="register-username-regole" className="text-xs text-muted">
-            {TESTO_USERNAME_REGOLE}
-          </p>
-        </div>
-
-        <div>
           <label htmlFor="register-email" className="block text-sm font-medium mb-1">
             Email
           </label>
@@ -211,7 +131,7 @@ export default function RegisterPage() {
           type="submit"
           // Spento anche da registrato, mentre la pagina si ricarica: un
           // secondo invio proverebbe a creare lo stesso account.
-          disabled={inCorso || registrato || usernameDaCorreggere}
+          disabled={inCorso || registrato}
           className={`w-full rounded-lg bg-accent-strong p-2 text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
         >
           {inCorso || registrato ? "Attendere..." : "Crea account"}

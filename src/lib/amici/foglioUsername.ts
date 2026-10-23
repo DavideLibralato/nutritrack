@@ -4,7 +4,7 @@
 //
 // Il caso da non sbagliare: il proprio nome attuale. Per il database è
 // "preso" (da te), quindi `username_disponibile` risponde false; senza
-// questa regola il foglio aperto direbbe "Questo username è già in uso."
+// questa regola il foglio aperto direbbe "Questo nome è già in uso."
 // sul tuo stesso nome.
 
 import { normalizzaUsername } from "@/lib/validazione";

@@ -3,11 +3,11 @@
 // Solo online: `nomi_utente` non sta in Dexie. I componenti non chiamano
 // Supabase: passano da qui.
 //
-// Il client Supabase si riceve come parametro perché queste funzioni
-// servono da due parti: dal browser (il controllo mentre si scrive, con il
-// client di src/lib/supabase/client.ts) e dalla Server Action della
-// registrazione (con il client del server, che ha i cookie della sessione
-// appena nata).
+// Il client Supabase si riceve come parametro (dal browser, quello di
+// src/lib/supabase/client.ts): così i test lo sostituiscono senza toccare
+// il modulo. Fino al branch username-dopo-accesso le chiamava anche la
+// Server Action della registrazione, con il client del server; ora lo
+// username si sceglie solo dopo l'accesso, da utente autenticato.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizzaUsername, usernameValido } from "@/lib/validazione";

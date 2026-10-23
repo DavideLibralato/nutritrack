@@ -13,11 +13,7 @@
 
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { useSceltaUsername } from "@/lib/amici/useSceltaUsername";
-import {
-  TESTO_NOME_IN_USO,
-  TESTO_USERNAME_SENZA_RETE,
-  testoStatoUsername,
-} from "@/lib/amici/testiUsername";
+import { TESTO_USERNAME_SENZA_RETE, testoStatoUsername } from "@/lib/amici/testiUsername";
 import CampoUsername from "./CampoUsername";
 
 export default function SceltaUsername({ onScelto }: { onScelto: (username: string) => void }) {
@@ -41,9 +37,7 @@ export default function SceltaUsername({ onScelto }: { onScelto: (username: stri
         onInvio={() => void scelta.salva()}
         esito={
           scelta.errore ??
-          (scelta.online
-            ? testoStatoUsername(scelta.stato, "quando continui", TESTO_NOME_IN_USO)
-            : TESTO_USERNAME_SENZA_RETE)
+          (scelta.online ? testoStatoUsername(scelta.stato, "quando continui") : TESTO_USERNAME_SENZA_RETE)
         }
         tono={
           scelta.errore || scelta.daCorreggere

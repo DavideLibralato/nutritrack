@@ -1,8 +1,9 @@
 "use client";
 
-// "Disponibile / già in uso" mentre si scrive lo username (pagina
-// Registrati, poi "Scegli il tuo username" in Amici e il cambio da
-// Profilo; PUNTO_DI_PARTENZA.md §3, mockup docs/mockups/amici.html).
+// "Disponibile / già in uso" mentre si scrive lo username ("Scegli il tuo
+// nome su Libra" in Amici e nell'onboarding, e il cambio da Profilo;
+// PUNTO_DI_PARTENZA.md §3, mockup docs/mockups/amici.html). Fino al branch
+// username-dopo-accesso anche nella pagina Registrati.
 //
 // Due regole, tutte e due con un test permanente:
 // - si chiede al server solo quando l'utente smette di scrivere per
@@ -13,8 +14,8 @@
 //   regola il "Disponibile" di un nome vecchio coprirebbe il "già in uso"
 //   di quello nuovo.
 //
-// Senza rete l'esito è "errore": non è né libero né preso, e la Server
-// Action ricontrolla comunque all'invio.
+// Senza rete l'esito è "errore": non è né libero né preso, e al
+// salvataggio decide comunque imposta_username, che sa dire "occupato".
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";

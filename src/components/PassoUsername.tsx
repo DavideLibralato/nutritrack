@@ -18,7 +18,6 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { CLASSE_DOMANDA, CLASSE_NOTA, CLASSE_SOTTO } from "@/lib/onboarding/classiOnboarding";
 import type { SceltaUsernameInCorso } from "@/lib/amici/useSceltaUsername";
 import {
-  TESTO_NOME_IN_USO,
   TESTO_NOME_SENZA_RETE_ONBOARDING,
   TESTO_USERNAME_REGOLE,
   testoStatoUsername,
@@ -37,7 +36,7 @@ export default function PassoUsername({
   const esito =
     scelta.errore ??
     (scelta.online
-      ? testoStatoUsername(scelta.stato, "quando vai avanti", TESTO_NOME_IN_USO)
+      ? testoStatoUsername(scelta.stato, "quando vai avanti")
       : TESTO_NOME_SENZA_RETE_ONBOARDING);
 
   return (

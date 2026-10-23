@@ -1940,15 +1940,19 @@ del 15/10.
       "Vai", "Invia"): non danno fastidio e aiutano. La "×" nativa la
       toglie `globals.css`, come nelle ricerche di Aggiungi e del
       catalogo. Costo: VoiceOver annuncia "campo di ricerca".
-  - **Restano con "username"**: la riga **Username** in Profilo, la
-    pagina Registrati e i messaggi d'esito dopo un'azione ("Questo
-    username è già in uso.", "Nessun utente con questo username…"). Non
-    stanno vicino a un campo vuoto quando lo si tocca. Eccezione dal
-    23/10 (branch `username-dopo-accesso`): in "Scegli il tuo nome su
-    Libra", in Amici e nel passo dell'onboarding, il nome preso è
-    "Questo nome è già in uso." (`TESTO_NOME_IN_USO`), perché lì compare
-    sotto il campo mentre si scrive. Il foglio di Profilo resta con
-    "username": da decidere.
+  - **Il nome preso è "Questo nome è già in uso." ovunque**
+    (`TESTO_NOME_IN_USO`, un solo testo dal 23/10, branch
+    `username-dopo-accesso`): nella card di Amici, nel passo
+    dell'onboarding e nel foglio di Profilo, mentre si scrive e al
+    salvataggio. Compare sotto un campo che sta da solo, quindi segue la
+    regola sopra. Fino al 23/10 era "Questo username è già in uso.".
+  - **Restano con "username"**: la riga **Username** in Profilo e
+    "Nessun utente con questo username…" dopo "Invia richiesta" in
+    Aggiungi un amico. Non stanno vicino a un campo vuoto quando lo si
+    tocca. Anche "Per cambiare lo username serve la connessione."
+    (`TESTO_USERNAME_SENZA_RETE`, offline sotto il campo della card di
+    Amici e del foglio di Profilo) contiene ancora la parola: da
+    decidere.
   - Nessun test sul comportamento: l'unica prova possibile è su iPhone.
 - **Lo username dopo l'accesso** (deciso da Davide il 18/10 e il 23/10;
   branch `username-dopo-accesso`, **in costruzione**). Fino al merge
@@ -2595,7 +2599,8 @@ sono in Obiettivi, la pesata in Peso.
   legati al tuo account, non al nome. Il vecchio nome torna libero."
   **Annulla / Salva**: il Salva chiama `imposta_username` e si spegne
   offline ("Per cambiare lo username serve la connessione."); "occupato"
-  → "Questo username è già in uso.", nessuna risposta → "Non sono
+  → "Questo nome è già in uso." (fino al 23/10 "Questo username è già in
+  uso."), nessuna risposta → "Non sono
   riuscito a salvarlo. Controlla la connessione e riprova." Riuscito, il
   foglio si chiude e la riga mostra il nome nuovo. Fuori dal Salva unico e
   dal guardiano: il foglio salva da sé. L'email resta nell'intestazione,

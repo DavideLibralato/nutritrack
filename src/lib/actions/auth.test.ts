@@ -11,6 +11,12 @@
 // non finisce, prove su iPhone del 17/10). redirect è finto proprio per
 // controllare che non venga mai chiamato.
 //
+// Dal branch username-dopo-accesso la registrazione non tocca più lo
+// username: niente chiave `username` nei metadati (il contratto con i
+// trigger, migration registrazione_username_facoltativo) e nessuna
+// chiamata a username_disponibile o imposta_username. Le due funzioni sono
+// finte proprio per controllare che non vengano mai chiamate.
+//
 // Finti: il client Supabase del server, le due funzioni dello username e
 // redirect di Next.js. Nessuna registrazione vera.
 
@@ -38,14 +44,13 @@ vi.mock("@/lib/amici/nomiUtente", () => ({
 const STATO_INIZIALE: StatoRegistrazione = {
   errore: null,
   messaggio: null,
-  valori: { nome: "", username: "", email: "" },
+  valori: { nome: "", email: "" },
 };
 
 function modulo(campi: Partial<Record<string, string>> = {}): FormData {
   const dati = new FormData();
   const tutti = {
     nome: "Giulia",
-    nomeUtente: "Giulia_92",
     email: "giulia@esempio.it",
     password: "segreta123",
     codiceInvito: CODICE,
@@ -57,15 +62,13 @@ function modulo(campi: Partial<Record<string, string>> = {}): FormData {
 
 const CON_SESSIONE = { data: { user: { id: "u1" }, session: { access_token: "t" } }, error: null };
 const SENZA_SESSIONE = { data: { user: { id: "u1" }, session: null }, error: null };
+const VALORI = { nome: "Giulia", email: "giulia@esempio.it" };
 
 beforeEach(() => {
   vi.stubEnv("CODICE_INVITO", CODICE);
   finti.signUp.mockReset();
   finti.signUp.mockResolvedValue(CON_SESSIONE);
-  // mockReset e non mockClear: svuota anche le risposte "Once" rimaste da
-  // un test, che altrimenti passerebbero al test dopo.
-  finti.controllaDisponibilita.mockReset();
-  finti.controllaDisponibilita.mockResolvedValue("disponibile");
+  finti.controllaDisponibilita.mockClear();
   finti.impostaUsername.mockClear();
   finti.redirect.mockReset();
 });
@@ -74,8 +77,13 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+function nessunaChiamataUsername() {
+  expect(finti.controllaDisponibilita).not.toHaveBeenCalled();
+  expect(finti.impostaUsername).not.toHaveBeenCalled();
+}
+
 describe("registrati", () => {
-  it("signUp riceve il segno dell'onboarding insieme agli altri metadati, e nient'altro", async () => {
+  it("signUp riceve nome, codice e segno dell'onboarding, senza username, e nient'altro", async () => {
     await registrati(STATO_INIZIALE, modulo());
 
     expect(finti.signUp).toHaveBeenCalledTimes(1);
@@ -85,7 +93,6 @@ describe("registrati", () => {
       options: {
         data: {
           nome: "Giulia",
-          username: "giulia_92",
           codice_invito: CODICE,
           onboarding: "da_fare",
         },
@@ -93,23 +100,20 @@ describe("registrati", () => {
     });
   });
 
-  it("con la sessione: dopo impostaUsername risponde «registrato», senza redirect di Next", async () => {
-    const stato = await registrati(STATO_INIZIALE, modulo());
+  it("uno username mandato da una pagina vecchia non arriva nei metadati", async () => {
+    await registrati(STATO_INIZIALE, modulo({ nomeUtente: "giulia_92" }));
 
-    expect(finti.impostaUsername).toHaveBeenCalledTimes(1);
-    expect(stato).toEqual({
-      errore: null,
-      messaggio: null,
-      valori: { nome: "Giulia", username: "giulia_92", email: "giulia@esempio.it" },
-      registrato: true,
-    });
-    expect(finti.redirect).not.toHaveBeenCalled();
+    const opzioni = finti.signUp.mock.calls[0][0].options.data;
+    expect(opzioni).not.toHaveProperty("username");
+    nessunaChiamataUsername();
   });
 
-  it("con la sessione, se impostaUsername non risponde «ok», si entra lo stesso", async () => {
-    finti.impostaUsername.mockResolvedValueOnce("errore");
+  it("con la sessione: risponde «registrato», senza redirect di Next e senza toccare lo username", async () => {
     const stato = await registrati(STATO_INIZIALE, modulo());
-    expect(stato.registrato).toBe(true);
+
+    expect(stato).toEqual({ errore: null, messaggio: null, valori: VALORI, registrato: true });
+    expect(finti.redirect).not.toHaveBeenCalled();
+    nessunaChiamataUsername();
   });
 
   it("senza sessione (conferma email accesa): niente «registrato», lo stesso messaggio di prima", async () => {
@@ -120,10 +124,10 @@ describe("registrati", () => {
     expect(stato).toEqual({
       errore: null,
       messaggio: "Account creato: controlla la tua email per confermarlo prima di accedere.",
-      valori: { nome: "Giulia", username: "giulia_92", email: "giulia@esempio.it" },
+      valori: VALORI,
     });
     expect(finti.redirect).not.toHaveBeenCalled();
-    expect(finti.impostaUsername).not.toHaveBeenCalled();
+    nessunaChiamataUsername();
   });
 
   it("con un errore di signUp: il messaggio tradotto di prima, niente «registrato»", async () => {
@@ -138,79 +142,28 @@ describe("registrati", () => {
     expect(stato.messaggio).toBeNull();
     expect(stato.registrato).toBeUndefined();
     expect(finti.redirect).not.toHaveBeenCalled();
-    expect(finti.impostaUsername).not.toHaveBeenCalled();
+    nessunaChiamataUsername();
   });
 
-  // Lo username preso fra il controllo e signUp: il trigger rifiuta la
-  // registrazione e GoTrue manda solo l'errore generico del database
-  // (verificato sulla funzione `crea_nome_utente_registrazione` e sulla
-  // migration trigger_registrazione.sql, 18/10).
-  const ERRORE_DATABASE = {
-    data: { user: null, session: null },
-    error: { message: "Database error saving new user", code: "unexpected_failure", status: 500 },
-  };
-
-  it("username preso fra il controllo e signUp: il testo dello username, con il nome preso", async () => {
-    finti.controllaDisponibilita.mockResolvedValueOnce("disponibile").mockResolvedValueOnce("in_uso");
-    finti.signUp.mockResolvedValue(ERRORE_DATABASE);
-
-    const stato = await registrati(STATO_INIZIALE, modulo());
-
-    expect(finti.controllaDisponibilita).toHaveBeenCalledTimes(2);
-    expect(stato).toEqual({
-      errore: "Questo username è già in uso.",
-      messaggio: null,
-      valori: { nome: "Giulia", username: "giulia_92", email: "giulia@esempio.it" },
-      usernamePreso: "giulia_92",
-    });
-    expect(finti.impostaUsername).not.toHaveBeenCalled();
-  });
-
-  // Anche il codice di invito rifiutato dal trigger (cambiato nel Vault ma
-  // non in CODICE_INVITO) arriva come errore generico: lo username è
-  // libero, e non va detto che è preso.
-  it("errore generico del database con lo username libero: il messaggio generico", async () => {
-    finti.controllaDisponibilita.mockResolvedValueOnce("disponibile").mockResolvedValueOnce("disponibile");
-    finti.signUp.mockResolvedValue(ERRORE_DATABASE);
-
-    const stato = await registrati(STATO_INIZIALE, modulo());
-
-    expect(finti.controllaDisponibilita).toHaveBeenCalledTimes(2);
-    expect(stato.errore).toBe("Si è verificato un errore. Riprova tra poco.");
-    expect(stato.usernamePreso).toBeUndefined();
-  });
-
-  it("errore generico del database senza risposta al secondo controllo: il messaggio generico", async () => {
-    finti.controllaDisponibilita.mockResolvedValueOnce("disponibile").mockResolvedValueOnce("errore");
-    finti.signUp.mockResolvedValue(ERRORE_DATABASE);
-
-    const stato = await registrati(STATO_INIZIALE, modulo());
-
-    expect(stato.errore).toBe("Si è verificato un errore. Riprova tra poco.");
-    expect(stato.usernamePreso).toBeUndefined();
-  });
-
-  it("un altro errore di signUp: nessun secondo controllo dello username", async () => {
+  // Il trigger che rifiuta la registrazione (oggi solo per il codice di
+  // invito cambiato nel Vault ma non in CODICE_INVITO): GoTrue manda
+  // l'errore generico del database. Fino al branch username-dopo-accesso
+  // qui si richiedeva se lo username era preso; ora non c'è più niente da
+  // richiedere.
+  it("errore del database: il messaggio generico, nessuna chiamata a username_disponibile", async () => {
     finti.signUp.mockResolvedValue({
       data: { user: null, session: null },
-      error: { message: "User already registered", code: "user_already_exists", status: 422 },
+      error: { message: "Database error saving new user", code: "unexpected_failure", status: 500 },
     });
 
     const stato = await registrati(STATO_INIZIALE, modulo());
 
-    expect(finti.controllaDisponibilita).toHaveBeenCalledTimes(1);
-    expect(stato.errore).toBe("Esiste già un account con questa email.");
-    expect(stato.usernamePreso).toBeUndefined();
-  });
-
-  it("username già preso al primo controllo: niente signUp, con il nome preso", async () => {
-    finti.controllaDisponibilita.mockResolvedValueOnce("in_uso");
-
-    const stato = await registrati(STATO_INIZIALE, modulo());
-
-    expect(finti.signUp).not.toHaveBeenCalled();
-    expect(stato.errore).toBe("Questo username è già in uso.");
-    expect(stato.usernamePreso).toBe("giulia_92");
+    expect(stato).toEqual({
+      errore: "Si è verificato un errore. Riprova tra poco.",
+      messaggio: null,
+      valori: VALORI,
+    });
+    nessunaChiamataUsername();
   });
 
   it("codice di invito sbagliato: niente signUp, come prima", async () => {

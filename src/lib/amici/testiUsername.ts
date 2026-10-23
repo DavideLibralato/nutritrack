@@ -1,16 +1,14 @@
-// I testi dello username, dal mockup approvato (docs/mockups/amici.html).
-// Gli stessi nella pagina, mentre si scrive, e nella Server Action, all'invio:
-// stanno qui e non in src/lib/actions/auth.ts perché un file "use server"
-// può esportare solo funzioni async.
+// I testi dello username, dal mockup approvato (docs/mockups/amici.html):
+// in "Scegli il tuo nome su Libra" (Amici e onboarding), nel foglio di
+// Profilo e in Aggiungi un amico.
 
 import type { StatoFoglioUsername } from "./foglioUsername";
 
 export const TESTO_USERNAME_NON_VALIDO =
   "Da 3 a 20 caratteri: inizia con una lettera, poi lettere, numeri e _.";
-export const TESTO_USERNAME_IN_USO = "Questo username è già in uso.";
-// Lo stesso, senza "username", dove il campo sta da solo: "Scegli il tuo
-// nome su Libra" in Amici e nel passo dell'onboarding (deciso il 23/10;
-// la regola di iPhone in PUNTO §3, "Lo username").
+// Senza "username": compare sotto un campo che sta da solo, e iPhone con
+// quella parola lo prenderebbe per un campo di accesso (PUNTO §3, "Lo
+// username"). Fino al 23/10 era "Questo username è già in uso.".
 export const TESTO_NOME_IN_USO = "Questo nome è già in uso.";
 export const TESTO_USERNAME_REGOLE =
   "Da 3 a 20 caratteri: lettere, numeri e _. Serve agli amici per trovarti.";
@@ -30,14 +28,9 @@ export const TESTO_NOME_SENZA_RETE_ONBOARDING =
 // La riga sotto il campo, per ogni stato. "vuoto": niente. "errore": la
 // risposta non è arrivata, si ricontrolla all'invio. "attuale": solo nel
 // foglio di Profilo, il nome che hai già. `quando`: il momento del
-// ricontrollo, "quando crei l'account" in Registrati, "quando salvi" nel
-// foglio. `inUso`: il testo del nome preso (TESTO_NOME_IN_USO dove il
-// campo sta da solo).
-export function testoStatoUsername(
-  stato: StatoFoglioUsername,
-  quando = "quando crei l'account",
-  inUso = TESTO_USERNAME_IN_USO
-): string {
+// ricontrollo, "quando continui" in Amici, "quando vai avanti"
+// nell'onboarding, "quando salvi" nel foglio di Profilo.
+export function testoStatoUsername(stato: StatoFoglioUsername, quando: string): string {
   switch (stato) {
     case "vuoto":
       return "";
@@ -46,7 +39,7 @@ export function testoStatoUsername(
     case "disponibile":
       return "Disponibile";
     case "in_uso":
-      return inUso;
+      return TESTO_NOME_IN_USO;
     case "non_valido":
       return TESTO_USERNAME_NON_VALIDO;
     case "errore":
