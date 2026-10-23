@@ -6312,9 +6312,9 @@ attuale sbagliata il testo era quello generico, perché il codice vero di
 produzione (`current_password_invalid`) non era quello del sorgente.
 
 **Accedi porta solo a pagine dell'app** (23/10, branch
-`redirect-accesso`; da provare su iPhone: sotto, "Prove su iPhone della
-destinazione dopo l'accesso"). Difetto già in produzione, trovato in
-revisione il 18/10: un link a `/login?redirectTo=//esempio.com`, dopo
+`redirect-accesso`; **provato su iPhone il 23/10** sull'anteprima:
+sotto, "Prove su iPhone della destinazione dopo l'accesso"). Difetto
+già in produzione, trovato in revisione il 18/10: un link a `/login?redirectTo=//esempio.com`, dopo
 l'accesso, portava fuori dall'app (§9.1). Ora la destinazione passa da
 `destinazioneDopoAccesso`; nessun altro punto dell'app naviga verso un
 indirizzo preso dall'URL.
@@ -6690,7 +6690,27 @@ dell'anteprima: fatto il 18/10 (confermato da Davide alle 23:18).
 
 ### Prove su iPhone della destinazione dopo l'accesso
 
-Da fare sull'anteprima del branch `redirect-accesso`, in Safari
+**Provate il 23/10** sull'anteprima del branch (Build `e3f615c`), in
+Safari: **prove 0-4 passate**. Fatte con l'**account vero di Davide**,
+non con quello di prova: solo accessi e uscite, nessuna scrittura. La
+prova 3 è passata alle 19:22. Il primo tentativo, con `redirectto`
+minuscolo, l'app l'aveva ignorato, quindi non valeva.
+
+Verificato da Claude sui log edge di Supabase, in sola lettura: 11
+accessi con password riusciti, tutti dall'anteprima del branch:
+- 10 da Safari su iPhone, dalle 19:08:35 alle 19:22:25. Gli ultimi due
+  (19:22:24 e 19:22:25) sono la prova 3, con un doppio tocco su
+  "Accedi";
+- 1 da Chrome sul PC alle 19:19:26: un accesso di Davide all'anteprima,
+  non una prova della lista.
+
+Nei log di Auth il "referer" mostra il Site URL (app-libra) quando
+l'anteprima non è fra le Redirect URL: la pagina vera da cui parte la
+richiesta si legge nei log edge.
+
+Le prove, come erano state scritte (in origine con l'account di prova):
+
+Sull'anteprima del branch `redirect-accesso`, in Safari
 (finestra privata), con l'**account di prova**: solo accessi e uscite,
 nessuna scrittura. Non serve la Redirect URL dell'anteprima su Supabase
 (nessun link via email). Da loggati il middleware rimanda `/login` alla
@@ -6723,8 +6743,10 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
    password"), unito a main il 18/10; Redirect URL dell'anteprima tolta
    da Supabase lo stesso giorno
 4. **`redirect-accesso`**: Accedi porta solo a pagine dell'app (sopra,
-   "Fatto"). Restano le prove su iPhone sull'anteprima (sopra, "Prove
-   su iPhone della destinazione dopo l'accesso") e il merge su main
+   "Fatto"). Provato su iPhone il 23/10 sull'anteprima (sopra, "Prove
+   su iPhone della destinazione dopo l'accesso"). Resta il merge su
+   main. La Redirect URL dell'anteprima non è mai stata aggiunta, quindi
+   non c'è niente da togliere da Supabase
 5. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)

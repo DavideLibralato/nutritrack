@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Accedi porta solo a pagine dell'app, provato su iPhone
+
+Branch `redirect-accesso`, commit 2 (solo documenti). **Provato su
+iPhone il 23/10** sull'anteprima del branch (Build `e3f615c`), in
+Safari: prove 0-4 passate. Fatte con l'account vero di Davide, non con
+quello di prova: solo accessi e uscite, nessuna scrittura. La prova 3
+(`redirectTo=/%5Cesempio.com`) è finita su Oggi, sempre sull'anteprima.
+Il primo tentativo era stato scritto con `redirectto` minuscolo, che
+l'app ignora, quindi non valeva. La prova buona è quella delle 19:22.
+
+Verificato da Claude sui log edge di Supabase, in sola lettura: 11
+accessi con password riusciti, tutti dall'anteprima del branch:
+- 10 da Safari su iPhone: 19:08:35, 19:08:45, 19:09:50, 19:10:49,
+  19:14:01, 19:14:54, 19:16:02, 19:16:21, 19:22:24 e 19:22:25 (le
+  ultime due sono la prova 3, con un doppio tocco su "Accedi");
+- 1 da Chrome sul PC alle 19:19:26: un accesso di Davide all'anteprima,
+  non una prova della lista.
+
+Corretto un errore del primo resoconto, che dava 9 accessi, tutti da
+iPhone fra le 19:08 e le 19:19. Nei log di Auth il "referer" mostra il
+Site URL (app-libra) quando l'anteprima non è fra le Redirect URL: la
+pagina vera si legge nei log edge. PUNTO §11: "Fatto", le prove segnate
+come provate, "Prossimi passi".
+
 ## 2026-10-23 — Accedi porta solo a pagine dell'app
 
 Branch `redirect-accesso`, commit 1. **Difetto già in produzione**,
