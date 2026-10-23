@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Merge di `username-dopo-accesso` su main; migration 2 pronta
+
+Fast-forward `e36856f` → `7268442`, 7 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL da togliere: le prove non sono
+passate da link via email. Restano la prova 14 (eliminazione degli
+account usa e getta A, B e C, dalla produzione) e la verifica di Cowork.
+
+Branch `revoca-username-anon`. File
+`supabase/migrations/username_disponibile_solo_autenticati.sql`, **non
+applicato**: toglie ad `anon` l'EXECUTE su `username_disponibile`
+(PUBLIC non l'ha, `authenticated` lo tiene). Si applica dopo il deploy
+di produzione Ready di `7268442` e l'"ok migration" di Davide; poi il
+blocco di prove nel SQL Editor.
+
 ## 2026-10-23 — Username dopo l'accesso provato su iPhone
 
 Branch `username-dopo-accesso`, commit 7 (solo documenti). **Provato su

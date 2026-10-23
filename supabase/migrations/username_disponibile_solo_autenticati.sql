@@ -1,0 +1,22 @@
+-- NON eseguire dal SQL Editor: si applica con apply_migration; le prove sono nel file prove_username_disponibile_solo_autenticati.sql
+--
+-- Migration `username_disponibile_solo_autenticati` (branch
+-- `revoca-username-anon`; PUNTO_DI_PARTENZA.md §3, Amici, "Lo username
+-- dopo l'accesso", e §9.6). Testo esatto da passare ad apply_migration con
+-- questo nome: la versione (timestamp) la assegna Supabase quando la si
+-- applica. apply_migration esegue il file in una sola transazione: niente
+-- begin/commit qui.
+--
+-- Da quando lo username si sceglie dopo l'accesso (branch
+-- username-dopo-accesso, su main dal 23/10, commit 7268442), nessuna
+-- pagina senza sessione chiama più username_disponibile: chi non ha fatto
+-- l'accesso non può più chiedere se un nome è preso. Si applica solo dopo
+-- il deploy di produzione Ready di quel commit: prima, la Registrati di
+-- produzione la chiamava ancora da anon, mentre si scriveva e all'invio.
+--
+-- PUBLIC non ha EXECUTE (verificato il 23/10: proacl
+-- {postgres=X/postgres,anon=X/postgres,authenticated=X/postgres}): basta
+-- togliere anon. authenticated resta: la usano la card di Amici, il passo
+-- dell'onboarding e il foglio di Profilo.
+
+revoke execute on function public.username_disponibile(text) from anon;
