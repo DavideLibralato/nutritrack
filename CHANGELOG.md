@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Username dopo l'accesso: decisioni e migration 1
+
+Branch `username-dopo-accesso`, commit 1 (documenti e file della
+migration, nessun codice). Decisioni di Davide del 18/10 e del 23/10 in
+PUNTO §3, Amici, "Lo username dopo l'accesso": Registrati senza
+username, un passo nuovo nell'onboarding dopo il Benvenuto
+(obbligatorio, ma si salta senza rete), suggerimento dai metadati tolto,
+`username_disponibile` solo per chi ha fatto l'accesso, e l'ordine dei
+rilasci con due migration. Le voci di oggi su Registrati, §4, §9.1 e
+§9.6 dicono fino a quando valgono.
+
+File `supabase/migrations/registrazione_username_facoltativo.sql`,
+**non applicato**: username facoltativo nei due trigger di
+registrazione, codice di invito sempre obbligatorio. Definizioni e
+permessi letti da Claude su Supabase in sola lettura il 23/10:
+`username_disponibile` è eseguibile da `anon` e `authenticated`, non da
+PUBLIC; 6 account, nessuno con il segno `onboarding`, nessuno con lo
+username nei metadati senza la riga in `nomi_utente`. Si applica dopo
+il blocco di prove annullato nel SQL Editor e l'"ok migration".
+
+## 2026-10-23 — Merge di `redirect-accesso` su main
+
+Fast-forward `d09b576` → `e36856f`, 2 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL da togliere: quella
+dell'anteprima non era mai stata aggiunta. Test su main: 1304 in 115
+file, tutti verdi.
+
 ## 2026-10-23 — Accedi porta solo a pagine dell'app, provato su iPhone
 
 Branch `redirect-accesso`, commit 2 (solo documenti). **Provato su

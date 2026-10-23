@@ -1118,6 +1118,12 @@ da uno stato React che può essere indietro (stessa regola di
 
 ### Onboarding (dal 17/10, branch `onboarding`)
 
+**In arrivo** (branch `username-dopo-accesso`, deciso il 18/10 e il
+23/10): un passo "Scegli il tuo nome su Libra" subito dopo il Benvenuto,
+per chi non ha ancora uno username. Regole in sezione 3, Amici, "Lo
+username dopo l'accesso". Quello che segue descrive l'onboarding di
+oggi, a cinque passi.
+
 **Stato al 17/10: provato su iPhone e unito a main il 17/10.** Le prime
 prove sull'anteprima del branch, in Safari su iPhone più Chrome sul PC
 come secondo dispositivo; le ultime in produzione, dall'app installata.
@@ -1936,7 +1942,67 @@ del 15/10.
     username è già in uso.", "Nessun utente con questo username…"). Non
     stanno vicino a un campo vuoto quando lo si tocca.
   - Nessun test sul comportamento: l'unica prova possibile è su iPhone.
-- **Si sceglie alla registrazione**: campo "Username" nella pagina
+- **Lo username dopo l'accesso** (deciso da Davide il 18/10 e il 23/10;
+  branch `username-dopo-accesso`, **in costruzione**). Fino al merge
+  valgono le quattro voci qui sotto ("Si sceglie alla registrazione",
+  "Com'è fatta la pagina Registrati", "All'invio", "Chi è già
+  registrato"); dal merge, questa:
+  - **Registrati** chiede solo nome, email, password e codice di invito.
+    Spariscono il campo Username, il controllo mentre si scrive e il
+    caso "username appena preso" (il secondo controllo dopo "Database
+    error saving new user", di `login-ritocchi`); `signUp` non manda più
+    `username` nei metadati e la Server Action non chiama più
+    `imposta_username`. Resta il messaggio generico per l'errore del
+    database: ora lo provoca solo il codice di Vercel diverso da quello
+    del Vault (9.1).
+  - **Onboarding**: un passo nuovo subito dopo il Benvenuto, "Scegli il
+    tuo nome su Libra", con lo stesso aspetto degli altri
+    (`StrutturaPasso`) e la logica di SceltaUsername e
+    `useDisponibilitaUsername`. Testi approvati il 23/10: frase "Gli
+    amici ti trovano solo con il nome esatto. Potrai cambiarlo da
+    Profilo.", esito come in Amici ("lo controllo quando vai avanti"),
+    sotto le regole, pulsante "Avanti". Niente "Dopo" nella barra (il
+    passo è obbligatorio), Indietro torna al Benvenuto.
+  - **Quando compare**: lo decide il tocco su "Iniziamo", con la lettura
+    di `nomi_utente` (`leggiMioUsername`) fatta all'apertura della
+    pagina. Solo con la risposta "nessuno username" e la connessione;
+    con lo username già scelto non compare mai. Se la risposta non è
+    ancora arrivata, è un errore o si è offline, si salta: lo username
+    lo chiede Amici alla prima apertura, come oggi per chi non ce l'ha
+    (offline non si può sapere se il nome è libero). Chi riprende
+    l'onboarding da "Su di te" in poi non lo vede. Il passo non entra
+    nella logica dei passi di Dexie (`passiMancanti`, la scheda di
+    Oggi): i passi da 1 a 5 restano numerati così, e la barra conta 6
+    puntini solo quando il passo c'è.
+  - **Se il salvataggio non riesce**: nome preso nel frattempo → "Questo
+    username è già in uso." e si resta sul passo; rete caduta, o
+    `imposta_username` senza risposta → il messaggio e il link "Lo
+    scelgo dopo", che porta a "Su di te". Offline sul passo: "Senza
+    connessione non posso controllare se il nome è libero: te lo
+    chiederò in Amici." con lo stesso link. Si salta solo quando non si
+    può verificare.
+  - **Profilo**: la riga "Username" resta com'è.
+  - **Il suggerimento dai metadati si toglie** (`useUsernameDaiMetadati`
+    e il campo già scritto in "Scegli il tuo nome su Libra"): il 23/10
+    nessun account aveva lo username nei metadati senza la riga in
+    `nomi_utente`, e gli account nuovi non lo avranno.
+  - **`username_disponibile` solo per chi ha fatto l'accesso**: tolta ad
+    `anon` (sezione 4 e 9.6), perché nessuna pagina senza sessione la
+    chiama più.
+  - **Ordine dei rilasci** (anteprima e produzione usano lo stesso
+    database): (1) migration `registrazione_username_facoltativo`, che
+    rende lo username facoltativo nei trigger di registrazione (9.1),
+    **prima** delle prove sull'anteprima: il client di oggi, che lo
+    manda, si comporta come adesso; quello nuovo, che non lo manda, crea
+    l'account senza riga in `nomi_utente`; (2) prove sull'anteprima,
+    merge, deploy di produzione Ready; (3) migration che toglie
+    `username_disponibile` ad `anon`, **solo dopo** il deploy: prima, la
+    Registrati di produzione la chiama ancora senza sessione, mentre si
+    scrive e all'invio. Ogni migration si applica solo con l'"ok
+    migration" di Davide, a prove passate (la prima con il blocco
+    annullato "RESOCONTO" nel SQL Editor).
+- **Si sceglie alla registrazione** (fino al merge di
+  `username-dopo-accesso`): campo "Username" nella pagina
   Registrati, sotto Nome. **Prima dell'invio** la Server Action chiede
   `username_disponibile` ("Questo username è già in uso"). **Lo
   garantisce il database**: il trigger su `auth.users` (sezione 9.1)
@@ -1956,7 +2022,8 @@ del 15/10.
   il merge di `amici` (9.1, "ordine dei rilasci"): fino ad allora lo
   username di chi si registra lo salva la Server Action con
   `imposta_username` (sotto, "All'invio").
-- **Com'è fatta la pagina Registrati** (dal 15/10, passo 3; mockup
+- **Com'è fatta la pagina Registrati** (dal 15/10, passo 3, fino al merge
+  di `username-dopo-accesso`; mockup
   `docs/mockups/amici.html`, schermata 1). Campo "Username" sotto Nome,
   con la "@" davanti (fuori dal valore); il campo scrive già in
   minuscolo. Sotto, una riga di esito che cambia **mentre si scrive**
@@ -1970,7 +2037,8 @@ del 15/10.
   precedente si scarta (test permanente). Sotto ancora le regole: "Da 3 a
   20 caratteri: lettere, numeri e _. Serve agli amici per trovarti."
   "Crea account" si spegne solo con formato sbagliato o nome preso.
-- **All'invio** la Server Action rifà tutto: formato, codice di invito,
+- **All'invio** (fino al merge di `username-dopo-accesso`) la Server
+  Action rifà tutto: formato, codice di invito,
   poi `username_disponibile` (se la risposta non arriva si va avanti:
   il nome lo protegge l'indice unico). `signUp` porta nei metadati
   `nome`, `username`, `codice_invito` e, dal 17/10, `onboarding:
@@ -1993,7 +2061,8 @@ del 15/10.
   in `validazione.ts` (`FORMATO_USERNAME`, `normalizzaUsername`,
   `usernameValido`, con test), chiamate in `src/lib/amici/nomiUtente.ts`,
   testi in `testiUsername.ts`.
-- **Chi è già registrato** lo sceglie alla prima apertura di Amici: al
+- **Chi è già registrato** (il suggerimento dai metadati, fino al merge
+  di `username-dopo-accesso`) lo sceglie alla prima apertura di Amici: al
   posto della pagina c'è "Scegli il tuo nome su Libra" (fino al 16/10
   "Scegli il tuo username"). **Se nei metadati
   dell'account c'è già uno `username`** (scritto da Registrati), il campo
@@ -3497,7 +3566,9 @@ destinatario, `user_id` = chi manda (decisa il 16/10; file
 **Le funzioni** (tutte `security definer`, `search_path = ''`, controlli
 espliciti dentro, `revoke` da `public`; `grant` solo ad `authenticated`,
 salvo dove è detto): `username_disponibile(text)` (anche ad `anon`, per la
-pagina Registrati: risponde solo sì o no sul nome esatto),
+pagina Registrati: risponde solo sì o no sul nome esatto; tolta ad `anon`
+dopo il deploy di `username-dopo-accesso`, sezione 3, "Lo username dopo
+l'accesso"),
 `imposta_username(text)`, `chiedi_amicizia(text)`,
 `rispondi_amicizia(uuid, bool)`, `annulla_o_rimuovi_amicizia(uuid)`,
 `chiudi_rifiuto(uuid)` (l'Ok su "Non accettata"),
@@ -4233,7 +4304,11 @@ Conseguenze:
   sessione". Dal 16/10 lo username lo crea il trigger anche senza
   sessione (con un nome già preso `signUp` fallisce), quindi non resta
   più solo nei metadati; restano da provare il messaggio "controlla la
-  tua email" e l'onboarding al primo accesso (voce qui sotto)
+  tua email" e l'onboarding al primo accesso (voce qui sotto). Dal
+  merge di `username-dopo-accesso` lo username non passa più dalla
+  registrazione: lo chiede il passo dell'onboarding al primo accesso,
+  da utente autenticato, quindi funziona anche con la conferma accesa
+  (sezione 3, "Lo username dopo l'accesso")
 - **il segno dell'onboarding sta nei metadati dell'account** (campo
   `onboarding: "da_fare"`, scritto da `registrati` in `signUp` dal 17/10,
   branch `onboarding`; sezione 3, "Onboarding"). Il trigger di
@@ -4314,6 +4389,18 @@ definer` e `search_path = ''`):
     ogni accesso e aggiornamento di GoTrue): nessun raise, metadati null
     o non oggetto lasciati come sono. Nella stessa migration la pulizia
     dell'account che aveva ancora la chiave.
+- **Username facoltativo** (branch `username-dopo-accesso`, migration
+  `registrazione_username_facoltativo`, **non ancora applicata**: file
+  in `supabase/migrations/`). I due trigger di registrazione lasciano
+  nascere l'account anche senza username: assente, null o vuoto →
+  nessuna riga in `nomi_utente`, e la chiave `username` si toglie dai
+  metadati insieme a `codice_invito`. Con lo username presente tutto
+  come sopra (formato, normalizzazione, riga, nome preso = rifiuto). Il
+  codice di invito resta obbligatorio e si controlla prima di tutto.
+  `create or replace`: proprietario, permessi e trigger non cambiano.
+  Si applica prima delle prove sull'anteprima (sezione 3, "Lo username
+  dopo l'accesso", ordine dei rilasci), dopo il blocco di prove
+  annullato `prove_registrazione_username_facoltativo.sql`
 - **Perché il terzo trigger** (difetto trovato il 16/10 con la prima
   registrazione vera; causa verificata da Cowork sui dati). Il BEFORE
   INSERT toglie `codice_invito`, ma circa 100 ms dopo GoTrue fa un
@@ -5182,7 +5269,9 @@ costruzione e non per attenzione.
   - lo **username** è leggibile solo da chi ha con te una riga di
     `amicizie` che può vedere (sezione 4); chiunque, anche senza
     account, può sapere solo se un nome **esatto** è già preso (`username_disponibile`, per la
-    pagina Registrati), lo stesso che la richiesta di amicizia dice a chi
+    pagina Registrati; dopo il deploy di `username-dopo-accesso` solo chi
+    ha fatto l'accesso, sezione 3, "Lo username dopo l'accesso"), lo
+    stesso che la richiesta di amicizia dice a chi
     è entrato. Nessuna funzione restituisce un elenco, un id o un nome
     che non hai scritto tu;
   - un **alimento mandato** porta a un amico una copia dei soli dati di
@@ -5201,7 +5290,9 @@ costruzione e non per attenzione.
   agisce solo per chi la chiama, con i controlli scritti dentro, e
   restituisce un esito, mai dati di altri. `username_disponibile` è
   chiamabile senza account perché la pagina Registrati non ha ancora una
-  sessione, e risponde solo sì o no sul nome esatto. Su Supabase non c'è
+  sessione, e risponde solo sì o no sul nome esatto. Con la migration
+  che la toglie ad `anon`, dopo il deploy di `username-dopo-accesso`,
+  il suo avviso `anon_security_definer_function_executable` deve sparire. Su Supabase non c'è
   un limite di frequenza per funzione: se un giorno servisse, una
   tabellina dei tentativi. Con la beta a inviti non serve
 - I dati sul dispositivo (IndexedDB) vanno **cancellati al logout**: su un
@@ -6319,9 +6410,8 @@ l'accesso, portava fuori dall'app (§9.1). Ora la destinazione passa da
 `destinazioneDopoAccesso`; nessun altro punto dell'app naviga verso un
 indirizzo preso dall'URL.
 
-**Test.** 1290 test permanenti in 113 file (Vitest), tutti verdi al 18/10
-su main (dal merge di `cambia-password`); 1304 in 115 file sul branch
-`redirect-accesso`.
+**Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
+su main (dal merge di `redirect-accesso`).
 
 ### Non ancora costruito
 
@@ -6742,19 +6832,25 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
    sull'anteprima (sopra, "Fatto" e "Prove su iPhone di Cambia
    password"), unito a main il 18/10; Redirect URL dell'anteprima tolta
    da Supabase lo stesso giorno
-4. **`redirect-accesso`**: Accedi porta solo a pagine dell'app (sopra,
-   "Fatto"). Provato su iPhone il 23/10 sull'anteprima (sopra, "Prove
-   su iPhone della destinazione dopo l'accesso"). Resta il merge su
-   main. La Redirect URL dell'anteprima non è mai stata aggiunta, quindi
-   non c'è niente da togliere da Supabase
-5. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
+4. ~~**`redirect-accesso`**~~ fatto: Accedi porta solo a pagine
+   dell'app (sopra, "Fatto"). Provato su iPhone il 23/10 sull'anteprima
+   (sopra, "Prove su iPhone della destinazione dopo l'accesso"), unito a
+   main il 23/10. La Redirect URL dell'anteprima non è mai stata
+   aggiunta, quindi non c'era niente da togliere da Supabase
+5. **`username-dopo-accesso`** (in corso dal 23/10): lo username non si
+   chiede più in Registrati ma in un passo dell'onboarding (sezione 3,
+   Amici, "Lo username dopo l'accesso"). Due migration: la prima
+   (username facoltativo nei trigger) prima delle prove sull'anteprima,
+   la seconda (`username_disponibile` tolta ad `anon`) solo dopo il
+   deploy di produzione
+6. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)
-6. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
+7. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
    fatto e provato su iPhone il 10/10, prima della settimana (sopra,
    "Fatto")
-7. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
+8. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
    https://app-libra.vercel.app, con Site URL e Redirect URL su Supabase
    aggiornati (sopra, "Fatto")
-8. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
+9. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
    della bilancia (sezione 7, "Nome e icona"; sopra, "Fatto")
