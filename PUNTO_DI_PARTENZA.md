@@ -2033,7 +2033,26 @@ del 15/10.
     `nomi_utente`, e gli account nuovi non lo avranno.
   - **`username_disponibile` solo per chi ha fatto l'accesso**: tolta ad
     `anon` (sezione 4 e 9.6), perché nessuna pagina senza sessione la
-    chiama più.
+    chiama più. **Fatto il 23/10**: migration
+    `username_disponibile_solo_autenticati`, versione
+    **20261023195630**, applicata da Cowork dopo il deploy di produzione
+    di `7268442` e l'"ok migration" di Davide. Permessi ora
+    `{postgres=X/postgres,authenticated=X/postgres}`; blocco di prove
+    dopo l'applicazione **7 su 7 ok** (prima dell'applicazione 4 su 7,
+    fallite le prove 1, 4 e 6: anon con EXECUTE, permessi diversi, anon
+    che la chiama); l'avviso `anon_security_definer_function_executable`
+    di `get_advisors` è sparito.
+  - **Attenzione se la si ricrea**: con `create or replace` i permessi
+    restano quelli di adesso. Con `drop` + `create` la funzione nuova
+    riparte dai permessi di default: in Postgres EXECUTE a PUBLIC (cioè
+    anche ad `anon`), e su Supabase, per le funzioni create da
+    `supabase_admin`, anche EXECUTE esplicito ad `anon` e
+    `authenticated` (`pg_default_acl`, letto il 23/10; per quelle create
+    da `postgres`, come le nostre migration, il default dello schema
+    aggiunge solo `postgres`). In ogni caso `anon` torna a poterla
+    chiamare. Nello stesso file vanno rifatti `revoke all … from
+    public, anon, authenticated` e `grant execute … to authenticated`,
+    come in `nomi_utente.sql`.
   - **Ordine dei rilasci** (anteprima e produzione usano lo stesso
     database): (1) migration `registrazione_username_facoltativo`, che
     rende lo username facoltativo nei trigger di registrazione (9.1),
@@ -3611,10 +3630,10 @@ destinatario, `user_id` = chi manda (decisa il 16/10; file
 
 **Le funzioni** (tutte `security definer`, `search_path = ''`, controlli
 espliciti dentro, `revoke` da `public`; `grant` solo ad `authenticated`,
-salvo dove è detto): `username_disponibile(text)` (anche ad `anon`, per la
-pagina Registrati: risponde solo sì o no sul nome esatto; tolta ad `anon`
-dopo il deploy di `username-dopo-accesso`, sezione 3, "Lo username dopo
-l'accesso"),
+salvo dove è detto): `username_disponibile(text)` (dal 15/10 anche ad
+`anon`, per la pagina Registrati: risponde solo sì o no sul nome esatto;
+**tolta ad `anon` il 23/10**, migration 20261023195630, sezione 3, "Lo
+username dopo l'accesso"),
 `imposta_username(text)`, `chiedi_amicizia(text)`,
 `rispondi_amicizia(uuid, bool)`, `annulla_o_rimuovi_amicizia(uuid)`,
 `chiudi_rifiuto(uuid)` (l'Ok su "Non accettata"),
@@ -5316,12 +5335,12 @@ costruzione e non per attenzione.
 - **Eccezioni di Amici** (decise il 15/10, sezione 3 e sezione 4, "Le
   tabelle di Amici"), le uniche righe che riguardano due utenti:
   - lo **username** è leggibile solo da chi ha con te una riga di
-    `amicizie` che può vedere (sezione 4); chiunque, anche senza
-    account, può sapere solo se un nome **esatto** è già preso (`username_disponibile`, per la
-    pagina Registrati; dopo il deploy di `username-dopo-accesso` solo chi
-    ha fatto l'accesso, sezione 3, "Lo username dopo l'accesso"), lo
-    stesso che la richiesta di amicizia dice a chi
-    è entrato. Nessuna funzione restituisce un elenco, un id o un nome
+    `amicizie` che può vedere (sezione 4); chi ha fatto l'accesso può
+    sapere solo se un nome **esatto** è già preso
+    (`username_disponibile`; fino al 23/10 anche chi non aveva un
+    account, per la pagina Registrati: sezione 3, "Lo username dopo
+    l'accesso"), lo stesso che la richiesta di amicizia dice a chi è
+    entrato. Nessuna funzione restituisce un elenco, un id o un nome
     che non hai scritto tu;
   - un **alimento mandato** porta a un amico una copia dei soli dati di
     prodotto (gli stessi del catalogo), con lo username di chi lo manda;
@@ -5337,11 +5356,10 @@ costruzione e non per attenzione.
   `username_disponibile`. Sono voluti: le funzioni leggono righe di altri
   utenti che la RLS nasconde (per questo `security definer`), ma ciascuna
   agisce solo per chi la chiama, con i controlli scritti dentro, e
-  restituisce un esito, mai dati di altri. `username_disponibile` è
-  chiamabile senza account perché la pagina Registrati non ha ancora una
-  sessione, e risponde solo sì o no sul nome esatto. Con la migration
-  che la toglie ad `anon`, dopo il deploy di `username-dopo-accesso`,
-  il suo avviso `anon_security_definer_function_executable` deve sparire. Su Supabase non c'è
+  restituisce un esito, mai dati di altri. `username_disponibile` era
+  chiamabile senza account per la pagina Registrati, che non ha ancora
+  una sessione. Dal 23/10 non più (migration 20261023195630), e il suo
+  avviso `anon_security_definer_function_executable` è sparito. Su Supabase non c'è
   un limite di frequenza per funzione: se un giorno servisse, una
   tabellina dei tentativi. Con la beta a inviti non serve
 - I dati sul dispositivo (IndexedDB) vanno **cancellati al logout**: su un
@@ -6467,8 +6485,10 @@ degli account usa e getta, dopo il merge). Registrati senza username; passo
 "Questo nome è già in uso." e "Per cambiare il nome serve la
 connessione." ovunque; suggerimento dai metadati tolto. Migration
 `registrazione_username_facoltativo` applicata il 23/10 (§9.1); la
-seconda, `username_disponibile` tolta ad `anon`, dopo il deploy di
-produzione (§3, "Lo username dopo l'accesso").
+seconda, `username_disponibile_solo_autenticati` (versione
+20261023195630), applicata il 23/10 dopo il deploy di produzione (§3,
+"Lo username dopo l'accesso"). Su main dal 23/10 (fast-forward fino a
+`7268442`).
 
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
@@ -7027,11 +7047,11 @@ branch.
    Amici, "Lo username dopo l'accesso"). Due migration: la prima
    (username facoltativo nei trigger) prima delle prove sull'anteprima,
    applicata il 23/10 (9.1); la seconda (`username_disponibile` tolta
-   ad `anon`) solo dopo il deploy di produzione. Prove su iPhone e
-   controllo di Cowork passati (sopra, "Prove su iPhone dello username
-   dopo l'accesso"). Restano: il merge, il deploy di produzione, la
-   migration 2 con l'"ok migration" di Davide, e l'eliminazione degli
-   account usa e getta A, B e C (prova 14) con la verifica di Cowork
+   ad `anon`) applicata il 23/10 dopo il deploy di produzione, versione
+   20261023195630. Prove su iPhone e controllo di Cowork passati
+   (sopra, "Prove su iPhone dello username dopo l'accesso"), unito a
+   main il 23/10. Resta l'eliminazione degli account usa e getta A, B e
+   C (prova 14) con la verifica di Cowork
 6. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)

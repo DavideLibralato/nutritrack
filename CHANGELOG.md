@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — `username_disponibile` solo per chi ha fatto l'accesso
+
+Branch `revoca-username-anon`, commit 2 (solo documenti). Migration
+`username_disponibile_solo_autenticati` **applicata da Cowork**,
+versione **20261023195630**, dopo il deploy di produzione di `7268442`
+e l'"ok migration" di Davide. Permessi ora
+`{postgres=X/postgres,authenticated=X/postgres}`, verificati anche da
+Claude in sola lettura (anon senza EXECUTE). Blocco di prove nel SQL
+Editor: 7 su 7 ok dopo l'applicazione; prima 4 su 7, con le prove 1, 4
+e 6 fallite come atteso. L'avviso `anon_security_definer_function_executable`
+di `get_advisors` è sparito.
+
+PUNTO §3, §4, §9.6 e §11 aggiornati, più una nota: ricreando la
+funzione con `drop` + `create` i permessi ripartono dai default (EXECUTE
+a PUBLIC, quindi anche ad anon), mentre `create or replace` li mantiene.
+Controllando `pg_default_acl` (23/10) il quadro è un po' diverso da come
+lo si pensava: l'EXECUTE esplicito ad anon e authenticated vale per le
+funzioni create da `supabase_admin`; per quelle create da `postgres`
+resta il PUBLIC di Postgres. In pratica è lo stesso: anon torna a poterla
+chiamare.
+
 ## 2026-10-23 — Merge di `username-dopo-accesso` su main; migration 2 pronta
 
 Fast-forward `e36856f` → `7268442`, 7 commit. Branch cancellato in
