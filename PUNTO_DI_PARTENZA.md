@@ -4206,6 +4206,16 @@ Conseguenze:
   in Registrati. L'email di Accedi si ripulisce dagli spazi come negli
   altri moduli; il campo `type="email"` li toglie già da solo, e le
   maiuscole le porta in minuscolo Supabase Auth
+- **Accedi porta solo a pagine dell'app** (dal 23/10, branch
+  `redirect-accesso`). Dopo l'accesso si va al `redirectTo`
+  dell'indirizzo (lo mette il middleware quando si apre una pagina
+  protetta senza sessione), ma solo se, risolto rispetto all'origine
+  dell'app, resta sulla stessa origine
+  (`src/lib/destinazioneDopoAccesso.ts`). Altrimenti la home. Non basta
+  che inizi con "/": `//esempio.com` e `/\esempio.com` il browser li
+  legge come un altro sito, e `router.push` di Next ci va con una
+  navigazione completa. Vale per ogni destinazione presa dall'URL: si
+  controlla l'origine, non il primo carattere
 - in fase beta la **registrazione è chiusa**: chi si iscrive deve inserire un
   codice di invito, oppure la sua email deve essere in una allowlist. È un
   controllo di una riga, che si toglie senza toccare nient'altro il giorno in
@@ -5609,7 +5619,7 @@ reset.
 
 ## 11. Stato attuale
 
-Aggiornato al 18 ottobre 2026. È la fotografia di oggi; la storia, commit
+Aggiornato al 23 ottobre 2026. È la fotografia di oggi; la storia, commit
 per commit, sta in `CHANGELOG.md`.
 
 **Account di prova.** Esiste un account di prova fisso,
@@ -6292,7 +6302,8 @@ provato il "già in uso" mentre si scrive (prova 8), come regressione.
 
 **Cambia password** (18/10, branch `cambia-password`; **provato su
 iPhone il 18/10** sull'anteprima: sotto, "Prove su iPhone di Cambia
-password"). La riga
+password"; unito a main il 18/10, Redirect URL dell'anteprima tolta da
+Supabase lo stesso giorno). La riga
 "Password" in Profilo e la sottopagina con password attuale e nuova
 (§9.1, "Cambia password"; §3, "Profilo"). `RigaImpostazioni` passa ora
 dal guardiano delle modifiche non salvate (`LinkProtetto`). Difetto
@@ -6300,9 +6311,17 @@ trovato su iPhone nella prova 5 e corretto nel commit 6: con la password
 attuale sbagliata il testo era quello generico, perché il codice vero di
 produzione (`current_password_invalid`) non era quello del sorgente.
 
-**Test.** 1249 test permanenti in 110 file (Vitest), tutti verdi al 18/10
-su main (dal merge di `login-ritocchi`); 1290 in 113 file sul branch
-`cambia-password`.
+**Accedi porta solo a pagine dell'app** (23/10, branch
+`redirect-accesso`; da provare su iPhone: sotto, "Prove su iPhone della
+destinazione dopo l'accesso"). Difetto già in produzione, trovato in
+revisione il 18/10: un link a `/login?redirectTo=//esempio.com`, dopo
+l'accesso, portava fuori dall'app (§9.1). Ora la destinazione passa da
+`destinazioneDopoAccesso`; nessun altro punto dell'app naviga verso un
+indirizzo preso dall'URL.
+
+**Test.** 1290 test permanenti in 113 file (Vitest), tutti verdi al 18/10
+su main (dal merge di `cambia-password`); 1304 in 115 file sul branch
+`redirect-accesso`.
 
 ### Non ancora costruito
 
@@ -6667,7 +6686,28 @@ Le prove, come erano state scritte:
     modifica parte, senza perdere niente.
 
 Dopo il merge su main va tolta da Supabase la Redirect URL
-dell'anteprima.
+dell'anteprima: fatto il 18/10 (confermato da Davide alle 23:18).
+
+### Prove su iPhone della destinazione dopo l'accesso
+
+Da fare sull'anteprima del branch `redirect-accesso`, in Safari
+(finestra privata), con l'**account di prova**: solo accessi e uscite,
+nessuna scrittura. Non serve la Redirect URL dell'anteprima su Supabase
+(nessun link via email). Da loggati il middleware rimanda `/login` alla
+home, quindi fra una prova e l'altra si esce (Profilo → Esci).
+`<anteprima>` è l'indirizzo dell'anteprima del branch.
+
+0. Prima: in Informazioni si legge la Build dell'anteprima.
+1. **Caso normale**: da non loggati apri `<anteprima>/impostazioni` →
+   si va ad Accedi, e nell'indirizzo c'è
+   `redirectTo=%2Fimpostazioni`. Accedi → si arriva su Impostazioni.
+2. **Altro sito con due barre**: apri
+   `<anteprima>/login?redirectTo=//esempio.com` e accedi → si arriva su
+   Oggi, e l'indirizzo resta quello dell'anteprima.
+3. **Barra rovesciata**: apri
+   `<anteprima>/login?redirectTo=/%5Cesempio.com` e accedi → Oggi,
+   sempre sull'anteprima.
+4. **Senza redirectTo**: apri `<anteprima>/login` e accedi → Oggi.
 
 ### Prossimi passi
 
@@ -6678,18 +6718,21 @@ dell'anteprima.
    sull'anteprima (sopra, "Fatto", "Pagine di accesso" e "Username
    appena preso"), unito a main il 18/10; Redirect URL dell'anteprima
    tolta da Supabase lo stesso giorno
-3. **`cambia-password`**: provato su iPhone il 18/10 sull'anteprima
-   (sopra, "Fatto" e "Prove su iPhone di Cambia password"). Restano il
-   merge su main e, dopo, la Redirect URL dell'anteprima da togliere da
-   Supabase
-4. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
+3. ~~**`cambia-password`**~~ fatto: provato su iPhone il 18/10
+   sull'anteprima (sopra, "Fatto" e "Prove su iPhone di Cambia
+   password"), unito a main il 18/10; Redirect URL dell'anteprima tolta
+   da Supabase lo stesso giorno
+4. **`redirect-accesso`**: Accedi porta solo a pagine dell'app (sopra,
+   "Fatto"). Restano le prove su iPhone sull'anteprima (sopra, "Prove
+   su iPhone della destinazione dopo l'accesso") e il merge su main
+5. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)
-5. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
+6. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
    fatto e provato su iPhone il 10/10, prima della settimana (sopra,
    "Fatto")
-6. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
+7. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
    https://app-libra.vercel.app, con Site URL e Redirect URL su Supabase
    aggiornati (sopra, "Fatto")
-7. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
+8. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
    della bilancia (sezione 7, "Nome e icona"; sopra, "Fatto")

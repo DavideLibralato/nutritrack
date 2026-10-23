@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
 import { emailValida } from "@/lib/validazione";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { destinazioneDopoAccesso } from "@/lib/destinazioneDopoAccesso";
 import CampoPassword from "@/components/CampoPassword";
 import MarchioLibra from "@/components/MarchioLibra";
 import PaginaAccesso from "@/components/PaginaAccesso";
@@ -75,9 +76,9 @@ function LoginForm() {
 
     // Se il middleware ci ha mandato qui perche' l'utente ha provato ad
     // aprire una pagina protetta senza essere loggato, dopo il login lo
-    // riportiamo li' invece che sempre alla home.
-    const redirectTo = searchParams.get("redirectTo");
-    router.push(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/");
+    // riportiamo li' invece che sempre alla home. Solo pagine dell'app:
+    // un redirectTo verso un altro sito porta alla home.
+    router.push(destinazioneDopoAccesso(searchParams.get("redirectTo"), window.location.origin));
     router.refresh(); // aggiorna i Server Components con la nuova sessione
   }
 

@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Accedi porta solo a pagine dell'app
+
+Branch `redirect-accesso`, commit 1. **Difetto già in produzione**,
+trovato da Claude in una revisione il 18/10: dopo l'accesso Accedi
+andava a qualunque `redirectTo` che iniziasse con "/", quindi anche a
+`//esempio.com` e `/\esempio.com`, che il browser legge come un altro
+sito. Un link `app-libra.vercel.app/login?redirectTo=//esempio.com`,
+dopo un accesso riuscito, portava fuori dall'app. Dimostrato prima
+della correzione: nel sorgente di Next 16.3.3 `router.push` risolve
+l'indirizzo con `new URL(href, location.href)` e, se l'origine è
+diversa, fa `location.assign`; il nuovo test di Accedi
+(`login/page.test.tsx`) col codice di prima finiva su
+`http://esempio.com`. Ora la destinazione la decide
+`src/lib/destinazioneDopoAccesso.ts`: risolve `redirectTo` rispetto
+all'origine dell'app e lo accetta solo se l'origine resta la stessa,
+altrimenti la home. Il caso normale (il middleware manda a
+`/login?redirectTo=/impostazioni`, e dopo l'accesso si torna lì) non
+cambia. Test visti fallire tornando al solo `startsWith("/")` da una
+copia (4 rossi). Nessun altro punto dell'app naviga verso un indirizzo
+preso dall'URL. Nello stesso commit la voce di merge di
+`cambia-password`, qui sotto. PUNTO §9.1 la regola, §11 "Fatto", le
+prove su iPhone e "Prossimi passi".
+
+## 2026-10-18 — Merge di `cambia-password` su main
+
+Fast-forward `f9d7b26` → `d09b576`, 7 commit. Branch cancellato in
+locale e su GitHub. Tolta da Supabase la Redirect URL dell'anteprima
+del branch, confermato da Davide il 18/10 alle 23:18.
+
 ## 2026-10-18 — Cambia password provato su iPhone
 
 Branch `cambia-password`, commit 7 (solo documenti). **Provato su iPhone
