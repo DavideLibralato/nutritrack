@@ -14,7 +14,9 @@ import { repositoryObiettivi } from "@/lib/repository";
 // (l'utente di prima davanti al Benvenuto), il passo salta da solo dopo un
 // salvataggio, "Dopo" salva a metà, il peso arriva con la virgola sbagliata.
 // Finti: lo stato del segno, l'utente, il router, la rete, la chiusura
-// dell'onboarding e la pesata. Dexie è quello di fake-indexeddb.
+// dell'onboarding e la pesata. Dexie è quello di fake-indexeddb. Lo
+// username letto dal server è finto anche lui, e già scelto: il passo dello
+// username non compare, e le sue regole sono in passoUsername.test.ts.
 
 const USER_ID = "utente-test-onboarding";
 
@@ -41,6 +43,14 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(finti.query),
 }));
 vi.mock("@/lib/useOnline", () => ({ useOnline: () => finti.online }));
+vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
+vi.mock("@/lib/amici/useMioUsername", () => ({
+  useMioUsername: () => ({
+    stato: { esito: "ok", username: "giulia_92" },
+    ricarica: () => {},
+    impostato: () => {},
+  }),
+}));
 vi.mock("@/lib/onboarding/segnoOnboarding", () => ({
   concludiOnboarding: (...args: unknown[]) => finti.concludi(...(args as [])),
 }));

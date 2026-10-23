@@ -1,24 +1,29 @@
 // La barra in alto dell'onboarding, dal passo 2 (mockup
 // docs/mockups/onboarding.html, stile B): a sinistra Indietro, al centro i
-// cinque puntini, a destra "Dopo" (= "Lo faccio dopo").
+// puntini, a destra "Dopo" (= "Lo faccio dopo").
 //
-// I puntini: quelli dei passi fatti pieni d'accento, quello del passo
-// attuale d'accento e più lungo, gli altri del colore della linea. Per lo
-// screen reader sono un'immagine sola, "Passo N di 5".
+// I puntini sono `totale`: 5, oppure 6 quando c'è il passo dello username
+// (posizioneNellaBarra in src/lib/onboarding/passoUsername.ts). Quelli dei
+// passi fatti pieni d'accento, quello del passo attuale d'accento e più
+// lungo, gli altri del colore della linea. Per lo screen reader sono
+// un'immagine sola, "Passo N di 6".
+//
+// Senza `onDopo` (il passo dello username, obbligatorio) "Dopo" non c'è, ma
+// il suo posto resta vuoto: i puntini non si spostano da un passo
+// all'altro.
 //
 // L'allungamento si fa con `transform`, non animando la larghezza (che
 // farebbe ricalcolare la disposizione di tutta la barra a ogni fotogramma):
 // ogni puntino occupa sempre 8 px nella disposizione, quello attuale si
 // allarga da sinistra (scaleX) fino a 22 px, e quelli dopo di lui scorrono
 // di 14 px a destra (translateX). Il contenitore è già largo quanto la fila
-// finale (4 × 8 + 22 + 4 × 6 = 78 px), quindi niente esce dai bordi. Con
+// finale (con 5 puntini 4 × 8 + 22 + 4 × 6 = 78 px, con 6 92 px), quindi
+// niente esce dai bordi. Con
 // "riduci movimento" (prefers-reduced-motion) i puntini cambiano senza
 // animazione: `motion-safe:` applica la transizione solo senza quella
 // preferenza.
 
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-
-export const NUMERO_PASSI = 5;
 
 const LARGO = 22;
 const STRETTO = 8;
@@ -26,12 +31,14 @@ const SPAZIO = 6;
 
 export default function BarraOnboarding({
   passo,
+  totale,
   onIndietro,
   onDopo,
 }: {
   passo: number;
+  totale: number;
   onIndietro: () => void;
-  onDopo: () => void;
+  onDopo?: () => void;
 }) {
   return (
     <div className="flex min-h-11 shrink-0 items-center justify-between">
@@ -55,11 +62,11 @@ export default function BarraOnboarding({
 
       <div
         role="img"
-        aria-label={`Passo ${passo} di ${NUMERO_PASSI}`}
+        aria-label={`Passo ${passo} di ${totale}`}
         className="flex"
-        style={{ gap: SPAZIO, width: (NUMERO_PASSI - 1) * (STRETTO + SPAZIO) + LARGO }}
+        style={{ gap: SPAZIO, width: (totale - 1) * (STRETTO + SPAZIO) + LARGO }}
       >
-        {Array.from({ length: NUMERO_PASSI }, (_, i) => {
+        {Array.from({ length: totale }, (_, i) => {
           const numero = i + 1;
           const attuale = numero === passo;
           const transform = attuale
@@ -80,13 +87,17 @@ export default function BarraOnboarding({
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={onDopo}
-        className={`min-w-[38px] rounded text-right text-sm text-muted ${CLASSE_FOCUS}`}
-      >
-        Dopo
-      </button>
+      {onDopo ? (
+        <button
+          type="button"
+          onClick={onDopo}
+          className={`min-w-[38px] rounded text-right text-sm text-muted ${CLASSE_FOCUS}`}
+        >
+          Dopo
+        </button>
+      ) : (
+        <span aria-hidden="true" className="min-w-[38px]" />
+      )}
     </div>
   );
 }

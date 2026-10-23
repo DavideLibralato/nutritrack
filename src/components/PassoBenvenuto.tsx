@@ -33,7 +33,7 @@ export default function PassoBenvenuto({ onIniziamo }: { onIniziamo: () => void 
           {nome ? `Ciao ${nome}.` : "Ciao!"}
         </h1>
         <p className={CLASSE_SOTTO}>
-          Ti do il benvenuto su Libra. Quattro domande veloci e ti propongo quante calorie, grassi,
+          Ti do il benvenuto su Libra. Qualche domanda veloce e ti propongo quante calorie, grassi,
           carboidrati e proteine puntare ogni giorno.
         </p>
       </div>

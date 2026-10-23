@@ -1119,10 +1119,11 @@ da uno stato React che può essere indietro (stessa regola di
 ### Onboarding (dal 17/10, branch `onboarding`)
 
 **In arrivo** (branch `username-dopo-accesso`, deciso il 18/10 e il
-23/10): un passo "Scegli il tuo nome su Libra" subito dopo il Benvenuto,
-per chi non ha ancora uno username. Regole in sezione 3, Amici, "Lo
-username dopo l'accesso". Quello che segue descrive l'onboarding di
-oggi, a cinque passi.
+23/10; costruito sul branch, non ancora provato su iPhone): un passo
+"Scegli il tuo nome su Libra" subito dopo il Benvenuto, per chi non ha
+ancora uno username. Regole in sezione 3, Amici, "Lo username dopo
+l'accesso". Quello che segue descrive l'onboarding di main, a cinque
+passi.
 
 **Stato al 17/10: provato su iPhone e unito a main il 17/10.** Le prime
 prove sull'anteprima del branch, in Safari su iPhone più Chrome sul PC
@@ -1254,8 +1255,10 @@ Benvenuto, e i valori scritti restano, anche quelli dei passi già
 salvati: stanno nella pagina, non nei componenti dei passi.
 
 1. **Benvenuto**: l'icona, "Ciao <nome>." e "Ti do il benvenuto su
-   Libra. Quattro domande veloci e ti propongo quante calorie, grassi,
-   carboidrati e proteine puntare ogni giorno." Pulsante "Iniziamo".
+   Libra. Qualche domanda veloce e ti propongo quante calorie, grassi,
+   carboidrati e proteine puntare ogni giorno." (fino al 23/10 "Quattro
+   domande veloci": con il passo dello username possono essere cinque,
+   branch `username-dopo-accesso`). Pulsante "Iniziamo".
    Qui niente "Dopo" e niente Indietro. Il nome viene dai metadati
    (`useNomeUtente`), c'è già quando la pagina si carica dopo "Crea
    account".
@@ -1940,7 +1943,12 @@ del 15/10.
   - **Restano con "username"**: la riga **Username** in Profilo, la
     pagina Registrati e i messaggi d'esito dopo un'azione ("Questo
     username è già in uso.", "Nessun utente con questo username…"). Non
-    stanno vicino a un campo vuoto quando lo si tocca.
+    stanno vicino a un campo vuoto quando lo si tocca. Eccezione dal
+    23/10 (branch `username-dopo-accesso`): in "Scegli il tuo nome su
+    Libra", in Amici e nel passo dell'onboarding, il nome preso è
+    "Questo nome è già in uso." (`TESTO_NOME_IN_USO`), perché lì compare
+    sotto il campo mentre si scrive. Il foglio di Profilo resta con
+    "username": da decidere.
   - Nessun test sul comportamento: l'unica prova possibile è su iPhone.
 - **Lo username dopo l'accesso** (deciso da Davide il 18/10 e il 23/10;
   branch `username-dopo-accesso`, **in costruzione**). Fino al merge
@@ -1973,9 +1981,23 @@ del 15/10.
     l'onboarding da "Su di te" in poi non lo vede. Il passo non entra
     nella logica dei passi di Dexie (`passiMancanti`, la scheda di
     Oggi): i passi da 1 a 5 restano numerati così, e la barra conta 6
-    puntini solo quando il passo c'è.
+    puntini solo quando il passo c'è. Una volta comparso, il passo resta
+    nel giro della pagina: rifacendo "Iniziamo" dal Benvenuto non
+    sparisce, e Indietro da "Su di te" ci torna, con il nome salvato e
+    "È già il tuo nome." sotto il campo; "Avanti" senza cambiarlo non
+    richiama il server. Regole in `src/lib/onboarding/passoUsername.ts`
+    (`mostraPassoUsername`, `passoPrecedente`, `posizioneNellaBarra`),
+    con test permanente.
+  - **Com'è fatto** (commit 3 del branch): `PassoUsername` dentro
+    `StrutturaPasso`; il campo è `CampoUsername` di Amici nella variante
+    "onboarding", con le misure dei riquadri degli altri passi (alto 54
+    px, testo a 17 px); la logica è `useSceltaUsername`, tenuto acceso
+    dalla pagina anche quando il passo non si vede. Sulla barra, senza
+    "Dopo" il suo posto resta vuoto, così i puntini non si spostano.
+    Il nome preso è "Questo nome è già in uso.", come nella card di
+    Amici (deciso il 23/10, sopra).
   - **Se il salvataggio non riesce**: nome preso nel frattempo → "Questo
-    username è già in uso." e si resta sul passo; rete caduta, o
+    nome è già in uso." e si resta sul passo; rete caduta, o
     `imposta_username` senza risposta → il messaggio e il link "Lo
     scelgo dopo", che porta a "Su di te". Offline sul passo: "Senza
     connessione non posso controllare se il nome è libero: te lo
@@ -6428,6 +6450,16 @@ su main (dal merge di `redirect-accesso`).
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Da tenere d'occhio: un test di Aggiungi fallito una volta** (23/10,
+  branch `username-dopo-accesso`, commit 3). In `src/app/aggiungi/
+  page.test.tsx`, «"Non aggiungerlo": si resta su /aggiungi, niente
+  scritto, e il «+» risponde di nuovo subito» è fallito in un giro
+  completo di `vitest run` (1200 ms, subito dopo aver fermato il server
+  di sviluppo), su codice che il branch non tocca. Rilanciato da solo è
+  passato 3 volte su 3, e il giro completo dopo era tutto verde. Sembra
+  un test sensibile ai tempi con il PC carico; se ricapita, va guardato
+  il suo modo di aspettare.
 
 - **CHECK `quantita_g > 0` su `voci_diario` e `composizioni_voci`**
   (lavoro futuro, deciso da Davide il 18/10: migration a parte, solo con

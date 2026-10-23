@@ -8,6 +8,10 @@ import type { StatoFoglioUsername } from "./foglioUsername";
 export const TESTO_USERNAME_NON_VALIDO =
   "Da 3 a 20 caratteri: inizia con una lettera, poi lettere, numeri e _.";
 export const TESTO_USERNAME_IN_USO = "Questo username è già in uso.";
+// Lo stesso, senza "username", dove il campo sta da solo: "Scegli il tuo
+// nome su Libra" in Amici e nel passo dell'onboarding (deciso il 23/10;
+// la regola di iPhone in PUNTO §3, "Lo username").
+export const TESTO_NOME_IN_USO = "Questo nome è già in uso.";
 export const TESTO_USERNAME_REGOLE =
   "Da 3 a 20 caratteri: lettere, numeri e _. Serve agli amici per trovarti.";
 
@@ -17,15 +21,22 @@ export const TESTO_USERNAME_AMICI_RESTANO =
 export const TESTO_USERNAME_SENZA_RETE = "Per cambiare lo username serve la connessione.";
 export const TESTO_USERNAME_NON_SALVATO =
   "Non sono riuscito a salvarlo. Controlla la connessione e riprova.";
+// Nel passo dell'onboarding, offline (PUNTO §3, "Lo username dopo
+// l'accesso"). Senza "username", come tutti i testi vicino a un campo da
+// solo (iPhone).
+export const TESTO_NOME_SENZA_RETE_ONBOARDING =
+  "Senza connessione non posso controllare se il nome è libero: te lo chiederò in Amici.";
 
 // La riga sotto il campo, per ogni stato. "vuoto": niente. "errore": la
 // risposta non è arrivata, si ricontrolla all'invio. "attuale": solo nel
 // foglio di Profilo, il nome che hai già. `quando`: il momento del
 // ricontrollo, "quando crei l'account" in Registrati, "quando salvi" nel
-// foglio.
+// foglio. `inUso`: il testo del nome preso (TESTO_NOME_IN_USO dove il
+// campo sta da solo).
 export function testoStatoUsername(
   stato: StatoFoglioUsername,
-  quando = "quando crei l'account"
+  quando = "quando crei l'account",
+  inUso = TESTO_USERNAME_IN_USO
 ): string {
   switch (stato) {
     case "vuoto":
@@ -35,7 +46,7 @@ export function testoStatoUsername(
     case "disponibile":
       return "Disponibile";
     case "in_uso":
-      return TESTO_USERNAME_IN_USO;
+      return inUso;
     case "non_valido":
       return TESTO_USERNAME_NON_VALIDO;
     case "errore":

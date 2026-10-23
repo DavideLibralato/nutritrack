@@ -5,6 +5,38 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Passo dello username nell'onboarding
+
+Branch `username-dopo-accesso`, commit 3. Dopo il Benvenuto, per chi
+non ha ancora uno username, il passo "Scegli il tuo nome su Libra"
+(`PassoUsername` in `StrutturaPasso`, campo `CampoUsername` nella
+variante "onboarding"). Lo decide il tocco su "Iniziamo" con la lettura
+di `nomi_utente` fatta all'apertura: con lo username mai, senza una
+risposta sicura (errore, risposta non arrivata, offline) si salta.
+Niente "Dopo" sulla barra, che conta 6 puntini quando il passo c'è.
+"Lo scelgo dopo" offline o con il salvataggio senza risposta.
+`useSceltaUsername` ora ricorda il nome salvato ("È già il tuo nome."
+tornando indietro, Avanti senza chiamare il server) e l'esito del
+salvataggio fallito.
+
+Ritocchi ai testi chiesti da Davide dopo gli screenshot: il Benvenuto
+dice "Qualche domanda veloce" (prima "Quattro domande veloci"), e in
+"Scegli il tuo nome su Libra", nel passo e nella card di Amici, il nome
+preso è "Questo nome è già in uso." (`TESTO_NOME_IN_USO`). Il foglio di
+Profilo e Registrati restano con "Questo username è già in uso.":
+Profilo da decidere, Registrati sparisce con il commit 4.
+
+Da tenere d'occhio (PUNTO §11): un test di Aggiungi («"Non
+aggiungerlo"…») fallito una volta in un giro completo, poi passato 3
+volte su 3 da solo e nel giro completo successivo.
+
+Test permanente `passoUsername.test.ts` (9 test): visto fallire
+rompendo la funzione da una copia, due volte (senza il controllo dello
+username già scelto, senza il controllo della rete), poi ripristinata
+dalla copia. Screenshot a 390 px su una pagina temporanea pubblica con
+dati finti (nessun account, nessuna chiamata a Supabase), poi cancellata
+con la sua eccezione nel middleware, rimesso dalla copia.
+
 ## 2026-10-23 — Scelta dello username in un hook; suggerimento tolto
 
 Branch `username-dopo-accesso`, commit 2. La logica di "Scegli il tuo

@@ -21,6 +21,17 @@ const CLASSE_TONO: Record<TonoEsitoUsername, string> = {
   neutro: "text-muted",
 };
 
+// "normale": la card di Amici. "onboarding": le misure dei riquadri degli
+// altri passi (CLASSE_RIQUADRO_CAMPO in classiOnboarding.ts: alto 54 px,
+// angoli da 16 px, testo a 17 px).
+const CLASSI_VARIANTE = {
+  normale: { chiocciola: "left-2", campo: "rounded-lg bg-background p-2 pl-7 text-base" },
+  onboarding: {
+    chiocciola: "left-4 text-[17px]",
+    campo: "min-h-[54px] rounded-2xl bg-surface py-3 pr-4 pl-9 text-[17px]",
+  },
+};
+
 export default function CampoUsername({
   id,
   ariaLabel,
@@ -31,6 +42,7 @@ export default function CampoUsername({
   esito,
   tono,
   invalido,
+  variante = "normale",
 }: {
   id: string;
   ariaLabel: string;
@@ -41,14 +53,16 @@ export default function CampoUsername({
   esito: string;
   tono: TonoEsitoUsername;
   invalido: boolean;
+  variante?: keyof typeof CLASSI_VARIANTE;
 }) {
   const idEsito = `${id}-esito`;
+  const classi = CLASSI_VARIANTE[variante];
   return (
     <div>
       <div className="relative">
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted"
+          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted ${classi.chiocciola}`}
         >
           @
         </span>
@@ -68,7 +82,7 @@ export default function CampoUsername({
           spellCheck={false}
           aria-describedby={idEsito}
           aria-invalid={invalido}
-          className={`w-full rounded-lg border border-border bg-background p-2 pl-7 text-base ${CLASSE_FOCUS}`}
+          className={`w-full border border-border ${classi.campo} ${CLASSE_FOCUS}`}
         />
       </div>
       <p id={idEsito} role="status" className={`mt-1 min-h-5 text-sm ${CLASSE_TONO[tono]}`}>

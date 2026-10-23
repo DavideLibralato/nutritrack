@@ -11,6 +11,13 @@
 // memoria) e gli obiettivi giornalieri, salvati con il passo 4 da "Inizia a
 // usare Libra".
 //
+// Fra il Benvenuto e "Su di te", per chi non ha ancora uno username, il
+// passo "Scegli il tuo nome su Libra" (PassoUsername, salvato con Avanti
+// sul server, in nomi_utente). Lo decide il tocco su "Iniziamo", con la
+// lettura di useMioUsername partita all'apertura della pagina:
+// mostraPassoUsername in src/lib/onboarding/passoUsername.ts, con le
+// regole di Indietro e dei puntini.
+//
 // Chi entra (statoSegno, via useStatoOnboarding):
 //   - non ancora noto, o i dati non ancora scesi su questo dispositivo →
 //     "Caricamento...", oppure senza rete il testo della connessione. Si
@@ -39,6 +46,14 @@ import { useStatoOnboarding } from "@/lib/onboarding/useStatoOnboarding";
 import { concludiOnboarding } from "@/lib/onboarding/segnoOnboarding";
 import { passoDiPartenza, type PassoOnboarding, type StatoSegno } from "@/lib/onboarding/statoOnboarding";
 import {
+  mostraPassoUsername,
+  passoPrecedente,
+  posizioneNellaBarra,
+  type PassoPagina,
+} from "@/lib/onboarding/passoUsername";
+import { useMioUsername } from "@/lib/amici/useMioUsername";
+import { useSceltaUsername } from "@/lib/amici/useSceltaUsername";
+import {
   pesoDaRegistrare,
   pesoIniziale,
   propostaPasso5,
@@ -53,6 +68,7 @@ import type { TipoObiettivo } from "@/lib/db/tipi";
 import { CLASSE_DOMANDA, CLASSE_SOTTO } from "@/lib/onboarding/classiOnboarding";
 import BarraOnboarding from "@/components/BarraOnboarding";
 import PassoBenvenuto from "@/components/PassoBenvenuto";
+import PassoUsername from "@/components/PassoUsername";
 import PassoSuDiTe from "@/components/PassoSuDiTe";
 import PassoPeso from "@/components/PassoPeso";
 import PassoObiettivo from "@/components/PassoObiettivo";
@@ -118,7 +134,18 @@ function Onboarding() {
   }, [userId]);
 
   const [avvio, setAvvio] = useState<Avvio | null>(null);
-  const [passo, setPasso] = useState<PassoOnboarding>(1);
+  const [passo, setPasso] = useState<PassoPagina>(1);
+  // Il passo dello username fa parte di questo giro: deciso da "Iniziamo".
+  const [conUsername, setConUsername] = useState(false);
+  // Letto all'apertura, così al tocco su "Iniziamo" la risposta c'è già.
+  // Solo per decidere se mostrare il passo; dopo un salvataggio non serve
+  // aggiornarlo, perché il passo resta nel giro (mostraPassoUsername).
+  const mioUsername = useMioUsername();
+  // Acceso sempre, anche quando il passo non si vede: tornando indietro
+  // da "Su di te" il campo ritrova il nome scritto. Salvato il nome, si va
+  // a "Su di te" (l'errore della pagina è già vuoto: lo azzera vaiA
+  // entrando nel passo dello username).
+  const scelta = useSceltaUsername(() => setPasso(2));
   const [suDiTe, setSuDiTe] = useState<ValoriSuDiTe | null>(null);
   const [peso, setPeso] = useState("");
   // Passo 4: solo in memoria, si salva alla fine del 5. Si parte senza
@@ -174,10 +201,17 @@ function Onboarding() {
   // La proposta del passo 5, dai dati salvati adesso (profilo e pesata dei
   // passi 2 e 3, letti da Dexie con useLiveQuery) e dall'obiettivo scelto.
   const proposta = tipo ? propostaPasso5(dati.profilo, dati.misurazioni, tipo) : null;
+  const barra = posizioneNellaBarra(passo, conUsername);
 
-  function vaiA(nuovo: PassoOnboarding) {
+  function vaiA(nuovo: PassoPagina) {
     setErrore(null);
     setPasso(nuovo);
+  }
+
+  function iniziamo() {
+    const mostra = mostraPassoUsername(mioUsername.stato, online, conUsername);
+    setConUsername(mostra);
+    vaiA(mostra ? "username" : 2);
   }
 
   // "Dopo": non salva il passo in corso e non aspetta la rete. La chiave
@@ -282,17 +316,20 @@ function Onboarding() {
       style={{ top: areaVisibile.top, height: areaVisibile.height }}
       className="fixed inset-x-0 mx-auto flex w-full max-w-md flex-col overflow-hidden bg-background"
     >
-      {passo > 1 && (
+      {passo !== 1 && (
         <div className="px-[18px] pt-[calc(0.5rem+env(safe-area-inset-top))]">
           <BarraOnboarding
-            passo={passo}
-            onIndietro={() => vaiA((passo - 1) as PassoOnboarding)}
-            onDopo={dopo}
+            passo={barra.posizione}
+            totale={barra.totale}
+            onIndietro={() => vaiA(passoPrecedente(passo, conUsername))}
+            // Il passo dello username è obbligatorio: niente "Dopo".
+            onDopo={passo === "username" ? undefined : dopo}
           />
         </div>
       )}
 
-      {passo === 1 && <PassoBenvenuto onIniziamo={() => vaiA(2)} />}
+      {passo === 1 && <PassoBenvenuto onIniziamo={iniziamo} />}
+      {passo === "username" && <PassoUsername scelta={scelta} onSalta={() => vaiA(2)} />}
       {passo === 2 && (
         <PassoSuDiTe
           valori={suDiTe}

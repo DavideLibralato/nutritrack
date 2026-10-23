@@ -49,7 +49,7 @@ describe("SceltaUsername", () => {
     render(<SceltaUsername onScelto={onScelto} />);
     fireEvent.change(campo(), { target: { value: "davide_l" } });
     fireEvent.click(screen.getByRole("button", { name: "Continua" }));
-    await waitFor(() => expect(screen.getByText("Questo username è già in uso.")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Questo nome è già in uso.")).toBeTruthy());
     expect(onScelto).not.toHaveBeenCalled();
   });
 });
