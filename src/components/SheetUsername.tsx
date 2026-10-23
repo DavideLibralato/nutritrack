@@ -27,7 +27,7 @@ import {
   TESTO_USERNAME_NON_SALVATO,
   TESTO_USERNAME_NON_VALIDO,
   TESTO_USERNAME_REGOLE,
-  TESTO_USERNAME_SENZA_RETE,
+  TESTO_NOME_SENZA_RETE,
   testoStatoUsername,
 } from "@/lib/amici/testiUsername";
 
@@ -160,7 +160,7 @@ export default function SheetUsername({ attuale, onAnnulla, onSalvato }: Props) 
                   : "text-muted"
             }`}
           >
-            {errore ?? (online ? testoStatoUsername(stato, "quando salvi") : TESTO_USERNAME_SENZA_RETE)}
+            {errore ?? (online ? testoStatoUsername(stato, "quando salvi") : TESTO_NOME_SENZA_RETE)}
           </p>
 
           <p className="mt-2 text-sm text-muted">

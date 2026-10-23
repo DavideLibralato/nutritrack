@@ -1949,13 +1949,18 @@ del 15/10.
   - **Restano con "username"**: la riga **Username** in Profilo e
     "Nessun utente con questo username…" dopo "Invia richiesta" in
     Aggiungi un amico. Non stanno vicino a un campo vuoto quando lo si
-    tocca. Anche "Per cambiare lo username serve la connessione."
-    (`TESTO_USERNAME_SENZA_RETE`, offline sotto il campo della card di
-    Amici e del foglio di Profilo) contiene ancora la parola: da
-    decidere.
+    tocca.
+  - **Offline**, sotto il campo della card di Amici e del foglio di
+    Profilo: "Per cambiare il nome serve la connessione."
+    (`TESTO_NOME_SENZA_RETE`, dal 23/10; prima "Per cambiare lo username
+    serve la connessione."). Compare anche all'apertura, quindi senza la
+    parola. Nel passo dell'onboarding il testo offline è un altro (sotto,
+    "Lo username dopo l'accesso").
   - Nessun test sul comportamento: l'unica prova possibile è su iPhone.
 - **Lo username dopo l'accesso** (deciso da Davide il 18/10 e il 23/10;
-  branch `username-dopo-accesso`, **in costruzione**). Fino al merge
+  branch `username-dopo-accesso`, **costruito il 23/10, da provare su
+  iPhone**: sezione 11, "Prove su iPhone dello username dopo
+  l'accesso"). Fino al merge
   valgono le quattro voci qui sotto ("Si sceglie alla registrazione",
   "Com'è fatta la pagina Registrati", "All'invio", "Chi è già
   registrato"); dal merge, questa:
@@ -6440,8 +6445,19 @@ l'accesso, portava fuori dall'app (§9.1). Ora la destinazione passa da
 `destinazioneDopoAccesso`; nessun altro punto dell'app naviga verso un
 indirizzo preso dall'URL.
 
+**Lo username dopo l'accesso** (23/10, branch `username-dopo-accesso`,
+**costruito, non ancora provato su iPhone**: sotto, "Prove su iPhone
+dello username dopo l'accesso"). Registrati senza username; passo
+"Scegli il tuo nome su Libra" nell'onboarding dopo il Benvenuto;
+"Questo nome è già in uso." e "Per cambiare il nome serve la
+connessione." ovunque; suggerimento dai metadati tolto. Migration
+`registrazione_username_facoltativo` applicata il 23/10 (§9.1); la
+seconda, `username_disponibile` tolta ad `anon`, dopo il deploy di
+produzione (§3, "Lo username dopo l'accesso").
+
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
-su main (dal merge di `redirect-accesso`).
+su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
+`username-dopo-accesso`.
 
 ### Non ancora costruito
 
@@ -6859,6 +6875,84 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
    sempre sull'anteprima.
 4. **Senza redirectTo**: apri `<anteprima>/login` e accedi → Oggi.
 
+### Prove su iPhone dello username dopo l'accesso
+
+**Da fare** sull'anteprima del branch `username-dopo-accesso`, in
+Safari (finestra privata), **non** nell'app installata, che apre la
+produzione. La migration `registrazione_username_facoltativo` è già
+applicata (§9.1), quindi l'anteprima può registrare account senza
+username. Le registrazioni le fa Davide, con il codice di invito: due
+account usa e getta, **A** e **B**, con email nuove (vanno bene alias
+`+qualcosa`: la conferma email è spenta, il link non serve). Non serve
+la Redirect URL dell'anteprima su Supabase, perché nessuna prova passa
+da un link via email. `<anteprima>` è l'indirizzo dell'anteprima del
+branch.
+
+0. **Prima**: in Informazioni si legge la Build dell'anteprima (il
+   commit di questa lista). Su Vercel `CODICE_INVITO` deve valere anche
+   per l'ambiente Preview: senza, Registrati risponde "Codice di invito
+   non valido." anche con il codice giusto (§9.1, "Cambiare il codice
+   di invito").
+1. **Registrati senza username** (account A): `<anteprima>/register`
+   ha solo Nome, Email, Password e Codice di invito. "Crea account" →
+   il Benvenuto, "Ciao <nome>." e "Ti do il benvenuto su Libra. Qualche
+   domanda veloce e ti propongo…".
+2. **Il passo**: "Iniziamo" → "Scegli il tuo nome su Libra", campo con
+   la "@". In alto Indietro e **6 puntini** (acceso il secondo, quello
+   lungo); **niente "Dopo"**. Indietro → Benvenuto; "Iniziamo" → di
+   nuovo il passo.
+3. **Nome già preso**: scrivi `libra` (preso il 23/10) → sotto il campo
+   "Questo nome è già in uso." in arancio, "Avanti" spento. Il campo
+   scrive solo in minuscolo. Un nome sbagliato (`1abc`) → la regola dei
+   3-20 caratteri.
+4. **Nome libero**: un nome nuovo → "Disponibile" in verde, "Avanti" →
+   "Parlami un po' di te", con 6 puntini (acceso il terzo) e "Dopo" di
+   nuovo al suo posto.
+5. **Indietro con il nome salvato**: Indietro da "Su di te" → il passo
+   con il nome scritto e "È già il tuo nome."; "Avanti" acceso → "Su di
+   te".
+6. **Chi ha già lo username non vede il passo**: ricarica la pagina
+   (o chiudi e riapri la scheda) prima di salvare "Su di te" → il
+   Benvenuto (non è salvato niente in Dexie); "Iniziamo" → **direttamente
+   "Su di te", con 5 puntini**: lo username c'è già. È la prova vera
+   della regola, sull'account che l'ha appena scelto.
+7. **Il resto dell'onboarding** fino a "Inizia a usare Libra" → Oggi,
+   senza la scheda "Completa il tuo profilo".
+8. **Profilo** (sempre A): Impostazioni → Profilo, la riga "Username"
+   mostra il nome scelto. Il foglio: si apre con il nome e "È già il
+   tuo nome."; scrivi `libra` → "Questo nome è già in uso."; modalità
+   aereo → "Per cambiare il nome serve la connessione.", "Salva"
+   spento. Togli la modalità aereo, cambia il nome con uno libero,
+   Salva → la riga mostra il nome nuovo. Su iPhone, aprendo il foglio,
+   non deve comparire la proposta della password salvata.
+9. **Senza rete al momento di "Iniziamo"** (account B, registrato con
+   la rete): sul Benvenuto, modalità aereo → "Iniziamo" →
+   **direttamente "Su di te", 5 puntini**, nessun passo dello
+   username.
+10. **Senza rete sul passo** (sempre B): Indietro → Benvenuto, togli la
+    modalità aereo, "Iniziamo" → il passo dello username (6 puntini).
+    Modalità aereo → sotto il campo "Senza connessione non posso
+    controllare se il nome è libero: te lo chiederò in Amici.",
+    "Avanti" spento e il link **"Lo scelgo dopo"** → "Su di te". Lì
+    "Dopo" → Oggi.
+11. **Amici chiede il nome** (B, con la rete): Impostazioni → Amici →
+    "Scegli il tuo nome su Libra" con il campo **vuoto** (niente nome
+    già scritto). Un nome libero → "Continua" → la pagina Amici.
+12. **Un account che ha già lo username** (l'account di prova): accesso
+    → Oggi, mai l'onboarding; Amici mostra subito la pagina, senza
+    "Scegli il tuo nome". Nota: è un account di prima dell'onboarding,
+    senza segno, quindi la guardia non lo manderebbe comunque
+    all'onboarding; la regola "con lo username il passo non compare" la
+    prova il punto 6.
+13. **Controllo di Cowork su Supabase, prima di eliminare**: in
+    `auth.users` A e B hanno nei metadati `nome` e `onboarding`, senza
+    `username` né `codice_invito`; in `nomi_utente` una riga per A (il
+    nome del punto 8) e una per B (quello del punto 11), nate solo dopo
+    la scelta.
+14. **Pulizia**: A e B, Impostazioni → "Elimina il mio account". Poi
+    Cowork: A e B non ci sono più, né in `auth.users` né in
+    `nomi_utente`.
+
 ### Prossimi passi
 
 1. ~~**Onboarding** dopo la registrazione~~ fatto: provato il 17/10,
@@ -6877,12 +6971,15 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
    (sopra, "Prove su iPhone della destinazione dopo l'accesso"), unito a
    main il 23/10. La Redirect URL dell'anteprima non è mai stata
    aggiunta, quindi non c'era niente da togliere da Supabase
-5. **`username-dopo-accesso`** (in corso dal 23/10): lo username non si
+5. **`username-dopo-accesso`** (costruito il 23/10): lo username non si
    chiede più in Registrati ma in un passo dell'onboarding (sezione 3,
    Amici, "Lo username dopo l'accesso"). Due migration: la prima
    (username facoltativo nei trigger) prima delle prove sull'anteprima,
    applicata il 23/10 (9.1); la seconda (`username_disponibile` tolta
-   ad `anon`) solo dopo il deploy di produzione
+   ad `anon`) solo dopo il deploy di produzione. Restano: le prove su
+   iPhone sull'anteprima (sopra, "Prove su iPhone dello username dopo
+   l'accesso"), il controllo di Cowork su Supabase, il merge, il deploy
+   e la migration 2
 6. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)

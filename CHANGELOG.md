@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Username dopo l'accesso: documenti e prove su iPhone
+
+Branch `username-dopo-accesso`, commit 5. Il testo offline della card di
+Amici e del foglio di Profilo diventa "Per cambiare il nome serve la
+connessione." (`TESTO_NOME_SENZA_RETE` al posto di
+`TESTO_USERNAME_SENZA_RETE`): compare anche all'apertura, quindi senza
+"username". PUNTO: §3 con la regola dei testi completa e il blocco "Lo
+username dopo l'accesso" costruito; §11 con la voce in "Fatto", i test
+del branch (1306 in 116 file), i prossimi passi e la lista "Prove su
+iPhone dello username dopo l'accesso" (0-14: due account usa e getta,
+modalità aereo su "Iniziamo" e sul passo, Profilo, l'account di prova,
+il controllo di Cowork prima di eliminare e la pulizia). Verificato in
+sola lettura che `libra`, usato nella prova del nome preso, è preso.
+
 ## 2026-10-23 — Registrati senza username; un solo testo per il nome preso
 
 Branch `username-dopo-accesso`, commit 4. Registrati chiede solo nome,

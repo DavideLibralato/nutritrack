@@ -16,7 +16,10 @@ export const TESTO_USERNAME_REGOLE =
 // Nel foglio "Cambia username" di Profilo, sotto il campo (mockup).
 export const TESTO_USERNAME_AMICI_RESTANO =
   "I tuoi amici restano: sono legati al tuo account, non al nome. Il vecchio nome torna libero.";
-export const TESTO_USERNAME_SENZA_RETE = "Per cambiare lo username serve la connessione.";
+// Offline, sotto il campo della card di Amici e del foglio di Profilo:
+// compare anche all'apertura, quindi senza "username" (fino al 23/10 "Per
+// cambiare lo username serve la connessione.").
+export const TESTO_NOME_SENZA_RETE = "Per cambiare il nome serve la connessione.";
 export const TESTO_USERNAME_NON_SALVATO =
   "Non sono riuscito a salvarlo. Controlla la connessione e riprova.";
 // Nel passo dell'onboarding, offline (PUNTO §3, "Lo username dopo
