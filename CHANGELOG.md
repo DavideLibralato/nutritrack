@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Prova 14: account usa e getta eliminati, lavoro chiuso
+
+Branch `revoca-username-anon`, commit 3 (solo documenti). Davide ha
+eliminato dalla produzione, con "Elimina il mio account", i tre account
+usa e getta delle prove: A (`3ec55426`), B (`9c4df4d9`) e C
+(`49bcda74`). Verifica di Cowork su Supabase, in sola lettura: 0 righe
+in `auth.users` e 0 righe per loro in tutte le tabelle di `public` con
+colonne uuid; nessun utente creato il 23/10 rimasto. Ricontrollato da
+Claude: 0 in `auth.users` e in `nomi_utente`, 6 account in tutto, come
+prima delle prove. Il lavoro "username dopo l'accesso" è chiuso: PUNTO
+§11 con la prova 14 passata e il punto tolto dai Prossimi passi.
+
 ## 2026-10-23 — `username_disponibile` solo per chi ha fatto l'accesso
 
 Branch `revoca-username-anon`, commit 2 (solo documenti). Migration

@@ -6479,8 +6479,9 @@ indirizzo preso dall'URL.
 
 **Lo username dopo l'accesso** (23/10, branch `username-dopo-accesso`,
 **provato su iPhone il 23/10** sull'anteprima, Build `dbbe27b`: sotto,
-"Prove su iPhone dello username dopo l'accesso"; resta l'eliminazione
-degli account usa e getta, dopo il merge). Registrati senza username; passo
+"Prove su iPhone dello username dopo l'accesso", tutte passate,
+eliminazione degli account usa e getta compresa; **lavoro chiuso il
+23/10**). Registrati senza username; passo
 "Scegli il tuo nome su Libra" nell'onboarding dopo il Benvenuto;
 "Questo nome è già in uso." e "Per cambiare il nome serve la
 connessione." ovunque; suggerimento dai metadati tolto. Migration
@@ -6933,9 +6934,16 @@ con tre account usa e getta (A, B e C), più l'account di prova per la
   (`3ec55426…`) → `prova_a23b`, B (`9c4df4d9…`) → `test`, C
   (`49bcda74…`) → `test11`; tutti e tre con l'onboarding fatto e i
   metadati senza `username` né `codice_invito`;
-- **prova 14: da fare.** L'eliminazione di A, B e C la fa Davide
-  **dopo il merge**; poi Cowork verifica che non ci siano più né in
-  `auth.users` né in `nomi_utente`.
+- **prova 14: passata il 23/10**, dopo il merge. Davide ha eliminato A
+  (`3ec55426…`), B (`9c4df4d9…`) e C (`49bcda74…`) dalla produzione con
+  "Elimina il mio account". Verifica di Cowork su Supabase, in sola
+  lettura: 0 righe in `auth.users` e 0 righe per loro in tutte le
+  tabelle di `public` con colonne uuid (`nomi_utente`, `profili`,
+  `obiettivi`, `obiettivi_target`, `voci_diario`, `pasti`, `giorni`,
+  `alimenti`, `composizioni`, `composizioni_voci`, `preferiti`,
+  `misurazioni`, `amicizie`, `alimenti_condivisi`); nessun utente
+  creato il 23/10 rimasto. Ricontrollato da Claude: 0 in `auth.users` e
+  in `nomi_utente`, 6 account in tutto, come prima delle prove.
 
 Le prove, come erano state scritte (la 9 e la 10 nella versione del
 commit 6; lo stesso vale per C, aggiunto per rifarle):
@@ -7041,25 +7049,14 @@ branch.
    (sopra, "Prove su iPhone della destinazione dopo l'accesso"), unito a
    main il 23/10. La Redirect URL dell'anteprima non è mai stata
    aggiunta, quindi non c'era niente da togliere da Supabase
-5. **`username-dopo-accesso`** (costruito e provato su iPhone il 23/10,
-   Build `dbbe27b`): lo username non si
-   chiede più in Registrati ma in un passo dell'onboarding (sezione 3,
-   Amici, "Lo username dopo l'accesso"). Due migration: la prima
-   (username facoltativo nei trigger) prima delle prove sull'anteprima,
-   applicata il 23/10 (9.1); la seconda (`username_disponibile` tolta
-   ad `anon`) applicata il 23/10 dopo il deploy di produzione, versione
-   20261023195630. Prove su iPhone e controllo di Cowork passati
-   (sopra, "Prove su iPhone dello username dopo l'accesso"), unito a
-   main il 23/10. Resta l'eliminazione degli account usa e getta A, B e
-   C (prova 14) con la verifica di Cowork
-6. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
+5. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)
-7. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
+6. ~~**Dopo la settimana:** l'indicatore di sincronizzazione in app~~
    fatto e provato su iPhone il 10/10, prima della settimana (sopra,
    "Fatto")
-8. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
+7. ~~**Un indirizzo di produzione pubblico**~~ fatto l'11/10:
    https://app-libra.vercel.app, con Site URL e Redirect URL su Supabase
    aggiornati (sopra, "Fatto")
-9. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
+8. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
    della bilancia (sezione 7, "Nome e icona"; sopra, "Fatto")
