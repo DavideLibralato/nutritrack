@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Username dopo l'accesso provato su iPhone
+
+Branch `username-dopo-accesso`, commit 7 (solo documenti). **Provato su
+iPhone il 23/10** sull'anteprima del branch, in Safari, da Davide, con
+tre account usa e getta (A, B, C) e l'account di prova.
+- Prove 0-8 e 12 passate.
+- Prova 9: la prima volta, con la Build `f1780b4`, era comparso il
+  passo con il testo senza rete invece di "Su di te"; corretto nel
+  commit 6.
+- Prove 9-10 rifatte con la Build `dbbe27b` (commit 6) e l'account C,
+  passate: offline, "Iniziamo" mostra il passo con il testo senza rete
+  e "Lo scelgo dopo" → "Su di te"; con la rete il passo normale, e la
+  modalità aereo accesa dopo fa comparire il testo offline da solo.
+- Prova 11 passata: B ha scelto il nome da Amici.
+- Prova 13 passata, controllo di Cowork su Supabase: A `3ec55426` →
+  `prova_a23b`, B `9c4df4d9` → `test`, C `49bcda74` → `test11`; tutti
+  con l'onboarding fatto e i metadati senza `username` né
+  `codice_invito`.
+- **Prova 14 da fare**: l'eliminazione di A, B e C la fa Davide dopo il
+  merge, poi Cowork verifica che non ci siano più.
+
+La migration 2 (`username_disponibile` tolta ad `anon`) resta da
+scrivere e applicare dopo merge e deploy di produzione, con l'"ok
+migration" di Davide. PUNTO §3 e §11 aggiornati.
+
 ## 2026-10-23 — Il passo dello username non guarda più la rete al tocco
 
 Branch `username-dopo-accesso`, commit 6. Trovato da Davide nella prova

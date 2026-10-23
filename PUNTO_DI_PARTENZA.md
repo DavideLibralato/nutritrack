@@ -1119,7 +1119,8 @@ da uno stato React che può essere indietro (stessa regola di
 ### Onboarding (dal 17/10, branch `onboarding`)
 
 **In arrivo** (branch `username-dopo-accesso`, deciso il 18/10 e il
-23/10; costruito sul branch, non ancora provato su iPhone): un passo
+23/10; costruito sul branch e provato su iPhone il 23/10, Build
+`dbbe27b`): un passo
 "Scegli il tuo nome su Libra" subito dopo il Benvenuto, per chi non ha
 ancora uno username. Regole in sezione 3, Amici, "Lo username dopo
 l'accesso". Quello che segue descrive l'onboarding di main, a cinque
@@ -1958,9 +1959,9 @@ del 15/10.
     "Lo username dopo l'accesso").
   - Nessun test sul comportamento: l'unica prova possibile è su iPhone.
 - **Lo username dopo l'accesso** (deciso da Davide il 18/10 e il 23/10;
-  branch `username-dopo-accesso`, **costruito il 23/10, da provare su
-  iPhone**: sezione 11, "Prove su iPhone dello username dopo
-  l'accesso"). Fino al merge
+  branch `username-dopo-accesso`, **costruito e provato su iPhone il
+  23/10**, Build `dbbe27b`: sezione 11, "Prove su iPhone dello username
+  dopo l'accesso"). Fino al merge
   valgono le quattro voci qui sotto ("Si sceglie alla registrazione",
   "Com'è fatta la pagina Registrati", "All'invio", "Chi è già
   registrato"); dal merge, questa:
@@ -6459,8 +6460,9 @@ l'accesso, portava fuori dall'app (§9.1). Ora la destinazione passa da
 indirizzo preso dall'URL.
 
 **Lo username dopo l'accesso** (23/10, branch `username-dopo-accesso`,
-**costruito, non ancora provato su iPhone**: sotto, "Prove su iPhone
-dello username dopo l'accesso"). Registrati senza username; passo
+**provato su iPhone il 23/10** sull'anteprima, Build `dbbe27b`: sotto,
+"Prove su iPhone dello username dopo l'accesso"; resta l'eliminazione
+degli account usa e getta, dopo il merge). Registrati senza username; passo
 "Scegli il tuo nome su Libra" nell'onboarding dopo il Benvenuto;
 "Questo nome è già in uso." e "Per cambiare il nome serve la
 connessione." ovunque; suggerimento dai metadati tolto. Migration
@@ -6890,7 +6892,35 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
 
 ### Prove su iPhone dello username dopo l'accesso
 
-**Da fare** sull'anteprima del branch `username-dopo-accesso`, in
+**Provate il 23/10** sull'anteprima del branch, in Safari, da Davide,
+con tre account usa e getta (A, B e C), più l'account di prova per la
+12. Esito:
+- **prove 0-8 e 12: passate**, almeno in parte con la Build `f1780b4`
+  (commit 5): il commit 6 cambia solo la regola delle prove 9-10, non
+  quello che provano queste;
+- **prova 9: la prima volta diversa dall'atteso** (Build `f1780b4`,
+  account B, registrato alle 21:21): al tocco di "Iniziamo" con la
+  modalità aereo è comparso il passo con il testo senza rete invece di
+  "Su di te". Causa e scelta in sezione 3, "Quando compare" (la rete al
+  tocco non conta più), corretto nel commit 6;
+- **prove 9-10: rifatte con la Build `dbbe27b` (commit 6) e un account
+  C, passate.** Offline, al tocco di "Iniziamo" compare il passo con il
+  testo senza rete e "Lo scelgo dopo" → "Su di te"; con la rete il
+  passo normale, e con la modalità aereo accesa dopo il testo offline
+  compare da solo;
+- **prova 11: passata** (B ha scelto il nome da Amici);
+- **prova 13: passata**, controllo di Cowork su Supabase: A
+  (`3ec55426…`) → `prova_a23b`, B (`9c4df4d9…`) → `test`, C
+  (`49bcda74…`) → `test11`; tutti e tre con l'onboarding fatto e i
+  metadati senza `username` né `codice_invito`;
+- **prova 14: da fare.** L'eliminazione di A, B e C la fa Davide
+  **dopo il merge**; poi Cowork verifica che non ci siano più né in
+  `auth.users` né in `nomi_utente`.
+
+Le prove, come erano state scritte (la 9 e la 10 nella versione del
+commit 6; lo stesso vale per C, aggiunto per rifarle):
+
+Sull'anteprima del branch `username-dopo-accesso`, in
 Safari (finestra privata), **non** nell'app installata, che apre la
 produzione. La migration `registrazione_username_facoltativo` è già
 applicata (§9.1), quindi l'anteprima può registrare account senza
@@ -6969,8 +6999,8 @@ branch.
     `username` né `codice_invito`; in `nomi_utente` una riga per A (il
     nome del punto 8) e una per B (quello del punto 11), nate solo dopo
     la scelta.
-14. **Pulizia**: A e B, Impostazioni → "Elimina il mio account". Poi
-    Cowork: A e B non ci sono più, né in `auth.users` né in
+14. **Pulizia**: A e B (e C), Impostazioni → "Elimina il mio
+    account". Poi Cowork: non ci sono più, né in `auth.users` né in
     `nomi_utente`.
 
 ### Prossimi passi
@@ -6991,15 +7021,17 @@ branch.
    (sopra, "Prove su iPhone della destinazione dopo l'accesso"), unito a
    main il 23/10. La Redirect URL dell'anteprima non è mai stata
    aggiunta, quindi non c'era niente da togliere da Supabase
-5. **`username-dopo-accesso`** (costruito il 23/10): lo username non si
+5. **`username-dopo-accesso`** (costruito e provato su iPhone il 23/10,
+   Build `dbbe27b`): lo username non si
    chiede più in Registrati ma in un passo dell'onboarding (sezione 3,
    Amici, "Lo username dopo l'accesso"). Due migration: la prima
    (username facoltativo nei trigger) prima delle prove sull'anteprima,
    applicata il 23/10 (9.1); la seconda (`username_disponibile` tolta
-   ad `anon`) solo dopo il deploy di produzione. Restano: le prove su
-   iPhone sull'anteprima (sopra, "Prove su iPhone dello username dopo
-   l'accesso"), il controllo di Cowork su Supabase, il merge, il deploy
-   e la migration 2
+   ad `anon`) solo dopo il deploy di produzione. Prove su iPhone e
+   controllo di Cowork passati (sopra, "Prove su iPhone dello username
+   dopo l'accesso"). Restano: il merge, il deploy di produzione, la
+   migration 2 con l'"ok migration" di Davide, e l'eliminazione degli
+   account usa e getta A, B e C (prova 14) con la verifica di Cowork
 6. **Una settimana d'uso vero** (è il senso della fase 2, sezione 6). La
    domanda a cui deve rispondere: da quale sezione di Aggiungi si parte
    davvero (ricerca, Recenti o Preferiti)
