@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-24 — Animazione di apertura: la decisione "mostrare o no"
+
+Branch `animazione-apertura`, commit 2. Scelta la proposta P1
+"Equilibrio" fra tre provate con Remotion (fuori dal repo), con la
+regola A: mai un'attesa in più. Questo commit fa solo la decisione,
+nell'app non si vede ancora niente: `src/lib/animazioneApertura.ts`
+(script in `<head>` che scrive `data-apertura="mostra"` su `/` al primo
+caricamento o a una ricarica, con un segno in `sessionStorage` per il
+cambio scheda offline; variabile del modulo per il cambio scheda
+online) e 12 test, con verifica rompi e ripristina su tre regole.
+PUNTO §7, "Animazione di apertura".
+
 ## 2026-10-23 — Merge di `revoca-username-anon` su main
 
 Fast-forward `7268442` → `6eb7e68`, 3 commit. Branch cancellato in

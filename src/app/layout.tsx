@@ -7,6 +7,7 @@ import RipresaEliminazioneAccount from "@/components/RipresaEliminazioneAccount"
 import RipresaUscita from "@/components/RipresaUscita";
 import RipresaSegnoOnboarding from "@/components/RipresaSegnoOnboarding";
 import { COLORI_BARRA, SCRIPT_TEMA } from "@/lib/tema";
+import { SCRIPT_APERTURA } from "@/lib/animazioneApertura";
 
 // Font per titoli e numeri: piu caratteristico del generico Geist/Arial usato finora.
 const fontIntestazioni = Bricolage_Grotesque({
@@ -98,6 +99,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             browser lo esegue appena lo legge, prima di disegnare la pagina.
             La pagina nasce già col tema giusto, senza lampi. */}
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+        {/* Lo script dell'animazione di apertura
+            (src/lib/animazioneApertura.ts): stesso principio, decide
+            prima del primo disegno se la pagina Oggi la mostra. Scrive
+            data-apertura="mostra" su <html>, coperto come data-tema da
+            suppressHydrationWarning. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_APERTURA }} />
       </head>
       <body className="min-h-full flex flex-col">
         {children}

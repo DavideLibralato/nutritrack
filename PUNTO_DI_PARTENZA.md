@@ -3960,6 +3960,60 @@ Confermate dai mockup, con una correzione.
   bene così (non va ispessita), lo spazio fra il marchio in cima e il
   titolo va bene, e il marchio segue tema e colore principale
 
+### Animazione di apertura (dal 24/10, branch `animazione-apertura`)
+
+All'apertura di Oggi la bilancia compare inclinata e oscilla fino a
+fermarsi in piano, poi sfuma e lascia la pagina. Scelta fra tre
+proposte provate in anteprima con Remotion (progetto fuori dal repo,
+`C:\Users\david\Progetti\libra-apertura-remotion`, solo banco di prova:
+nell'app è CSS + SVG, nessuna libreria e nessun video). **Stato**: fatta
+la decisione "mostrare o no" (sotto); lo strato con l'animazione è il
+passo successivo.
+
+- **Regola A: mai un'attesa in più.** L'animazione dura al massimo
+  quanto il caricamento che c'è già ("Caricamento..." di Oggi): appena
+  Oggi ha i dati, sfuma in 150 ms. Se il caricamento dura più di 1,2 s,
+  la bilancia resta ferma in equilibrio; dopo **3 s** sfuma comunque,
+  come rete di sicurezza (sotto ricompare "Caricamento...").
+- **Non copre il tratto più lungo dell'apertura**: prima che arrivi
+  l'HTML (service worker "prima la rete" e `getUser()` del middleware)
+  nessun nostro codice può disegnare. Sostituisce solo l'attesa dopo.
+- **Solo al primo caricamento di Oggi** (apertura a freddo o
+  ricarica), **mai tornando su Oggi da un'altra scheda**, anche se in
+  quel momento i dati Dexie non ci sono ancora. Due livelli
+  (`src/lib/animazioneApertura.ts`):
+  - `SCRIPT_APERTURA` in `<head>` (`layout.tsx`, accanto a quello del
+    tema, stessa tecnica: testo di funzioni autonome con
+    `toString()`). Gira solo su `/`, prima del primo disegno. Mostra se
+    la pagina è una ricarica (`performance`, tipo `"reload"`) oppure se
+    in `sessionStorage` non c'è `nutritrack:apertura-mostrata`; il
+    segno si scrive in ogni caso. Se mostra, scrive
+    `data-apertura="mostra"` su `<html>` (coperto da
+    `suppressHydrationWarning` come `data-tema`). **Il CSS nasconde lo
+    strato in ogni altro caso**: se lo script non parte o
+    `sessionStorage` lancia un errore, l'animazione non c'è, mai un
+    errore. Serve per il cambio scheda offline: lì Next non riesce a
+    cambiare pagina e fa una navigazione completa con
+    `location.assign`/`replace` (verificato in
+    `next/dist/client/components/app-router.js`), di tipo `"navigate"`,
+    che trova il segno;
+  - `aperturaGiaPassata()` / `segnaAperturaPassata()`, una variabile del
+    modulo: cambiando scheda online Next non ricarica il JavaScript, la
+    variabile resta vera e lo strato non si disegna. Si legge al primo
+    disegno e si scrive solo dopo il montaggio, perché nel modo
+    sviluppo React fa due volte i primi disegni.
+  Test: `src/lib/animazioneApertura.test.ts`, che esegue anche la
+  stringa vera dello script in una pagina finta.
+- **Dove vive lo strato**: fuori dal `<Suspense>` di Oggi, mai nel suo
+  fallback. Nell'HTML del server il fallback è marcato `<!--$!-->`
+  (`BAILOUT_TO_CLIENT_SIDE_RENDERING`): all'idratazione React lo butta
+  e lo rifà, e un'animazione lì dentro ripartirebbe. Lo strato è fisso
+  a tutto schermo, fondo `--background` (niente lampo), sotto la
+  pillola della tab bar (che resta visibile e toccabile come oggi),
+  `pointer-events: none`, `aria-hidden="true"`.
+- **Riduci movimento**: bilancia ferma in piano, che sfuma quando Oggi
+  è pronta.
+
 ### Tema chiaro / scuro / sistema
 
 Previsto dall'inizio, con tre opzioni: Chiaro, Scuro, Sistema (segue le
