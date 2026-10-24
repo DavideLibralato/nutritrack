@@ -2,9 +2,9 @@
 
 // L'animazione di apertura di Oggi (PUNTO_DI_PARTENZA.md §7, "Animazione di
 // apertura"): uno strato a tutto schermo con la bilancia che si mette in
-// equilibrio, sopra la pagina, che se ne va appena Oggi ha i dati. Come si
-// muove sta tutto in globals.css (.animazione-apertura e seguenti); qui c'è
-// solo quando c'è e quando se ne va.
+// equilibrio, sopra la pagina. Come si muove sta tutto in globals.css
+// (.animazione-apertura e seguenti); qui c'è solo quando c'è e quando se ne
+// va.
 //
 // Perché fuori dal <Suspense> di Oggi e non nel suo fallback: nell'HTML del
 // server il fallback è marcato come "da rifare nel browser", e quando React
@@ -19,12 +19,11 @@
 // - tornando su Oggi da un'altra scheda (senza ricaricare) lo strato non si
 //   disegna proprio: aperturaGiaPassata() è già vera.
 //
-// Quando se ne va:
-// - Oggi pronta → dissolvenza di 150 ms (data-esce), poi lo strato si toglie
-//   dalla pagina; se la bilancia non si era ancora vista, via subito;
-// - dopo 3 s comunque (solo CSS, funziona anche senza JavaScript).
-// La regola A: non aggiunge mai attesa, e non blocca i tocchi
-// (pointer-events: none).
+// Quando se ne va (regola A, uscitaApertura): al più tardi fra "oscillazione
+// finita" (l'animazione CSS apertura-minimo, 700 ms) e "Oggi pronta" →
+// dissolvenza di 150 ms (data-esce), poi lo strato si toglie dalla pagina.
+// Dopo 3 s comunque (solo CSS, funziona anche senza JavaScript).
+// Finché è pieno blocca i tocchi (copre Oggi); durante l'uscita no.
 
 import { useEffect, useRef, useState, type AnimationEvent } from "react";
 import {
@@ -56,26 +55,58 @@ export default function AnimazioneApertura() {
   // e lo strato non esiste.
   const [presente, setPresente] = useState(() => !aperturaGiaPassata());
   const [esce, setEsce] = useState(false);
-  const bilancia = useRef<SVGSVGElement>(null);
+  const strato = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     segnaAperturaPassata();
-    return quandoOggiPronta(() => {
+    let attivo = true;
+    let minimoFinito = false;
+    let oggiPronta = false;
+
+    function decidi() {
+      if (!attivo) return;
       const mostrata =
         document.documentElement.getAttribute(ATTRIBUTO_APERTURA) === "mostra";
-      // A che punto è la comparsa della bilancia. Con "riduci movimento"
-      // non c'è nessuna animazione (null: si sfuma).
-      const comparsa = bilancia.current?.getAnimations?.()[0];
-      const tempo = typeof comparsa?.currentTime === "number" ? comparsa.currentTime : null;
-      if (uscitaApertura(mostrata, tempo) === "togli") setPresente(false);
-      else setEsce(true);
+      const esito = uscitaApertura(mostrata, minimoFinito, oggiPronta);
+      if (esito === "togli") setPresente(false);
+      else if (esito === "sfuma") setEsce(true);
+    }
+
+    // L'oscillazione intera. Non si ascolta l'evento di fine: se il
+    // JavaScript arriva dopo 700 ms (succede, all'apertura) l'evento è già
+    // passato e non tornerebbe più. Si chiede invece al browser
+    // l'animazione stessa: se c'è, si aspetta la sua fine (`finished`); se
+    // non c'è più (già finita) o lo strato è nascosto (nessuna animazione),
+    // il minimo è passato. Senza getAnimations (iOS prima del 13.1) si
+    // considera passato: si esce quando Oggi è pronta, come prima.
+    const minimo = strato.current
+      ?.getAnimations?.()
+      .find((a) => (a as CSSAnimation).animationName === "apertura-minimo");
+    if (minimo && minimo.playState !== "finished") {
+      minimo.finished.then(
+        () => {
+          minimoFinito = true;
+          decidi();
+        },
+        () => {}
+      );
+    } else {
+      minimoFinito = true;
+    }
+
+    const smetti = quandoOggiPronta(() => {
+      oggiPronta = true;
+      decidi();
     });
+    return () => {
+      attivo = false;
+      smetti();
+    };
   }, []);
 
-  // Fine di una delle due dissolvenze dello strato (non delle animazioni
-  // della bilancia, che arrivano qui risalendo dai figli).
+  // Fine dell'uscita o della rete di sicurezza: lo strato si toglie dalla
+  // pagina. Gli altri nomi (la bilancia, il minimo) non contano.
   function fineAnimazione(e: AnimationEvent<HTMLDivElement>) {
-    if (e.target !== e.currentTarget) return;
     if (e.animationName === "apertura-uscita" || e.animationName === "apertura-sicurezza") {
       setPresente(false);
     }
@@ -85,32 +116,35 @@ export default function AnimazioneApertura() {
 
   return (
     <div
+      ref={strato}
       className="animazione-apertura"
       aria-hidden="true"
       data-esce={esce ? "" : undefined}
       onAnimationEnd={fineAnimazione}
     >
-      <svg ref={bilancia} viewBox={VIEWBOX_BILANCIA} className="animazione-apertura-bilancia">
-        <g fill="currentColor" stroke="currentColor" strokeLinecap="round">
-          {/* Fermi: asta e base. */}
-          <path d={ASTA} strokeWidth={SPESSORE_ASTA} fill="none" />
-          <path d={BASE} strokeWidth={SPESSORE_BASE} fill="none" />
-          {/* I piatti salgono e scendono restando dritti. */}
-          <g className="apertura-piatto-sinistra">
-            <path d={FILI_SINISTRA} strokeWidth={SPESSORE_FILI} fill="none" />
-            <path d={PIATTO_SINISTRA} stroke="none" />
+      <div className="animazione-apertura-fondo">
+        <svg viewBox={VIEWBOX_BILANCIA} className="animazione-apertura-bilancia">
+          <g fill="currentColor" stroke="currentColor" strokeLinecap="round">
+            {/* Fermi: asta e base. */}
+            <path d={ASTA} strokeWidth={SPESSORE_ASTA} fill="none" />
+            <path d={BASE} strokeWidth={SPESSORE_BASE} fill="none" />
+            {/* I piatti salgono e scendono restando dritti. */}
+            <g className="apertura-piatto-sinistra">
+              <path d={FILI_SINISTRA} strokeWidth={SPESSORE_FILI} fill="none" />
+              <path d={PIATTO_SINISTRA} stroke="none" />
+            </g>
+            <g className="apertura-piatto-destra">
+              <path d={FILI_DESTRA} strokeWidth={SPESSORE_FILI} fill="none" />
+              <path d={PIATTO_DESTRA} stroke="none" />
+            </g>
+            {/* Il giogo ruota attorno al fulcro, sopra i fili come nell'icona. */}
+            <g className="apertura-giogo">
+              <path d={GIOGO} strokeWidth={SPESSORE_GIOGO} fill="none" />
+            </g>
+            <circle {...PERNO} stroke="none" />
           </g>
-          <g className="apertura-piatto-destra">
-            <path d={FILI_DESTRA} strokeWidth={SPESSORE_FILI} fill="none" />
-            <path d={PIATTO_DESTRA} stroke="none" />
-          </g>
-          {/* Il giogo ruota attorno al fulcro, sopra i fili come nell'icona. */}
-          <g className="apertura-giogo">
-            <path d={GIOGO} strokeWidth={SPESSORE_GIOGO} fill="none" />
-          </g>
-          <circle {...PERNO} stroke="none" />
-        </g>
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 }

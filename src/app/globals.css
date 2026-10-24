@@ -280,40 +280,70 @@ body:has([data-pulsante-aggiungi]) {
    fermarsi in piano. Si animano solo transform e opacity.
 
    Lo strato: fisso a tutto schermo, fondo della pagina (niente lampo),
-   sopra la sfumatura (z-20) e sotto la pillola (z-30), che resta visibile
-   e toccabile. Non riceve tocchi. Nascosto finché lo script in <head> non
-   scrive data-apertura="mostra": se lo script non parte, niente
-   animazione.
+   sopra la sfumatura (z-20) e "+ Aggiungi" (z-22), sotto la pillola
+   (z-30), che resta visibile e toccabile. Nascosto finché lo script in
+   <head> non scrive data-apertura="mostra": se lo script non parte,
+   niente animazione.
 
-   Rete di sicurezza (apertura-sicurezza): dopo 3 s sfuma comunque, anche
-   se il JavaScript non arriva mai. Uscita normale (data-esce, quando Oggi
-   è pronta): apertura-uscita, 150 ms. Due nomi diversi apposta: cambiando
-   nome il browser fa partire un'animazione nuova; con lo stesso nome e
-   solo il ritardo cambiato salterebbe subito alla fine. */
+   Tocchi: finché è pieno li blocca (copre Oggi, che non si vede: un tocco
+   finirebbe su qualcosa di invisibile). Durante l'uscita (data-esce) li
+   lascia passare.
+
+   Tre tempi, tutti CSS:
+   - apertura-minimo (700 ms, non cambia niente a schermo): l'oscillazione
+     intera. Il componente aspetta che finisca prima di far uscire lo
+     strato. Sta sullo strato e non sulla bilancia, così vale anche con
+     riduci movimento, dove la bilancia non si muove;
+   - apertura-sicurezza: dopo 3 s sfuma comunque, anche se il JavaScript
+     non arriva mai. Finisce con visibility: hidden, che smette anche di
+     bloccare i tocchi;
+   - apertura-uscita (data-esce, Oggi pronta e oscillazione finita):
+     150 ms, sul fondo interno e non sullo strato. Così non sostituisce le
+     due animazioni dello strato: se la rete di sicurezza ha già nascosto
+     tutto, l'uscita resta invisibile invece di far ricomparire la
+     bilancia per sfumarla di nuovo. */
 .animazione-apertura {
   display: none;
   position: fixed;
   inset: 0;
   z-index: 25;
-  background: var(--background);
-  color: var(--accento);
-  pointer-events: none;
-  animation: apertura-sicurezza 150ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
+  animation:
+    apertura-minimo 700ms linear,
+    apertura-sicurezza 150ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
 }
 html[data-apertura="mostra"] .animazione-apertura {
   display: block;
 }
 .animazione-apertura[data-esce] {
+  pointer-events: none;
+}
+.animazione-apertura-fondo {
+  position: absolute;
+  inset: 0;
+  background: var(--background);
+  color: var(--accento);
+}
+.animazione-apertura[data-esce] .animazione-apertura-fondo {
   animation: apertura-uscita 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes apertura-minimo {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes apertura-sicurezza {
   to {
     opacity: 0;
+    visibility: hidden;
   }
 }
 @keyframes apertura-uscita {
   to {
     opacity: 0;
+    visibility: hidden;
   }
 }
 
@@ -407,8 +437,9 @@ html[data-apertura="mostra"] .animazione-apertura {
   }
 }
 
-/* Riduci movimento: bilancia ferma in piano, già visibile; lo strato
-   sfuma lo stesso quando Oggi è pronta (l'opacità non è movimento). */
+/* Riduci movimento: bilancia ferma in piano, già visibile, per lo stesso
+   tempo minimo (apertura-minimo sta sullo strato e resta); poi sfuma
+   come sempre (l'opacità non è movimento). */
 @media (prefers-reduced-motion: reduce) {
   .animazione-apertura-bilancia,
   .apertura-giogo,

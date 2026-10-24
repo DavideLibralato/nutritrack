@@ -149,26 +149,28 @@ export function quandoOggiPronta(avvisa: () => void): () => void {
   };
 }
 
-// --- Come se ne va lo strato quando Oggi è pronta ----------------------
-
-// Quanto dura la comparsa della bilancia (keyframes apertura-comparsa in
-// globals.css): prima di questo istante la bilancia non si è ancora vista.
-export const COMPARSA_MS = 120;
-
-// mostrata: lo script in <head> ha scritto data-apertura="mostra".
-// tempoComparsa: a che punto è la comparsa della bilancia, in ms
-// (Animation.currentTime), o null se non lo si sa (riduci movimento, che
-// non ha la comparsa, o un browser senza getAnimations).
+// --- Quando se ne va lo strato --------------------------------------
 //
-// "togli": via subito, senza dissolvenza. Lo strato è nascosto, oppure la
-// bilancia non si è ancora vista: Oggi compare come oggi, senza una
-// dissolvenza su qualcosa che non c'era.
-// "sfuma": dissolvenza di 150 ms.
+// Regola A (dal 24/10): alle aperture l'oscillazione si vede SEMPRE intera
+// (fino al piano, 700 ms: apertura-minimo in globals.css, anche con riduci
+// movimento), poi lo strato sfuma. Se Oggi è pronta dopo, sfuma quando è
+// pronta: al più tardi fra le due. Dopo 3 s sfuma comunque (solo CSS).
+//
+// mostrata: lo script in <head> ha scritto data-apertura="mostra".
+// minimoFinito: l'animazione apertura-minimo è finita.
+// oggiPronta: OggiContenuto ha i dati.
+//
+// "togli": via subito, senza dissolvenza: lo strato è nascosto dal CSS e
+// non c'è niente da sfumare (né un'animazione da aspettare: un elemento
+// nascosto non ne fa partire nessuna).
+// "sfuma": dissolvenza di 150 ms, poi via.
+// "aspetta": manca ancora una delle due condizioni.
 export function uscitaApertura(
   mostrata: boolean,
-  tempoComparsa: number | null
-): "togli" | "sfuma" {
+  minimoFinito: boolean,
+  oggiPronta: boolean
+): "togli" | "sfuma" | "aspetta" {
   if (!mostrata) return "togli";
-  if (tempoComparsa !== null && tempoComparsa < COMPARSA_MS) return "togli";
-  return "sfuma";
+  if (minimoFinito && oggiPronta) return "sfuma";
+  return "aspetta";
 }

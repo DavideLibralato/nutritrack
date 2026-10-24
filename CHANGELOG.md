@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-24 — Animazione di apertura: oscillazione sempre intera
+
+Branch `animazione-apertura`, commit 4. Davide l'ha vista nel browser:
+troppo veloce, non si capiva. Regola A cambiata: alle aperture a freddo
+l'oscillazione si vede sempre intera (700 ms), poi dissolvenza di
+150 ms; se Oggi è pronta dopo, sfuma quando è pronta. Tolta la regola
+"via subito entro 120 ms" con il suo test. Il tempo minimo è
+un'animazione CSS sullo strato (`apertura-minimo`), quindi vale anche
+con riduci movimento; il componente ne aspetta la fine con
+`getAnimations()` / `finished`, non con l'evento, che arriverebbe prima
+del JavaScript. Lo strato ora blocca i tocchi finché è pieno e li lascia
+passare durante la dissolvenza; "+ Aggiungi" sceso a z-22, sotto lo
+strato (resta sopra solo la pillola). Uscita sul fondo interno, così la
+rete di sicurezza dei 3 s non viene sostituita. Test della regola nuova
+con rompi e ripristina su due condizioni. PUNTO §3, §7 e §11.
+
 ## 2026-10-24 — Animazione di apertura su Oggi
 
 Branch `animazione-apertura`, commit 3. Lo strato con la bilancia che si

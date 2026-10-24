@@ -87,7 +87,8 @@ I numeri stanno tutti in `globals.css`, in un posto solo:
 | `--spazio-fra-barre` | lo spazio fra pillola e bottone, e fra pillola e barra Salva |
 | `--ingombro-oggi` | pillola + spazio + bottone |
 
-Livelli: sfumatura z-20; pillola, "+ Aggiungi" e barra Salva z-30;
+Livelli: sfumatura z-20; "+ Aggiungi" z-22 (dal 24/10, prima z-30);
+animazione di apertura z-25 (§7); pillola e barra Salva z-30;
 BarraAnnulla z-40; gli sheet z-50, sopra a tutto.
 
 **Barretta home di iOS.** `--tab-bar-distanza` è
@@ -148,9 +149,9 @@ coincidevano, ha vinto il mockup.
 
 ### Oggi (schermata di apertura)
 
-Al primo caricamento, mentre Oggi carica i dati, sopra la pagina c'è
-l'animazione di apertura (la bilancia che si mette in equilibrio): vedi
-§7, "Animazione di apertura".
+All'apertura a freddo, sopra la pagina c'è l'animazione di apertura (la
+bilancia che si mette in equilibrio, almeno 0,7 s, più a lungo se Oggi
+carica ancora): vedi §7, "Animazione di apertura".
 
 Dall'alto:
 
@@ -3986,18 +3987,41 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   transform e opacity. Colori solo da variabili: fondo `--background`,
   bilancia `--accento` (segue tema e colore principale).
 
-- **Regola A: mai un'attesa in più.** L'animazione dura al massimo
-  quanto il caricamento che c'è già ("Caricamento..." di Oggi): appena
-  Oggi ha i dati (`OggiContenuto` manda `segnalaOggiPronta()`), sfuma in
-  150 ms e lo strato si toglie dalla pagina. Se la bilancia non si era
-  ancora vista (comparsa sotto i 120 ms, letta con `getAnimations()`),
-  via subito senza dissolvenza: Oggi compare come prima
-  (`uscitaApertura`). Se il caricamento dura più di 0,7 s la bilancia
-  resta ferma in equilibrio; dopo **3 s** sfuma comunque, come rete di
-  sicurezza (sotto ricompare "Caricamento..."). La rete di sicurezza è
-  solo CSS (`apertura-sicurezza`, ritardo 3 s): funziona anche se il
-  JavaScript non arriva mai. Il segnale "pronta" è un valore, non solo
-  un evento: chi si mette in ascolto dopo viene avvisato subito.
+- **Regola A: minimo l'oscillazione intera, solo alle aperture a
+  freddo** (cambiata il 24/10: prima era "al massimo quanto il
+  caricamento", ma nel browser l'animazione era troppo veloce per
+  capirla). Alle aperture (gli stessi casi di sotto: ricarica o nessun
+  segno in `sessionStorage`) l'oscillazione si vede **sempre intera**,
+  fino al piano a 700 ms, poi lo strato sfuma in 150 ms. Se Oggi è
+  pronta dopo (`OggiContenuto` manda `segnalaOggiPronta()`), sfuma
+  quando è pronta: **al più tardi fra "oscillazione finita" e "Oggi
+  pronta"** (`uscitaApertura`, test in
+  `src/lib/animazioneApertura.test.ts`). Nel frattempo la bilancia resta
+  ferma in equilibrio. Dopo **3 s** sfuma comunque, come rete di
+  sicurezza (sotto ricompare "Caricamento...").
+  - **Il costo, scelto**: a ogni apertura a freddo fino a circa 0,85 s
+    (700 + 150 ms) in cui Oggi non si vede e non si tocca, anche se i
+    dati sono già pronti. Cambiando scheda nessun costo: lì
+    l'animazione non c'è.
+  - **I tempi sono tutti CSS** e il componente li legge, non li
+    ricalcola: `apertura-minimo` (700 ms, non cambia niente a schermo)
+    sullo strato, quindi vale anche con riduci movimento;
+    `apertura-sicurezza` (ritardo 3 s), che funziona anche se il
+    JavaScript non arriva mai e finisce con `visibility: hidden`;
+    `apertura-uscita` (150 ms) sul fondo interno, così non sostituisce
+    le altre due e, se la rete di sicurezza ha già nascosto tutto,
+    resta invisibile. La fine del minimo non si ascolta come evento: se
+    il JavaScript arriva dopo 700 ms l'evento è già passato. Il
+    componente chiede l'animazione al browser (`getAnimations()`) e ne
+    aspetta la fine (`finished`); se non c'è più, il minimo è passato.
+    Senza `getAnimations` (iOS prima del 13.1) si esce quando Oggi è
+    pronta.
+  - Il segnale "pronta" è un valore, non solo un evento: chi si mette
+    in ascolto dopo viene avvisato subito.
+- **Tocchi**: finché lo strato è pieno li blocca, perché copre Oggi e
+  un tocco finirebbe su qualcosa che non si vede; durante la
+  dissolvenza (`data-esce`) li lascia passare (`pointer-events: none`).
+  La pillola resta sopra e toccabile.
 - **Non copre il tratto più lungo dell'apertura**: prima che arrivi
   l'HTML (service worker "prima la rete" e `getUser()` del middleware)
   nessun nostro codice può disegnare. Sostituisce solo l'attesa dopo.
@@ -4042,14 +4066,14 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   (`BAILOUT_TO_CLIENT_SIDE_RENDERING`): all'idratazione React lo butta
   e lo rifà, e un'animazione lì dentro ripartirebbe. Lo strato è fisso
   a tutto schermo, fondo `--background` (niente lampo), `z-index` 25:
-  sopra la sfumatura in basso (z-20), sotto la pillola della tab bar
-  (z-30, resta visibile e toccabile come oggi) e quindi anche sotto
-  "+ Aggiungi", che compare quando Oggi è pronta, mentre lo strato
-  sfuma. `pointer-events: none`, `aria-hidden="true"`. Componente
+  sopra la sfumatura in basso (z-20) e sopra "+ Aggiungi", sceso a
+  z-22 il 24/10 apposta (prima era z-30 come la pillola e compariva
+  sopra la bilancia); sotto la pillola della tab bar (z-30), che resta
+  visibile e toccabile come prima. `aria-hidden="true"`. Componente
   `src/components/AnimazioneApertura.tsx`, messo in `page.tsx` di Oggi
   prima del `<Suspense>`.
-- **Riduci movimento**: bilancia ferma in piano, che sfuma quando Oggi
-  è pronta.
+- **Riduci movimento**: bilancia ferma in piano per lo stesso tempo
+  minimo (700 ms), poi sfuma come sempre (l'opacità non è movimento).
 
 ### Tema chiaro / scuro / sistema
 
@@ -6584,13 +6608,13 @@ seconda, `username_disponibile_solo_autenticati` (versione
 
 **L'animazione di apertura** (24/10, branch `animazione-apertura`, da
 provare su iPhone). La bilancia che si mette in equilibrio sopra Oggi
-mentre carica, solo al primo caricamento, mai un'attesa in più (§7,
+alle aperture a freddo, con l'oscillazione sempre intera (§7,
 "Animazione di apertura"). CSS + SVG, scelta fra tre proposte provate
 con Remotion fuori dal repo.
 
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
-`username-dopo-accesso`; 1325 in 117 file sul branch
+`username-dopo-accesso`; 1326 in 117 file sul branch
 `animazione-apertura`.
 
 ### Non ancora costruito

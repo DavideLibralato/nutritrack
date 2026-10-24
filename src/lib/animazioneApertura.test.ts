@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ATTRIBUTO_APERTURA,
   CHIAVE_APERTURA,
-  COMPARSA_MS,
   SCRIPT_APERTURA,
   decidiApertura,
   uscitaApertura,
@@ -196,23 +195,28 @@ describe("segnale \"Oggi è pronta\"", () => {
   });
 });
 
-describe("uscitaApertura", () => {
-  it("strato nascosto dallo script: via subito", () => {
-    expect(uscitaApertura(false, 500)).toBe("togli");
-    expect(uscitaApertura(false, null)).toBe("togli");
+describe("uscitaApertura (regola A: minimo l'oscillazione intera)", () => {
+  it("Oggi pronta prima che l'oscillazione finisca: aspetta, la bilancia si vede intera", () => {
+    expect(uscitaApertura(true, false, true)).toBe("aspetta");
   });
 
-  it("bilancia non ancora comparsa (prima di 120 ms): via subito, niente dissolvenza", () => {
-    expect(uscitaApertura(true, 0)).toBe("togli");
-    expect(uscitaApertura(true, COMPARSA_MS - 1)).toBe("togli");
+  it("oscillazione finita ma Oggi non ancora pronta: aspetta Oggi", () => {
+    expect(uscitaApertura(true, true, false)).toBe("aspetta");
   });
 
-  it("bilancia già vista: dissolvenza", () => {
-    expect(uscitaApertura(true, COMPARSA_MS)).toBe("sfuma");
-    expect(uscitaApertura(true, 2000)).toBe("sfuma");
+  it("oscillazione finita e Oggi pronta: sfuma", () => {
+    expect(uscitaApertura(true, true, true)).toBe("sfuma");
   });
 
-  it("tempo sconosciuto (riduci movimento, niente getAnimations): dissolvenza", () => {
-    expect(uscitaApertura(true, null)).toBe("sfuma");
+  it("niente ancora: aspetta", () => {
+    expect(uscitaApertura(true, false, false)).toBe("aspetta");
+  });
+
+  it("strato nascosto dallo script: via subito, qualunque cosa", () => {
+    for (const minimo of [false, true]) {
+      for (const pronta of [false, true]) {
+        expect(uscitaApertura(false, minimo, pronta)).toBe("togli");
+      }
+    }
   });
 });
