@@ -280,25 +280,28 @@ body:has([data-pulsante-aggiungi]) {
    fermarsi in piano. Si animano solo transform e opacity.
 
    Lo strato: fisso a tutto schermo, fondo della pagina (niente lampo),
-   sopra la sfumatura (z-20) e "+ Aggiungi" (z-22), sotto la pillola
-   (z-30), che resta visibile e toccabile. Nascosto finché lo script in
-   <head> non scrive data-apertura="mostra": se lo script non parte,
-   niente animazione.
+   z-35: sopra tutta la barra in basso (sfumatura z-20, pillola e
+   "+ Aggiungi" z-30), che durante l'animazione non si vede e torna con
+   Oggi nella dissolvenza; sotto BarraAnnulla (z-40) e gli sheet (z-50),
+   che all'apertura non ci sono. Nascosto finché lo script in <head> non
+   scrive data-apertura="mostra": se lo script non parte, niente
+   animazione.
 
-   Tocchi: finché è pieno li blocca (copre Oggi, che non si vede: un tocco
-   finirebbe su qualcosa di invisibile). Durante l'uscita (data-esce) li
-   lascia passare.
+   Tocchi: finché è pieno li blocca (copre tutto, anche la pillola: un
+   tocco finirebbe su qualcosa di invisibile). Durante l'uscita
+   (data-esce) li lascia passare.
 
    Tre tempi, tutti CSS:
-   - apertura-minimo (700 ms, non cambia niente a schermo): l'oscillazione
+   - apertura-minimo (1050 ms, non cambia niente a schermo): l'oscillazione
      intera. Il componente aspetta che finisca prima di far uscire lo
      strato. Sta sullo strato e non sulla bilancia, così vale anche con
      riduci movimento, dove la bilancia non si muove;
    - apertura-sicurezza: dopo 3 s sfuma comunque, anche se il JavaScript
      non arriva mai. Finisce con visibility: hidden, che smette anche di
-     bloccare i tocchi;
+     bloccare i tocchi. 3 s bastano: minimo e uscita insieme fanno
+     1050 + 250 = 1300 ms;
    - apertura-uscita (data-esce, Oggi pronta e oscillazione finita):
-     150 ms, sul fondo interno e non sullo strato. Così non sostituisce le
+     250 ms, sul fondo interno e non sullo strato. Così non sostituisce le
      due animazioni dello strato: se la rete di sicurezza ha già nascosto
      tutto, l'uscita resta invisibile invece di far ricomparire la
      bilancia per sfumarla di nuovo. */
@@ -306,10 +309,10 @@ body:has([data-pulsante-aggiungi]) {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 25;
+  z-index: 35;
   animation:
-    apertura-minimo 700ms linear,
-    apertura-sicurezza 150ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
+    apertura-minimo 1050ms linear,
+    apertura-sicurezza 250ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
 }
 html[data-apertura="mostra"] .animazione-apertura {
   display: block;
@@ -324,7 +327,7 @@ html[data-apertura="mostra"] .animazione-apertura {
   color: var(--accento);
 }
 .animazione-apertura[data-esce] .animazione-apertura-fondo {
-  animation: apertura-uscita 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: apertura-uscita 250ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 @keyframes apertura-minimo {
   from {
@@ -358,7 +361,7 @@ html[data-apertura="mostra"] .animazione-apertura {
   height: 74.4px;
   margin: -37.2px 0 0 -48px;
   overflow: visible;
-  animation: apertura-comparsa 120ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: apertura-comparsa 180ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 @keyframes apertura-comparsa {
   from {
@@ -368,11 +371,15 @@ html[data-apertura="mostra"] .animazione-apertura {
 }
 
 /* Il giogo ruota attorno al fulcro (50, 34 nel disegno): -12° → +4° →
-   -1,2° → 0° a 0 / 260 / 480 / 700 ms, ogni tratto "va e rallenta". */
+   -1,2° → 0° a 0 / 390 / 720 / 1050 ms, ogni tratto "va e rallenta"
+   (rallentata il 24/10: prima 0 / 260 / 480 / 700 ms). Le percentuali
+   dei keyframes sono le stesse di prima: 390/1050 = 260/700 = 37,143%,
+   720/1050 = 480/700 = 68,571%. Cambia solo la durata, che deve restare
+   uguale ad apertura-minimo e ai piatti. */
 .apertura-giogo {
   transform-box: view-box;
   transform-origin: 50px 34px;
-  animation: apertura-giogo 700ms both;
+  animation: apertura-giogo 1050ms both;
 }
 @keyframes apertura-giogo {
   0% {
@@ -397,10 +404,10 @@ html[data-apertura="mostra"] .animazione-apertura {
    negli stessi istanti e con la stessa curva. -12° → 5,82; 4° → 1,95;
    -1,2° → 0,59. */
 .apertura-piatto-sinistra {
-  animation: apertura-piatto-sinistra 700ms both;
+  animation: apertura-piatto-sinistra 1050ms both;
 }
 .apertura-piatto-destra {
-  animation: apertura-piatto-destra 700ms both;
+  animation: apertura-piatto-destra 1050ms both;
 }
 @keyframes apertura-piatto-sinistra {
   0% {

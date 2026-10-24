@@ -1553,14 +1553,13 @@ function OggiContenuto() {
           `data-pulsante-aggiungi`: alza la sfumatura dietro le barre fino a
           coprire anche il bottone (regola :has in globals.css). Si nasconde
           mentre un campo ha il fuoco, come la pillola.
-          z-[22], non z-30 come la pillola: sopra la sfumatura (z-20) ma sotto
-          l'animazione di apertura (z-25), che non deve averlo sopra la
-          bilancia (PUNTO §7, "Animazione di apertura"). */}
+          z-30 come la pillola; l'animazione di apertura (z-35) li copre
+          tutti e due (PUNTO §7, "Animazione di apertura"). */}
       <div
         ref={rifFasciaAggiungi}
         data-pulsante-aggiungi
         data-nascondi-mentre-scrivi
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-[22] mx-auto max-w-md"
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] z-30 mx-auto max-w-md"
       >
         {/* Appena sopra il bottone, senza coprirlo. Ha il suo sfondo pieno,
             quindi resta leggibile sopra la lista che passa sotto. Qui non

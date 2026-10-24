@@ -2,8 +2,9 @@
 // sezione 7, "Animazione di apertura"). Come si vede sta nel componente
 // AnimazioneApertura e in globals.css; qui c'è solo la decisione.
 //
-// Si mostra solo al primo caricamento (apertura a freddo o ricarica) di
-// Oggi o di Accedi (PERCORSI_APERTURA), mai tornando su Oggi da un'altra
+// Si mostra solo alla prima apertura della scheda o dell'app (nessun segno
+// in sessionStorage) su Oggi o su Accedi (PERCORSI_APERTURA): non a una
+// ricarica (dal 24/10, commit 6) e mai tornando su Oggi da un'altra
 // scheda. Accedi perché chi apre l'app senza aver fatto l'accesso parte da
 // / ma il middleware lo manda su /login, e Accedi → Oggi poi è una
 // navigazione interna: senza /login al primo utilizzo l'animazione non si
@@ -15,10 +16,10 @@
 //    bilancia possa comparire. Se la mostra scrive data-apertura="mostra"
 //    su <html>; il CSS nasconde lo strato in ogni altro caso, quindi se lo
 //    script non parte o sessionStorage non funziona l'animazione
-//    semplicemente non c'è. Serve per le ricariche complete che NON sono
-//    aperture: offline il cambio scheda di Next fallisce e diventa una
-//    navigazione completa (location.assign/replace, tipo "navigate"), che
-//    trova il segno in sessionStorage e salta l'animazione.
+//    semplicemente non c'è. Il segno resta per tutta la vita della scheda:
+//    lo trovano le ricariche e le navigazioni complete che non sono
+//    aperture (offline il cambio scheda di Next fallisce e diventa una
+//    navigazione completa, location.assign/replace).
 //
 // 2. aperturaGiaPassata / segnaAperturaPassata, una variabile del modulo:
 //    cambiando scheda online Next non ricarica il JavaScript, la variabile
@@ -44,16 +45,13 @@ type MemoriaSessione = Pick<Storage, "getItem" | "setItem">;
 // REGOLA: autonoma (vedi sopra). Chiave e percorsi arrivano come
 // parametri.
 //
-// percorso: location.pathname. tipoNavigazione: il `type` della voce
-// "navigation" di performance ("navigate", "reload", "back_forward"), o
-// null se il browser non lo dice. memoria: sessionStorage, o null se il
+// percorso: location.pathname. memoria: sessionStorage, o null se il
 // solo accesso ha lanciato un errore.
 //
 // Restituisce "mostra", "salta", oppure null fuori dai percorsi (non
 // tocca niente: aprire Registrati non deve consumare l'animazione).
 export function decidiApertura(
   percorso: string,
-  tipoNavigazione: string | null,
   memoria: MemoriaSessione | null,
   chiave: string,
   percorsi: readonly string[]
@@ -63,12 +61,9 @@ export function decidiApertura(
     // memoria null: l'errore finisce nel catch, come uno storage rotto.
     const giaMostrata = memoria!.getItem(chiave) !== null;
     // Il segno si scrive prima di decidere: se la scrittura fallisce,
-    // niente animazione (senza segno non si saprebbe distinguere il
-    // prossimo cambio scheda offline da un'apertura).
+    // niente animazione (senza segno ogni ricarica sembrerebbe
+    // un'apertura).
     memoria!.setItem(chiave, "1");
-    // Una ricarica la mostra sempre, anche col segno già scritto da
-    // un'apertura precedente nella stessa scheda.
-    if (tipoNavigazione === "reload") return "mostra";
     return giaMostrata ? "salta" : "mostra";
   } catch {
     return "salta";
@@ -78,10 +73,9 @@ export function decidiApertura(
 // REGOLA: autonoma come decidiApertura. decidiApertura arriva come
 // parametro (`decidi`).
 //
-// Il lavoro sulla pagina: raccoglie percorso, tipo di navigazione e
-// sessionStorage (ogni accesso in try/catch: Safari privato o dati del
-// sito bloccati lanciano al solo accesso), decide e, se è "mostra", scrive
-// l'attributo su <html>.
+// Il lavoro sulla pagina: raccoglie percorso e sessionStorage (l'accesso
+// in try/catch: Safari privato o dati del sito bloccati lanciano al solo
+// accesso), decide e, se è "mostra", scrive l'attributo su <html>.
 export function avviaApertura(
   decidi: typeof decidiApertura,
   opzioni: { chiave: string; attributo: string; percorsi: readonly string[] }
@@ -92,16 +86,7 @@ export function avviaApertura(
   } catch {
     memoria = null;
   }
-  let tipo: string | null = null;
-  try {
-    const voce = performance.getEntriesByType("navigation")[0] as
-      | PerformanceNavigationTiming
-      | undefined;
-    tipo = voce ? voce.type : null;
-  } catch {
-    tipo = null;
-  }
-  if (decidi(location.pathname, tipo, memoria, opzioni.chiave, opzioni.percorsi) === "mostra") {
+  if (decidi(location.pathname, memoria, opzioni.chiave, opzioni.percorsi) === "mostra") {
     document.documentElement.setAttribute(opzioni.attributo, "mostra");
   }
 }
@@ -163,7 +148,7 @@ export function quandoOggiPronta(avvisa: () => void): () => void {
 // --- Quando se ne va lo strato --------------------------------------
 //
 // Regola A (dal 24/10): alle aperture l'oscillazione si vede SEMPRE intera
-// (fino al piano, 700 ms: apertura-minimo in globals.css, anche con riduci
+// (fino al piano, 1050 ms: apertura-minimo in globals.css, anche con riduci
 // movimento), poi lo strato sfuma. Se Oggi è pronta dopo, sfuma quando è
 // pronta: al più tardi fra le due. Dopo 3 s sfuma comunque (solo CSS).
 //
@@ -174,7 +159,7 @@ export function quandoOggiPronta(avvisa: () => void): () => void {
 // "togli": via subito, senza dissolvenza: lo strato è nascosto dal CSS e
 // non c'è niente da sfumare (né un'animazione da aspettare: un elemento
 // nascosto non ne fa partire nessuna).
-// "sfuma": dissolvenza di 150 ms, poi via.
+// "sfuma": dissolvenza di 250 ms, poi via.
 // "aspetta": manca ancora una delle due condizioni.
 export function uscitaApertura(
   mostrata: boolean,

@@ -10,11 +10,12 @@ import {
 } from "./animazioneApertura";
 
 // Quando mostrare l'animazione di apertura (PUNTO_DI_PARTENZA.md, sezione
-// 7, "Animazione di apertura"): solo al primo caricamento di Oggi, mai
-// tornando su Oggi da un'altra scheda, e se sessionStorage non funziona
-// semplicemente non compare (mai un errore). È una regola che non fa
-// rumore se si rompe: o l'animazione ricompare a ogni cambio scheda
-// offline, o sparisce per sempre.
+// 7, "Animazione di apertura"): solo alla prima apertura della scheda o
+// dell'app (nessun segno in sessionStorage), su Oggi o su Accedi; non a una
+// ricarica, mai tornando su Oggi da un'altra scheda, e se sessionStorage non
+// funziona semplicemente non compare (mai un errore). È una regola che non
+// fa rumore se si rompe: o l'animazione ricompare quando non deve, o
+// sparisce per sempre.
 
 // Un sessionStorage finto, che si può rompere in lettura o in scrittura.
 function memoriaFinta({
@@ -37,57 +38,43 @@ function memoriaFinta({
   };
 }
 
+function decidi(percorso: string, memoria: ReturnType<typeof memoriaFinta> | null) {
+  return decidiApertura(percorso, memoria, CHIAVE_APERTURA, PERCORSI_APERTURA);
+}
+
 describe("decidiApertura", () => {
-  it("primo caricamento di Oggi: la mostra e scrive il segno", () => {
+  it("prima apertura su Oggi: la mostra e scrive il segno", () => {
     const memoria = memoriaFinta();
-    expect(decidiApertura("/", "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
+    expect(decidi("/", memoria)).toBe("mostra");
     expect(memoria.dati.get(CHIAVE_APERTURA)).toBe("1");
   });
 
-  it("segno già presente (cambio scheda offline = navigazione completa): non la mostra", () => {
-    expect(decidiApertura("/", "navigate", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe(
-      "salta"
-    );
-    // Anche "indietro" con ricarica completa.
-    expect(
-      decidiApertura("/", "back_forward", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)
-    ).toBe("salta");
+  it("segno già presente (ricarica, cambio scheda offline, indietro): non la mostra", () => {
+    expect(decidi("/", memoriaFinta({ segno: true }))).toBe("salta");
   });
 
-  it("ricarica: la mostra anche con il segno", () => {
-    expect(decidiApertura("/", "reload", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe(
-      "mostra"
-    );
-  });
-
-  it("browser che non dice il tipo di navigazione: decide il segno", () => {
-    expect(decidiApertura("/", null, memoriaFinta(), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
-    expect(decidiApertura("/", null, memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
+  it("due caricamenti nella stessa scheda: solo il primo la mostra", () => {
+    const memoria = memoriaFinta();
+    expect(decidi("/", memoria)).toBe("mostra");
+    expect(decidi("/", memoria)).toBe("salta");
   });
 
   it("sessionStorage che lancia un errore, in lettura o in scrittura: non la mostra, senza eccezioni", () => {
-    for (const tipo of ["navigate", "reload"]) {
-      expect(
-        decidiApertura("/", tipo, memoriaFinta({ rottaInLettura: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)
-      ).toBe("salta");
-      expect(
-        decidiApertura("/", tipo, memoriaFinta({ rottaInScrittura: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)
-      ).toBe("salta");
-      // Il solo accesso a sessionStorage ha già lanciato: arriva null.
-      expect(decidiApertura("/", tipo, null, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
-    }
+    expect(decidi("/", memoriaFinta({ rottaInLettura: true }))).toBe("salta");
+    expect(decidi("/", memoriaFinta({ rottaInScrittura: true }))).toBe("salta");
+    // Il solo accesso a sessionStorage ha già lanciato: arriva null.
+    expect(decidi("/", null)).toBe("salta");
   });
 
   it("Accedi (/login): stesse regole di Oggi", () => {
-    expect(decidiApertura("/login", "navigate", memoriaFinta(), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
-    expect(decidiApertura("/login", "navigate", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
-    expect(decidiApertura("/login", "reload", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
+    expect(decidi("/login", memoriaFinta())).toBe("mostra");
+    expect(decidi("/login", memoriaFinta({ segno: true }))).toBe("salta");
   });
 
   it("il segno è uno solo: vista su Accedi, dopo una navigazione completa su Oggi non ricompare", () => {
     const memoria = memoriaFinta();
-    expect(decidiApertura("/login", "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
-    expect(decidiApertura("/", "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
+    expect(decidi("/login", memoria)).toBe("mostra");
+    expect(decidi("/", memoria)).toBe("salta");
   });
 
   it("fuori dai percorsi non decide e non scrive il segno", () => {
@@ -100,7 +87,7 @@ describe("decidiApertura", () => {
       "/onboarding",
     ]) {
       const memoria = memoriaFinta();
-      expect(decidiApertura(percorso, "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBeNull();
+      expect(decidi(percorso, memoria)).toBeNull();
       expect(memoria.dati.size).toBe(0);
     }
   });
@@ -109,10 +96,12 @@ describe("decidiApertura", () => {
 // La stringa vera che layout.tsx mette in <head>, eseguita in una pagina
 // finta: se decidiApertura o avviaApertura usassero qualcosa di fuori (un
 // import, una costante del modulo), nel testo copiato non esisterebbe e
-// questi casi fallirebbero.
+// questi casi fallirebbero. `tipo` finge il tipo di navigazione che il
+// browser dichiara: lo script non lo deve guardare (una ricarica non
+// mostra l'animazione).
 function apri({
   percorso = "/",
-  tipo = "navigate" as string | null,
+  tipo = "navigate",
   segno = false,
   storageRotto = false,
 } = {}) {
@@ -132,9 +121,7 @@ function apri({
           });
         }
         window.performance.getEntriesByType = ((nome: string) =>
-          nome === "navigation" && tipo !== null
-            ? [{ type: tipo }]
-            : []) as unknown as typeof window.performance.getEntriesByType;
+          nome === "navigation" ? [{ type: tipo }] : []) as unknown as typeof window.performance.getEntriesByType;
       },
     }
   );
@@ -145,7 +132,7 @@ function apri({
 }
 
 describe("SCRIPT_APERTURA in <head>", () => {
-  it("primo caricamento: data-apertura=\"mostra\" e segno scritto", () => {
+  it("prima apertura: data-apertura=\"mostra\" e segno scritto", () => {
     const pagina = apri();
     expect(pagina.attributo()).toBe("mostra");
     expect(pagina.segno()).toBe("1");
@@ -155,15 +142,15 @@ describe("SCRIPT_APERTURA in <head>", () => {
     expect(apri({ segno: true }).attributo()).toBeNull();
   });
 
-  it("ricarica con il segno: mostra", () => {
-    expect(apri({ segno: true, tipo: "reload" }).attributo()).toBe("mostra");
+  it("ricarica con il segno: nessun attributo, niente animazione", () => {
+    expect(apri({ segno: true, tipo: "reload" }).attributo()).toBeNull();
   });
 
   it("sessionStorage rotto: nessun attributo, la pagina va avanti", () => {
     expect(apri({ storageRotto: true }).attributo()).toBeNull();
   });
 
-  it("Accedi al primo caricamento (dopo il redirect da /): mostra", () => {
+  it("Accedi alla prima apertura (dopo il redirect da /): mostra", () => {
     const pagina = apri({ percorso: "/login?redirectTo=%2F" });
     expect(pagina.attributo()).toBe("mostra");
     expect(pagina.segno()).toBe("1");

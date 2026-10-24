@@ -21,10 +21,10 @@
 //
 // Pillola e sfumatura si nascondono mentre un campo ha il fuoco
 // (`data-nascondi-mentre-scrivi`, regola in globals.css), così non compaiono
-// mai sopra la tastiera. Livelli: sfumatura z-20, "+ Aggiungi" z-22,
-// animazione di apertura z-25, pillola z-30 (come la barra Salva di
-// Profilo), sotto BarraAnnulla (z-40) e gli sheet (z-50), che la coprono con
-// lo sfondo scuro.
+// mai sopra la tastiera. Livelli: sfumatura z-20, pillola z-30 (come
+// "+ Aggiungi" e la barra Salva di Profilo), sotto l'animazione di apertura
+// (z-35, la copre finché c'è), BarraAnnulla (z-40) e gli sheet (z-50), che
+// la coprono con lo sfondo scuro.
 //
 // Le voci sono LinkProtetto: se la pagina ha modifiche non salvate
 // (GuardianoModifiche), toccarle chiede prima "Esci senza salvare?". Vale

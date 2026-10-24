@@ -87,8 +87,8 @@ I numeri stanno tutti in `globals.css`, in un posto solo:
 | `--spazio-fra-barre` | lo spazio fra pillola e bottone, e fra pillola e barra Salva |
 | `--ingombro-oggi` | pillola + spazio + bottone |
 
-Livelli: sfumatura z-20; "+ Aggiungi" z-22 (dal 24/10, prima z-30);
-animazione di apertura z-25 (§7); pillola e barra Salva z-30;
+Livelli: sfumatura z-20; pillola, "+ Aggiungi" e barra Salva z-30;
+animazione di apertura z-35 (§7, copre tutta la barra finché c'è);
 BarraAnnulla z-40; gli sheet z-50, sopra a tutto.
 
 **Barretta home di iOS.** `--tab-bar-distanza` è
@@ -149,9 +149,10 @@ coincidevano, ha vinto il mockup.
 
 ### Oggi (schermata di apertura)
 
-All'apertura a freddo, sopra la pagina c'è l'animazione di apertura (la
-bilancia che si mette in equilibrio, almeno 0,7 s, più a lungo se Oggi
-carica ancora): vedi §7, "Animazione di apertura".
+Alla prima apertura dell'app o della scheda, sopra la pagina (barra in
+basso compresa) c'è l'animazione di apertura: la bilancia che si mette
+in equilibrio, almeno 1,05 s più 0,25 s di dissolvenza, più a lungo se
+Oggi carica ancora. Vedi §7, "Animazione di apertura".
 
 Dall'alto:
 
@@ -3981,19 +3982,24 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
 - **Come si muove** (proposta P1 "Equilibrio", numeri dal progetto di
   prova; keyframes in `globals.css`, `.animazione-apertura` e
   seguenti): bilancia larga 96 px, centrata, con il centro al 45%
-  dell'altezza; compare in 120 ms (opacità e 6 px in su); il giogo va
-  da -12° a +4°, -1,2° e 0° a 0 / 260 / 480 / 700 ms, ogni tratto
+  dell'altezza; compare in 180 ms (opacità e 6 px in su); il giogo va
+  da -12° a +4°, -1,2° e 0° a 0 / 390 / 720 / 1050 ms, ogni tratto
   `cubic-bezier(.45,0,.25,1)`; i piatti salgono e scendono di 28 ×
-  sin(angolo) unità del disegno restando dritti. Si animano solo
+  sin(angolo) unità del disegno restando dritti, negli stessi istanti;
+  la dissolvenza dura 250 ms. **Rallentata il 24/10 (commit 6)**: nel
+  browser era troppo veloce; prima comparsa 120 ms, tappe a 260 / 480 /
+  700 ms, dissolvenza 150 ms. Le percentuali dei keyframes non cambiano
+  (390/1050 = 260/700): cambia solo la durata, che è la stessa per
+  giogo, piatti e `apertura-minimo`. Si animano solo
   transform e opacity. Colori solo da variabili: fondo `--background`,
   bilancia `--accento` (segue tema e colore principale).
 
-- **Regola A: minimo l'oscillazione intera, solo alle aperture a
-  freddo** (cambiata il 24/10: prima era "al massimo quanto il
-  caricamento", ma nel browser l'animazione era troppo veloce per
-  capirla). Alle aperture (gli stessi casi di sotto: ricarica o nessun
-  segno in `sessionStorage`) l'oscillazione si vede **sempre intera**,
-  fino al piano a 700 ms, poi lo strato sfuma in 150 ms. Se Oggi è
+- **Regola A: minimo l'oscillazione intera, solo alle aperture**
+  (cambiata il 24/10: prima era "al massimo quanto il caricamento", ma
+  nel browser l'animazione era troppo veloce per capirla). Alle
+  aperture (sotto: nessun segno in `sessionStorage`) l'oscillazione si
+  vede **sempre intera**, fino al piano a 1050 ms, poi lo strato sfuma
+  in 250 ms. Se Oggi è
   pronta dopo (`OggiContenuto` manda `segnalaOggiPronta()`), sfuma
   quando è pronta: **al più tardi fra "oscillazione finita" e "Oggi
   pronta"** (`uscitaApertura`, test in
@@ -4002,19 +4008,22 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   sicurezza (sotto ricompare "Caricamento..."). **Su Accedi** non ci
   sono dati da aspettare (`attende="niente"`): oscillazione intera, poi
   dissolvenza.
-  - **Il costo, scelto**: a ogni apertura a freddo fino a circa 0,85 s
-    (700 + 150 ms) in cui Oggi non si vede e non si tocca, anche se i
-    dati sono già pronti. Cambiando scheda nessun costo: lì
-    l'animazione non c'è.
+  - **Il costo, scelto**: a ogni apertura fino a circa 1,05 s in cui
+    Oggi non si vede e non si tocca, anche se i dati sono già pronti, più
+    0,25 s di dissolvenza in cui Oggi ricompare e si può già toccare.
+    Ricaricando o cambiando scheda nessun costo: lì l'animazione non c'è.
   - **I tempi sono tutti CSS** e il componente li legge, non li
-    ricalcola: `apertura-minimo` (700 ms, non cambia niente a schermo)
+    ricalcola: `apertura-minimo` (1050 ms, non cambia niente a schermo)
     sullo strato, quindi vale anche con riduci movimento;
-    `apertura-sicurezza` (ritardo 3 s), che funziona anche se il
-    JavaScript non arriva mai e finisce con `visibility: hidden`;
-    `apertura-uscita` (150 ms) sul fondo interno, così non sostituisce
-    le altre due e, se la rete di sicurezza ha già nascosto tutto,
-    resta invisibile. La fine del minimo non si ascolta come evento: se
-    il JavaScript arriva dopo 700 ms l'evento è già passato. Il
+    `apertura-sicurezza` (ritardo 3 s, dissolvenza 250 ms), che funziona
+    anche se il JavaScript non arriva mai e finisce con
+    `visibility: hidden`. **I 3 s bastano ancora**: minimo e uscita
+    insieme fanno 1050 + 250 = 1300 ms, e nella prova del 24/10 lo strato
+    era tolto a 1,5 s dall'apertura. `apertura-uscita` (250 ms) sta sul
+    fondo interno, così non sostituisce le altre due e, se la rete di
+    sicurezza ha già nascosto tutto, resta invisibile. La fine del
+    minimo non si ascolta come evento: se il JavaScript arriva dopo
+    1050 ms l'evento è già passato. Il
     componente chiede l'animazione al browser (`getAnimations()`) e ne
     aspetta la fine (`finished`); se non c'è più, il minimo è passato.
     Senza `getAnimations` (iOS prima del 13.1) si esce quando Oggi è
@@ -4024,14 +4033,22 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
 - **Tocchi**: finché lo strato è pieno li blocca, perché copre Oggi e
   un tocco finirebbe su qualcosa che non si vede; durante la
   dissolvenza (`data-esce`) li lascia passare (`pointer-events: none`).
-  La pillola resta sopra e toccabile.
+  Dal commit 6 copre anche la barra in basso (pillola e "+ Aggiungi"):
+  niente pillola invisibile toccabile, perché lo strato blocca i tocchi
+  anche lì. La barra torna visibile con Oggi, nella dissolvenza.
 - **Non copre il tratto più lungo dell'apertura**: prima che arrivi
   l'HTML (service worker "prima la rete" e `getUser()` del middleware)
   nessun nostro codice può disegnare. Sostituisce solo l'attesa dopo.
-- **Solo al primo caricamento di Oggi o di Accedi** (apertura a
-  freddo o ricarica; `PERCORSI_APERTURA`, cioè `/` e `/login`), **mai
-  tornando su Oggi da un'altra scheda**, anche se in quel momento i
-  dati Dexie non ci sono ancora. Registrati, Password dimenticata e
+- **Solo alla prima apertura, su Oggi o su Accedi**
+  (`PERCORSI_APERTURA`, cioè `/` e `/login`): si mostra solo se in
+  `sessionStorage` non c'è il segno, cioè alla prima apertura della
+  scheda di Safari o dell'app. **Non a una ricarica** (dal 24/10,
+  commit 6: prima "ricarica = mostra"; la ricarica tiene il segno) e
+  **mai tornando su Oggi da un'altra scheda**, anche se in quel momento
+  i dati Dexie non ci sono ancora. **Da provare su iPhone**: che il
+  segno sparisca quando iOS chiude l'app (chiusura dal multitasking, o
+  iOS che la toglie dalla memoria). Se restasse, l'animazione non si
+  vedrebbe più finché l'app non viene tolta e riaggiunta. Registrati, Password dimenticata e
   Reimposta password restano fuori. **Perché anche Accedi** (buco
   trovato da Davide il 24/10): chi apre l'app installata senza aver
   fatto l'accesso parte da `/`, ma il middleware lo manda su `/login`,
@@ -4041,10 +4058,10 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   (`src/lib/animazioneApertura.ts`):
   - `SCRIPT_APERTURA` in `<head>` (`layout.tsx`, accanto a quello del
     tema, stessa tecnica: testo di funzioni autonome con
-    `toString()`). Gira solo su `/` e `/login`, prima del primo disegno. Mostra se
-    la pagina è una ricarica (`performance`, tipo `"reload"`) oppure se
-    in `sessionStorage` non c'è `nutritrack:apertura-mostrata`; il
-    segno si scrive in ogni caso. Se mostra, scrive
+    `toString()`). Gira solo su `/` e `/login`, prima del primo
+    disegno. Mostra se in `sessionStorage` non c'è
+    `nutritrack:apertura-mostrata`; il segno si scrive in ogni caso.
+    Il tipo di navigazione non conta più (dal commit 6). Se mostra, scrive
     `data-apertura="mostra"` su `<html>` (coperto da
     `suppressHydrationWarning` come `data-tema`). **Il CSS nasconde lo
     strato in ogni altro caso**: se lo script non parte o
@@ -4069,17 +4086,21 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
     solo"). Lo stesso per la fine dell'onboarding e per Reimposta
     password (`router.replace("/")`). Verificato in console il 24/10,
     prima del commit 5 (quando su `/login` lo script non faceva
-    niente): dopo l'accesso `data-apertura` assente e segno vuoto; dopo
-    una ricarica `"mostra"` e `"1"`, nessun avviso di idratazione,
-    nemmeno tornando su Oggi da Impostazioni.
+    niente, e una ricarica la mostrava ancora): dopo l'accesso
+    `data-apertura` assente e segno vuoto; dopo una ricarica `"mostra"`
+    e `"1"`, nessun avviso di idratazione, nemmeno tornando su Oggi da
+    Impostazioni.
   - **Il redirect del middleware da `/` a `/login`** è una sola
     navigazione di tipo `"navigate"` con un redirect, e lo script trova
     il percorso `/login`. Provato il 24/10 con `next start` ed Edge
     senza interfaccia, profilo nuovo e senza accesso: apertura di `/` →
     `navigate`, `redirectCount` 1, percorso `/login?redirectTo=%2F`,
-    `"mostra"`, segno scritto, strato presente a 300 e 600 ms e tolto a
-    1000 ms; ricarica → `reload`, `"mostra"`; di nuovo `/` nella stessa
-    scheda → segno trovato, niente animazione. Nell'app installata la
+    `"mostra"`, segno scritto; di nuovo `/` nella stessa scheda → segno
+    trovato, niente animazione. **Riprovato al commit 6**, con i tempi
+    nuovi: strato pieno a 400 e 900 ms (z-35, tocchi bloccati), in
+    uscita a 1300 ms (tocchi liberi, fondo a metà dissolvenza), tolto a
+    1500 ms; ricarica → tipo `reload`, nessun attributo, niente
+    animazione. Nell'app installata la
     navigazione passa dal service worker ("prima la rete"): il redirect
     arriva al browser com'è e il tipo resta `"navigate"`, ma questo va
     confermato su iPhone.
@@ -4089,11 +4110,12 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   fallback. Nell'HTML del server il fallback è marcato `<!--$!-->`
   (`BAILOUT_TO_CLIENT_SIDE_RENDERING`): all'idratazione React lo butta
   e lo rifà, e un'animazione lì dentro ripartirebbe. Lo strato è fisso
-  a tutto schermo, fondo `--background` (niente lampo), `z-index` 25:
-  sopra la sfumatura in basso (z-20) e sopra "+ Aggiungi", sceso a
-  z-22 il 24/10 apposta (prima era z-30 come la pillola e compariva
-  sopra la bilancia); sotto la pillola della tab bar (z-30), che resta
-  visibile e toccabile come prima. `aria-hidden="true"`. Componente
+  a tutto schermo, fondo `--background` (niente lampo), `z-index` 35:
+  sopra tutta la barra in basso (sfumatura z-20, pillola e
+  "+ Aggiungi" z-30), sotto BarraAnnulla (z-40) e gli sheet (z-50), che
+  all'apertura non ci sono. Dal commit 6; prima era z-25, sotto la
+  pillola, e "+ Aggiungi" era stato abbassato a z-22 (tornato a z-30).
+  `aria-hidden="true"`. Componente
   `src/components/AnimazioneApertura.tsx`, messo prima del
   `<Suspense>` in `page.tsx` di Oggi (`attende="oggi"`) e di Accedi
   (`attende="niente"`). Su Accedi nell'HTML del server c'è solo lo
@@ -4101,7 +4123,8 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   dell'idratazione la pagina è vuota. Sopra lo strato su Accedi non
   resta niente: non c'è la pillola né altri elementi fissi.
 - **Riduci movimento**: bilancia ferma in piano per lo stesso tempo
-  minimo (700 ms), poi sfuma come sempre (l'opacità non è movimento).
+  minimo (1050 ms), poi sfuma come sempre in 250 ms (l'opacità non è
+  movimento).
 
 ### Tema chiaro / scuro / sistema
 
@@ -6636,14 +6659,15 @@ seconda, `username_disponibile_solo_autenticati` (versione
 
 **L'animazione di apertura** (24/10, branch `animazione-apertura`, da
 provare su iPhone). La bilancia che si mette in equilibrio sopra Oggi
-(o sopra Accedi, per chi non ha fatto l'accesso) alle aperture a
-freddo, con l'oscillazione sempre intera (§7,
+(o sopra Accedi, per chi non ha fatto l'accesso) alla prima apertura
+dell'app o della scheda, non a una ricarica, con l'oscillazione sempre
+intera (§7,
 "Animazione di apertura"). CSS + SVG, scelta fra tre proposte provate
 con Remotion fuori dal repo.
 
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
-`username-dopo-accesso`; 1329 in 117 file sul branch
+`username-dopo-accesso`; 1328 in 117 file sul branch
 `animazione-apertura`.
 
 ### Non ancora costruito

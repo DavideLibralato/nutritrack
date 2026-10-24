@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-24 — Animazione di apertura: più lenta, sopra la barra, niente al refresh
+
+Branch `animazione-apertura`, commit 6. Tre richieste di Davide dopo
+averla vista. **Più lenta**: comparsa 180 ms, tappe del giogo a
+0 / 390 / 720 / 1050 ms (prima 260 / 480 / 700, stesse percentuali dei
+keyframes), piatti sincronizzati, dissolvenza 250 ms; tempo minimo
+dello strato 1050 ms, anche con riduci movimento. Rete di sicurezza a
+3 s invariata: 1050 + 250 = 1300 ms ci stanno. **Sopra la barra**: lo
+strato passa a z-35 e copre pillola e "+ Aggiungi", che torna a z-30;
+blocca i tocchi anche lì, la barra ricompare con Oggi nella
+dissolvenza. **Niente al refresh**: tolta la regola "ricarica =
+mostra", si mostra solo senza il segno in `sessionStorage`; lo script
+non legge più il tipo di navigazione. Da provare su iPhone che il segno
+sparisca quando iOS chiude l'app. Test aggiornati, rompi e ripristina
+sulla regola della ricarica. Riprovato con `next start` ed Edge senza
+interfaccia: strato pieno fino a 900 ms, in uscita a 1300, tolto a
+1500; ricarica senza animazione. PUNTO §3, §7 e §11.
+
 ## 2026-10-24 — Animazione di apertura anche su Accedi
 
 Branch `animazione-apertura`, commit 5. Buco trovato da Davide: chi apre
