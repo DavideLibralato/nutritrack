@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-24 — Animazione di apertura provata su iPhone
+
+Branch `animazione-apertura`, commit 7 (solo documenti). **Provata su
+iPhone il 24/10** sull'anteprima del branch, in Safari, con l'account di
+prova, Build del commit 6 (`af2d9de`): prove 0-11 passate. Accedi con
+l'animazione al primo utilizzo, nessuna ripetizione dopo l'accesso,
+barra in basso nascosta fino alla dissolvenza, niente animazione a
+ricarica / cambio scheda / ritorno dal background / offline, tocchi
+bloccati durante la bilancia, tema scuro e due colori principali,
+riduci movimento, durata giusta. Restano da provare dopo il merge,
+nell'app installata: chiusura dal multitasking e riapertura (il segno
+in `sessionStorage` deve sparire) e apertura senza accesso (animazione
+su Accedi, finora provata solo nel browser). PUNTO §7 e §11.
+
 ## 2026-10-24 — Animazione di apertura: più lenta, sopra la barra, niente al refresh
 
 Branch `animazione-apertura`, commit 6. Tre richieste di Davide dopo

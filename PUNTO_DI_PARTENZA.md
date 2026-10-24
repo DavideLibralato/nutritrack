@@ -3977,7 +3977,13 @@ fermarsi in piano, poi sfuma e lascia la pagina. Scelta fra tre
 proposte provate in anteprima con Remotion (progetto fuori dal repo,
 `C:\Users\david\Progetti\libra-apertura-remotion`, solo banco di prova:
 nell'app è CSS + SVG, nessuna libreria e nessun video). **Stato**:
-costruita (decisione "mostrare o no" e strato), da provare su iPhone.
+costruita e **provata su iPhone il 24/10** (anteprima del branch, in
+Safari, account di prova, Build del commit 6; prove 0-11 passate, §11).
+**Da provare dopo il merge**, nell'app installata:
+- (a) app chiusa dal multitasking e riaperta → l'animazione ricompare,
+  cioè il segno in `sessionStorage` sparisce quando iOS chiude l'app;
+- (b) app installata senza accesso → animazione su Accedi (provato solo
+  nel browser: Safari su iPhone e Edge senza interfaccia).
 
 - **Come si muove** (proposta P1 "Equilibrio", numeri dal progetto di
   prova; keyframes in `globals.css`, `.animazione-apertura` e
@@ -4045,11 +4051,12 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   scheda di Safari o dell'app. **Non a una ricarica** (dal 24/10,
   commit 6: prima "ricarica = mostra"; la ricarica tiene il segno) e
   **mai tornando su Oggi da un'altra scheda**, anche se in quel momento
-  i dati Dexie non ci sono ancora. **Da provare su iPhone**: che il
-  segno sparisca quando iOS chiude l'app (chiusura dal multitasking, o
-  iOS che la toglie dalla memoria). Se restasse, l'animazione non si
-  vedrebbe più finché l'app non viene tolta e riaggiunta. Registrati, Password dimenticata e
-  Reimposta password restano fuori. **Perché anche Accedi** (buco
+  i dati Dexie non ci sono ancora. **Da provare dopo il merge**, punto
+  (a) sopra: che il segno sparisca quando iOS chiude l'app installata
+  (chiusura dal multitasking, o iOS che la toglie dalla memoria). Se
+  restasse, l'animazione non si vedrebbe più finché l'app non viene
+  tolta e riaggiunta. Registrati, Password dimenticata e Reimposta
+  password restano fuori. **Perché anche Accedi** (buco
   trovato da Davide il 24/10): chi apre l'app installata senza aver
   fatto l'accesso parte da `/`, ma il middleware lo manda su `/login`,
   dove lo script prima non faceva niente; poi Accedi → Oggi è una
@@ -4100,10 +4107,10 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
     nuovi: strato pieno a 400 e 900 ms (z-35, tocchi bloccati), in
     uscita a 1300 ms (tocchi liberi, fondo a metà dissolvenza), tolto a
     1500 ms; ricarica → tipo `reload`, nessun attributo, niente
-    animazione. Nell'app installata la
-    navigazione passa dal service worker ("prima la rete"): il redirect
-    arriva al browser com'è e il tipo resta `"navigate"`, ma questo va
-    confermato su iPhone.
+    animazione. Su iPhone in Safari, il 24/10: Accedi con l'animazione
+    al primo utilizzo. Nell'app installata la navigazione passa dal
+    service worker ("prima la rete"): il redirect arriva al browser
+    com'è, ma va confermato dopo il merge, punto (b) sopra.
   Test: `src/lib/animazioneApertura.test.ts`, che esegue anche la
   stringa vera dello script in una pagina finta.
 - **Dove vive lo strato**: fuori dal `<Suspense>` di Oggi, mai nel suo
@@ -6657,8 +6664,16 @@ seconda, `username_disponibile_solo_autenticati` (versione
 "Lo username dopo l'accesso"). Su main dal 23/10 (fast-forward fino a
 `7268442`).
 
-**L'animazione di apertura** (24/10, branch `animazione-apertura`, da
-provare su iPhone). La bilancia che si mette in equilibrio sopra Oggi
+**L'animazione di apertura** (24/10, branch `animazione-apertura`,
+**provata su iPhone il 24/10** sull'anteprima, in Safari, con l'account
+di prova, Build del commit 6 `af2d9de`: prove 0-11 passate. Accedi con
+l'animazione al primo utilizzo e nessuna ripetizione dopo l'accesso;
+barra in basso nascosta fino alla dissolvenza; niente animazione a
+ricarica, cambio scheda, ritorno dal background e offline; tocchi
+bloccati durante la bilancia; tema scuro e due colori principali;
+riduci movimento; durata giusta. Da provare dopo il merge nell'app
+installata: chiusura dal multitasking e riapertura, e apertura senza
+accesso; §7). La bilancia che si mette in equilibrio sopra Oggi
 (o sopra Accedi, per chi non ha fatto l'accesso) alla prima apertura
 dell'app o della scheda, non a una ricarica, con l'oscillazione sempre
 intera (§7,
