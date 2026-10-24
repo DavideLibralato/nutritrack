@@ -5,6 +5,11 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-23 — Merge di `revoca-username-anon` su main
+
+Fast-forward `7268442` → `6eb7e68`, 3 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL da togliere.
+
 ## 2026-10-23 — Prova 14: account usa e getta eliminati, lavoro chiuso
 
 Branch `revoca-username-anon`, commit 3 (solo documenti). Davide ha
