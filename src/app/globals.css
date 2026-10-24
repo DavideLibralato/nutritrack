@@ -273,6 +273,151 @@ body:has([data-pulsante-aggiungi]) {
   }
 }
 
+/* Animazione di apertura (src/components/AnimazioneApertura.tsx;
+   PUNTO_DI_PARTENZA.md §7, "Animazione di apertura"). Proposta P1
+   "Equilibrio", numeri presi dal progetto Remotion di prova
+   (Equilibrio.tsx): la bilancia compare inclinata e oscilla fino a
+   fermarsi in piano. Si animano solo transform e opacity.
+
+   Lo strato: fisso a tutto schermo, fondo della pagina (niente lampo),
+   sopra la sfumatura (z-20) e sotto la pillola (z-30), che resta visibile
+   e toccabile. Non riceve tocchi. Nascosto finché lo script in <head> non
+   scrive data-apertura="mostra": se lo script non parte, niente
+   animazione.
+
+   Rete di sicurezza (apertura-sicurezza): dopo 3 s sfuma comunque, anche
+   se il JavaScript non arriva mai. Uscita normale (data-esce, quando Oggi
+   è pronta): apertura-uscita, 150 ms. Due nomi diversi apposta: cambiando
+   nome il browser fa partire un'animazione nuova; con lo stesso nome e
+   solo il ritardo cambiato salterebbe subito alla fine. */
+.animazione-apertura {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: var(--background);
+  color: var(--accento);
+  pointer-events: none;
+  animation: apertura-sicurezza 150ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
+}
+html[data-apertura="mostra"] .animazione-apertura {
+  display: block;
+}
+.animazione-apertura[data-esce] {
+  animation: apertura-uscita 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes apertura-sicurezza {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes apertura-uscita {
+  to {
+    opacity: 0;
+  }
+}
+
+/* La bilancia: larga 96 px (alta 96 x 62/80 = 74,4), centrata in
+   orizzontale e con il centro al 45% dell'altezza (380 su 844 nel
+   progetto di prova), dove l'occhio sente il centro. */
+.animazione-apertura-bilancia {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 96px;
+  height: 74.4px;
+  margin: -37.2px 0 0 -48px;
+  overflow: visible;
+  animation: apertura-comparsa 120ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes apertura-comparsa {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Il giogo ruota attorno al fulcro (50, 34 nel disegno): -12° → +4° →
+   -1,2° → 0° a 0 / 260 / 480 / 700 ms, ogni tratto "va e rallenta". */
+.apertura-giogo {
+  transform-box: view-box;
+  transform-origin: 50px 34px;
+  animation: apertura-giogo 700ms both;
+}
+@keyframes apertura-giogo {
+  0% {
+    transform: rotate(-12deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  37.143% {
+    transform: rotate(4deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  68.571% {
+    transform: rotate(-1.2deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* I piatti seguono le estremità del giogo restando dritti: salgono e
+   scendono di 28 x sin(angolo) unità del disegno (28 = mezzo giogo),
+   negli stessi istanti e con la stessa curva. -12° → 5,82; 4° → 1,95;
+   -1,2° → 0,59. */
+.apertura-piatto-sinistra {
+  animation: apertura-piatto-sinistra 700ms both;
+}
+.apertura-piatto-destra {
+  animation: apertura-piatto-destra 700ms both;
+}
+@keyframes apertura-piatto-sinistra {
+  0% {
+    transform: translateY(5.82px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  37.143% {
+    transform: translateY(-1.95px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  68.571% {
+    transform: translateY(0.59px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes apertura-piatto-destra {
+  0% {
+    transform: translateY(-5.82px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  37.143% {
+    transform: translateY(1.95px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  68.571% {
+    transform: translateY(-0.59px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Riduci movimento: bilancia ferma in piano, già visibile; lo strato
+   sfuma lo stesso quando Oggi è pronta (l'opacità non è movimento). */
+@media (prefers-reduced-motion: reduce) {
+  .animazione-apertura-bilancia,
+  .apertura-giogo,
+  .apertura-piatto-sinistra,
+  .apertura-piatto-destra {
+    animation: none;
+  }
+}
+
 /* Righe di Oggi che si possono tenere premute (alimenti e nome del pasto,
    src/lib/tieniPremuto.ts). Senza -webkit-touch-callout e -webkit-user-select
    Safari su iPhone apre il suo menu di selezione del testo sulla pressione

@@ -78,6 +78,8 @@ import ServeConnessione from "@/components/ServeConnessione";
 import SchedaCompletaProfilo from "@/components/SchedaCompletaProfilo";
 import SheetDoppioni from "@/components/SheetDoppioni";
 import SheetDuplica from "@/components/SheetDuplica";
+import AnimazioneApertura from "@/components/AnimazioneApertura";
+import { segnalaOggiPronta } from "@/lib/animazioneApertura";
 import {
   arrotondaGrammi,
   grammiInDestinazione,
@@ -196,17 +198,23 @@ function capitalizza(testo: string): string {
   return testo.charAt(0).toUpperCase() + testo.slice(1);
 }
 
+// AnimazioneApertura sta FUORI dal <Suspense>, apposta: il fallback qui
+// sotto all'idratazione viene buttato e rifatto, e l'animazione dentro
+// ripartirebbe (PUNTO_DI_PARTENZA.md §7, "Animazione di apertura").
 export default function OggiPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="flex flex-1 items-center justify-center p-4">
-          <p className="text-sm text-muted">Caricamento...</p>
-        </main>
-      }
-    >
-      <OggiContenuto />
-    </Suspense>
+    <>
+      <AnimazioneApertura />
+      <Suspense
+        fallback={
+          <main className="flex flex-1 items-center justify-center p-4">
+            <p className="text-sm text-muted">Caricamento...</p>
+          </main>
+        }
+      >
+        <OggiContenuto />
+      </Suspense>
+    </>
   );
 }
 
@@ -608,7 +616,7 @@ function OggiContenuto() {
     });
   }
 
-  if (
+  const inCaricamento =
     userId === undefined ||
     pasti === undefined ||
     vociTutte === undefined ||
@@ -618,8 +626,15 @@ function OggiContenuto() {
     catalogo === undefined ||
     profilo === undefined ||
     giorniRighe === undefined ||
-    obiettiviTarget === undefined
-  ) {
+    obiettiviTarget === undefined;
+
+  // Oggi ha i dati: l'animazione di apertura, se c'è, se ne va. Senza
+  // animazione (cambio scheda) il segnale non trova nessuno in ascolto.
+  useEffect(() => {
+    if (!inCaricamento) segnalaOggiPronta();
+  }, [inCaricamento]);
+
+  if (inCaricamento) {
     return (
       <main className="flex flex-1 items-center justify-center p-4">
         <p className="text-sm text-muted">Caricamento...</p>

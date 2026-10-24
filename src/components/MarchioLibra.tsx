@@ -20,6 +20,25 @@
 //
 // role="img" con aria-label: lo screen reader dice "Libra" una volta sola,
 // e dentro un titolo legge "Accedi a Libra".
+//
+// Il disegno sta in src/lib/glifoBilancia.ts, condiviso con l'animazione
+// di apertura.
+
+import {
+  ASTA,
+  BASE,
+  FILI_DESTRA,
+  FILI_SINISTRA,
+  GIOGO,
+  PERNO,
+  PIATTO_DESTRA,
+  PIATTO_SINISTRA,
+  SPESSORE_ASTA,
+  SPESSORE_BASE,
+  SPESSORE_FILI,
+  SPESSORE_GIOGO,
+  VIEWBOX_BILANCIA,
+} from "@/lib/glifoBilancia";
 
 export default function MarchioLibra({ variante }: { variante: "titolo" | "piccolo" }) {
   return (
@@ -31,17 +50,17 @@ export default function MarchioLibra({ variante }: { variante: "titolo" | "picco
       }`}
     >
       <svg
-        viewBox="10 18 80 62"
+        viewBox={VIEWBOX_BILANCIA}
         aria-hidden="true"
         className="h-[0.78em] w-auto shrink-0 -translate-y-[0.02em] text-accent"
       >
         <g fill="currentColor" stroke="currentColor" strokeLinecap="round">
-          <circle cx="50" cy="25" r="5.5" stroke="none" />
-          <path d="M50 29 V73" strokeWidth="7" fill="none" />
-          <path d="M33 75 H67" strokeWidth="8" fill="none" />
-          <path d="M21 34 H79" strokeWidth="7" fill="none" />
-          <path d="M22 35 L14 55 M22 35 L30 55 M78 35 L70 55 M78 35 L86 55" strokeWidth="3.5" fill="none" />
-          <path d="M12 55 H32 A10 8 0 0 1 12 55 Z M68 55 H88 A10 8 0 0 1 68 55 Z" stroke="none" />
+          <circle {...PERNO} stroke="none" />
+          <path d={ASTA} strokeWidth={SPESSORE_ASTA} fill="none" />
+          <path d={BASE} strokeWidth={SPESSORE_BASE} fill="none" />
+          <path d={GIOGO} strokeWidth={SPESSORE_GIOGO} fill="none" />
+          <path d={`${FILI_SINISTRA} ${FILI_DESTRA}`} strokeWidth={SPESSORE_FILI} fill="none" />
+          <path d={`${PIATTO_SINISTRA} ${PIATTO_DESTRA}`} stroke="none" />
         </g>
       </svg>
       <span aria-hidden="true">Libra</span>

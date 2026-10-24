@@ -119,3 +119,56 @@ export function aperturaGiaPassata(): boolean {
 export function segnaAperturaPassata(): void {
   giaPassata = true;
 }
+
+// --- Il segnale "Oggi è pronta" ----------------------------------------
+//
+// OggiContenuto lo manda quando ha tutti i dati; lo strato lo ascolta e
+// se ne va. È un valore, non solo un evento: chi si mette in ascolto
+// dopo che Oggi è già pronta viene chiamato subito, quindi non conta chi
+// dei due arriva per primo.
+
+let oggiPronta = false;
+const inAttesa = new Set<() => void>();
+
+export function segnalaOggiPronta(): void {
+  if (oggiPronta) return;
+  oggiPronta = true;
+  for (const avvisa of inAttesa) avvisa();
+  inAttesa.clear();
+}
+
+// Restituisce la funzione per smettere di ascoltare (pulizia di useEffect).
+export function quandoOggiPronta(avvisa: () => void): () => void {
+  if (oggiPronta) {
+    avvisa();
+    return () => {};
+  }
+  inAttesa.add(avvisa);
+  return () => {
+    inAttesa.delete(avvisa);
+  };
+}
+
+// --- Come se ne va lo strato quando Oggi è pronta ----------------------
+
+// Quanto dura la comparsa della bilancia (keyframes apertura-comparsa in
+// globals.css): prima di questo istante la bilancia non si è ancora vista.
+export const COMPARSA_MS = 120;
+
+// mostrata: lo script in <head> ha scritto data-apertura="mostra".
+// tempoComparsa: a che punto è la comparsa della bilancia, in ms
+// (Animation.currentTime), o null se non lo si sa (riduci movimento, che
+// non ha la comparsa, o un browser senza getAnimations).
+//
+// "togli": via subito, senza dissolvenza. Lo strato è nascosto, oppure la
+// bilancia non si è ancora vista: Oggi compare come oggi, senza una
+// dissolvenza su qualcosa che non c'era.
+// "sfuma": dissolvenza di 150 ms.
+export function uscitaApertura(
+  mostrata: boolean,
+  tempoComparsa: number | null
+): "togli" | "sfuma" {
+  if (!mostrata) return "togli";
+  if (tempoComparsa !== null && tempoComparsa < COMPARSA_MS) return "togli";
+  return "sfuma";
+}

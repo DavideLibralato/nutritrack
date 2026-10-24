@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-24 — Animazione di apertura su Oggi
+
+Branch `animazione-apertura`, commit 3. Lo strato con la bilancia che si
+mette in equilibrio (`src/components/AnimazioneApertura.tsx`, keyframes
+in `globals.css`), fuori dal `<Suspense>` di Oggi: nell'HTML del server
+sta prima del fallback marcato `<!--$!-->`, quindi l'idratazione lo
+tiene. Se ne va quando Oggi segnala i dati (`segnalaOggiPronta`):
+dissolvenza di 150 ms, o via subito se la bilancia non si era ancora
+vista; dopo 3 s comunque, solo CSS. Il disegno della bilancia passa in
+`src/lib/glifoBilancia.ts`, condiviso con `MarchioLibra` (stesso
+disegno, nessun pixel cambiato nel marchio). 7 test nuovi (segnale e
+regola di uscita), con rompi e ripristina su due regole. Verificato nel
+codice che dopo Accedi l'animazione non compare (navigazione interna),
+scritto nel PUNTO §7. Da provare su iPhone.
+
 ## 2026-10-24 — Animazione di apertura: la decisione "mostrare o no"
 
 Branch `animazione-apertura`, commit 2. Scelta la proposta P1

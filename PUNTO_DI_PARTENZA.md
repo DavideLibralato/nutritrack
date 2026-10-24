@@ -148,6 +148,10 @@ coincidevano, ha vinto il mockup.
 
 ### Oggi (schermata di apertura)
 
+Al primo caricamento, mentre Oggi carica i dati, sopra la pagina c'è
+l'animazione di apertura (la bilancia che si mette in equilibrio): vedi
+§7, "Animazione di apertura".
+
 Dall'alto:
 
 1. **Data + calorie rimanenti**: "Mercoledì 4 set" e sotto, in grigio,
@@ -3938,8 +3942,11 @@ Confermate dai mockup, con una correzione.
   "Libra" (`src/components/MarchioLibra.tsx`). **Il glifo** è lo stesso
   disegno dell'icona, ridisegnato con tratti più spessi e senza il
   quadrato scuro, perché stia alto come le maiuscole di "Libra" (0,78em).
-  È un SVG nel componente, in `currentColor`: si ricava dal mockup
-  testata-login, non dai PNG, che hanno fondo scuro e colore fisso.
+  È un SVG in `currentColor`: si ricava dal mockup testata-login, non
+  dai PNG, che hanno fondo scuro e colore fisso. Il disegno sta in
+  `src/lib/glifoBilancia.ts` (dal 24/10), una copia sola condivisa con
+  l'animazione di apertura, diviso in pezzi (asta, base, giogo, fili e
+  piatti) perché l'animazione li muove separatamente.
   Segue l'accento scelto in Aspetto e il tema (`--accento`), a
   differenza dell'icona dell'app. Senza un account il colore principale
   non si cambia: le pagine di accesso mostrano quello salvato su quel
@@ -3966,15 +3973,31 @@ All'apertura di Oggi la bilancia compare inclinata e oscilla fino a
 fermarsi in piano, poi sfuma e lascia la pagina. Scelta fra tre
 proposte provate in anteprima con Remotion (progetto fuori dal repo,
 `C:\Users\david\Progetti\libra-apertura-remotion`, solo banco di prova:
-nell'app è CSS + SVG, nessuna libreria e nessun video). **Stato**: fatta
-la decisione "mostrare o no" (sotto); lo strato con l'animazione è il
-passo successivo.
+nell'app è CSS + SVG, nessuna libreria e nessun video). **Stato**:
+costruita (decisione "mostrare o no" e strato), da provare su iPhone.
+
+- **Come si muove** (proposta P1 "Equilibrio", numeri dal progetto di
+  prova; keyframes in `globals.css`, `.animazione-apertura` e
+  seguenti): bilancia larga 96 px, centrata, con il centro al 45%
+  dell'altezza; compare in 120 ms (opacità e 6 px in su); il giogo va
+  da -12° a +4°, -1,2° e 0° a 0 / 260 / 480 / 700 ms, ogni tratto
+  `cubic-bezier(.45,0,.25,1)`; i piatti salgono e scendono di 28 ×
+  sin(angolo) unità del disegno restando dritti. Si animano solo
+  transform e opacity. Colori solo da variabili: fondo `--background`,
+  bilancia `--accento` (segue tema e colore principale).
 
 - **Regola A: mai un'attesa in più.** L'animazione dura al massimo
   quanto il caricamento che c'è già ("Caricamento..." di Oggi): appena
-  Oggi ha i dati, sfuma in 150 ms. Se il caricamento dura più di 1,2 s,
-  la bilancia resta ferma in equilibrio; dopo **3 s** sfuma comunque,
-  come rete di sicurezza (sotto ricompare "Caricamento...").
+  Oggi ha i dati (`OggiContenuto` manda `segnalaOggiPronta()`), sfuma in
+  150 ms e lo strato si toglie dalla pagina. Se la bilancia non si era
+  ancora vista (comparsa sotto i 120 ms, letta con `getAnimations()`),
+  via subito senza dissolvenza: Oggi compare come prima
+  (`uscitaApertura`). Se il caricamento dura più di 0,7 s la bilancia
+  resta ferma in equilibrio; dopo **3 s** sfuma comunque, come rete di
+  sicurezza (sotto ricompare "Caricamento..."). La rete di sicurezza è
+  solo CSS (`apertura-sicurezza`, ritardo 3 s): funziona anche se il
+  JavaScript non arriva mai. Il segnale "pronta" è un valore, non solo
+  un evento: chi si mette in ascolto dopo viene avvisato subito.
 - **Non copre il tratto più lungo dell'apertura**: prima che arrivi
   l'HTML (service worker "prima la rete" e `getUser()` del middleware)
   nessun nostro codice può disegnare. Sostituisce solo l'attesa dopo.
@@ -4002,15 +4025,29 @@ passo successivo.
     variabile resta vera e lo strato non si disegna. Si legge al primo
     disegno e si scrive solo dopo il montaggio, perché nel modo
     sviluppo React fa due volte i primi disegni.
+  - **Dopo l'accesso l'animazione non compare, di proposito.** Accedi
+    porta a Oggi con `router.push` (`src/app/login/page.tsx`), una
+    navigazione interna senza ricaricare la pagina: lo script in
+    `<head>` ha girato solo all'apertura di `/login`, dove non fa
+    niente, e su Oggi non c'è né l'attributo né il segno. Lo stesso per
+    la fine dell'onboarding e per Reimposta password
+    (`router.replace("/")`). Verificato in console il 24/10: dopo
+    l'accesso `data-apertura` assente e segno vuoto; dopo una ricarica
+    `"mostra"` e `"1"`, nessun avviso di idratazione, nemmeno tornando
+    su Oggi da Impostazioni.
   Test: `src/lib/animazioneApertura.test.ts`, che esegue anche la
   stringa vera dello script in una pagina finta.
 - **Dove vive lo strato**: fuori dal `<Suspense>` di Oggi, mai nel suo
   fallback. Nell'HTML del server il fallback è marcato `<!--$!-->`
   (`BAILOUT_TO_CLIENT_SIDE_RENDERING`): all'idratazione React lo butta
   e lo rifà, e un'animazione lì dentro ripartirebbe. Lo strato è fisso
-  a tutto schermo, fondo `--background` (niente lampo), sotto la
-  pillola della tab bar (che resta visibile e toccabile come oggi),
-  `pointer-events: none`, `aria-hidden="true"`.
+  a tutto schermo, fondo `--background` (niente lampo), `z-index` 25:
+  sopra la sfumatura in basso (z-20), sotto la pillola della tab bar
+  (z-30, resta visibile e toccabile come oggi) e quindi anche sotto
+  "+ Aggiungi", che compare quando Oggi è pronta, mentre lo strato
+  sfuma. `pointer-events: none`, `aria-hidden="true"`. Componente
+  `src/components/AnimazioneApertura.tsx`, messo in `page.tsx` di Oggi
+  prima del `<Suspense>`.
 - **Riduci movimento**: bilancia ferma in piano, che sfuma quando Oggi
   è pronta.
 
@@ -6545,9 +6582,16 @@ seconda, `username_disponibile_solo_autenticati` (versione
 "Lo username dopo l'accesso"). Su main dal 23/10 (fast-forward fino a
 `7268442`).
 
+**L'animazione di apertura** (24/10, branch `animazione-apertura`, da
+provare su iPhone). La bilancia che si mette in equilibrio sopra Oggi
+mentre carica, solo al primo caricamento, mai un'attesa in più (§7,
+"Animazione di apertura"). CSS + SVG, scelta fra tre proposte provate
+con Remotion fuori dal repo.
+
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
-`username-dopo-accesso`.
+`username-dopo-accesso`; 1325 in 117 file sul branch
+`animazione-apertura`.
 
 ### Non ancora costruito
 

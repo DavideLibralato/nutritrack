@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ATTRIBUTO_APERTURA,
   CHIAVE_APERTURA,
+  COMPARSA_MS,
   SCRIPT_APERTURA,
   decidiApertura,
+  uscitaApertura,
 } from "./animazioneApertura";
 
 // Quando mostrare l'animazione di apertura (PUNTO_DI_PARTENZA.md, sezione
@@ -159,5 +161,58 @@ describe("secondo livello: cambio scheda senza ricaricare", () => {
     expect(modulo.aperturaGiaPassata()).toBe(false);
     modulo.segnaAperturaPassata();
     expect(modulo.aperturaGiaPassata()).toBe(true);
+  });
+});
+
+describe("segnale \"Oggi è pronta\"", () => {
+  it("chi ascolta prima viene avvisato una volta, quando arriva", async () => {
+    vi.resetModules();
+    const { quandoOggiPronta, segnalaOggiPronta } = await import("./animazioneApertura");
+    const avvisa = vi.fn();
+    quandoOggiPronta(avvisa);
+    expect(avvisa).not.toHaveBeenCalled();
+    segnalaOggiPronta();
+    segnalaOggiPronta(); // Oggi che si ridisegna: niente secondo avviso
+    expect(avvisa).toHaveBeenCalledTimes(1);
+  });
+
+  it("chi ascolta dopo che Oggi è già pronta viene avvisato subito", async () => {
+    vi.resetModules();
+    const { quandoOggiPronta, segnalaOggiPronta } = await import("./animazioneApertura");
+    segnalaOggiPronta();
+    const avvisa = vi.fn();
+    quandoOggiPronta(avvisa);
+    expect(avvisa).toHaveBeenCalledTimes(1);
+  });
+
+  it("chi smette di ascoltare non viene avvisato (pulizia di useEffect)", async () => {
+    vi.resetModules();
+    const { quandoOggiPronta, segnalaOggiPronta } = await import("./animazioneApertura");
+    const avvisa = vi.fn();
+    const smetti = quandoOggiPronta(avvisa);
+    smetti();
+    segnalaOggiPronta();
+    expect(avvisa).not.toHaveBeenCalled();
+  });
+});
+
+describe("uscitaApertura", () => {
+  it("strato nascosto dallo script: via subito", () => {
+    expect(uscitaApertura(false, 500)).toBe("togli");
+    expect(uscitaApertura(false, null)).toBe("togli");
+  });
+
+  it("bilancia non ancora comparsa (prima di 120 ms): via subito, niente dissolvenza", () => {
+    expect(uscitaApertura(true, 0)).toBe("togli");
+    expect(uscitaApertura(true, COMPARSA_MS - 1)).toBe("togli");
+  });
+
+  it("bilancia già vista: dissolvenza", () => {
+    expect(uscitaApertura(true, COMPARSA_MS)).toBe("sfuma");
+    expect(uscitaApertura(true, 2000)).toBe("sfuma");
+  });
+
+  it("tempo sconosciuto (riduci movimento, niente getAnimations): dissolvenza", () => {
+    expect(uscitaApertura(true, null)).toBe("sfuma");
   });
 });
