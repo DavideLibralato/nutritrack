@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-24 — Animazione di apertura anche su Accedi
+
+Branch `animazione-apertura`, commit 5. Buco trovato da Davide: chi apre
+l'app installata senza aver fatto l'accesso parte da `/`, il middleware
+lo manda su `/login`, dove lo script non faceva niente, e Accedi → Oggi
+è una navigazione interna: al primo utilizzo l'animazione non si vedeva
+mai. Ora vale anche su `/login` (`PERCORSI_APERTURA`), con le stesse
+regole e lo stesso segno: oscillazione intera e poi dissolvenza, niente
+dati da aspettare (`attende="niente"`); dopo l'accesso non ricompare su
+Oggi. Registrati e le pagine della password restano fuori. Provato con
+`next start` ed Edge senza interfaccia, senza accesso: redirect da `/`
+→ tipo `navigate`, percorso `/login`, animazione mostrata e tolta prima
+di 1 s; ricarica → mostrata; di nuovo `/` → saltata. Su Accedi sopra lo
+strato non resta niente (nessuna pillola). 3 test nuovi, rompi e
+ripristina su due regole. PUNTO §7 e §11.
+
 ## 2026-10-24 — Animazione di apertura: oscillazione sempre intera
 
 Branch `animazione-apertura`, commit 4. Davide l'ha vista nel browser:

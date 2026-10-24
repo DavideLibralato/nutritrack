@@ -3970,7 +3970,8 @@ Confermate dai mockup, con una correzione.
 
 ### Animazione di apertura (dal 24/10, branch `animazione-apertura`)
 
-All'apertura di Oggi la bilancia compare inclinata e oscilla fino a
+All'apertura di Oggi, o di Accedi per chi non ha ancora fatto l'accesso
+(dal 24/10, commit 5), la bilancia compare inclinata e oscilla fino a
 fermarsi in piano, poi sfuma e lascia la pagina. Scelta fra tre
 proposte provate in anteprima con Remotion (progetto fuori dal repo,
 `C:\Users\david\Progetti\libra-apertura-remotion`, solo banco di prova:
@@ -3998,7 +3999,9 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   pronta"** (`uscitaApertura`, test in
   `src/lib/animazioneApertura.test.ts`). Nel frattempo la bilancia resta
   ferma in equilibrio. Dopo **3 s** sfuma comunque, come rete di
-  sicurezza (sotto ricompare "Caricamento...").
+  sicurezza (sotto ricompare "Caricamento..."). **Su Accedi** non ci
+  sono dati da aspettare (`attende="niente"`): oscillazione intera, poi
+  dissolvenza.
   - **Il costo, scelto**: a ogni apertura a freddo fino a circa 0,85 s
     (700 + 150 ms) in cui Oggi non si vede e non si tocca, anche se i
     dati sono già pronti. Cambiando scheda nessun costo: lì
@@ -4025,13 +4028,20 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
 - **Non copre il tratto più lungo dell'apertura**: prima che arrivi
   l'HTML (service worker "prima la rete" e `getUser()` del middleware)
   nessun nostro codice può disegnare. Sostituisce solo l'attesa dopo.
-- **Solo al primo caricamento di Oggi** (apertura a freddo o
-  ricarica), **mai tornando su Oggi da un'altra scheda**, anche se in
-  quel momento i dati Dexie non ci sono ancora. Due livelli
+- **Solo al primo caricamento di Oggi o di Accedi** (apertura a
+  freddo o ricarica; `PERCORSI_APERTURA`, cioè `/` e `/login`), **mai
+  tornando su Oggi da un'altra scheda**, anche se in quel momento i
+  dati Dexie non ci sono ancora. Registrati, Password dimenticata e
+  Reimposta password restano fuori. **Perché anche Accedi** (buco
+  trovato da Davide il 24/10): chi apre l'app installata senza aver
+  fatto l'accesso parte da `/`, ma il middleware lo manda su `/login`,
+  dove lo script prima non faceva niente; poi Accedi → Oggi è una
+  navigazione interna. Al primo utilizzo l'animazione non si vedeva
+  mai. Due livelli
   (`src/lib/animazioneApertura.ts`):
   - `SCRIPT_APERTURA` in `<head>` (`layout.tsx`, accanto a quello del
     tema, stessa tecnica: testo di funzioni autonome con
-    `toString()`). Gira solo su `/`, prima del primo disegno. Mostra se
+    `toString()`). Gira solo su `/` e `/login`, prima del primo disegno. Mostra se
     la pagina è una ricarica (`performance`, tipo `"reload"`) oppure se
     in `sessionStorage` non c'è `nutritrack:apertura-mostrata`; il
     segno si scrive in ogni caso. Se mostra, scrive
@@ -4049,16 +4059,30 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
     variabile resta vera e lo strato non si disegna. Si legge al primo
     disegno e si scrive solo dopo il montaggio, perché nel modo
     sviluppo React fa due volte i primi disegni.
-  - **Dopo l'accesso l'animazione non compare, di proposito.** Accedi
-    porta a Oggi con `router.push` (`src/app/login/page.tsx`), una
-    navigazione interna senza ricaricare la pagina: lo script in
-    `<head>` ha girato solo all'apertura di `/login`, dove non fa
-    niente, e su Oggi non c'è né l'attributo né il segno. Lo stesso per
-    la fine dell'onboarding e per Reimposta password
-    (`router.replace("/")`). Verificato in console il 24/10: dopo
-    l'accesso `data-apertura` assente e segno vuoto; dopo una ricarica
-    `"mostra"` e `"1"`, nessun avviso di idratazione, nemmeno tornando
-    su Oggi da Impostazioni.
+  - **Dopo l'accesso l'animazione non ricompare su Oggi, di
+    proposito.** Si vede su Accedi, se è l'apertura; poi Accedi porta a
+    Oggi con `router.push` (`src/app/login/page.tsx`), una navigazione
+    interna senza ricaricare la pagina. Lì lo strato di Oggi non si
+    disegna: la variabile del modulo è già vera, l'ha segnata lo strato
+    di Accedi. Anche una navigazione completa verso Oggi troverebbe il
+    segno, che è uno solo per le due pagine (test "il segno è uno
+    solo"). Lo stesso per la fine dell'onboarding e per Reimposta
+    password (`router.replace("/")`). Verificato in console il 24/10,
+    prima del commit 5 (quando su `/login` lo script non faceva
+    niente): dopo l'accesso `data-apertura` assente e segno vuoto; dopo
+    una ricarica `"mostra"` e `"1"`, nessun avviso di idratazione,
+    nemmeno tornando su Oggi da Impostazioni.
+  - **Il redirect del middleware da `/` a `/login`** è una sola
+    navigazione di tipo `"navigate"` con un redirect, e lo script trova
+    il percorso `/login`. Provato il 24/10 con `next start` ed Edge
+    senza interfaccia, profilo nuovo e senza accesso: apertura di `/` →
+    `navigate`, `redirectCount` 1, percorso `/login?redirectTo=%2F`,
+    `"mostra"`, segno scritto, strato presente a 300 e 600 ms e tolto a
+    1000 ms; ricarica → `reload`, `"mostra"`; di nuovo `/` nella stessa
+    scheda → segno trovato, niente animazione. Nell'app installata la
+    navigazione passa dal service worker ("prima la rete"): il redirect
+    arriva al browser com'è e il tipo resta `"navigate"`, ma questo va
+    confermato su iPhone.
   Test: `src/lib/animazioneApertura.test.ts`, che esegue anche la
   stringa vera dello script in una pagina finta.
 - **Dove vive lo strato**: fuori dal `<Suspense>` di Oggi, mai nel suo
@@ -4070,8 +4094,12 @@ costruita (decisione "mostrare o no" e strato), da provare su iPhone.
   z-22 il 24/10 apposta (prima era z-30 come la pillola e compariva
   sopra la bilancia); sotto la pillola della tab bar (z-30), che resta
   visibile e toccabile come prima. `aria-hidden="true"`. Componente
-  `src/components/AnimazioneApertura.tsx`, messo in `page.tsx` di Oggi
-  prima del `<Suspense>`.
+  `src/components/AnimazioneApertura.tsx`, messo prima del
+  `<Suspense>` in `page.tsx` di Oggi (`attende="oggi"`) e di Accedi
+  (`attende="niente"`). Su Accedi nell'HTML del server c'è solo lo
+  strato: il modulo sta in un `<Suspense fallback={null}>`, quindi prima
+  dell'idratazione la pagina è vuota. Sopra lo strato su Accedi non
+  resta niente: non c'è la pillola né altri elementi fissi.
 - **Riduci movimento**: bilancia ferma in piano per lo stesso tempo
   minimo (700 ms), poi sfuma come sempre (l'opacità non è movimento).
 
@@ -6608,13 +6636,14 @@ seconda, `username_disponibile_solo_autenticati` (versione
 
 **L'animazione di apertura** (24/10, branch `animazione-apertura`, da
 provare su iPhone). La bilancia che si mette in equilibrio sopra Oggi
-alle aperture a freddo, con l'oscillazione sempre intera (§7,
+(o sopra Accedi, per chi non ha fatto l'accesso) alle aperture a
+freddo, con l'oscillazione sempre intera (§7,
 "Animazione di apertura"). CSS + SVG, scelta fra tre proposte provate
 con Remotion fuori dal repo.
 
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
-`username-dopo-accesso`; 1326 in 117 file sul branch
+`username-dopo-accesso`; 1329 in 117 file sul branch
 `animazione-apertura`.
 
 ### Non ancora costruito

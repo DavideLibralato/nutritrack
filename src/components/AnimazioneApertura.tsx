@@ -23,7 +23,11 @@
 // finita" (l'animazione CSS apertura-minimo, 700 ms) e "Oggi pronta" →
 // dissolvenza di 150 ms (data-esce), poi lo strato si toglie dalla pagina.
 // Dopo 3 s comunque (solo CSS, funziona anche senza JavaScript).
-// Finché è pieno blocca i tocchi (copre Oggi); durante l'uscita no.
+// Finché è pieno blocca i tocchi (copre la pagina); durante l'uscita no.
+//
+// Dove sta: Oggi (aspetta i dati, attende="oggi") e Accedi (niente da
+// aspettare, attende="niente": oscillazione intera, poi via). In tutte e due
+// prima del <Suspense> della pagina.
 
 import { useEffect, useRef, useState, type AnimationEvent } from "react";
 import {
@@ -49,7 +53,7 @@ import {
   VIEWBOX_BILANCIA,
 } from "@/lib/glifoBilancia";
 
-export default function AnimazioneApertura() {
+export default function AnimazioneApertura({ attende }: { attende: "oggi" | "niente" }) {
   // Al primo disegno nel browser (idratazione) vale true, come sul server:
   // stesso HTML, quindi React tiene l'elemento. Cambiando scheda vale false
   // e lo strato non esiste.
@@ -61,7 +65,8 @@ export default function AnimazioneApertura() {
     segnaAperturaPassata();
     let attivo = true;
     let minimoFinito = false;
-    let oggiPronta = false;
+    // Su Accedi non c'è niente da aspettare: conta solo il minimo.
+    let oggiPronta = attende === "niente";
 
     function decidi() {
       if (!attivo) return;
@@ -94,15 +99,23 @@ export default function AnimazioneApertura() {
       minimoFinito = true;
     }
 
-    const smetti = quandoOggiPronta(() => {
-      oggiPronta = true;
+    // Su Accedi nessun ascolto: il segnale di Oggi non lo riguarda. Si
+    // decide subito: se il minimo è già passato (JavaScript arrivato
+    // tardi) esce, altrimenti aspetta `finished` qui sopra.
+    let smetti = () => {};
+    if (attende === "oggi") {
+      smetti = quandoOggiPronta(() => {
+        oggiPronta = true;
+        decidi();
+      });
+    } else {
       decidi();
-    });
+    }
     return () => {
       attivo = false;
       smetti();
     };
-  }, []);
+  }, [attende]);
 
   // Fine dell'uscita o della rete di sicurezza: lo strato si toglie dalla
   // pagina. Gli altri nomi (la bilancia, il minimo) non contano.

@@ -204,7 +204,7 @@ function capitalizza(testo: string): string {
 export default function OggiPage() {
   return (
     <>
-      <AnimazioneApertura />
+      <AnimazioneApertura attende="oggi" />
       <Suspense
         fallback={
           <main className="flex flex-1 items-center justify-center p-4">

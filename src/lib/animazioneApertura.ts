@@ -2,8 +2,13 @@
 // sezione 7, "Animazione di apertura"). Come si vede sta nel componente
 // AnimazioneApertura e in globals.css; qui c'è solo la decisione.
 //
-// Si mostra solo al primo caricamento della pagina Oggi (apertura a
-// freddo o ricarica), mai tornando su Oggi da un'altra scheda. Due livelli:
+// Si mostra solo al primo caricamento (apertura a freddo o ricarica) di
+// Oggi o di Accedi (PERCORSI_APERTURA), mai tornando su Oggi da un'altra
+// scheda. Accedi perché chi apre l'app senza aver fatto l'accesso parte da
+// / ma il middleware lo manda su /login, e Accedi → Oggi poi è una
+// navigazione interna: senza /login al primo utilizzo l'animazione non si
+// vedrebbe mai. Il segno è lo stesso: vista su Accedi, dopo l'accesso non
+// ricompare su Oggi. Due livelli:
 //
 // 1. SCRIPT_APERTURA, in <head> (layout.tsx, accanto a quello del tema):
 //    gira prima che la pagina venga disegnata, quindi decide prima che la
@@ -29,25 +34,31 @@
 export const CHIAVE_APERTURA = "nutritrack:apertura-mostrata";
 export const ATTRIBUTO_APERTURA = "data-apertura";
 
+// Le pagine dove l'animazione può comparire. Registrati, Password
+// dimenticata e Reimposta password restano fuori.
+export const PERCORSI_APERTURA = ["/", "/login"] as const;
+
 // La parte di sessionStorage che serve: così i test passano un finto.
 type MemoriaSessione = Pick<Storage, "getItem" | "setItem">;
 
-// REGOLA: autonoma (vedi sopra). La chiave arriva come parametro.
+// REGOLA: autonoma (vedi sopra). Chiave e percorsi arrivano come
+// parametri.
 //
 // percorso: location.pathname. tipoNavigazione: il `type` della voce
 // "navigation" di performance ("navigate", "reload", "back_forward"), o
 // null se il browser non lo dice. memoria: sessionStorage, o null se il
 // solo accesso ha lanciato un errore.
 //
-// Restituisce "mostra", "salta", oppure null fuori da Oggi (non tocca
-// niente: aprire il login non deve consumare l'animazione di Oggi).
+// Restituisce "mostra", "salta", oppure null fuori dai percorsi (non
+// tocca niente: aprire Registrati non deve consumare l'animazione).
 export function decidiApertura(
   percorso: string,
   tipoNavigazione: string | null,
   memoria: MemoriaSessione | null,
-  chiave: string
+  chiave: string,
+  percorsi: readonly string[]
 ): "mostra" | "salta" | null {
-  if (percorso !== "/") return null;
+  if (percorsi.indexOf(percorso) === -1) return null;
   try {
     // memoria null: l'errore finisce nel catch, come uno storage rotto.
     const giaMostrata = memoria!.getItem(chiave) !== null;
@@ -73,7 +84,7 @@ export function decidiApertura(
 // l'attributo su <html>.
 export function avviaApertura(
   decidi: typeof decidiApertura,
-  opzioni: { chiave: string; attributo: string }
+  opzioni: { chiave: string; attributo: string; percorsi: readonly string[] }
 ): void {
   let memoria: Storage | null = null;
   try {
@@ -90,7 +101,7 @@ export function avviaApertura(
   } catch {
     tipo = null;
   }
-  if (decidi(location.pathname, tipo, memoria, opzioni.chiave) === "mostra") {
+  if (decidi(location.pathname, tipo, memoria, opzioni.chiave, opzioni.percorsi) === "mostra") {
     document.documentElement.setAttribute(opzioni.attributo, "mostra");
   }
 }
@@ -98,7 +109,7 @@ export function avviaApertura(
 // Il testo dello script in <head>: le due funzioni qui sopra, chiamate
 // subito con i loro valori.
 export const SCRIPT_APERTURA = `(${avviaApertura.toString()})(${decidiApertura.toString()}, ${JSON.stringify(
-  { chiave: CHIAVE_APERTURA, attributo: ATTRIBUTO_APERTURA }
+  { chiave: CHIAVE_APERTURA, attributo: ATTRIBUTO_APERTURA, percorsi: PERCORSI_APERTURA }
 )});`;
 
 // --- Secondo livello: cambio scheda senza ricaricare --------------------

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ATTRIBUTO_APERTURA,
   CHIAVE_APERTURA,
+  PERCORSI_APERTURA,
   SCRIPT_APERTURA,
   decidiApertura,
   uscitaApertura,
@@ -39,48 +40,67 @@ function memoriaFinta({
 describe("decidiApertura", () => {
   it("primo caricamento di Oggi: la mostra e scrive il segno", () => {
     const memoria = memoriaFinta();
-    expect(decidiApertura("/", "navigate", memoria, CHIAVE_APERTURA)).toBe("mostra");
+    expect(decidiApertura("/", "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
     expect(memoria.dati.get(CHIAVE_APERTURA)).toBe("1");
   });
 
   it("segno già presente (cambio scheda offline = navigazione completa): non la mostra", () => {
-    expect(decidiApertura("/", "navigate", memoriaFinta({ segno: true }), CHIAVE_APERTURA)).toBe(
+    expect(decidiApertura("/", "navigate", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe(
       "salta"
     );
     // Anche "indietro" con ricarica completa.
     expect(
-      decidiApertura("/", "back_forward", memoriaFinta({ segno: true }), CHIAVE_APERTURA)
+      decidiApertura("/", "back_forward", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)
     ).toBe("salta");
   });
 
   it("ricarica: la mostra anche con il segno", () => {
-    expect(decidiApertura("/", "reload", memoriaFinta({ segno: true }), CHIAVE_APERTURA)).toBe(
+    expect(decidiApertura("/", "reload", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe(
       "mostra"
     );
   });
 
   it("browser che non dice il tipo di navigazione: decide il segno", () => {
-    expect(decidiApertura("/", null, memoriaFinta(), CHIAVE_APERTURA)).toBe("mostra");
-    expect(decidiApertura("/", null, memoriaFinta({ segno: true }), CHIAVE_APERTURA)).toBe("salta");
+    expect(decidiApertura("/", null, memoriaFinta(), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
+    expect(decidiApertura("/", null, memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
   });
 
   it("sessionStorage che lancia un errore, in lettura o in scrittura: non la mostra, senza eccezioni", () => {
     for (const tipo of ["navigate", "reload"]) {
       expect(
-        decidiApertura("/", tipo, memoriaFinta({ rottaInLettura: true }), CHIAVE_APERTURA)
+        decidiApertura("/", tipo, memoriaFinta({ rottaInLettura: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)
       ).toBe("salta");
       expect(
-        decidiApertura("/", tipo, memoriaFinta({ rottaInScrittura: true }), CHIAVE_APERTURA)
+        decidiApertura("/", tipo, memoriaFinta({ rottaInScrittura: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)
       ).toBe("salta");
       // Il solo accesso a sessionStorage ha già lanciato: arriva null.
-      expect(decidiApertura("/", tipo, null, CHIAVE_APERTURA)).toBe("salta");
+      expect(decidiApertura("/", tipo, null, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
     }
   });
 
-  it("fuori da Oggi non decide e non scrive il segno", () => {
-    for (const percorso of ["/login", "/impostazioni", "/aggiungi", "/onboarding"]) {
+  it("Accedi (/login): stesse regole di Oggi", () => {
+    expect(decidiApertura("/login", "navigate", memoriaFinta(), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
+    expect(decidiApertura("/login", "navigate", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
+    expect(decidiApertura("/login", "reload", memoriaFinta({ segno: true }), CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
+  });
+
+  it("il segno è uno solo: vista su Accedi, dopo una navigazione completa su Oggi non ricompare", () => {
+    const memoria = memoriaFinta();
+    expect(decidiApertura("/login", "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("mostra");
+    expect(decidiApertura("/", "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBe("salta");
+  });
+
+  it("fuori dai percorsi non decide e non scrive il segno", () => {
+    for (const percorso of [
+      "/register",
+      "/password-dimenticata",
+      "/reimposta-password",
+      "/impostazioni",
+      "/aggiungi",
+      "/onboarding",
+    ]) {
       const memoria = memoriaFinta();
-      expect(decidiApertura(percorso, "navigate", memoria, CHIAVE_APERTURA)).toBeNull();
+      expect(decidiApertura(percorso, "navigate", memoria, CHIAVE_APERTURA, PERCORSI_APERTURA)).toBeNull();
       expect(memoria.dati.size).toBe(0);
     }
   });
@@ -143,8 +163,14 @@ describe("SCRIPT_APERTURA in <head>", () => {
     expect(apri({ storageRotto: true }).attributo()).toBeNull();
   });
 
-  it("fuori da Oggi: nessun attributo e nessun segno", () => {
-    const pagina = apri({ percorso: "/login" });
+  it("Accedi al primo caricamento (dopo il redirect da /): mostra", () => {
+    const pagina = apri({ percorso: "/login?redirectTo=%2F" });
+    expect(pagina.attributo()).toBe("mostra");
+    expect(pagina.segno()).toBe("1");
+  });
+
+  it("Registrati: nessun attributo e nessun segno", () => {
+    const pagina = apri({ percorso: "/register" });
     expect(pagina.attributo()).toBeNull();
     expect(pagina.segno()).toBeNull();
   });

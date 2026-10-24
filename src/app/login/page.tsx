@@ -9,17 +9,28 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { destinazioneDopoAccesso } from "@/lib/destinazioneDopoAccesso";
 import CampoPassword from "@/components/CampoPassword";
 import MarchioLibra from "@/components/MarchioLibra";
+import AnimazioneApertura from "@/components/AnimazioneApertura";
 import PaginaAccesso from "@/components/PaginaAccesso";
 import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
 
 // useSearchParams() (sotto, in LoginForm) puo' andare in stallo durante il
 // primo render sul server se non e' avvolto in una <Suspense>: Next.js lo
 // richiede esplicitamente, altrimenti la build da' errore.
+//
+// AnimazioneApertura (PUNTO_DI_PARTENZA.md §7, "Animazione di apertura"):
+// chi apre l'app senza aver fatto l'accesso parte da / e il middleware lo
+// manda qui; poi Accedi → Oggi è una navigazione interna. Senza lo strato
+// anche qui, al primo utilizzo l'animazione non si vedrebbe mai. Fuori dal
+// <Suspense> come su Oggi: il suo fallback all'idratazione viene rifatto.
+// Niente da aspettare: oscillazione intera, poi via.
 export default function LoginPage() {
   return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
+    <>
+      <AnimazioneApertura attende="niente" />
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
+    </>
   );
 }
 
