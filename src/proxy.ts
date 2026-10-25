@@ -1,7 +1,12 @@
+// Il "proxy" di Next 16 (fino a Next 15 si chiamava middleware): gira sul
+// server prima di ogni pagina e decide se mandare a /login. Dal 25/10/2026
+// è una funzione Node.js su Vercel, nella regione fissata in vercel.json
+// (dub1, Dublino, vicino a Supabase in Irlanda); prima, come middleware,
+// girava su Edge. PUNTO_DI_PARTENZA.md §9.1.
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -37,7 +42,8 @@ export async function middleware(request: NextRequest) {
   // Le due pagine della password non vanno né protette né rimbalzate se
   // già loggati:
   // - /reimposta-password: ci si arriva dal link nell'email senza essere
-  //   ancora loggati (lo scambio del codice lo fa il client Supabase);
+  //   ancora loggati, con la sessione nel frammento dell'indirizzo, che la
+  //   pagina raccoglie da sé (il frammento non arriva mai al server);
   // - /password-dimenticata: "Richiedi un nuovo link" deve funzionare anche
   //   con una sessione aperta, per esempio quella dell'account di prova in
   //   Safari quando il reset dell'account vero va richiesto da lì (dal
@@ -90,6 +96,7 @@ function copiaCookieSessione(
 // I file del service worker (sw.js, sw-strategia.js, offline.html) devono
 // restare fuori: il browser li scarica anche senza login, e un redirect a
 // /login al loro posto farebbe fallire l'installazione del service worker.
+// Test: proxyMatcher.test.ts.
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|sw-strategia.js|offline.html|apple-touch-icon.png|icons/).*)',

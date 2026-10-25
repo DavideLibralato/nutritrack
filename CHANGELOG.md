@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Da `middleware.ts` a `proxy.ts`, funzioni in dub1
+
+Branch `proxy-rete-lenta`, commit 2. Next 16 ha deprecato il nome
+`middleware`: `src/middleware.ts` diventa `src/proxy.ts` (rinomina con
+`git mv`), la funzione si chiama `proxy`, il matcher è identico e il
+controllo resta `getUser()`. Il proxy gira solo su Node.js: verificato
+nella build (`runtime: "nodejs"`, prima era su Edge). `vercel.json`
+nuovo con `"regions": ["dub1"]`, vicino a Supabase in Irlanda.
+Corretto il commento su `/reimposta-password`, superato dopo
+`togli-pkce`. Test nuovo `proxyMatcher.test.ts` (9 casi, con
+`unstable_doesMiddlewareMatch` di Next: `unstable_doesProxyMatch` in
+16.3.3 non esiste ancora). Rompi e ripristina, da una copia: `sw.js`
+tolto dalle esclusioni (1 rosso), `/login` e `/reimposta-password`
+esclusi (2 rossi). Test 1326 → 1335 in 119 file. In `CLAUDE.md`
+`proxy.ts` al posto di `middleware.ts` fra i nomi fissi di Next.
+PUNTO §8 e §11.
+
 ## 2026-10-25 — Allineamento dei documenti dopo `togli-pkce`
 
 Branch `proxy-rete-lenta`, commit 1 (solo documenti). Voce del merge di

@@ -62,7 +62,7 @@ non dice il contrario.
 - Nessun colore scritto a mano nei componenti: tutti da variabili CSS, per il
   tema chiaro/scuro (sezione 7)
 - **Nomi di file descrittivi ovunque, tranne dove Next.js impone un nome
-  fisso** (`page.tsx`, `layout.tsx`, `middleware.ts`, `route.ts`...). Per
+  fisso** (`page.tsx`, `layout.tsx`, `proxy.ts`, `route.ts`...). Per
   quei file il significato sta nel percorso/cartella, non nel nome del
   file: `src/app/login/page.tsx` è la pagina di login perché sta nella
   cartella `login`, non perché si chiama `page.tsx` — è così che il

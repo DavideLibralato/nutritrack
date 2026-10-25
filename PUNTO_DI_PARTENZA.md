@@ -4476,6 +4476,31 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
 ## 8. Stack e costi
 
 - **Next.js + Vercel** — hosting gratuito
+  - **Il proxy** (`src/proxy.ts`, dal 25/10, branch `proxy-rete-lenta`;
+    fino ad allora `src/middleware.ts`, nome deprecato da Next 16). Gira
+    prima di ogni pagina e manda a `/login` chi non ha fatto l'accesso
+    (in "middleware" nel resto del documento si intende lui). Cambia il
+    runtime: il middleware girava su **Edge**, vicino all'utente; il
+    proxy gira solo su **Node.js** (Next non lo lascia scegliere), cioè
+    come funzione Vercel in una regione sola. Verificato nella build:
+    `functions-config-manifest.json`, `runtime: "nodejs"`, stesso
+    matcher. La regione è fissata in `vercel.json` (`"regions":
+    ["dub1"]`, Dublino): vicina all'Italia e a Supabase (eu-west-1,
+    Irlanda), che il proxy chiama a ogni navigazione. Vale per tutte le
+    funzioni del progetto
+  - **Costi del proxy sul piano Hobby**: conta come funzione ("fluid
+    compute"), con le soglie mensili di 1.000.000 di invocazioni, 4 ore
+    di CPU attiva e 360 GB-ora di memoria. Stima per la beta (10 persone
+    × 50 navigazioni al giorno): circa 15.000 invocazioni al mese.
+    Nessun addebito possibile (Hobby non ha pagamento a consumo); oltre
+    le soglie Vercel può mettere in pausa il progetto
+  - **Il matcher** (dove il proxy gira) ha un test:
+    `src/proxyMatcher.test.ts`, con `unstable_doesMiddlewareMatch` di
+    Next (in 16.3.3 c'è solo con il nome vecchio). Fuori `sw.js`,
+    `sw-strategia.js`, `offline.html`, `manifest.json` e `icons/`
+    (un redirect a `/login` al posto di `sw.js` farebbe fallire in
+    silenzio il service worker); dentro `/`, `/login`,
+    `/reimposta-password`
 - **Supabase** — database e autenticazione, piano gratuito (progetto esistente:
   `nutritrack`, eu-west-1)
 - **Dexie (IndexedDB)** — database locale sul dispositivo, fonte di verità
@@ -6777,7 +6802,17 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 `username-dopo-accesso`; 1328 in 117 file sul branch
 `animazione-apertura` (su main dal 24/10); 1331 in 118 file sul branch
 `apertura-pesata` (su main dal 25/10); 1326 in 118 file sul branch
-`togli-pkce` (su main dal 25/10).
+`togli-pkce` (su main dal 25/10); 1335 in 119 file sul branch
+`proxy-rete-lenta`.
+
+**Proxy e rete lenta** (dal 25/10, branch `proxy-rete-lenta`). Commit 2:
+`src/middleware.ts` diventa `src/proxy.ts` (funzione `proxy`, matcher
+identico, ancora `getUser()`), che gira su Node.js in `dub1` invece che
+su Edge (§8, "Il proxy"); test del matcher. Previsti: `getClaims()` al
+posto di `getUser()` (commit 3) e un tempo massimo di 3 s per le pagine
+nel service worker (commit 4). Da misurare in Chrome sul PC il tempo di
+risposta del documento "/" (TTFB) su app-libra (Edge) e sull'anteprima
+dopo ogni commit, a freddo e a caldo.
 
 ### Non ancora costruito
 
