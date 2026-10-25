@@ -5,6 +5,14 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-24 — Merge di `animazione-apertura` su main
+
+Fast-forward `6eb7e68` → `b732e33`, 7 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL da togliere. Dopo il merge,
+nell'app installata: chiusura dal multitasking e riapertura provata
+(l'animazione ricompare, chiaro e scuro); apertura senza accesso
+provata solo nel browser. PUNTO §7 e §11.
+
 ## 2026-10-24 — Animazione di apertura provata su iPhone
 
 Branch `animazione-apertura`, commit 7 (solo documenti). **Provata su

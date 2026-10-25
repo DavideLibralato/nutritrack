@@ -3979,11 +3979,13 @@ proposte provate in anteprima con Remotion (progetto fuori dal repo,
 nell'app è CSS + SVG, nessuna libreria e nessun video). **Stato**:
 costruita e **provata su iPhone il 24/10** (anteprima del branch, in
 Safari, account di prova, Build del commit 6; prove 0-11 passate, §11).
-**Da provare dopo il merge**, nell'app installata:
+Su main dal 24/10. Dopo il merge, nell'app installata:
 - (a) app chiusa dal multitasking e riaperta → l'animazione ricompare,
-  cioè il segno in `sessionStorage` sparisce quando iOS chiude l'app;
-- (b) app installata senza accesso → animazione su Accedi (provato solo
-  nel browser: Safari su iPhone e Edge senza interfaccia).
+  cioè il segno in `sessionStorage` sparisce quando iOS chiude l'app:
+  **provato il 24/10 nell'app installata** (chiusura dal multitasking e
+  riapertura, chiaro e scuro);
+- (b) app installata senza accesso → animazione su Accedi: **provato
+  solo nel browser** (Safari su iPhone e Edge senza interfaccia).
 
 - **Come si muove** (proposta P1 "Equilibrio", numeri dal progetto di
   prova; keyframes in `globals.css`, `.animazione-apertura` e
@@ -4051,11 +4053,10 @@ Safari, account di prova, Build del commit 6; prove 0-11 passate, §11).
   scheda di Safari o dell'app. **Non a una ricarica** (dal 24/10,
   commit 6: prima "ricarica = mostra"; la ricarica tiene il segno) e
   **mai tornando su Oggi da un'altra scheda**, anche se in quel momento
-  i dati Dexie non ci sono ancora. **Da provare dopo il merge**, punto
-  (a) sopra: che il segno sparisca quando iOS chiude l'app installata
-  (chiusura dal multitasking, o iOS che la toglie dalla memoria). Se
-  restasse, l'animazione non si vedrebbe più finché l'app non viene
-  tolta e riaggiunta. Registrati, Password dimenticata e Reimposta
+  i dati Dexie non ci sono ancora. Il segno sparisce quando iOS chiude
+  l'app installata: **provato il 24/10** chiudendola dal multitasking e
+  riaprendola (punto (a) sopra). Se restasse, l'animazione non si
+  vedrebbe più finché l'app non viene tolta e riaggiunta. Registrati, Password dimenticata e Reimposta
   password restano fuori. **Perché anche Accedi** (buco
   trovato da Davide il 24/10): chi apre l'app installata senza aver
   fatto l'accesso parte da `/`, ma il middleware lo manda su `/login`,
@@ -6671,9 +6672,10 @@ l'animazione al primo utilizzo e nessuna ripetizione dopo l'accesso;
 barra in basso nascosta fino alla dissolvenza; niente animazione a
 ricarica, cambio scheda, ritorno dal background e offline; tocchi
 bloccati durante la bilancia; tema scuro e due colori principali;
-riduci movimento; durata giusta. Da provare dopo il merge nell'app
-installata: chiusura dal multitasking e riapertura, e apertura senza
-accesso; §7). La bilancia che si mette in equilibrio sopra Oggi
+riduci movimento; durata giusta. Dopo il merge, nell'app installata:
+chiusura dal multitasking e riapertura provata il 24/10, chiaro e
+scuro; apertura senza accesso provata solo nel browser; §7). Su main
+dal 24/10 (fast-forward fino a `b732e33`). La bilancia che si mette in equilibrio sopra Oggi
 (o sopra Accedi, per chi non ha fatto l'accesso) alla prima apertura
 dell'app o della scheda, non a una ricarica, con l'oscillazione sempre
 intera (§7,
