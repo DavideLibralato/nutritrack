@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Proxy e rete lenta provati nell'app installata
+
+Branch `check-quantita`, commit 1 (solo documenti). Dopo il merge di
+`proxy-rete-lenta`, Davide ha provato il 25/10 nell'app installata
+l'apertura normale e la Modalità aereo: tutto ok. PUNTO §11.
+
+## 2026-10-25 — Merge di `proxy-rete-lenta` su main
+
+Fast-forward `a5252d7` → `18e6319`, 5 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL aggiunta su Supabase, quindi
+nessuna da togliere. PUNTO §11.
+
 ## 2026-10-25 — Proxy e tempo massimo provati su iPhone
 
 Branch `proxy-rete-lenta`, commit 5 (solo documenti). **Provato il

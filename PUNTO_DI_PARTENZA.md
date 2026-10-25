@@ -6901,8 +6901,9 @@ Cache Storage all'arrivo della risposta lenta; "Lenta 2 s" → rete;
 `/password-dimenticata` aspetta tutta la rete; offline → copia) e
 **iPhone in Safari** prove 1-3 (Build del commit 4 `42bb009`; uso
 normale con una voce da 125 g arrivata al server alle 19:22,
-verificato da Cowork; Modalità aereo → copia). **Da provare dopo il
-merge**, nell'app installata: apertura normale e Modalità aereo. Il
+verificato da Cowork; Modalità aereo → copia). Dopo il merge
+(fast-forward su main il 25/10), **provato il 25/10 nell'app
+installata** da Davide: apertura normale e Modalità aereo, tutto ok. Il
 `sw.js` nuovo arriva al telefono alla prima apertura con la rete.
 **Difetto già in produzione, corretto nel commit 4**: un "Esci" mentre
 la pagina arrivava dalla rete non bastava a fermarne il salvataggio.
