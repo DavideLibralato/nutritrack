@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Mockup della Foto profilo (25/10/2026), copia del canvas
+     https://claude.ai/artifact/AKv9HE5zyp84qxSi85H6SD.
+     Scelte di Davide (25/10 sera): ritaglio B "Foglio dal basso" (sheet con
+     area del ritaglio, cursore di ingrandimento + pizzico, "Usa foto" /
+     "Annulla"); matita sul cerchio in Profilo: sì; Elimina foto con
+     conferma (sheet "Eliminare la foto?"): sì; caricamento con la foto
+     sbiadita e toast "Foto aggiornata": sì. Le proposte A e C restano qui
+     solo come storia. La foto è un disegno di esempio. -->
+<title>Mockup Foto profilo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Mockup della Foto profilo (25/10/2026). Tre proposte per il ritaglio,
+     poi il tocco sulla foto, gli stati dopo "Usa foto" e i posti dove
+     compare. I colori dell'app sono quelli di globals.css (accento verde);
+     il riquadro "Tema dell'app" li passa al tema scuro. La foto è un
+     disegno di esempio, non una persona vera. -->
+<style>
+/* Layout: tavolo da lavoro con i telefoni affiancati, che vanno a capo; una colonna sul telefono. */
+:root{
+  /* pagina (il tavolo) */
+  --pag-fondo:#e9e4da; --pag-testo:#1f1b16; --pag-tenue:#6b6354; --pag-linea:#d8d0c1; --pag-carta:#f5f1e9;
+  /* app, tema chiaro (globals.css) */
+  --a-fondo:#faf7f2; --a-testo:#1f1b16; --a-linea:#e7e0d2; --a-tenue:#78705f; --a-accento:#3f7d4c;
+  --a-pieno:#3f7d4c; --a-su-pieno:#faf7f2; --a-superficie:#ffffff; --a-avviso:#b5533c; --a-pericolo:#b3261e;
+  --a-capsula:#e6efe6; --a-velo:rgba(31,27,22,.42);
+  --f-titoli:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
+  --f-testo:'Hanken Grotesk',ui-sans-serif,system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --pag-fondo:#141210; --pag-testo:#f2ede4; --pag-tenue:#a39a8b; --pag-linea:#3a342d; --pag-carta:#1f1c18; color-scheme:dark}}
+:root[data-theme="dark"]{--pag-fondo:#141210; --pag-testo:#f2ede4; --pag-tenue:#a39a8b; --pag-linea:#3a342d; --pag-carta:#1f1c18; color-scheme:dark}
+.app-scuro{
+  --a-fondo:#1b1815; --a-testo:#f2ede4; --a-linea:#3a342d; --a-tenue:#a39a8b; --a-accento:#7bb887;
+  --a-pieno:#3f7d4c; --a-su-pieno:#ffffff; --a-superficie:#26221e; --a-avviso:#e8916f; --a-pericolo:#f2938a;
+  --a-capsula:#2e3a2f; --a-velo:rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pag-fondo);color:var(--pag-testo);font-family:var(--f-testo);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.testa{max-width:1180px;margin:0 auto 8px;display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--f-titoli);font-size:34px;line-height:1.05;margin:0;text-wrap:balance}
+.sotto{margin:6px 0 0;color:var(--pag-tenue);max-width:62ch}
+.tema{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--pag-tenue)}
+.seg{display:inline-flex;border:1px solid var(--pag-linea);border-radius:999px;padding:3px;background:var(--pag-carta)}
+.seg button{border:0;background:transparent;color:var(--pag-testo);font:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--pag-testo);color:var(--pag-fondo)}
+.seg button:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #3f7d4c;outline-offset:2px}
+section{max-width:1180px;margin:40px auto 0}
+.sez{display:flex;gap:12px;align-items:baseline;border-top:1px solid var(--pag-linea);padding-top:14px;margin-bottom:16px}
+.sez h2{font-family:var(--f-titoli);font-size:22px;margin:0}
+.sez p{margin:0;color:var(--pag-tenue);font-size:14px;max-width:70ch}
+.griglia{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+figure{margin:0;display:flex;flex-direction:column;gap:10px;width:360px;max-width:100%;min-width:0}
+figcaption{display:flex;flex-direction:column;gap:3px}
+.etichetta{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.nota{font-size:13px;color:var(--pag-tenue)}
+.nota b{color:var(--pag-testo);font-weight:600}
+.proposta{font-family:var(--f-titoli);font-size:18px;font-weight:700}
+.pro{list-style:none;margin:0;padding:0;font-size:13px;display:flex;flex-direction:column;gap:3px}
+.pro li{padding-left:16px;position:relative;color:var(--pag-tenue)}
+.pro li::before{position:absolute;left:0;font-weight:700}
+.pro .si::before{content:"+";color:#3f7d4c}
+.pro .no::before{content:"–";color:#b5533c}
+
+/* telefono */
+.tel{width:360px;max-width:100%;height:740px;border-radius:30px;overflow:hidden;position:relative;border:1px solid var(--pag-linea);
+  box-shadow:0 20px 44px -20px rgba(0,0,0,.5);background:var(--a-fondo);color:var(--a-testo);font-size:16px}
+.schermo{position:absolute;inset:0;display:flex;flex-direction:column;gap:18px;padding:22px 16px}
+.barra-titolo{display:flex;align-items:center;gap:6px;min-height:44px}
+.indietro{width:40px;height:44px;margin-left:-10px;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--a-testo)}
+.barra-titolo h3{margin:0;font-family:var(--f-titoli);font-size:23px;font-weight:700}
+.avatar{border-radius:999px;background:var(--a-pieno);color:var(--a-su-pieno);display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-titoli);font-weight:700;flex-shrink:0;background-size:cover;background-position:center;position:relative}
+.avatar.foto{color:transparent}
+.matita{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:999px;background:var(--a-superficie);border:1px solid var(--a-linea);
+  display:flex;align-items:center;justify-content:center;color:var(--a-testo)}
+.testa-profilo{display:flex;align-items:center;gap:14px}
+.nome{font-weight:600;font-size:17px}
+.dato{font-size:14px;color:var(--a-tenue)}
+.gruppo-tit{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--a-tenue);padding:0 4px;margin-bottom:6px}
+.gruppo{background:var(--a-superficie);border:1px solid var(--a-linea);border-radius:14px}
+.riga{display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 14px;border-bottom:1px solid var(--a-linea);gap:10px}
+.riga:last-child{border-bottom:0}
+.riga span:last-child{color:var(--a-tenue)}
+.velo{position:absolute;inset:0;background:var(--a-velo)}
+.sheet{position:absolute;left:8px;right:8px;bottom:10px;display:flex;flex-direction:column;gap:8px}
+.sheet .blocco{background:var(--a-superficie);border-radius:16px;overflow:hidden}
+.sheet .voce{min-height:54px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--a-linea);font-size:17px;color:var(--a-accento);font-weight:500}
+.sheet .voce:last-child{border-bottom:0}
+.sheet .voce.rossa{color:var(--a-pericolo)}
+.sheet .voce.forte{font-weight:700}
+.sheet .tit{padding:12px 16px;text-align:center;font-size:13px;color:var(--a-tenue);border-bottom:1px solid var(--a-linea)}
+.ios{background:rgba(242,242,247,.96);color:#000}
+.ios .voce{color:#000;justify-content:space-between;padding:0 16px;font-weight:400;border-color:rgba(60,60,67,.2)}
+.ios-annulla{background:#fff;color:#007aff;font-weight:600;justify-content:center}
+.btn{min-height:46px;border:0;border-radius:10px;background:var(--a-pieno);color:var(--a-su-pieno);font:inherit;font-weight:600;font-size:16px;cursor:pointer;width:100%}
+.btn.ghost{background:transparent;color:var(--a-testo);border:1px solid var(--a-linea)}
+.link-btn{background:none;border:0;font:inherit;color:var(--a-testo);font-size:16px;cursor:pointer;padding:10px}
+.avviso{border:1px solid var(--a-linea);background:var(--a-superficie);border-radius:12px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.avviso b{font-weight:600}
+.errore{color:var(--a-avviso);font-size:14px;margin:0}
+
+/* ritaglio: area con foto spostabile e cerchio fisso */
+.ritaglio{position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.ritaglio:active{cursor:grabbing}
+.ritaglio img{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;max-width:none}
+.ritaglio .cerchio{position:absolute;border-radius:999px;box-shadow:0 0 0 2000px rgba(0,0,0,.56);border:2px solid rgba(255,255,255,.9);pointer-events:none}
+.ritaglio .cerchio.griglia3{background:
+  linear-gradient(to right,transparent 33.1%,rgba(255,255,255,.35) 33.3%,transparent 33.6%,transparent 66.4%,rgba(255,255,255,.35) 66.6%,transparent 66.9%),
+  linear-gradient(to bottom,transparent 33.1%,rgba(255,255,255,.35) 33.3%,transparent 33.6%,transparent 66.4%,rgba(255,255,255,.35) 66.6%,transparent 66.9%)}
+.zoom{display:flex;align-items:center;gap:10px;color:var(--a-tenue);font-size:13px}
+.zoom input{flex:1;accent-color:var(--a-accento)}
+.mini-fila{display:flex;align-items:flex-end;justify-content:center;gap:18px}
+.mini{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--a-tenue)}
+.mini i{display:block;border-radius:999px;background-repeat:no-repeat;background-color:var(--a-linea)}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--a-testo);color:var(--a-fondo);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;white-space:nowrap}
+.carica{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--a-tenue)}
+.spin{width:18px;height:18px;border-radius:999px;border:2px solid var(--a-linea);border-top-color:var(--a-accento);animation:gira 0.9s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spin{animation:none}}
+.dica{font-size:13px;color:var(--a-tenue);text-align:center}
+.scuro-fisso{background:#000;color:#fff}
+.scuro-fisso .dica{color:rgba(255,255,255,.72)}
+.decide{max-width:1180px;margin:44px auto 0;border:1px solid var(--pag-linea);background:var(--pag-carta);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.decide h2{font-family:var(--f-titoli);font-size:20px;margin:0}
+.decide ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;max-width:80ch}
+@media (max-width:420px){h1{font-size:28px}.tel{height:700px}}
+</style>
+</head>
+<body>
+
+<div class="testa">
+  <div>
+    <h1>Foto profilo</h1>
+    <p class="sotto">Tre proposte per il ritaglio, da provare con il dito o con il mouse: trascina per spostare la foto, pizzica (o rotellina) per ingrandire. Sotto: il tocco sulla foto, cosa succede dopo "Usa foto", e i tre posti dove compare.</p>
+  </div>
+  <div class="tema"><span id="tema-et">Tema dell'app</span>
+    <div class="seg" role="group" aria-labelledby="tema-et">
+      <button type="button" id="t-chiaro" aria-pressed="true">Chiaro</button>
+      <button type="button" id="t-scuro" aria-pressed="false">Scuro</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+<section>
+  <div class="sez"><h2>Il ritaglio</h2><p>Si apre dopo aver scelto la foto dalla Libreria o averla scattata. Il cerchio resta fermo, si muove la foto. "Usa foto" la carica; "Annulla" torna a Profilo senza toccare niente.</p></div>
+  <div class="griglia">
+
+    <figure>
+      <div class="tel scuro-fisso">
+        <div class="schermo" style="padding:18px 0 22px;gap:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0 8px;min-height:44px">
+            <button type="button" class="link-btn" style="color:#fff">Annulla</button>
+            <span style="font-weight:600">Sposta e ridimensiona</span>
+            <button type="button" class="link-btn usa" style="color:#fff;font-weight:700" data-r="r1">Usa foto</button>
+          </div>
+          <div class="ritaglio" id="r1" style="flex:1;margin-top:8px"></div>
+          <p class="dica" style="margin:14px 16px 0">Trascina per spostare · pizzica per ingrandire</p>
+        </div>
+      </div>
+      <figcaption>
+        <span class="proposta">A · Come le Foto dell'iPhone</span>
+        <span class="nota">Schermo intero nero, la foto più grande possibile. Sempre scuro, anche col tema chiaro.</span>
+        <ul class="pro"><li class="si">gesto che conosci già (è quello di iOS)</li><li class="si">massimo spazio per mirare</li><li class="no">non si vede come verrà in piccolo</li></ul>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="testa-profilo"><div class="avatar" style="width:56px;height:56px;font-size:20px">DL</div><div><div class="nome">Davide</div><div class="dato">80 kg · 175 cm</div></div></div>
+        </div>
+        <div class="velo"></div>
+        <div class="sheet" style="left:0;right:0;bottom:0">
+          <div class="blocco" style="border-radius:22px 22px 0 0;padding:14px 16px 22px;display:flex;flex-direction:column;gap:14px">
+            <div style="width:36px;height:5px;border-radius:9px;background:var(--a-linea);align-self:center"></div>
+            <div style="font-family:var(--f-titoli);font-size:20px;font-weight:700">La tua foto</div>
+            <div class="ritaglio" id="r2" style="height:300px;border-radius:14px"></div>
+            <div class="zoom"><span aria-hidden="true">−</span><input type="range" id="z2" min="0" max="100" value="0" aria-label="Ingrandimento"><span aria-hidden="true">+</span></div>
+            <button type="button" class="btn usa" data-r="r2">Usa foto</button>
+            <button type="button" class="link-btn" style="align-self:center;padding:2px">Annulla</button>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <span class="proposta">B · Foglio dal basso</span>
+        <span class="nota">Come gli altri fogli di Libra (quantità, conferme). Profilo resta dietro, oscurato.</span>
+        <ul class="pro"><li class="si">coerente con il resto dell'app</li><li class="si">cursore per chi non vuole pizzicare</li><li class="no">area del ritaglio più piccola</li></ul>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Foto profilo</h3></div>
+          <div class="ritaglio" id="r3" style="height:330px;border-radius:16px;margin-inline:-4px"></div>
+          <div class="zoom"><span aria-hidden="true">−</span><input type="range" id="z3" min="0" max="100" value="0" aria-label="Ingrandimento"><span aria-hidden="true">+</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="gruppo-tit" style="margin:0">Come la vedranno</div>
+            <div class="mini-fila">
+              <div class="mini"><i id="m3a" style="width:56px;height:56px"></i>Profilo</div>
+              <div class="mini"><i id="m3b" style="width:52px;height:52px"></i>Impostazioni</div>
+              <div class="mini"><i id="m3c" style="width:38px;height:38px"></i>Amici</div>
+            </div>
+          </div>
+          <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px">
+            <button type="button" class="btn usa" data-r="r3">Usa foto</button>
+            <button type="button" class="link-btn" style="align-self:center;padding:4px">Annulla</button>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        <span class="proposta">C · Pagina con anteprime</span>
+        <span class="nota">Una pagina dell'app, con le anteprime nelle tre misure vere che si aggiornano mentre sposti.</span>
+        <ul class="pro"><li class="si">vedi subito come esce nei tre posti</li><li class="si">stesse pagine di Impostazioni (freccia indietro)</li><li class="no">la più lunga da costruire</li></ul>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section>
+  <div class="sez"><h2>Il tocco sulla foto</h2><p>In Profilo il cerchio ha una matita piccola, così si capisce che si tocca. Senza foto si apre subito il menu dell'iPhone; con la foto, la scelta fra Modifica ed Elimina.</p></div>
+  <div class="griglia">
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="testa-profilo"><div class="avatar" style="width:56px;height:56px;font-size:20px">DL<span class="matita"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></span></div><div><div class="nome">Davide</div><div class="dato">80 kg · 175 cm</div></div></div>
+        </div>
+        <div class="velo"></div>
+        <div class="sheet">
+          <div class="blocco ios">
+            <div class="voce">Libreria foto <span aria-hidden="true">▢</span></div>
+            <div class="voce">Scatta foto <span aria-hidden="true">◎</span></div>
+            <div class="voce">Scegli file <span aria-hidden="true">▤</span></div>
+          </div>
+          <div class="blocco ios-annulla"><div class="voce" style="color:#007aff;font-weight:600;justify-content:center;border:0">Annulla</div></div>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">1 · Senza foto</span><span class="nota">Il menu è quello dell'iPhone (<b>non lo disegniamo noi</b>): esce da solo con <code>accept="image/*"</code>.</span></figcaption>
+    </figure>
+
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="testa-profilo"><div class="avatar foto av-profilo" style="width:56px;height:56px;font-size:20px">DL<span class="matita"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></span></div><div><div class="nome">Davide</div><div class="dato">80 kg · 175 cm</div></div></div>
+        </div>
+        <div class="velo"></div>
+        <div class="sheet">
+          <div class="blocco">
+            <div class="tit">Foto profilo</div>
+            <div class="voce">Modifica foto</div>
+            <div class="voce rossa">Elimina foto</div>
+          </div>
+          <div class="blocco"><div class="voce forte">Annulla</div></div>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">2 · Con la foto</span><span class="nota">"Modifica foto" riapre il menu dell'iPhone e poi il ritaglio.</span></figcaption>
+    </figure>
+
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="testa-profilo"><div class="avatar foto av-profilo" style="width:56px;height:56px;font-size:20px">DL</div><div><div class="nome">Davide</div><div class="dato">80 kg · 175 cm</div></div></div>
+        </div>
+        <div class="velo"></div>
+        <div class="sheet" style="left:0;right:0;bottom:0">
+          <div class="blocco" style="border-radius:22px 22px 0 0;padding:14px 16px 22px;display:flex;flex-direction:column;gap:12px">
+            <div style="width:36px;height:5px;border-radius:9px;background:var(--a-linea);align-self:center"></div>
+            <div style="font-family:var(--f-titoli);font-size:20px;font-weight:700">Eliminare la foto?</div>
+            <p style="margin:0;color:var(--a-tenue);font-size:15px">Al suo posto torneranno le iniziali, anche per i tuoi amici.</p>
+            <button type="button" class="btn" style="background:var(--a-pericolo);color:var(--a-su-pieno)">Elimina foto</button>
+            <button type="button" class="link-btn" style="align-self:center;padding:2px">Annulla</button>
+          </div>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">3 · Elimina foto</span><span class="nota">Una conferma prima, perché il file si cancella davvero (niente barra "Annulla" dopo).</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="sez"><h2>Dopo "Usa foto"</h2><p>Serve la rete, come Cambia password. Il caricamento dura al massimo 30 secondi.</p></div>
+  <div class="griglia">
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="testa-profilo"><div class="avatar foto av-profilo" style="width:56px;height:56px;opacity:.55"></div><div><div class="nome">Davide</div><div class="carica"><span class="spin" aria-hidden="true"></span>Caricamento della foto…</div></div></div>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">4 · In caricamento</span><span class="nota">La foto nuova si vede subito, sbiadita, finché il server non risponde.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="testa-profilo"><div class="avatar foto av-profilo" style="width:56px;height:56px"></div><div><div class="nome">Davide</div><div class="dato">80 kg · 175 cm</div></div></div>
+        </div>
+        <div class="toast">Foto aggiornata</div>
+      </div>
+      <figcaption><span class="etichetta">5 · Fatto</span><span class="nota">Un messaggio breve in basso, come "Password aggiornata".</span></figcaption>
+    </figure>
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="testa-profilo"><div class="avatar" style="width:56px;height:56px;font-size:20px">DL</div><div><div class="nome">Davide</div><div class="dato">80 kg · 175 cm</div></div></div>
+          <p class="errore" role="alert">Caricamento non riuscito: la foto non è cambiata. Controlla la connessione e riprova.</p>
+          <button type="button" class="btn ghost">Riprova</button>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">6 · Non riuscito</span><span class="nota">Torna la foto di prima (qui le iniziali). "Riprova" ricarica la stessa foto già ritagliata.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="tel">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Profilo</h3></div>
+          <div class="avviso"><b>Serve la connessione</b><span style="color:var(--a-tenue)">Per cambiare o togliere la foto devi essere online. Quella di adesso resta visibile.</span></div>
+          <div class="testa-profilo"><div class="avatar foto av-profilo" style="width:56px;height:56px"></div><div><div class="nome">Davide</div><div class="dato">80 kg · 175 cm</div></div></div>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">7 · Senza rete</span><span class="nota">Toccando la foto offline compare il riquadro di Cambia password; la foto si vede dalla copia sul telefono.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="sez"><h2>Dove compare</h2><p>Le misure sono quelle di oggi. Chi non ha foto (o un'amicizia non ancora accettata) resta con le iniziali.</p></div>
+  <div class="griglia">
+    <figure>
+      <div class="tel" style="height:420px">
+        <div class="schermo">
+          <div class="barra-titolo"><h3>Impostazioni</h3></div>
+          <div class="gruppo" style="display:flex;align-items:center;gap:14px;padding:14px">
+            <div class="avatar foto av-imp" style="width:52px;height:52px;font-size:19px">DL</div>
+            <div style="flex:1"><div class="nome">Davide</div><div class="dato">@libra</div></div>
+            <span style="color:var(--a-tenue);font-size:22px">›</span>
+          </div>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">Scheda in cima a Impostazioni</span><span class="nota">52 px. Tocca e porta a Profilo, come oggi.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="tel" style="height:420px">
+        <div class="schermo">
+          <div class="barra-titolo"><span class="indietro">‹</span><h3>Amici</h3></div>
+          <div>
+            <div class="gruppo-tit">Amici</div>
+            <div class="gruppo">
+              <div class="riga" style="justify-content:flex-start;gap:12px;min-height:58px"><div class="avatar foto av-amico" style="width:38px;height:38px;font-size:14px"></div><div style="display:flex;flex-direction:column"><span style="color:var(--a-testo);font-weight:600">@prova_libra2</span><span style="font-size:13px">Amici dal 16/10</span></div></div>
+              <div class="riga" style="justify-content:flex-start;gap:12px;min-height:58px"><div class="avatar" style="width:38px;height:38px;font-size:14px;background:var(--a-capsula);color:var(--a-accento)">AX</div><div style="display:flex;flex-direction:column"><span style="color:var(--a-testo);font-weight:600">@axela</span><span style="font-size:13px">Senza foto: iniziali</span></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="gruppo-tit">Richieste</div>
+            <div class="gruppo"><div class="riga" style="justify-content:flex-start;gap:12px;min-height:58px"><div class="avatar" style="width:38px;height:38px;font-size:14px;background:var(--a-capsula);color:var(--a-accento)">MA</div><div style="display:flex;flex-direction:column"><span style="color:var(--a-testo);font-weight:600">@marco</span><span style="font-size:13px">In attesa: iniziali, anche se ha la foto</span></div></div></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><span class="etichetta">Lista Amici</span><span class="nota">38 px. Solo gli amici accettati vedono la tua foto, e tu la loro.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+</div>
+
+<div class="decide">
+  <h2>Da scegliere</h2>
+  <ol>
+    <li>Il ritaglio: <b>A</b>, <b>B</b> o <b>C</b> (o un misto, per esempio C con lo sfondo nero di A).</li>
+    <li>La matita sul cerchio in Profilo: sì o no.</li>
+    <li>Elimina foto con la conferma (schermata 3): va bene così?</li>
+    <li>Il caricamento con la foto sbiadita e il messaggio "Foto aggiornata" (4 e 5): va bene così?</li>
+  </ol>
+  <p class="nota" style="margin:0">Prova "Usa foto" in una delle tre proposte: il ritaglio che hai scelto finisce nelle schermate sotto.</p>
+</div>
+
+<script>
+(function(){
+  // La foto di esempio: un disegno fatto qui, non una persona vera.
+  function disegnaFoto(){
+    var c=document.createElement('canvas'); c.width=900; c.height=1200;
+    var g=c.getContext('2d');
+    var cielo=g.createLinearGradient(0,0,0,1200); cielo.addColorStop(0,'#9cc3d8'); cielo.addColorStop(.55,'#e9d4b4'); cielo.addColorStop(1,'#b7895f');
+    g.fillStyle=cielo; g.fillRect(0,0,900,1200);
+    g.fillStyle='rgba(255,246,220,.85)'; g.beginPath(); g.arc(700,250,90,0,Math.PI*2); g.fill();
+    g.fillStyle='#7f9a6b'; g.beginPath(); g.moveTo(0,820); g.quadraticCurveTo(250,690,520,800); g.quadraticCurveTo(720,880,900,760); g.lineTo(900,1200); g.lineTo(0,1200); g.fill();
+    g.fillStyle='#5f7a52'; g.beginPath(); g.moveTo(0,950); g.quadraticCurveTo(380,860,900,980); g.lineTo(900,1200); g.lineTo(0,1200); g.fill();
+    // figura
+    g.fillStyle='#3a4a5c'; g.beginPath(); g.moveTo(250,1200); g.quadraticCurveTo(260,880,450,860); g.quadraticCurveTo(640,880,650,1200); g.fill();
+    g.fillStyle='#d9a77f'; g.fillRect(415,760,70,120);
+    g.beginPath(); g.ellipse(450,650,118,140,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#4a3326'; g.beginPath(); g.ellipse(450,575,128,86,0,Math.PI,0); g.fill();
+    g.fillStyle='#2b2521'; g.beginPath(); g.arc(410,655,9,0,Math.PI*2); g.arc(492,655,9,0,Math.PI*2); g.fill();
+    g.strokeStyle='#8f5a43'; g.lineWidth=7; g.lineCap='round'; g.beginPath(); g.arc(451,700,36,.2,Math.PI-.2); g.stroke();
+    return c.toDataURL('image/jpeg',.9);
+  }
+  var FOTO=disegnaFoto(), W0=900, H0=1200;
+
+  var ritagli={};
+  function creaRitaglio(id, zoomId, minis){
+    var box=document.getElementById(id); if(!box) return;
+    var img=new Image(); img.src=FOTO; img.alt=''; box.appendChild(img);
+    var cer=document.createElement('div'); cer.className='cerchio griglia3'; box.appendChild(cer);
+    var st={s:1,x:0,y:0,smin:1,r:100,bw:0,bh:0};
+    var zoom=zoomId?document.getElementById(zoomId):null;
+    var SMAX_F=4;
+    function misura(){
+      st.bw=box.clientWidth; st.bh=box.clientHeight;
+      st.r=Math.min(st.bw,st.bh)*0.42;
+      cer.style.width=cer.style.height=(st.r*2)+'px';
+      cer.style.left=(st.bw/2-st.r)+'px'; cer.style.top=(st.bh/2-st.r)+'px';
+      st.smin=(st.r*2)/Math.min(W0,H0);
+      if(st.s<st.smin) st.s=st.smin*1.15;
+      limita(); disegna();
+    }
+    function limita(){
+      var smax=st.smin*SMAX_F;
+      st.s=Math.max(st.smin,Math.min(smax,st.s));
+      var mx=W0*st.s/2-st.r, my=H0*st.s/2-st.r;
+      st.x=Math.max(-mx,Math.min(mx,st.x)); st.y=Math.max(-my,Math.min(my,st.y));
+    }
+    function disegna(){
+      var left=st.bw/2+st.x-W0*st.s/2, top=st.bh/2+st.y-H0*st.s/2;
+      img.style.transform='translate('+left+'px,'+top+'px) scale('+st.s+')';
+      img.style.width=W0+'px'; img.style.height=H0+'px';
+      if(zoom){ zoom.value=Math.round((Math.log(st.s/st.smin)/Math.log(SMAX_F))*100); }
+      (minis||[]).forEach(function(m){
+        var el=document.getElementById(m); if(!el) return;
+        var k=el.clientWidth/(2*st.r);
+        el.style.backgroundImage='url('+FOTO+')';
+        el.style.backgroundSize=(W0*st.s*k)+'px '+(H0*st.s*k)+'px';
+        el.style.backgroundPosition=((left-(st.bw/2-st.r))*k)+'px '+((top-(st.bh/2-st.r))*k)+'px';
+      });
+    }
+    function zoomIntorno(nuova,px,py){
+      var vecchia=st.s; nuova=Math.max(st.smin,Math.min(st.smin*SMAX_F,nuova));
+      var cx=px-st.bw/2, cy=py-st.bh/2;
+      st.x=cx-(cx-st.x)*(nuova/vecchia); st.y=cy-(cy-st.y)*(nuova/vecchia); st.s=nuova;
+      limita(); disegna();
+    }
+    var dita={}, pinza=null;
+    box.addEventListener('pointerdown',function(e){box.setPointerCapture(e.pointerId); dita[e.pointerId]={x:e.clientX,y:e.clientY};});
+    box.addEventListener('pointermove',function(e){
+      if(!dita[e.pointerId]) return;
+      var ids=Object.keys(dita);
+      if(ids.length===1){ st.x+=e.clientX-dita[e.pointerId].x; st.y+=e.clientY-dita[e.pointerId].y; dita[e.pointerId]={x:e.clientX,y:e.clientY}; limita(); disegna(); return; }
+      dita[e.pointerId]={x:e.clientX,y:e.clientY};
+      var a=dita[ids[0]], b=dita[ids[1]];
+      var d=Math.hypot(a.x-b.x,a.y-b.y), r=box.getBoundingClientRect();
+      var mx=(a.x+b.x)/2-r.left, my=(a.y+b.y)/2-r.top;
+      if(pinza){ st.x+=mx-pinza.mx; st.y+=my-pinza.my; zoomIntorno(st.s*d/pinza.d,mx,my); }
+      pinza={d:d,mx:mx,my:my};
+    });
+    function fine(e){ delete dita[e.pointerId]; pinza=null; }
+    box.addEventListener('pointerup',fine); box.addEventListener('pointercancel',fine);
+    box.addEventListener('wheel',function(e){ e.preventDefault(); var r=box.getBoundingClientRect(); zoomIntorno(st.s*Math.exp(-e.deltaY*0.0015),e.clientX-r.left,e.clientY-r.top); },{passive:false});
+    if(zoom) zoom.addEventListener('input',function(){ zoomIntorno(st.smin*Math.pow(SMAX_F,zoom.value/100),st.bw/2,st.bh/2); });
+    img.onload=misura; if(img.complete) misura();
+    window.addEventListener('resize',misura);
+    ritagli[id]={st:st,ritaglia:function(){
+      var c=document.createElement('canvas'); c.width=c.height=400; var g=c.getContext('2d');
+      var left=st.bw/2+st.x-W0*st.s/2, top=st.bh/2+st.y-H0*st.s/2;
+      var sx=((st.bw/2-st.r)-left)/st.s, sy=((st.bh/2-st.r)-top)/st.s, sw=(2*st.r)/st.s;
+      g.drawImage(img,sx,sy,sw,sw,0,0,400,400); return c.toDataURL('image/jpeg',.85);
+    }};
+  }
+  creaRitaglio('r1');
+  creaRitaglio('r2','z2');
+  creaRitaglio('r3','z3',['m3a','m3b','m3c']);
+
+  function mettiFoto(url){
+    document.querySelectorAll('.av-profilo,.av-imp').forEach(function(el){ el.style.backgroundImage='url('+url+')'; });
+  }
+  // Prima di "Usa foto": un ritaglio di partenza (proposta C).
+  setTimeout(function(){ if(ritagli.r3) mettiFoto(ritagli.r3.ritaglia()); },60);
+  // L'amico di esempio: lo stesso disegno, inquadrato più largo.
+  (function(){ var el=document.querySelector('.av-amico'); if(!el) return; el.style.backgroundImage='url('+FOTO+')'; el.style.backgroundSize='70px 93px'; el.style.backgroundPosition='-16px -28px'; })();
+
+  document.querySelectorAll('.usa').forEach(function(b){
+    b.addEventListener('click',function(){
+      var r=ritagli[b.getAttribute('data-r')]; if(!r) return; mettiFoto(r.ritaglia());
+      var t=b.textContent; b.textContent='Messa sotto ✓'; setTimeout(function(){ b.textContent=t; },1400);
+    });
+  });
+
+  var app=document.getElementById('app'), bc=document.getElementById('t-chiaro'), bs=document.getElementById('t-scuro');
+  function tema(scuro){ app.classList.toggle('app-scuro',scuro); bc.setAttribute('aria-pressed',String(!scuro)); bs.setAttribute('aria-pressed',String(scuro)); try{localStorage.setItem('fp-tema',scuro?'s':'c');}catch(e){} }
+  bc.addEventListener('click',function(){tema(false)}); bs.addEventListener('click',function(){tema(true)});
+  try{ if(localStorage.getItem('fp-tema')==='s') tema(true); }catch(e){}
+})();
+</script>
+</body>
+</html>

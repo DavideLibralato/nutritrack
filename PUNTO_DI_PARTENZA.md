@@ -948,7 +948,9 @@ Salva, "Salvato." e bivio); il gruppo mostra "Modificato" ed errori.
 un comando che non fa niente sembra rotto):
 
 - in cima la **scheda dell'account**: iniziali (prime due parole del nome),
-  nome, "78,4 kg · 180 cm"; porta a **Profilo**;
+  nome, "78,4 kg · 180 cm"; porta a **Profilo**. Con la foto profilo
+  (branch `foto-profilo`, sotto "Profilo") la foto prende il posto delle
+  iniziali, nel cerchio da 52 px;
 - gruppo **Alimentazione**: Obiettivi ("2500 kcal", oppure "2500 · 2950
   kcal" con i giorni differenziati accesi), Pasti e orari, **Alimenti**
   (dal 15/10, branch `catalogo-alimenti`: il catalogo personale, "46
@@ -2222,7 +2224,10 @@ proposta **B**, scelta il 16/10)
   collegamento "Vai ad Amici". Se gli amici non si leggono: "Non riesco a
   leggere i tuoi amici. Controlla la connessione e riprova." con
   Riprova. Gli amici sono quelli della pagina Amici, in ordine
-  alfabetico, con la spunta a quadratino; "Annulla" chiude. Il foglio
+  alfabetico, con la spunta a quadratino; "Annulla" chiude. Dal branch
+  `foto-profilo` (deciso il 25/10) ogni amico ha anche il cerchio con la
+  sua foto, o le iniziali, come nella pagina Amici (oggi la riga ha solo
+  spunta e "@username"). Il foglio
   è `SheetCondividiCon` (passo 4, 16/10). **Provato su iPhone il 16/10**
   da Davide (anteprima in Safari, account A → B, build `c47f275`): invio
   di 2 alimenti, secondo invio dello stesso alimento, foglio offline;
@@ -2491,7 +2496,8 @@ proposta **B**, scelta il 16/10)
 **Offline e dati.** Le tre tabelle di Amici sono **solo online** (sezione
 4): non entrano in Dexie, nella coda né nella discesa, quindi niente
 versione Dexie nuova. Offline la pagina Amici mostra "Serve la
-connessione". Entra nel local-first una cosa sola, la copia accettata,
+connessione". Per questo le foto degli amici non hanno una copia sul
+telefono (deciso il 25/10): offline l'elenco non c'è. Entra nel local-first una cosa sola, la copia accettata,
 che è una riga normale di `alimenti`.
 
 **La pagina Amici** (dal 15/10, branch `amici`, passo 6; mockup
@@ -2563,7 +2569,11 @@ Com'è fatta, dall'alto ("‹ Impostazioni" e il titolo "Amici"):
 
 Le iniziali vengono dallo username: le prime lettere delle prime due
 parti separate da "_" ("marco_b" → "mb"), altrimenti le prime due lettere
-(`inizialiUsername`). La divisione delle righe in ricevute / inviate in
+(`inizialiUsername`). Dal branch `foto-profilo` (deciso il 25/10) fra
+gli **amici accettati** il cerchio da 38 px mostra la foto profilo, se
+c'è; richieste ricevute, inviate e non accettate restano con le
+iniziali anche se l'altro ha la foto (sotto "Profilo", "La foto
+profilo"). La divisione delle righe in ricevute / inviate in
 attesa / non accettate / amici è una funzione pura con test
 (`dividiAmicizie` in `src/lib/amici/amicizie.ts`): non si fida della RLS e
 scarta comunque le righe cancellate, quelle senza di me, le richieste
@@ -2633,7 +2643,9 @@ sono in Obiettivi, la pesata in Peso.
   iniziali, nome, "78,4 kg · 180 cm" (ultima pesata e altezza salvate) ed
   email dell'account in sola lettura. Il nome viene dai metadati
   dell'account scritti alla registrazione (`profili.nome` non lo scrive
-  ancora nessuno): se manca, niente iniziali e niente nome
+  ancora nessuno): se manca, niente iniziali e niente nome. Con la foto
+  profilo (sotto, "La foto profilo") il cerchio mostra la foto al posto
+  delle iniziali, ha una piccola matita e si tocca
 - **Account** (dal 15/10, branch `amici`, passo 4; mockup
   `docs/mockups/amici.html`, schermata 5): la riga **Username**, sopra i
   dati personali. A destra "@nome", "Da scegliere" se non c'è ancora,
@@ -2682,6 +2694,84 @@ sono in Obiettivi, la pesata in Peso.
   prima. Esce solo questo dispositivo (`scope: "local"`), e non offline:
   senza rete non si esce, con un messaggio, mai "a metà"
 - **Tema**: non sta in Profilo ma in Impostazioni > Aspetto (sopra)
+
+#### La foto profilo (decisa il 25/10, branch `foto-profilo`)
+
+Decisioni di Davide del 5/10 e del 25/10, dopo l'analisi del 25/10.
+Mockup `docs/mockups/foto-profilo.html` (canvas di Cowork): scelta la
+proposta **B, "Foglio dal basso"**; le proposte A e C nel file sono solo
+storia.
+
+- **Dove si vede**: nel cerchio dell'intestazione di Profilo
+  (`IntestazioneProfilo`), nella scheda in cima a Impostazioni
+  (`SchedaAccount`, 52 px), nella lista Amici (`RigaAmico`, 38 px) e nel
+  foglio "Condividi con" (`SheetCondividiCon`). Senza foto restano le
+  iniziali, come oggi
+- **Chi la vede**: tu e i tuoi **amici con amicizia accettata**. Chi ti
+  ha mandato una richiesta, chi l'ha ricevuta e non ha ancora risposto,
+  e chi non è più tuo amico vede le iniziali (regole in §4, "La foto
+  profilo: solo online")
+- **Ingresso**: tocco sul cerchio in Profilo, che ha una piccola
+  **matita** per far capire che si tocca. Senza foto si apre subito il
+  menu dell'iPhone (Libreria foto, Scatta foto, Scegli file: è del
+  sistema, esce da solo con `<input type="file" accept="image/*">`). Con
+  la foto, un foglio **"Foto profilo"** con "Modifica foto" (riapre il
+  menu dell'iPhone e poi il ritaglio), "Elimina foto" (rosso) e "Annulla"
+- **Anteprima e ritaglio, una schermata sola**: un foglio dal basso come
+  gli altri di Libra, titolo **"La tua foto"**. Area del ritaglio con un
+  **cerchio fisso**: si sposta la foto con un dito e la si ingrandisce
+  con due (pizzico), oppure con il **cursore di ingrandimento** (− / +).
+  "**Usa foto**" pieno, "**Annulla**" sotto: Annulla torna a Profilo senza
+  toccare niente. Il ritaglio usa la libreria `react-easy-crop` (MIT,
+  gratuita; deciso il 25/10 contro un codice nostro per i gesti di
+  Safari), con il suo CSS spento e il nostro, a variabili
+- **Il file**: si disegna solo il quadrato scelto in un canvas di
+  400×400 e si salva in **JPEG** (qualità 0,85; Safari non produce WebP
+  dal canvas), circa 25-60 KB. Il ridisegno raddrizza la foto e toglie i
+  dati EXIF, compresa la posizione. Dall'iPhone può arrivare un HEIC:
+  Safari lo apre, quindi va bene. Un file che il browser non sa aprire
+  (per esempio un HEIC scelto da Chrome sul PC) → "**Questa foto non si
+  può aprire**"
+- **Dopo "Usa foto"** (serve la rete, come Cambia password): la foto
+  nuova si vede subito **sbiadita**, con "**Caricamento della foto…**";
+  riuscito, il messaggio breve in basso "**Foto aggiornata**" (come
+  "Password aggiornata"). Tempo massimo i 30 s di `fetchConScadenza.ts`.
+  Non riuscito: torna la foto di prima (o le iniziali) e compare
+  "**Caricamento non riuscito: la foto non è cambiata. Controlla la
+  connessione e riprova.**" con "**Riprova**", che ricarica la stessa
+  foto già ritagliata, senza rifare il ritaglio
+- **Elimina foto**, con una conferma perché il file si cancella davvero
+  (niente barra "Annulla" dopo): foglio "**Eliminare la foto?**", testo
+  "Al suo posto torneranno le iniziali, anche per i tuoi amici.", pulsante
+  rosso "**Elimina foto**" e "Annulla"
+- **Offline**: la propria foto si vede lo stesso, dalla copia sul
+  telefono. Toccando il cerchio compare il riquadro "**Serve la
+  connessione**" di Cambia password: "Per cambiare o togliere la foto
+  devi essere online. Quella di adesso resta visibile."
+- **Chiamata diretta, non dalla coda** (deciso il 25/10): la coda porta
+  righe, non file, e il cambio ha tre passi in un ordine preciso. (1)
+  si carica il file nuovo; (2) `imposta_foto_profilo` con il percorso
+  nuovo; (3) si cancellano il file vecchio e ogni avanzo della cartella.
+  Fallito (1): non è cambiato niente. Fallito (2): resta un file in più,
+  che pulisce il cambio successivo; se si è persa solo la risposta, la
+  foto può essere cambiata lo stesso e la si vede al prossimo
+  aggiornamento. Fallito (3): un avanzo, pulito al cambio successivo.
+  Elimina foto: `imposta_foto_profilo(null)`, poi i file, poi la copia
+  sul telefono
+- **La copia sul telefono, solo della propria foto** (deciso il 25/10):
+  in Dexie, tabella locale `foto_locale` (chiave `user_id`: percorso e
+  file), mostrata con un indirizzo locale (`URL.createObjectURL`).
+  Serve la `version(9)` di Dexie, con la tabella nuova e senza
+  `.upgrade()`: nasce vuota e le righe esistenti non cambiano forma
+  (CLAUDE.md, B). Si aggiorna all'apertura con la rete e al ritorno in
+  primo piano: se il percorso sul server è diverso, si scarica la foto
+  nuova; dopo un cambio da questo telefono si salva subito il file già
+  compresso. Si cancella con Esci, Elimina account, Elimina foto, e
+  quando il server dice che non c'è più (tolta da un altro telefono).
+  Le foto degli amici non hanno copia: offline la pagina Amici non c'è
+  (sopra, "Amici", "Offline e dati"); si leggono con URL firmati
+  validi un'ora, in una sola chiamata per tutti, e se la lettura fallisce
+  restano le iniziali, senza errore nella pagina
 
 #### Un solo Salva (deciso il 2026-09-26)
 
@@ -3189,7 +3279,7 @@ bug che si nota sei mesi dopo, guardando un grafico che non torna.
 
 ---
 
-## 4. Modello dati (11 tabelle sincronizzate, più 3 solo online per Amici)
+## 4. Modello dati (11 tabelle sincronizzate, più 3 solo online per Amici e 1 per la foto profilo)
 
 Progettate per il quadro completo, anche se in V1 se ne usa metà. **Creare una
 tabella non vuol dire costruire la feature**: alcune restano vuote finché non
@@ -3662,6 +3752,64 @@ le funzioni dei trigger su `auth.users` (9.1) e
 `valore_condiviso_valido` (il controllo di un valore numerico dentro
 `manda_alimenti`, non security definer), non chiamabili da nessuno. Gli
 avvisi degli advisors che danno sono accettati (9.6).
+
+#### La foto profilo: solo online (decisa il 25/10, branch `foto-profilo`)
+
+Stato: **decisa, migration non ancora scritta**. Schermate e
+comportamento in §3, "Profilo", "La foto profilo".
+
+- **Perché una tabella e non una colonna su `profili`** (deciso il 25/10,
+  al posto della colonna nullable decisa il 5/10): la coda invia la riga
+  intera di `profili` (`upsert` in `sincronizza.ts`). Un telefono non
+  ancora allineato che salva l'altezza riscriverebbe sul server il
+  percorso della foto vecchia, in silenzio. In più gli amici non possono
+  leggere `profili` (RLS: solo la propria riga). Una tabella solo online,
+  come quelle di Amici, non passa dalla coda
+- **`foto_profilo`**: `id` uuid, `user_id` unico (una riga per utente)
+  verso `auth.users` `ON DELETE CASCADE`, `percorso` text nullable (null =
+  nessuna foto), `creato_il`, `updated_at` con il trigger
+  `set_updated_at`, `deleted_at` (campi tecnici, sotto). Non entra in
+  Dexie, nella coda né nella discesa; tipo `FotoProfilo` in `tipi.ts`
+- **RLS nella stessa migration**: lettura per il proprietario e per chi
+  ha con lui un'amicizia `accettata` non cancellata; nessuna scrittura
+  diretta
+- **`imposta_foto_profilo(p_percorso text)`**, `security definer`,
+  `search_path = ''`, `revoke` da `public` e `anon`, `grant` ad
+  `authenticated` come le altre: scrive la riga (la crea alla prima
+  foto). Controlla che il percorso stia nella cartella di chi chiama e
+  che il file esista davvero in `storage.objects`; null toglie la foto.
+  Risponde con un testo, come `chiedi_amicizia`
+- **Gli amici**: una terza lettura in `leggiAmicizie`, come per
+  `nomi_utente` (`user_id`, `percorso` di `foto_profilo` per gli altri
+  della lista); la RLS restituisce solo gli amici accettati
+- **Bucket `foto-profilo`, privato**: limite 500 KB, solo `image/jpeg`
+  (una rete di sicurezza del server, il telefono manda già 25-60 KB).
+  Scartato quello pubblico: chi ha avuto l'indirizzo, per esempio un ex
+  amico, la vedrebbe per sempre
+- **Percorso** `<user_id>/<uuid>.jpg`, **nome nuovo a ogni cambio**: un
+  indirizzo nuovo non è mai in cache, quindi una foto vecchia non
+  ricompare; il file vecchio si cancella dopo
+- **Regole su `storage.objects`**, per `authenticated`, solo nel bucket
+  `foto-profilo`: aggiungere solo nella propria cartella (il primo pezzo
+  del percorso = il proprio id); leggere il proprietario e gli amici con
+  amicizia accettata non cancellata; cancellare solo nella propria
+  cartella; nessuna regola di modifica (un file non si sovrascrive mai).
+  Il confronto fra cartella e id è fra testi, senza conversione a uuid
+- **Lettura**: la propria foto con `download()` (finisce in Dexie, §3);
+  quelle degli amici con `createSignedUrls`, URL firmati validi **un'ora**.
+  Rischio accettato: un URL dato prima che l'amicizia venga tolta resta
+  valido fino alla sua scadenza
+- **`elimina_mio_account` sostituita**, con `create or replace` (mai drop
+  e create: ridarebbe `EXECUTE` a `PUBLIC`, lezione del 23/10) e gli
+  stessi `revoke`/`grant` del file originale: in più **rifiuta se nella
+  cartella dell'utente c'è ancora un file** (§9.6, "Elimina il mio
+  account", "File in Storage")
+- **Migration additiva**: tabella, bucket, regole e funzione nuove, una
+  funzione sostituita con stesso nome e firma; niente drop. All'app di
+  oggi non cambia niente: nessuno può caricare file, e con zero file il
+  controllo nuovo di Elimina account non rifiuta mai. Prove in un blocco
+  annullato RESOCONTO, in un file della cartella del progetto fuori da
+  git, che Cowork legge prima di applicare
 
 ### Campi tecnici obbligatori su ogni tabella
 
@@ -4583,7 +4731,14 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
     silenzio il service worker); dentro `/`, `/login`,
     `/reimposta-password`
 - **Supabase** — database e autenticazione, piano gratuito (progetto esistente:
-  `nutritrack`, eu-west-1)
+  `nutritrack`, eu-west-1). Dal branch `foto-profilo` anche lo
+  **Storage**, per le foto profilo (§4): nel piano gratuito 1 GB di
+  spazio e 5 GB di traffico al mese (più 5 GB serviti dalla cache), URL
+  firmati e regole di accesso compresi. Il ridimensionamento delle
+  immagini sul server **non** c'è nel piano gratuito: per questo la foto
+  si comprime sul telefono (circa 50 KB l'una)
+- **react-easy-crop** (dal branch `foto-profilo`) — il ritaglio della
+  foto profilo con le dita, licenza MIT, gratuita
 - **Dexie (IndexedDB)** — database locale sul dispositivo, fonte di verità
 - **PWA installabile** — nessuno store, nessun costo di pubblicazione
 - **Open Food Facts** — catalogo alimenti via API pubblica, gratuita, senza chiave
@@ -5817,12 +5972,30 @@ costruzione e non per attenzione.
   vera: A eliminato con due condivisioni in attesa nei due sensi, tutto
   di A sparito, le copie già aggiunte da B rimaste, `@amici_uno` di nuovo
   libero, nessun altro utente toccato (verificato da Cowork)
-- **File in Storage**: oggi zero. Quando ci saranno file dell'utente (la
-  foto profilo), `elimina_mio_account` o il flusso che la chiama dovrà
-  cancellare anche quelli: le foreign key non toccano i file
+- **File in Storage** (deciso il 25/10, branch `foto-profilo`; oggi zero
+  file). La foto profilo non si può cancellare dentro
+  `elimina_mio_account`: su `storage.objects` il trigger
+  `protect_objects_delete` blocca le cancellazioni da SQL (verificato il
+  25/10), e la documentazione di Supabase dice che togliere quelle righe
+  a mano lascerebbe il file orfano. Nessuna foreign key lega i file
+  all'utente: cancellato l'account, il file resterebbe sul server. Quindi
+  il flusso, **prima della funzione**: (1) `imposta_foto_profilo(null)`;
+  (2) si elencano i file della propria cartella e si cancellano con le API
+  dello Storage; (3) `elimina_mio_account`, che **rifiuta se nella
+  cartella c'è ancora un file** (la funzione gira in una transazione:
+  l'account resta intatto). Così nessuna strada lascia una foto senza
+  account, nemmeno un altro telefono che carica una foto nel frattempo.
+  Fallisce (1) o (2) (rete, 30 s scaduti): ci si ferma con l'errore di
+  rete di oggi, "il tuo account non è stato toccato". Fallisce (3) dopo
+  che la foto è stata tolta: "**Non è stato possibile eliminare
+  l'account. La tua foto è già stata tolta; i tuoi dati sono intatti.
+  Riprova.**" (testo di Davide, 25/10). Scartata una Edge Function con
+  la chiave di servizio: più pezzi e una chiave segreta, stesso
+  risultato
 - **Sul dispositivo, solo dopo l'ok del server**: via le righe di questo
-  utente nelle 11 tabelle Dexie, le sue voci di outbox (accantonate
-  comprese) e i suoi cursori. Senza il controllo delle firme del
+  utente nelle 11 tabelle Dexie, la copia della sua foto profilo
+  (`foto_locale`, dal branch `foto-profilo`), le sue voci di outbox
+  (accantonate comprese) e i suoi cursori. Senza il controllo delle firme del
   ripristino: a server cancellato non c'è più niente da proteggere. Il
   catalogo comune e i dati di altri utenti sul dispositivo restano. Poi
   le pagine salvate dal service worker, la sessione (`scope: "local"`),
@@ -5942,7 +6115,9 @@ costruzione e non per attenzione.
   login), il catalogo comune e i dati di altri utenti. Con Amici (15/10)
   si cancella anche la chiave del pallino di questo utente
   (`nutritrack:amici:novita:<id>`); in Dexie niente di nuovo, le tabelle
-  di Amici sono solo online
+  di Amici sono solo online. Dal branch `foto-profilo` si cancella anche
+  la copia della propria foto profilo (`foto_locale`); il file sul
+  server resta, è dell'account
 - **Ordine: signOut → attesa delle discese in corso → pulizia**. Una
   discesa partita prima dell'uscita può finire dopo la pulizia e
   riscrivere righe **e cursore**: al rientro dello stesso utente la
@@ -6998,6 +7173,25 @@ nell'app installata** da Davide: l'uso normale.
 
 ### Non ancora costruito
 
+- **Foto profilo** (branch `foto-profilo`, dal 25/10): decisa
+  (§3 "Profilo", "La foto profilo"; §4 "La foto profilo: solo online";
+  §9.6 "File in Storage"; mockup `docs/mockups/foto-profilo.html`), non
+  ancora costruita. Commit previsti, in quest'ordine: migration scritta e
+  non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
+  l'"ok migration", applicata da Cowork e provata; ritaglio e
+  compressione (funzioni pure con test); Storage, Dexie `version(9)` e
+  pulizia a Esci; la foto nei quattro posti; le schermate di cambio con
+  `react-easy-crop`; Elimina account che cancella i file; prove su
+  iPhone. La migration va prima del codice, che senza bucket non si può
+  provare. Prove: blocco SQL RESOCONTO sulle regole (con l'amicizia
+  accettata fra l'account di Davide e quello di prova, più righe create
+  nel blocco per richiesta in attesa e amicizia tolta); su iPhone con
+  l'account di prova; per Amici l'account di Davide, più un usa e getta
+  che alla fine fa Elimina account con la foto, e così copre anche la
+  verifica di `user_not_found` (sotto, "Difetti e verifiche aperti").
+  Test permanenti: il calcolo del ritaglio, la sequenza del cambio con i
+  suoi fallimenti, Elimina account che si ferma se i file non si
+  cancellano, Dexie da 8 a 9
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)

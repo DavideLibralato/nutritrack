@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Foto profilo: decisioni e mockup
+
+Branch `foto-profilo`, commit 2 (solo documenti). Dopo l'analisi del
+25/10, con l'ok di Davide e tre cambi rispetto al 5/10: (A) la foto sta
+in una tabella solo online `foto_profilo` e non in una colonna di
+`profili`, perché la coda invia la riga intera e un altro telefono
+riscriverebbe il percorso vecchio; (B) copia sul telefono solo della
+propria foto, perché offline la pagina Amici non c'è; (C) Elimina
+account cancella i file dal telefono prima della funzione, che rifiuta
+se ne resta uno (da SQL i file dello Storage non si cancellano). Bucket
+privato, URL firmati di un'ora per gli amici accettati, nome nuovo a ogni
+cambio, `react-easy-crop` per il ritaglio, JPEG 400×400, costo zero.
+Aggiunto il mockup `docs/mockups/foto-profilo.html` (scelta la proposta
+B, "Foglio dal basso"). PUNTO §3, §4, §8, §9.6 e §11.
+
 ## 2026-10-25 — Merge di `check-quantita` provato; verifiche di Cowork
 
 Branch `foto-profilo`, commit 1 (solo documenti). Dopo il merge di
