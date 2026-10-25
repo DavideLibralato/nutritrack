@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Il proxy verifica il token in locale (`getClaims`)
+
+Branch `proxy-rete-lenta`, commit 3. Nel proxy `getClaims()` al posto
+di `getUser()`: niente più chiamata a Supabase a ogni navigazione. La
+chiave in uso è ECC P-256 (ES256), la HS256 è fra le precedenti
+(screenshot del 25/10): la firma si verifica in locale. Con un token
+HS256 la libreria ricade su `getUser()`. Verificato con una prova
+temporanea, poi cancellata: ES256 → nessuna chiamata a `/user`; HS256
+→ una per navigazione; senza sessione o con firma sbagliata → `/login`.
+Prezzo accettato: un token revocato vale per il proxy fino alla
+scadenza (al massimo un'ora); i dati restano protetti dall'RLS.
+Nessun test nuovo (il comportamento è della libreria); 1335 test in
+119 file. In PUNTO §8 anche regione di prima (`iad1`, Fluid Compute) e
+consumi Vercel di partenza. PUNTO §8 e §11.
+
 ## 2026-10-25 — Da `middleware.ts` a `proxy.ts`, funzioni in dub1
 
 Branch `proxy-rete-lenta`, commit 2. Next 16 ha deprecato il nome

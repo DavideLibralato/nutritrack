@@ -4486,14 +4486,36 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
     `functions-config-manifest.json`, `runtime: "nodejs"`, stesso
     matcher. La regione è fissata in `vercel.json` (`"regions":
     ["dub1"]`, Dublino): vicina all'Italia e a Supabase (eu-west-1,
-    Irlanda), che il proxy chiama a ogni navigazione. Vale per tutte le
-    funzioni del progetto
+    Irlanda). Vale per tutte le funzioni del progetto. Prima la regione
+    era **`iad1`** (Washington, la predefinita), con Fluid Compute
+    acceso (screenshot di Davide del 25/10)
+  - **Chi è l'utente: `getClaims()`, non `getUser()`** (dal 25/10,
+    commit 3 del branch). `getUser()` chiedeva a Supabase a ogni
+    navigazione; `getClaims()` verifica la firma del token in locale con
+    la chiave pubblica del progetto (`/auth/v1/.well-known/jwks.json`,
+    scaricata una volta e tenuta in memoria dalla funzione). Rinnova il
+    token se sta per scadere e scrive i cookie come prima. La chiave in
+    uso è **ECC P-256 (ES256)**; la HS256 è fra le "Previously used
+    keys" (Supabase → JWT Keys, screenshot di Davide del 25/10). Con un
+    token HS256, o senza `kid`, la libreria ricade da sola su
+    `getUser()`: nessuna perdita, solo nessun guadagno. Verificato con
+    una prova temporanea (rete finta, poi cancellata): token ES256
+    → nessuna chiamata a `/user`, pagina servita; HS256 → una chiamata a
+    `/user` per navigazione; nessuna sessione o firma sbagliata →
+    `/login`. **Il prezzo**: un token revocato sul server (Esci da un
+    altro dispositivo, password cambiata, account eliminato) per il
+    proxy vale fino alla scadenza, al massimo un'ora. Non pesa: il proxy
+    è la porta verso `/login`, non la protezione dei dati, che è l'RLS
+    di Supabase con lo stesso token; il client se ne accorge da sé
+    (`useUtenteId`, sincronizzazione con "sessione scaduta")
   - **Costi del proxy sul piano Hobby**: conta come funzione ("fluid
     compute"), con le soglie mensili di 1.000.000 di invocazioni, 4 ore
     di CPU attiva e 360 GB-ora di memoria. Stima per la beta (10 persone
     × 50 navigazioni al giorno): circa 15.000 invocazioni al mese.
     Nessun addebito possibile (Hobby non ha pagamento a consumo); oltre
-    le soglie Vercel può mettere in pausa il progetto
+    le soglie Vercel può mettere in pausa il progetto. Punto di partenza
+    (Vercel → Usage, ultimi 30 giorni al 25/10): Fast Data Transfer 280
+    MB su 100 GB, CDN Requests 33.000, ISR Reads 12.000
   - **Il matcher** (dove il proxy gira) ha un test:
     `src/proxyMatcher.test.ts`, con `unstable_doesMiddlewareMatch` di
     Next (in 16.3.3 c'è solo con il nome vecchio). Fuori `sw.js`,
@@ -6808,9 +6830,9 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 **Proxy e rete lenta** (dal 25/10, branch `proxy-rete-lenta`). Commit 2:
 `src/middleware.ts` diventa `src/proxy.ts` (funzione `proxy`, matcher
 identico, ancora `getUser()`), che gira su Node.js in `dub1` invece che
-su Edge (§8, "Il proxy"); test del matcher. Previsti: `getClaims()` al
-posto di `getUser()` (commit 3) e un tempo massimo di 3 s per le pagine
-nel service worker (commit 4). Da misurare in Chrome sul PC il tempo di
+su Edge (§8, "Il proxy"); test del matcher. Commit 3: `getClaims()` al
+posto di `getUser()`, verifica locale del token ES256. Previsto: un
+tempo massimo di 3 s per le pagine nel service worker (commit 4). Da misurare in Chrome sul PC il tempo di
 risposta del documento "/" (TTFB) su app-libra (Edge) e sull'anteprima
 dopo ogni commit, a freddo e a caldo.
 

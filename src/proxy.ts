@@ -2,7 +2,7 @@
 // server prima di ogni pagina e decide se mandare a /login. Dal 25/10/2026
 // è una funzione Node.js su Vercel, nella regione fissata in vercel.json
 // (dub1, Dublino, vicino a Supabase in Irlanda); prima, come middleware,
-// girava su Edge. PUNTO_DI_PARTENZA.md §9.1.
+// girava su Edge. PUNTO_DI_PARTENZA.md §8, "Il proxy".
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -30,12 +30,23 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // IMPORTANTE: non aggiungere logica tra createServerClient e getUser().
-  // getUser() rinfresca il token di sessione se serve; se lo si chiama
-  // troppo tardi si rischia di perdere sessioni valide in modo casuale.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // IMPORTANTE: non aggiungere logica tra createServerClient e getClaims().
+  // getClaims() rinfresca il token di sessione se serve (i cookie nuovi
+  // passano da setAll qui sopra); se lo si chiama troppo tardi si rischia
+  // di perdere sessioni valide in modo casuale.
+  //
+  // getClaims() e non getUser() (dal 25/10/2026): verifica la firma del
+  // token in locale, con la chiave pubblica del progetto (ECC P-256,
+  // scaricata da /auth/v1/.well-known/jwks.json e tenuta in memoria), senza
+  // chiedere a Supabase a ogni navigazione. Un token firmato con una chiave
+  // simmetrica (HS256) lo manderebbe comunque a verificare al server, come
+  // getUser(). Il prezzo: un token revocato sul server (uscita da un altro
+  // dispositivo, password cambiata) qui vale fino alla sua scadenza, al
+  // massimo un'ora. Non pesa: questa è una porta verso /login, non la
+  // protezione dei dati, che è l'RLS di Supabase con lo stesso token.
+  // PUNTO_DI_PARTENZA.md §8, "Il proxy".
+  const { data } = await supabase.auth.getClaims()
+  const user = data?.claims ?? null
 
   const percorso = request.nextUrl.pathname
   const rottaSoloOspiti = percorso === '/login' || percorso === '/register'
@@ -81,7 +92,7 @@ export async function proxy(request: NextRequest) {
 
 // I redirect qui sopra creano una risposta nuova (NextResponse.redirect),
 // quindi dobbiamo ricopiarci sopra a mano gli eventuali cookie di sessione
-// aggiornati da supabase.auth.getUser(), altrimenti l'utente rischia di
+// aggiornati da supabase.auth.getClaims(), altrimenti l'utente rischia di
 // perdere la sessione rinfrescata proprio nel momento del redirect.
 function copiaCookieSessione(
   risposta: NextResponse,
