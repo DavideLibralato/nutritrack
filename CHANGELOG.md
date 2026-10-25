@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Migration dei vincoli sui numeri (scritta, non applicata)
+
+Branch `check-quantita`, commit 4. File
+`supabase/migrations/check_quantita_e_valori.sql`: 26 `CHECK` (nel piano
+erano 24, ma il conto di base era sbagliato: 18, non 16, più gli 8 sui
+target). Maggiori di zero: quantità di voci e pasti salvati, porzione,
+altezza, peso obiettivo, misurazioni. Zero o più: valori per 100 g di
+`alimenti` (allineati ad `alimenti_condivisi`) e la loro copia in
+`voci_diario`, target di `obiettivi` e `obiettivi_target`. Additiva, `ADD
+CONSTRAINT` semplice; nessun cambio a Dexie. Commenti "check sul
+database" in `tipi.ts`. Prima di scriverla: nessuna riga viola (comprese
+le cancellate) e nessun percorso del client scrive valori rifiutati.
+**Non applicata**: prove nel file temporaneo
+`prove_check_quantita_e_valori.sql`, fuori da git. Test invariati, 1345
+in 119 file. PUNTO §4 e §11.
+
 ## 2026-10-25 — Riga "allenamento" di un periodo nuovo: niente NaN né normale vecchio
 
 Branch `check-quantita`, commit 3. **Due difetti già in produzione,

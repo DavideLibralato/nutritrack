@@ -3683,6 +3683,28 @@ messi da subito, non aggiunti dopo:
 Eccezione: `alimenti` ha `user_id` **nullable**. `NULL` = alimento del catalogo
 condiviso, visibile a tutti; valorizzato = alimento privato di quell'utente.
 
+### Vincoli sui numeri (dal 25/10, branch `check-quantita`)
+
+Migration `check_quantita_e_valori`: 26 `CHECK` sui valori impossibili, come
+rete di sicurezza contro un bug del client (oggi li ferma già l'app):
+
+- **maggiori di zero**: `voci_diario.quantita_g`, `composizioni_voci.quantita_g`,
+  `alimenti.porzione_default_g`, `profili.altezza_cm`,
+  `obiettivi.peso_obiettivo`, `misurazioni.valore`;
+- **zero o più**: i valori per 100 g di `alimenti` (i quattro principali e i
+  quattro facoltativi) e la loro copia in `voci_diario`; `kcal`,
+  `proteine_g`, `carboidrati_g`, `grassi_g` di `obiettivi` e
+  `obiettivi_target`.
+
+Sulle colonne che ammettono `null` il `null` resta valido. Nomi
+`<tabella>_<colonna>_check`, come quelli di `alimenti_condivisi`, che ha già
+gli stessi vincoli su valori e porzione: le due tabelle seguono le stesse
+regole. **Niente vincolo sul massimo**: `numeric(7,2)` e `numeric(5,1)` lo
+impediscono già. I limiti "fisici" (900 kcal e 100 g di macro per 100 g,
+500 kg, 280 cm) restano solo nel client: sono regole d'inserimento, non dati
+impossibili. Una riga rifiutata (errore 23514, status 400) conta come
+rifiuto del server: dopo 5 giri la sync la accantona, senza perderla.
+
 ---
 
 ### Il giorno è quello del calendario
@@ -6951,7 +6973,13 @@ nei giorni di allenamento e il server la rifiutava (`NOT NULL`), poi
 accantonata. (2) Con un cambio di dieta e senza riga "allenamento" nel
 periodo in corso, la riga nuova prendeva il normale vecchio. Al 25/10
 (Cowork) i 3 profili hanno i giorni differenziati accesi e una riga
-"allenamento" nel periodo in corso: nessuno è colpito adesso.
+"allenamento" nel periodo in corso: nessuno è colpito adesso. Commit 4:
+la migration `supabase/migrations/check_quantita_e_valori.sql` (26
+vincoli, §4, "Vincoli sui numeri") e i commenti in `tipi.ts`. **Non
+ancora applicata**: la applica Cowork con `apply_migration` dopo
+l'"ok migration" di Davide, con le prove (blocco annullato "RESOCONTO",
+45 casi) eseguite da Davide nel SQL Editor prima (atteso 12 su 45) e
+dopo (45 su 45), poi `get_advisors` e le prove sull'app.
 
 ### Non ancora costruito
 

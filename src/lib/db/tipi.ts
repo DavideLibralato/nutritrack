@@ -55,7 +55,7 @@ export interface Profilo extends RigaBase {
   nome: string | null; // non ancora scritto da nessuna schermata
   sesso: Sesso;
   data_nascita: string | null; // "YYYY-MM-DD"
-  altezza_cm: number | null;
+  altezza_cm: number | null; // check sul database: > 0 (null ammesso)
   // NOT NULL sul database, a differenza degli altri tre campi anagrafici:
   // la pagina Profilo deve garantire un valore prima di salvare, non può
   // mandare null qui (sezione 3: "senza di loro il fabbisogno non è
@@ -81,6 +81,7 @@ export interface Obiettivo extends RigaBase {
   // Profilo. Il Salva del Profilo le scrive insieme
   // (src/lib/profilo/salvataggioProfilo.ts); qui servono da ripiego per un
   // periodo a cui mancasse la riga "normale".
+  // Check sul database (dal 25/10): kcal e macro >= 0, peso obiettivo > 0.
   kcal: number;
   proteine_g: number;
   carboidrati_g: number;
@@ -113,6 +114,7 @@ export const TIPO_GIORNO_ALLENAMENTO: TipoGiorno = "allenamento";
 export interface ObiettivoTarget extends RigaBase {
   obiettivo_id: string;
   tipo_giorno: TipoGiorno;
+  // Check sul database (dal 25/10): kcal e macro >= 0.
   kcal: number;
   proteine_g: number;
   carboidrati_g: number;
@@ -161,6 +163,8 @@ export interface Alimento extends RigaBase {
   marca: string | null;
   barcode: string | null;
   // Valori per 100 g (sezione 9.3: la quantità è sempre in grammi).
+  // Check sul database (dal 25/10, come alimenti_condivisi): i valori
+  // >= 0 (i facoltativi anche null), la porzione > 0.
   kcal_100g: number;
   proteine_100g: number;
   carboidrati_100g: number;
@@ -178,13 +182,14 @@ export interface VoceDiario extends RigaBase {
   alimento_id: string | null;
   pasto_id: string | null;
   gruppo_id: string | null; // righe inserite insieme da un pasto salvato/ricetta
-  quantita_g: number;
+  quantita_g: number; // check sul database: > 0
   data: string; // "YYYY-MM-DD": il giorno del calendario (vedi PUNTO_DI_PARTENZA.md)
   creato_il: string; // ISO 8601: quando è stata scritta la riga
   consumato_alle: string | null; // ISO 8601: quando è stata mangiata
 
   // Copia dei valori nutrizionali dell'alimento al momento dell'inserimento:
   // se l'alimento viene corretto nel catalogo dopo, la storia non cambia.
+  // Check sul database sui quattro valori: >= 0, come in alimenti.
   nome_alimento: string;
   kcal_100g: number;
   proteine_100g: number;
@@ -218,13 +223,13 @@ export interface Composizione extends RigaBase {
 export interface ComposizioneVoce extends RigaBase {
   composizione_id: string;
   alimento_id: string;
-  quantita_g: number;
+  quantita_g: number; // check sul database: > 0
   ordine: number;
 }
 
 export interface Misurazione extends RigaBase {
   tipo: string; // "peso" | "vita" | "fianchi" | ... — elenco aperto (sezione 4, categoria 2)
-  valore: number;
+  valore: number; // check sul database: > 0
   unita: string; // "kg", "cm", ...
   data: string; // "YYYY-MM-DD"
 }
