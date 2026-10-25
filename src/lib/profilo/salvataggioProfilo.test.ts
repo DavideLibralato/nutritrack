@@ -714,3 +714,78 @@ describe("Altezza e peso obiettivo: arrotondati a un decimale prima di scrivere"
     expect(await tabelleInOutbox()).not.toContain("profili");
   });
 });
+
+// Difetti del 25/10, tutti e due in creaPeriodo. La riga "allenamento" di
+// un periodo nuovo prende, in quest'ordine: i target scritti nella scheda
+// Allenamento, la riga "allenamento" del periodo precedente, il target
+// normale del periodo nuovo. Prima prendeva i campi della scheda così
+// com'erano caricati: vuoti senza nessun periodo (NaN, poi null verso il
+// server, rifiutato da NOT NULL), oppure il normale VECCHIO dopo un cambio
+// di dieta.
+describe("Periodo nuovo: i numeri della riga «allenamento»", () => {
+  const NORMALE_NUOVO = { kcal: "2000", grassi: "70", carboidrati: "250", proteine: "60" };
+
+  async function righeDelPeriodo(periodoId: string) {
+    return (await db.obiettivi_target.toArray()).filter((t) => t.obiettivo_id === periodoId);
+  }
+
+  it("senza nessun periodo e con i giorni differenziati: la riga «allenamento» copia il normale, niente NaN", async () => {
+    // Chi ha scelto "Lo faccio dopo": profilo con i giorni accesi, nessun
+    // obiettivo. Scrive solo i target della scheda Normale.
+    await db.profili.put(PROFILO);
+    const caricati = valoriDaDati(PROFILO, null, []);
+    expect(caricati.giorni.targetAllenamento.kcal).toBe("");
+    const attuali: ValoriModulo = {
+      ...caricati,
+      obiettivo: { ...caricati.obiettivo, target: NORMALE_NUOVO },
+    };
+
+    expect((await salva(caricati, attuali, { periodoVistoId: null })).esito).toBe("salvato");
+
+    const [periodo] = await db.obiettivi.toArray();
+    const righe = await righeDelPeriodo(periodo.id);
+    const numeri = (tipo: string) => {
+      const t = righe.find((r) => r.tipo_giorno === tipo)!;
+      return [t.kcal, t.proteine_g, t.carboidrati_g, t.grassi_g];
+    };
+    expect(numeri(TIPO_GIORNO_NORMALE)).toEqual([2000, 60, 250, 70]);
+    expect(numeri(TIPO_GIORNO_ALLENAMENTO)).toEqual([2000, 60, 250, 70]);
+
+    // Quello che parte verso Supabase: nessun numero mancante.
+    const inCoda = (await db.outbox.where("tabella").equals("obiettivi_target").toArray()).map(
+      (v) => v.dati as ObiettivoTarget
+    );
+    expect(inCoda).toHaveLength(2);
+    for (const t of inCoda) {
+      for (const n of [t.kcal, t.proteine_g, t.carboidrati_g, t.grassi_g]) {
+        expect(Number.isInteger(n)).toBe(true);
+      }
+    }
+  });
+
+  it("cambio di dieta senza riga «allenamento» nel periodo in corso: prende il normale nuovo, non il vecchio", async () => {
+    // Giorni differenziati accesi ma target di allenamento mai scritti: il
+    // periodo in corso ha solo la riga normale (2500).
+    await db.profili.put(PROFILO);
+    await db.obiettivi.put(PERIODO);
+    await db.obiettivi_target.put(riga(TIPO_GIORNO_NORMALE, 2500));
+    const caricati = valoriDaDati(PROFILO, PERIODO, [riga(TIPO_GIORNO_NORMALE, 2500)]);
+    const attuali: ValoriModulo = {
+      ...caricati,
+      obiettivo: { ...caricati.obiettivo, target: NORMALE_NUOVO },
+    };
+
+    await salva(caricati, attuali, {
+      periodoVistoId: PERIODO.id,
+      scelta: { tipo: "nuovo", validoDal: OGGI },
+    });
+
+    const nuovo = periodoInCorso(await db.obiettivi.toArray(), OGGI)!;
+    expect(nuovo.id).not.toBe(PERIODO.id);
+    const righe = await righeDelPeriodo(nuovo.id);
+    expect(righe.map((r) => [r.tipo_giorno, r.kcal]).sort()).toEqual([
+      [TIPO_GIORNO_ALLENAMENTO, 2000],
+      [TIPO_GIORNO_NORMALE, 2000],
+    ]);
+  });
+});

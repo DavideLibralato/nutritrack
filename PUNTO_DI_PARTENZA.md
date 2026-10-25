@@ -1076,7 +1076,10 @@ In Impostazioni > Obiettivi (`/impostazioni/obiettivi`), con
   (decisione B). Con l'interruttore acceso, sopra c'è il selettore Normale |
   Allenamento, con un pallino sulla scheda che ha modifiche non salvate; la
   scheda Allenamento, senza una riga "allenamento", parte dai valori del
-  normale. Sotto: "In vigore dal …", oppure, senza periodo, "Il primo
+  normale. Un periodo nuovo (il primo, o un cambio di dieta) con la
+  scheda Allenamento non toccata: la riga "allenamento" prende quella del
+  periodo precedente se c'era, altrimenti il normale del periodo nuovo
+  (§4, "fallback", dal 25/10). Sotto: "In vigore dal …", oppure, senza periodo, "Il primo
   obiettivo vale per tutti i giorni, finché non lo cambi"
 
 Un solo Salva per tutta la pagina, anche cambiando scheda; il bivio "cambio
@@ -3236,7 +3239,13 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
   significa poterle aggiornare su una sola e dimenticare l'altra
 - **fallback quando manca la riga per il tipo scritto**: dal Salva unico
   (2026-09-26) un periodo nuovo nasce già con la riga "allenamento" se la
-  differenziazione è attiva, ma la riga può mancare ancora — periodi creati
+  differenziazione è attiva (o se il periodo precedente l'aveva). I suoi
+  numeri, in quest'ordine (dal 25/10, `creaPeriodo`): quelli scritti
+  nella scheda Allenamento; altrimenti quelli della riga "allenamento" del
+  periodo precedente; altrimenti il normale del periodo nuovo. Prima si
+  prendevano i campi della scheda così com'erano caricati: vuoti senza
+  nessun periodo (NaN, rifiutato dal server), o il normale vecchio dopo un
+  cambio di dieta. La riga può comunque mancare ancora — periodi creati
   prima, o differenziazione accesa senza mai toccare i target di allenamento —
   e intanto un giorno può già essere
   scritto o proposto come "allenamento". In quel caso si usa il target
@@ -6931,7 +6940,18 @@ server lo rifiutava e dopo 5 tentativi la modifica finiva fra le
 accantonate. Ora vale la regola della pesata e dell'onboarding
 (`leggiPesoKg`, fra 0,1 e 500 kg) attraverso `pesoObiettivoNonValido`,
 che usano sia `validaModulo` sia la pagina. Al 25/10 nessun peso
-obiettivo sul server supera 85 kg.
+obiettivo sul server supera 85 kg. Commit 3: **due difetti già in
+produzione, corretti**, tutti e due nella riga "allenamento" di un
+periodo nuovo (`creaPeriodo`, regola in §4, "fallback"). (1) Senza
+nessun periodo e con i giorni differenziati accesi (chi sceglie "Lo
+faccio dopo" e scrive gli obiettivi in Impostazioni senza aprire la
+scheda Allenamento, o li salva poi al passo 5 dell'onboarding, dove
+quei campi non si vedono) la riga nasceva con NaN: Oggi mostrava "/ NaN"
+nei giorni di allenamento e il server la rifiutava (`NOT NULL`), poi
+accantonata. (2) Con un cambio di dieta e senza riga "allenamento" nel
+periodo in corso, la riga nuova prendeva il normale vecchio. Al 25/10
+(Cowork) i 3 profili hanno i giorni differenziati accesi e una riga
+"allenamento" nel periodo in corso: nessuno è colpito adesso.
 
 ### Non ancora costruito
 

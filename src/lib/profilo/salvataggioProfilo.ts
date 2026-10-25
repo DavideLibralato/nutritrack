@@ -522,9 +522,9 @@ export async function salvaProfilo(r: RichiestaSalvataggio): Promise<EsitoSalvat
   // 2 e 3. obiettivi e obiettivi_target.
   if (toccaPeriodo) {
     if (!stato.periodo) {
-      await creaPeriodo(r, stato, r.giornoCorrente);
+      await creaPeriodo(r, stato, m, r.giornoCorrente);
     } else if (r.scelta?.tipo === "nuovo") {
-      await creaPeriodo(r, stato, r.scelta.validoDal);
+      await creaPeriodo(r, stato, m, r.scelta.validoDal);
     } else {
       await correggiPeriodo(r, stato, stato.periodo, m);
     }
@@ -581,9 +581,28 @@ async function scriviProfilo(r: RichiestaSalvataggio, stato: StatoLocale, m: Mod
 // "allenamento". Così un cambio d'obiettivo non lascia più i giorni di
 // allenamento senza target fino al prossimo salvataggio a mano (il ripiego
 // descritto in sezione 4 resta, ma non nasce più da qui).
+//
+// I numeri della riga "allenamento", in quest'ordine (deciso il 25/10):
+// 1. quelli scritti dall'utente nella scheda Allenamento
+//    (m.targetAllenamento, che vale solo a interruttore acceso), già
+//    controllati da validaModulo;
+// 2. altrimenti quelli della riga "allenamento" del periodo precedente;
+// 3. altrimenti il target normale del periodo nuovo: è la regola della
+//    scheda Allenamento, che senza una riga parte dai valori del normale.
+// Prima si prendevano i campi della scheda così com'erano caricati, e
+// c'erano due difetti, già in produzione:
+// - senza nessun periodo (chi ha scelto "Lo faccio dopo" e scrive gli
+//   obiettivi in Impostazioni, o li salva al passo 5 dell'onboarding) quei
+//   campi erano vuoti: la riga nasceva con NaN, Oggi mostrava "/ NaN" nei
+//   giorni di allenamento e il server la rifiutava (NOT NULL), quindi
+//   finiva accantonata;
+// - con un cambio di dieta e senza riga "allenamento" nel periodo in corso,
+//   la riga nuova prendeva il normale VECCHIO: i giorni di allenamento
+//   restavano sulla dieta di prima, senza nessun avviso.
 async function creaPeriodo(
   r: RichiestaSalvataggio,
   stato: StatoLocale,
+  m: Modifiche,
   validoDal: string
 ): Promise<void> {
   const { attuali } = r;
@@ -608,16 +627,23 @@ async function creaPeriodo(
     ? targetPerTipo(stato.righeTarget, stato.periodo.id, TIPO_GIORNO_ALLENAMENTO)
     : null;
   if (attuali.giorni.differenzia || allenamentoPrecedente) {
-    // Da spenta, i campi allenamento sono nascosti e valgono quelli caricati
-    // (un ritocco fatto prima di spegnere non si salva).
-    const sorgente = attuali.giorni.differenzia
-      ? attuali.giorni.targetAllenamento
-      : r.caricati.giorni.targetAllenamento;
+    // Da spenta, m.targetAllenamento è false: un ritocco fatto prima di
+    // spegnere non si salva, e vale la riga precedente.
+    const allenamento = m.targetAllenamento
+      ? targetNumerico(attuali.giorni.targetAllenamento)
+      : allenamentoPrecedente
+        ? {
+            kcal: allenamentoPrecedente.kcal,
+            proteine_g: allenamentoPrecedente.proteine_g,
+            carboidrati_g: allenamentoPrecedente.carboidrati_g,
+            grassi_g: allenamentoPrecedente.grassi_g,
+          }
+        : normale;
     await repositoryObiettiviTarget.crea({
       user_id: r.userId,
       obiettivo_id: periodo.id,
       tipo_giorno: TIPO_GIORNO_ALLENAMENTO,
-      ...targetNumerico(sorgente),
+      ...allenamento,
     });
   }
 }

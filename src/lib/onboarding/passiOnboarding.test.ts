@@ -4,10 +4,31 @@
 // senza toccare deve trovare "Dati personali" non modificato, così non
 // riscrive il profilo.
 
-import { describe, it, expect } from "vitest";
-import { obiettivoCompleto, pesoDaRegistrare, pesoIniziale, suDiTeIniziale } from "./passiOnboarding";
+import { describe, it, expect, vi } from "vitest";
+import {
+  obiettivoCompleto,
+  pesoDaRegistrare,
+  pesoIniziale,
+  salvaObiettivo,
+  suDiTeIniziale,
+} from "./passiOnboarding";
 import { modifiche, numeroDaCampo, valoriDaDati } from "../profilo/salvataggioProfilo";
+import { db } from "../db/database";
 import type { Misurazione, Profilo } from "../db/tipi";
+import { TIPO_GIORNO_ALLENAMENTO, TIPO_GIORNO_NORMALE } from "../db/tipi";
+
+// Il repository prova subito a inviare l'outbox a Supabase: qui la rete
+// "non c'è", come in salvataggioProfilo.test.ts.
+vi.mock("../supabase/client", () => ({
+  createClient: () => ({
+    from: () => {
+      throw new Error("Rete non disponibile (finta, nei test).");
+    },
+    auth: {
+      getSession: async () => ({ data: { session: null } }),
+    },
+  }),
+}));
 
 const PROFILO: Profilo = {
   id: "profilo-1",
@@ -68,5 +89,32 @@ describe("pesoDaRegistrare e peso obiettivo", () => {
     expect(pesoDaRegistrare("0,04")).toBeNull();
     expect(obiettivoCompleto("dimagrire", "0,04")).toBe(false);
     expect(obiettivoCompleto("dimagrire", "72,55")).toBe(true);
+  });
+});
+
+// Difetto del 25/10 (creaPeriodo in salvataggioProfilo.ts): al passo 5 i
+// target di allenamento non si vedono. Con i giorni differenziati già
+// accesi nel profilo (accesi in Impostazioni dopo "Lo faccio dopo"), "Inizia
+// a usare Libra" scriveva la riga "allenamento" con NaN. Ora copia il
+// normale appena scelto.
+describe("salvaObiettivo con i giorni differenziati già accesi", () => {
+  it("la riga «allenamento» nasce uguale al target normale", async () => {
+    await Promise.all([db.profili.clear(), db.obiettivi.clear(), db.obiettivi_target.clear(), db.outbox.clear()]);
+    await db.profili.put({ ...PROFILO, differenzia_giorni: true, giorni_allenamento_default: ["lunedi"] });
+
+    const esito = await salvaObiettivo("u1", {
+      tipo: "dimagrire",
+      pesoObiettivo: "",
+      target: { kcal: "1800", grassi: "60", carboidrati: "180", proteine: "135" },
+    });
+    expect(esito.esito).toBe("salvato");
+
+    const righe = await db.obiettivi_target.toArray();
+    const numeri = (tipo: string) => {
+      const t = righe.find((r) => r.tipo_giorno === tipo)!;
+      return [t.kcal, t.proteine_g, t.carboidrati_g, t.grassi_g];
+    };
+    expect(numeri(TIPO_GIORNO_NORMALE)).toEqual([1800, 135, 180, 60]);
+    expect(numeri(TIPO_GIORNO_ALLENAMENTO)).toEqual([1800, 135, 180, 60]);
   });
 });

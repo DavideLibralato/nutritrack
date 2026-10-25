@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Riga "allenamento" di un periodo nuovo: niente NaN né normale vecchio
+
+Branch `check-quantita`, commit 3. **Due difetti già in produzione,
+corretti qui**, tutti e due in `creaPeriodo`, che prendeva i campi della
+scheda Allenamento così com'erano caricati. (1) Senza nessun periodo e
+con i giorni differenziati accesi ("Lo faccio dopo", poi obiettivi da
+Impostazioni senza aprire la scheda Allenamento, oppure il passo 5
+dell'onboarding, dove quei campi non si vedono) i campi erano vuoti: la
+riga nasceva con NaN, Oggi mostrava "/ NaN" e il server la rifiutava
+(`NOT NULL`), poi accantonata. (2) Cambio di dieta senza riga
+"allenamento" nel periodo in corso: la riga nuova prendeva il normale
+vecchio. Ora, in quest'ordine: i target scritti nella scheda
+Allenamento, la riga "allenamento" del periodo precedente, il normale
+del periodo nuovo. Verificato da Cowork su Supabase il 25/10: i 3
+profili hanno `differenzia_giorni` acceso e una riga "allenamento" nel
+periodo in corso, quindi nessun utente è colpito adesso. 3 test nuovi
+(2 in `salvataggioProfilo.test.ts`, 1 in `passiOnboarding.test.ts`),
+provati rompendo e ripristinando da una copia: con la logica vecchia 3
+rossi. Test 1342 → 1345 in 119 file. PUNTO §3, §4 e §11.
+
 ## 2026-10-25 — Peso obiettivo: al massimo 500 kg anche in Impostazioni
 
 Branch `check-quantita`, commit 2. **Difetto già in produzione,
