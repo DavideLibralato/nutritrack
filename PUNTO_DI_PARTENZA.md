@@ -3685,8 +3685,10 @@ condiviso, visibile a tutti; valorizzato = alimento privato di quell'utente.
 
 ### Vincoli sui numeri (dal 25/10, branch `check-quantita`)
 
-Migration `check_quantita_e_valori`: 26 `CHECK` sui valori impossibili, come
-rete di sicurezza contro un bug del client (oggi li ferma già l'app):
+Migration `check_quantita_e_valori`, **applicata il 25/10** (versione
+`20261025194847`; prove e verifiche in §11, "Vincoli sui numeri"): 26
+`CHECK` sui valori impossibili, come rete di sicurezza contro un bug del
+client (oggi li ferma già l'app):
 
 - **maggiori di zero**: `voci_diario.quantita_g`, `composizioni_voci.quantita_g`,
   `alimenti.porzione_default_g`, `profili.altezza_cm`,
@@ -6818,9 +6820,10 @@ log di Supabase: le scritture partivano da quell'indirizzo); rifatta su
 coperto dai test, e su iPhone è stata provata la regressione. Verificato
 da Claude su Supabase in sola lettura: nessuna voce oltre 99999,99 g,
 nessuna riga orfana nei pasti salvati, l'Annulla del segnalibro rimette
-in vita lo stesso pasto (stesso id), nessuna "Non salvate online". Resta
-come lavoro futuro il CHECK `quantita_g > 0` (sotto, "Difetti e
-verifiche aperti").
+in vita lo stesso pasto (stesso id), nessuna "Non salvate online". Il
+CHECK `quantita_g > 0`, allora lavoro futuro, è stato aggiunto il 25/10
+insieme agli altri vincoli sui numeri (sotto, "Vincoli sui numeri", e
+§4).
 
 **Pagine di accesso** (18/10, branch `login-ritocchi`). Le quattro pagine (Accedi, Registrati, Password dimenticata,
 Reimposta password) hanno l'occhio sui campi password (§9.1, "le quattro
@@ -6975,11 +6978,22 @@ periodo in corso, la riga nuova prendeva il normale vecchio. Al 25/10
 (Cowork) i 3 profili hanno i giorni differenziati accesi e una riga
 "allenamento" nel periodo in corso: nessuno è colpito adesso. Commit 4:
 la migration `supabase/migrations/check_quantita_e_valori.sql` (26
-vincoli, §4, "Vincoli sui numeri") e i commenti in `tipi.ts`. **Non
-ancora applicata**: la applica Cowork con `apply_migration` dopo
-l'"ok migration" di Davide, con le prove (blocco annullato "RESOCONTO",
-45 casi) eseguite da Davide nel SQL Editor prima (atteso 12 su 45) e
-dopo (45 su 45), poi `get_advisors` e le prove sull'app.
+vincoli, §4, "Vincoli sui numeri") e i commenti in `tipi.ts`.
+**Applicata il 25/10** da Cowork con `apply_migration` (versione
+`20261025194847`), dopo l'"ok migration" di Davide. Prove: blocco
+annullato "RESOCONTO" (45 casi) eseguito da Davide nel SQL Editor,
+**prima** "12 su 45" con 33 KO tutti "(accetta)" (oggi i valori
+sbagliati passavano), **dopo** "45 su 45"; 26 vincoli contati,
+`get_advisors` senza avvisi nuovi. **Provato il 25/10** su iPhone in
+Safari, anteprima del branch, account di prova, Build del commit 4
+(`b503316`): voce creata e portata a 75 g, alimento "Prova zero" con 0
+kcal salvato (poi cancellato), pesata 80 kg; peso obiettivo 10000 e
+500,1 rifiutati sotto il campo senza scrivere niente; "Non salvate
+online" vuoto. Verificato da Cowork nei log: tutte le scritture
+dall'anteprima con 200/201, nessun 400. La riga "allenamento" del
+commit 3 non si può provare con l'account di prova (ha già gli
+obiettivi): la coprono i 3 test permanenti. **Da provare dopo il
+merge**, nell'app installata: l'uso normale.
 
 ### Non ancora costruito
 
@@ -7004,14 +7018,6 @@ dopo (45 su 45), poi `get_advisors` e le prove sull'app.
   un test sensibile ai tempi con il PC carico; se ricapita, va guardato
   il suo modo di aspettare.
 
-- **CHECK `quantita_g > 0` su `voci_diario` e `composizioni_voci`**
-  (lavoro futuro, deciso da Davide il 18/10: migration a parte, solo con
-  il suo "ok migration"). Rete di sicurezza contro un bug del client: il
-  tipo `numeric(7,2)` accetta 0 e i negativi, e il client li rifiuta già
-  (`leggiGrammi`). Al 18/10 i dati lo rispettano (minimo 10 g nel diario,
-  20 g nei pasti salvati). Un CHECK `<= 99999,99` invece non serve:
-  `numeric(7,2)` lo impedisce già. Non toglie il problema lato app: una
-  riga rifiutata finisce comunque fra le modifiche accantonate
 - **Onboarding finito su un dispositivo e riaperto offline su un altro**
   (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").
   Inizio l'onboarding in Safari, lo finisco su Chrome, poi riapro Safari

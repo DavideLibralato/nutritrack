@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Vincoli sui numeri applicati e provati
+
+Branch `check-quantita`, commit 5 (solo documenti). Migration
+`check_quantita_e_valori` applicata da Cowork il 25/10 con
+`apply_migration` (versione `20261025194847`), dopo l'"ok migration".
+Prove SQL di Davide nel SQL Editor: prima "12 su 45" con 33 KO tutti
+"(accetta)", dopo "45 su 45"; 26 vincoli contati, `get_advisors` senza
+avvisi nuovi. App su iPhone in Safari, anteprima, account di prova,
+Build `b503316`: voce portata a 75 g, alimento con 0 kcal (poi
+cancellato), pesata 80 kg, peso obiettivo 10000 e 500,1 rifiutati sotto
+il campo, "Non salvate online" vuoto; nei log (Cowork) solo 200/201,
+nessun 400. La riga "allenamento" del commit 3 non è provabile con
+l'account di prova (ha già gli obiettivi): la coprono i 3 test
+permanenti. File delle prove cancellato (mai in git). La voce "CHECK
+`quantita_g > 0`" esce dai difetti aperti. Da provare dopo il merge,
+nell'app installata: l'uso normale. PUNTO §4 e §11.
+
 ## 2026-10-25 — Migration dei vincoli sui numeri (scritta, non applicata)
 
 Branch `check-quantita`, commit 4. File
