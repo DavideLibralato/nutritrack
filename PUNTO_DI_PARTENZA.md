@@ -3984,8 +3984,12 @@ prova: nell'app è CSS + SVG, nessuna libreria e nessun video).
 commit 6; prove 0-11 passate, §11). **Dal 25/10 il movimento è P5
 "Pesata"** (branch `apertura-pesata`, sotto "Come si muove"): cambiano
 solo disegno e keyframes, la logica "quando mostrarla" è la stessa
-provata il 24/10. **Da provare su iPhone** il movimento nuovo.
-Su main dal 24/10. Dopo il merge, nell'app installata:
+provata il 24/10. **P5 provata su iPhone il 25/10** (anteprima di
+`apertura-pesata`, Safari, account di prova, Build del commit 3, già
+rallentata a 1980 ms; prove 0-7 passate, §11). **Da provare dopo il
+merge**, nell'app installata: chiusura dal multitasking e riapertura
+con l'animazione nuova.
+P1 su main dal 24/10. Dopo quel merge, nell'app installata:
 - (a) app chiusa dal multitasking e riaperta → l'animazione ricompare,
   cioè il segno in `sessionStorage` sparisce quando iOS chiude l'app:
   **provato il 24/10 nell'app installata** (chiusura dal multitasking e
@@ -6738,8 +6742,15 @@ fuori dal repo. **Dal 25/10 il movimento è P5 "Pesata"** (branch
 `apertura-pesata`): i piatti calati uno dopo l'altro, poi l'equilibrio,
 1680 + 300 ms (rallentata ×1,4 il 25/10, prima 1200 + 250). Provata
 con `next start` ed Edge senza interfaccia
-(fotogrammi in chiaro e scuro, riduci movimento, tempi dello strato);
-**da provare su iPhone**.
+(fotogrammi in chiaro e scuro, riduci movimento, tempi dello strato) e
+**provata su iPhone il 25/10** sull'anteprima del branch, in Safari,
+con l'account di prova, Build del commit 3 `06f4c17`: prove 0-7
+passate. Animazione P5 su Accedi e su Oggi alla prima apertura; piatti
+calati senza attraversare il giogo; barra in basso solo nella
+dissolvenza; niente animazione a ricarica e cambio scheda; tema scuro
+e un altro colore principale; riduci movimento; durata (~2 s) giusta.
+**Da provare dopo il merge** nell'app installata: chiusura dal
+multitasking e riapertura, con l'animazione nuova.
 
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch

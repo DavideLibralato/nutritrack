@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Animazione P5 provata su iPhone
+
+Branch `apertura-pesata`, commit 4 (solo documenti). **Provata su
+iPhone il 25/10** sull'anteprima del branch, in Safari, con l'account
+di prova, Build del commit 3 (`06f4c17`): prove 0-7 passate.
+Animazione P5 su Accedi e su Oggi alla prima apertura, piatti calati
+senza attraversare il giogo, barra in basso solo nella dissolvenza,
+niente animazione a ricarica e cambio scheda, tema scuro e un altro
+colore principale, riduci movimento, durata (~2 s) giusta. Resta da
+provare dopo il merge, nell'app installata: chiusura dal multitasking
+e riapertura con l'animazione nuova. PUNTO §7 e §11.
+
 ## 2026-10-25 — Animazione di apertura: P5 rallentata ×1,4
 
 Branch `apertura-pesata`, commit 3. Davide la trovava ancora troppo
