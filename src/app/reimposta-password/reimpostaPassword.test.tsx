@@ -1,15 +1,12 @@
-// Il link di ripristino della password (/reimposta-password?code=...).
+// Il link di ripristino della password (/reimposta-password#access_token=...).
 //
-// Bug corretto il 10/10/2026: alla prima apertura del link compariva "Link
-// non valido", e solo ricaricando la pagina il modulo. Il client Supabase
-// scambia da solo il codice appena nasce (detectSessionInUrl); la pagina
-// lo scambiava una seconda volta, trovava il "code verifier" già usato e
-// cancellato, e mostrava l'errore anche se l'accesso era riuscito.
-//
-// Regola che il test custodisce: con ?code= il modulo compare SOLO se la
-// sessione è nata dallo scambio di quel link. Una sessione già aperta nel
-// browser (per esempio l'account di prova in Safari) non basta: la
-// password nuova finirebbe sull'account sbagliato.
+// Regola che il test custodisce: il modulo compare SOLO se la sessione è
+// nata dal frammento di quel link (o, ricaricando, dal frammento raccolto
+// in questa scheda). Una sessione già aperta nel browser (per esempio
+// l'account di prova in Safari) non basta: la password nuova finirebbe
+// sull'account sbagliato. Nemmeno quella nata da un vecchio link ?code=
+// (flusso PKCE, tolto dalla pagina il 25/10/2026) che la libreria scambia
+// da sola se nel browser è rimasto il "code verifier".
 //
 // Client Supabase vero (@supabase/ssr + auth-js, quelli installati), con
 // i cookie di jsdom; finta solo la rete. Il fetch finto conosce poche
@@ -34,17 +31,8 @@ const UTENTE_PROVA = { id: "22222222-2222-4222-8222-222222222222", email: "prova
 
 // --- La rete finta --------------------------------------------------------
 
-// Come il server rifiuta il codice del link. I testi inglesi sono
-// verosimili ma non documentati: la pagina decide dal codice.
-const RIFIUTI = {
-  flow_state_not_found: "invalid flow state, no valid flow state found",
-  flow_state_expired: "flow state has expired",
-  bad_code_verifier: "code challenge does not match previously saved code verifier",
-} as const;
-
 const server = {
-  // Il codice d'errore con cui il server rifiuta il link, o null.
-  rifiutaCodice: null as keyof typeof RIFIUTI | null,
+  // Gli scambi di un vecchio codice PKCE (POST /token?grant_type=pkce).
   scambi: 0,
   passwordCambiate: [] as string[],
   impreviste: [] as string[],
@@ -73,8 +61,9 @@ const UTENTE_SCONOSCIUTO = { id: "33333333-3333-4333-8333-333333333333", email: 
 
 // Il token del link implicito. setSession controlla che ogni pezzo del JWT
 // sia base64url valido, e la firma "firma" di token() non lo è (5
-// caratteri): lo scambio PKCE non la controllava, quindi token() resta
-// com'è per i casi di prima. Qui la firma è codificata davvero.
+// caratteri): lo scambio PKCE e l'accesso con password non la
+// controllano, quindi token() resta com'è per loro. Qui la firma è
+// codificata davvero.
 function tokenDelLink(utente: { id: string }): string {
   return token(utente).replace(/\.firma$/, `.${base64url("firma")}`);
 }
@@ -128,11 +117,10 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
   // /recover porta anche ?redirect_to=...: conta il percorso.
   if (metodo === "POST" && url.split("?")[0] === `${AUTH}/recover`) return json({});
 
+  // Il vecchio link ?code= con il verifier ancora nel browser: il server
+  // accetta lo scambio e la sessione si apre.
   if (metodo === "POST" && url === `${AUTH}/token?grant_type=pkce`) {
     server.scambi++;
-    if (server.rifiutaCodice) {
-      return json({ code: 400, error_code: server.rifiutaCodice, msg: RIFIUTI[server.rifiutaCodice] }, 400);
-    }
     if (corpo.auth_code === CODICE_DEL_LINK && corpo.code_verifier) return json(sessione(UTENTE_VERO));
   }
 
@@ -190,15 +178,10 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
 
 // --- Next.js e singleton --------------------------------------------------
 
-// Come in Next: i parametri letti al caricamento non cambiano quando la
-// libreria toglie ?code= dall'indirizzo (vedi page.tsx).
-let parametriPagina = new URLSearchParams();
-
 const routerFinto = { push: vi.fn(), replace: vi.fn(), refresh: () => {}, back: () => {} };
 
 vi.mock("next/navigation", () => ({
   useRouter: () => routerFinto,
-  useSearchParams: () => parametriPagina,
 }));
 
 // Il singleton vero (createBrowserClient in @supabase/ssr) vive in
@@ -235,14 +218,16 @@ function cancellaCookie() {
 }
 
 // Un client a parte, nello stesso browser, per preparare la scena prima di
-// aprire il link: è come la pagina /password-dimenticata o /login, aperta
-// in un momento precedente. Scrive nei cookie veri di jsdom.
+// aprire il link: è come la pagina /login aperta in un momento
+// precedente. Scrive nei cookie veri di jsdom.
 function clientPreparazione() {
   vaiA("/login");
   return createBrowserClient(URL_SUPABASE, CHIAVE, { isSingleton: false });
 }
 
-async function chiediIlLink() {
+// Un link chiesto con il flusso PKCE (prima del 18/10/2026): il client
+// dell'app lascia il "code verifier" nei cookie di questo browser.
+async function chiediIlLinkPkce() {
   const supabase = clientPreparazione();
   const { error } = await supabase.auth.resetPasswordForEmail(UTENTE_VERO.email, {
     redirectTo: `${window.location.origin}/reimposta-password`,
@@ -260,7 +245,7 @@ async function entraConAccountDiProva() {
 let clientPrecedente: unknown = null;
 
 // Il test vale solo se ogni caso ha il suo client: con quello del caso
-// prima, nato con un altro indirizzo, lo scambio automatico non partirebbe.
+// prima, nato con un altro indirizzo, l'avvio non guarderebbe il link.
 function controllaClientNuovo() {
   const client = createClient();
   expect(client).not.toBe(clientPrecedente);
@@ -272,7 +257,6 @@ function controllaClientNuovo() {
 // qualcun altro, come useUtenteId nel layout radice.
 function apriPagina(percorso: string, { clientPrimaDellaPagina = false } = {}) {
   vaiA(percorso);
-  parametriPagina = new URLSearchParams(new URL(window.location.href).search);
   singleton.client = null;
   if (clientPrimaDellaPagina) controllaClientNuovo();
   // StrictMode: come in `npm run dev`, gli effect girano due volte.
@@ -290,7 +274,6 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchFinto);
   // Le schede che si parlano: qui ogni caso è un browser a sé.
   vi.stubGlobal("BroadcastChannel", undefined);
-  server.rifiutaCodice = null;
   server.scambi = 0;
   server.passwordCambiate = [];
   server.impreviste = [];
@@ -317,14 +300,13 @@ const MODULO = "Imposta una nuova password";
 const ERRORE = "Link non valido";
 // I testi scritti per intero, non presi da erroriAuth.ts: il test deve
 // accorgersi anche se un caso finisce sul testo dell'altro.
-const TESTO_ALTRO_BROWSER =
-  "Questo link funziona solo nel browser da cui l'hai chiesto. Richiedine uno nuovo qui sotto, da questo browser. Su iPhone i link delle email si aprono sempre in Safari, anche se hai l'app installata.";
 const TESTO_SCADUTO = "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
 const TESTO_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.";
 
 // L'errore come lo scrive il server di Auth quando rifiuta un link già
 // usato o scaduto (prepErrorRedirectURL in supabase/auth, verify.go): per
-// il flusso PKCE nella query e nell'hash, e nell'hash anche "sb".
+// il flusso implicito solo nell'hash, per il vecchio flusso PKCE anche
+// nella query; nell'hash anche "sb".
 const ERRORE_SERVER =
   "error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired";
 
@@ -340,62 +322,53 @@ function ricarica() {
 }
 
 describe("/reimposta-password", () => {
-  it("verifier presente: compare il modulo, una sola chiamata di scambio", async () => {
-    await chiediIlLink();
-    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
+  // La regola di sicurezza dal 25/10/2026 (ramo PKCE tolto): ?code= senza
+  // frammento finisce sempre sull'errore. Qui il caso più insidioso: nel
+  // browser è rimasto il verifier, la libreria scambia il codice da sola e
+  // la sessione si apre davvero. Nessuno ha scritto il segno, quindi niente
+  // modulo, nemmeno ricaricando.
+  it.each([
+    ["client creato dalla pagina", false],
+    ["client creato prima della pagina (layout radice)", true],
+  ])(
+    "?code= senza frammento, la libreria fa lo scambio da sola (%s): errore, non il modulo",
+    async (_descrizione, clientPrimaDellaPagina) => {
+      await chiediIlLinkPkce();
+      apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`, { clientPrimaDellaPagina });
 
-    expect(await screen.findByText(MODULO)).toBeTruthy();
-    expect(screen.queryByText(ERRORE)).toBeNull();
-    expect(server.scambi).toBe(1);
-    // Lo scambio l'ha fatto la libreria, che ha tolto il codice.
-    expect(window.location.search).toBe("");
-    // T7: il modulo dice a quale account si cambia la password.
-    expect(campoAccount().value).toBe(UTENTE_VERO.email);
-  });
+      expect(await screen.findByText(ERRORE)).toBeTruthy();
+      expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
+      expect(screen.queryByText(MODULO)).toBeNull();
+      // Lo scambio è avvenuto davvero: la libreria ha tolto il codice.
+      expect(server.scambi).toBe(1);
+      expect(window.location.search).toBe("");
+      expect(sessionStorage.length).toBe(0);
 
-  it("verifier presente e client creato prima della pagina (layout radice): compare il modulo", async () => {
-    await chiediIlLink();
-    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`, { clientPrimaDellaPagina: true });
+      ricarica();
 
-    expect(await screen.findByText(MODULO)).toBeTruthy();
-    expect(server.scambi).toBe(1);
-  });
+      expect(await screen.findByText(ERRORE)).toBeTruthy();
+      expect(screen.queryByText(MODULO)).toBeNull();
+    }
+  );
 
-  it("verifier assente, nessuna sessione: errore col testo dell'altro browser", async () => {
+  it("?code= senza verifier, nessuna sessione: errore di link non valido", async () => {
     apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
 
     expect(await screen.findByText(ERRORE)).toBeTruthy();
-    expect(screen.getByText(TESTO_ALTRO_BROWSER)).toBeTruthy();
+    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
     expect(screen.queryByText(MODULO)).toBeNull();
     expect(server.scambi).toBe(0);
   });
 
-  it("verifier assente ma sessione di un altro account nei cookie: errore, non il modulo", async () => {
+  it("?code= senza verifier ma sessione di un altro account nei cookie: errore, non il modulo", async () => {
     await entraConAccountDiProva();
     apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
 
     expect(await screen.findByText(ERRORE)).toBeTruthy();
-    expect(screen.getByText(TESTO_ALTRO_BROWSER)).toBeTruthy();
+    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
     expect(screen.queryByText(MODULO)).toBeNull();
     expect(server.scambi).toBe(0);
   });
-
-  // bad_code_verifier: il verifier di un'altra richiesta (il link della
-  // prima email dopo averne chiesta una seconda). Il suo testo inglese
-  // contiene "code verifier": dal testo finirebbe sul messaggio sbagliato.
-  it.each(Object.keys(RIFIUTI) as (keyof typeof RIFIUTI)[])(
-    "il server rifiuta il codice (%s): errore col testo del link scaduto",
-    async (codice) => {
-      server.rifiutaCodice = codice;
-      await chiediIlLink();
-      apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
-
-      expect(await screen.findByText(ERRORE)).toBeTruthy();
-      expect(screen.getByText(TESTO_SCADUTO)).toBeTruthy();
-      expect(screen.queryByText(MODULO)).toBeNull();
-      expect(server.scambi).toBe(1);
-    }
-  );
 
   // T1–T4. Link già usato o scaduto: il server rimanda qui SENZA ?code=,
   // con l'errore nell'indirizzo. La prova sull'anteprima del 10/10: con
@@ -436,41 +409,9 @@ describe("/reimposta-password", () => {
     expect(screen.queryByText(MODULO)).toBeNull();
   });
 
-  it("T5 ricaricamento dopo uno scambio riuscito, stessa scheda: di nuovo il modulo, con l'email", async () => {
-    await chiediIlLink();
-    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
-    expect(await screen.findByText(MODULO)).toBeTruthy();
-
-    ricarica();
-
-    expect(await screen.findByText(MODULO)).toBeTruthy();
-    // T7 anche qui.
-    expect(campoAccount().value).toBe(UTENTE_VERO.email);
-  });
-
-  it("T6 senza codice né errore, sessione aperta ma nessuno scambio in questa scheda: errore", async () => {
+  it("T6 senza frammento né errore, sessione aperta ma nessun link raccolto in questa scheda: errore", async () => {
     await entraConAccountDiProva();
     apriPagina("/reimposta-password");
-
-    expect(await screen.findByText(ERRORE)).toBeTruthy();
-    expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
-    expect(screen.queryByText(MODULO)).toBeNull();
-  });
-
-  it("T8 dopo il salvataggio della password, indietro o ricaricamento non riaprono il modulo", async () => {
-    await chiediIlLink();
-    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
-    expect(await screen.findByText(MODULO)).toBeTruthy();
-
-    fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
-    fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
-    fireEvent.click(screen.getByText("Salva nuova password"));
-    // replace: la pagina del reset esce dalla cronologia.
-    await waitFor(() => expect(routerFinto.replace).toHaveBeenCalledWith("/"));
-    expect(routerFinto.push).not.toHaveBeenCalled();
-    expect(server.passwordCambiate).toEqual([UTENTE_VERO.email]);
-
-    ricarica();
 
     expect(await screen.findByText(ERRORE)).toBeTruthy();
     expect(screen.getByText(TESTO_NON_VALIDO)).toBeTruthy();
@@ -484,9 +425,8 @@ describe("/reimposta-password", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new DOMException("Memoria non disponibile", "SecurityError");
     });
-    await chiediIlLink();
-    apriPagina(`/reimposta-password?code=${CODICE_DEL_LINK}`);
-    // Lo scambio del link vale comunque: il modulo compare.
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`);
+    // Il link vale comunque: il modulo compare.
     expect(await screen.findByText(MODULO)).toBeTruthy();
 
     ricarica();
@@ -615,7 +555,9 @@ describe("/reimposta-password, link con la sessione nel frammento", () => {
     fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
     fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
     fireEvent.click(screen.getByText("Salva nuova password"));
+    // replace e non push: la pagina del reset esce dalla cronologia.
     await waitFor(() => expect(routerFinto.replace).toHaveBeenCalledWith("/"));
+    expect(routerFinto.push).not.toHaveBeenCalled();
     expect(server.passwordCambiate).toEqual([UTENTE_VERO.email]);
 
     ricarica();

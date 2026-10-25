@@ -1,8 +1,4 @@
 // Il link per reimpostare la password: lo usa solo /reimposta-password.
-// Lo scambio non è avvenuto perché in questo browser manca il "code
-// verifier" salvato quando il link è stato chiesto.
-export const LINK_ALTRO_BROWSER =
-  "Questo link funziona solo nel browser da cui l'hai chiesto. Richiedine uno nuovo qui sotto, da questo browser. Su iPhone i link delle email si aprono sempre in Safari, anche se hai l'app installata.";
 // Nessun link e nessuna sessione nata da un link in questa scheda.
 export const LINK_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.";
 // Il server ha rifiutato il link.
@@ -59,8 +55,6 @@ const MAPPA_ERRORI: Record<string, string> = {
   "for security purposes": "Per sicurezza, riprova tra qualche istante.",
   "network": ERRORE_CONNESSIONE,
   "failed to fetch": ERRORE_CONNESSIONE,
-  "flow state": LINK_SCADUTO,
-  "code verifier": LINK_ALTRO_BROWSER,
 };
 
 export function traduciErroreAuth(messaggio: string | undefined | null): string {
@@ -75,23 +69,14 @@ export function traduciErroreAuth(messaggio: string | undefined | null): string 
   return ERRORE_GENERICO;
 }
 
-// Codici con cui il server rifiuta il link. bad_code_verifier: il
-// verifier c'è ma è di un'altra richiesta, per esempio il link della prima
-// email dopo averne chiesta una seconda. otp_expired: il server rifiuta il
-// link stesso, già usato o scaduto (anche quello di un'email superata da
-// una più recente), e rimanda alla pagina con l'errore nell'indirizzo.
-// Si decide dal codice e non dal testo inglese: quel testo non è
-// documentato, e quello di bad_code_verifier potrebbe contenere "code
-// verifier" e finire nel messaggio dell'altro browser. Altri errori
+// Codici con cui il server rifiuta il link. otp_expired: il link è già
+// usato o scaduto (anche quello di un'email superata da una più recente),
+// e il server rimanda alla pagina con l'errore nell'indirizzo. Si decide
+// dal codice e non dal testo inglese, che non è documentato. Altri errori
 // (rete...) passano dalla mappa.
-const CODICI_LINK_SCADUTO = [
-  "flow_state_not_found",
-  "flow_state_expired",
-  "bad_code_verifier",
-  "otp_expired",
-];
+const CODICI_LINK_SCADUTO = ["otp_expired"];
 
-// Due forme: dallo scambio del codice il codice sta in `code`; dall'errore
+// Due forme: da una chiamata al server il codice sta in `code`; dall'errore
 // nell'indirizzo (AuthImplicitGrantRedirectError di auth-js) `code` è
 // vuoto e il codice sta in `details.code`.
 type ErroreLink = { code?: string; message: string; details?: { code?: string } | null };

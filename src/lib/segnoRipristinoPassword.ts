@@ -1,12 +1,14 @@
 // Il "segno" del ripristino della password, per /reimposta-password.
 //
-// Dopo uno scambio riuscito del link la pagina scrive qui l'id
-// dell'utente. Se la pagina viene ricaricata (su iPhone Safari ricarica da
-// solo le schede rimaste dietro, per esempio tornando dall'app Mail),
-// l'indirizzo non ha più ?code= e il modulo ricompare solo se la sessione
-// aperta è dello stesso utente del segno. Senza segno, o con un altro
-// utente, la pagina mostra l'errore: una sessione qualunque aperta nel
-// browser non basta per cambiarle la password.
+// Dopo aver raccolto la sessione dal frammento del link (e averla
+// rinnovata) la pagina scrive qui l'id dell'utente. Se la pagina viene
+// ricaricata (su iPhone Safari ricarica da solo le schede rimaste dietro,
+// per esempio tornando dall'app Mail), l'indirizzo non ha più il
+// frammento e il modulo ricompare solo se la sessione aperta è dello
+// stesso utente del segno. Senza segno, o con un altro utente, la pagina
+// mostra l'errore: una sessione qualunque aperta nel browser non basta
+// per cambiarle la password, nemmeno quella nata da un vecchio link
+// ?code= scambiato dalla libreria.
 //
 // sessionStorage: una memoria del browser che vale per UNA scheda e
 // sopravvive al ricaricamento, ma non passa alle altre schede. Un link

@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Tolto il ramo PKCE di `/reimposta-password`
+
+Branch `togli-pkce`, commit 2. Dal 18/10 i link di ripristino sono
+tutti impliciti (frammento) e quelli `?code=` chiesti prima sono
+scaduti. Tolti dalla pagina il caso `?code=` (testo "altro browser") e
+il segno scritto dopo uno scambio, con `useSearchParams` e la
+`Suspense`; da `erroriAuth.ts` `LINK_ALTRO_BROWSER`, "flow state",
+"code verifier", `flow_state_*` e `bad_code_verifier`. Restano
+frammento, rinnovo, segno per il ricaricamento, `otp_expired` e
+l'eccezione per "Not a valid PKCE flow url". Regola nuova, con test
+permanente: `?code=` senza frammento finisce sull'errore anche se la
+libreria scambia il codice da sola (verifier rimasto nel browser),
+perché nessuno scrive il segno. Test: 1331 → 1326 in 118 file (tolti
+i 3 rifiuti `flow_state_*`/`bad_code_verifier`, T5 e T8, con il
+controllo di T8 spostato nel test del frammento; riscritti T9 e i 4
+casi `?code=`). Rompi e ripristina, da copie dei file: segno scritto
+dopo `?code=` (3 test rossi), `router.push` (1), segno in memoria
+senza `sessionStorage` (T9), `otp_expired` tolto (5). PUNTO §9.1 e
+§11.
+
 ## 2026-10-25 — Allineamento dei documenti dopo `apertura-pesata`
 
 Branch `togli-pkce`, commit 1 (solo documenti). Voce del merge di

@@ -1,12 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
   ERRORE_CONNESSIONE,
-  LINK_ALTRO_BROWSER,
   LINK_NON_VALIDO,
   traduciErroreAuth,
   traduciErroreLinkRipristino,
@@ -79,18 +78,8 @@ function testoErrore(errore: Error): string {
   return isAuthRetryableFetchError(errore) ? ERRORE_CONNESSIONE : LINK_NON_VALIDO;
 }
 
-// useSearchParams() richiede una <Suspense> attorno (stesso motivo di /login).
 export default function ReimpostaPasswordPage() {
-  return (
-    <Suspense fallback={null}>
-      <ReimpostaPasswordForm />
-    </Suspense>
-  );
-}
-
-function ReimpostaPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [statoSessione, setStatoSessione] = useState<"verifica" | "pronto" | "errore">(
     "verifica"
@@ -105,33 +94,26 @@ function ReimpostaPasswordForm() {
   const [caricamento, setCaricamento] = useState(false);
 
   // La raccolta dal frammento parte una volta sola per caricamento della
-  // pagina. In sviluppo (StrictMode) React fa girare l'effect due volte, e
-  // l'effect può ripartire se cambiano i parametri: la seconda volta
-  // troverebbe l'indirizzo già pulito, e un secondo setSession sarebbe una
-  // chiamata inutile. Una ref (useRef) è una scatola che sopravvive ai
+  // pagina. In sviluppo (StrictMode) React fa girare l'effect due volte:
+  // la seconda volta troverebbe l'indirizzo già pulito, e un secondo
+  // setSession sarebbe una chiamata inutile. Una ref (useRef) è una scatola che sopravvive ai
   // nuovi giri del componente senza farlo ridisegnare: tiene la stessa
   // promessa per tutti.
   const raccolta = useRef<Promise<EsitoFrammento> | null>(null);
 
   // Il link dell'email porta qui con la sessione nel frammento (link
-  // chiesti dal 18/10/2026, sopra) oppure, per i link chiesti prima, con
-  // ?code=..., che va scambiato con una
-  // sessione vera prima di poter cambiare la password (flusso PKCE).
+  // chiesti dal 18/10/2026, sopra). Il modulo compare SOLO se la sessione
+  // è nata da quel frammento (o, dopo un ricaricamento, dal frammento
+  // raccolto in questa scheda: il segno). Una sessione già aperta nel
+  // browser può essere di un altro account: cambiarle la password sarebbe
+  // cambiarla all'account sbagliato.
   //
-  // Lo scambio NON lo facciamo noi: lo fa da solo il client Supabase appena
-  // nasce (detectSessionInUrl, acceso da @supabase/ssr), se nel browser c'è
-  // il "code verifier" salvato quando è stato chiesto il link. Il client è
-  // uno solo per tutta la pagina e può nascere prima di questo componente
-  // (useUtenteId nel layout radice). Fino al 10/10/2026 lo scambiavamo una
-  // seconda volta qui: il verifier era già stato usato e cancellato, e la
-  // pagina mostrava "Link non valido" anche se l'accesso era riuscito.
-  //
-  // Il modulo compare SOLO se la sessione è nata da questo link (o, dopo
-  // un ricaricamento, dallo scambio fatto in questa scheda). Una sessione
-  // già aperta nel browser può essere di un altro account: cambiarle la
-  // password sarebbe cambiarla all'account sbagliato.
+  // Un indirizzo con ?code= e senza frammento (i vecchi link PKCE, tolti
+  // dal 25/10/2026) finisce sempre sull'errore. Se nel browser è rimasto
+  // un "code verifier", il client Supabase scambia il codice da solo
+  // appena nasce e la sessione si apre: ma nessuno scrive il segno, quindi
+  // il passo 2 mostra l'errore, non il modulo.
   useEffect(() => {
-    const code = searchParams.get("code");
     // Il frammento si legge prima di creare il client e prima di guardare
     // l'esito di initialize().
     raccolta.current ??= raccogliSessioneDalFrammento();
@@ -144,7 +126,8 @@ function ReimpostaPasswordForm() {
     }
 
     // initialize() non rifà il lavoro: restituisce l'esito dell'avvio già
-    // partito, scambio compreso.
+    // partito (il client può essere nato prima, con useUtenteId nel layout
+    // radice).
     supabase.auth.initialize().then(async ({ error }) => {
       // 0. Sessione nel frammento (flusso implicito). Se il client è nato
       // prima che la pagina togliesse il frammento (useUtenteId nel layout
@@ -160,49 +143,29 @@ function ReimpostaPasswordForm() {
           mostraErrore(frammento.testo);
           return;
         }
-        // Come dopo uno scambio riuscito: il segno per un ricaricamento.
+        // Il segno per un eventuale ricaricamento.
         scriviSegnoRipristino(frammento.idUtente);
         setEmailAccount(frammento.email);
         setStatoSessione("pronto");
         return;
       }
 
-      // 1. Errore: il server ha rifiutato il codice, o ha rimandato qui con
-      // l'errore nell'indirizzo (link già usato o scaduto: ?error=... e
-      // #error=..., SENZA ?code=), o la rete. Prima di tutto il resto,
-      // anche con una sessione aperta.
+      // 1. Errore: il server ha rimandato qui con l'errore nell'indirizzo
+      // (link già usato o scaduto, otp_expired), o la rete. Prima di tutto
+      // il resto, anche con una sessione aperta.
       if (error) {
         mostraErrore(traduciErroreLinkRipristino(error));
         return;
       }
 
-      // 2. Con ?code=: la libreria lo toglie dall'indirizzo solo dopo
-      // averlo scambiato con successo. Se è ancora lì lo scambio non è
-      // avvenuto (verifier assente: link aperto in un altro browser, o
-      // chiesto dall'app installata su iPhone e aperto in Safari).
-      // searchParams non aiuta: Next non si accorge della modifica della
-      // libreria e continua a vedere il codice.
-      if (code && new URL(window.location.href).searchParams.has("code")) {
-        mostraErrore(LINK_ALTRO_BROWSER);
-        return;
-      }
-
-      // getSession legge la sessione salvata sul dispositivo, senza rete:
-      // con ?code= è quella appena nata dallo scambio.
+      // 2. Senza frammento né errore: ci si arriva ricaricando dopo aver
+      // raccolto il frammento. Il modulo solo se la sessione è dello
+      // stesso utente del segno scritto in questa scheda
+      // (segnoRipristinoPassword.ts). getSession legge la sessione salvata
+      // sul dispositivo, senza rete.
       const { data } = await supabase.auth.getSession();
       const utente = data.session?.user;
-      if (!utente?.email) {
-        mostraErrore(LINK_NON_VALIDO);
-        return;
-      }
-
-      if (code) {
-        // 3. Scambio riuscito: il segno per un eventuale ricaricamento.
-        scriviSegnoRipristino(utente.id);
-      } else if (leggiSegnoRipristino() !== utente.id) {
-        // 4. Senza codice né errore: ci si arriva ricaricando dopo lo
-        // scambio. Il modulo solo se la sessione è dello stesso utente del
-        // segno scritto in questa scheda (segnoRipristinoPassword.ts).
+      if (!utente?.email || leggiSegnoRipristino() !== utente.id) {
         mostraErrore(LINK_NON_VALIDO);
         return;
       }
@@ -210,7 +173,7 @@ function ReimpostaPasswordForm() {
       setEmailAccount(utente.email);
       setStatoSessione("pronto");
     });
-  }, [searchParams]);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -4819,9 +4819,9 @@ e i modelli sono bloccati senza SMTP personalizzato (§10.9). Quindi:
 - **Errori del frammento**: rete (verifica o rinnovo) → "Errore di
   connessione"; token o rinnovo rifiutati → "Link non valido o scaduto";
   `otp_expired` → "link scaduto, già usato o superato".
-- Poi tutto come per PKCE: il segno in `sessionStorage`, il modulo con
-  l'email dell'account del link, `updateUser` su quell'account anche se
-  nel browser era aperto un altro account (che esce da quel browser).
+- Poi il segno in `sessionStorage`, il modulo con l'email dell'account
+  del link, `updateUser` su quell'account anche se nel browser era
+  aperto un altro account (che esce da quel browser). Regole sotto.
 - **Sicurezza, il prezzo.** Con PKCE un link rubato non serviva senza il
   browser che l'aveva chiesto; ora chi ha l'email entra, come con
   qualunque link magico. Il prefetch dei filtri antispam brucia il link
@@ -4842,42 +4842,43 @@ e i modelli sono bloccati senza SMTP personalizzato (§10.9). Quindi:
   10 secondi (verificato il 18/10): se un giorno si spegne, il rinforzo
   perde metà del suo effetto.
 
-**I link PKCE già spediti** (chiesti prima del rilascio) tornano ancora
-con `?code=`: il ramo PKCE della pagina resta com'era, con le regole qui
-sotto. Si toglie più avanti (§11, "Difetti e verifiche aperti").
+**Il ramo PKCE è stato tolto il 25/10** (branch `togli-pkce`): dal 18/10
+le richieste partono tutte implicite, e i link `?code=` chiesti prima
+sono scaduti da giorni. Via il testo "funziona solo nel browser da cui
+l'hai chiesto" (`LINK_ALTRO_BROWSER`) e i codici `flow_state_*` e
+`bad_code_verifier`. Le regole della pagina:
 
-Il ramo PKCE: il link dell'email passa dal server di Auth e torna a
-`/reimposta-password` con `?code=` se il link è buono, **senza** `?code=`
-e con l'errore nell'indirizzo (query e hash, `error_code=otp_expired`) se
-è già usato o scaduto. Le regole della pagina:
-
-- **Lo scambio del codice lo fa la libreria, la pagina ne legge solo
-  l'esito.** Il client Supabase è uno solo per pagina e appena nasce
-  scambia da solo il `?code=` (`detectSessionInUrl`), se trova il
-  verifier; dopo lo scambio riuscito toglie `?code=` dall'indirizzo. La
-  pagina chiama `initialize()`, che restituisce l'esito dell'avvio già
-  partito senza rifarlo. Mai `exchangeCodeForSession` a mano: era il
-  bug del 10/10, il secondo scambio trovava il verifier già cancellato.
-- **L'errore nell'indirizzo prima di tutto.** Se `initialize()` dà
-  errore (link già usato o scaduto, server che rifiuta il codice, rete)
-  si mostra l'errore, anche con una sessione aperta nel browser. Il
-  testo si sceglie dal codice dell'errore, non dal testo inglese
-  (`traduciErroreLinkRipristino`): `otp_expired`, `flow_state_*`,
-  `bad_code_verifier` → "link scaduto, già usato o superato".
-- **Una sessione aperta non basta.** Con `?code=` il modulo compare solo
-  se la libreria l'ha tolto dall'indirizzo, cioè se la sessione è nata
-  da quel link; se è ancora lì manca il verifier (altro browser) → testo
-  "funziona solo nel browser da cui l'hai chiesto". Altrimenti una
+- **L'errore nell'indirizzo prima di tutto.** Il client Supabase è uno
+  solo per pagina; la pagina chiama `initialize()`, che restituisce
+  l'esito dell'avvio già partito senza rifarlo. Se dà errore (link già
+  usato o scaduto, rete) si mostra l'errore, anche con una sessione
+  aperta nel browser. Il testo si sceglie dal codice dell'errore, non
+  dal testo inglese (`traduciErroreLinkRipristino`): `otp_expired` →
+  "link scaduto, già usato o superato".
+- **Una sessione aperta non basta.** Il modulo compare solo se la
+  sessione è nata dal frammento di questo link (o, ricaricando, dal
+  frammento raccolto in questa scheda: il segno). Altrimenti una
   sessione già aperta, per esempio l'account di prova in Safari,
   riceverebbe la password nuova di un altro account.
-- **Il segno per il ricaricamento.** Dopo lo scambio riuscito la pagina
-  scrive l'id dell'utente in `sessionStorage` (vale per una scheda,
-  sopravvive al ricaricamento: Safari su iPhone ricarica da solo le
-  schede rimaste dietro). Senza codice né errore il modulo ricompare solo
-  se la sessione è di quell'utente. Il segno si toglie dopo il
-  salvataggio, e la pagina esce dalla cronologia (`router.replace`).
-  Senza memoria disponibile non c'è segno → errore (direzione sicura).
-  Scartato il claim `amr`: "recovery" resta per tutta la sessione.
+- **`?code=` senza frammento → errore, mai il modulo.** Anche se la
+  libreria riesce a fare lo scambio da sola: succede se nel browser è
+  rimasto un "code verifier" di una richiesta PKCE di prima del 18/10
+  (il client dell'app scambia il codice appena nasce,
+  `detectSessionInUrl`). La sessione si apre, ma nessuno scrive il
+  segno, quindi la pagina mostra "Link non valido o scaduto". La
+  sessione resta aperta: è dell'account del link, nel browser che l'ha
+  chiesto. Se il server rifiuta lo scambio, il testo è quello generico.
+  Test permanente in `reimpostaPassword.test.tsx`, con lo scambio
+  avvenuto davvero.
+- **Il segno per il ricaricamento.** Dopo la raccolta dal frammento e il
+  rinnovo, la pagina scrive l'id dell'utente in `sessionStorage` (vale
+  per una scheda, sopravvive al ricaricamento: Safari su iPhone ricarica
+  da solo le schede rimaste dietro). Senza frammento né errore il modulo
+  ricompare solo se la sessione è di quell'utente. Il segno si toglie
+  dopo il salvataggio, e la pagina esce dalla cronologia
+  (`router.replace`). Senza memoria disponibile non c'è segno → errore
+  (direzione sicura). Scartato il claim `amr`: "recovery" resta per
+  tutta la sessione.
 - **L'email nel modulo.** Campo "Account" in sola lettura con
   `autoComplete="username"`: si vede a quale account si cambia la
   password, e il gestore delle password la salva su quell'email.
@@ -4891,7 +4892,8 @@ Codice: `src/app/password-dimenticata/page.tsx`,
 `src/lib/erroriAuth.ts`, `src/lib/segnoRipristinoPassword.ts`. Test:
 `passwordDimenticata.test.tsx` (la richiesta senza `code_challenge`, i
 cookie intatti) e `reimpostaPassword.test.tsx` (client Supabase vero,
-rete finta: PKCE, T1–T9, frammento, rinnovo). I limiti noti stanno in
+rete finta: `?code=` senza frammento, errori nell'indirizzo, frammento,
+rinnovo). I limiti noti stanno in
 §11, "Difetti e verifiche aperti".
 
 #### Cambia password (dal 18/10, branch `cambia-password`)
@@ -6758,7 +6760,8 @@ nuova **provata il 25/10** (Build `7497460` confermata, compare P5).
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 `username-dopo-accesso`; 1328 in 117 file sul branch
 `animazione-apertura` (su main dal 24/10); 1331 in 118 file sul branch
-`apertura-pesata` (su main dal 25/10).
+`apertura-pesata` (su main dal 25/10); 1326 in 118 file sul branch
+`togli-pkce`.
 
 ### Non ancora costruito
 
@@ -6824,20 +6827,19 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
   ripristino della password"). Non con `token_hash` e `verifyOtp`:
   servirebbe cambiare il modello dell'email, bloccato senza
   SMTP personalizzato (§10.9)
-- **Togliere il ramo PKCE di `/reimposta-password` e `LINK_ALTRO_BROWSER`**
-  (lavoro futuro, branch a parte). Dopo il rilascio di `reset-ovunque`
-  le richieste nuove sono tutte implicite: il ramo `?code=` serve solo ai
-  link chiesti prima, che scadono entro il tempo di validità dei link
-  (di solito un'ora). Da togliere dopo qualche giorno dal merge, con i
-  test PKCE di `reimpostaPassword.test.tsx` e le voci `flow_state_*`,
-  `bad_code_verifier` e "code verifier" di `erroriAuth.ts`. Resta la
-  gestione di `otp_expired`, che serve anche al frammento
-- **Errore di rete durante lo scambio del link** (10/10, raro, solo per i
-  link PKCE). La libreria cancella comunque il verifier: si vede "Errore
-  di connessione", e ricaricando compare il testo "altro browser". Serve
-  un link nuovo. Con i link nuovi (frammento) un errore di rete alla
-  verifica o al rinnovo dà "Errore di connessione" e serve comunque un
-  link nuovo: il frammento è già stato tolto dall'indirizzo
+- **Togliere il ramo PKCE di `/reimposta-password` e `LINK_ALTRO_BROWSER`**:
+  **fatto il 25/10** (branch `togli-pkce`). Tolti il caso `?code=` della
+  pagina, `LINK_ALTRO_BROWSER`, le voci `flow_state_*`,
+  `bad_code_verifier` e "code verifier" di `erroriAuth.ts` e i test
+  PKCE; resta `otp_expired`, che serve al frammento. Un `?code=` senza
+  frammento finisce sull'errore, anche se la libreria fa lo scambio da
+  sola (§9.1, "Il ripristino della password"; test permanente)
+- **Errore di rete con il link dell'email** (raro). Un errore di rete
+  alla verifica dei token del frammento o al rinnovo dà "Errore di
+  connessione", e serve un link nuovo: il frammento è già stato tolto
+  dall'indirizzo. Il caso dei vecchi link PKCE (verifier cancellato
+  anche se lo scambio falliva per la rete, 10/10) non esiste più dal
+  25/10
 - **Email di Supabase gratuite: circa 2 all'ora** (il servizio interno
   del piano gratuito, sezione 10.9). Da tenere presente nelle prove del
   reset: oltre il limite la richiesta fallisce con "Troppi tentativi"
