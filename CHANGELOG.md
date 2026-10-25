@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Allineamento dei documenti dopo `apertura-pesata`
+
+Branch `togli-pkce`, commit 1 (solo documenti). Voce del merge di
+`apertura-pesata` qui sotto; in PUNTO §7 e §11 la chiusura dal
+multitasking con l'animazione nuova passa da "da provare dopo il
+merge" a provata il 25/10.
+
+## 2026-10-25 — Merge di `apertura-pesata` su main
+
+Fast-forward `b732e33` → `7497460`, 4 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL da togliere. Dopo il merge,
+nell'app installata: chiusura dal multitasking e riapertura provata il
+25/10 (Build `7497460` confermata, compare P5). PUNTO §7 e §11.
+
 ## 2026-10-25 — Animazione P5 provata su iPhone
 
 Branch `apertura-pesata`, commit 4 (solo documenti). **Provata su

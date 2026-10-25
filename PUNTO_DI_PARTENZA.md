@@ -3986,9 +3986,10 @@ commit 6; prove 0-11 passate, §11). **Dal 25/10 il movimento è P5
 solo disegno e keyframes, la logica "quando mostrarla" è la stessa
 provata il 24/10. **P5 provata su iPhone il 25/10** (anteprima di
 `apertura-pesata`, Safari, account di prova, Build del commit 3, già
-rallentata a 1980 ms; prove 0-7 passate, §11). **Da provare dopo il
-merge**, nell'app installata: chiusura dal multitasking e riapertura
-con l'animazione nuova.
+rallentata a 1980 ms; prove 0-7 passate, §11). P5 su main dal 25/10
+(fast-forward fino a `7497460`); nell'app installata, chiusura dal
+multitasking e riapertura con l'animazione nuova **provata il 25/10**
+(Build `7497460` confermata, compare P5).
 P1 su main dal 24/10. Dopo quel merge, nell'app installata:
 - (a) app chiusa dal multitasking e riaperta → l'animazione ricompare,
   cioè il segno in `sessionStorage` sparisce quando iOS chiude l'app:
@@ -6749,14 +6750,15 @@ passate. Animazione P5 su Accedi e su Oggi alla prima apertura; piatti
 calati senza attraversare il giogo; barra in basso solo nella
 dissolvenza; niente animazione a ricarica e cambio scheda; tema scuro
 e un altro colore principale; riduci movimento; durata (~2 s) giusta.
-**Da provare dopo il merge** nell'app installata: chiusura dal
-multitasking e riapertura, con l'animazione nuova.
+Su main dal 25/10 (fast-forward fino a `7497460`). Nell'app
+installata, chiusura dal multitasking e riapertura con l'animazione
+nuova **provata il 25/10** (Build `7497460` confermata, compare P5).
 
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 `username-dopo-accesso`; 1328 in 117 file sul branch
 `animazione-apertura` (su main dal 24/10); 1331 in 118 file sul branch
-`apertura-pesata`.
+`apertura-pesata` (su main dal 25/10).
 
 ### Non ancora costruito
 
