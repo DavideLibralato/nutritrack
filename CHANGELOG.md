@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Foto profilo: Storage, copia sul telefono, pulizia a Esci
+
+Branch `foto-profilo`, commit 6. `src/lib/foto/fotoProfilo.ts`:
+`cambiaFoto` (carica il file nuovo con upsert spento, poi
+`imposta_foto_profilo`, salva subito la copia, poi toglie dalla cartella
+tutto tranne il file appena impostato; dopo un'impostazione fallita il
+file nuovo resta, perché potrebbe già essere la foto valida),
+`eliminaFoto` (server, file, copia), `aggiornaMiaFoto` (scarica solo se
+il percorso è cambiato; la copia si scrive solo se è ancora quella letta
+all'inizio, così un download partito prima di un cambio da questo
+telefono non riporta indietro la foto) e `indirizziFotoAmici` (una sola
+`createSignedUrls` da un'ora, ogni errore → iniziali). Dexie
+`version(9)` con la tabella `foto_locale` (chiave `user_id`), nessun
+`.upgrade()`: nasce vuota. La copia tiene i **byte** (ArrayBuffer) e il
+tipo, non un Blob: nel finto IndexedDB dei test un Blob torna vuoto, e
+su WebKit vecchi dava problemi. La copia si toglie a Elimina account
+(`cancellaDatiUtente`) e a Esci (`sostituisciDatiUtente` a zero righe:
+Esci non passa da `cancellaDatiUtente`); "Ricarica i dati" la lascia.
+Verificato nel codice di supabase-js che lo Storage usa la stessa fetch
+con i 30 s. Test nuovi: 20 in `fotoProfilo.test.ts`, 4 in
+`ripristino.test.ts`, la partenza dalla 8 in `aggiornamentoSchema.test.ts`
+(e la seconda scheda ora alla 8); provati rompendo e ripristinando da una
+copia in otto modi, ognuno con almeno un rosso. Test 1361 → 1386 in 121
+file. PUNTO §3 e §11.
+
 ## 2026-10-25 — Ritaglio e compressione della foto profilo
 
 Branch `foto-profilo`, commit 5. `src/lib/foto/ritaglioFoto.ts`:

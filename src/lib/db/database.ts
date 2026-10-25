@@ -24,6 +24,7 @@ import type {
 } from "./tipi";
 import type { VoceOutbox } from "../sync/outbox";
 import type { CursoreSync } from "../sync/discesa";
+import type { FotoLocale } from "../foto/fotoProfilo";
 
 // Table<T, string>, non EntityTable: EntityTable presuppone una chiave che
 // Dexie può generare da sola (auto-increment) e quindi opzionale in
@@ -49,6 +50,11 @@ export class NutriTrackDatabase extends Dexie {
   // scaricato da Supabase (src/lib/sync/discesa.ts). Solo locale, non
   // sincronizzata a sua volta.
   sync_cursori!: Table<CursoreSync, string>;
+
+  // La copia della propria foto profilo, una riga per utente con chiave
+  // user_id (src/lib/foto/fotoProfilo.ts, dalla version(9)). Solo locale,
+  // non sincronizzata: si riscarica dal server.
+  foto_locale!: Table<FotoLocale, string>;
 
   // `nome`: sempre "nutritrack" nell'app. Un altro nome serve solo al test
   // degli aggiornamenti di schema (aggiornamentoSchema.test.ts), che apre
@@ -247,6 +253,30 @@ export class NutriTrackDatabase extends Dexie {
       preferiti: "id, user_id, alimento_id, deleted_at",
       outbox: "id, tabella, creato_il",
       sync_cursori: "id, tabella, user_id",
+    });
+
+    // version(9): tabella nuova foto_locale, la copia della propria foto
+    // profilo (branch foto-profilo, PUNTO_DI_PARTENZA.md §3, "La foto
+    // profilo"). Chiave user_id, senza altri indici: si legge solo per
+    // chiave. Le altre tabelle sono identiche alla version(8). Nessun
+    // .upgrade() (regola B): la tabella nasce vuota e le righe esistenti
+    // non cambiano forma, quindi non c'è niente da riscrivere. Verificato
+    // da aggiornamentoSchema.test.ts (regola B.7).
+    this.version(9).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+      sync_cursori: "id, tabella, user_id",
+      foto_locale: "user_id",
     });
   }
 }

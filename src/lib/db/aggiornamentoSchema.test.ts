@@ -20,8 +20,8 @@
 // regola B.1, questo test non la vede per forza: Dexie corregge da solo
 // gli indici che non coincidono, con un avviso in console.)
 //
-// Quando nasce una version(9): si aggiunge qui SCHEMA_V8 (copia della 8
-// com'è oggi), le sue righe se la forma cambia, e l'8 nel ciclo dei test.
+// Quando nasce una version(10): si aggiunge qui SCHEMA_V9 (copia della 9
+// com'è oggi), le sue righe se la forma cambia, e il 9 nel ciclo dei test.
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import Dexie from "dexie";
@@ -70,10 +70,14 @@ const SCHEMA_V6 = SCHEMA_V5;
 // sulle voci di diario).
 const SCHEMA_V7 = SCHEMA_V6;
 
+// version(8): stessi indici della 7 (campo nuovo ultimo_status
+// sull'outbox).
+const SCHEMA_V8 = SCHEMA_V7;
+
 const SCHEMI: Record<number, Record<string, string>> = {
-  3: SCHEMA_V3, 4: SCHEMA_V4, 5: SCHEMA_V5, 6: SCHEMA_V6, 7: SCHEMA_V7,
+  3: SCHEMA_V3, 4: SCHEMA_V4, 5: SCHEMA_V5, 6: SCHEMA_V6, 7: SCHEMA_V7, 8: SCHEMA_V8,
 };
-const ULTIMA_VERSIONE = 8;
+const ULTIMA_VERSIONE = 9;
 
 // --- Righe realistiche, come le aveva un telefono a quella versione ----------
 
@@ -230,7 +234,7 @@ function nomeNuovo() {
 // --- I test ------------------------------------------------------------------
 
 describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
-  for (const da of [3, 4, 5, 6, 7]) {
+  for (const da of [3, 4, 5, 6, 7, 8]) {
     it(`dalla version(${da}) all'ultima: tutte le righe, identiche, con gli indici che funzionano`, async () => {
       const nome = nomeNuovo();
       const { vecchio, contenuto } = await databaseVecchio(nome, da);
@@ -251,6 +255,14 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
       }
       // Le tabelle nate dopo la versione di partenza esistono, vuote.
       if (da < 5) expect(await nuovo.sync_cursori.count()).toBe(0);
+      // version(9): foto_locale nasce vuota, e la copia di una foto si
+      // scrive e si rilegge per chiave (user_id), byte compresi.
+      expect(await nuovo.foto_locale.count()).toBe(0);
+      const byte = new Uint8Array([255, 216, 255, 224]).buffer;
+      await nuovo.foto_locale.put({ user_id: U, percorso: `${U}/foto.jpg`, byte, tipo: "image/jpeg" });
+      const foto = await nuovo.foto_locale.get(U);
+      expect(foto).toMatchObject({ user_id: U, percorso: `${U}/foto.jpg`, tipo: "image/jpeg" });
+      expect(Array.from(new Uint8Array(foto!.byte))).toEqual([255, 216, 255, 224]);
 
       // Gli indici funzionano sulle righe vecchie.
       expect(await nuovo.voci_diario.where("pasto_id").equals("pasto-cena").count()).toBe(1);
@@ -290,15 +302,15 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
     });
   }
 
-  it("la version(8) apre anche con una seconda scheda ancora aperta alla version(7), che continua a funzionare", async () => {
+  it("la version(9) apre anche con una seconda scheda ancora aperta alla version(8), che continua a funzionare", async () => {
     // Due schede dello stesso browser: quella vecchia ha ancora in memoria il
-    // codice di prima (version(7)), quella nuova apre con la 8. IndexedDB
+    // codice di prima (version(8)), quella nuova apre con la 9. IndexedDB
     // chiede alla vecchia di chiudersi ("versionchange"): se non lo
     // facesse, la nuova resterebbe bloccata. Dexie la chiude da solo, con
     // un avviso in console, e la riapre alla prima operazione.
     const avvisi = vi.spyOn(console, "warn").mockImplementation(() => {});
     const nome = nomeNuovo();
-    const { vecchio: schedaVecchia } = await databaseVecchio(nome, 7);
+    const { vecchio: schedaVecchia } = await databaseVecchio(nome, 8);
 
     const schedaNuova = new NutriTrackDatabase(nome);
     aperti.push(schedaNuova);
@@ -306,13 +318,14 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
     // limite di tempo trasforma il blocco in un errore leggibile.
     await Promise.race([
       schedaNuova.open(),
-      new Promise((_, rifiuta) => setTimeout(() => rifiuta(new Error("version(8) bloccata")), 2000)),
+      new Promise((_, rifiuta) => setTimeout(() => rifiuta(new Error("version(9) bloccata")), 2000)),
     ]);
     expect(schedaNuova.verno).toBe(ULTIMA_VERSIONE);
     expect(avvisi).toHaveBeenCalledWith(expect.stringContaining("Another connection wants to upgrade"));
 
     // La scheda vecchia legge e scrive ancora: Dexie la riapre alla
-    // versione che trova (gli indici sono gli stessi della 7).
+    // versione che trova (le sue tabelle hanno gli stessi indici della 8;
+    // foto_locale non la conosce e non la tocca).
     expect(await schedaVecchia.table("pasti").count()).toBe(2);
     await schedaVecchia.table("misurazioni").put({
       id: "m-dalla-scheda-vecchia", user_id: U, updated_at: ADESSO, deleted_at: null,

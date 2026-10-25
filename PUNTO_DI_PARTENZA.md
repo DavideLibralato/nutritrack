@@ -2786,7 +2786,8 @@ storia.
   sul telefono
 - **La copia sul telefono, solo della propria foto** (deciso il 25/10):
   in Dexie, tabella locale `foto_locale` (chiave `user_id`: percorso e
-  file), mostrata con un indirizzo locale (`URL.createObjectURL`).
+  byte del file, sotto), mostrata con un indirizzo locale
+  (`URL.createObjectURL`).
   Serve la `version(9)` di Dexie, con la tabella nuova e senza
   `.upgrade()`: nasce vuota e le righe esistenti non cambiano forma
   (CLAUDE.md, B). Si aggiorna all'apertura con la rete e al ritorno in
@@ -2798,6 +2799,47 @@ storia.
   (sopra, "Amici", "Offline e dati"); si leggono con URL firmati
   validi un'ora, in una sola chiamata per tutti, e se la lettura fallisce
   restano le iniziali, senza errore nella pagina
+- **Com'è fatto il livello Storage** (commit 6, `src/lib/foto/fotoProfilo.ts`;
+  il client Supabase si riceve come parametro, come in `amicizie.ts`):
+  - `cambiaFoto(supabase, userId, file)`: carica `<user_id>/<uuid>.jpg`
+    con `upsert: false`, chiama `imposta_foto_profilo`, salva subito la
+    copia con lo stesso file, poi `pulisciCartella` toglie dalla cartella
+    tutto tranne il file appena impostato. Esiti `ok` (con
+    `avanziRimasti` se la pulizia non è riuscita: per l'utente è fatto),
+    `caricamento-fallito` (niente cambiato), `impostazione-fallita` (un
+    file in più, che toglie il cambio dopo). Dopo un'impostazione fallita
+    il file nuovo **non** si cancella: se si è persa solo la risposta è
+    già la foto valida, e cancellarlo la romperebbe
+  - `eliminaFoto(supabase, userId)`: `imposta_foto_profilo(null)`, poi i
+    file, poi la copia. Esiti `ok` (con `avanziRimasti`) e `fallito`
+    (niente cambiato)
+  - `aggiornaMiaFoto(supabase, userId)`: rilegge il percorso sul server.
+    Diverso → scarica; nessuno → toglie la copia; nessuna risposta o
+    download fallito → copia intatta. La copia si scrive **solo se è
+    ancora quella letta all'inizio** (lettura e scrittura in una
+    transazione): un download partito prima di un cambio fatto da
+    questo telefono non riporta indietro la foto (esito
+    `cambiata-nel-frattempo`)
+  - `indirizziFotoAmici(supabase, ids)`: una lettura di `foto_profilo`
+    (la RLS dà solo gli amici accettati) e **una** `createSignedUrls` per
+    tutti, valida 3600 s. Ogni errore → nessuna foto, mai un errore
+  - **la copia tiene i byte, non un Blob** (deciso scrivendo il codice, il
+    25/10): `foto_locale` = `user_id`, `percorso`, `byte` (ArrayBuffer),
+    `tipo`; il Blob si ricostruisce leggendo (`blobDaFotoLocale`). Un Blob
+    in IndexedDB su WebKit vecchi dava problemi, e nel finto IndexedDB
+    dei test torna indietro vuoto; i byte passano ovunque
+  - **pulizia**: Elimina account con `cancellaDatiUtente`; Esci e la sua
+    ripresa con `sostituisciDatiUtente` a zero righe, che solo in quel
+    caso toglie anche la copia. "Ricarica i dati dal tuo account" passa
+    dalla stessa funzione con le righe scaricate e la lascia: la foto sul
+    server non è cambiata
+  - **tempo massimo**: anche lo Storage passa dalla fetch con i 30 s di
+    `fetchConScadenza.ts` (supabase-js gli dà la stessa fetch del resto,
+    verificato il 25/10 nel codice della libreria); una chiamata scaduta
+    è uno dei fallimenti qui sopra
+  - test permanenti in `fotoProfilo.test.ts` (Storage finto che tiene i
+    file), `ripristino.test.ts` (le pulizie) e `aggiornamentoSchema.test.ts`
+    (da 3-8 a 9, e una seconda scheda alla 8)
 
 #### Un solo Salva (deciso il 2026-09-26)
 
@@ -7228,7 +7270,10 @@ nell'app installata** da Davide: l'uso normale.
   `tipi.ts`), **applicata il 25/10** da Cowork (versione
   `20261025204607`; prove SQL prima "migration non applicata", dopo "52
   su 52"; `get_advisors` solo con l'avviso atteso; §4, "La foto profilo:
-  solo online"). Commit previsti, in quest'ordine: migration scritta e
+  solo online"). **Commit 5**: ritaglio e compressione
+  (`ritaglioFoto.ts`). **Commit 6**: livello Storage, Dexie `version(9)`
+  con `foto_locale`, pulizia a Esci ed Elimina account
+  (`fotoProfilo.ts`; §3, "La foto profilo"). Commit previsti, in quest'ordine: migration scritta e
   non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
   l'"ok migration", applicata da Cowork e provata; ritaglio e
   compressione (funzioni pure con test); Storage, Dexie `version(9)` e

@@ -15,7 +15,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { db } from "../db/database";
 import { scaricaTabella } from "./discesa";
-import { cancellaDatiUtente, modificheNonInviate, ripristinaDatiLocali } from "./ripristino";
+import {
+  cancellaDatiUtente,
+  modificheNonInviate,
+  ripristinaDatiLocali,
+  sostituisciDatiUtente,
+} from "./ripristino";
 import type { Alimento, NomeTabella, Pasto } from "../db/tipi";
 import type { VoceOutbox } from "./outbox";
 
@@ -335,5 +340,68 @@ describe("cancellaDatiUtente", () => {
     await cancellaDatiUtente(utente);
     await expect(cancellaDatiUtente(utente)).resolves.toBeUndefined();
     expect(await pastiLocali(utente)).toHaveLength(0);
+  });
+
+  it("toglie anche la copia della foto profilo dell'utente, non quella di un altro", async () => {
+    const utenteA = `utente-${crypto.randomUUID()}`;
+    const utenteB = `utente-${crypto.randomUUID()}`;
+    await db.foto_locale.bulkPut([fotoLocale(utenteA), fotoLocale(utenteB)]);
+
+    await cancellaDatiUtente(utenteA);
+
+    expect(await db.foto_locale.get(utenteA)).toBeUndefined();
+    expect(await db.foto_locale.get(utenteB)).not.toBeUndefined();
+  });
+});
+
+// La copia della foto profilo (foto_locale, branch foto-profilo): via con
+// Esci, cioè sostituisciDatiUtente con zero righe (esci.ts,
+// uscitaInCorso.ts); resta con "Ricarica i dati dal tuo account", che
+// passa dalla stessa funzione con le righe scaricate (la foto sul server
+// non è cambiata); resta se Esci non svuota (modifiche non confermate).
+function fotoLocale(userId: string) {
+  return {
+    user_id: userId,
+    percorso: `${userId}/${crypto.randomUUID()}.jpg`,
+    byte: new Uint8Array([255, 216, 255]).buffer,
+    tipo: "image/jpeg",
+  };
+}
+
+describe("sostituisciDatiUtente e la copia della foto profilo", () => {
+  it("Esci (zero righe) toglie la copia dell'utente, non quella di un altro", async () => {
+    const utenteA = `utente-${crypto.randomUUID()}`;
+    const utenteB = `utente-${crypto.randomUUID()}`;
+    await db.foto_locale.bulkPut([fotoLocale(utenteA), fotoLocale(utenteB)]);
+
+    expect(await sostituisciDatiUtente(utenteA, new Map(), [])).toBe(true);
+
+    expect(await db.foto_locale.get(utenteA)).toBeUndefined();
+    expect(await db.foto_locale.get(utenteB)).not.toBeUndefined();
+  });
+
+  it("Esci che non svuota (modifica non confermata) lascia anche la copia", async () => {
+    const utente = `utente-${crypto.randomUUID()}`;
+    const modificato = pasto(utente, "Pranzo", "2026-09-25T13:00:00.000Z");
+    await db.pasti.put(modificato);
+    await db.outbox.put(voceOutbox(modificato));
+    await db.foto_locale.put(fotoLocale(utente));
+
+    expect(await sostituisciDatiUtente(utente, new Map(), [])).toBe(false);
+
+    expect(await db.foto_locale.get(utente)).not.toBeUndefined();
+  });
+
+  it("Ricarica i dati (righe scaricate) lascia la copia", async () => {
+    const utente = `utente-${crypto.randomUUID()}`;
+    const { canonici } = await dispositivoConPastiDoppi(utente);
+    const copia = fotoLocale(utente);
+    await db.foto_locale.put(copia);
+
+    const esito = await ripristinaDatiLocali(utente, []);
+    expect(esito.esito).toBe("ripristinato");
+
+    expect(await pastiLocali(utente)).toHaveLength(canonici.length);
+    expect((await db.foto_locale.get(utente))?.percorso).toBe(copia.percorso);
   });
 });

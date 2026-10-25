@@ -176,7 +176,11 @@ export async function scaricaTuttoInMemoria(
 // confermate. Le firme confermate che non ci sono più (inviate nel
 // frattempo) non sono un problema: non c'è più niente da perdere.
 //
-// Con `righe` vuota cancella e basta (il futuro logout, §9.6).
+// Con `righe` vuota cancella e basta: è Esci (esci.ts, e la sua ripresa
+// in uscitaInCorso.ts, §9.6). Solo in quel caso si toglie anche la copia
+// della foto profilo (foto_locale): "Ricarica i dati dal tuo account"
+// passa da qui con le righe scaricate (una Map con tutte le tabelle, anche
+// vuote) e la foto sul server non è cambiata, quindi la copia resta.
 export async function sostituisciDatiUtente(
   userId: string,
   righe: Map<NomeTabella, RigaBase[]>,
@@ -186,7 +190,7 @@ export async function sostituisciDatiUtente(
 
   return db.transaction(
     "rw",
-    [...TABELLE_DISCESA.map((t) => t.tabella), db.outbox, db.sync_cursori],
+    [...TABELLE_DISCESA.map((t) => t.tabella), db.outbox, db.sync_cursori, db.foto_locale],
     async () => {
       // Riletta DENTRO la transazione: una modifica fatta durante lo
       // scarico (l'utente cambia pagina e aggiunge qualcosa) è qui.
@@ -196,6 +200,7 @@ export async function sostituisciDatiUtente(
       // Restano, e bulkPut qui sotto sovrascrive, le righe con user_id
       // null (catalogo condiviso): vedi togliDatiUtente.
       await togliDatiUtente(userId, vociUtente);
+      if (righe.size === 0) await db.foto_locale.delete(userId);
 
       for (const t of TABELLE_DISCESA) {
         const righeTabella = righe.get(t.nome) ?? [];
@@ -223,7 +228,8 @@ export async function sostituisciDatiUtente(
 
 // "Elimina il mio account" (PUNTO_DI_PARTENZA.md §9.6): via dal
 // dispositivo tutto ciò che è di questo utente — righe delle 11 tabelle,
-// TUTTE le sue voci di outbox (in attesa e accantonate) e i suoi cursori.
+// TUTTE le sue voci di outbox (in attesa e accantonate), i suoi cursori e
+// la copia della sua foto profilo (foto_locale, dal branch foto-profilo).
 // A differenza di sostituisciDatiUtente nessun controllo delle firme: si
 // chiama solo dopo che il server ha cancellato l'account, quando non c'è
 // più niente da proteggere (una modifica non inviata non avrebbe più
@@ -235,9 +241,10 @@ export async function sostituisciDatiUtente(
 export async function cancellaDatiUtente(userId: string): Promise<void> {
   await db.transaction(
     "rw",
-    [...TABELLE_DISCESA.map((t) => t.tabella), db.outbox, db.sync_cursori],
+    [...TABELLE_DISCESA.map((t) => t.tabella), db.outbox, db.sync_cursori, db.foto_locale],
     async () => {
       await togliDatiUtente(userId, vociOutboxDellUtente(await db.outbox.toArray(), userId));
+      await db.foto_locale.delete(userId);
     }
   );
 }
