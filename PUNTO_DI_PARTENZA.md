@@ -6170,7 +6170,7 @@ reset.
 
 ## 11. Stato attuale
 
-Aggiornato al 23 ottobre 2026. È la fotografia di oggi; la storia, commit
+Aggiornato al 25 ottobre 2026. È la fotografia di oggi; la storia, commit
 per commit, sta in `CHANGELOG.md`.
 
 **Account di prova.** Esiste un account di prova fisso,
@@ -6992,8 +6992,9 @@ kcal salvato (poi cancellato), pesata 80 kg; peso obiettivo 10000 e
 online" vuoto. Verificato da Cowork nei log: tutte le scritture
 dall'anteprima con 200/201, nessun 400. La riga "allenamento" del
 commit 3 non si può provare con l'account di prova (ha già gli
-obiettivi): la coprono i 3 test permanenti. **Da provare dopo il
-merge**, nell'app installata: l'uso normale.
+obiettivi): la coprono i 3 test permanenti. Dopo il merge
+(fast-forward su main il 25/10, fino a `9a14a98`), **provato il 25/10
+nell'app installata** da Davide: l'uso normale.
 
 ### Non ancora costruito
 
@@ -7040,6 +7041,23 @@ merge**, nell'app installata: l'uso normale.
   e la si toglie dopo il merge. Un `redirectTo` non in elenco viene
   ignorato in silenzio: il link porta al Site URL, quindi un reset chiesto
   dall'anteprima di un branch senza la sua voce porta su app-libra
+- **Il dominio `app-libra.vercel.app` non va mai lasciato libero**
+  (verificato da Cowork il 25/10). Finché è assegnato al progetto Vercel
+  nessun'altra squadra può prenderlo. Regola: non cancellare né
+  rinominare il progetto Vercel e non togliere quel dominio. L'app
+  installata (che vive su quell'indirizzo, con i suoi dati locali) e i
+  link delle email (Site URL e Redirect URL qui sopra) ne dipendono: se si
+  liberasse, chiunque potrebbe registrarlo e ricevere i link di accesso
+- **`user_not_found` per un account cancellato: atteso dal codice, non
+  ancora visto in produzione** (verifica di Cowork del 25/10; §9.6,
+  "Segno"). Secondo il codice di Supabase Auth, `GET /user` con il token
+  di un utente cancellato risponde 403 "User from sub claim in JWT does
+  not exist", codice `user_not_found`: è quello su cui contano
+  `riprendiEliminazioneInSospeso` ed Elimina account. Nei log di
+  produzione non compare ancora. Verifica alla prossima prova con un
+  account usa e getta: stesso account su due dispositivi, Elimina
+  account su uno, aprire l'app sull'altro, controllare nei log di Auth
+  la risposta di `/user`
 - **Un reset chiesto dall'app installata su iPhone non poteva riuscire**
   (limite noto dal 10/10): **risolto con `reset-ovunque`, provato il
   18/10 sull'anteprima** (Chrome sul PC → Safari su iPhone) **e, dopo il

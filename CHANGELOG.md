@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Merge di `check-quantita` provato; verifiche di Cowork
+
+Branch `foto-profilo`, commit 1 (solo documenti). Dopo il merge di
+`check-quantita`, Davide ha provato il 25/10 nell'app installata l'uso
+normale. Fra le verifiche aperte gli esiti di Cowork del 25/10 sera:
+`app-libra.vercel.app` resta nostro finché è assegnato al progetto
+(regola: non cancellare né rinominare il progetto Vercel, non togliere
+il dominio); `user_not_found` per un account cancellato è atteso dal
+codice di Supabase Auth (403 su `GET /user`) ma non ancora visto nei
+log, da verificare con un account usa e getta su due dispositivi.
+PUNTO §11.
+
+## 2026-10-25 — Merge di `check-quantita` su main
+
+Fast-forward `18e6319` → `9a14a98`, 5 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL aggiunta su Supabase, quindi
+nessuna da togliere. PUNTO §11.
+
 ## 2026-10-25 — Vincoli sui numeri applicati e provati
 
 Branch `check-quantita`, commit 5 (solo documenti). Migration
