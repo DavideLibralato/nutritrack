@@ -6,9 +6,14 @@
 // Il nome viene dai metadati dell'account (useNomeUtente). Se manca, niente
 // cerchio e al posto del nome "Profilo"; se mancano anche peso e altezza, il
 // sottotitolo dice cosa c'è dentro.
+//
+// Con la foto profilo (branch foto-profilo) il cerchio la mostra al posto
+// delle iniziali (`foto`: l'indirizzo locale di useMiaFoto), anche senza
+// nome; senza foto, le iniziali come prima (CerchioFoto).
 
 import Link from "next/link";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import CerchioFoto from "./CerchioFoto";
 
 // Le iniziali delle prime due parole del nome: "Davide" → "D",
 // "Davide Libralato" → "DL".
@@ -29,10 +34,12 @@ export default function SchedaAccount({
   nome,
   pesoKg,
   altezzaCm,
+  foto,
 }: {
   nome: string | null;
   pesoKg: number | null;
   altezzaCm: number | null;
+  foto: string | null;
 }) {
   const dettagli = [
     pesoKg != null ? `${formattaNumero(pesoKg)} kg` : null,
@@ -44,13 +51,12 @@ export default function SchedaAccount({
       href="/impostazioni/profilo"
       className={`flex w-full items-center gap-3.5 rounded-[20px] border border-border bg-surface px-4 py-3.5 ${CLASSE_FOCUS}`}
     >
-      {nome && (
-        <span
-          aria-hidden
-          className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-accent-strong font-display text-[19px] font-bold text-on-strong"
-        >
-          {iniziali(nome)}
-        </span>
+      {(nome || foto) && (
+        <CerchioFoto
+          indirizzo={foto}
+          iniziali={nome ? iniziali(nome) : null}
+          classe="size-[52px] bg-accent-strong font-display text-[19px] font-bold text-on-strong"
+        />
       )}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[19px] font-medium">{nome ?? "Profilo"}</span>

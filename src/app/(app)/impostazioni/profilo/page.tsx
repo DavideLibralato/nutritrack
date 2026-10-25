@@ -34,6 +34,7 @@ import { OPZIONI_ATTIVITA, OPZIONI_SESSO } from "@/lib/profilo/opzioniProfilo";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
 import IntestazioneProfilo from "@/components/IntestazioneProfilo";
+import { useMiaFoto } from "@/lib/foto/useFotoProfilo";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaCampo from "@/components/RigaCampo";
 import SelettoreSegmenti from "@/components/SelettoreSegmenti";
@@ -57,6 +58,8 @@ export default function ProfiloPage() {
   const modulo = useModuloImpostazioni();
   const nome = useNomeUtente();
   const email = useEmailUtente();
+  // La propria foto profilo, dalla copia sul telefono (anche offline).
+  const miaFoto = useMiaFoto(modulo.userId);
   // Lo username si legge online e si cambia nel suo foglio, fuori dal Salva
   // unico della pagina (PUNTO_DI_PARTENZA.md §3, "Amici").
   const mioUsername = useMioUsername();
@@ -90,6 +93,7 @@ export default function ProfiloPage() {
         pesoKg={ultimaPesata?.valore ?? null}
         altezzaCm={profilo?.altezza_cm ?? null}
         email={email}
+        foto={miaFoto}
       />
 
       {/* Username: letto dal server. Senza risposta (offline) il tocco

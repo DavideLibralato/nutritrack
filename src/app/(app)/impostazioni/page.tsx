@@ -68,6 +68,7 @@ import { testoRigaPeso } from "@/lib/profilo/testiPeso";
 import { useSceltaAccento, useSceltaTema } from "@/lib/useSceltaTema";
 import { NOMI_ACCENTO, type SceltaTema } from "@/lib/tema";
 import SchedaAccount from "@/components/SchedaAccount";
+import { useMiaFoto } from "@/lib/foto/useFotoProfilo";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
 import EsciAccount from "@/components/EsciAccount";
@@ -85,6 +86,8 @@ import { useNovitaAmici } from "@/lib/amici/novita";
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
   const nome = useNomeUtente();
+  // La propria foto profilo, dalla copia sul telefono (anche offline).
+  const miaFoto = useMiaFoto(userId);
   const sceltaTema = useSceltaTema();
   const sceltaAccento = useSceltaAccento();
 
@@ -173,6 +176,7 @@ export default function ImpostazioniPage() {
         nome={nome}
         pesoKg={ultimaPesata?.valore ?? null}
         altezzaCm={profilo?.altezza_cm ?? null}
+        foto={miaFoto}
       />
 
       <GruppoImpostazioni titolo="Alimentazione">

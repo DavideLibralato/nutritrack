@@ -18,6 +18,8 @@
 // - Con `non_amici` (uno degli amici non lo è più) il foglio resta aperto,
 //   dice cosa è successo e rilegge gli amici: le spunte su chi non c'è più
 //   cadono da sole.
+// - Ogni amico ha il cerchio da 38 px della pagina Amici, con la foto
+//   profilo o le iniziali (branch foto-profilo, deciso il 25/10).
 
 import { useEffect, useRef, useState } from "react";
 import { useAreaVisibile } from "@/lib/areaVisibile";
@@ -40,7 +42,11 @@ import {
 } from "@/lib/catalogo/testiAlimentiInArrivo";
 import type { MessaggioBarra } from "@/lib/inserimento/testiBarra";
 import type { Alimento } from "@/lib/db/tipi";
+import { inizialiUsername } from "@/lib/amici/amicizie";
+import { useFotoAmici } from "@/lib/foto/useFotoProfilo";
 import LinkProtetto from "./LinkProtetto";
+import CerchioFoto from "./CerchioFoto";
+import { CLASSE_CERCHIO_AMICO } from "./RigaAmico";
 
 interface Props {
   userId: string;
@@ -62,6 +68,8 @@ export default function SheetCondividiCon({ userId, idAlimenti, onChiudi, onInvi
   const idInvio = useRef<string | null>(null);
 
   const amici = stato.esito === "ok" ? stato.divise.amici : [];
+  // Foto degli amici, in una sola chiamata; mentre arrivano, iniziali.
+  const fotoAmici = useFotoAmici(amici.map((a) => a.altroId));
   // Solo chi è ancora fra gli amici: dopo una rilettura, una spunta su chi
   // non c'è più non conta e non parte.
   const sceltiValidi = amici.filter((a) => scelti.has(a.altroId));
@@ -183,6 +191,11 @@ export default function SheetCondividiCon({ userId, idAlimenti, onChiudi, onInvi
                         className={`flex min-h-12 w-full items-center gap-3 rounded-[20px] px-4 py-2.5 text-left disabled:opacity-50 ${CLASSE_FOCUS}`}
                       >
                         <Spunta piena={spuntato} />
+                        <CerchioFoto
+                          indirizzo={fotoAmici[a.altroId]}
+                          iniziali={inizialiUsername(a.username)}
+                          classe={CLASSE_CERCHIO_AMICO}
+                        />
                         <span className={a.username ? "font-semibold" : "text-muted"}>
                           {a.username ? `@${a.username}` : "Nome non disponibile"}
                         </span>

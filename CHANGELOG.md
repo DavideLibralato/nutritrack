@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Foto profilo mostrata nei quattro posti
+
+Branch `foto-profilo`, commit 7. `CerchioFoto` mostra la foto
+(`object-fit: cover`) o le iniziali, con le misure di oggi: Profilo 56
+px, scheda di Impostazioni 52 px, Amici e "Condividi con" 38 px (nel
+foglio il cerchio è nuovo, per tutti gli amici). Se l'immagine non si
+carica, iniziali. Decorativo per lo screen reader, come le iniziali: il
+nome è già scritto accanto. `useMiaFoto` crea un indirizzo locale per
+copia e lo revoca quando cambia o il componente sparisce; dipende da
+utente + percorso e non dall'oggetto di `useLiveQuery`, che è nuovo a
+ogni rilettura (trovato scrivendo i test: ogni scrittura in
+`foto_locale` avrebbe creato un indirizzo nuovo). `useFotoAmici`: una
+chiamata per pagina, rinnovata solo se gli indirizzi hanno più di 50
+minuti. `AggiornamentoFotoProfilo` nel layout principale fa partire
+`aggiornaMiaFoto` 2 s dopo l'apertura, al ritorno in primo piano e della
+rete; `creaAggiornatoreFoto` evita i giri doppi (stesso giro se è in
+corso, nessuno per 30 s dopo uno riuscito, i falliti non contano). Test
+nuovi: 5 in `aggiornamentoFoto.test.ts`, 6 in `useFotoProfilo.test.tsx`;
+provati rompendo e ripristinando da una copia in sei modi, ognuno con
+almeno un rosso. Test 1386 → 1397 in 123 file. PUNTO §3 e §11.
+
 ## 2026-10-25 — Foto profilo: Storage, copia sul telefono, pulizia a Esci
 
 Branch `foto-profilo`, commit 6. `src/lib/foto/fotoProfilo.ts`:

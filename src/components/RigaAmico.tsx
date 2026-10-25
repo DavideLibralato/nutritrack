@@ -1,5 +1,6 @@
 // Una persona nella pagina Amici (mockup docs/mockups/amici.html, schermata
-// 4): iniziali in un cerchio, "@username" e, sotto, una riga grigia
+// 4): iniziali in un cerchio (o la foto profilo, per gli amici accettati:
+// branch foto-profilo, CerchioFoto), "@username" e, sotto, una riga grigia
 // facoltativa ("Vuole essere tuo amico", "In attesa che accetti", "Non
 // accettata"); a destra i pulsanti della riga (`azioni`). Con `onClick`
 // tutta la riga è un pulsante con la freccia (gli amici: il tocco apre la
@@ -12,15 +13,24 @@ import type { CSSProperties, ReactNode } from "react";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { inizialiUsername } from "@/lib/amici/amicizie";
 import { etichettaAmico } from "@/lib/amici/testiAmici";
+import CerchioFoto from "./CerchioFoto";
+
+// Il cerchio da 38 px di un amico: lo stesso nel foglio "Condividi con".
+export const CLASSE_CERCHIO_AMICO =
+  "size-[38px] bg-[var(--capsula-attiva)] text-sm font-bold text-accent";
 
 export default function RigaAmico({
   username,
+  foto,
   sotto,
   azioni,
   onClick,
   disattivata = false,
 }: {
   username: string | null;
+  // L'indirizzo firmato della sua foto (useFotoAmici), solo per gli amici
+  // accettati; assente → iniziali.
+  foto?: string | null;
   sotto?: string;
   azioni?: ReactNode;
   onClick?: () => void;
@@ -29,12 +39,11 @@ export default function RigaAmico({
   const stile = { "--rientro-linea": "66px" } as CSSProperties;
   const contenuto = (
     <>
-      <span
-        aria-hidden
-        className="flex size-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--capsula-attiva)] text-sm font-bold text-accent"
-      >
-        {inizialiUsername(username)}
-      </span>
+      <CerchioFoto
+        indirizzo={foto}
+        iniziali={inizialiUsername(username)}
+        classe={CLASSE_CERCHIO_AMICO}
+      />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">{etichettaAmico(username)}</span>
         {sotto && <span className="block text-[13px] leading-snug text-muted">{sotto}</span>}

@@ -26,6 +26,7 @@ import { useOnline } from "@/lib/useOnline";
 import { createClient } from "@/lib/supabase/client";
 import { useMioUsername } from "@/lib/amici/useMioUsername";
 import { useAmicizie } from "@/lib/amici/useAmicizie";
+import { useFotoAmici } from "@/lib/foto/useFotoProfilo";
 import {
   annullaORimuoviAmicizia,
   chiudiRifiuto,
@@ -58,6 +59,12 @@ export default function AmiciPage() {
   const online = useOnline();
   const mioUsername = useMioUsername();
   const { stato, ricarica } = useAmicizie();
+  // Le foto dei soli amici accettati: richieste ricevute, inviate e non
+  // accettate restano con le iniziali (PUNTO_DI_PARTENZA.md §3, "La foto
+  // profilo"). Una chiamata per l'elenco, non una per riga.
+  const fotoAmici = useFotoAmici(
+    stato.esito === "ok" ? stato.divise.amici.map((voce) => voce.altroId) : []
+  );
 
   const [foglioAggiungi, setFoglioAggiungi] = useState(false);
   const [daRimuovere, setDaRimuovere] = useState<VoceAmicizia | null>(null);
@@ -244,6 +251,7 @@ export default function AmiciPage() {
             <RigaAmico
               key={voce.id}
               username={voce.username}
+              foto={fotoAmici[voce.altroId]}
               disattivata={inCorso === voce.id}
               onClick={() => setDaRimuovere(voce)}
             />

@@ -8,8 +8,13 @@
 // (useNomeUtente): se manca, niente cerchio e niente nome. Le iniziali sono
 // le stesse della scheda dell'account nell'elenco (SchedaAccount). Se non c'è
 // niente da mostrare, l'intestazione non compare.
+//
+// Con la foto profilo (branch foto-profilo) il cerchio la mostra al posto
+// delle iniziali (`foto`: l'indirizzo locale di useMiaFoto), anche senza
+// nome; senza foto, le iniziali come prima (CerchioFoto).
 
 import { iniziali } from "./SchedaAccount";
+import CerchioFoto from "./CerchioFoto";
 
 function formattaNumero(n: number): string {
   return n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
@@ -20,28 +25,29 @@ export default function IntestazioneProfilo({
   pesoKg,
   altezzaCm,
   email,
+  foto,
 }: {
   nome: string | null;
   pesoKg: number | null;
   altezzaCm: number | null;
   email: string | null;
+  foto: string | null;
 }) {
   const dettagli = [
     pesoKg != null ? `${formattaNumero(pesoKg)} kg` : null,
     altezzaCm != null ? `${formattaNumero(altezzaCm)} cm` : null,
   ].filter((parte) => parte !== null);
 
-  if (!nome && dettagli.length === 0 && !email) return null;
+  if (!nome && !foto && dettagli.length === 0 && !email) return null;
 
   return (
     <section className="flex w-full max-w-sm items-center gap-4">
-      {nome && (
-        <div
-          aria-hidden
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-strong text-xl font-display font-bold text-on-strong"
-        >
-          {iniziali(nome)}
-        </div>
+      {(nome || foto) && (
+        <CerchioFoto
+          indirizzo={foto}
+          iniziali={nome ? iniziali(nome) : null}
+          classe="size-14 bg-accent-strong text-xl font-display font-bold text-on-strong"
+        />
       )}
       <div className="min-w-0">
         {nome && <h2 className="truncate text-2xl font-display font-bold">{nome}</h2>}

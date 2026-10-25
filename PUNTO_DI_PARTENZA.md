@@ -2840,6 +2840,43 @@ storia.
   - test permanenti in `fotoProfilo.test.ts` (Storage finto che tiene i
     file), `ripristino.test.ts` (le pulizie) e `aggiornamentoSchema.test.ts`
     (da 3-8 a 9, e una seconda scheda alla 8)
+- **Com'è mostrata** (commit 7):
+  - **il cerchio**: `CerchioFoto` (un `<img>` con `object-fit: cover` dentro
+    il cerchio, oppure le iniziali), con misure e colori di oggi passati da
+    chi lo usa: 56 px in Profilo, 52 px nella scheda di Impostazioni,
+    38 px in Amici e in "Condividi con" (`CLASSE_CERCHIO_AMICO`, la stessa
+    classe). Il fondo del cerchio resta sotto la foto mentre si carica.
+    Se l'immagine non si carica (indirizzo firmato scaduto, file tolto)
+    tornano le iniziali. Con la foto il cerchio c'è anche senza nome
+    nei metadati
+  - **per lo screen reader** è decorativo (`aria-hidden`, `alt=""`), come
+    le iniziali di oggi: in tutti e quattro i posti il nome è già scritto
+    accanto, e un "Foto di @marco" lo farebbe leggere due volte. Il nome
+    del pulsante sul cerchio in Profilo arriva con il commit 8
+  - **la propria foto**: `useMiaFoto(userId)` crea **un** indirizzo locale
+    (`URL.createObjectURL`) per ogni copia (utente + percorso) e lo revoca
+    quando la copia cambia, sparisce o il componente si smonta. L'effetto
+    dipende dalla chiave e non dall'oggetto di `useLiveQuery`, che è nuovo
+    a ogni rilettura: altrimenti ogni scrittura in `foto_locale`, anche di
+    un altro utente, farebbe nascere un indirizzo nuovo e ricaricare
+    l'immagine. Funziona offline
+  - **l'aggiornamento della copia**: `AggiornamentoFotoProfilo`, nel layout
+    principale accanto a Sincronizzazione, fa partire `aggiornaMiaFoto`
+    2 s dopo l'apertura (Oggi si apre dalla copia in Dexie e la prima
+    discesa ha la precedenza sulla rete), al ritorno in primo piano e al
+    ritorno della rete, solo con `navigator.onLine`. Niente giri doppi
+    (`creaAggiornatoreFoto`): un giro in corso dà la stessa promessa a chi
+    lo richiede, e dopo un giro riuscito per 30 s non se ne fanno altri;
+    un giro fallito non conta, il ritorno dopo riprova subito
+  - **le foto degli amici**: `useFotoAmici(ids)` chiama
+    `indirizziFotoAmici` una volta quando cambia l'elenco degli amici
+    accettati, e di nuovo al ritorno in primo piano o della rete solo se
+    gli indirizzi hanno più di 50 minuti (valgono un'ora) o se l'ultima
+    volta non ne è arrivato nessuno. Una chiamata per pagina: Amici (solo
+    la sezione "I tuoi amici") e il foglio "Condividi con", dove ogni
+    amico ha ora il cerchio da 38 px fra la spunta e il nome
+  - test permanenti in `aggiornamentoFoto.test.ts` (giri doppi) e
+    `useFotoProfilo.test.tsx` (indirizzi creati e revocati)
 
 #### Un solo Salva (deciso il 2026-09-26)
 
@@ -7273,7 +7310,10 @@ nell'app installata** da Davide: l'uso normale.
   solo online"). **Commit 5**: ritaglio e compressione
   (`ritaglioFoto.ts`). **Commit 6**: livello Storage, Dexie `version(9)`
   con `foto_locale`, pulizia a Esci ed Elimina account
-  (`fotoProfilo.ts`; §3, "La foto profilo"). Commit previsti, in quest'ordine: migration scritta e
+  (`fotoProfilo.ts`; §3, "La foto profilo"). **Commit 7**: la foto
+  mostrata nei quattro posti, con le iniziali se manca, e l'aggiornamento
+  della copia all'apertura e al ritorno in primo piano; cambiarla non si
+  può ancora (commit 8). Commit previsti, in quest'ordine: migration scritta e
   non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
   l'"ok migration", applicata da Cowork e provata; ritaglio e
   compressione (funzioni pure con test); Storage, Dexie `version(9)` e
