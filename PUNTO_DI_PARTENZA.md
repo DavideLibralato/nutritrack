@@ -3889,7 +3889,11 @@ Confermate dai mockup, con una correzione.
   La barra sceglie da sola, a seconda che ci sia un'azione; i messaggi non
   portano una durata loro
 - Numeri grandi, etichette piccole e grigie, spesso in maiuscoletto
-  ("OBIETTIVO", "TARGET GIORNALIERI"). Pesi tipografici: solo regular e medium
+  ("OBIETTIVO", "TARGET GIORNALIERI"). Pesi tipografici: solo regular e medium.
+  **Eccezione voluta: il marchio di Libra** (`MarchioLibra`, la parola
+  "Libra" accanto alla bilancia) è a 700, perché è un logo e non testo
+  dell'interfaccia (decisione di Davide del 25/10; mockup testata-login
+  del 18/10)
 - **Il colore nei grafici segnala, non decora.** Nel grafico calorie del
   mockup (la pagina Statistiche non è ancora costruita) funziona così: verde =
   dentro l'obiettivo, arancio = sopra, grigio = giorno senza dati
@@ -4429,7 +4433,11 @@ diventa rosso (3,57:1).
     `#1b1815`), usato dai `<meta>` di `layout.tsx` e dallo script;
   - `manifest.json` ha un valore solo, quindi resta chiaro: `#faf7f2` per
     sfondo e `theme_color`. Su Android chi è in scuro vede un lampo chiaro
-    all'avvio;
+    all'avvio. Su iPhone il dubbio di una schermata nativa chiara con il
+    tema scuro (punto aperto dall'analisi dell'animazione del 24/10) è
+    chiuso: **guardato da Davide il 25/10** sull'iPhone in modo scuro,
+    app installata chiusa dal multitasking e riaperta, nessun lampo
+    chiaro. Non si interviene;
   - `offline.html` ha i suoi colori e lo script copiati (sopra).
 - **Barra di stato dell'app installata: resta `statusBarStyle:
   "default"`.** iOS la fa opaca, la colora secondo il tema del sistema e la
@@ -6769,7 +6777,7 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 `username-dopo-accesso`; 1328 in 117 file sul branch
 `animazione-apertura` (su main dal 24/10); 1331 in 118 file sul branch
 `apertura-pesata` (su main dal 25/10); 1326 in 118 file sul branch
-`togli-pkce`.
+`togli-pkce` (su main dal 25/10).
 
 ### Non ancora costruito
 
@@ -6848,9 +6856,10 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
   (accesso implicito, rinnovo con il refresh token dell'indirizzo
   revocato, ricaricamento senza nuova verifica, password cambiata,
   link riaperto rifiutato con `otp_expired`, accesso con la password
-  nuova). **Dopo il merge** va tolta da Supabase (Authentication → URL
-  Configuration) la Redirect URL esatta dell'anteprima,
-  `https://nutritrack-git-togli-pkce-…vercel.app/**`: deve restare solo
+  nuova). Su main dal 25/10 (fast-forward fino a `a5252d7`). La Redirect
+  URL esatta dell'anteprima,
+  `https://nutritrack-git-togli-pkce-…vercel.app/**`, **tolta il 25/10**
+  da Supabase (Authentication → URL Configuration): resta solo
   `https://app-libra.vercel.app/**`
 - **Errore di rete con il link dell'email** (raro). Un errore di rete
   alla verifica dei token del frammento o al rinnovo dà "Errore di

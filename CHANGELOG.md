@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Allineamento dei documenti dopo `togli-pkce`
+
+Branch `proxy-rete-lenta`, commit 1 (solo documenti). Voce del merge di
+`togli-pkce` qui sotto; in PUNTO §11 la Redirect URL dell'anteprima di
+`togli-pkce` risulta tolta. In §7 il marchio di Libra a 700 è segnato
+come eccezione voluta alla regola "solo regular e medium" (è un logo);
+la schermata nativa chiara con il tema scuro, guardata sull'iPhone il
+25/10, non dà lampi: non si interviene.
+
+## 2026-10-25 — Merge di `togli-pkce` su main
+
+Fast-forward `7497460` → `a5252d7`, 3 commit. Branch cancellato in
+locale e su GitHub. Redirect URL esatta dell'anteprima tolta da
+Supabase il 25/10. PUNTO §11.
+
 ## 2026-10-25 — Ripristino della password senza PKCE provato su iPhone
 
 Branch `togli-pkce`, commit 3 (solo documenti). **Provato su iPhone il
