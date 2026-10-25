@@ -148,7 +148,7 @@ export function quandoOggiPronta(avvisa: () => void): () => void {
 // --- Quando se ne va lo strato --------------------------------------
 //
 // Regola A (dal 24/10): alle aperture la pesata si vede SEMPRE intera
-// (fino al piano, 1200 ms: apertura-minimo in globals.css, anche con riduci
+// (fino al piano, 1680 ms: apertura-minimo in globals.css, anche con riduci
 // movimento), poi lo strato sfuma. Se Oggi è pronta dopo, sfuma quando è
 // pronta: al più tardi fra le due. Dopo 3 s sfuma comunque (solo CSS).
 //
@@ -159,7 +159,7 @@ export function quandoOggiPronta(avvisa: () => void): () => void {
 // "togli": via subito, senza dissolvenza: lo strato è nascosto dal CSS e
 // non c'è niente da sfumare (né un'animazione da aspettare: un elemento
 // nascosto non ne fa partire nessuna).
-// "sfuma": dissolvenza di 250 ms, poi via.
+// "sfuma": dissolvenza di 300 ms, poi via.
 // "aspetta": manca ancora una delle due condizioni.
 export function uscitaApertura(
   mostrata: boolean,

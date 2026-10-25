@@ -294,7 +294,7 @@ body:has([data-pulsante-aggiungi]) {
    (data-esce) li lascia passare.
 
    Tre tempi, tutti CSS:
-   - apertura-minimo (1200 ms, non cambia niente a schermo): la pesata
+   - apertura-minimo (1680 ms, non cambia niente a schermo): la pesata
      intera, fino al piano. Il componente aspetta che finisca prima di
      far uscire lo strato. Sta sullo strato e non sulla bilancia, così
      vale anche con riduci movimento, dove la bilancia non si muove.
@@ -303,9 +303,9 @@ body:has([data-pulsante-aggiungi]) {
    - apertura-sicurezza: dopo 3 s sfuma comunque, anche se il JavaScript
      non arriva mai. Finisce con visibility: hidden, che smette anche di
      bloccare i tocchi. 3 s bastano: minimo e uscita insieme fanno
-     1200 + 250 = 1450 ms;
+     1680 + 300 = 1980 ms. Sfuma in 300 ms, come l'uscita;
    - apertura-uscita (data-esce, Oggi pronta e pesata finita):
-     250 ms, sul fondo interno e non sullo strato. Così non sostituisce le
+     300 ms, sul fondo interno e non sullo strato. Così non sostituisce le
      due animazioni dello strato: se la rete di sicurezza ha già nascosto
      tutto, l'uscita resta invisibile invece di far ricomparire la
      bilancia per sfumarla di nuovo. */
@@ -315,8 +315,8 @@ body:has([data-pulsante-aggiungi]) {
   inset: 0;
   z-index: 35;
   animation:
-    apertura-minimo 1200ms linear,
-    apertura-sicurezza 250ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
+    apertura-minimo 1680ms linear,
+    apertura-sicurezza 300ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
 }
 html[data-apertura="mostra"] .animazione-apertura {
   display: block;
@@ -331,7 +331,7 @@ html[data-apertura="mostra"] .animazione-apertura {
   color: var(--accento);
 }
 .animazione-apertura[data-esce] .animazione-apertura-fondo {
-  animation: apertura-uscita 250ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: apertura-uscita 300ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 @keyframes apertura-minimo {
   from {
@@ -365,7 +365,7 @@ html[data-apertura="mostra"] .animazione-apertura {
   height: 74.4px;
   margin: -37.2px 0 0 -48px;
   overflow: visible;
-  animation: apertura-comparsa 180ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: apertura-comparsa 252ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 @keyframes apertura-comparsa {
   from {
@@ -375,19 +375,21 @@ html[data-apertura="mostra"] .animazione-apertura {
 }
 
 /* Il giogo ruota attorno al fulcro (50, 34 nel disegno). Tempi in ms su
-   1200 (uguale ad apertura-minimo):
-     0–300     fermo in piano (struttura vuota, cala il piatto sinistro)
-     300–460   urto del piatto sinistro: 0° → -9°, "parte svelto,
-               arriva piano"
-     460–580   fermo a -9° (cala il piatto destro)
-     580–800   urto del destro: -9° → +4°, poi -1,2° a 1000 e 0° a 1200,
-               ogni tratto "va e rallenta"
-   Percentuali: 300/1200 = 25%, 460/1200 = 38,333%, 580/1200 = 48,333%,
-   800/1200 = 66,667%, 1000/1200 = 83,333%. */
+   1680 (uguale ad apertura-minimo):
+     0–420      fermo in piano (struttura vuota, cala il piatto sinistro)
+     420–644    urto del piatto sinistro: 0° → -9°, "parte svelto,
+                arriva piano"
+     644–812    fermo a -9° (cala il piatto destro)
+     812–1120   urto del destro: -9° → +4°, poi -1,2° a 1400 e 0° a 1680,
+                ogni tratto "va e rallenta"
+   Percentuali: 25%, 38,333%, 48,333%, 66,667%, 83,333%. Rallentata ×1,4
+   il 25/10 (prima su 1200 ms: 300 / 460 / 580 / 800 / 1000): le
+   percentuali non cambiano, cambia solo la durata, la stessa per giogo,
+   piatti e apertura-minimo. */
 .apertura-giogo {
   transform-box: view-box;
   transform-origin: 50px 34px;
-  animation: apertura-giogo 1200ms both;
+  animation: apertura-giogo 1680ms both;
 }
 @keyframes apertura-giogo {
   0% {
@@ -424,14 +426,16 @@ html[data-apertura="mostra"] .animazione-apertura {
      -9° → 4,38; +4° → 1,95; -1,2° → 0,59. Il sinistro scende quando il
      giogo va in negativo, il destro sale;
    - dentro (apertura-piatto) compare e viene calato: vedi sotto.
-   --ritardo: quando parte il piatto, 100 ms il sinistro, 380 il destro. */
+   --ritardo: quando parte il piatto, 140 ms il sinistro, 532 il destro
+   (×1,4 dal 25/10, prima 100 e 380): ritardo + calata = l'urto del giogo,
+   420 e 812 ms. */
 .apertura-segue-sinistra {
-  --ritardo: 100ms;
-  animation: apertura-segue-sinistra 1200ms both;
+  --ritardo: 140ms;
+  animation: apertura-segue-sinistra 1680ms both;
 }
 .apertura-segue-destra {
-  --ritardo: 380ms;
-  animation: apertura-segue-destra 1200ms both;
+  --ritardo: 532ms;
+  animation: apertura-segue-destra 1680ms both;
 }
 @keyframes apertura-segue-sinistra {
   0% {
@@ -489,8 +493,8 @@ html[data-apertura="mostra"] .animazione-apertura {
 }
 
 /* Il piatto calato sui fili, dal suo --ritardo:
-   - compare in 120 ms (opacità);
-   - in 200 ms scende di 17 unità del disegno, accelerando come una
+   - compare in 168 ms (opacità);
+   - in 280 ms scende di 17 unità del disegno, accelerando come una
      caduta: parte con il bordo a y 38, appena sotto il giogo (spesso 7,
      finisce a 37,5), così non lo attraversa mai;
    - i fili restano agganciati al giogo e si allungano fino al bordo del
@@ -502,16 +506,16 @@ html[data-apertura="mostra"] .animazione-apertura {
      dashoffset. Lunghezze vere e non pathLength="1": la posa ferma non
      dipende da come il browser tratta pathLength. */
 .apertura-piatto {
-  animation: apertura-piatto-compare 120ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: apertura-piatto-compare 168ms cubic-bezier(0.2, 0, 0, 1) both;
   animation-delay: var(--ritardo);
 }
 .apertura-piatto-calato {
-  animation: apertura-piatto-calato 200ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  animation: apertura-piatto-calato 280ms cubic-bezier(0.55, 0, 1, 0.45) both;
   animation-delay: var(--ritardo);
 }
 .apertura-filo {
   stroke-dasharray: 21.55 50;
-  animation: apertura-filo 200ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  animation: apertura-filo 280ms cubic-bezier(0.55, 0, 1, 0.45) both;
   animation-delay: var(--ritardo);
 }
 @keyframes apertura-piatto-compare {

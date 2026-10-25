@@ -20,8 +20,8 @@
 //   disegna proprio: aperturaGiaPassata() è già vera.
 //
 // Quando se ne va (regola A, uscitaApertura): al più tardi fra "pesata
-// finita" (l'animazione CSS apertura-minimo, 1200 ms) e "Oggi pronta" →
-// dissolvenza di 250 ms (data-esce), poi lo strato si toglie dalla pagina.
+// finita" (l'animazione CSS apertura-minimo, 1680 ms) e "Oggi pronta" →
+// dissolvenza di 300 ms (data-esce), poi lo strato si toglie dalla pagina.
 // Dopo 3 s comunque (solo CSS, funziona anche senza JavaScript).
 // Finché è pieno blocca i tocchi (copre la pagina); durante l'uscita no.
 //
@@ -78,7 +78,7 @@ export default function AnimazioneApertura({ attende }: { attende: "oggi" | "nie
     }
 
     // La pesata intera. Non si ascolta l'evento di fine: se il
-    // JavaScript arriva dopo 1200 ms (succede, all'apertura) l'evento è già
+    // JavaScript arriva dopo 1680 ms (succede, all'apertura) l'evento è già
     // passato e non tornerebbe più. Si chiede invece al browser
     // l'animazione stessa: se c'è, si aspetta la sua fine (`finished`); se
     // non c'è più (già finita) o lo strato è nascosto (nessuna animazione),

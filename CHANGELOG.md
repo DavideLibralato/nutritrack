@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Animazione di apertura: P5 rallentata ×1,4
+
+Branch `apertura-pesata`, commit 3. Davide la trovava ancora troppo
+veloce. Tempi:
+
+| | prima | ora |
+|---|---|---|
+| comparsa | 0–180 | 0–252 |
+| piatto sinistro calato | 100–300 | 140–420 |
+| urto, giogo a -9° | 300–460 | 420–644 |
+| piatto destro calato | 380–580 | 532–812 |
+| giogo a +4° / -1,2° / 0° | 800 / 1000 / 1200 | 1120 / 1400 / 1680 |
+| dissolvenza | 250 | 300 |
+| totale | 1450 | 1980 |
+
+Giogo, piatti e `apertura-minimo` a 1680 ms con le stesse percentuali;
+ritardi, comparsa e calata dei piatti ×1,4; dissolvenza a 300 ms (non
+350), anche nella rete di sicurezza. Rete di sicurezza a 3 s
+invariata: 1980 ms lasciano un secondo di margine, e alzarla
+allungherebbe solo l'attesa nei casi in cui scatta. I tre test di
+`aperturaTempi.test.ts` restano verdi senza modifiche. Provato con
+`next start` ed Edge senza interfaccia: strato in uscita a circa 1680
+ms e tolto a circa 2010, anche con riduci movimento; fotogrammi
+identici a quelli di prima a tempi ×1,4. Da provare su iPhone. PUNTO
+§3, §7 e §11.
+
 ## 2026-10-25 — Animazione di apertura: P5 "Pesata" al posto di P1
 
 Branch `apertura-pesata`, commit 2. Davide ha scelto P5 fra P1 e tre
