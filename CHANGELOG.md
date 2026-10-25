@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Ripristino della password senza PKCE provato su iPhone
+
+Branch `togli-pkce`, commit 3 (solo documenti). **Provato su iPhone il
+25/10** sull'anteprima del branch, Build del commit 2 (`b055274`),
+account di prova: reset chiesto da Chrome sul PC, link aperto da Mail
+in Safari su iPhone, prove 0-6 passate. Confermato da Cowork nei log
+di Auth: richiesta con ritorno sull'anteprima, accesso implicito dal
+frammento, rinnovo subito dopo (refresh token dell'indirizzo
+revocato), ricaricamento senza nuova verifica, password cambiata,
+stesso link riaperto rifiutato (`otp_expired`), accesso con la
+password nuova. Dopo il merge va tolta da Supabase la Redirect URL
+esatta dell'anteprima. PUNTO §9.1 e §11.
+
 ## 2026-10-25 — Tolto il ramo PKCE di `/reimposta-password`
 
 Branch `togli-pkce`, commit 2. Dal 18/10 i link di ripristino sono

@@ -4846,7 +4846,15 @@ e i modelli sono bloccati senza SMTP personalizzato (§10.9). Quindi:
 le richieste partono tutte implicite, e i link `?code=` chiesti prima
 sono scaduti da giorni. Via il testo "funziona solo nel browser da cui
 l'hai chiesto" (`LINK_ALTRO_BROWSER`) e i codici `flow_state_*` e
-`bad_code_verifier`. Le regole della pagina:
+`bad_code_verifier`. **Provato su iPhone il 25/10** (anteprima del
+branch, Build del commit 2 `b055274`, account di prova; reset chiesto
+da Chrome sul PC, link aperto da Mail in Safari su iPhone): prove 0-6
+passate. Confermato da Cowork nei log di Auth: richiesta con ritorno
+sull'anteprima, accesso implicito dal frammento, rinnovo subito dopo
+(refresh token dell'indirizzo revocato), ricaricamento senza una
+nuova verifica, password cambiata, stesso link riaperto rifiutato
+(`otp_expired`), accesso con la password nuova. Le regole della
+pagina:
 
 - **L'errore nell'indirizzo prima di tutto.** Il client Supabase è uno
   solo per pagina; la pagina chiama `initialize()`, che restituisce
@@ -6833,7 +6841,17 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
   `bad_code_verifier` e "code verifier" di `erroriAuth.ts` e i test
   PKCE; resta `otp_expired`, che serve al frammento. Un `?code=` senza
   frammento finisce sull'errore, anche se la libreria fa lo scambio da
-  sola (§9.1, "Il ripristino della password"; test permanente)
+  sola (§9.1, "Il ripristino della password"; test permanente).
+  **Provato su iPhone il 25/10** (anteprima del branch, Build del
+  commit 2 `b055274`, account di prova, Chrome sul PC → Mail e Safari
+  su iPhone): prove 0-6 passate, confermate da Cowork nei log di Auth
+  (accesso implicito, rinnovo con il refresh token dell'indirizzo
+  revocato, ricaricamento senza nuova verifica, password cambiata,
+  link riaperto rifiutato con `otp_expired`, accesso con la password
+  nuova). **Dopo il merge** va tolta da Supabase (Authentication → URL
+  Configuration) la Redirect URL esatta dell'anteprima,
+  `https://nutritrack-git-togli-pkce-…vercel.app/**`: deve restare solo
+  `https://app-libra.vercel.app/**`
 - **Errore di rete con il link dell'email** (raro). Un errore di rete
   alla verifica dei token del frammento o al rinnovo dà "Errore di
   connessione", e serve un link nuovo: il frammento è già stato tolto
