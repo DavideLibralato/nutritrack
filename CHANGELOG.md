@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Migration della foto profilo (scritta, non applicata)
+
+Branch `foto-profilo`, commit 3. File
+`supabase/migrations/foto_profilo.sql`: tabella solo online
+`foto_profilo` (una riga per utente, `percorso` nullable con check
+`<user_id>/<uuid>.jpg`) con RLS nella stessa migration (lettura per il
+proprietario e gli amici accettati, nessuna scrittura diretta); funzione
+`imposta_foto_profilo` (esiti `ok`, `non_valido`, `file_mancante`);
+bucket privato `foto-profilo` (500 KB, solo JPEG); tre regole su
+`storage.objects` (aggiungere e cancellare solo nella propria cartella,
+leggere proprietario e amici accettati); `elimina_mio_account`
+sostituita con `create or replace` e gli stessi `revoke`/`grant`, in più
+rifiuta se resta un file. Nessuna tabella o colonna esistente toccata,
+nessun cambio a Dexie. Tipo `FotoProfilo` in `tipi.ts`. **Non
+applicata**: prove nel file temporaneo `prove_foto_profilo.sql`, fuori
+da git (52 casi). PUNTO §4 e §11.
+
 ## 2026-10-25 — Foto profilo: decisioni e mockup
 
 Branch `foto-profilo`, commit 2 (solo documenti). Dopo l'analisi del

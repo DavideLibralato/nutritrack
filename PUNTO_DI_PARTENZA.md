@@ -3755,8 +3755,16 @@ avvisi degli advisors che danno sono accettati (9.6).
 
 #### La foto profilo: solo online (decisa il 25/10, branch `foto-profilo`)
 
-Stato: **decisa, migration non ancora scritta**. Schermate e
-comportamento in §3, "Profilo", "La foto profilo".
+Stato: **migration scritta, non applicata** (commit 3,
+`supabase/migrations/foto_profilo.sql`; prove nel file temporaneo
+`prove_foto_profilo.sql`, fuori da git). Schermate e comportamento in
+§3, "Profilo", "La foto profilo". Scrivendola (25/10): gli esiti di
+`imposta_foto_profilo` sono `ok`, `non_valido` (percorso fuori dalla
+propria cartella o non `<uuid>.jpg`) e `file_mancante` (il file non è nel
+bucket); senza utente, errore. Il formato del percorso lo controllano tre
+volte, in modo indipendente, la regola di inserimento sui file, il check
+della tabella e la funzione. Le due funzioni leggono `storage.objects`
+come proprietario (`postgres`, che salta la RLS: verificato il 25/10).
 
 - **Perché una tabella e non una colonna su `profili`** (deciso il 25/10,
   al posto della colonna nullable decisa il 5/10): la coda invia la riga
@@ -7176,7 +7184,11 @@ nell'app installata** da Davide: l'uso normale.
 - **Foto profilo** (branch `foto-profilo`, dal 25/10): decisa
   (§3 "Profilo", "La foto profilo"; §4 "La foto profilo: solo online";
   §9.6 "File in Storage"; mockup `docs/mockups/foto-profilo.html`), non
-  ancora costruita. Commit previsti, in quest'ordine: migration scritta e
+  ancora costruita. **Commit 3: migration scritta, non applicata**
+  (`supabase/migrations/foto_profilo.sql`, tipo `FotoProfilo` in
+  `tipi.ts`; prove in `prove_foto_profilo.sql`, fuori da git: prima
+  della migration il blocco dice "migration non applicata", dopo deve
+  dire "52 su 52"). Commit previsti, in quest'ordine: migration scritta e
   non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
   l'"ok migration", applicata da Cowork e provata; ritaglio e
   compressione (funzioni pure con test); Storage, Dexie `version(9)` e
