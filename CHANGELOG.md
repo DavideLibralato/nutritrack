@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Peso obiettivo: al massimo 500 kg anche in Impostazioni
+
+Branch `check-quantita`, commit 2. **Difetto già in produzione,
+corretto qui**: in Impostazioni > Obiettivi il peso obiettivo non aveva
+un massimo. La colonna è `numeric(5,1)`: "10000" restava in Dexie, il
+server lo rifiutava e la modifica finiva accantonata. Ora vale la
+regola della pesata e dell'onboarding (`leggiPesoKg`, fra 0,1 e 500 kg),
+in una funzione sola, `pesoObiettivoNonValido`, che usano
+`validaModulo` e la pagina. `numeroDaCampo` passa in `numeriDecimali.ts`
+(riesportata dal posto di prima) per non far importare a vicenda
+`salvataggioProfilo.ts` e `letturaPeso.ts`. Un test nuovo (500,04 sì;
+500,05, 500,1 e 10000 no, niente in coda), provato rompendo e
+ripristinando da una copia: con la regola vecchia 1 rosso. Test 1341 →
+1342 in 119 file. PUNTO §3 e §11.
+
 ## 2026-10-25 — Proxy e rete lenta provati nell'app installata
 
 Branch `check-quantita`, commit 1 (solo documenti). Dopo il merge di

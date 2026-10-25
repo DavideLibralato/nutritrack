@@ -35,7 +35,8 @@ import {
 import { salvaTarget, targetPerTipo } from "../repository/obiettiviTarget";
 import { giornoSuccessivo } from "../dataGiorno";
 import { periodoInCorso } from "../totaliDiario";
-import { arrotondaDecimali, numeroPerCampo } from "../numeriDecimali";
+import { arrotondaDecimali, numeroDaCampo, numeroPerCampo } from "../numeriDecimali";
+import { leggiPesoKg, PESO_MASSIMO_KG } from "./letturaPeso";
 import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "../db/tipi";
 import type {
   GiornoSettimana,
@@ -154,11 +155,19 @@ export function valoriDaDati(
 
 // --- Confronto ------------------------------------------------------------
 
-// "Stringa" → numero, con la virgola accettata come separatore decimale.
-// NaN per un campo vuoto o non numerico.
-export function numeroDaCampo(valore: string): number {
-  const pulito = valore.trim().replace(",", ".");
-  return pulito === "" ? NaN : Number(pulito);
+// numeroDaCampo sta in numeriDecimali.ts (dove c'è il perché); si
+// riesporta da qui per chi la importava già da questo file.
+export { numeroDaCampo };
+
+// Il peso obiettivo scritto non va: pieno ma non un peso fra 0,1 e
+// PESO_MASSIMO_KG (leggiPesoKg, la stessa regola della pesata e del passo 4
+// dell'onboarding). Vuoto va bene: è facoltativo. Senza il massimo,
+// "10000" si salvava in Dexie e il server lo rifiutava (numeric(5,1)
+// arriva a 9999,9): la modifica finiva fra quelle accantonate (difetto
+// trovato il 25/10). La usano validaModulo e la pagina Obiettivi, per
+// mettere l'errore sotto il campo giusto.
+export function pesoObiettivoNonValido(valore: string): boolean {
+  return valore.trim() !== "" && leggiPesoKg(valore) === null;
 }
 
 // Altezza o peso obiettivo dal campo, già arrotondati a un decimale come
@@ -320,12 +329,10 @@ export function validaModulo(
   }
 
   if (m.obiettivo) {
-    const peso = attuali.obiettivo.pesoObiettivo;
-    const n = altezzaOPesoDaCampo(peso);
     if (!targetValido(attuali.obiettivo.target)) {
       errori.obiettivo = "Calorie e macro devono essere numeri, zero o più.";
-    } else if (peso.trim() !== "" && (Number.isNaN(n) || n <= 0)) {
-      errori.obiettivo = "Il peso obiettivo deve essere un numero maggiore di zero.";
+    } else if (pesoObiettivoNonValido(attuali.obiettivo.pesoObiettivo)) {
+      errori.obiettivo = `Il peso obiettivo deve essere fra 0,1 e ${PESO_MASSIMO_KG} kg.`;
     }
   }
 

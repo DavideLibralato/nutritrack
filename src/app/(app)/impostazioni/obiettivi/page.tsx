@@ -23,7 +23,7 @@ import { formattaDataBreve } from "@/lib/dataGiorno";
 import {
   numeriUguali,
   giorniUguali,
-  altezzaOPesoDaCampo,
+  pesoObiettivoNonValido,
   type ValoriModulo,
   type ValoriTarget,
 } from "@/lib/profilo/salvataggioProfilo";
@@ -171,11 +171,8 @@ export default function ObiettiviPage() {
 
   // L'errore della sezione Obiettivo riguarda il peso obiettivo o i target
   // normali: va sotto il gruppo del campo sbagliato.
-  const pesoNonValido = (() => {
-    const peso = ob.ora.pesoObiettivo;
-    const n = altezzaOPesoDaCampo(peso);
-    return peso.trim() !== "" && (Number.isNaN(n) || n <= 0);
-  })();
+  // Stessa regola di validaModulo (pesoObiettivoNonValido), non una copia.
+  const pesoNonValido = pesoObiettivoNonValido(ob.ora.pesoObiettivo);
   const errorePeso = errori.obiettivo && pesoNonValido ? errori.obiettivo : null;
   const erroreTarget = errori.obiettivo && !pesoNonValido ? errori.obiettivo : null;
 

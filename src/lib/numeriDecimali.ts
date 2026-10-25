@@ -61,6 +61,17 @@ export function numeroPerCampo(n: number, decimaliMassimi: number): string {
   return n.toLocaleString("it-IT", { maximumFractionDigits: decimaliMassimi, useGrouping: false });
 }
 
+// "Stringa" → numero, con la virgola accettata come separatore decimale.
+// NaN per un campo vuoto o non numerico. Lettura grezza, senza limiti né
+// arrotondamento: la usano i campi del profilo e del peso
+// (salvataggioProfilo.ts, letturaPeso.ts). Sta qui e non in
+// salvataggioProfilo.ts perché letturaPeso.ts serve anche a
+// salvataggioProfilo.ts: i due file non devono importarsi a vicenda.
+export function numeroDaCampo(valore: string): number {
+  const pulito = valore.trim().replace(",", ".");
+  return pulito === "" ? NaN : Number(pulito);
+}
+
 // La virgola vale come separatore decimale. `zeroAmmesso`: 0 è un valore
 // valido (una kcal o un macro possono essere zero, una quantità no).
 export function leggiNumeroDecimale(

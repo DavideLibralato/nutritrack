@@ -755,7 +755,9 @@ si è salvato. Dove si usa:
 - **un decimale**: altezza e peso obiettivo, `numeric(5,1)`
   (`altezzaOPesoDaCampo` in `salvataggioProfilo.ts`); la pesata, per
   scelta ("78,4 kg"; la colonna `misurazioni.valore` è `numeric(7,2)`),
-  in `leggiPesoKg`.
+  in `leggiPesoKg`. Il peso obiettivo, se c'è, segue la regola della
+  pesata (fra 0,1 e 500 kg, `pesoObiettivoNonValido`, dal 25/10): senza
+  un massimo, oltre 9999,9 il server lo rifiutava.
 
 Si controlla il numero **già arrotondato**: "0,04" cm o kg farebbe 0 e non
 vale. Si arrotonda solo il valore che si sta scrivendo: una riga già
@@ -1059,9 +1061,9 @@ In Impostazioni > Obiettivi (`/impostazioni/obiettivi`), con
 "‹ Impostazioni" e il guardiano delle modifiche. Dall'alto:
 
 - **Obiettivo**: Dimagrire / Mantenere / Massa (selettore a segmenti),
-  **peso obiettivo** (facoltativo; se c'è, comparirà come linea di
-  riferimento nel grafico del peso, come la linea tratteggiata delle
-  calorie) e **"Calcola proposta"**: riempie i target del giorno normale dal
+  **peso obiettivo** (facoltativo; se c'è, fra 0,1 e 500 kg come nel
+  passo 4 dell'onboarding, e comparirà come linea di riferimento nel
+  grafico del peso, come la linea tratteggiata delle calorie) e **"Calcola proposta"**: riempie i target del giorno normale dal
   fabbisogno, usando i dati personali salvati e l'ultima pesata. Senza
   pesata è disattivato e la nota porta a Peso con un link; se mancano dati
   personali, il messaggio dice quali e porta a Profilo. I target restano
@@ -6916,6 +6918,20 @@ risposta in volo durante Esci), ma con l'attesa oltre i 3 s diventava
 più probabile. Non in un commit a parte perché l'epoca di inizio la
 prende la funzione nuova (`navigazioneConTempoMassimo`) e lì sta il suo
 test; `sw.js` da solo non è testabile.
+
+**Vincoli sui numeri** (dal 25/10, branch `check-quantita`). Una
+migration che aggiunge `CHECK` sui numeri che non possono essere zero o
+negativi (quantità, valori degli alimenti, altezza, peso, target),
+preceduta da una revisione di tutti i punti in cui l'app li scrive:
+nessuno manda 0, un negativo o un campo vuoto diventato 0. Commit 2:
+**difetto già in produzione, corretto**: in Impostazioni > Obiettivi il
+peso obiettivo non aveva un massimo. `obiettivi.peso_obiettivo` è
+`numeric(5,1)` (al massimo 9999,9): "10000" si salvava in Dexie, il
+server lo rifiutava e dopo 5 tentativi la modifica finiva fra le
+accantonate. Ora vale la regola della pesata e dell'onboarding
+(`leggiPesoKg`, fra 0,1 e 500 kg) attraverso `pesoObiettivoNonValido`,
+che usano sia `validaModulo` sia la pagina. Al 25/10 nessun peso
+obiettivo sul server supera 85 kg.
 
 ### Non ancora costruito
 

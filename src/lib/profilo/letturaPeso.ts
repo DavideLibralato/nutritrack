@@ -1,10 +1,11 @@
 // Il peso scritto dall'utente in un campo: "Registra peso" in Impostazioni >
 // Peso e il passo 3 dell'onboarding (PUNTO_DI_PARTENZA.md, sezione 3,
-// "Peso" e "Onboarding") accettano gli stessi valori. La virgola vale come
+// "Peso" e "Onboarding") accettano gli stessi valori, e lo stesso vale per
+// il peso obiettivo, nell'onboarding e in Impostazioni > Obiettivi
+// (pesoObiettivoNonValido in salvataggioProfilo.ts). La virgola vale come
 // separatore decimale (numeroDaCampo).
 
-import { numeroDaCampo } from "./salvataggioProfilo";
-import { arrotondaDecimali } from "../numeriDecimali";
+import { arrotondaDecimali, numeroDaCampo } from "../numeriDecimali";
 
 export const PESO_MASSIMO_KG = 500;
 

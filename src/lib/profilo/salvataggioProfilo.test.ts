@@ -28,6 +28,7 @@ import {
   salvaProfilo,
   ribasaModulo,
   dopoSalvataggio,
+  pesoObiettivoNonValido,
   type ValoriModulo,
   type SceltaPeriodo,
 } from "./salvataggioProfilo";
@@ -663,6 +664,36 @@ describe("Altezza e peso obiettivo: arrotondati a un decimale prima di scrivere"
     });
     expect(esito.esito).toBe("da-correggere");
     expect(await tabelleInOutbox()).toEqual([]);
+  });
+
+  // Difetto del 25/10: in Impostazioni > Obiettivi il peso obiettivo non
+  // aveva un massimo. numeric(5,1) arriva a 9999,9: "10000" restava in
+  // Dexie e il server lo rifiutava, quindi la modifica finiva accantonata.
+  // Ora vale la regola della pesata e dell'onboarding (leggiPesoKg): fino a
+  // 500 kg, controllato sul numero arrotondato ("500,04" → 500 va bene,
+  // "500,05" → 500,1 no).
+  it("peso obiettivo: fino a 500 kg sì, oltre no, e niente nella coda", async () => {
+    await conDatiEsistenti();
+    const caricati = valoriDaDati(PROFILO, PERIODO, TARGET);
+    const conPeso = (pesoObiettivo: string): ValoriModulo => ({
+      ...caricati,
+      obiettivo: { ...caricati.obiettivo, pesoObiettivo },
+    });
+    const opzioni = { periodoVistoId: PERIODO.id, scelta: { tipo: "correzione" as const } };
+
+    for (const troppo of ["500,05", "500,1", "10000"]) {
+      const esito = await salva(caricati, conPeso(troppo), opzioni);
+      expect(esito).toEqual({
+        esito: "da-correggere",
+        errori: { obiettivo: "Il peso obiettivo deve essere fra 0,1 e 500 kg." },
+      });
+      expect(pesoObiettivoNonValido(troppo)).toBe(true);
+    }
+    expect(await tabelleInOutbox()).toEqual([]);
+
+    expect(pesoObiettivoNonValido("500,04")).toBe(false);
+    expect((await salva(caricati, conPeso("500,04"), opzioni)).esito).toBe("salvato");
+    expect((await db.obiettivi.get(PERIODO.id))?.peso_obiettivo).toBe(500);
   });
 
   it("un'altezza lunga già in Dexie non si tocca se si salva un'altra sezione", async () => {
