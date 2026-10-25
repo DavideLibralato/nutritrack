@@ -1,8 +1,8 @@
 "use client";
 
 // L'animazione di apertura di Oggi (PUNTO_DI_PARTENZA.md §7, "Animazione di
-// apertura"): uno strato a tutto schermo con la bilancia che si mette in
-// equilibrio, sopra la pagina. Come si muove sta tutto in globals.css
+// apertura"): uno strato a tutto schermo, sopra la pagina, con la bilancia
+// che riceve i due piatti e si mette in equilibrio (P5 "Pesata", dal 25/10). Come si muove sta tutto in globals.css
 // (.animazione-apertura e seguenti); qui c'è solo quando c'è e quando se ne
 // va.
 //
@@ -19,14 +19,14 @@
 // - tornando su Oggi da un'altra scheda (senza ricaricare) lo strato non si
 //   disegna proprio: aperturaGiaPassata() è già vera.
 //
-// Quando se ne va (regola A, uscitaApertura): al più tardi fra "oscillazione
-// finita" (l'animazione CSS apertura-minimo, 1050 ms) e "Oggi pronta" →
+// Quando se ne va (regola A, uscitaApertura): al più tardi fra "pesata
+// finita" (l'animazione CSS apertura-minimo, 1200 ms) e "Oggi pronta" →
 // dissolvenza di 250 ms (data-esce), poi lo strato si toglie dalla pagina.
 // Dopo 3 s comunque (solo CSS, funziona anche senza JavaScript).
 // Finché è pieno blocca i tocchi (copre la pagina); durante l'uscita no.
 //
 // Dove sta: Oggi (aspetta i dati, attende="oggi") e Accedi (niente da
-// aspettare, attende="niente": oscillazione intera, poi via). In tutte e due
+// aspettare, attende="niente": pesata intera, poi via). In tutte e due
 // prima del <Suspense> della pagina.
 
 import { useEffect, useRef, useState, type AnimationEvent } from "react";
@@ -40,8 +40,8 @@ import {
 import {
   ASTA,
   BASE,
-  FILI_DESTRA,
-  FILI_SINISTRA,
+  FILI_DESTRA_SEPARATI,
+  FILI_SINISTRA_SEPARATI,
   GIOGO,
   PERNO,
   PIATTO_DESTRA,
@@ -77,8 +77,8 @@ export default function AnimazioneApertura({ attende }: { attende: "oggi" | "nie
       else if (esito === "sfuma") setEsce(true);
     }
 
-    // L'oscillazione intera. Non si ascolta l'evento di fine: se il
-    // JavaScript arriva dopo 1050 ms (succede, all'apertura) l'evento è già
+    // La pesata intera. Non si ascolta l'evento di fine: se il
+    // JavaScript arriva dopo 1200 ms (succede, all'apertura) l'evento è già
     // passato e non tornerebbe più. Si chiede invece al browser
     // l'animazione stessa: se c'è, si aspetta la sua fine (`finished`); se
     // non c'è più (già finita) o lo strato è nascosto (nessuna animazione),
@@ -141,14 +141,13 @@ export default function AnimazioneApertura({ attende }: { attende: "oggi" | "nie
             {/* Fermi: asta e base. */}
             <path d={ASTA} strokeWidth={SPESSORE_ASTA} fill="none" />
             <path d={BASE} strokeWidth={SPESSORE_BASE} fill="none" />
-            {/* I piatti salgono e scendono restando dritti. */}
-            <g className="apertura-piatto-sinistra">
-              <path d={FILI_SINISTRA} strokeWidth={SPESSORE_FILI} fill="none" />
-              <path d={PIATTO_SINISTRA} stroke="none" />
+            {/* I piatti: fuori seguono il giogo restando dritti, dentro
+                compaiono e vengono calati sui fili. */}
+            <g className="apertura-segue-sinistra">
+              <PiattoCalato fili={FILI_SINISTRA_SEPARATI} piatto={PIATTO_SINISTRA} />
             </g>
-            <g className="apertura-piatto-destra">
-              <path d={FILI_DESTRA} strokeWidth={SPESSORE_FILI} fill="none" />
-              <path d={PIATTO_DESTRA} stroke="none" />
+            <g className="apertura-segue-destra">
+              <PiattoCalato fili={FILI_DESTRA_SEPARATI} piatto={PIATTO_DESTRA} />
             </g>
             {/* Il giogo ruota attorno al fulcro, sopra i fili come nell'icona. */}
             <g className="apertura-giogo">
@@ -159,5 +158,24 @@ export default function AnimazioneApertura({ attende }: { attende: "oggi" | "nie
         </svg>
       </div>
     </div>
+  );
+}
+
+// Un piatto con i suoi due fili, calato dal giogo (globals.css,
+// .apertura-piatto e seguenti): i fili si allungano, il piatto scende.
+function PiattoCalato({ fili, piatto }: { fili: readonly string[]; piatto: string }) {
+  return (
+    <g className="apertura-piatto">
+      {fili.map((filo) => (
+        <path
+          key={filo}
+          className="apertura-filo"
+          d={filo}
+          strokeWidth={SPESSORE_FILI}
+          fill="none"
+        />
+      ))}
+      <path className="apertura-piatto-calato" d={piatto} stroke="none" />
+    </g>
   );
 }

@@ -147,8 +147,8 @@ export function quandoOggiPronta(avvisa: () => void): () => void {
 
 // --- Quando se ne va lo strato --------------------------------------
 //
-// Regola A (dal 24/10): alle aperture l'oscillazione si vede SEMPRE intera
-// (fino al piano, 1050 ms: apertura-minimo in globals.css, anche con riduci
+// Regola A (dal 24/10): alle aperture la pesata si vede SEMPRE intera
+// (fino al piano, 1200 ms: apertura-minimo in globals.css, anche con riduci
 // movimento), poi lo strato sfuma. Se Oggi è pronta dopo, sfuma quando è
 // pronta: al più tardi fra le due. Dopo 3 s sfuma comunque (solo CSS).
 //

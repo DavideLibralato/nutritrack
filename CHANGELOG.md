@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Animazione di apertura: P5 "Pesata" al posto di P1
+
+Branch `apertura-pesata`, commit 2. Davide ha scelto P5 fra P1 e tre
+proposte nuove provate con Remotion: la bilancia compare senza piatti,
+il sinistro viene calato sui fili e la fa pendere, poi il destro, e
+oscilla fino al piano. Racconta cosa fa l'app; in P1 la bilancia
+oscillava da sola. Tempi: 1200 ms di animazione + 250 di dissolvenza
+(prima 1050 + 250); `apertura-minimo` a 1200 ms, rete di sicurezza a
+3 s invariata. Cambiano solo disegno e keyframes (`globals.css`,
+`AnimazioneApertura.tsx`, fili separati in `glifoBilancia.ts` con
+MarchioLibra invariato); la logica "quando mostrarla" no. Si anima
+anche lo stroke-dashoffset dei fili, con la lunghezza vera e non
+`pathLength`. **Bug trovato nel laboratorio e corretto prima di
+portarla**: il piatto che cadeva dall'alto faceva attraversare il
+giogo ai fili; un taglio fisso non bastava (il piatto sporge oltre il
+giogo), quindi il piatto è calato dal giogo. Test nuovo
+`aperturaTempi.test.ts` (3 casi, solo errori silenziosi: durate uguali
+di giogo, piatti e minimo; rete di sicurezza dopo minimo + uscita;
+riduci movimento che ferma tutto), con rompi e ripristina sui tre;
+1331 test in 118 file. Provato con
+`next start` ed Edge senza interfaccia: fotogrammi in chiaro e scuro,
+riduci movimento, strato tolto a circa 1460 ms. Da provare su iPhone.
+PUNTO §3, §7 e §11.
+
 ## 2026-10-24 — Merge di `animazione-apertura` su main
 
 Fast-forward `6eb7e68` → `b732e33`, 7 commit. Branch cancellato in

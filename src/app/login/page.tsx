@@ -22,7 +22,7 @@ import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
 // manda qui; poi Accedi → Oggi è una navigazione interna. Senza lo strato
 // anche qui, al primo utilizzo l'animazione non si vedrebbe mai. Fuori dal
 // <Suspense> come su Oggi: il suo fallback all'idratazione viene rifatto.
-// Niente da aspettare: oscillazione intera, poi via.
+// Niente da aspettare: pesata intera, poi via.
 export default function LoginPage() {
   return (
     <>

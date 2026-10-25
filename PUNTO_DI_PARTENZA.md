@@ -150,8 +150,9 @@ coincidevano, ha vinto il mockup.
 ### Oggi (schermata di apertura)
 
 Alla prima apertura dell'app o della scheda, sopra la pagina (barra in
-basso compresa) c'è l'animazione di apertura: la bilancia che si mette
-in equilibrio, almeno 1,05 s più 0,25 s di dissolvenza, più a lungo se
+basso compresa) c'è l'animazione di apertura: la bilancia che riceve i
+due piatti e si mette in equilibrio, almeno 1,2 s più 0,25 s di
+dissolvenza, più a lungo se
 Oggi carica ancora. Vedi §7, "Animazione di apertura".
 
 Dall'alto:
@@ -3972,13 +3973,18 @@ Confermate dai mockup, con una correzione.
 ### Animazione di apertura (dal 24/10, branch `animazione-apertura`)
 
 All'apertura di Oggi, o di Accedi per chi non ha ancora fatto l'accesso
-(dal 24/10, commit 5), la bilancia compare inclinata e oscilla fino a
-fermarsi in piano, poi sfuma e lascia la pagina. Scelta fra tre
-proposte provate in anteprima con Remotion (progetto fuori dal repo,
-`C:\Users\david\Progetti\libra-apertura-remotion`, solo banco di prova:
-nell'app è CSS + SVG, nessuna libreria e nessun video). **Stato**:
-costruita e **provata su iPhone il 24/10** (anteprima del branch, in
-Safari, account di prova, Build del commit 6; prove 0-11 passate, §11).
+(dal 24/10, commit 5), la bilancia compare senza piatti; il piatto
+sinistro viene calato sui fili e la fa pendere, poi il destro, e la
+bilancia oscilla fino a fermarsi in piano; poi sfuma e lascia la
+pagina. Proposte provate in anteprima con Remotion (progetto fuori dal
+repo, `C:\Users\david\Progetti\libra-apertura-remotion`, solo banco di
+prova: nell'app è CSS + SVG, nessuna libreria e nessun video).
+**Stato**: costruita con P1 "Equilibrio" e **provata su iPhone il
+24/10** (anteprima del branch, in Safari, account di prova, Build del
+commit 6; prove 0-11 passate, §11). **Dal 25/10 il movimento è P5
+"Pesata"** (branch `apertura-pesata`, sotto "Come si muove"): cambiano
+solo disegno e keyframes, la logica "quando mostrarla" è la stessa
+provata il 24/10. **Da provare su iPhone** il movimento nuovo.
 Su main dal 24/10. Dopo il merge, nell'app installata:
 - (a) app chiusa dal multitasking e riaperta → l'animazione ricompare,
   cioè il segno in `sessionStorage` sparisce quando iOS chiude l'app:
@@ -3987,51 +3993,85 @@ Su main dal 24/10. Dopo il merge, nell'app installata:
 - (b) app installata senza accesso → animazione su Accedi: **provato
   solo nel browser** (Safari su iPhone e Edge senza interfaccia).
 
-- **Come si muove** (proposta P1 "Equilibrio", numeri dal progetto di
-  prova; keyframes in `globals.css`, `.animazione-apertura` e
-  seguenti): bilancia larga 96 px, centrata, con il centro al 45%
-  dell'altezza; compare in 180 ms (opacità e 6 px in su); il giogo va
-  da -12° a +4°, -1,2° e 0° a 0 / 390 / 720 / 1050 ms, ogni tratto
-  `cubic-bezier(.45,0,.25,1)`; i piatti salgono e scendono di 28 ×
-  sin(angolo) unità del disegno restando dritti, negli stessi istanti;
-  la dissolvenza dura 250 ms. **Rallentata il 24/10 (commit 6)**: nel
-  browser era troppo veloce; prima comparsa 120 ms, tappe a 260 / 480 /
-  700 ms, dissolvenza 150 ms. Le percentuali dei keyframes non cambiano
-  (390/1050 = 260/700): cambia solo la durata, che è la stessa per
-  giogo, piatti e `apertura-minimo`. Si animano solo
-  transform e opacity. Colori solo da variabili: fondo `--background`,
-  bilancia `--accento` (segue tema e colore principale).
+- **Come si muove** (proposta P5 "Pesata" dal 25/10, numeri dal
+  progetto di prova, `Pesata.tsx`; keyframes in `globals.css`,
+  `.animazione-apertura` e seguenti): bilancia larga 96 px, centrata,
+  con il centro al 45% dell'altezza. Tempi su 1200 ms:
+  - 0–180: asta, base, giogo e perno compaiono (opacità e 6 px in su);
+  - 100–300: il piatto sinistro viene **calato**: parte 17 unità del
+    disegno più in alto, con il bordo appena sotto il giogo, e scende
+    accelerando (`cubic-bezier(.55,0,1,.45)`); i fili restano agganciati
+    al giogo e si allungano fino al piatto (stroke-dashoffset, stessa
+    durata e stessa curva); compare in 120 ms;
+  - 300–460: l'urto fa pendere il giogo da 0° a -9°
+    (`cubic-bezier(.2,0,0,1)`);
+  - 380–580: il piatto destro, allo stesso modo;
+  - 580–1200: il giogo va a +4°, -1,2° e 0° a 800 / 1000 / 1200 ms, ogni
+    tratto `cubic-bezier(.45,0,.25,1)`; i piatti seguono le estremità
+    del giogo di 28 × sin(angolo) unità restando dritti;
+  - poi la dissolvenza di 250 ms: **1450 ms in tutto**.
 
-- **Regola A: minimo l'oscillazione intera, solo alle aperture**
+  Si animano solo transform, opacity e lo stroke-dashoffset dei fili
+  (quattro tratti separati in `glifoBilancia.ts`; nel marchio di Accedi
+  restano due percorsi con lo stesso testo di prima, aspetto invariato).
+  Il tratteggio usa la lunghezza vera del filo (√464 ≈ 21,54), non
+  `pathLength="1"`: la posa ferma non dipende da come il browser lo
+  tratta. Colori solo da variabili: fondo `--background`, bilancia
+  `--accento` (segue tema e colore principale).
+  `src/app/aperturaTempi.test.ts` controlla solo i tre errori che non si
+  vedono provandola una volta: giogo, piatti e `apertura-minimo` con la
+  stessa durata; rete di sicurezza dopo minimo + uscita; riduci
+  movimento che ferma tutti i pezzi. L'aspetto (curve, spostamenti,
+  punta dei fili) si controlla guardandolo, niente test sul CSS.
+  - **Perché P5** (25/10): P1 era una bilancia che oscilla da sola;
+    P5 racconta cosa fa l'app, metti qualcosa sul piatto e trovi
+    l'equilibrio, e il movimento ha una causa che si vede. Scelta da
+    Davide fra P1 (aggiornata ai tempi dell'app per confronto) e tre
+    proposte nuove: P4 "Zoom" (la bilancia parte enorme e si
+    restringe), P5, P6 "Montaggio" (i pezzi arrivano da quattro
+    direzioni). **I piatti sono calati, non cadono dall'alto**: nella
+    prima versione piatto e fili cadevano da sopra e intorno ai 200 ms
+    i fili attraversavano il giogo; un taglio fisso sopra il giogo non
+    bastava, perché il piatto è più largo dell'estremità del giogo e
+    la parte che sporge spuntava da una linea invisibile.
+  - **P1, prima del 25/10**: compariva in 180 ms già inclinata, giogo da
+    -12° a +4°, -1,2° e 0° a 0 / 390 / 720 / 1050 ms, piatti che
+    seguivano il giogo; 1050 + 250 = 1300 ms. Rallentata il 24/10 (commit 6) da
+    260 / 480 / 700 ms.
+
+- **Regola A: minimo l'animazione intera, solo alle aperture**
   (cambiata il 24/10: prima era "al massimo quanto il caricamento", ma
   nel browser l'animazione era troppo veloce per capirla). Alle
-  aperture (sotto: nessun segno in `sessionStorage`) l'oscillazione si
-  vede **sempre intera**, fino al piano a 1050 ms, poi lo strato sfuma
-  in 250 ms. Se Oggi è
+  aperture (sotto: nessun segno in `sessionStorage`) la pesata si
+  vede **sempre intera**, fino al piano a 1200 ms (con P1 1050), poi
+  lo strato sfuma in 250 ms. Se Oggi è
   pronta dopo (`OggiContenuto` manda `segnalaOggiPronta()`), sfuma
-  quando è pronta: **al più tardi fra "oscillazione finita" e "Oggi
+  quando è pronta: **al più tardi fra "pesata finita" e "Oggi
   pronta"** (`uscitaApertura`, test in
   `src/lib/animazioneApertura.test.ts`). Nel frattempo la bilancia resta
   ferma in equilibrio. Dopo **3 s** sfuma comunque, come rete di
   sicurezza (sotto ricompare "Caricamento..."). **Su Accedi** non ci
-  sono dati da aspettare (`attende="niente"`): oscillazione intera, poi
+  sono dati da aspettare (`attende="niente"`): pesata intera, poi
   dissolvenza.
-  - **Il costo, scelto**: a ogni apertura fino a circa 1,05 s in cui
+  - **Il costo, scelto**: a ogni apertura fino a circa 1,2 s in cui
     Oggi non si vede e non si tocca, anche se i dati sono già pronti, più
     0,25 s di dissolvenza in cui Oggi ricompare e si può già toccare.
     Ricaricando o cambiando scheda nessun costo: lì l'animazione non c'è.
   - **I tempi sono tutti CSS** e il componente li legge, non li
-    ricalcola: `apertura-minimo` (1050 ms, non cambia niente a schermo)
-    sullo strato, quindi vale anche con riduci movimento;
+    ricalcola: `apertura-minimo` (1200 ms, non cambia niente a schermo;
+    deve durare quanto giogo e piatti) sullo strato, quindi vale anche
+    con riduci movimento;
     `apertura-sicurezza` (ritardo 3 s, dissolvenza 250 ms), che funziona
     anche se il JavaScript non arriva mai e finisce con
     `visibility: hidden`. **I 3 s bastano ancora**: minimo e uscita
-    insieme fanno 1050 + 250 = 1300 ms, e nella prova del 24/10 lo strato
-    era tolto a 1,5 s dall'apertura. `apertura-uscita` (250 ms) sta sul
+    insieme fanno 1200 + 250 = 1450 ms. Prova del 25/10 con P5
+    (`next start` ed Edge senza interfaccia, su Accedi): strato pieno
+    fino a circa 1200 ms, in uscita, tolto a circa 1460 ms; con riduci
+    movimento lo stesso. `apertura-uscita` (250 ms) sta sul
     fondo interno, così non sostituisce le altre due e, se la rete di
     sicurezza ha già nascosto tutto, resta invisibile. La fine del
     minimo non si ascolta come evento: se il JavaScript arriva dopo
-    1050 ms l'evento è già passato. Il
+    1200 ms l'evento è già passato. Il
     componente chiede l'animazione al browser (`getAnimations()`) e ne
     aspetta la fine (`finished`); se non c'è più, il minimo è passato.
     Senza `getAnimations` (iOS prima del 13.1) si esce quando Oggi è
@@ -4130,9 +4170,9 @@ Su main dal 24/10. Dopo il merge, nell'app installata:
   strato: il modulo sta in un `<Suspense fallback={null}>`, quindi prima
   dell'idratazione la pagina è vuota. Sopra lo strato su Accedi non
   resta niente: non c'è la pillola né altri elementi fissi.
-- **Riduci movimento**: bilancia ferma in piano per lo stesso tempo
-  minimo (1050 ms), poi sfuma come sempre in 250 ms (l'opacità non è
-  movimento).
+- **Riduci movimento**: bilancia ferma in piano, con i piatti al loro
+  posto, per lo stesso tempo minimo (1200 ms), poi sfuma come sempre in
+  250 ms (l'opacità non è movimento).
 
 ### Tema chiaro / scuro / sistema
 
@@ -6677,15 +6717,20 @@ chiusura dal multitasking e riapertura provata il 24/10, chiaro e
 scuro; apertura senza accesso provata solo nel browser; §7). Su main
 dal 24/10 (fast-forward fino a `b732e33`). La bilancia che si mette in equilibrio sopra Oggi
 (o sopra Accedi, per chi non ha fatto l'accesso) alla prima apertura
-dell'app o della scheda, non a una ricarica, con l'oscillazione sempre
+dell'app o della scheda, non a una ricarica, con l'animazione sempre
 intera (§7,
-"Animazione di apertura"). CSS + SVG, scelta fra tre proposte provate
-con Remotion fuori dal repo.
+"Animazione di apertura"). CSS + SVG, proposte provate con Remotion
+fuori dal repo. **Dal 25/10 il movimento è P5 "Pesata"** (branch
+`apertura-pesata`): i piatti calati uno dopo l'altro, poi l'equilibrio,
+1200 + 250 ms. Provata con `next start` ed Edge senza interfaccia
+(fotogrammi in chiaro e scuro, riduci movimento, tempi dello strato);
+**da provare su iPhone**.
 
 **Test.** 1304 test permanenti in 115 file (Vitest), tutti verdi al 23/10
 su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 `username-dopo-accesso`; 1328 in 117 file sul branch
-`animazione-apertura`.
+`animazione-apertura` (su main dal 24/10); 1331 in 118 file sul branch
+`apertura-pesata`.
 
 ### Non ancora costruito
 

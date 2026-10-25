@@ -274,10 +274,12 @@ body:has([data-pulsante-aggiungi]) {
 }
 
 /* Animazione di apertura (src/components/AnimazioneApertura.tsx;
-   PUNTO_DI_PARTENZA.md §7, "Animazione di apertura"). Proposta P1
-   "Equilibrio", numeri presi dal progetto Remotion di prova
-   (Equilibrio.tsx): la bilancia compare inclinata e oscilla fino a
-   fermarsi in piano. Si animano solo transform e opacity.
+   PUNTO_DI_PARTENZA.md §7, "Animazione di apertura"). Proposta P5
+   "Pesata" (dal 25/10, prima P1 "Equilibrio"), numeri presi dal
+   progetto Remotion di prova (Pesata.tsx): la bilancia compare senza
+   piatti; il sinistro viene calato sui fili e la fa pendere, poi il
+   destro, e la bilancia oscilla fino al piano. Si animano solo
+   transform, opacity e lo stroke-dashoffset dei fili.
 
    Lo strato: fisso a tutto schermo, fondo della pagina (niente lampo),
    z-35: sopra tutta la barra in basso (sfumatura z-20, pillola e
@@ -292,15 +294,17 @@ body:has([data-pulsante-aggiungi]) {
    (data-esce) li lascia passare.
 
    Tre tempi, tutti CSS:
-   - apertura-minimo (1050 ms, non cambia niente a schermo): l'oscillazione
-     intera. Il componente aspetta che finisca prima di far uscire lo
-     strato. Sta sullo strato e non sulla bilancia, così vale anche con
-     riduci movimento, dove la bilancia non si muove;
+   - apertura-minimo (1200 ms, non cambia niente a schermo): la pesata
+     intera, fino al piano. Il componente aspetta che finisca prima di
+     far uscire lo strato. Sta sullo strato e non sulla bilancia, così
+     vale anche con riduci movimento, dove la bilancia non si muove.
+     Deve durare quanto apertura-giogo e apertura-segue-* (lo controlla
+     aperturaTempi.test.ts);
    - apertura-sicurezza: dopo 3 s sfuma comunque, anche se il JavaScript
      non arriva mai. Finisce con visibility: hidden, che smette anche di
      bloccare i tocchi. 3 s bastano: minimo e uscita insieme fanno
-     1050 + 250 = 1300 ms;
-   - apertura-uscita (data-esce, Oggi pronta e oscillazione finita):
+     1200 + 250 = 1450 ms;
+   - apertura-uscita (data-esce, Oggi pronta e pesata finita):
      250 ms, sul fondo interno e non sullo strato. Così non sostituisce le
      due animazioni dello strato: se la rete di sicurezza ha già nascosto
      tutto, l'uscita resta invisibile invece di far ricomparire la
@@ -311,7 +315,7 @@ body:has([data-pulsante-aggiungi]) {
   inset: 0;
   z-index: 35;
   animation:
-    apertura-minimo 1050ms linear,
+    apertura-minimo 1200ms linear,
     apertura-sicurezza 250ms cubic-bezier(0.4, 0, 1, 1) 3s forwards;
 }
 html[data-apertura="mostra"] .animazione-apertura {
@@ -370,27 +374,41 @@ html[data-apertura="mostra"] .animazione-apertura {
   }
 }
 
-/* Il giogo ruota attorno al fulcro (50, 34 nel disegno): -12° → +4° →
-   -1,2° → 0° a 0 / 390 / 720 / 1050 ms, ogni tratto "va e rallenta"
-   (rallentata il 24/10: prima 0 / 260 / 480 / 700 ms). Le percentuali
-   dei keyframes sono le stesse di prima: 390/1050 = 260/700 = 37,143%,
-   720/1050 = 480/700 = 68,571%. Cambia solo la durata, che deve restare
-   uguale ad apertura-minimo e ai piatti. */
+/* Il giogo ruota attorno al fulcro (50, 34 nel disegno). Tempi in ms su
+   1200 (uguale ad apertura-minimo):
+     0–300     fermo in piano (struttura vuota, cala il piatto sinistro)
+     300–460   urto del piatto sinistro: 0° → -9°, "parte svelto,
+               arriva piano"
+     460–580   fermo a -9° (cala il piatto destro)
+     580–800   urto del destro: -9° → +4°, poi -1,2° a 1000 e 0° a 1200,
+               ogni tratto "va e rallenta"
+   Percentuali: 300/1200 = 25%, 460/1200 = 38,333%, 580/1200 = 48,333%,
+   800/1200 = 66,667%, 1000/1200 = 83,333%. */
 .apertura-giogo {
   transform-box: view-box;
   transform-origin: 50px 34px;
-  animation: apertura-giogo 1050ms both;
+  animation: apertura-giogo 1200ms both;
 }
 @keyframes apertura-giogo {
   0% {
-    transform: rotate(-12deg);
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  38.333% {
+    transform: rotate(-9deg);
+  }
+  48.333% {
+    transform: rotate(-9deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  37.143% {
+  66.667% {
     transform: rotate(4deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  68.571% {
+  83.333% {
     transform: rotate(-1.2deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
@@ -399,26 +417,42 @@ html[data-apertura="mostra"] .animazione-apertura {
   }
 }
 
-/* I piatti seguono le estremità del giogo restando dritti: salgono e
-   scendono di 28 x sin(angolo) unità del disegno (28 = mezzo giogo),
-   negli stessi istanti e con la stessa curva. -12° → 5,82; 4° → 1,95;
-   -1,2° → 0,59. */
-.apertura-piatto-sinistra {
-  animation: apertura-piatto-sinistra 1050ms both;
+/* Ogni piatto (con i suoi fili) sta in due livelli:
+   - fuori (apertura-segue-*) segue l'estremità del giogo restando dritto:
+     sale e scende di 28 x sin(angolo) unità del disegno (28 = mezzo
+     giogo), negli stessi istanti e con le stesse curve del giogo.
+     -9° → 4,38; +4° → 1,95; -1,2° → 0,59. Il sinistro scende quando il
+     giogo va in negativo, il destro sale;
+   - dentro (apertura-piatto) compare e viene calato: vedi sotto.
+   --ritardo: quando parte il piatto, 100 ms il sinistro, 380 il destro. */
+.apertura-segue-sinistra {
+  --ritardo: 100ms;
+  animation: apertura-segue-sinistra 1200ms both;
 }
-.apertura-piatto-destra {
-  animation: apertura-piatto-destra 1050ms both;
+.apertura-segue-destra {
+  --ritardo: 380ms;
+  animation: apertura-segue-destra 1200ms both;
 }
-@keyframes apertura-piatto-sinistra {
+@keyframes apertura-segue-sinistra {
   0% {
-    transform: translateY(5.82px);
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  38.333% {
+    transform: translateY(4.38px);
+  }
+  48.333% {
+    transform: translateY(4.38px);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  37.143% {
+  66.667% {
     transform: translateY(-1.95px);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  68.571% {
+  83.333% {
     transform: translateY(0.59px);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
@@ -426,16 +460,26 @@ html[data-apertura="mostra"] .animazione-apertura {
     transform: translateY(0);
   }
 }
-@keyframes apertura-piatto-destra {
+@keyframes apertura-segue-destra {
   0% {
-    transform: translateY(-5.82px);
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  38.333% {
+    transform: translateY(-4.38px);
+  }
+  48.333% {
+    transform: translateY(-4.38px);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  37.143% {
+  66.667% {
     transform: translateY(1.95px);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  68.571% {
+  83.333% {
     transform: translateY(-0.59px);
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
@@ -444,14 +488,59 @@ html[data-apertura="mostra"] .animazione-apertura {
   }
 }
 
-/* Riduci movimento: bilancia ferma in piano, già visibile, per lo stesso
-   tempo minimo (apertura-minimo sta sullo strato e resta); poi sfuma
-   come sempre (l'opacità non è movimento). */
+/* Il piatto calato sui fili, dal suo --ritardo:
+   - compare in 120 ms (opacità);
+   - in 200 ms scende di 17 unità del disegno, accelerando come una
+     caduta: parte con il bordo a y 38, appena sotto il giogo (spesso 7,
+     finisce a 37,5), così non lo attraversa mai;
+   - i fili restano agganciati al giogo e si allungano fino al bordo del
+     piatto: stroke-dashoffset, stessa durata e stessa curva del piatto,
+     quindi la punta resta sul bordo da sola. Un filo è lungo √464 =
+     21,54 (glifoBilancia.ts); il tratto è 21,55,
+     poi 50 di vuoto: fermo copre il filo intero. All'inizio se ne
+     vedono 3/20 (da y 35 a 38) = 3,23: 21,55 - 3,23 = 18,32 di
+     dashoffset. Lunghezze vere e non pathLength="1": la posa ferma non
+     dipende da come il browser tratta pathLength. */
+.apertura-piatto {
+  animation: apertura-piatto-compare 120ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation-delay: var(--ritardo);
+}
+.apertura-piatto-calato {
+  animation: apertura-piatto-calato 200ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  animation-delay: var(--ritardo);
+}
+.apertura-filo {
+  stroke-dasharray: 21.55 50;
+  animation: apertura-filo 200ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  animation-delay: var(--ritardo);
+}
+@keyframes apertura-piatto-compare {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes apertura-piatto-calato {
+  from {
+    transform: translateY(-17px);
+  }
+}
+@keyframes apertura-filo {
+  from {
+    stroke-dashoffset: 18.32;
+  }
+}
+
+/* Riduci movimento: bilancia ferma in piano, piatti al loro posto e già
+   visibili, per lo stesso tempo minimo (apertura-minimo sta sullo strato
+   e resta); poi sfuma come sempre (l'opacità non è movimento). */
 @media (prefers-reduced-motion: reduce) {
   .animazione-apertura-bilancia,
   .apertura-giogo,
-  .apertura-piatto-sinistra,
-  .apertura-piatto-destra {
+  .apertura-segue-sinistra,
+  .apertura-segue-destra,
+  .apertura-piatto,
+  .apertura-piatto-calato,
+  .apertura-filo {
     animation: none;
   }
 }
