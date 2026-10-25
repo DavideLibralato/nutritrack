@@ -3755,9 +3755,22 @@ avvisi degli advisors che danno sono accettati (9.6).
 
 #### La foto profilo: solo online (decisa il 25/10, branch `foto-profilo`)
 
-Stato: **migration scritta, non applicata** (commit 3,
-`supabase/migrations/foto_profilo.sql`; prove nel file temporaneo
-`prove_foto_profilo.sql`, fuori da git). Schermate e comportamento in
+Stato: **migration `foto_profilo` applicata il 25/10** da Cowork con
+`apply_migration` (versione `20261025204607`), dopo l'"ok migration" di
+Davide (file `supabase/migrations/foto_profilo.sql`, commit 3).
+Verificato da Cowork: tabella con le 6 colonne previste e RLS attiva;
+bucket privato, 512000 byte, solo `image/jpeg`; 3 regole su
+`storage.objects` e 1 su `foto_profilo`; `elimina_mio_account` con gli
+stessi permessi di prima (`postgres` e `authenticated`, niente `anon`);
+`imposta_foto_profilo` non eseguibile da `anon`; `get_advisors` solo con
+l'avviso atteso (`imposta_foto_profilo` security definer, come le altre
+10). Prove: blocco annullato RESOCONTO (52 casi) eseguito nel SQL
+Editor, **prima** "migration non applicata… Nessuna prova eseguita",
+**dopo** "52 su 52"; dopo le prove nessun file nello Storage, nessuna
+riga in `foto_profilo`, amicizia e account di prova intatti. Tipo
+`FotoProfilo` in `tipi.ts` confrontato il 25/10 con
+`information_schema.columns`: combacia. File delle prove cancellato (mai
+in git). Schermate e comportamento in
 §3, "Profilo", "La foto profilo". Scrivendola (25/10): gli esiti di
 `imposta_foto_profilo` sono `ok`, `non_valido` (percorso fuori dalla
 propria cartella o non `<uuid>.jpg`) e `file_mancante` (il file non è nel
@@ -7184,11 +7197,12 @@ nell'app installata** da Davide: l'uso normale.
 - **Foto profilo** (branch `foto-profilo`, dal 25/10): decisa
   (§3 "Profilo", "La foto profilo"; §4 "La foto profilo: solo online";
   §9.6 "File in Storage"; mockup `docs/mockups/foto-profilo.html`), non
-  ancora costruita. **Commit 3: migration scritta, non applicata**
+  ancora costruita. **Commit 3: migration scritta**
   (`supabase/migrations/foto_profilo.sql`, tipo `FotoProfilo` in
-  `tipi.ts`; prove in `prove_foto_profilo.sql`, fuori da git: prima
-  della migration il blocco dice "migration non applicata", dopo deve
-  dire "52 su 52"). Commit previsti, in quest'ordine: migration scritta e
+  `tipi.ts`), **applicata il 25/10** da Cowork (versione
+  `20261025204607`; prove SQL prima "migration non applicata", dopo "52
+  su 52"; `get_advisors` solo con l'avviso atteso; §4, "La foto profilo:
+  solo online"). Commit previsti, in quest'ordine: migration scritta e
   non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
   l'"ok migration", applicata da Cowork e provata; ritaglio e
   compressione (funzioni pure con test); Storage, Dexie `version(9)` e

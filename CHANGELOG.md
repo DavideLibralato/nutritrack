@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Migration della foto profilo applicata e provata
+
+Branch `foto-profilo`, commit 4 (solo documenti). Migration
+`foto_profilo` applicata da Cowork il 25/10 con `apply_migration`
+(versione `20261025204607`), dopo l'"ok migration". Verificato da
+Cowork: 6 colonne e RLS attiva, bucket privato da 512000 byte solo
+JPEG, 3 regole su `storage.objects` e 1 su `foto_profilo`,
+`elimina_mio_account` con i permessi di prima, `imposta_foto_profilo`
+non eseguibile da `anon`; `get_advisors` solo con l'avviso atteso.
+Prove SQL: prima "migration non applicata… Nessuna prova eseguita",
+dopo "52 su 52"; nessun file né riga rimasti, amicizia e account di
+prova intatti. `FotoProfilo` in `tipi.ts` combacia con
+`information_schema.columns`. File delle prove cancellato (mai in git).
+PUNTO §4 e §11.
+
 ## 2026-10-25 — Migration della foto profilo (scritta, non applicata)
 
 Branch `foto-profilo`, commit 3. File
