@@ -4528,6 +4528,10 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
     Edge; a freddo comparabile (una sola misura per lato, e quella del
     commit 3 includeva il rinnovo del token scaduto e il download della
     JWKS)
+  - **Provato su iPhone il 25/10** in Safari sull'anteprima del branch
+    (Build del commit 4 `42bb009`, account di prova): accesso, cambio
+    scheda e una voce da 125 g arrivata al server alle 19:22 (verificato
+    da Cowork), con il proxy Node in `dub1` e `getClaims()`
   - **Costi del proxy sul piano Hobby**: conta come funzione ("fluid
     compute"), con le soglie mensili di 1.000.000 di invocazioni, 4 ore
     di CPU attiva e 360 GB-ora di memoria. Stima per la beta (10 persone
@@ -5264,7 +5268,15 @@ Come, in concreto:
     dispositivo: è lo stesso caso dell'offline (§10.6, nessuno viene
     buttato fuori per la rete); se ne accorgono `useUtenteId` (verifica
     col server), la sincronizzazione ("sessione scaduta") e la prima
-    navigazione che arriva in rete, che il proxy manda a `/login` Non si salvano risposte non ok né redirect (il middleware
+    navigazione che arriva in rete, che il proxy manda a `/login`.
+    **Provato il 25/10** sull'anteprima, account di prova: in Chrome sul
+    PC con un profilo di latenza di 5 s la pagina arriva dalla copia in
+    circa 3 s, e la copia in Cache Storage si aggiorna quando arriva la
+    risposta lenta; con 2 s arriva dalla rete; `/password-dimenticata`
+    aspetta tutta la rete; offline la copia come prima. **Provato su
+    iPhone il 25/10** in Safari sull'anteprima: uso normale e Modalità
+    aereo (copia). Nell'app installata dopo il merge (§11).
+    Non si salvano risposte non ok né redirect (il middleware
     rimanda a `/login` chi non è entrato). Una pagina si salva **solo dopo**
     che tutti i file che cita (JS, CSS e i font citati dal CSS) sono in
     cache: mai una copia che cerca file assenti
@@ -6882,9 +6894,16 @@ su Edge (§8, "Il proxy"); test del matcher. Commit 3: `getClaims()` al
 posto di `getUser()`, verifica locale del token ES256. Misure del 25/10
 in §8 ("Il proxy"): a caldo Node in `dub1` uguale o un po' più veloce
 di Edge (~131 ms contro 241), a freddo comparabile. Commit 4: tempo
-massimo di 3 s per le pagine nel service worker (§9.2), da provare con
-la rete lenta in Chrome e in Safari su iPhone, sull'anteprima; l'app
-installata solo dopo il merge.
+massimo di 3 s per le pagine nel service worker (§9.2). **Provato il
+25/10** sull'anteprima, account di prova: Chrome sul PC prove 0-5
+(rete normale; "Lenta 5 s" → copia in circa 3 s; copia aggiornata in
+Cache Storage all'arrivo della risposta lenta; "Lenta 2 s" → rete;
+`/password-dimenticata` aspetta tutta la rete; offline → copia) e
+**iPhone in Safari** prove 1-3 (Build del commit 4 `42bb009`; uso
+normale con una voce da 125 g arrivata al server alle 19:22,
+verificato da Cowork; Modalità aereo → copia). **Da provare dopo il
+merge**, nell'app installata: apertura normale e Modalità aereo. Il
+`sw.js` nuovo arriva al telefono alla prima apertura con la rete.
 **Difetto già in produzione, corretto nel commit 4**: un "Esci" mentre
 la pagina arrivava dalla rete non bastava a fermarne il salvataggio.
 `salvaPagina` prendeva l'epoca quando la risposta era già arrivata,

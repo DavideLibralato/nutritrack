@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Proxy e tempo massimo provati su iPhone
+
+Branch `proxy-rete-lenta`, commit 5 (solo documenti). **Provato il
+25/10** sull'anteprima del branch, account di prova, Build del commit 4
+(`42bb009`). Chrome sul PC, prove 0-5: rete normale; "Lenta 5 s" →
+pagina dalla copia in circa 3 s; copia aggiornata in Cache Storage
+all'arrivo della risposta lenta; "Lenta 2 s" → dalla rete;
+`/password-dimenticata` aspetta tutta la rete; offline → copia. iPhone,
+Safari, prove 1-3: uso normale con una voce da 125 g arrivata al
+server alle 19:22 (verificato da Cowork); Modalità aereo → copia. Da
+provare dopo il merge, nell'app installata: apertura normale e
+Modalità aereo. Corretto anche un punto mancante in §9.2. PUNTO §8,
+§9.2 e §11.
+
 ## 2026-10-25 — Service worker: al massimo 3 s di attesa per le pagine
 
 Branch `proxy-rete-lenta`, commit 4. Con una rete che c'è ma non passa
