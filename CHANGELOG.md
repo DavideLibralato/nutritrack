@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Ritaglio e compressione della foto profilo
+
+Branch `foto-profilo`, commit 5. `src/lib/foto/ritaglioFoto.ts`:
+`rettangoloRitaglio` (pura) porta il quadrato di react-easy-crop a un
+quadrato intero dentro la foto, centrato dove l'ha messo l'utente;
+valori non numerici, lato sotto il pixel o foto senza misure → nessun
+ritaglio. `preparaFotoProfilo` apre il file con `Image` + `decode()` (le
+stesse coordinate dell'`<img>` della libreria, foto già raddrizzata),
+disegna su un canvas fino a 400×400 e produce un JPEG 0,85; esiti
+`ok`, `non-si-apre`, `ritaglio-non-valido`, `canvas-non-disponibile`,
+`non-jpeg`, `troppo-grande`. Sotto i 400 px la foto non si ingrandisce.
+16 test permanenti sulla funzione pura, provati rompendo e ripristinando
+da una copia in quattro modi (senza bordi 4 rossi, lato più grande 2,
+senza controllo dei NaN 1, ingrandimento 2). La parte con canvas non
+gira in jsdom: si prova su iPhone. Commento di `FotoProfilo` in
+`tipi.ts` aggiornato (versione, confronto del 25/10). Test 1345 → 1361
+in 120 file. PUNTO §3.
+
 ## 2026-10-25 — Migration della foto profilo applicata e provata
 
 Branch `foto-profilo`, commit 4 (solo documenti). Migration

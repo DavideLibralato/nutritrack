@@ -260,13 +260,13 @@ export interface NomeUtente extends RigaBase {
   // sparisce solo con l'utente (ON DELETE CASCADE).
 }
 
-// La foto profilo di un utente (migration `foto_profilo`, branch
-// `foto-profilo`, non ancora applicata; PUNTO_DI_PARTENZA.md §4, "La foto
+// La foto profilo di un utente (migration `foto_profilo`, versione
+// 20261025204607, applicata il 25/10; PUNTO_DI_PARTENZA.md §4, "La foto
 // profilo: solo online"). Solo online, come le tabelle di Amici: una riga
 // per utente, la crea la prima foto. La leggono il proprietario e gli
 // amici con amicizia accettata (RLS); si scrive solo con
-// imposta_foto_profilo. Da confrontare con information_schema.columns
-// dopo l'applicazione (CLAUDE.md, A.8).
+// imposta_foto_profilo. Confrontato il 25/10 con
+// information_schema.columns: NOT NULL tutte tranne percorso e deleted_at.
 export interface FotoProfilo extends RigaBase {
   user_id: string; // NOT NULL qui, a differenza di RigaBase
   // `<user_id>/<uuid>.jpg` nel bucket `foto-profilo` (check sul database);

@@ -2731,7 +2731,33 @@ storia.
   dati EXIF, compresa la posizione. Dall'iPhone può arrivare un HEIC:
   Safari lo apre, quindi va bene. Un file che il browser non sa aprire
   (per esempio un HEIC scelto da Chrome sul PC) → "**Questa foto non si
-  può aprire**"
+  può aprire**". **Com'è fatto** (commit 5, `src/lib/foto/ritaglioFoto.ts`):
+  - `rettangoloRitaglio`, funzione pura con test: dal quadrato di
+    react-easy-crop (pixel della foto, con decimali, a volte mezzo pixel
+    fuori) al quadrato da disegnare. Lato = il più piccolo fra larghezza
+    e altezza, arrotondato, al massimo il lato corto della foto; il
+    centro resta dove l'ha messo l'utente; se esce dalla foto si sposta
+    dentro senza cambiare il lato. Un valore non numerico (NaN,
+    Infinity), un lato sotto il pixel o una foto senza misure → nessun
+    ritaglio (esito `ritaglio-non-valido`), mai una parte della foto
+    scelta a caso;
+  - `preparaFotoProfilo`: apre il file con `Image` + `decode()`, non con
+    `createImageBitmap`. react-easy-crop mostra la foto in un `<img>`,
+    quindi le sue coordinate sono quelle della foto già raddrizzata come
+    la disegna un `<img>`; `createImageBitmap` su Safari ha avuto
+    problemi proprio con l'orientamento EXIF. Poi disegna su un canvas
+    (sotto, il bianco: le parti trasparenti di un PNG in JPEG
+    diventerebbero nere) e fa `toBlob("image/jpeg", 0,85)`. Esiti: `ok`
+    (con il file), `non-si-apre`, `ritaglio-non-valido`,
+    `canvas-non-disponibile`, `non-jpeg`, `troppo-grande` (oltre i
+    512000 byte del bucket): solo con `ok` si carica;
+  - **una foto piccola non si ingrandisce** (deciso il 25/10): sotto i
+    400 px il file esce del lato del quadrato scelto. Ingrandire non
+    aggiunge dettaglio e appesantisce il file; a schermo la foto più
+    grande usa 168 pixel reali (56 px a 3x). Da una foto dell'iPhone ci
+    si arriva solo con uno zoom oltre 7 volte;
+  - la parte con canvas non gira nei test (jsdom non ha canvas): si
+    prova su iPhone
 - **Dopo "Usa foto"** (serve la rete, come Cambia password): la foto
   nuova si vede subito **sbiadita**, con "**Caricamento della foto…**";
   riuscito, il messaggio breve in basso "**Foto aggiornata**" (come
