@@ -129,7 +129,89 @@
     return chiaviSalvate.filter((chiave) => !pagineApp.includes(new URL(chiave).pathname));
   }
 
+  // Quanto si aspetta la rete prima di mostrare la copia salvata di una
+  // pagina (dal 25/10/2026, branch `proxy-rete-lenta`). Con una rete
+  // normale l'HTML arriva in meno di un secondo, anche con l'avvio a
+  // freddo del proxy: 3 s lasciano margine a una rete mediocre senza
+  // mostrare la copia per niente. Più corto: si vedrebbe spesso una copia
+  // vecchia dopo un deploy. Più lungo: si allunga l'attesa davanti allo
+  // schermo bianco con una rete che c'è ma non passa niente.
+  const TEMPO_MASSIMO_PAGINA_MS = 3000;
+
+  // Una navigazione verso una pagina con copia (strategia "pagina"): la
+  // gara fra la rete e il tempo massimo. Niente cache né fetch qui dentro:
+  // li passa sw.js, così la gara si testa con l'orologio finto.
+  //
+  // o.rete          la richiesta di rete, già partita (Promise<Response>)
+  // o.leggiCopia    () => Promise<Response | undefined>, la copia salvata
+  // o.paginaOffline () => Promise<Response>, "Sei offline"
+  // o.salvabile     (Response) => boolean, rispostaPaginaSalvabile
+  // o.epocaAttuale  () => number, cresce a ogni "Esci" (sw.js)
+  // o.salva         (copiaDellaRisposta, epocaInizio) => Promise
+  // o.tempoMassimo  facoltativo, per i test; di solito la costante sopra
+  //
+  // Restituisce { risposta, salvataggio }:
+  // - risposta: quella da dare al browser. La rete se arriva entro il
+  //   tempo massimo; dopo, la copia se c'è, altrimenti si continua ad
+  //   aspettare la rete. Se la rete fallisce: la copia, o "Sei offline";
+  // - salvataggio: la risposta di rete si salva quando arriva, anche se
+  //   intanto è stata mostrata la copia (la volta dopo la copia è quella
+  //   nuova), ma solo se è una pagina vera e se nel frattempo non c'è
+  //   stato un "Esci" (l'epoca è quella di quando la navigazione è
+  //   partita). La pagina a schermo non cambia.
+  function navigazioneConTempoMassimo(o) {
+    const tempoMassimo = o.tempoMassimo === undefined ? TEMPO_MASSIMO_PAGINA_MS : o.tempoMassimo;
+    const epocaInizio = o.epocaAttuale();
+
+    // Registrato per primo: la copia per il salvataggio si fa prima che il
+    // browser cominci a leggere la risposta (il corpo si legge una volta).
+    const salvataggio = o.rete
+      .then((r) => {
+        if (!o.salvabile(r) || o.epocaAttuale() !== epocaInizio) return;
+        return o.salva(r.clone(), epocaInizio);
+      })
+      .catch(() => {});
+
+    const risposta = new Promise((risolvi) => {
+      let decisa = false;
+      async function copiaSalvata() {
+        try {
+          return await o.leggiCopia();
+        } catch {
+          return undefined;
+        }
+      }
+
+      const timer = setTimeout(async () => {
+        if (decisa) return;
+        const copia = await copiaSalvata();
+        if (decisa || !copia) return; // senza copia si aspetta la rete
+        decisa = true;
+        risolvi(copia);
+      }, tempoMassimo);
+
+      o.rete.then(
+        (r) => {
+          if (decisa) return;
+          decisa = true;
+          clearTimeout(timer);
+          risolvi(r);
+        },
+        async () => {
+          if (decisa) return;
+          decisa = true;
+          clearTimeout(timer);
+          risolvi((await copiaSalvata()) || o.paginaOffline());
+        }
+      );
+    });
+
+    return { risposta, salvataggio };
+  }
+
   const api = {
+    TEMPO_MASSIMO_PAGINA_MS,
+    navigazioneConTempoMassimo,
     PAGINE_APP,
     pagineDaTogliere,
     scegliStrategia,

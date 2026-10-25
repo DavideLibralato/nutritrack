@@ -4508,6 +4508,26 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
     è la porta verso `/login`, non la protezione dei dati, che è l'RLS
     di Supabase con lo stesso token; il client se ne accorge da sé
     (`useUtenteId`, sincronizzazione con "sessione scaduta")
+  - **Misure del 25/10** (Davide, Chrome sul PC, tempo di risposta del
+    documento "/", TTFB, rete senza limiti, service worker escluso):
+
+    | | a caldo, mediana (min–max) | a freddo |
+    |---|---|---|
+    | produzione, Edge (main `a5252d7`) | 241 ms (157–520) | 1480 ms |
+    | anteprima commit 2, Node `dub1`, `getUser()` | 183 ms (133–432) | 1190 ms |
+    | anteprima commit 3, Node `dub1`, `getClaims()` | ~131 ms (94–173) | 1320 ms |
+
+    Il commit 3 a freddo comprende il rinnovo del token scaduto e il
+    download della JWKS nella stessa richiesta. Verificato da Cowork nei
+    log di Supabase: il proxy dell'anteprima chiama da Dublino (colo DUB,
+    user agent "node"); con il commit 2 faceva 6–10 `GET /user` a ogni
+    ricarica (anche per i prefetch delle altre pagine), con il commit 3
+    nessuna: solo `jwks.json` una volta per istanza e un `POST /token`
+    per il rinnovo. La produzione su Edge chiama da FRA ma anche da IAD.
+    Quindi Node in `dub1`, a caldo, è uguale o un po' più veloce di
+    Edge; a freddo comparabile (una sola misura per lato, e quella del
+    commit 3 includeva il rinnovo del token scaduto e il download della
+    JWKS)
   - **Costi del proxy sul piano Hobby**: conta come funzione ("fluid
     compute"), con le soglie mensili di 1.000.000 di invocazioni, 4 ore
     di CPU attiva e 360 GB-ora di memoria. Stima per la beta (10 persone
@@ -5225,7 +5245,26 @@ Come, in concreto:
     `/impostazioni` e le sue sotto-pagine, dal 3/10 al posto di `/profilo`):
     prima la rete, e se risponde se ne salva una copia (chiave = percorso,
     senza query). Offline si usa la copia; se manca, `/offline.html` ("Sei
-    offline"). Non si salvano risposte non ok né redirect (il middleware
+    offline"). **Con la rete lenta, al massimo 3 s** (dal 25/10, branch
+    `proxy-rete-lenta`; `TEMPO_MASSIMO_PAGINA_MS` e
+    `navigazioneConTempoMassimo` in `sw-strategia.js`, 6 test con
+    l'orologio finto). Se la rete non risponde entro 3 s e la copia c'è,
+    si mostra la copia; senza copia si continua ad aspettare la rete.
+    Perché 3 s: con una rete normale l'HTML arriva in meno di un
+    secondo, anche a freddo (misure sotto, §8); più corto si vedrebbe
+    spesso una copia vecchia dopo un deploy, più lungo si allunga lo
+    schermo bianco con una rete che c'è ma non passa niente. La risposta
+    di rete arrivata dopo non si butta: si salva con le regole di sempre
+    (solo la pagina vera, tutti i file in cache), così la volta dopo la
+    copia è quella nuova, ma la pagina a schermo non cambia. **Non si
+    salva se nel frattempo c'è stato un "Esci"**: vale l'epoca di quando
+    la navigazione è partita, non di quando arriva la risposta.
+    Login, registrazione e password: nessun tempo massimo, non hanno
+    copia. Copia mostrata con la sessione scaduta o chiusa da un altro
+    dispositivo: è lo stesso caso dell'offline (§10.6, nessuno viene
+    buttato fuori per la rete); se ne accorgono `useUtenteId` (verifica
+    col server), la sincronizzazione ("sessione scaduta") e la prima
+    navigazione che arriva in rete, che il proxy manda a `/login` Non si salvano risposte non ok né redirect (il middleware
     rimanda a `/login` chi non è entrato). Una pagina si salva **solo dopo**
     che tutti i file che cita (JS, CSS e i font citati dal CSS) sono in
     cache: mai una copia che cerca file assenti
@@ -6024,6 +6063,15 @@ il service worker nuovo entra subito (`skipWaiting` + `clients.claim`) e
 cancella le cache con un nome diverso dal suo — così la vecchia
 `nutritrack-v1`, con le RSC salvate, sparisce dai dispositivi al primo
 aggiornamento.
+
+**Il tempo massimo di 3 s** (dal 25/10, §9.2) può mostrare la copia di
+una build vecchia subito dopo un deploy, se la rete è lenta. È lo stesso
+caso dell'offline: i file che la copia cita sono in cache, e la prima
+volta che Next parla con il server nuovo se ne accorge e ricarica. La
+pagina nuova arrivata dopo i 3 s si salva, quindi alla navigazione
+seguente la copia è già quella del deploy nuovo. Nessuna cache nuova:
+la forma di ciò che è salvato non cambia, basta il `sw.js` modificato
+perché il telefono lo aggiorni.
 
 ### 10.8 Chi corregge il catalogo condiviso
 
@@ -6824,17 +6872,30 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 `username-dopo-accesso`; 1328 in 117 file sul branch
 `animazione-apertura` (su main dal 24/10); 1331 in 118 file sul branch
 `apertura-pesata` (su main dal 25/10); 1326 in 118 file sul branch
-`togli-pkce` (su main dal 25/10); 1335 in 119 file sul branch
+`togli-pkce` (su main dal 25/10); 1341 in 119 file sul branch
 `proxy-rete-lenta`.
 
 **Proxy e rete lenta** (dal 25/10, branch `proxy-rete-lenta`). Commit 2:
 `src/middleware.ts` diventa `src/proxy.ts` (funzione `proxy`, matcher
 identico, ancora `getUser()`), che gira su Node.js in `dub1` invece che
 su Edge (§8, "Il proxy"); test del matcher. Commit 3: `getClaims()` al
-posto di `getUser()`, verifica locale del token ES256. Previsto: un
-tempo massimo di 3 s per le pagine nel service worker (commit 4). Da misurare in Chrome sul PC il tempo di
-risposta del documento "/" (TTFB) su app-libra (Edge) e sull'anteprima
-dopo ogni commit, a freddo e a caldo.
+posto di `getUser()`, verifica locale del token ES256. Misure del 25/10
+in §8 ("Il proxy"): a caldo Node in `dub1` uguale o un po' più veloce
+di Edge (~131 ms contro 241), a freddo comparabile. Commit 4: tempo
+massimo di 3 s per le pagine nel service worker (§9.2), da provare con
+la rete lenta in Chrome e in Safari su iPhone, sull'anteprima; l'app
+installata solo dopo il merge.
+**Difetto già in produzione, corretto nel commit 4**: un "Esci" mentre
+la pagina arrivava dalla rete non bastava a fermarne il salvataggio.
+`salvaPagina` prendeva l'epoca quando la risposta era già arrivata,
+non quando la navigazione era partita: una pagina chiesta prima
+dell'uscita e arrivata dopo finiva in cache, e offline l'app si
+sarebbe riaperta come se si fosse ancora dentro (proprio quello che lo
+svuotamento della cache all'uscita deve evitare). Raro (serviva una
+risposta in volo durante Esci), ma con l'attesa oltre i 3 s diventava
+più probabile. Non in un commit a parte perché l'epoca di inizio la
+prende la funzione nuova (`navigazioneConTempoMassimo`) e lì sta il suo
+test; `sw.js` da solo non è testabile.
 
 ### Non ancora costruito
 

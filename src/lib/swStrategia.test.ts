@@ -5,10 +5,12 @@
 
 import { createRequire } from "node:module";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
 const {
+  TEMPO_MASSIMO_PAGINA_MS,
+  navigazioneConTempoMassimo,
   PAGINE_APP,
   pagineDaTogliere,
   scegliStrategia,
@@ -163,5 +165,131 @@ describe("rispostaPaginaSalvabile", () => {
   it("non salva errori né risposte che non sono HTML", () => {
     expect(rispostaPaginaSalvabile({ ...buona, ok: false })).toBe(false);
     expect(rispostaPaginaSalvabile({ ...buona, contentType: "text/x-component" })).toBe(false);
+  });
+});
+
+// --- La gara fra la rete e il tempo massimo (dal 25/10/2026) ---------------
+//
+// Con una rete che c'è ma non passa niente, il fetch della pagina può
+// durare decine di secondi davanti a uno schermo bianco, mentre la copia
+// salvata è già lì. Errori silenziosi da tenere d'occhio: la copia
+// mostrata quando la rete era in tempo, la pagina nuova arrivata tardi e
+// mai salvata, un redirect salvato al posto della pagina, una pagina
+// salvata dopo un "Esci". Orologio finto: i tempi si fanno avanzare a mano.
+
+describe("navigazioneConTempoMassimo", () => {
+  // Una promessa che il test risolve o rifiuta quando vuole: la rete.
+  function reteControllata() {
+    let risolvi!: (r: Response) => void;
+    let rifiuta!: (e: Error) => void;
+    const promessa = new Promise<Response>((ok, ko) => {
+      risolvi = ok;
+      rifiuta = ko;
+    });
+    return { promessa, risolvi, rifiuta };
+  }
+
+  function pagina(testo: string, stato = 200) {
+    return new Response(testo, { status: stato, headers: { "Content-Type": "text/html" } });
+  }
+
+  // La scena: una copia salvata (o nessuna), un'epoca che il test può
+  // cambiare (un "Esci"), i salvataggi annotati con il loro testo.
+  function scena({ copia = "copia salvata" as string | null } = {}) {
+    const rete = reteControllata();
+    const stato = { epoca: 0, salvati: [] as { testo: string; epocaInizio: number }[] };
+    const { risposta, salvataggio } = navigazioneConTempoMassimo({
+      rete: rete.promessa,
+      leggiCopia: async () => (copia === null ? undefined : pagina(copia)),
+      paginaOffline: async () => pagina("Sei offline", 503),
+      salvabile: (r: Response) => r.ok,
+      epocaAttuale: () => stato.epoca,
+      salva: async (r: Response, epocaInizio: number) => {
+        stato.salvati.push({ testo: await r.text(), epocaInizio });
+      },
+    });
+    return { rete, stato, risposta: risposta as Promise<Response>, salvataggio: salvataggio as Promise<void> };
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("la rete arriva prima del tempo massimo: la pagina di rete, salvata", async () => {
+    const s = scena();
+    await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_PAGINA_MS - 1);
+    s.rete.risolvi(pagina("pagina nuova"));
+
+    expect(await (await s.risposta).text()).toBe("pagina nuova");
+    await s.salvataggio;
+    expect(s.stato.salvati).toEqual([{ testo: "pagina nuova", epocaInizio: 0 }]);
+    // Il timer non mostra la copia dopo.
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(s.stato.salvati).toHaveLength(1);
+  });
+
+  it("tempo massimo passato con la copia: la copia; la rete arrivata dopo si salva", async () => {
+    const s = scena();
+    let data: Response | null = null;
+    s.risposta.then((r) => (data = r));
+
+    await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_PAGINA_MS - 1);
+    expect(data).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await data!.text()).toBe("copia salvata");
+
+    s.rete.risolvi(pagina("pagina nuova"));
+    await s.salvataggio;
+    expect(s.stato.salvati).toEqual([{ testo: "pagina nuova", epocaInizio: 0 }]);
+  });
+
+  it("tempo massimo passato senza copia: si aspetta la rete", async () => {
+    const s = scena({ copia: null });
+    let data: Response | null = null;
+    s.risposta.then((r) => (data = r));
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(data).toBeNull();
+    s.rete.risolvi(pagina("pagina nuova"));
+    expect(await (await s.risposta).text()).toBe("pagina nuova");
+  });
+
+  it("la rete fallisce prima del tempo massimo: la copia, o senza copia \"Sei offline\"", async () => {
+    const conCopia = scena();
+    conCopia.rete.rifiuta(new TypeError("Failed to fetch"));
+    expect(await (await conCopia.risposta).text()).toBe("copia salvata");
+
+    const senzaCopia = scena({ copia: null });
+    senzaCopia.rete.rifiuta(new TypeError("Failed to fetch"));
+    const r = await senzaCopia.risposta;
+    expect(r.status).toBe(503);
+    await conCopia.salvataggio;
+    await senzaCopia.salvataggio;
+    expect(conCopia.stato.salvati).toEqual([]);
+    expect(senzaCopia.stato.salvati).toEqual([]);
+  });
+
+  it("dopo il tempo massimo arriva un redirect (verso /login): resta la copia, niente salvato", async () => {
+    const s = scena();
+    await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_PAGINA_MS);
+    expect(await (await s.risposta).text()).toBe("copia salvata");
+
+    s.rete.risolvi(new Response(null, { status: 307, headers: { Location: "/login?redirectTo=%2F" } }));
+    await s.salvataggio;
+    expect(s.stato.salvati).toEqual([]);
+  });
+
+  it("un \"Esci\" mentre si aspetta la rete: la risposta arrivata dopo non si salva", async () => {
+    const s = scena();
+    await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_PAGINA_MS);
+    expect(await (await s.risposta).text()).toBe("copia salvata");
+
+    s.stato.epoca = 1; // Esci
+    s.rete.risolvi(pagina("pagina dell'account uscito"));
+    await s.salvataggio;
+    expect(s.stato.salvati).toEqual([]);
   });
 });

@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-25 — Service worker: al massimo 3 s di attesa per le pagine
+
+Branch `proxy-rete-lenta`, commit 4. Con una rete che c'è ma non passa
+niente il fetch della pagina poteva durare decine di secondi davanti a
+uno schermo bianco. Ora, per le pagine con copia, dopo 3 s si mostra la
+copia salvata; senza copia si aspetta la rete come prima. La risposta
+arrivata dopo si salva lo stesso (la volta dopo la copia è quella
+nuova), ma non se è un redirect né se nel frattempo c'è stato un
+"Esci". **Difetto già in produzione, corretto qui**: `salvaPagina`
+prendeva l'epoca all'arrivo della risposta e non all'inizio della
+navigazione, quindi una pagina chiesta prima di un "Esci" e arrivata
+dopo finiva in cache (offline l'app si sarebbe riaperta come se si
+fosse ancora dentro, quello che lo svuotamento di Esci deve evitare). Non in un commit a parte perché l'epoca di inizio la prende la
+funzione nuova e lì sta il suo test; `sw.js` da solo non è testabile.
+La gara sta in una funzione pura in `sw-strategia.js`
+(`navigazioneConTempoMassimo`, costante `TEMPO_MASSIMO_PAGINA_MS`),
+con 6 test a orologio finto; `sw.js` la usa. Nessuna cache nuova. Rompi
+e ripristina da una copia, 6 rotture: copia 1 ms prima (2 rossi),
+risposta tardiva non salvata (1), "Sei offline" senza aspettare la
+rete (1), rete fallita senza guardare la copia (1), redirect salvato
+(1), salvataggio dopo un "Esci" (1). Test 1335 → 1341 in 119 file. In
+PUNTO §8 le misure del TTFB del 25/10 (produzione Edge 241 ms a caldo,
+commit 2 183 ms, commit 3 ~131 ms; a freddo comparabile, una misura per
+lato) e i log di Supabase. PUNTO §8, §9.2, §10.7 e §11.
+
 ## 2026-10-25 — Il proxy verifica il token in locale (`getClaims`)
 
 Branch `proxy-rete-lenta`, commit 3. Nel proxy `getClaims()` al posto

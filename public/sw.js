@@ -42,7 +42,11 @@ importScripts("/sw-strategia.js");
 // 18/10/2026, branch "cambia-password": /impostazioni/password in
 // PAGINE_APP, perché anche offline si veda "Serve la connessione" e non la
 // pagina "Sei offline". Nessuna cache nuova, come per Amici.
+// 25/10/2026, branch "proxy-rete-lenta": tempo massimo di 3 s per le
+// pagine con copia (navigazioneConTempoMassimo). Nessuna cache nuova: la
+// forma di ciò che è salvato non cambia.
 const {
+  navigazioneConTempoMassimo,
   PAGINE_APP,
   pagineDaTogliere,
   scegliStrategia,
@@ -148,27 +152,28 @@ async function ottieniStatico(url) {
 
 // --- Pagine: prima la rete ---------------------------------------------
 
-async function gestisciNavigazione(event, conCopia) {
-  const chiave = chiavePagina(event.request.url);
-  try {
-    const risposta = await fetch(event.request);
-    if (conCopia && salvabile(risposta)) {
-      // La pagina va al browser subito; il salvataggio continua dietro
-      // (waitUntil tiene vivo il service worker finché non finisce).
-      const copia = risposta.clone();
-      event.waitUntil(
-        copia.text().then((html) => salvaPagina(chiave, html)).catch(() => {})
-      );
-    }
-    return risposta;
-  } catch {
-    // Offline (o server irraggiungibile).
-    if (conCopia) {
-      const salvata = await caches.open(CACHE_PAGINE).then((c) => c.match(chiave));
-      if (salvata) return salvata;
-    }
-    return paginaOffline();
+function gestisciNavigazione(event, conCopia) {
+  // Login, registrazione, password: solo rete, offline "Sei offline".
+  // Nessun tempo massimo: non c'è una copia da mostrare.
+  if (!conCopia) {
+    return fetch(event.request).catch(() => paginaOffline());
   }
+
+  // Pagine dell'app: prima la rete, ma non oltre il tempo massimo se c'è
+  // una copia (sw-strategia.js). La risposta di rete si salva anche se
+  // arriva dopo; waitUntil tiene vivo il service worker finché il
+  // salvataggio non finisce.
+  const chiave = chiavePagina(event.request.url);
+  const { risposta, salvataggio } = navigazioneConTempoMassimo({
+    rete: fetch(event.request),
+    leggiCopia: () => caches.open(CACHE_PAGINE).then((c) => c.match(chiave)),
+    paginaOffline,
+    salvabile,
+    epocaAttuale: () => epoca,
+    salva: (copia, epocaInizio) => copia.text().then((html) => salvaPagina(chiave, html, epocaInizio)),
+  });
+  event.waitUntil(salvataggio);
+  return risposta;
 }
 
 function salvabile(risposta) {
@@ -206,8 +211,10 @@ function inCoda(lavoro) {
 // Salva la pagina SOLO dopo che tutti i file che cita (JS, CSS e i font
 // citati dal CSS) sono in cache: se uno manca, la pagina non si salva, così
 // non resta mai una copia offline che cerca file assenti.
-function salvaPagina(chiave, html) {
-  const epocaInizio = epoca;
+// epocaInizio: l'epoca di quando la navigazione è partita (una risposta
+// chiesta prima di un "Esci" non si salva dopo); il riscaldamento non la
+// passa e vale quella di adesso.
+function salvaPagina(chiave, html, epocaInizio = epoca) {
   return inCoda(async () => {
     const risorse = estraiRisorseStatiche(html, chiave);
     const risposte = await Promise.all(risorse.map((url) => ottieniStatico(url)));
