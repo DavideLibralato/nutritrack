@@ -24,22 +24,18 @@
 //      Non esiste → come un sì. Esiste → non era arrivata, segno tolto. Non
 //      si sa → "risposta persa": il segno "richiesta" resta, e lo risolve
 //      il prossimo tentativo o il prossimo avvio;
-// 4. pulizia: dati dell'utente in Dexie, pagine salvate dal service
-//    worker, ora dell'ultimo contatto col server, segno del reset password,
-//    esito dell'onboarding in sospeso, stato dei giri in memoria, e per
-//    ultima la sessione. Una pulizia
+// 4. pulizia (puliziaDopoEliminazione.ts, la stessa dell'account eliminato
+//    da un altro dispositivo): dati dell'utente in Dexie, pagine salvate
+//    dal service worker, ora dell'ultimo contatto col server, segno del
+//    reset password, esito dell'onboarding in sospeso, stato dei giri in
+//    memoria, e per ultima la sessione. Una pulizia
 //    fallita non ferma l'uscita: il segno "confermata" resta e il prossimo
 //    avvio la ripete.
 
 import { createClient } from "../supabase/client";
-import { cancellaDatiUtente } from "../sync/ripristino";
-import { svuotaPagineSalvate } from "../serviceWorker";
-import { azzeraStatoGiri, CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
-import { cancellaNovita } from "../amici/novita";
 import { conTempoMassimo, SCADUTA } from "../sync/tempoMassimo";
-import { togliSegnoRipristino } from "../segnoRipristinoPassword";
-import { togliSegnoLocale } from "../onboarding/segnoOnboarding";
 import { classificaErroreVerifica } from "../supabase/utenteOffline";
+import { pulisciDispositivoDopoEliminazione } from "./puliziaDopoEliminazione";
 import { togliFotoPerEliminazione, type EsitoFotoPerEliminazione } from "../foto/fotoProfilo";
 import {
   classificaVerificaUtente,
@@ -142,25 +138,10 @@ export async function eliminaAccount(idUtente: string): Promise<EsitoEliminazion
 async function confermaEPulisci(idUtente: string): Promise<"eliminato"> {
   scriviSegnoEliminazione(idUtente, "confermata");
 
-  try {
-    await cancellaDatiUtente(idUtente);
-  } catch (errore) {
-    console.error("Eliminazione account: pulizia di Dexie non riuscita, si riprova al prossimo avvio.", errore);
-  }
-  await svuotaPagineSalvate().catch(() => {});
-  try {
-    localStorage.removeItem(CHIAVE_ULTIMO_SUCCESSO);
-  } catch {
-    // Niente localStorage: non c'era niente da togliere.
-  }
-  togliSegnoRipristino();
-  // Le novità di Amici salvate per il pallino offline (dal 15/10).
-  cancellaNovita(idUtente);
-  // L'esito dell'onboarding in sospeso (dal 17/10): l'account non c'è più,
-  // non c'è niente a cui mandarlo.
-  togliSegnoLocale(idUtente);
-  // Dopo aver tolto l'ora salvata: azzeraStatoGiri la rilegge da lì.
-  azzeraStatoGiri();
+  // La stessa pulizia dell'account eliminato da un altro dispositivo
+  // (puliziaDopoEliminazione.ts). Se Dexie non si pulisce, il segno
+  // "confermata" resta e il prossimo avvio riprova.
+  await pulisciDispositivoDopoEliminazione(idUtente);
 
   // scope "local": la sessione sul server non esiste più, si toglie quella
   // salvata qui. Un errore (rete) non conta: l'account è già cancellato, e

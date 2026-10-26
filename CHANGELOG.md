@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — Pulizia per l'account eliminato da un altro dispositivo
+
+Branch `account-eliminato`, commit 3. La pulizia di Elimina account
+estratta in `puliziaDopoEliminazione.ts` (Dexie dell'utente, pagine
+salvate, ora dell'ultimo contatto, segni, novità, stato dei giri), usata
+da `confermaEPulisci` senza cambi di comportamento. Nuovo
+`accountEliminatoAltrove.ts`, **non ancora collegato** (lo collega il
+commit 4): con la sessione di un utente il cui account non esiste più,
+conta le modifiche in coda, scrive il segno "confermata" se il posto è
+libero, `signOut` locale, controlla che la sessione sia sparita, aspetta
+le discese, pulisce e ricarica su `/login?eliminato=altrove` (più
+`&perse=1` se c'erano modifiche). Non fa niente senza sessione o con un
+segno di eliminazione dello stesso utente (ci pensa Elimina account);
+agisce una volta sola per caricamento, e solo quando agisce; il segno di
+un altro utente non si sovrascrive; sessione rimasta → niente
+navigazione. 12 test nuovi, ognuno verificato con una rottura (8
+rotture, una per garanzia). 1443 test verdi.
+
 ## 2026-10-26 — user_not_found riconosciuto in un punto solo
 
 Branch `account-eliminato`, commit 2. Nuova `utenteEliminato(errore)` in
