@@ -95,6 +95,21 @@ export function classificaErroreVerifica(errore: AuthError | null): EsitoVerific
   return "rete";
 }
 
+// L'utente del token non esiste più: l'account è stato cancellato (da
+// questo dispositivo o da un altro). Supabase Auth risponde 403 "User from
+// sub claim in JWT does not exist", codice "user_not_found" (visto nei log
+// di Auth il 26/10/2026, su GET /user e POST /logout). È una risposta
+// definitiva del server, non un problema di rete. L'unico punto che
+// riconosce questo codice: chi deve saperlo passa da qui
+// (classificaVerificaUtente in eliminazioneInCorso.ts).
+//
+// Non è un valore in più di classificaErroreVerifica: chi la usa
+// (cambiaPassword.ts, esci.ts) tratta come "rete" tutto ciò che non è
+// "autenticazione", e un account cancellato diventerebbe un errore di rete.
+export function utenteEliminato(errore: AuthError | null): boolean {
+  return !!errore && isAuthApiError(errore) && errore.code === "user_not_found";
+}
+
 export type StatoUtente = {
   // undefined = non so ancora, null = nessun utente, stringa = l'id.
   userId: string | null | undefined;

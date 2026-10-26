@@ -19,8 +19,9 @@
 // (navigazione privata, memoria bloccata) non c'è segno, e la pulizia fa
 // solo il primo giro, quello del flusso.
 
-import { isAuthApiError, type AuthError } from "@supabase/supabase-js";
+import type { AuthError } from "@supabase/supabase-js";
 import { cancellaDatiUtente } from "../sync/ripristino";
+import { utenteEliminato } from "../supabase/utenteOffline";
 
 export const CHIAVE_ELIMINAZIONE = "nutritrack:eliminazione-account";
 
@@ -68,8 +69,8 @@ export function togliSegnoEliminazione(): void {
 
 // Che cosa dice il server dell'utente del segno.
 // - "non-esiste": il server rifiuta il token perché l'utente non c'è più
-//   (codice "user_not_found"). Da verificare nella prova vera che sia
-//   proprio questo il codice che arriva per un account cancellato;
+//   (codice "user_not_found", verificato il 26/10/2026; il controllo sta
+//   in utenteEliminato, utenteOffline.ts);
 // - "esiste": il server riconosce proprio quell'utente;
 // - "sconosciuto": tutto il resto — rete, sessione mancante o scaduta,
 //   un altro utente entrato nel frattempo. Nel dubbio non si cancella
@@ -81,7 +82,7 @@ export function classificaVerificaUtente(
   utente: { id: string } | null,
   errore: AuthError | null
 ): VerificaUtente {
-  if (errore && isAuthApiError(errore) && errore.code === "user_not_found") return "non-esiste";
+  if (utenteEliminato(errore)) return "non-esiste";
   if (!errore && utente?.id === idUtente) return "esiste";
   return "sconosciuto";
 }

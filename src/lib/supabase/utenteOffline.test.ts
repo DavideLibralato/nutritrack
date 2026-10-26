@@ -17,6 +17,7 @@ import {
   leggiSessioneSalvata,
   prossimoStatoUtente,
   STATO_UTENTE_INIZIALE,
+  utenteEliminato,
   type SegnaleUtente,
   type StatoUtente,
 } from "./utenteOffline";
@@ -81,6 +82,34 @@ describe("classificaErroreVerifica", () => {
 
   it("nessun errore: null", () => {
     expect(classificaErroreVerifica(null)).toBeNull();
+  });
+});
+
+// Account cancellato: la sola risposta che fa pulire il dispositivo e
+// uscire. Un falso sì cancellerebbe i dati di un utente che esiste ancora;
+// un falso no lascerebbe i dati di un account che non c'è più.
+describe("utenteEliminato", () => {
+  it("sì: 403 con codice user_not_found (il testo vero dei log di Auth)", () => {
+    expect(
+      utenteEliminato(new AuthApiError("User from sub claim in JWT does not exist", 403, "user_not_found"))
+    ).toBe(true);
+  });
+
+  it("no: gli altri rifiuti del server, anche con lo stesso status", () => {
+    expect(utenteEliminato(new AuthApiError("Session not found", 403, "session_not_found"))).toBe(false);
+    expect(utenteEliminato(new AuthApiError("invalid JWT", 401, "bad_jwt"))).toBe(false);
+    expect(utenteEliminato(new AuthApiError("Not found", 404, undefined))).toBe(false);
+    expect(utenteEliminato(new AuthSessionMissingError())).toBe(false);
+  });
+
+  it("no: rete e errori imprevisti (la rete non porta mai a nessun utente)", () => {
+    expect(utenteEliminato(new AuthRetryableFetchError("Failed to fetch", 0))).toBe(false);
+    expect(utenteEliminato(new AuthUnknownError("boh", new Error()))).toBe(false);
+    expect(utenteEliminato(new AuthApiError("errore server", 500, undefined))).toBe(false);
+  });
+
+  it("no: nessun errore", () => {
+    expect(utenteEliminato(null)).toBe(false);
   });
 });
 

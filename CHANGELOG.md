@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — user_not_found riconosciuto in un punto solo
+
+Branch `account-eliminato`, commit 2. Nuova `utenteEliminato(errore)` in
+`utenteOffline.ts`: vero solo per 403 con codice `user_not_found`
+(account cancellato), falso per gli altri rifiuti, per la rete e senza
+errore. `classificaVerificaUtente` ora passa da lì; nessun cambio di
+comportamento. Non è un valore in più di `classificaErroreVerifica`:
+Cambia password ed Esci tratterebbero l'account cancellato come un
+errore di rete. Test nuovi; verificati rompendo il controllo (codice
+sbagliato, solo lo status 403): falliscono anche i test esistenti di
+`classificaVerificaUtente`. 1431 test verdi.
+
 ## 2026-10-26 — Merge di `foto-profilo` provato nell'app installata
 
 Branch `account-eliminato`, commit 1 (solo documenti). Davide ha
