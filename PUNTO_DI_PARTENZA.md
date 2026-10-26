@@ -2877,6 +2877,58 @@ storia.
     amico ha ora il cerchio da 38 px fra la spunta e il nome
   - test permanenti in `aggiornamentoFoto.test.ts` (giri doppi) e
     `useFotoProfilo.test.tsx` (indirizzi creati e revocati)
+- **Com'è fatto il cambio** (commit 8, mockup proposta B, schermate 1-7):
+  - **la macchina degli stati** (`statoCambioFoto.ts`, funzione pura con
+    test): riposo → scelta (solo con la foto) → ritaglio → preparazione →
+    caricamento → fatto, oppure caricamento non riuscito → Riprova; più
+    foto non valida, conferma di Elimina, eliminazione, senza rete. Dal
+    caricamento in poi lo stato tiene la foto **già ritagliata e
+    compressa**: Riprova ricarica quella. Durante preparazione,
+    caricamento ed eliminazione niente si apre e i fogli non si chiudono;
+    una risposta arrivata fuori fase non cambia lo stato
+  - **le chiamate** (`useCambioFoto.ts`): `preparaFotoProfilo` poi
+    `cambiaFoto`; `eliminaFoto`. Due tocchi nello stesso istante vedono lo
+    stesso stato, quindi un segno a parte (un ref) lascia partire un
+    lavoro alla volta: "Usa foto", Riprova ed "Elimina foto" non partono
+    due volte. Una chiamata che lancia vale come fallita
+  - **il tocco sul cerchio** (`CambioFotoProfilo.tsx`): pulsante con la
+    matita, nome per lo screen reader "Aggiungi foto profilo" o "Cambia
+    foto profilo". Il menu dell'iPhone si apre con un `<input type="file"
+    accept="image/*">` nascosto, nello stesso tocco (Safari lo apre solo
+    da un gesto); svuotato dopo ogni scelta, così si può scegliere di
+    nuovo la stessa foto. Offline (`navigator.onLine`) il riquadro "Serve
+    la connessione" sopra l'intestazione, che sparisce da solo al ritorno
+    della rete. Per la lezione del 23/10 `navigator.onLine` decide solo il
+    riquadro: se dice "online" e la rete non c'è, ci pensa l'errore del
+    caricamento. Chiuso un foglio, il fuoco torna sul cerchio
+  - **i fogli**: `SheetSceltaFoto` ("Foto profilo", a due blocchi come i
+    fogli d'azione dell'iPhone), `SheetRitaglioFoto` ("La tua foto") e
+    `SheetEliminaFoto`, gli ultimi due su `FoglioDalBasso` (maniglia,
+    titolo, Esc e tocco fuori chiudono tranne durante un lavoro). Senza
+    animazioni di apertura, come gli altri sheet; la rotellina del
+    caricamento si ferma con "riduci movimento"
+  - **il ritaglio**: `react-easy-crop` con `cropShape="round"`,
+    `objectFit="cover"`, zoom da 1 a 4, cerchio all'84% del lato corto
+    dell'area alta 300 px, niente rotazione né griglia. Cursore con − e +
+    (pulsanti veri, passo 0,25). Su Safari il pizzico ingrandisce la foto
+    e non la pagina: la libreria blocca il `gesturestart` sul contenitore
+    e i `touchmove`, e il nostro `touch-action: none` sul contenitore
+    lascia a lei i gesti. Il suo CSS è spento
+    (`disableAutomaticStylesInjection`, ha colori scritti a mano) e
+    sostituito in `globals.css` (`.ritaglio-*`), con due variabili nuove,
+    `--ritaglio-velo` e `--ritaglio-bordo`, uguali nei due temi perché
+    stanno sopra una foto. "Usa foto" spento finché la foto non è
+    caricata nell'area
+  - **i testi proposti nel commit 8** (oltre a quelli del mockup):
+    "Questa foto non si può aprire. Scegline un'altra." (il mockup diceva
+    solo la prima frase); per gli altri errori della preparazione "Non sono
+    riuscito a preparare la foto. Riprova, o scegline un'altra."; Elimina
+    fallita, nel foglio di conferma che resta aperto: "Non sono riuscito a
+    togliere la foto: è ancora quella di prima. Controlla la connessione e
+    riprova."; dopo Elimina "Foto eliminata.". "Foto aggiornata." con il
+    punto, come "Password aggiornata."
+  - test permanenti in `statoCambioFoto.test.ts` e `useCambioFoto.test.tsx`;
+    il ritaglio e i gesti si provano su iPhone
 
 #### Un solo Salva (deciso il 2026-09-26)
 
@@ -4864,7 +4916,12 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
   immagini sul server **non** c'è nel piano gratuito: per questo la foto
   si comprime sul telefono (circa 50 KB l'una)
 - **react-easy-crop** (dal branch `foto-profilo`) — il ritaglio della
-  foto profilo con le dita, licenza MIT, gratuita
+  foto profilo con le dita, licenza MIT, gratuita. Versione **esatta
+  6.2.4** in `package.json` (pubblicata il 6/10, installata il 26/10);
+  porta una sola dipendenza, `normalize-wheel` 1.0.1, licenza BSD-3-Clause
+  (anche lei gratuita e permissiva). Peso nella build del 26/10: circa 11
+  KB compressi la libreria (8,2 + 2,7), 14,7 KB compressi in tutto con le
+  schermate nuove, in un pezzo che si scarica **solo in Profilo**
 - **Dexie (IndexedDB)** — database locale sul dispositivo, fonte di verità
 - **PWA installabile** — nessuno store, nessun costo di pubblicazione
 - **Open Food Facts** — catalogo alimenti via API pubblica, gratuita, senza chiave
@@ -7313,7 +7370,10 @@ nell'app installata** da Davide: l'uso normale.
   (`fotoProfilo.ts`; §3, "La foto profilo"). **Commit 7**: la foto
   mostrata nei quattro posti, con le iniziali se manca, e l'aggiornamento
   della copia all'apertura e al ritorno in primo piano; cambiarla non si
-  può ancora (commit 8). Commit previsti, in quest'ordine: migration scritta e
+  può ancora (commit 8). **Commit 8**: le schermate del cambio (matita,
+  "Foto profilo", "La tua foto" con `react-easy-crop` 6.2.4, caricamento,
+  errori, conferma di Elimina, riquadro offline), non ancora provate su
+  iPhone. Commit previsti, in quest'ordine: migration scritta e
   non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
   l'"ok migration", applicata da Cowork e provata; ritaglio e
   compressione (funzioni pure con test); Storage, Dexie `version(9)` e

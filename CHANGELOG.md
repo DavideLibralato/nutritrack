@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — Le schermate del cambio della foto profilo
+
+Branch `foto-profilo`, commit 8. Dal mockup scelto (proposta B): in
+Profilo il cerchio è un pulsante con la matita ("Aggiungi foto profilo" /
+"Cambia foto profilo"); senza foto apre il menu dell'iPhone, con la foto il
+foglio "Foto profilo" (Modifica, Elimina in rosso, Annulla); il foglio "La
+tua foto" con `react-easy-crop` (cerchio fisso, pizzico, trascinamento,
+cursore con − e +); dopo "Usa foto" la foto sbiadita con "Caricamento
+della foto…", poi "Foto aggiornata."; errore con Riprova sulla stessa
+foto già ritagliata; conferma "Eliminare la foto?"; offline il riquadro
+"Serve la connessione". `react-easy-crop` **6.2.4 esatta** (MIT, del
+6/10; dipendenza `normalize-wheel` BSD-3-Clause), CSS suo spento e
+sostituito in `globals.css` con `--ritaglio-velo` e `--ritaglio-bordo`;
++14,7 KB compressi, solo nella pagina Profilo. Macchina degli stati pura
+(`statoCambioFoto.ts`) e chiamate in `useCambioFoto.ts`, con un segno
+contro il doppio tocco. Testi proposti: "Questa foto non si può aprire.
+Scegline un'altra.", "Non sono riuscito a preparare la foto. Riprova, o
+scegline un'altra.", "Non sono riuscito a togliere la foto: è ancora
+quella di prima. Controlla la connessione e riprova.", "Foto
+eliminata.". Test nuovi: 15 in `statoCambioFoto.test.ts`, 8 in
+`useCambioFoto.test.tsx`; provati rompendo e ripristinando da una copia
+in sei modi, ognuno con almeno un rosso. Ritaglio e gesti non girano in
+jsdom: si provano su iPhone. Test 1397 → 1420 in 125 file. PUNTO §3, §8
+e §11.
+
 ## 2026-10-25 — Foto profilo mostrata nei quattro posti
 
 Branch `foto-profilo`, commit 7. `CerchioFoto` mostra la foto

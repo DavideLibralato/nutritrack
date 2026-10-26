@@ -63,6 +63,23 @@ function chiaveDi(foto: FotoLocale): string {
   return `${foto.user_id}:${foto.percorso}`;
 }
 
+// Un indirizzo locale per un file in memoria (la foto scelta nel ritaglio,
+// la foto pronta mostrata sbiadita mentre si carica). Revocato quando il
+// file cambia o il componente sparisce. null senza file.
+export function useIndirizzoBlob(file: Blob | null): string | null {
+  const [indirizzo, setIndirizzo] = useState<{ file: Blob; url: string } | null>(null);
+
+  useEffect(() => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincronizzazione con una sorgente esterna (l'indirizzo locale, da creare e revocare)
+    setIndirizzo({ file, url });
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  return file && indirizzo?.file === file ? indirizzo.url : null;
+}
+
 // Gli indirizzi firmati delle foto degli amici accettati: { id → indirizzo }.
 // Una sola chiamata (indirizziFotoAmici) quando cambia l'elenco degli amici;
 // ripetuta al ritorno in primo piano e della rete solo se gli indirizzi

@@ -33,7 +33,7 @@ import { numeriUguali, type ValoriModulo } from "@/lib/profilo/salvataggioProfil
 import { OPZIONI_ATTIVITA, OPZIONI_SESSO } from "@/lib/profilo/opzioniProfilo";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
-import IntestazioneProfilo from "@/components/IntestazioneProfilo";
+import CambioFotoProfilo from "@/components/CambioFotoProfilo";
 import { useMiaFoto } from "@/lib/foto/useFotoProfilo";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaCampo from "@/components/RigaCampo";
@@ -88,7 +88,8 @@ export default function ProfiloPage() {
   return (
     <main className={CLASSE_MAIN}>
       <IntestazioneSottopagina titolo="Profilo" />
-      <IntestazioneProfilo
+      <CambioFotoProfilo
+        userId={modulo.userId}
         nome={nome}
         pesoKg={ultimaPesata?.valore ?? null}
         altezzaCm={profilo?.altezza_cm ?? null}

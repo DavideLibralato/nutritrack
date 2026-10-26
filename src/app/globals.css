@@ -114,6 +114,17 @@
     var(--se-chiaro, color-mix(in srgb, var(--foreground) 12%, transparent))
     var(--se-scuro, color-mix(in srgb, #000000 45%, transparent));
   --linea-tempo: color-mix(in srgb, var(--accento) 60%, transparent);
+  /* Il ritaglio della foto profilo (SheetRitaglioFoto, classi .ritaglio-*
+     più sotto): il velo scuro intorno al cerchio e il bordo del cerchio.
+     Uguali nei due temi, apposta: stanno sopra una foto, non sopra
+     l'interfaccia, e devono staccare da qualunque foto. Come nel mockup
+     docs/mockups/foto-profilo.html. */
+  --ritaglio-velo:
+    var(--se-chiaro, color-mix(in srgb, #000000 56%, transparent))
+    var(--se-scuro, color-mix(in srgb, #000000 56%, transparent));
+  --ritaglio-bordo:
+    var(--se-chiaro, color-mix(in srgb, #ffffff 90%, transparent))
+    var(--se-scuro, color-mix(in srgb, #ffffff 90%, transparent));
 }
 
 /* GLI INTERRUTTORI: quale tema è acceso.
@@ -709,6 +720,59 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Il ritaglio della foto profilo (src/components/SheetRitaglioFoto.tsx,
+   react-easy-crop). La libreria porta un suo CSS con colori scritti a mano:
+   è spento (disableAutomaticStylesInjection) e sostituito da queste regole,
+   con i colori dalle variabili. Le classi .reactEasyCrop_* le mette la
+   libreria sugli elementi e servono così come sono: senza, la foto non si
+   adatta all'area. Le nostre (.ritaglio-*) le passa il componente.
+   `touch-action: none` sul contenitore è quello che lascia il pizzico e il
+   trascinamento alla libreria invece che a Safari (che altrimenti
+   scorrerebbe o ingrandirebbe la pagina); la libreria in più blocca il
+   gesturestart di Safari sul contenitore. */
+.ritaglio-contenitore {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: move;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.ritaglio-foto {
+  will-change: transform;
+  max-width: unset;
+}
+.reactEasyCrop_Contain {
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  position: absolute;
+  inset: 0;
+}
+.reactEasyCrop_Cover_Horizontal {
+  width: 100%;
+  height: auto;
+}
+.reactEasyCrop_Cover_Vertical {
+  width: auto;
+  height: 100%;
+}
+.ritaglio-cerchio {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  border: 2px solid var(--ritaglio-bordo);
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999em var(--ritaglio-velo);
+  overflow: hidden;
 }
 
 /* Il pulsante "×" nativo di <input type="search"> (WebKit/Chromium) si
