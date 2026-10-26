@@ -11,6 +11,9 @@
 // Offline con il token scaduto supabase-js risponde "nessuna sessione" anche
 // se la sessione è ancora salvata: la regola per decidere (e perché) sta in
 // utenteOffline.ts. Qui si raccolgono solo i segnali.
+//
+// Unica eccezione: con `user_not_found` (account eliminato) l'hook fa
+// partire anche la pulizia e l'uscita (accountEliminatoAltrove.ts).
 
 import { useEffect, useReducer, useState } from "react";
 import { createClient } from "./client";
@@ -20,7 +23,9 @@ import {
   leggiSessioneSalvata,
   prossimoStatoUtente,
   STATO_UTENTE_INIZIALE,
+  utenteEliminato,
 } from "./utenteOffline";
+import { gestisciAccountEliminatoAltrove } from "../account/accountEliminatoAltrove";
 
 function sessioneSalvata() {
   return leggiSessioneSalvata(
@@ -42,9 +47,16 @@ export function useUtenteId(): string | null | undefined {
     // rifiuta davvero. Un errore di rete non cambia niente.
     supabase.auth
       .getUser()
-      .then(({ data, error }) =>
-        invia({ tipo: "verifica", idUtente: data.user?.id ?? null, esito: classificaErroreVerifica(error) })
-      )
+      .then(({ data, error }) => {
+        invia({ tipo: "verifica", idUtente: data.user?.id ?? null, esito: classificaErroreVerifica(error) });
+        // L'account non esiste più (eliminato da un altro dispositivo, dal
+        // 26/10/2026): si pulisce questo dispositivo, si chiude la sessione
+        // e si va su Accedi (accountEliminatoAltrove.ts). Solo con questa
+        // risposta: rete, sessione revocata e gli altri rifiuti restano come
+        // prima. Ogni componente che usa questo hook arriva qui; il modulo
+        // agisce una volta sola.
+        if (utenteEliminato(error)) gestisciAccountEliminatoAltrove().catch(() => {});
+      })
       .catch(() => invia({ tipo: "verifica", idUtente: null, esito: "rete" }));
 
     // Sessione iniziale e cambi successivi (login/logout, token

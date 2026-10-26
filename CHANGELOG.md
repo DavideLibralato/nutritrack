@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — useUtenteId: con user_not_found si esce e si pulisce
+
+Branch `account-eliminato`, commit 4 (da solo: tocca il controllo della
+sessione di tutta l'app). In `useUtenteId`, quando `getUser()` risponde
+`user_not_found` (`utenteEliminato`), parte
+`gestisciAccountEliminatoAltrove()` (commit 3): pulizia di quell'utente,
+sessione chiusa, ricaricamento su `/login?eliminato=altrove`. Lo stato
+dell'hook non cambia (con il 403 resta "nessun utente", come prima).
+Rete, 500, 401, `session_not_found` e gli altri 403 restano come prima:
+il modulo non parte. Test dell'hook (7) con il modulo finto, verificati
+con quattro rotture (modulo chiamato con qualunque errore, con
+qualunque "autenticazione", con qualunque 403); test di integrazione
+con il modulo vero: 6 hook montati insieme → un solo `signOut` e una
+sola navigazione (rottura: tolta la protezione "una volta sola"). Il
+messaggio su Accedi per `altrove` arriva nel commit 6: fino ad allora
+si atterra su Accedi senza riquadro. 1452 test verdi, build ok.
+
 ## 2026-10-26 — Test: pulizia fallita dopo l'account eliminato altrove
 
 Branch `account-eliminato`, commit 3b (solo un test, codice invariato).
