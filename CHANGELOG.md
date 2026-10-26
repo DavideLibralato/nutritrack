@@ -5,6 +5,17 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — Test: pulizia fallita dopo l'account eliminato altrove
+
+Branch `account-eliminato`, commit 3b (solo un test, codice invariato).
+Fissa il comportamento già presente in `accountEliminatoAltrove.ts`: se
+la pulizia di Dexie fallisce si va su `/login?eliminato=altrove` lo
+stesso (la sessione è già chiusa) e il segno "confermata" resta, così la
+ripresa all'avvio riprova. Verificato con due rotture ("pulizia fallita
+→ niente navigazione", "→ segno tolto"). Limite noto, non corretto: con
+il posto del segno occupato da un altro utente e la pulizia fallita,
+nessuno riprova (da scrivere in PUNTO §11). 1444 test verdi.
+
 ## 2026-10-26 — Pulizia per l'account eliminato da un altro dispositivo
 
 Branch `account-eliminato`, commit 3. La pulizia di Elimina account

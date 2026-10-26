@@ -9,6 +9,8 @@
 // - il segno di un altro utente non si sovrascrive;
 // - sessione rimasta dopo il signOut: nessuna navigazione (il proxy
 //   rimanderebbe indietro, e si ripartirebbe da capo);
+// - pulizia di Dexie fallita: si va su Accedi lo stesso e il segno resta,
+//   così la ripresa all'avvio riprova;
 // - le modifiche in coda si contano PRIMA della pulizia (perse=1);
 // - una discesa partita prima finisce prima della pulizia.
 
@@ -173,6 +175,26 @@ describe("gestisciAccountEliminatoAltrove", () => {
     expect(naviga).not.toHaveBeenCalled();
     expect(await pastiDi(A)).toBe(0);
     expect(leggiSegnoEliminazione()).toEqual({ idUtente: A, fase: "confermata" });
+  });
+
+  it("pulizia di Dexie fallita: si va su Accedi lo stesso, il segno resta e la ripresa riprova", async () => {
+    // La sessione è già chiusa: restare qui non servirebbe a niente. Su
+    // /login la ripresa all'avvio trova il segno "confermata" e ripete la
+    // pulizia.
+    const transazione = vi
+      .spyOn(db, "transaction")
+      .mockImplementationOnce((() => Promise.reject(new Error("Dexie guasto"))) as never);
+    const errori = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(await gestisciAccountEliminatoAltrove(naviga)).toBe("uscito");
+      expect(transazione).toHaveBeenCalled();
+      expect(await pastiDi(A)).toBe(2); // la pulizia è davvero fallita
+      expect(naviga).toHaveBeenCalledWith("/login?eliminato=altrove");
+      expect(leggiSegnoEliminazione()).toEqual({ idUtente: A, fase: "confermata" });
+    } finally {
+      transazione.mockRestore();
+      errori.mockRestore();
+    }
   });
 
   it("modifiche in coda dell'utente, anche accantonate: perse=1 (contate prima della pulizia)", async () => {
