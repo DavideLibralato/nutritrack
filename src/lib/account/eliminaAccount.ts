@@ -6,6 +6,14 @@
 //
 // L'ordine conta:
 // 1. il server risponde ed è proprio questo utente? Se no, niente toccato;
+// 1b. la foto profilo (dal branch foto-profilo, togliFotoPerEliminazione):
+//    cartella vuota → si va avanti come prima; con dei file,
+//    imposta_foto_profilo(null) e cancellazione dei file. Elenco o
+//    impostazione non riusciti → "rete", niente toccato; file non
+//    cancellati → "foto-tolta", ci si ferma senza chiamare la funzione
+//    (rifiuterebbe comunque). Da qui, se la foto è stata tolta, "rete" e
+//    "rifiutato" diventano "foto-tolta": il resto dell'account è intatto,
+//    la foto no;
 // 2. segno "richiesta" (eliminazioneInCorso.ts), poi la chiamata;
 // 3. risposta:
 //    - sì → segno "confermata", poi la pulizia;
@@ -32,6 +40,7 @@ import { conTempoMassimo, SCADUTA } from "../sync/tempoMassimo";
 import { togliSegnoRipristino } from "../segnoRipristinoPassword";
 import { togliSegnoLocale } from "../onboarding/segnoOnboarding";
 import { classificaErroreVerifica } from "../supabase/utenteOffline";
+import { togliFotoPerEliminazione, type EsitoFotoPerEliminazione } from "../foto/fotoProfilo";
 import {
   classificaVerificaUtente,
   scriviSegnoEliminazione,
@@ -52,7 +61,14 @@ export type EsitoEliminazione =
   | "rifiutato"
   // Il server non riconosce più questa sessione (scaduta, uscita da un
   // altro dispositivo): serve rientrare prima di eliminare.
-  | "sessione";
+  | "sessione"
+  // In questo tentativo la foto profilo è stata tolta (dal profilo, e di
+  // solito anche i file), ma l'account no: il resto è intatto. Prende il
+  // posto di "rete" e "rifiutato" quando la foto c'era, perché il loro
+  // "il tuo account non è stato toccato" non sarebbe più vero del tutto.
+  // Riprovare è sicuro: la volta dopo la cartella è vuota (o si finisce di
+  // svuotarla).
+  | "foto-tolta";
 
 // La parola da scrivere per confermare: "ELIMINA", con maiuscole e
 // minuscole indifferenti e senza contare gli spazi ai bordi (deciso
@@ -83,6 +99,21 @@ export async function eliminaAccount(idUtente: string): Promise<EsitoEliminazion
   if (prima === "non-esiste") return confermaEPulisci(idUtente);
   if (prima !== "esiste") return "sessione";
 
+  // 1b. La foto profilo (dal branch foto-profilo, §9.6 "File in Storage"):
+  // i file si cancellano da qui, prima della funzione, che rifiuta se ne
+  // resta uno. Prima del segno: se questo passo si ferma, la funzione non
+  // è stata chiamata e non c'è niente da riprendere all'avvio. Senza
+  // conTempoMassimo intorno: sono fino a tre chiamate, ognuna già annullata
+  // dopo 30 s (fetchConScadenza). Una scadenza unica su tutto il passo
+  // potrebbe dire "niente toccato" mentre la cancellazione dei file finisce
+  // dopo.
+  const foto = await togliFotoPerEliminazione(supabase, idUtente).catch(
+    (): EsitoFotoPerEliminazione => "non-toccata"
+  );
+  if (foto === "non-toccata") return "rete";
+  if (foto === "solo-dal-profilo") return "foto-tolta";
+  const fotoTolta = foto === "tolta";
+
   // 2. Segno, poi la chiamata.
   scriviSegnoEliminazione(idUtente, "richiesta");
   const risposta = await conTempoMassimo(supabase.rpc("elimina_mio_account"));
@@ -93,15 +124,17 @@ export async function eliminaAccount(idUtente: string): Promise<EsitoEliminazion
   if (risposta !== SCADUTA && risposta.status !== 0) {
     console.error("Eliminazione account rifiutata dal server.", risposta.error);
     togliSegnoEliminazione();
-    return "rifiutato";
+    return fotoTolta ? "foto-tolta" : "rifiutato";
   }
 
   const dopo = await verificaUtenteSulServer(idUtente).catch((): VerificaUtente => "sconosciuto");
   if (dopo === "non-esiste") return confermaEPulisci(idUtente);
   if (dopo === "esiste") {
     togliSegnoEliminazione();
-    return "rete";
+    return fotoTolta ? "foto-tolta" : "rete";
   }
+  // Non si sa se l'account c'è ancora: il segno "richiesta" resta, come
+  // prima. Il testo di "risposta persa" vale anche con la foto tolta.
   return "risposta-persa";
 }
 

@@ -6175,6 +6175,42 @@ costruzione e non per attenzione.
   Riprova.**" (testo di Davide, 25/10). Scartata una Edge Function con
   la chiave di servizio: più pezzi e una chiave segreta, stesso
   risultato
+- **Com'è fatto** (commit 9, `togliFotoPerEliminazione` in
+  `src/lib/foto/fotoProfilo.ts`, chiamata da `eliminaAccount.ts` dopo la
+  verifica dell'utente e **prima del segno "richiesta"**):
+  - **per prima cosa l'elenco della cartella** (proposto scrivendo il
+    codice, confermato da Davide il 26/10). Vuota, cioè chi non ha mai
+    avuto una foto: si va avanti
+    come prima, con questa sola chiamata in più e nessuna
+    `imposta_foto_profilo`. Con dei file, l'ordine deciso: (1)
+    `imposta_foto_profilo(null)` e via la copia sul telefono, come in
+    Elimina foto; (2) cancellazione dei file. Un elenco vuoto non può
+    rallentare né fallire per lo Storage in modo diverso da oggi: se non
+    risponde, è la stessa rete di cui ha bisogno la funzione
+  - **elenco o (1) falliti** → esito `rete` di oggi ("il tuo account non è
+    stato toccato"): vero, non è cambiato niente
+  - **(2) fallita** → esito nuovo `foto-tolta`, con il testo di Davide, e
+    la funzione **non** si chiama (rifiuterebbe). Diverso da quanto deciso
+    il 25/10 ("il testo di oggi"), confermato da Davide il 26/10: dopo (1)
+    la foto non c'è più né per gli
+    amici né sul telefono, quindi "il tuo account non è stato toccato" non
+    sarebbe più vero. Il testo di Davide sì
+  - **dopo la foto tolta**, la funzione rifiutata (`rifiutato`) o non
+    arrivata (`rete`, l'utente c'è ancora) diventano `foto-tolta`, con il
+    segno tolto come prima. Con la cartella vuota restano quelli di oggi
+  - **risposta persa** (non si sa se l'account c'è ancora): `risposta-persa`
+    e il segno "richiesta" lasciato, come prima, anche con la foto tolta:
+    il suo testo ("riprova: se l'account è già eliminato, l'app lo vede")
+    resta vero. Il segno si scrive solo dopo il passo della foto, quindi
+    un passo della foto fallito non lascia niente da riprendere all'avvio
+  - **niente tempo massimo unico** sul passo della foto: sono fino a tre
+    chiamate, ognuna già annullata dopo 30 s; una scadenza di 35 s su
+    tutto potrebbe dire "niente toccato" mentre i file si cancellano dopo
+  - riprovare dopo `foto-tolta` è sicuro: si finisce di svuotare la
+    cartella e si va avanti
+  - test permanenti in `eliminaAccount.test.ts` (7 nuovi, con uno Storage
+    finto: cartella vuota di default, come per chi non ha mai avuto una
+    foto)
 - **Sul dispositivo, solo dopo l'ok del server**: via le righe di questo
   utente nelle 11 tabelle Dexie, la copia della sua foto profilo
   (`foto_locale`, dal branch `foto-profilo`), le sue voci di outbox
@@ -7372,8 +7408,19 @@ nell'app installata** da Davide: l'uso normale.
   della copia all'apertura e al ritorno in primo piano; cambiarla non si
   può ancora (commit 8). **Commit 8**: le schermate del cambio (matita,
   "Foto profilo", "La tua foto" con `react-easy-crop` 6.2.4, caricamento,
-  errori, conferma di Elimina, riquadro offline), non ancora provate su
-  iPhone. Commit previsti, in quest'ordine: migration scritta e
+  errori, conferma di Elimina, riquadro offline). **Prova rapida passata
+  il 26/10** (Safari su iPhone, anteprima del branch, account di prova,
+  Build del commit 8 `095a82d`): menu dell'iPhone; ritaglio con
+  trascinamento, pizzico e − / + (si muove la foto, non la pagina);
+  Annulla; Usa foto con "Caricamento della foto…" e "Foto aggiornata.";
+  la foto anche in Impostazioni; cambio con la fotocamera; offline la foto
+  si vede e il tocco mostra "Serve la connessione"; Elimina foto con "Foto
+  eliminata.". Verificato da Cowork su Supabase: un solo file rimasto
+  nella cartella (i vecchi cancellati), `image/jpeg`, 78.991 byte,
+  `foto_profilo` che punta a quel file, tutte le richieste dall'anteprima
+  con 200. **Commit 9**: Elimina account che toglie prima la foto (§9.6,
+  "File in Storage", "Com'è fatto"), non ancora provato su iPhone.
+  Commit previsti, in quest'ordine: migration scritta e
   non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
   l'"ok migration", applicata da Cowork e provata; ritaglio e
   compressione (funzioni pure con test); Storage, Dexie `version(9)` e

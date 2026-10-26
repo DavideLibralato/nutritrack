@@ -172,6 +172,59 @@ export async function eliminaFoto(
   return { esito: "ok", avanziRimasti: !pulita };
 }
 
+// --- La foto prima di Elimina account ---------------------------------------
+
+export type EsitoFotoPerEliminazione =
+  // La cartella è vuota (chi non ha mai avuto una foto): niente da fare.
+  | "nessuna"
+  // Foto tolta dal profilo e file cancellati: si può eliminare l'account.
+  | "tolta"
+  // Elenco o imposta_foto_profilo non riusciti: niente è cambiato.
+  | "non-toccata"
+  // Foto tolta dal profilo (e dal telefono), ma i file sono ancora lì: ci
+  // si ferma, la funzione rifiuterebbe comunque.
+  | "solo-dal-profilo";
+
+// Prima di elimina_mio_account (PUNTO_DI_PARTENZA.md §9.6, "File in
+// Storage"): da SQL i file non si cancellano, quindi li toglie l'app, e la
+// funzione rifiuta se ne resta uno.
+//
+// Per prima cosa l'elenco della cartella. Vuota → "nessuna", con questa
+// sola chiamata: chi non ha mai avuto una foto fa il percorso di prima,
+// con un elenco vuoto in più. Con dei file, l'ordine deciso il 25/10:
+// imposta_foto_profilo(null), poi la cancellazione dei file. Tolta la foto
+// dal profilo si toglie anche la copia sul telefono, come in Elimina foto:
+// da lì la foto non c'è più per nessuno.
+export async function togliFotoPerEliminazione(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<EsitoFotoPerEliminazione> {
+  let percorsi: string[];
+  try {
+    const { data, error } = await supabase.storage.from(BUCKET_FOTO).list(userId);
+    if (error || !Array.isArray(data)) return "non-toccata";
+    percorsi = data.map((f) => `${userId}/${f.name}`);
+  } catch {
+    return "non-toccata";
+  }
+  if (percorsi.length === 0) return "nessuna";
+
+  try {
+    const { data, error } = await supabase.rpc("imposta_foto_profilo", { p_percorso: null });
+    if (error || data !== "ok") return "non-toccata";
+  } catch {
+    return "non-toccata";
+  }
+  await db.foto_locale.delete(userId);
+
+  try {
+    const { error } = await supabase.storage.from(BUCKET_FOTO).remove(percorsi);
+    return error ? "solo-dal-profilo" : "tolta";
+  } catch {
+    return "solo-dal-profilo";
+  }
+}
+
 // --- Aggiornare la copia della propria foto ---------------------------------
 
 export type EsitoAggiornaFoto =

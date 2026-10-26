@@ -46,6 +46,10 @@ const TESTI_ESITO: Record<Exclude<EsitoEliminazione, "eliminato">, string> = {
     "Non so se è andata: la connessione si è interrotta prima della risposta. Riprova: se l'account è già eliminato, l'app lo vede e finisce il lavoro.",
   rifiutato: "Non riuscito: il server ha rifiutato la richiesta. Il tuo account non è stato toccato.",
   sessione: "Il server non riconosce più la tua sessione. Esci e rientra, poi riprova.",
+  // Dal branch foto-profilo: la foto è stata tolta in questo tentativo,
+  // l'account no (testo di Davide, 25/10).
+  "foto-tolta":
+    "Non è stato possibile eliminare l'account. La tua foto è già stata tolta; i tuoi dati sono intatti. Riprova.",
 };
 
 export default function EliminaAccount() {

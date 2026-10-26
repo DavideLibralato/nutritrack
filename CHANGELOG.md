@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — Elimina account toglie prima la foto profilo
+
+Branch `foto-profilo`, commit 9. Prima di `elimina_mio_account`, dopo la
+verifica dell'utente e prima del segno "richiesta",
+`togliFotoPerEliminazione` elenca la cartella: vuota (chi non ha mai
+avuto una foto) → il percorso di prima con un solo elenco in più; con dei
+file → `imposta_foto_profilo(null)`, via la copia sul telefono, poi la
+cancellazione dei file. Elenco o impostazione falliti → `rete`, niente
+toccato. Cancellazione dei file fallita → esito nuovo `foto-tolta` con il
+testo di Davide, funzione mai chiamata: dopo `imposta_foto_profilo(null)`
+"il tuo account non è stato toccato" non sarebbe vero (diverso da quanto
+deciso il 25/10, motivo in PUNTO §9.6; questa scelta e l'elenco per primo
+confermati da Davide il 26/10). Con la foto tolta, anche
+`rifiutato` e `rete` dopo la chiamata diventano `foto-tolta`;
+`risposta-persa` e il suo segno restano come prima. Niente tempo massimo
+unico sul passo della foto (le sue chiamate hanno già i 30 s). 7 test
+nuovi in `eliminaAccount.test.ts` (Storage finto, cartella vuota di
+default), provati rompendo e ripristinando da una copia in sei modi,
+ognuno con almeno un rosso. Nei documenti anche la prova rapida del
+commit 8 su iPhone del 26/10, passata, e le verifiche di Cowork. Test
+1420 → 1427 in 125 file. PUNTO §9.6 e §11.
+
 ## 2026-10-26 — Le schermate del cambio della foto profilo
 
 Branch `foto-profilo`, commit 8. Dal mockup scelto (proposta B): in
