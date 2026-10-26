@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — Foto profilo provata su iPhone; user_not_found verificato
+
+Branch `foto-profilo`, commit 10 (solo documenti). Prove finali del
+26/10 sull'anteprima (Build `7ffd684`), verificate da Cowork nei log di
+edge e Auth: Davide, amico accettato, ha scaricato la foto di
+`prova_libra2` con l'indirizzo firmato (Amici e "Condividi con"); con
+l'account di prova "Ricarica i dati" ed Esci/rientro riscaricano la foto;
+l'account usa e getta `b4581db6` (richiesta in attesa: iniziali; foto
+caricata) ha fatto Elimina account nell'ordine elenco →
+`imposta_foto_profilo(null)` → cancellazione del file →
+`elimina_mio_account` (204), e dopo non restano suoi file, account né
+richiesta. **`user_not_found` verificato**: l'altro dispositivo ha avuto
+403 `user_not_found` su `GET /user` e `POST /logout`; la verifica
+aperta in §9.6 e §11 è chiusa. **Difetto aperto, non nato da questo
+branch e non corretto qui**: su quel dispositivo l'app non torna su
+Accedi (il proxy con `getClaims()` lascia passare il token ancora
+valido) e il client tratta `user_not_found` come una sessione scaduta
+qualunque (35 `GET /user` in 30 secondi, poi si ferma); i dati
+dell'account eliminato restano sul telefono. Prossimo lavoro: con
+`user_not_found` pulire i dati locali, chiudere la sessione e andare su
+Accedi con un messaggio. Da provare dopo il merge, nell'app installata:
+l'uso normale, con la foto in Profilo e Impostazioni. PUNTO §3, §9.6 e
+§11.
+
 ## 2026-10-26 — Elimina account toglie prima la foto profilo
 
 Branch `foto-profilo`, commit 9. Prima di `elimina_mio_account`, dopo la

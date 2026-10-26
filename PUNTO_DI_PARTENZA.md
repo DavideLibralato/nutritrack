@@ -2702,6 +2702,11 @@ Mockup `docs/mockups/foto-profilo.html` (canvas di Cowork): scelta la
 proposta **B, "Foglio dal basso"**; le proposte A e C nel file sono solo
 storia.
 
+Stato: **costruita e provata su iPhone il 26/10** sull'anteprima del
+branch (prove ed esiti in §11, "Non ancora costruito", "Foto profilo").
+Da provare dopo il merge, nell'app installata: l'uso normale, con la foto
+vista in Profilo e in Impostazioni.
+
 - **Dove si vede**: nel cerchio dell'intestazione di Profilo
   (`IntestazioneProfilo`), nella scheda in cima a Impostazioni
   (`SchedaAccount`, 52 px), nella lista Amici (`RigaAmico`, 38 px) e nel
@@ -6211,6 +6216,13 @@ costruzione e non per attenzione.
   - test permanenti in `eliminaAccount.test.ts` (7 nuovi, con uno Storage
     finto: cartella vuota di default, come per chi non ha mai avuto una
     foto)
+  - **provato il 26/10** sull'anteprima (Build `7ffd684`) con l'account usa
+    e getta `b4581db6`, che aveva una foto e una richiesta di amicizia in
+    attesa. Nei log, alle 21:15:06, l'ordine giusto: elenco della cartella
+    → `imposta_foto_profilo(null)` → cancellazione del file →
+    `elimina_mio_account` (204). Dopo, verificato da Cowork: nessun suo file
+    nello Storage, account e richiesta spariti; resta solo la foto
+    dell'account di prova
 - **Sul dispositivo, solo dopo l'ok del server**: via le righe di questo
   utente nelle 11 tabelle Dexie, la copia della sua foto profilo
   (`foto_locale`, dal branch `foto-profilo`), le sue voci di outbox
@@ -6237,8 +6249,10 @@ costruzione e non per attenzione.
   `user_not_found`) → si pulisce; lo stesso utente riconosciuto → la
   chiamata non era arrivata, si toglie il segno; tutto il resto (rete,
   sessione mancante o scaduta, un altro utente) → non si tocca niente e
-  il segno resta. Da verificare nella prova vera che per un account
-  cancellato il server risponda proprio `user_not_found`. Limite
+  il segno resta. **Verificato il 26/10** (branch `foto-profilo`, log di
+  Auth letti da Cowork) che per un account cancellato il server risponde
+  proprio 403 "User from sub claim in JWT does not exist", codice
+  `user_not_found`, sia a `GET /user` sia a `POST /logout`. Limite
   accettato: un segno "richiesta" con la sessione sparita resta lì
   finché non si può chiedere al server; i dati restano sul dispositivo,
   inerti. Test permanenti in `eliminazioneInCorso.test.ts` e
@@ -6255,7 +6269,11 @@ costruzione e non per attenzione.
   foreign key verso `auth.users` (accantonata dopo 5 tentativi). Il
   rinnovo del token fallisce (refresh token cancellati) e l'app torna al
   login. I dati locali su quel dispositivo restano, come con Esci oggi:
-  pulirli quando il server dice "utente non trovato" è lavoro a parte
+  pulirli quando il server dice "utente non trovato" è lavoro a parte.
+  **Visto il 26/10 che l'app non torna nemmeno al login** (difetto aperto
+  in §11, "Difetti e verifiche aperti", "Account eliminato da un altro
+  dispositivo"): il proxy lascia passare il token ancora valido, e il
+  client tratta `user_not_found` come una sessione scaduta qualunque
 - **Dove e come** (deciso l'11/10 sul mockup
   `docs/mockups/elimina-account.html`): la riga "Elimina il mio account"
   sta in fondo all'elenco Impostazioni, sotto Esci, in un gruppo suo;
@@ -6297,8 +6315,8 @@ costruzione e non per attenzione.
   davidemancon02+elimina@gmail.com, creato da Davide dall'app. L'account
   di prova fisso non si tocca. **Fatta l'11/10** sull'anteprima del
   branch (§11, "Fatto"): riuscita. Non è entrato in gioco il percorso
-  della risposta persa, quindi che il server risponda proprio
-  `user_not_found` per un account cancellato resta da verificare
+  della risposta persa. Che il server risponda proprio `user_not_found`
+  per un account cancellato è **verificato il 26/10** (sopra, "Segno")
 
 #### Esci svuota i dati locali (decisioni dell'11/10, branch `esci-svuota`)
 
@@ -7031,8 +7049,8 @@ sessione, 7 utenti, 384 righe altrui; dopo utente sparito, 0 righe
 nelle 11 tabelle, 0 identità, 0 sessioni, 0 refresh token, 6 utenti,
 384 righe altrui invariate, nessun alimento senza utente. Account di
 prova fisso intatto (70 voci); rientrati con quello, solo i suoi dati e
-sincronizzazione a posto. Resta da verificare `user_not_found` (§9.6,
-"Segno").
+sincronizzazione a posto. `user_not_found` per un account cancellato
+**verificato il 26/10** (branch `foto-profilo`; §9.6, "Segno").
 
 **Esci svuota i dati locali** (11/10, branch `esci-svuota`, decisioni e
 com'è fatto in §9.6). Uscendo si svuotano righe, coda e cursori
@@ -7419,8 +7437,27 @@ nell'app installata** da Davide: l'uso normale.
   nella cartella (i vecchi cancellati), `image/jpeg`, 78.991 byte,
   `foto_profilo` che punta a quel file, tutte le richieste dall'anteprima
   con 200. **Commit 9**: Elimina account che toglie prima la foto (§9.6,
-  "File in Storage", "Com'è fatto"), non ancora provato su iPhone.
-  Commit previsti, in quest'ordine: migration scritta e
+  "File in Storage", "Com'è fatto"). **Prove finali passate il 26/10**
+  (anteprima, Build `7ffd684`), verificate da Cowork nei log di edge e
+  Auth di Supabase:
+  - **Amici**: Davide, amico accettato, ha chiesto l'indirizzo firmato
+    della foto di `prova_libra2` e l'ha scaricata, in Amici e in
+    "Condividi con";
+  - **account di prova**: "Ricarica i dati dal tuo account", poi Esci e
+    rientro: la foto riscaricata;
+  - **account usa e getta `b4581db6`**: registrazione, richiesta di
+    amicizia a `prova_libra2` (in attesa: le iniziali), foto caricata,
+    poi Elimina account nell'ordine giusto (§9.6, "File in Storage",
+    "Com'è fatto"): nessun suo file rimasto, account e richiesta spariti;
+  - **`user_not_found` verificato**: l'altro dispositivo dello stesso
+    account ha ricevuto 403 `user_not_found` (sotto, "Difetti e verifiche
+    aperti"). Sullo stesso dispositivo trovato un difetto che non nasce da
+    questo branch (sotto, "Account eliminato da un altro dispositivo").
+  **Da provare dopo il merge**, nell'app installata: l'uso normale, con la
+  foto vista in Profilo e in Impostazioni. Questo blocco passa in "Fatto"
+  nel primo commit del lavoro successivo (account eliminato da un altro
+  dispositivo), insieme alla voce di merge e alla prova nell'app
+  installata, non con il merge (deciso da Davide il 26/10). Commit previsti, in quest'ordine: migration scritta e
   non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
   l'"ok migration", applicata da Cowork e provata; ritaglio e
   compressione (funzioni pure con test); Storage, Dexie `version(9)` e
@@ -7486,16 +7523,27 @@ nell'app installata** da Davide: l'uso normale.
   installata (che vive su quell'indirizzo, con i suoi dati locali) e i
   link delle email (Site URL e Redirect URL qui sopra) ne dipendono: se si
   liberasse, chiunque potrebbe registrarlo e ricevere i link di accesso
-- **`user_not_found` per un account cancellato: atteso dal codice, non
-  ancora visto in produzione** (verifica di Cowork del 25/10; §9.6,
-  "Segno"). Secondo il codice di Supabase Auth, `GET /user` con il token
-  di un utente cancellato risponde 403 "User from sub claim in JWT does
-  not exist", codice `user_not_found`: è quello su cui contano
-  `riprendiEliminazioneInSospeso` ed Elimina account. Nei log di
-  produzione non compare ancora. Verifica alla prossima prova con un
-  account usa e getta: stesso account su due dispositivi, Elimina
-  account su uno, aprire l'app sull'altro, controllare nei log di Auth
-  la risposta di `/user`
+- **`user_not_found` per un account cancellato: verificato il 26/10**
+  (branch `foto-profilo`; §9.6, "Segno"). Come diceva il codice di
+  Supabase Auth (verifica di Cowork del 25/10), con il token di un utente
+  cancellato `GET /user` risponde 403 "User from sub claim in JWT does
+  not exist", codice `user_not_found`; lo stesso `POST /logout`. È quello
+  su cui contano `riprendiEliminazioneInSospeso` ed Elimina account.
+  Prova: account usa e getta `b4581db6` su due dispositivi, Elimina
+  account su uno, l'app aperta sull'altro, log di Auth letti da Cowork
+- **Account eliminato da un altro dispositivo: l'app non torna su Accedi
+  e tiene i dati** (difetto aperto, visto il 26/10 nella prova sopra; non
+  nasce dal branch `foto-profilo`, non corretto lì). Sul secondo
+  dispositivo, ricaricando dopo l'eliminazione, l'app resta dentro: il
+  proxy usa `getClaims()`, che verifica il token sul telefono, e il token
+  vale ancora fino a un'ora (prezzo accettato il 25/10, §8, "Il proxy").
+  Il client riceve `user_not_found` ma lo tratta come una sessione
+  scaduta qualunque: in 30 secondi 35 `GET /user` con 403, poi si è
+  fermato. I dati dell'account eliminato restano sul telefono.
+  **Prossimo lavoro**: `user_not_found` è una risposta definitiva, non un
+  problema di rete. Quando arriva, l'app pulisce i dati locali di
+  quell'utente (come dopo Elimina account), chiude la sessione sul
+  telefono e va su Accedi con un messaggio, senza ripetere le richieste
 - **Un reset chiesto dall'app installata su iPhone non poteva riuscire**
   (limite noto dal 10/10): **risolto con `reset-ovunque`, provato il
   18/10 sull'anteprima** (Chrome sul PC → Safari su iPhone) **e, dopo il
@@ -8018,3 +8066,7 @@ branch.
    aggiornati (sopra, "Fatto")
 8. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
    della bilancia (sezione 7, "Nome e icona"; sopra, "Fatto")
+9. **Account eliminato da un altro dispositivo** (visto il 26/10): con
+   `user_not_found` pulire i dati locali di quell'utente, chiudere la
+   sessione e andare su Accedi con un messaggio, senza ripetere le
+   richieste (sopra, "Difetti e verifiche aperti")
