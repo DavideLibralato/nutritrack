@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-10-26 — Merge di `foto-profilo` provato nell'app installata
+
+Branch `account-eliminato`, commit 1 (solo documenti). Davide ha
+provato il 26/10 alle 21:28 nell'app installata (Build `7b33ce0`): le
+iniziali come prima, poi la foto messa dall'app installata, vista in
+Profilo e in Impostazioni. In PUNTO §11 "Foto profilo" passa da "Non
+ancora costruito" a "Fatto". Corretta qui sotto la voce del 26/10 su
+`user_not_found`: il `POST /logout` 403 è del dispositivo che ha
+eliminato, non dell'altro (log di Auth: 170 ms dopo il 204 di
+`elimina_mio_account`). PUNTO §11.
+
+## 2026-10-26 — Merge di `foto-profilo` su main
+
+Fast-forward `9a14a98` → `7b33ce0`, 10 commit. Branch cancellato in
+locale e su GitHub. Nessuna Redirect URL aggiunta su Supabase, quindi
+nessuna da togliere. PUNTO §11.
+
 ## 2026-10-26 — Foto profilo provata su iPhone; user_not_found verificato
 
 Branch `foto-profilo`, commit 10 (solo documenti). Prove finali del
@@ -17,12 +34,17 @@ caricata) ha fatto Elimina account nell'ordine elenco →
 `imposta_foto_profilo(null)` → cancellazione del file →
 `elimina_mio_account` (204), e dopo non restano suoi file, account né
 richiesta. **`user_not_found` verificato**: l'altro dispositivo ha avuto
-403 `user_not_found` su `GET /user` e `POST /logout`; la verifica
-aperta in §9.6 e §11 è chiusa. **Difetto aperto, non nato da questo
+403 `user_not_found` su `GET /user`; il 403 `user_not_found` su `POST
+/logout` (20:15:06, 170 ms dopo il 204) è invece del dispositivo che ha
+eliminato, dal `signOut` di fine flusso, ed è atteso (corretto il 26/10
+nel branch `account-eliminato`: prima diceva che anche il `POST
+/logout` era dell'altro dispositivo). La verifica aperta in §9.6 e §11
+è chiusa. **Difetto aperto, non nato da questo
 branch e non corretto qui**: su quel dispositivo l'app non torna su
 Accedi (il proxy con `getClaims()` lascia passare il token ancora
 valido) e il client tratta `user_not_found` come una sessione scaduta
-qualunque (35 `GET /user` in 30 secondi, poi si ferma); i dati
+qualunque (34 `GET /user` con 403 in circa 30 secondi, più il `POST
+/logout` sopra: 35 in tutto; poi si ferma); i dati
 dell'account eliminato restano sul telefono. Prossimo lavoro: con
 `user_not_found` pulire i dati locali, chiudere la sessione e andare su
 Accedi con un messaggio. Da provare dopo il merge, nell'app installata:

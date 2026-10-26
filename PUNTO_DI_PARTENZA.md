@@ -7408,71 +7408,60 @@ obiettivi): la coprono i 3 test permanenti. Dopo il merge
 (fast-forward su main il 25/10, fino a `9a14a98`), **provato il 25/10
 nell'app installata** da Davide: l'uso normale.
 
+**Foto profilo** (dal 25/10, branch `foto-profilo`; §3 "Profilo", "La
+foto profilo"; §4 "La foto profilo: solo online"; §9.6 "File in
+Storage"; mockup `docs/mockups/foto-profilo.html`). **Commit 3: migration scritta**
+(`supabase/migrations/foto_profilo.sql`, tipo `FotoProfilo` in
+`tipi.ts`), **applicata il 25/10** da Cowork (versione
+`20261025204607`; prove SQL prima "migration non applicata", dopo "52
+su 52"; `get_advisors` solo con l'avviso atteso; §4, "La foto profilo:
+solo online"). **Commit 5**: ritaglio e compressione
+(`ritaglioFoto.ts`). **Commit 6**: livello Storage, Dexie `version(9)`
+con `foto_locale`, pulizia a Esci ed Elimina account
+(`fotoProfilo.ts`; §3, "La foto profilo"). **Commit 7**: la foto
+mostrata nei quattro posti, con le iniziali se manca, e l'aggiornamento
+della copia all'apertura e al ritorno in primo piano; cambiarla non si
+può ancora (commit 8). **Commit 8**: le schermate del cambio (matita,
+"Foto profilo", "La tua foto" con `react-easy-crop` 6.2.4, caricamento,
+errori, conferma di Elimina, riquadro offline). **Prova rapida passata
+il 26/10** (Safari su iPhone, anteprima del branch, account di prova,
+Build del commit 8 `095a82d`): menu dell'iPhone; ritaglio con
+trascinamento, pizzico e − / + (si muove la foto, non la pagina);
+Annulla; Usa foto con "Caricamento della foto…" e "Foto aggiornata.";
+la foto anche in Impostazioni; cambio con la fotocamera; offline la foto
+si vede e il tocco mostra "Serve la connessione"; Elimina foto con "Foto
+eliminata.". Verificato da Cowork su Supabase: un solo file rimasto
+nella cartella (i vecchi cancellati), `image/jpeg`, 78.991 byte,
+`foto_profilo` che punta a quel file, tutte le richieste dall'anteprima
+con 200. **Commit 9**: Elimina account che toglie prima la foto (§9.6,
+"File in Storage", "Com'è fatto"). **Prove finali passate il 26/10**
+(anteprima, Build `7ffd684`), verificate da Cowork nei log di edge e
+Auth di Supabase:
+- **Amici**: Davide, amico accettato, ha chiesto l'indirizzo firmato
+  della foto di `prova_libra2` e l'ha scaricata, in Amici e in
+  "Condividi con";
+- **account di prova**: "Ricarica i dati dal tuo account", poi Esci e
+  rientro: la foto riscaricata;
+- **account usa e getta `b4581db6`**: registrazione, richiesta di
+  amicizia a `prova_libra2` (in attesa: le iniziali), foto caricata,
+  poi Elimina account nell'ordine giusto (§9.6, "File in Storage",
+  "Com'è fatto"): nessun suo file rimasto, account e richiesta spariti;
+- **`user_not_found` verificato**: l'altro dispositivo dello stesso
+  account ha ricevuto 403 `user_not_found` su `GET /user` (sotto,
+  "Difetti e verifiche aperti"). Sullo stesso dispositivo trovato un
+  difetto che non nasce da questo branch (sotto, "Account eliminato da
+  un altro dispositivo").
+
+Test permanenti: il calcolo del ritaglio, la sequenza del cambio con i
+suoi fallimenti, Elimina account che si ferma se i file non si
+cancellano, Dexie da 8 a 9. Su main dal 26/10 (fast-forward
+`9a14a98` → `7b33ce0`, 10 commit). **Provato il 26/10 alle 21:28
+nell'app installata** da Davide, Build `7b33ce0`: le iniziali come
+prima, poi la foto messa dall'app installata, vista in Profilo e in
+Impostazioni.
+
 ### Non ancora costruito
 
-- **Foto profilo** (branch `foto-profilo`, dal 25/10): decisa
-  (§3 "Profilo", "La foto profilo"; §4 "La foto profilo: solo online";
-  §9.6 "File in Storage"; mockup `docs/mockups/foto-profilo.html`), non
-  ancora costruita. **Commit 3: migration scritta**
-  (`supabase/migrations/foto_profilo.sql`, tipo `FotoProfilo` in
-  `tipi.ts`), **applicata il 25/10** da Cowork (versione
-  `20261025204607`; prove SQL prima "migration non applicata", dopo "52
-  su 52"; `get_advisors` solo con l'avviso atteso; §4, "La foto profilo:
-  solo online"). **Commit 5**: ritaglio e compressione
-  (`ritaglioFoto.ts`). **Commit 6**: livello Storage, Dexie `version(9)`
-  con `foto_locale`, pulizia a Esci ed Elimina account
-  (`fotoProfilo.ts`; §3, "La foto profilo"). **Commit 7**: la foto
-  mostrata nei quattro posti, con le iniziali se manca, e l'aggiornamento
-  della copia all'apertura e al ritorno in primo piano; cambiarla non si
-  può ancora (commit 8). **Commit 8**: le schermate del cambio (matita,
-  "Foto profilo", "La tua foto" con `react-easy-crop` 6.2.4, caricamento,
-  errori, conferma di Elimina, riquadro offline). **Prova rapida passata
-  il 26/10** (Safari su iPhone, anteprima del branch, account di prova,
-  Build del commit 8 `095a82d`): menu dell'iPhone; ritaglio con
-  trascinamento, pizzico e − / + (si muove la foto, non la pagina);
-  Annulla; Usa foto con "Caricamento della foto…" e "Foto aggiornata.";
-  la foto anche in Impostazioni; cambio con la fotocamera; offline la foto
-  si vede e il tocco mostra "Serve la connessione"; Elimina foto con "Foto
-  eliminata.". Verificato da Cowork su Supabase: un solo file rimasto
-  nella cartella (i vecchi cancellati), `image/jpeg`, 78.991 byte,
-  `foto_profilo` che punta a quel file, tutte le richieste dall'anteprima
-  con 200. **Commit 9**: Elimina account che toglie prima la foto (§9.6,
-  "File in Storage", "Com'è fatto"). **Prove finali passate il 26/10**
-  (anteprima, Build `7ffd684`), verificate da Cowork nei log di edge e
-  Auth di Supabase:
-  - **Amici**: Davide, amico accettato, ha chiesto l'indirizzo firmato
-    della foto di `prova_libra2` e l'ha scaricata, in Amici e in
-    "Condividi con";
-  - **account di prova**: "Ricarica i dati dal tuo account", poi Esci e
-    rientro: la foto riscaricata;
-  - **account usa e getta `b4581db6`**: registrazione, richiesta di
-    amicizia a `prova_libra2` (in attesa: le iniziali), foto caricata,
-    poi Elimina account nell'ordine giusto (§9.6, "File in Storage",
-    "Com'è fatto"): nessun suo file rimasto, account e richiesta spariti;
-  - **`user_not_found` verificato**: l'altro dispositivo dello stesso
-    account ha ricevuto 403 `user_not_found` (sotto, "Difetti e verifiche
-    aperti"). Sullo stesso dispositivo trovato un difetto che non nasce da
-    questo branch (sotto, "Account eliminato da un altro dispositivo").
-  **Da provare dopo il merge**, nell'app installata: l'uso normale, con la
-  foto vista in Profilo e in Impostazioni. Questo blocco passa in "Fatto"
-  nel primo commit del lavoro successivo (account eliminato da un altro
-  dispositivo), insieme alla voce di merge e alla prova nell'app
-  installata, non con il merge (deciso da Davide il 26/10). Commit previsti, in quest'ordine: migration scritta e
-  non applicata, con `tipi.ts` e le prove in un file fuori da git; dopo
-  l'"ok migration", applicata da Cowork e provata; ritaglio e
-  compressione (funzioni pure con test); Storage, Dexie `version(9)` e
-  pulizia a Esci; la foto nei quattro posti; le schermate di cambio con
-  `react-easy-crop`; Elimina account che cancella i file; prove su
-  iPhone. La migration va prima del codice, che senza bucket non si può
-  provare. Prove: blocco SQL RESOCONTO sulle regole (con l'amicizia
-  accettata fra l'account di Davide e quello di prova, più righe create
-  nel blocco per richiesta in attesa e amicizia tolta); su iPhone con
-  l'account di prova; per Amici l'account di Davide, più un usa e getta
-  che alla fine fa Elimina account con la foto, e così copre anche la
-  verifica di `user_not_found` (sotto, "Difetti e verifiche aperti").
-  Test permanenti: il calcolo del ritaglio, la sequenza del cambio con i
-  suoi fallimenti, Elimina account che si ferma se i file non si
-  cancellano, Dexie da 8 a 9
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
 - **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
   (fase 5)
