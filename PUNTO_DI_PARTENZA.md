@@ -7655,6 +7655,10 @@ verifiche aperti", "Account eliminato da un altro dispositivo").
   vecchia, il giro si ferma lo stesso. Test permanente
   `codaStessaRiga.test.ts` (quattro casi: invio riuscito, rifiuto,
   soglia di accantonamento, rete assente).
+  **Provato il 01/11**: Chrome sul PC (Slow 3G, account di prova), "+" e
+  subito "Annulla" due volte su Mela 100 g, su Supabase entrambe con
+  `deleted_at` (Cowork); il caso esatto "Annulla durante l'invio" lo
+  coprono i 4 test; Safari su iPhone, uso normale, positivo.
   **Limite: i danni già fatti non si possono rilevare.** Il server da
   solo non distingue una voce viva da una annullata sul telefono e
   rimasta viva sul server. Il confronto andrebbe fatto con le righe

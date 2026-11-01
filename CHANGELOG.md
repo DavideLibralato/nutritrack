@@ -22,6 +22,12 @@ quando arriva alla soglia, non viene accantonata e il giro si ferma
 senza controllo fallisce il caso dell'invio riuscito; senza il
 controllo in `seAncoraQuella` falliscono tutti e quattro. 1479 test
 verdi. Danni già fatti non rilevabili, limite scritto in PUNTO §11.
+Provato il 01/11: Chrome sul PC (simulazione telefono, Slow 3G),
+account di prova, due volte "+" e subito "Annulla" su Mela 100 g
+(21:26:21 e 21:26:25): su Supabase entrambe le voci con `deleted_at`,
+verificato da Cowork. Il caso "Annulla durante l'invio" esatto non è
+cronometrabile dal vero: coperto dai 4 test di
+`codaStessaRiga.test.ts`. Safari su iPhone, uso normale: positivo.
 
 ## 2026-11-01 — Merge di `account-eliminato` su main, provato nell'app installata
 
