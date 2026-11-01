@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-01 — Account eliminato altrove: provato su due dispositivi
+
+Branch `account-eliminato`, commit 7 (solo documenti). Prove a mano del
+01/11 sull'anteprima (Build `c283906`), Chrome sul PC e Safari su
+iPhone, due account usa e getta. Account 1 (`3e604b14`), eliminato
+dall'iPhone: iPhone su Accedi con il testo di sempre; Chrome ricaricato
+su Accedi con "Questo account non esiste più…", indirizzo pulito,
+righe sparite da IndexedDB; nei log 4 `GET /user` 403 più 1 `POST
+/logout` 403 nello stesso secondo, poi niente (il 26/10 erano 34 in 30
+s). Account 2 (`38827af3`), voce aggiunta offline in Safari ed
+eliminato da Chrome: offline niente, online Accedi con la riga delle
+modifiche perse; 3 `GET /user` 403, poi niente; la voce non è mai
+partita. Sul server (Cowork) nessuna riga dei due account. Non provati
+a mano, coperti dai test: la ripresa con la sessione dello stesso
+utente, il segno di un altro utente. PUNTO: §8 "Il proxy", §9.6 (altri
+dispositivi, ripresa all'avvio, riquadro su Accedi, pulizia condivisa),
+§11 (difetto corretto; limiti noti: "più di un'ora dopo", segno di un
+altro utente con la pulizia fallita, status della salita mai visto;
+punto 9 dei prossimi passi fatto).
+
 ## 2026-11-01 — Accedi: il riquadro per l'account eliminato altrove
 
 Branch `account-eliminato`, commit 6. Nuovo `avvisoEliminato.ts`: legge

@@ -4873,7 +4873,11 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
     proxy vale fino alla scadenza, al massimo un'ora. Non pesa: il proxy
     è la porta verso `/login`, non la protezione dei dati, che è l'RLS
     di Supabase con lo stesso token; il client se ne accorge da sé
-    (`useUtenteId`, sincronizzazione con "sessione scaduta")
+    (`useUtenteId`, sincronizzazione con "sessione scaduta"). Per l'account
+    eliminato da un altro dispositivo, dal 01/11 (branch
+    `account-eliminato`), non serve il proxy: il client riceve
+    `user_not_found`, pulisce, chiude la sessione e va su Accedi (§9.6,
+    "Elimina il mio account", "Altri dispositivi collegati")
   - **Misure del 25/10** (Davide, Chrome sul PC, tempo di risposta del
     documento "/", TTFB, rete senza limiti, service worker escluso):
 
@@ -6233,7 +6237,11 @@ costruzione e non per attenzione.
   lo stato dei giri, l'ora dell'ultimo contatto col server in
   `localStorage`, il segno del reset password in `sessionStorage`. Tema e
   colore restano: sono del dispositivo, non dell'account. Si atterra su
-  `/login` con "Account eliminato"
+  `/login` con "Account eliminato". **Dal 01/11** (branch
+  `account-eliminato`) questa pulizia, sessione esclusa, sta in un punto
+  solo, `src/lib/account/puliziaDopoEliminazione.ts`, usata da Elimina
+  account, dalla ripresa all'avvio e dall'account eliminato da un altro
+  dispositivo (sotto)
 - **Segno "eliminazione in corso"** in `localStorage`
   (`src/lib/account/eliminazioneInCorso.ts`), con l'id dell'utente e una
   fase. **"richiesta"** si scrive prima della chiamata; **"confermata"**
@@ -6252,28 +6260,102 @@ costruzione e non per attenzione.
   il segno resta. **Verificato il 26/10** (branch `foto-profilo`, log di
   Auth letti da Cowork) che per un account cancellato il server risponde
   proprio 403 "User from sub claim in JWT does not exist", codice
-  `user_not_found`, sia a `GET /user` sia a `POST /logout`. Limite
-  accettato: un segno "richiesta" con la sessione sparita resta lì
+  `user_not_found`, sia a `GET /user` sia a `POST /logout` (il `POST
+  /logout` 403 di quella prova era del dispositivo che aveva eliminato:
+  è il `signOut` di fine flusso, atteso e ignorato da supabase-js).
+  Limite accettato: un segno "richiesta" con la sessione sparita resta lì
   finché non si può chiedere al server; i dati restano sul dispositivo,
   inerti. Test permanenti in `eliminazioneInCorso.test.ts` e
   `ripristino.test.ts`
+- **La ripresa all'avvio con la sessione ancora salvata** (regola del
+  01/11, branch `account-eliminato`, commit 5 e 5b). Se il flusso si
+  interrompe prima del `signOut`, all'avvio la sessione dell'account
+  eliminato è ancora sul telefono; prima la ripresa puliva Dexie e basta,
+  e l'app restava ferma su "Caricamento...". Ora, dopo che il server ha
+  detto "non esiste" (o con il segno già "confermata"):
+  1. il segno "richiesta" diventa "confermata" (il giro dopo, senza
+     sessione, non potrebbe più chiedere al server e resterebbe
+     "in-attesa" per sempre);
+  2. attesa delle discese in corso (con la sessione valida
+     Sincronizzazione può farne partire una all'avvio);
+  3. la pulizia completa (`puliziaDopoEliminazione.ts`); se Dexie non si
+     pulisce, "in-attesa" e il segno resta;
+  4. di chi è la sessione salvata (`idUtenteDellaSessione`)? **Stesso
+     utente** → `signOut({ scope: "local" })`, controllo che la sessione
+     sia sparita, ricaricamento completo su `/login?eliminato=1`, segno
+     lasciato "confermata" (lo toglie il giro dopo su `/login`, senza
+     sessione, che copre anche una discesa finita tardi). Se la sessione
+     resta, nessuna navigazione (il proxy rimanderebbe indietro e si
+     ripartirebbe da capo), segno lasciato. **Nessuna sessione** (il
+     caso normale: il secondo giro dopo un flusso finito) **o un altro
+     utente** → segno tolto, come prima.
+  Le tre azioni (chi c'è, come chiudere la sessione, come navigare) le
+  passa `RipresaEliminazioneAccount.tsx`, e il parametro è obbligatorio:
+  se il componente smettesse di passarle si ferma `tsc`. Test permanenti
+  in `eliminazioneInCorso.test.ts` e `RipresaEliminazioneAccount.test.tsx`.
+  **Non provata a mano**: coperta dai test
 - **Offline non si elimina**, come Esci: prima una chiamata vera
   (`getUser`). Risposta persa dopo la chiamata: di nuovo `getUser`;
   "utente non trovato" → si pulisce, errore di rete → "non so, riprova".
   Doppio tocco: pulsante disattivato durante l'operazione
 - **Le modifiche non inviate si perdono** con tutto il resto: la conferma
   lo dice; non si contano e non si inviano prima
-- **Altri dispositivi collegati**: il token d'accesso resta valido fino
-  alla scadenza (circa un'ora, da verificare nelle impostazioni Auth).
-  Intanto la discesa legge zero righe e la salita è rifiutata dalla
-  foreign key verso `auth.users` (accantonata dopo 5 tentativi). Il
-  rinnovo del token fallisce (refresh token cancellati) e l'app torna al
-  login. I dati locali su quel dispositivo restano, come con Esci oggi:
-  pulirli quando il server dice "utente non trovato" è lavoro a parte.
-  **Visto il 26/10 che l'app non torna nemmeno al login** (difetto aperto
-  in §11, "Difetti e verifiche aperti", "Account eliminato da un altro
-  dispositivo"): il proxy lascia passare il token ancora valido, e il
-  client tratta `user_not_found` come una sessione scaduta qualunque
+- **Altri dispositivi collegati** (corretto il 01/11, branch
+  `account-eliminato`; prima l'app restava dentro, con i dati, §11,
+  "Difetti e verifiche aperti"). Il token d'accesso resta valido fino
+  alla scadenza (un'ora: emesso e scadenza nel token, visti nei log),
+  quindi il proxy con `getClaims()` lascia passare; la discesa legge
+  zero righe (PostgREST accetta il token, l'RLS non trova niente); la
+  salita sarebbe rifiutata dalla foreign key verso `auth.users`, che
+  tutte le tabelle hanno (`ON DELETE CASCADE`, verificato sullo schema il
+  26/10). La prima risposta definitiva è il 403 `user_not_found` di
+  `GET /user`: ogni componente che usa `useUtenteId` fa la sua
+  `getUser()` al montaggio (6 su Oggi, 8 su Impostazioni), e quella
+  risposta fa partire `gestisciAccountEliminatoAltrove()`
+  (`src/lib/account/accountEliminatoAltrove.ts`). Solo con quel codice
+  (`utenteEliminato`, `utenteOffline.ts`): rete, 500, 401,
+  `session_not_found` e gli altri 403 restano come prima; lo stato
+  dell'hook non cambia (con il 403, nessun utente). L'ordine:
+  1. di chi è la sessione su questo dispositivo? Nessuna → niente;
+  2. un segno di eliminazione dello **stesso** utente ("richiesta" o
+     "confermata")? Allora l'eliminazione è partita da qui: la finisce il
+     flusso di Elimina account o la ripresa all'avvio, con `?eliminato=1`.
+     Niente;
+  3. da qui si agisce **una volta sola** per caricamento della pagina
+     (sei componenti ricevono il 403 insieme); un "niente" dei punti 1-2
+     non blocca le chiamate dopo;
+  4. quante modifiche dell'utente c'erano in coda, accantonate comprese
+     (`totaleModifiche(modificheNonInviate(id))`), **prima** della pulizia;
+  5. segno "confermata", se il posto è libero; il segno di un **altro**
+     utente non si sovrascrive (è la sua eliminazione da finire): si
+     pulisce senza segno, un giro solo;
+  6. `signOut({ scope: "local" })` (il 403 di `/logout` lo ignora
+     supabase-js; la sessione e il cookie spariscono anche senza rete) e
+     controllo che la sessione sia sparita;
+  7. attesa delle discese in corso, poi la pulizia
+     (`puliziaDopoEliminazione.ts`);
+  8. ricaricamento completo su `/login?eliminato=altrove`, con `&perse=1`
+     se al punto 4 c'erano modifiche. Completo, non una navigazione di
+     Next: azzera ciò che è in memoria e fa ripartire la ripresa
+     all'avvio, che con il segno "confermata" fa il secondo giro di
+     pulizia e lo toglie.
+  Se la sessione resta dopo il `signOut` si pulisce lo stesso ma non si
+  naviga (il proxy vedrebbe ancora il token e rimanderebbe a "/"). Se la
+  pulizia di Dexie fallisce si va su Accedi lo stesso (la sessione è già
+  chiusa) e il segno resta: su `/login` la ripresa riprova. Offline non
+  succede niente finché il server non risponde. Test permanenti in
+  `accountEliminatoAltrove.test.ts`, `useUtente.test.tsx` e
+  `useUtente.integrazione.test.tsx` (6 hook insieme → un `signOut`, una
+  navigazione). Limiti in §11, "Difetti e verifiche aperti"
+- **Il riquadro su Accedi** (dal 01/11): `src/lib/account/avvisoEliminato.ts`
+  legge `?eliminato=` una volta dopo l'apertura e lo toglie subito
+  dall'indirizzo, con `perse` (come `passwordAggiornata.ts`): un
+  ricaricamento non lo rimostra. Titolo "Account eliminato" per tutti e
+  due; con `1` "I tuoi dati sono stati cancellati dal server e da questo
+  telefono."; con `altrove` "Questo account non esiste più. I suoi dati
+  sono stati tolti anche da questo telefono.", più "Le modifiche non
+  ancora salvate sul server sono andate perse." solo con `perse=1` (testi
+  di Davide del 26/10)
 - **Dove e come** (deciso l'11/10 sul mockup
   `docs/mockups/elimina-account.html`): la riga "Elimina il mio account"
   sta in fondo all'elenco Impostazioni, sotto Esci, in un gruppo suo;
@@ -7333,7 +7415,8 @@ su main (dal merge di `redirect-accesso`); 1306 in 116 file sul branch
 `animazione-apertura` (su main dal 24/10); 1331 in 118 file sul branch
 `apertura-pesata` (su main dal 25/10); 1326 in 118 file sul branch
 `togli-pkce` (su main dal 25/10); 1341 in 119 file sul branch
-`proxy-rete-lenta`.
+`proxy-rete-lenta`; 1475 in 130 file sul branch `account-eliminato`
+(01/11).
 
 **Proxy e rete lenta** (dal 25/10, branch `proxy-rete-lenta`). Commit 2:
 `src/middleware.ts` diventa `src/proxy.ts` (funzione `proxy`, matcher
@@ -7460,6 +7543,23 @@ nell'app installata** da Davide, Build `7b33ce0`: le iniziali come
 prima, poi la foto messa dall'app installata, vista in Profilo e in
 Impostazioni.
 
+**Account eliminato da un altro dispositivo** (dal 26/10, branch
+`account-eliminato`; §9.6, "Elimina il mio account": "Altri dispositivi
+collegati", "La ripresa all'avvio con la sessione ancora salvata", "Il
+riquadro su Accedi"). Commit 2: `utenteEliminato`, l'unico punto che
+riconosce `user_not_found`. Commit 3 e 3b: la pulizia di Elimina account
+in `puliziaDopoEliminazione.ts`, e il modulo
+`accountEliminatoAltrove.ts`, non ancora collegato. Commit 4, da solo
+(tocca il controllo della sessione di tutta l'app): `useUtenteId` che con
+`user_not_found` fa partire il modulo. Commit 5 e 5b: la ripresa
+all'avvio che chiude la sessione rimasta dell'account eliminato e va su
+`/login?eliminato=1`, con le azioni obbligatorie. Commit 6: il riquadro su
+Accedi per `altrove` e `perse=1`, con il segno tolto dall'indirizzo
+anche per `1`. Ogni test nuovo verificato rompendo il codice da una copia.
+**Provato il 01/11** sull'anteprima, Build `c283906`, Chrome sul PC e
+Safari su iPhone, due account usa e getta (esiti sotto, "Difetti e
+verifiche aperti", "Account eliminato da un altro dispositivo").
+
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
@@ -7517,22 +7617,73 @@ Impostazioni.
   Supabase Auth (verifica di Cowork del 25/10), con il token di un utente
   cancellato `GET /user` risponde 403 "User from sub claim in JWT does
   not exist", codice `user_not_found`; lo stesso `POST /logout`. È quello
-  su cui contano `riprendiEliminazioneInSospeso` ed Elimina account.
+  su cui contano `riprendiEliminazioneInSospeso`, Elimina account e, dal
+  01/11, l'account eliminato da un altro dispositivo (`utenteEliminato`
+  in `utenteOffline.ts`, l'unico punto che riconosce il codice).
   Prova: account usa e getta `b4581db6` su due dispositivi, Elimina
-  account su uno, l'app aperta sull'altro, log di Auth letti da Cowork
-- **Account eliminato da un altro dispositivo: l'app non torna su Accedi
-  e tiene i dati** (difetto aperto, visto il 26/10 nella prova sopra; non
-  nasce dal branch `foto-profilo`, non corretto lì). Sul secondo
-  dispositivo, ricaricando dopo l'eliminazione, l'app resta dentro: il
-  proxy usa `getClaims()`, che verifica il token sul telefono, e il token
-  vale ancora fino a un'ora (prezzo accettato il 25/10, §8, "Il proxy").
-  Il client riceve `user_not_found` ma lo tratta come una sessione
-  scaduta qualunque: in 30 secondi 35 `GET /user` con 403, poi si è
-  fermato. I dati dell'account eliminato restano sul telefono.
-  **Prossimo lavoro**: `user_not_found` è una risposta definitiva, non un
-  problema di rete. Quando arriva, l'app pulisce i dati locali di
-  quell'utente (come dopo Elimina account), chiude la sessione sul
-  telefono e va su Accedi con un messaggio, senza ripetere le richieste
+  account su uno, l'app aperta sull'altro, log di Auth letti da Cowork.
+  Il `POST /logout` 403 di quella prova era del dispositivo che aveva
+  eliminato (170 ms dopo il 204), non dell'altro
+- **Account eliminato da un altro dispositivo: corretto il 01/11**
+  (branch `account-eliminato`; com'è fatto in §9.6, "Elimina il mio
+  account", "Altri dispositivi collegati"). Il difetto, visto il 26/10
+  nella prova sopra: sul secondo dispositivo, ricaricando dopo
+  l'eliminazione, l'app restava dentro (il proxy con `getClaims()` lascia
+  passare il token, valido fino a un'ora) e il client trattava
+  `user_not_found` come una sessione scaduta qualunque: 34 `GET /user`
+  con 403 in circa 30 secondi (una per componente montato, a ogni
+  caricamento e navigazione, finché Davide ha navigato; nessun rinnovo
+  del token in quella finestra), più il `POST /logout` del dispositivo
+  che aveva eliminato: 35 in tutto. I dati dell'account eliminato restavano sul
+  telefono e le pagine ferme su "Caricamento...". Ora con
+  `user_not_found` l'app pulisce i dati di quell'utente, chiude la
+  sessione su quel dispositivo e va su Accedi con un messaggio.
+  **Provato il 01/11** sull'anteprima (Build `c283906`), Chrome sul PC e
+  Safari su iPhone, due account usa e getta:
+  - **account 1** (`3e604b14`): eliminato dall'iPhone alle 12:02:18
+    (`elimina_mio_account` 204, il suo `POST /logout` 403). iPhone su
+    Accedi con "I tuoi dati sono stati cancellati dal server e da questo
+    telefono.", indirizzo pulito. Chrome ricaricato alle 12:02:41: Accedi
+    con "Questo account non esiste più…", senza la riga delle modifiche
+    perse, indirizzo pulito, riquadro sparito al ricaricamento
+    successivo, righe dell'account sparite da IndexedDB. Nei log: 4 `GET
+    /user` 403 più 1 `POST /logout` 403 (il `signOut` del modulo nuovo,
+    atteso) nello stesso secondo, poi niente;
+  - **account 2** (`38827af3`): voce aggiunta offline in Safari, account
+    eliminato da Chrome alle 12:05:21. Safari ancora offline, ricaricato:
+    niente, dati al loro posto. Tornato online e ricaricato: Accedi con
+    il messaggio e la riga "Le modifiche non ancora salvate sul server
+    sono andate perse.". Nei log: 3 `GET /user` 403 alle 12:06:08, poi
+    niente. La voce in coda non è mai partita (nessun invio a
+    `voci_diario`);
+  - **sul server** (Cowork, sola lettura): nessuna riga dei due account in
+    `auth.users`, `auth.sessions`, `profili`, `pasti`, `voci_diario`,
+    `misurazioni`, `obiettivi`, `nomi_utente` e foto; restano 3 utenti.
+  **Non provati a mano**, coperti dai test: la ripresa all'avvio dopo un
+  flusso interrotto con la sessione dello stesso utente; il segno di un
+  altro utente
+- **Account eliminato e "più di un'ora dopo"** (limite noto, dal 01/11,
+  non corretto). Se il secondo dispositivo si riapre dopo la scadenza del
+  token, supabase-js prova il rinnovo, il server lo rifiuta (i refresh
+  token dell'account non ci sono più) ed emette SIGNED_OUT senza che
+  arrivi mai `user_not_found`: niente messaggio, e i dati dell'account
+  restano in Dexie, orfani. Non si puliscono perché quel rifiuto non si
+  distingue da una sessione revocata, in cui i dati sono di un account
+  che esiste ancora. **Da provare**: il codice d'errore vero del rinnovo
+  nei log di Auth, con un account usa e getta e il secondo dispositivo
+  chiuso per più di un'ora
+- **Account eliminato altrove, segno di un altro utente e pulizia
+  fallita** (limite noto, dal 01/11, non corretto). Il posto del segno
+  "eliminazione in corso" è uno solo: se è occupato dal segno di un altro
+  utente, il modulo non lo sovrascrive e pulisce senza segno. Se in quel
+  caso anche la pulizia di Dexie fallisce, nessuno riprova: i dati
+  dell'account eliminato restano sul telefono (sul server non ci sono
+  più). Servono due cose rare insieme
+- **Status della salita per un utente eliminato: mai visto** (dal 01/11).
+  Atteso un rifiuto della foreign key verso `auth.users` (tutte le
+  tabelle la hanno), quindi un tentativo contato e, dopo 5, la voce
+  accantonata. Nelle prove del 26/10 e del 01/11 la coda era vuota o la
+  voce non è partita prima dell'uscita
 - **Un reset chiesto dall'app installata su iPhone non poteva riuscire**
   (limite noto dal 10/10): **risolto con `reset-ovunque`, provato il
   18/10 sull'anteprima** (Chrome sul PC → Safari su iPhone) **e, dopo il
@@ -8055,7 +8206,6 @@ branch.
    aggiornati (sopra, "Fatto")
 8. ~~**Rinominare l'app in "Libra"**~~ fatto l'11/10: nome e icona
    della bilancia (sezione 7, "Nome e icona"; sopra, "Fatto")
-9. **Account eliminato da un altro dispositivo** (visto il 26/10): con
-   `user_not_found` pulire i dati locali di quell'utente, chiudere la
-   sessione e andare su Accedi con un messaggio, senza ripetere le
-   richieste (sopra, "Difetti e verifiche aperti")
+9. ~~**Account eliminato da un altro dispositivo**~~ fatto: provato il
+   01/11 sull'anteprima del branch `account-eliminato` (sopra, "Fatto" e
+   "Difetti e verifiche aperti"). Resta il limite "più di un'ora dopo"
