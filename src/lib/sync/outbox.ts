@@ -13,6 +13,12 @@
 // sincronizzazione parta (es. due tap veloci offline), la seconda mutazione
 // sovrascrive la prima invece di accodarsi — in coda resta solo lo stato più
 // recente, che è tutto ciò che serve mandare.
+//
+// Per lo stesso motivo (dal 01/11/2026, audit #1): chi cancella o aggiorna
+// una voce DOPO UN'ATTESA (una chiamata di rete, per esempio) deve prima
+// controllare che il suo creato_il sia ancora quello letto. Altrimenti
+// scrive sulla versione nuova, arrivata nel frattempo, e una delete la
+// perde per sempre. Vedi seAncoraQuella in sincronizza.ts.
 
 import { db } from "../db/database";
 import type { NomeTabella, RigaBase } from "../db/tipi";

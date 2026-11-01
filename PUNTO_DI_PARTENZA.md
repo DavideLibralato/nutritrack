@@ -5500,6 +5500,18 @@ Come, in concreto:
     caso Dexie perde la transazione dopo la prima scrittura, le altre
     finiscono fuori, e il "tutto o niente" non vale più (trovato il 15/10
     dai test di `ripristinaAlimenti`, con PrematureCommitError)
+  - **una voce di outbox si cancella o si aggiorna dopo un'attesa solo se
+    il suo `creato_il` è ancora quello letto** (dal 01/11, audit #1). L'id
+    della voce è `<tabella>:<id riga>`, quindi una seconda scrittura della
+    stessa riga sostituisce la voce con un `creato_il` nuovo: chi la
+    cancella o la aggiorna dopo una chiamata di rete senza controllare
+    scrive sulla versione nuova, che il server non ha mai visto. Lettura,
+    controllo e scrittura stanno in una transazione Dexie sulla sola
+    outbox (`seAncoraQuella` in `sincronizza.ts`). È la stessa firma
+    `id|creato_il` del ripristino: una regola sola. Eccezione voluta: la
+    discesa, quando il server ha cancellato la riga, scarta la voce senza
+    controllo, perché anche una scrittura arrivata nel frattempo va
+    scartata (la cancellazione dal server vince)
   - **una sincronizzazione per volta** (dal 9/10): se un giro è in corso,
     una chiamata nuova non ne apre un altro ma ne prenota **uno** dopo,
     condiviso da tutte quelle arrivate nel frattempo (il giro in corso può
@@ -7624,6 +7636,37 @@ verifiche aperti", "Account eliminato da un altro dispositivo").
   account su uno, l'app aperta sull'altro, log di Auth letti da Cowork.
   Il `POST /logout` 403 di quella prova era del dispositivo che aveva
   eliminato (170 ms dopo il 204), non dell'altro
+- **Coda: una modifica fatta durante l'invio della stessa riga si
+  perdeva. Corretto il 01/11** (branch `coda-stessa-riga`, audit #1; la
+  regola è in §9.2, "una voce di outbox si cancella o si aggiorna dopo
+  un'attesa…"). Il difetto: a invio riuscito il giro cancellava la voce
+  per id, senza controllare che fosse ancora quella inviata. Una seconda
+  scrittura della stessa riga arrivata mentre l'upsert era in viaggio
+  veniva così cancellata, e il giro prenotato trovava la coda vuota. Caso
+  tipico: "+" e poi "Annulla" con rete lenta, voce annullata sul
+  telefono e viva sul server, senza nessun segnale (indicatore "tutto
+  sincronizzato"). Dopo Esci o un ripristino la voce tornava viva anche
+  sul telefono. La discesa la riportava viva solo se l'ora del server
+  del primo invio era più recente di quella dell'Annulla sul telefono
+  (rete lenta in invio, o orologio del telefono indietro). Nei rami di
+  errore tentativi, errore e accantonamento finivano sulla versione
+  nuova, mai provata. Ora la versione nuova resta in coda pulita (zero
+  tentativi) e la manda il giro dopo; se il server aveva rifiutato la
+  vecchia, il giro si ferma lo stesso. Test permanente
+  `codaStessaRiga.test.ts` (quattro casi: invio riuscito, rifiuto,
+  soglia di accantonamento, rete assente).
+  **Limite: i danni già fatti non si possono rilevare.** Il server da
+  solo non distingue una voce viva da una annullata sul telefono e
+  rimasta viva sul server. Il confronto andrebbe fatto con le righe
+  cancellate in Dexie sui telefoni, ma i dati di Safari su iPhone non si
+  leggono da Windows, e dove nel frattempo c'è stato Esci, un ripristino
+  o una discesa che l'ha riportata viva non resta nessuna traccia.
+  Deciso di non cercarli (01/11). Resta il limite accettato della
+  correzione: due accodamenti della stessa riga nello stesso
+  millisecondo, con una lettura della coda in mezzo, avrebbero la stessa
+  firma. In pratica non succede: due scritture dentro la stessa
+  transazione non contano (il giro legge la coda solo dopo il commit), e
+  il 01/11 nessuna transazione scriveva la stessa riga due volte
 - **Account eliminato da un altro dispositivo: corretto il 01/11**
   (branch `account-eliminato`; com'è fatto in §9.6, "Elimina il mio
   account", "Altri dispositivi collegati"). Il difetto, visto il 26/10

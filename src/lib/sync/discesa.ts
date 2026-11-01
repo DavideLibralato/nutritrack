@@ -324,6 +324,8 @@ async function scaricaUnaTabella<T extends RigaBase>(
         await tabella.put(rigaScaricata);
 
         const idOutbox = `${nomeTabella}:${rigaScaricata.id}`;
+        // Senza transazione e senza controllo di creato_il, apposta (audit #1, 01/11/2026):
+        // una scrittura locale arrivata fra get e delete va scartata anche lei, perché la cancellazione dal server vince.
         const voceInSospeso = await db.outbox.get(idOutbox);
         if (voceInSospeso && !voceInSospeso.sospesa_il) {
           await db.outbox.delete(idOutbox);

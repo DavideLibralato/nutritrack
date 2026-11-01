@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-01 — Coda: la modifica fatta durante l'invio della stessa riga non si perde più
+
+Branch `coda-stessa-riga` (audit #1). Bug: a invio riuscito
+`sincronizza.ts` cancellava la voce di outbox per id, e l'id è
+`<tabella>:<id riga>`. Una seconda scrittura della stessa riga arrivata
+durante l'upsert ("+" e poi "Annulla" con rete lenta) veniva cancellata
+senza essere mai partita: voce annullata sul telefono, viva sul server.
+Nei rami di errore tentativi, errore e accantonamento finivano sulla
+versione nuova. Corretto con `seAncoraQuella`: si scrive sulla voce
+solo se `creato_il` è ancora quello letto (la firma del ripristino),
+dentro una transazione Dexie sulla sola outbox. Se la voce è cambiata
+quando arriva alla soglia, non viene accantonata e il giro si ferma
+(`break`). Discesa non toccata, con un commento sul perché. Nuovo test
+`codaStessaRiga.test.ts`, quattro casi. Sa fallire: con il solo delete
+senza controllo fallisce il caso dell'invio riuscito; senza il
+controllo in `seAncoraQuella` falliscono tutti e quattro. 1479 test
+verdi. Danni già fatti non rilevabili, limite scritto in PUNTO §11.
+
+## 2026-11-01 — Merge di `account-eliminato` su main, provato nell'app installata
+
+Unito il 01/11 con fast-forward, da `7b33ce0` a `41576ce`, 9 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge
+Davide ha usato l'app installata il 01/11 fra le 12:14 e le 12:21
+(Build `41576ce`), uso normale: nei log di Supabase tutte le richieste
+200, nessun 401 né 403.
+
 ## 2026-11-01 — Account eliminato altrove: provato su due dispositivi
 
 Branch `account-eliminato`, commit 7 (solo documenti). Prove a mano del

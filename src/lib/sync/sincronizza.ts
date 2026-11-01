@@ -16,7 +16,7 @@
 
 import { createClient } from "../supabase/client";
 import { db } from "../db/database";
-import { ordinaOutbox } from "./outbox";
+import { ordinaOutbox, type VoceOutbox } from "./outbox";
 import { idUtenteDellaSessione } from "../supabase/utenteDellaSessione";
 import { conTempoMassimo, MESSAGGIO_SCADUTA, SCADUTA } from "./tempoMassimo";
 import {
@@ -208,12 +208,18 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
       messaggioErrore = eccezione instanceof Error ? eccezione.message : "Errore di rete.";
     }
 
+    // Da qui ogni scrittura sulla voce passa da seAncoraQuella (vedi sotto):
+    // durante l'invio la stessa riga può essere stata riaccodata.
     if (messaggioErrore && status !== null && !rifiutoDelServer(status)) {
       // Il server non ha giudicato la riga (vedi rifiutoDelServer): niente
       // tentativo contato, la coda aspetta il prossimo giro così com'è.
+      // Se la voce è cambiata, la versione nuova resta pulita: non è lei
+      // che non è arrivata.
       fallite += 1;
       esito = esitoDaStatus(status);
-      await db.outbox.update(voce.id, { ultimo_errore: messaggioErrore, ultimo_status: status });
+      await seAncoraQuella(voce, () =>
+        db.outbox.update(voce.id, { ultimo_errore: messaggioErrore, ultimo_status: status })
+      );
       break;
     }
 
@@ -226,28 +232,73 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
         // (tabella outbox, campo sospesa_il), solo esclusa dal ciclo. Non è
         // un'eliminazione silenziosa — è il contrario: un segnale esplicito
         // che prima si perdeva del tutto.
-        sospese += 1;
-        await db.outbox.update(voce.id, {
-          tentativi,
-          ultimo_errore: messaggioErrore,
-          ultimo_status: status,
-          sospesa_il: new Date().toISOString(),
-        });
-        console.error(
-          `Sincronizzazione: voce accantonata dopo ${tentativi} tentativi ` +
-            `(${voce.tabella}:${voce.record_id}) — ${messaggioErrore}`
+        const accantonata = await seAncoraQuella(voce, () =>
+          db.outbox.update(voce.id, {
+            tentativi,
+            ultimo_errore: messaggioErrore,
+            ultimo_status: status,
+            sospesa_il: new Date().toISOString(),
+          })
         );
-        continue;
+        if (accantonata) {
+          sospese += 1;
+          console.error(
+            `Sincronizzazione: voce accantonata dopo ${tentativi} tentativi ` +
+              `(${voce.tabella}:${voce.record_id}) — ${messaggioErrore}`
+          );
+          continue;
+        }
+        // La voce è cambiata durante l'invio: la versione nuova non si
+        // accantona (il server non l'ha mai vista) e ora è lei in testa
+        // per questa riga. Ci si ferma come per un rifiuto normale, così
+        // le voci figlie dietro di lei aspettano: la prova il giro
+        // prenotato, da zero tentativi.
+        esito = "errore";
+        break;
       }
 
+      // Rifiuto sotto la soglia: i tentativi contano solo per la versione
+      // che il server ha davvero rifiutato, mai per quella arrivata dopo.
       esito = "errore";
-      await db.outbox.update(voce.id, { tentativi, ultimo_errore: messaggioErrore, ultimo_status: status });
+      await seAncoraQuella(voce, () =>
+        db.outbox.update(voce.id, { tentativi, ultimo_errore: messaggioErrore, ultimo_status: status })
+      );
       break;
     }
 
+    // Inviata. Se nel frattempo la riga è stata riaccodata, la versione
+    // nuova resta in coda e la manda il giro prenotato.
     inviate += 1;
-    await db.outbox.delete(voce.id);
+    await seAncoraQuella(voce, () => db.outbox.delete(voce.id));
   }
 
   return { risultato: { inviate, fallite, sospese }, esito };
+}
+
+// Scrive sulla voce di coda (cancella o aggiorna) solo se è ancora quella
+// letta a inizio giro (dal 01/11/2026, audit #1). Restituisce true se ha
+// scritto, false se in coda c'è ormai una versione nuova della riga.
+//
+// Cosa succedeva: l'id della voce è "<tabella>:<id riga>" (outbox.ts),
+// quindi una seconda scrittura della stessa riga arrivata mentre l'upsert
+// era in viaggio sovrascriveva la voce in coda, e la delete per id a fine
+// invio cancellava la versione nuova, mai vista dal server. Il giro
+// prenotato trovava la coda vuota. Caso tipico: "+" e poi "Annulla" con
+// rete lenta → voce annullata sul telefono, viva sul server, senza nessun
+// segnale. Allo stesso modo tentativi, errore e accantonamento finivano
+// sulla versione nuova, mai provata.
+//
+// Si riconosce dalla firma id + creato_il, la stessa del ripristino
+// (ripristino.ts, firma): ogni accodaMutazione mette un creato_il nuovo.
+// Lettura e scrittura nella stessa transazione Dexie, così un
+// accodamento non può infilarsi fra le due. Dentro solo operazioni Dexie
+// (regola in PUNTO_DI_PARTENZA.md §9.2): la rete è già finita quando si
+// arriva qui.
+function seAncoraQuella(voce: VoceOutbox, scrivi: () => Promise<unknown>): Promise<boolean> {
+  return db.transaction("rw", db.outbox, async () => {
+    const attuale = await db.outbox.get(voce.id);
+    if (!attuale || attuale.creato_il !== voce.creato_il) return false;
+    await scrivi();
+    return true;
+  });
 }
