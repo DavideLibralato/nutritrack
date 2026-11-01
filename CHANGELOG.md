@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-01 — Ripresa dell'eliminazione: azioni obbligatorie e testate
+
+Branch `account-eliminato`, commit 5b. Il secondo parametro di
+`riprendiEliminazioneInSospeso` (le azioni: chi c'è sulla sessione,
+come chiuderla, come navigare) diventa obbligatorio: se
+`RipresaEliminazioneAccount` smettesse di passarlo, la ripresa
+tornerebbe in silenzio al comportamento di prima del commit 5. Ora si
+ferma `tsc` (provato: "Expected 2 arguments, but got 1"; anche togliendo
+una sola delle tre azioni). I test vecchi della ripresa passano delle
+azioni finte senza sessione. Test nuovo sul componente: le tre azioni
+sono quelle vere; verificato con tre rotture (`utenteAttuale` tolta,
+`chiudiSessione` tolta, `naviga` finta). 1462 test verdi, build ok.
+
 ## 2026-11-01 — Ripresa dell'eliminazione: chiude la sessione rimasta
 
 Branch `account-eliminato`, commit 5. `riprendiEliminazioneInSospeso`

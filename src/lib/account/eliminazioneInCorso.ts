@@ -109,8 +109,10 @@ export type EsitoRipresa =
   | "in-attesa";
 
 // Cosa serve alla ripresa oltre alla verifica, passato da
-// RipresaEliminazioneAccount.tsx. Senza (i test più vecchi), si comporta
-// come prima del 26/10: nessuna sessione, niente da chiudere.
+// RipresaEliminazioneAccount.tsx. Obbligatorio (dal 01/11/2026): senza,
+// la ripresa tornerebbe in silenzio al comportamento di prima del 26/10
+// (sessione mai chiusa, app ferma su "Caricamento..."); così è tsc a
+// fermarsi se il componente smette di passarlo.
 export interface AzioniRipresa {
   // Di chi è la sessione salvata su questo dispositivo, senza rete
   // (idUtenteDellaSessione); null = nessuno.
@@ -120,12 +122,6 @@ export interface AzioniRipresa {
   // Ricaricamento completo della pagina.
   naviga: (indirizzo: string) => void;
 }
-
-const SENZA_SESSIONE: AzioniRipresa = {
-  utenteAttuale: async () => null,
-  chiudiSessione: async () => true,
-  naviga: () => {},
-};
 
 // All'avvio dell'app. `verifica` chiede al server dell'utente del segno:
 // si chiama solo con il segno "richiesta", quindi con il segno
@@ -145,7 +141,7 @@ const SENZA_SESSIONE: AzioniRipresa = {
 // Senza sessione, o con la sessione di un altro utente: come prima.
 export async function riprendiEliminazioneInSospeso(
   verifica: (idUtente: string) => Promise<VerificaUtente>,
-  azioni: AzioniRipresa = SENZA_SESSIONE
+  azioni: AzioniRipresa
 ): Promise<EsitoRipresa> {
   const segno = leggiSegnoEliminazione();
   if (!segno) return "niente";

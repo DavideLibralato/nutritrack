@@ -157,7 +157,7 @@ describe("riprendiEliminazioneInSospeso", () => {
     const { utente } = await dispositivo();
     const verifica = vi.fn();
 
-    expect(await riprendiEliminazioneInSospeso(verifica)).toBe("niente");
+    expect(await riprendiEliminazioneInSospeso(verifica, azioniFinte(null))).toBe("niente");
     expect(verifica).not.toHaveBeenCalled();
     expect(await pastiDi(utente)).toHaveLength(1);
   });
@@ -167,7 +167,7 @@ describe("riprendiEliminazioneInSospeso", () => {
     scriviSegnoEliminazione(utente, "confermata");
     const verifica = vi.fn();
 
-    expect(await riprendiEliminazioneInSospeso(verifica)).toBe("pulito");
+    expect(await riprendiEliminazioneInSospeso(verifica, azioniFinte(null))).toBe("pulito");
     expect(verifica).not.toHaveBeenCalled();
     expect(await pastiDi(utente)).toHaveLength(0);
     expect(await pastiDi(altro)).toHaveLength(1);
@@ -184,7 +184,7 @@ describe("riprendiEliminazioneInSospeso", () => {
     await db.pasti.put(pasto(utente, "Riscritto dalla discesa"));
     expect(leggiSegnoEliminazione()).not.toBeNull();
 
-    expect(await riprendiEliminazioneInSospeso(vi.fn())).toBe("pulito");
+    expect(await riprendiEliminazioneInSospeso(vi.fn(), azioniFinte(null))).toBe("pulito");
     expect(await pastiDi(utente)).toHaveLength(0);
   });
 
@@ -193,7 +193,7 @@ describe("riprendiEliminazioneInSospeso", () => {
     scriviSegnoEliminazione(utente, "richiesta");
     const verifica = vi.fn(async (): Promise<VerificaUtente> => "non-esiste");
 
-    expect(await riprendiEliminazioneInSospeso(verifica)).toBe("pulito");
+    expect(await riprendiEliminazioneInSospeso(verifica, azioniFinte(null))).toBe("pulito");
     expect(verifica).toHaveBeenCalledWith(utente);
     expect(await pastiDi(utente)).toHaveLength(0);
     expect(await pastiDi(altro)).toHaveLength(1);
@@ -204,7 +204,7 @@ describe("riprendiEliminazioneInSospeso", () => {
     const { utente } = await dispositivo();
     scriviSegnoEliminazione(utente, "richiesta");
 
-    expect(await riprendiEliminazioneInSospeso(async () => "esiste")).toBe("annullato");
+    expect(await riprendiEliminazioneInSospeso(async () => "esiste", azioniFinte(null))).toBe("annullato");
     expect(await pastiDi(utente)).toHaveLength(1);
     expect(leggiSegnoEliminazione()).toBeNull();
   });
@@ -213,7 +213,7 @@ describe("riprendiEliminazioneInSospeso", () => {
     const { utente } = await dispositivo();
     scriviSegnoEliminazione(utente, "richiesta");
 
-    expect(await riprendiEliminazioneInSospeso(async () => "sconosciuto")).toBe("in-attesa");
+    expect(await riprendiEliminazioneInSospeso(async () => "sconosciuto", azioniFinte(null))).toBe("in-attesa");
     expect(await pastiDi(utente)).toHaveLength(1);
     expect(leggiSegnoEliminazione()).toEqual({ idUtente: utente, fase: "richiesta" });
   });
@@ -224,7 +224,7 @@ describe("riprendiEliminazioneInSospeso", () => {
 
     const esito = await riprendiEliminazioneInSospeso(async () => {
       throw new Error("rete giù");
-    });
+    }, azioniFinte(null));
     expect(esito).toBe("in-attesa");
     expect(await pastiDi(utente)).toHaveLength(1);
     expect(leggiSegnoEliminazione()).not.toBeNull();
@@ -234,7 +234,7 @@ describe("riprendiEliminazioneInSospeso", () => {
     const { utente } = await dispositivo();
     localStorage.setItem(CHIAVE_ELIMINAZIONE, JSON.stringify({ idUtente: utente, fase: "boh" }));
 
-    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste")).toBe("niente");
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioniFinte(null))).toBe("niente");
     expect(await pastiDi(utente)).toHaveLength(1);
   });
 });
