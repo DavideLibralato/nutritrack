@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { traduciErroreAuth } from "@/lib/erroriAuth";
@@ -40,6 +40,17 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [errore, setErrore] = useState<string | null>(null);
   const [caricamento, setCaricamento] = useState(false);
+  // Un accesso già partito (dal 01/11/2026): il 01/11 su iPhone un secondo
+  // invio, 1,6 s dopo il primo, ha creato una seconda sessione. Si alza
+  // all'invio, si riabbassa solo con un errore: dopo un accesso riuscito
+  // resta alzato fino alla navigazione, e il pulsante resta "Attendere...".
+  //
+  // useRef e non useState: lo stato di React cambia solo al disegno
+  // successivo, quindi due invii nello stesso istante (doppio tocco, tasto
+  // Invio) vedrebbero entrambi "nessun accesso in corso". Il ref cambia
+  // subito, e cambiarlo non ridisegna niente. `caricamento` resta per il
+  // pulsante, che deve ridisegnarsi.
+  const accessoInCorso = useRef(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,6 +58,9 @@ function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Vale per ogni strada di invio: tocco sul pulsante, tasto Invio o
+    // "Vai" da un campo, riempimento automatico.
+    if (accessoInCorso.current) return;
     setErrore(null);
 
     // Validazione in italiano: senza noValidate sul form, il browser
@@ -71,21 +85,32 @@ function LoginForm() {
       return;
     }
 
+    accessoInCorso.current = true;
     setCaricamento(true);
 
-    const supabase = createClient();
+    // Un'eccezione (di solito supabase-js risponde con { error }, anche
+    // senza rete) conta come un errore: il pulsante non deve restare
+    // spento per sempre.
+    let messaggioErrore: string | null = null;
+    try {
+      const { error } = await createClient().auth.signInWithPassword({
+        email: emailPulita,
+        password,
+      });
+      if (error) messaggioErrore = traduciErroreAuth(error.message);
+    } catch {
+      messaggioErrore = traduciErroreAuth(null);
+    }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: emailPulita,
-      password,
-    });
-
-    setCaricamento(false);
-
-    if (error) {
-      setErrore(traduciErroreAuth(error.message));
+    if (messaggioErrore) {
+      accessoInCorso.current = false;
+      setCaricamento(false);
+      setErrore(messaggioErrore);
       return;
     }
+
+    // Accesso riuscito: niente setCaricamento(false). Il pulsante resta
+    // spento finché la navigazione non porta via questa pagina.
 
     // Se il middleware ci ha mandato qui perche' l'utente ha provato ad
     // aprire una pagina protetta senza essere loggato, dopo il login lo

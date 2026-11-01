@@ -5,6 +5,40 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-01 — Accedi: un secondo invio non parte più
+
+Branch `accesso-scaduto`. Bug visto nei log del 01/11: alle 10:33:52
+UTC un secondo POST /token con la password, 1,6 s dopo il primo, e
+quindi una seconda sessione. `handleSubmit` non controllava un accesso
+già in corso, e `setCaricamento(false)` riattivava il pulsante appena
+arrivava la risposta, prima della navigazione (la discesa intanto
+partiva già, `<Sincronizzazione />` sta nel layout radice). Il tasto
+Invio/"Vai" invia il modulo anche senza toccare il pulsante. Corretto
+con un `useRef` controllato a ogni invio: si alza all'invio, si
+riabbassa solo con un errore. Dopo un accesso riuscito il pulsante
+resta "Attendere..." fino alla navigazione. Un'eccezione di
+`signInWithPassword` conta come errore e riattiva il pulsante. Non è la
+causa di "Accesso scaduto" (il 401 PGRST303 arriva dal primo token, e
+il secondo invio parte prima che il 401 torni al telefono): quello è il
+commit successivo. Quattro test nuovi in `login/page.test.tsx`, ognuno
+fallisce con la sua rottura (controllo tolto, pulsante riattivato dopo
+il successo, ref non riabbassato dopo l'errore, senza try/catch).
+Caso limite chiuso nello stesso commit: `destinazioneDopoAccesso`
+accettava `?redirectTo=/login`, e dopo un accesso riuscito la
+navigazione restava su Accedi con "Attendere..." per sempre (prima
+`setCaricamento(false)` lo riattivava). Ora `/login` e `/login/...`
+portano alla home; `/loginx` resta com'è. Test in
+`destinazioneDopoAccesso.test.ts`, fallisce senza il controllo e con
+un controllo per semplice prefisso.
+
+## 2026-11-01 — Merge di `coda-stessa-riga` su main, provato nell'app installata
+
+Unito il 01/11 con fast-forward, da `41576ce` a `4960409`, 2 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge Davide ha usato l'app
+installata il 01/11 alle 21:32, account vero, uso normale: nei log di
+Supabase tutte le richieste 200/201, nessun 401 né 403.
+
 ## 2026-11-01 — Coda: la modifica fatta durante l'invio della stessa riga non si perde più
 
 Branch `coda-stessa-riga` (audit #1). Bug: a invio riuscito

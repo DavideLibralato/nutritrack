@@ -7,16 +7,19 @@
 // con new URL(href, location.href) e, se l'origine è diversa da quella
 // dell'app, esce con una navigazione completa (location.assign). Qui il
 // router è finto: la destinazione si calcola nello stesso modo.
-// Finti anche il client Supabase (accesso sempre riuscito) e i parametri
-// dell'indirizzo.
+// Finti anche il client Supabase (accesso riuscito, salvo dove un test
+// cambia la risposta) e i parametri dell'indirizzo.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import LoginPage from "./page";
 
+type RispostaAccesso = { error: { message: string } | null };
+
 const finti = vi.hoisted(() => ({
   query: "",
   push: vi.fn(),
+  signInWithPassword: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -24,11 +27,13 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(finti.query),
 }));
 vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: { signInWithPassword: async () => ({ error: null }) } }),
+  createClient: () => ({ auth: { signInWithPassword: finti.signInWithPassword } }),
 }));
 
 beforeEach(() => {
   finti.push.mockReset();
+  finti.signInWithPassword.mockReset();
+  finti.signInWithPassword.mockResolvedValue({ error: null });
 });
 
 afterEach(cleanup);
@@ -89,6 +94,93 @@ describe("Accedi, riquadro Account eliminato", () => {
     apri("/login");
     await screen.findByRole("button", { name: "Accedi" });
     expect(screen.queryByText("Account eliminato")).toBeNull();
+  });
+});
+
+// Il doppio invio (dal 01/11/2026): il 01/11 su iPhone un secondo
+// POST /token con la password, 1,6 s dopo il primo, ha creato una seconda
+// sessione. Il pulsante si riattivava appena tornata la risposta, prima
+// della navigazione, e nessun controllo fermava un invio già in corso.
+// fireEvent.submit sul modulo è la strada del tasto Invio/"Vai": passa
+// anche con il pulsante disattivato, quindi la ferma solo il controllo
+// nel codice.
+describe("Accedi, doppio invio", () => {
+  // Una risposta che arriva solo quando il test la manda.
+  function rispostaInAttesa() {
+    let rispondi!: (r: RispostaAccesso) => void;
+    finti.signInWithPassword.mockImplementation(
+      () => new Promise<RispostaAccesso>((r) => (rispondi = r))
+    );
+    return (r: RispostaAccesso) => rispondi(r);
+  }
+
+  function compila() {
+    finti.query = "";
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "giulia@esempio.it" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "segreta123" } });
+  }
+
+  function modulo(): HTMLFormElement {
+    return screen.getByRole("button", { name: /Accedi|Attendere/ }).closest("form")!;
+  }
+
+  function pulsante(): HTMLButtonElement {
+    return screen.getByRole("button", { name: /Accedi|Attendere/ }) as HTMLButtonElement;
+  }
+
+  it("con un accesso in attesa, altri invii (tocco, Invio) non partono", async () => {
+    const rispondi = rispostaInAttesa();
+    compila();
+
+    fireEvent.click(pulsante());
+    fireEvent.submit(modulo());
+    fireEvent.submit(modulo());
+
+    expect(finti.signInWithPassword).toHaveBeenCalledTimes(1);
+    expect(pulsante().disabled).toBe(true);
+
+    rispondi({ error: null });
+    await waitFor(() => expect(finti.push).toHaveBeenCalledTimes(1));
+    expect(finti.signInWithPassword).toHaveBeenCalledTimes(1);
+  });
+
+  it("dopo un accesso riuscito il pulsante resta spento, e un altro Invio non parte", async () => {
+    compila();
+
+    fireEvent.click(pulsante());
+    await waitFor(() => expect(finti.push).toHaveBeenCalledTimes(1));
+
+    expect(pulsante().disabled).toBe(true);
+    expect(pulsante().textContent).toBe("Attendere...");
+    fireEvent.submit(modulo());
+    expect(finti.signInWithPassword).toHaveBeenCalledTimes(1);
+  });
+
+  it("dopo un errore il pulsante si riattiva e si può riprovare", async () => {
+    finti.signInWithPassword.mockResolvedValueOnce({
+      error: { message: "Invalid login credentials" },
+    });
+    compila();
+
+    fireEvent.click(pulsante());
+    await waitFor(() => expect(pulsante().disabled).toBe(false));
+    expect(pulsante().textContent).toBe("Accedi");
+    expect(finti.push).not.toHaveBeenCalled();
+
+    fireEvent.submit(modulo());
+    await waitFor(() => expect(finti.push).toHaveBeenCalledTimes(1));
+    expect(finti.signInWithPassword).toHaveBeenCalledTimes(2);
+  });
+
+  it("un'eccezione conta come errore: il pulsante si riattiva", async () => {
+    finti.signInWithPassword.mockRejectedValueOnce(new Error("guasto"));
+    compila();
+
+    fireEvent.click(pulsante());
+    expect(await screen.findByText("Si è verificato un errore imprevisto. Riprova.")).toBeTruthy();
+    expect(pulsante().disabled).toBe(false);
+    expect(finti.push).not.toHaveBeenCalled();
   });
 });
 

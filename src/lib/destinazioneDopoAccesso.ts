@@ -14,5 +14,8 @@ export function destinazioneDopoAccesso(redirectTo: string | null, origine: stri
     return "/";
   }
   if (url.origin !== new URL(origine).origin) return "/";
+  // Accedi stessa no (dal 01/11/2026): la navigazione resterebbe su questa
+  // pagina, e dopo un accesso riuscito il pulsante resta "Attendere..." per sempre.
+  if (url.pathname === "/login" || url.pathname.startsWith("/login/")) return "/";
   return url.pathname + url.search + url.hash;
 }
