@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-01 — Ripresa dell'eliminazione: chiude la sessione rimasta
+
+Branch `account-eliminato`, commit 5. `riprendiEliminazioneInSospeso`
+dopo un flusso di Elimina account interrotto prima del `signOut`: prima
+lasciava l'app ferma su "Caricamento..." con la sessione dell'account
+eliminato (e poi, con il commit 4, il messaggio sbagliato `altrove`).
+Ora, dopo una pulizia riuscita, se la sessione salvata è dello stesso
+utente: `signOut` locale (`chiudiSessioneQui`), controllo che sia
+sparita, ricaricamento su `/login?eliminato=1`, segno lasciato
+"confermata" per il giro dopo; senza sessione o con un altro utente,
+come prima. In più: attesa delle discese prima della pulizia (prima non
+c'era), pulizia completa di `puliziaDopoEliminazione.ts` (prima solo
+Dexie), segno "richiesta" riscritto "confermata" quando il server dice
+che l'account non c'è più. 6 test nuovi, verificati con sei rotture
+(signOut tolto, controllo della sessione tolto, id confrontati male,
+sessione rimasta ignorata, riscrittura del segno tolta, attesa dopo la
+pulizia). 1458 test verdi, build ok.
+
 ## 2026-10-26 — useUtenteId: con user_not_found si esce e si pulisce
 
 Branch `account-eliminato`, commit 4 (da solo: tocca il controllo della

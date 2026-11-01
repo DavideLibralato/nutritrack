@@ -82,6 +82,17 @@ export async function verificaUtenteSulServer(idUtente: string): Promise<Verific
   return classificaVerificaUtente(idUtente, data.user, error);
 }
 
+// Chiude la sessione su questo dispositivo (scope "local": il 403 di
+// /logout per un account cancellato lo ignora supabase-js) e dice se è
+// davvero sparita, come fa Esci (esci.ts). Usata dalla ripresa all'avvio
+// (RipresaEliminazioneAccount.tsx).
+export async function chiudiSessioneQui(): Promise<boolean> {
+  const supabase = createClient();
+  await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  const { data } = await supabase.auth.getSession();
+  return data.session === null;
+}
+
 export async function eliminaAccount(idUtente: string): Promise<EsitoEliminazione> {
   const supabase = createClient();
 

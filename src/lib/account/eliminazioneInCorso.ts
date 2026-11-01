@@ -20,8 +20,9 @@
 // solo il primo giro, quello del flusso.
 
 import type { AuthError } from "@supabase/supabase-js";
-import { cancellaDatiUtente } from "../sync/ripristino";
+import { attendiDiscesaInCorso } from "../sync/discesa";
 import { utenteEliminato } from "../supabase/utenteOffline";
+import { pulisciDispositivoDopoEliminazione } from "./puliziaDopoEliminazione";
 
 export const CHIAVE_ELIMINAZIONE = "nutritrack:eliminazione-account";
 
@@ -92,6 +93,14 @@ export type EsitoRipresa =
   | "niente"
   // Dati dell'utente cancellati dal dispositivo, segno tolto.
   | "pulito"
+  // Pulito, e la sessione salvata era ancora quella dell'utente
+  // eliminato (flusso interrotto prima del signOut): sessione chiusa,
+  // ricaricamento su /login?eliminato=1. Segno "confermata" lasciato: lo
+  // toglie il giro dopo, su /login, senza sessione.
+  | "uscito"
+  // Pulito, sessione dell'utente eliminato chiusa ma rimasta: niente
+  // navigazione (il proxy rimanderebbe indietro), segno lasciato.
+  | "sessione-rimasta"
   // Il server dice che l'utente esiste: la richiesta non era arrivata.
   // Dati intatti, segno tolto.
   | "annullato"
@@ -99,11 +108,44 @@ export type EsitoRipresa =
   // lasciato per il prossimo avvio.
   | "in-attesa";
 
+// Cosa serve alla ripresa oltre alla verifica, passato da
+// RipresaEliminazioneAccount.tsx. Senza (i test più vecchi), si comporta
+// come prima del 26/10: nessuna sessione, niente da chiudere.
+export interface AzioniRipresa {
+  // Di chi è la sessione salvata su questo dispositivo, senza rete
+  // (idUtenteDellaSessione); null = nessuno.
+  utenteAttuale: () => Promise<string | null>;
+  // signOut "local", poi true se la sessione è davvero sparita.
+  chiudiSessione: () => Promise<boolean>;
+  // Ricaricamento completo della pagina.
+  naviga: (indirizzo: string) => void;
+}
+
+const SENZA_SESSIONE: AzioniRipresa = {
+  utenteAttuale: async () => null,
+  chiudiSessione: async () => true,
+  naviga: () => {},
+};
+
 // All'avvio dell'app. `verifica` chiede al server dell'utente del segno:
 // si chiama solo con il segno "richiesta", quindi con il segno
 // "confermata" la ripresa funziona anche offline.
+//
+// Dal 26/10/2026 (branch account-eliminato):
+// - prima della pulizia si aspettano le discese in corso (con la sessione
+//   ancora valida, Sincronizzazione può farne partire una all'avvio);
+// - la pulizia è quella completa di Elimina account
+//   (puliziaDopoEliminazione.ts), non solo Dexie;
+// - se la sessione salvata è ancora dell'utente eliminato (flusso
+//   interrotto prima del signOut), la si chiude e si va su
+//   /login?eliminato=1, invece di lasciare l'app ferma su "Caricamento...".
+//   Il segno resta "confermata" fino al giro dopo, su /login: lì non c'è
+//   più sessione, quindi non parte nessuna discesa nuova, e il secondo
+//   giro di pulizia copre una discesa partita prima e finita tardi.
+// Senza sessione, o con la sessione di un altro utente: come prima.
 export async function riprendiEliminazioneInSospeso(
-  verifica: (idUtente: string) => Promise<VerificaUtente>
+  verifica: (idUtente: string) => Promise<VerificaUtente>,
+  azioni: AzioniRipresa = SENZA_SESSIONE
 ): Promise<EsitoRipresa> {
   const segno = leggiSegnoEliminazione();
   if (!segno) return "niente";
@@ -115,14 +157,28 @@ export async function riprendiEliminazioneInSospeso(
       return "annullato";
     }
     if (esito === "sconosciuto") return "in-attesa";
+    // Il server ha detto che l'account non c'è più: da qui la ripresa non
+    // ha più bisogno della rete. Se il segno restasse "richiesta", il giro
+    // dopo (senza sessione) chiederebbe di nuovo al server, avrebbe sempre
+    // "sconosciuto" e il segno non si toglierebbe più.
+    scriviSegnoEliminazione(segno.idUtente, "confermata");
   }
 
-  try {
-    await cancellaDatiUtente(segno.idUtente);
-  } catch (errore) {
-    console.error("Eliminazione account: pulizia del dispositivo non riuscita, si riprova al prossimo avvio.", errore);
-    return "in-attesa";
+  await attendiDiscesaInCorso();
+  if (!(await pulisciDispositivoDopoEliminazione(segno.idUtente))) return "in-attesa";
+
+  // Nel dubbio su chi c'è, come se non ci fosse nessuno: non si chiude
+  // una sessione che non si sa di chi sia.
+  const attuale = await azioni.utenteAttuale().catch(() => null);
+  if (attuale !== segno.idUtente) {
+    togliSegnoEliminazione();
+    return "pulito";
   }
-  togliSegnoEliminazione();
-  return "pulito";
+
+  if (!(await azioni.chiudiSessione().catch(() => false))) {
+    console.error("Eliminazione account: la sessione è rimasta dopo il signOut, niente navigazione.");
+    return "sessione-rimasta";
+  }
+  azioni.naviga("/login?eliminato=1");
+  return "uscito";
 }

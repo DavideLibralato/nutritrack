@@ -48,8 +48,108 @@ async function dispositivo() {
   return { utente, altro };
 }
 
+// L'attesa delle discese in corso: di default niente. Un test la usa per
+// simulare una discesa partita prima che scrive una riga tardi.
+let discesaInCorso: (() => Promise<void>) | null = null;
+vi.mock("../sync/discesa", async (originale) => ({
+  ...(await originale<typeof import("../sync/discesa")>()),
+  attendiDiscesaInCorso: vi.fn(async () => {
+    if (discesaInCorso) await discesaInCorso();
+  }),
+}));
+
 beforeEach(() => {
   localStorage.clear();
+  discesaInCorso = null;
+});
+
+// Le azioni che RipresaEliminazioneAccount passa alla ripresa, finte: la
+// sessione salvata è di `sessioneDi`; `chiudiSessione` la toglie, a meno
+// che `resta`.
+function azioniFinte(sessioneDi: string | null, resta = false) {
+  let sessione = sessioneDi;
+  const azioni = {
+    utenteAttuale: vi.fn(async () => sessione),
+    chiudiSessione: vi.fn(async () => {
+      if (!resta) sessione = null;
+      return sessione === null;
+    }),
+    naviga: vi.fn(),
+  };
+  return azioni;
+}
+
+describe("riprendiEliminazioneInSospeso, con la sessione ancora salvata (dal 26/10)", () => {
+  it("segno e sessione dello stesso utente: pulizia, sessione chiusa, Accedi con ?eliminato=1", async () => {
+    const { utente, altro } = await dispositivo();
+    scriviSegnoEliminazione(utente, "confermata");
+    const azioni = azioniFinte(utente);
+
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioni)).toBe("uscito");
+    expect(await pastiDi(utente)).toHaveLength(0);
+    expect(await pastiDi(altro)).toHaveLength(1);
+    expect(azioni.chiudiSessione).toHaveBeenCalledTimes(1);
+    expect(azioni.naviga).toHaveBeenCalledWith("/login?eliminato=1");
+    // Lasciato per il giro dopo, su /login senza sessione.
+    expect(leggiSegnoEliminazione()).toEqual({ idUtente: utente, fase: "confermata" });
+  });
+
+  it("segno senza sessione (il secondo giro su /login): pulizia, nessuna chiusura, nessuna navigazione", async () => {
+    const { utente } = await dispositivo();
+    scriviSegnoEliminazione(utente, "confermata");
+    const azioni = azioniFinte(null);
+
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioni)).toBe("pulito");
+    expect(await pastiDi(utente)).toHaveLength(0);
+    expect(azioni.chiudiSessione).not.toHaveBeenCalled();
+    expect(azioni.naviga).not.toHaveBeenCalled();
+    expect(leggiSegnoEliminazione()).toBeNull();
+  });
+
+  it("segno di A, sessione di B: B non viene fatto uscire", async () => {
+    const { utente, altro } = await dispositivo();
+    scriviSegnoEliminazione(utente, "confermata");
+    const azioni = azioniFinte(altro);
+
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioni)).toBe("pulito");
+    expect(await pastiDi(utente)).toHaveLength(0);
+    expect(await pastiDi(altro)).toHaveLength(1);
+    expect(azioni.chiudiSessione).not.toHaveBeenCalled();
+    expect(azioni.naviga).not.toHaveBeenCalled();
+  });
+
+  it("sessione rimasta dopo il signOut: nessuna navigazione, segno lasciato", async () => {
+    const { utente } = await dispositivo();
+    scriviSegnoEliminazione(utente, "confermata");
+    const azioni = azioniFinte(utente, true);
+
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioni)).toBe("sessione-rimasta");
+    expect(await pastiDi(utente)).toHaveLength(0);
+    expect(azioni.naviga).not.toHaveBeenCalled();
+    expect(leggiSegnoEliminazione()).toEqual({ idUtente: utente, fase: "confermata" });
+  });
+
+  it("segno richiesta, utente che non esiste più, sessione ancora sua: il segno diventa confermata e resta", async () => {
+    const { utente } = await dispositivo();
+    scriviSegnoEliminazione(utente, "richiesta");
+    const azioni = azioniFinte(utente);
+
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioni)).toBe("uscito");
+    // Il giro dopo, senza sessione, non può più chiedere al server: con
+    // "richiesta" resterebbe "in-attesa" per sempre.
+    expect(leggiSegnoEliminazione()).toEqual({ idUtente: utente, fase: "confermata" });
+  });
+
+  it("una discesa partita prima e finita tardi non lascia righe dopo la pulizia", async () => {
+    const { utente } = await dispositivo();
+    scriviSegnoEliminazione(utente, "confermata");
+    discesaInCorso = async () => {
+      await db.pasti.put(pasto(utente, "Riga scritta tardi dalla discesa"));
+    };
+
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioniFinte(null))).toBe("pulito");
+    expect(await pastiDi(utente)).toHaveLength(0);
+  });
 });
 
 describe("riprendiEliminazioneInSospeso", () => {
