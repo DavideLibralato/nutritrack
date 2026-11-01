@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-01 — Accedi: il riquadro per l'account eliminato altrove
+
+Branch `account-eliminato`, commit 6. Nuovo `avvisoEliminato.ts`: legge
+`?eliminato=` una volta dopo l'apertura e lo toglie subito
+dall'indirizzo, insieme a `perse`, come `passwordAggiornata.ts` (prima
+`?eliminato=1` restava e si rimostrava a ogni ricaricamento). Su Accedi
+lo stesso riquadro "Account eliminato" ha due testi: `1` come prima;
+`altrove` "Questo account non esiste più. I suoi dati sono stati tolti
+anche da questo telefono.", più "Le modifiche non ancora salvate sul
+server sono andate perse." solo con `perse=1`. Test della lettura
+dell'indirizzo e della pagina, verificati con tre rotture (riga delle
+modifiche sempre, parametro non tolto, testi scambiati). 1475 test
+verdi, build ok.
+
 ## 2026-11-01 — Ripresa dell'eliminazione: azioni obbligatorie e testate
 
 Branch `account-eliminato`, commit 5b. Il secondo parametro di

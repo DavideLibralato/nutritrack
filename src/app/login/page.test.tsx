@@ -43,6 +43,55 @@ async function accediCon(query: string): Promise<URL> {
   return new URL(finti.push.mock.calls[0][0], window.location.href);
 }
 
+// Il riquadro "Account eliminato" (avvisoEliminato.ts): il testo giusto per
+// chi ha eliminato da qui e per chi è stato eliminato da un altro
+// dispositivo, la riga sulle modifiche perse solo quando c'erano, e il
+// segno tolto dall'indirizzo appena letto (un ricaricamento non lo rimostra).
+describe("Accedi, riquadro Account eliminato", () => {
+  const TESTO_QUI = "I tuoi dati sono stati cancellati dal server e da questo telefono.";
+  const TESTO_ALTROVE = "Questo account non esiste più. I suoi dati sono stati tolti anche da questo telefono.";
+  const RIGA_PERSE = "Le modifiche non ancora salvate sul server sono andate perse.";
+
+  function apri(percorso: string) {
+    window.history.replaceState(null, "", percorso);
+    finti.query = new URL(percorso, window.location.origin).search.slice(1);
+    render(<LoginPage />);
+  }
+
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("?eliminato=1: il testo di chi ha eliminato da qui, segno tolto", async () => {
+    apri("/login?eliminato=1");
+    expect(await screen.findByText(TESTO_QUI)).toBeTruthy();
+    expect(screen.queryByText(TESTO_ALTROVE)).toBeNull();
+    expect(screen.queryByText(RIGA_PERSE)).toBeNull();
+    expect(window.location.search).toBe("");
+  });
+
+  it("?eliminato=altrove senza modifiche: il testo nuovo, senza la riga delle modifiche", async () => {
+    apri("/login?eliminato=altrove");
+    expect(await screen.findByText(TESTO_ALTROVE)).toBeTruthy();
+    expect(screen.getByText("Account eliminato")).toBeTruthy();
+    expect(screen.queryByText(RIGA_PERSE)).toBeNull();
+    expect(window.location.search).toBe("");
+  });
+
+  it("?eliminato=altrove&perse=1: anche la riga delle modifiche perse, tutti e due i segni tolti", async () => {
+    apri("/login?eliminato=altrove&perse=1");
+    expect(await screen.findByText(TESTO_ALTROVE)).toBeTruthy();
+    expect(screen.getByText(RIGA_PERSE)).toBeTruthy();
+    expect(window.location.search).toBe("");
+  });
+
+  it("senza segno: nessun riquadro", async () => {
+    apri("/login");
+    await screen.findByRole("button", { name: "Accedi" });
+    expect(screen.queryByText("Account eliminato")).toBeNull();
+  });
+});
+
 describe("Accedi, destinazione dopo l'accesso", () => {
   it("torna alla pagina protetta da cui arrivava", async () => {
     const dest = await accediCon("redirectTo=%2Fimpostazioni");

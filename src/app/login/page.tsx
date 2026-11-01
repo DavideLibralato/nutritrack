@@ -12,6 +12,7 @@ import MarchioLibra from "@/components/MarchioLibra";
 import AnimazioneApertura from "@/components/AnimazioneApertura";
 import PaginaAccesso from "@/components/PaginaAccesso";
 import { CLASSE_TITOLO_ACCESSO } from "@/lib/classiAccesso";
+import { useAvvisoEliminato } from "@/lib/account/avvisoEliminato";
 
 // useSearchParams() (sotto, in LoginForm) puo' andare in stallo durante il
 // primo render sul server se non e' avvolto in una <Suspense>: Next.js lo
@@ -42,6 +43,7 @@ function LoginForm() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const avviso = useAvvisoEliminato();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,14 +98,23 @@ function LoginForm() {
   return (
     <PaginaAccesso>
       <form noValidate onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        {/* Dopo "Elimina il mio account" (EliminaAccount.tsx porta qui con
-            ?eliminato=1). role="status": letto dagli screen reader. */}
-        {searchParams.get("eliminato") === "1" && (
+        {/* Dopo "Elimina il mio account" (?eliminato=1) o dopo l'account
+            eliminato da un altro dispositivo (?eliminato=altrove, con
+            &perse=1 se c'erano modifiche non inviate): avvisoEliminato.ts.
+            role="status": letto dagli screen reader. */}
+        {avviso && (
           <div role="status" className="rounded-xl border border-border bg-surface px-3.5 py-3">
             <p className="text-[15px] font-medium">Account eliminato</p>
             <p className="text-sm leading-snug text-muted">
-              I tuoi dati sono stati cancellati dal server e da questo telefono.
+              {avviso.tipo === "qui"
+                ? "I tuoi dati sono stati cancellati dal server e da questo telefono."
+                : "Questo account non esiste più. I suoi dati sono stati tolti anche da questo telefono."}
             </p>
+            {avviso.tipo === "altrove" && avviso.perse && (
+              <p className="mt-1 text-sm leading-snug text-muted">
+                Le modifiche non ancora salvate sul server sono andate perse.
+              </p>
+            )}
           </div>
         )}
         {/* Il marchio è parte del titolo: si legge "Accedi a Libra". */}
