@@ -30,11 +30,8 @@ const nextConfig: NextConfig = {
   // scritto a mano e versionato: quel blocco finirebbe in un commit per
   // sbaglio. Spento qui.
   agentRules: false,
-  experimental: {
-    serverActions: {
-      bodySizeLimit: "8mb",
-    },
-  },
+  // Niente `experimental.serverActions.bodySizeLimit`: vale il limite di 1 MB.
+  // L'unica Server Action è `registrati` (quattro campi di testo); la foto profilo va diretta a Storage.
   // Evita che il browser/CDN mettano in cache il file del service worker:
   // altrimenti dopo un deploy gli utenti continuerebbero a usare la versione vecchia.
   async headers() {

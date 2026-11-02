@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Server Actions: tolto il limite di 8 MB (audit #8)
+
+Branch `aggiorna-next`. Tolto da `next.config.ts` il blocco
+`experimental.serverActions.bodySizeLimit: "8mb"`: ora vale il
+predefinito di Next, 1 MB. Prima cercato `"use server"` e `FormData`
+in `src/`: l'unica Server Action è `registrati` in
+`src/lib/actions/auth.ts`, quattro campi di testo; la foto profilo va
+diretta a Storage. Un limite più basso riduce quanto un estraneo può
+far leggere al server con una sola richiesta. Al suo posto un commento
+di due righe sul perché. tsc, lint, 1513 test e build verdi; la build
+non elenca più `serverActions` fra gli esperimenti.
+
 ## 2026-11-02 — Next.js 16.3.3 → 16.4.3 (audit #2)
 
 Branch `aggiorna-next`. `next` 16.3.3 → 16.4.3 ed `eslint-config-next`
