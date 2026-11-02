@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Migration mancanti nel repository (audit #3)
+
+Su main, solo file: nessuna scrittura sul database. Le 14 migration
+applicate che non avevano un file (versioni da `20260819192428` a
+`20261009172230`, da `rafforza_sicurezza_handle_new_user_e_profiles` a
+`pasti_validita`) ora sono in `supabase/migrations/<version>_<name>.sql`,
+copiate dalla colonna `statements` del server con una select. Testo
+esatto, fine riga LF; un a-capo finale aggiunto solo ai 4 testi che
+non l'avevano. md5 verificato su tutti e 14 contro l'elenco preparato da
+Cowork. Confrontati anche i 12 file che c'erano già: SQL identico al
+server in tutti i 10 confrontabili (in 2 il server non ha i commenti);
+`elimina_mio_account` e `trigger_registrazione` non hanno testo sul
+server, il file è l'unica copia. PUNTO §8 aggiornato. I 12 file vecchi
+mantengono il nome senza versione fino al prossimo commit.
+
+## 2026-11-02 — Merge di `aggiorna-next` su main, provato nell'app installata
+
+Unito il 02/11 con fast-forward, da `59c4ffe` a `a834fa6`, 3 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge Davide ha usato l'app
+installata il 02/11 alle 21:31 (Build `a834fa6`, confermata da Davide):
+nei log di Supabase tutte le richieste 200, nessun 401 né 403
+(verificato da Cowork).
+
 ## 2026-11-02 — Server Actions: tolto il limite di 8 MB (audit #8)
 
 Branch `aggiorna-next`. Tolto da `next.config.ts` il blocco

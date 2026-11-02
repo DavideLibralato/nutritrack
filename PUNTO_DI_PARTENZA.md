@@ -4971,6 +4971,24 @@ sono nel file prove_<nome>.sql`. L'unica eccezione resta il caso sopra
 già applicate non si modificano per aggiungerla: il testo applicato e
 quello nel repository devono restare uguali.
 
+**Tutte le migration sono nel repository** (dal 02/11, audit #3). Sul
+server (`supabase_migrations.schema_migrations`) sono 26 e ognuna ha il
+suo file in `supabase/migrations/`. Le 14 che mancavano sono state
+copiate dalla colonna `statements` con il testo esatto, senza
+intestazioni aggiunte, nei file `<version>_<name>.sql`. Le prime due
+(`rafforza_sicurezza_handle_new_user_e_profiles` e
+`pulizia_vecchio_schema`) appartengono allo **schema vecchio**, quello
+dell'app precedente: la seconda ne cancella le tabelle, da
+`schema_iniziale` in poi c'è lo schema di oggi. Confronto fra i file e
+il server, fatto il 02/11:
+- `voci_eliminata_dal_cambio` e `username_disponibile_solo_autenticati`:
+  SQL identico, ma sul server i commenti mancano;
+- le altre 8 confrontabili: testo identico byte per byte, commenti
+  compresi;
+- `elimina_mio_account` e `trigger_registrazione` (applicate dal SQL
+  Editor) **non hanno testo sul server**: il file del repository è
+  l'unica copia, da non perdere.
+
 - **Prettier è configurato ma non ancora applicato a tutto il codice.**
   `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
   doppi apici, punto e virgola, righe fino a 100, virgole finali "es5",
