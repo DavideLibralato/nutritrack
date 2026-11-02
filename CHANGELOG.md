@@ -5,11 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Tolta la prova 303; "Accesso scaduto" provato sull'anteprima
+
+Branch `accesso-scaduto`. Tolto tutto il commit 4 (blocco in
+`fetchConScadenza.ts`, `AvvisoProva303.tsx` e il suo uso in
+Informazioni): grep di "prova303", "libra-prova-303", "Prova 303" e
+"AvvisoProva303" in `src/` senza risultati, e `git diff` fra il commit
+3 e questo su `src/` vuoto. Provato il 02/11 sull'anteprima, account di
+prova, prima di toglierla:
+- `?prova303=una`, Chrome sul PC: un 401 finto, la ripetizione, "Tutto
+  salvato online"; le GET vere su `composizioni` nei log di Supabase a
+  200 (verificato da Cowork);
+- `?prova303=sempre`, Chrome e Safari su iPhone (screenshot 20:59):
+  "Accesso scaduto" con il testo nuovo, "Sincronizza ora" visibile,
+  Dettagli con composizioni · 401 · PGRST303, "Esci e rientra" nel
+  gruppo dei dati sotto Ricarica; con `?prova303=no` torna "Tutto
+  salvato";
+- doppio accesso, Chrome con Slow 3G, "Accedi" + Invio più volte:
+  pulsante su "Attendere..." fino a Oggi, nei log un solo POST /token
+  grant_type=password alle 20:55:40 (verificato da Cowork).
+Nessun 401 vero nei log durante le prove.
+
 ## 2026-11-02 — Prova 303: 401 PGRST303 finto per l'anteprima (temporaneo, da togliere)
 
 Branch `accesso-scaduto`. Temporaneo, da togliere con il commit 5 prima
 del merge: `?prova303=una|sempre|no` fa rispondere alle GET su
 `composizioni` un 401 PGRST303 finto, spento su app-libra.vercel.app.
+Tolto nel commit 5.
 
 ## 2026-11-02 — Sincronizzazione: "Sincronizza ora" anche con l'accesso scaduto, e i dettagli tecnici
 

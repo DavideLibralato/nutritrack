@@ -7624,6 +7624,24 @@ anche per `1`. Ogni test nuovo verificato rompendo il codice da una copia.
 Safari su iPhone, due account usa e getta (esiti sotto, "Difetti e
 verifiche aperti", "Account eliminato da un altro dispositivo").
 
+**"Accesso scaduto" dopo l'accesso** (dal 01/11, branch
+`accesso-scaduto`). Commit 1: Accedi protetto dal doppio invio, e
+`redirectTo` verso `/login` che porta alla home. Commit 2, da solo
+(tocca la sincronizzazione di tutta l'app): un 401 PGRST303 di
+PostgREST si ripete una volta (§9.2); Supabase aggiornato a PostgREST
+14.18 il 01/11. Commit 3: pagina Sincronizzazione nella disposizione C
+(§9.2, "La pagina"), con i Dettagli tecnici. Commit 4 e 5: un 401
+PGRST303 finto (`?prova303=`) per l'anteprima, messo e tolto; dopo il 5
+`src/` è identico al commit 3. **Provato il 02/11** sull'anteprima,
+account di prova: con `una` (Chrome sul PC) un 401 finto, la
+ripetizione e "Tutto salvato online", le GET vere su `composizioni` a
+200 nei log; con `sempre` (Chrome, e Safari su iPhone) "Accesso
+scaduto" con il testo nuovo, "Sincronizza ora", la riga PGRST303 nei
+Dettagli e "Esci e rientra" sotto Ricarica, e con `no` di nuovo "Tutto
+salvato"; doppio accesso con Slow 3G e Invio più volte: "Attendere..."
+fino a Oggi e un solo POST /token nei log. Nessun 401 vero durante le
+prove.
+
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto

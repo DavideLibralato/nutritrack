@@ -12,7 +12,6 @@
 import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
 import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
-import AvvisoProva303 from "@/components/AvvisoProva303"; // TEMPORANEO, commit 4
 
 export default function InformazioniPage() {
   return (
@@ -22,8 +21,6 @@ export default function InformazioniPage() {
         <RigaImpostazioni etichetta="Versione" valore={process.env.VERSIONE_APP} />
         <RigaImpostazioni etichetta="Build" valore={process.env.COMMIT_APP} />
       </GruppoImpostazioni>
-      {/* TEMPORANEO, commit 4 di accesso-scaduto: si toglie con il commit 5 prima del merge */}
-      <AvvisoProva303 />
     </main>
   );
 }

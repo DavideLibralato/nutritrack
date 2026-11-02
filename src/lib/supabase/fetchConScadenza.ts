@@ -85,13 +85,7 @@ export function creaFetchConScadenza(
     );
     const segnale = init?.signal ? unisciSegnali(init.signal, controller.signal) : controller.signal;
     const opzioni = { ...init, signal: segnale };
-    let tentativo = 0;
-    const chiama = () => {
-      tentativo += 1;
-      const finta = rispostaProva303(input, init, tentativo);
-      if (finta) return Promise.resolve(finta);
-      return fetchBase ? fetchBase(input, opzioni) : fetch(input, opzioni);
-    };
+    const chiama = () => (fetchBase ? fetchBase(input, opzioni) : fetch(input, opzioni));
 
     const risposta = await chiama();
     if (!(await daRipetere(input, init, risposta))) return risposta;
@@ -103,65 +97,6 @@ export function creaFetchConScadenza(
     return chiama();
   };
 }
-
-// --- TEMPORANEO, commit 4 di accesso-scaduto: si toglie con il commit 5 prima del merge ---
-//
-// Difetto simulato per provare sull'anteprima la ripetizione su PGRST303 e
-// la pagina Sincronizzazione nuova. Con la prova attiva, le GET su
-// /rest/v1/composizioni ricevono un 401 PGRST303 finto, senza contattare
-// Supabase:
-// - "una": solo la prima chiamata di ogni richiesta; la ripetizione dopo
-//   1 s va al server vero → deve finire "Tutto salvato";
-// - "sempre": anche la ripetizione → "Accesso scaduto", con la riga nei
-//   Dettagli tecnici.
-// Si accende dall'indirizzo, così va anche su iPhone: ?prova303=una o
-// ?prova303=sempre la salva in localStorage, ?prova303=no la toglie. Mai in
-// produzione: su app-libra.vercel.app è spenta comunque.
-const CHIAVE_PROVA_303 = "libra-prova-303";
-const HOST_PRODUZIONE = "app-libra.vercel.app";
-export type ModalitaProva303 = "una" | "sempre";
-
-export function modalitaProva303(): ModalitaProva303 | null {
-  if (typeof window === "undefined") return null;
-  if (window.location.hostname === HOST_PRODUZIONE) return null;
-  try {
-    const dallIndirizzo = new URLSearchParams(window.location.search).get("prova303");
-    if (dallIndirizzo === "una" || dallIndirizzo === "sempre") {
-      window.localStorage.setItem(CHIAVE_PROVA_303, dallIndirizzo);
-    } else if (dallIndirizzo === "no") {
-      window.localStorage.removeItem(CHIAVE_PROVA_303);
-    }
-    const salvata = window.localStorage.getItem(CHIAVE_PROVA_303);
-    return salvata === "una" || salvata === "sempre" ? salvata : null;
-  } catch {
-    return null;
-  }
-}
-
-function rispostaProva303(
-  input: RequestInfo | URL,
-  init: RequestInit | undefined,
-  tentativo: number
-): Response | null {
-  const modalita = modalitaProva303();
-  if (!modalita) return null;
-  if ((init?.method ?? "GET").toUpperCase() !== "GET") return null;
-  const url = indirizzo(input);
-  if (url === null) return null;
-  try {
-    if (!new URL(url).pathname.startsWith("/rest/v1/composizioni")) return null;
-  } catch {
-    return null;
-  }
-  if (modalita === "una" && tentativo > 1) return null;
-  console.warn(`Prova 303 (${modalita}): risposta finta 401 PGRST303, tentativo ${tentativo}.`, url);
-  return new Response(
-    JSON.stringify({ code: "PGRST303", details: null, hint: null, message: "JWT issued at future" }),
-    { status: 401, headers: { "content-type": "application/json; charset=utf-8" } }
-  );
-}
-
-// --- Fine del blocco TEMPORANEO ---
 
 function indirizzo(input: RequestInfo | URL): string | null {
   if (typeof input === "string") return input;
