@@ -5,6 +5,15 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Report dell'audit del 01/11 in docs/audit
+
+Su main. `AUDIT_2026-11-01.md`, finora fuori da git nella radice,
+spostato in `docs/audit/` con contenuto invariato (stesso md5). Prima
+controllato: niente email, password, codici di invito, chiavi né id
+utente; restano solo dati aggregati (3 utenti, 390 voci, URL pubblico),
+ok di Davide. Nessun documento lo citava per nome; aggiunto in PUNTO
+§11 un rimando, perché i numeri "audit #N" sono le sue segnalazioni.
+
 ## 2026-11-02 — Nomi delle migration con la versione
 
 Su main, solo file. I 12 file di `supabase/migrations/` senza

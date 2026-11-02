@@ -7679,6 +7679,10 @@ modalità aereo; nei log di Supabase 110 richieste tutte 200/201,
 nessun 401/403. Registrazione con codice invito non provata dal vivo
 (scelta di Davide), coperta dai test di `auth.ts`.
 
+**Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
+così com'è stato scritto. I rimandi "audit #N" in questo documento sono
+i numeri delle sue segnalazioni.
+
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
