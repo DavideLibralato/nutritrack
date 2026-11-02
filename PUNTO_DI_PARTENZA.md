@@ -2066,7 +2066,7 @@ del 15/10.
     aggiunge solo `postgres`). In ogni caso `anon` torna a poterla
     chiamare. Nello stesso file vanno rifatti `revoke all … from
     public, anon, authenticated` e `grant execute … to authenticated`,
-    come in `nomi_utente.sql`.
+    come in `20261015175818_nomi_utente.sql`.
   - **Ordine dei rilasci** (anteprima e produzione usano lo stesso
     database): (1) migration `registrazione_username_facoltativo`, che
     rende lo username facoltativo nei trigger di registrazione (9.1),
@@ -3608,7 +3608,7 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
   viene corretto nel catalogo, la storia passata non deve cambiare
 - **`eliminata_dal_cambio`** (`uuid`, nullable, nessun default, nessun
   vincolo né indice; migration `voci_eliminata_dal_cambio`, testo in
-  `supabase/migrations/voci_eliminata_dal_cambio.sql`, applicata il 10/10
+  `supabase/migrations/20261010085604_voci_eliminata_dal_cambio.sql`, applicata il 10/10
   e verificata: colonna presente col suo commento, RLS attiva, advisors
   senza avvisi nuovi. Su Dexie `version(7)`, stessi indici della 6: il
   campo è facoltativo, una voce salvata prima non ha la chiave e vale
@@ -3829,7 +3829,7 @@ funzioni (sotto), non da `insert`/`update` diretti, salvo dove è detto.
 
 **`alimenti_condivisi`** — un alimento mandato, una riga per alimento ×
 destinatario, `user_id` = chi manda (decisa il 16/10; file
-`supabase/migrations/alimenti_condivisi.sql`)
+`supabase/migrations/20261016180308_alimenti_condivisi.sql`)
 - `id` calcolato da `manda_alimenti` (sotto), `destinatario_id`,
   **`alimento_origine_id`** (l'id dell'alimento del mittente, **senza
   foreign key**: il mittente può cancellarlo; serve a riconoscere lo
@@ -3919,7 +3919,7 @@ avvisi degli advisors che danno sono accettati (9.6).
 
 Stato: **migration `foto_profilo` applicata il 25/10** da Cowork con
 `apply_migration` (versione `20261025204607`), dopo l'"ok migration" di
-Davide (file `supabase/migrations/foto_profilo.sql`, commit 3).
+Davide (file `supabase/migrations/20261025204607_foto_profilo.sql`, commit 3).
 Verificato da Cowork: tabella con le 6 colonne previste e RLS attiva;
 bucket privato, 512000 byte, solo `image/jpeg`; 3 regole su
 `storage.objects` e 1 su `foto_profilo`; `elimina_mio_account` con gli
@@ -4988,6 +4988,17 @@ il server, fatto il 02/11:
 - `elimina_mio_account` e `trigger_registrazione` (applicate dal SQL
   Editor) **non hanno testo sul server**: il file del repository è
   l'unica copia, da non perdere.
+
+**Nome del file di una migration** (regola del 02/11). Ogni migration
+ha il suo file `supabase/migrations/<version>_<name>.sql`, con la
+versione che Supabase registra in `schema_migrations`: così l'ordine di
+applicazione si legge dal nome, come fa la CLI di Supabase. La versione
+si conosce solo dopo l'applicazione, quindi il file nasce con un nome
+provvisorio (`<name>.sql`) e si rinomina con `git mv` in
+`<version>_<name>.sql` **nello stesso commit** che registra la
+migration applicata. Vale anche per il caso "il connettore rifiuta": la
+versione è quella della riga di registrazione. Rinominare non cambia il
+contenuto: il testo resta quello applicato.
 
 - **Prettier è configurato ma non ancora applicato a tutto il codice.**
   `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
@@ -6196,7 +6207,7 @@ costruzione e non per attenzione.
   L'app la chiama con `supabase.rpc` da un modulo in `/lib`, mai dal
   componente
 - **Applicata l'11/10**, versione 20261011155326, file
-  `supabase/migrations/elimina_mio_account.sql`. Il connettore rifiutava
+  `supabase/migrations/20261011155326_elimina_mio_account.sql`. Il connettore rifiutava
   `apply_migration` senza chiedere conferma (il DELETE nel testo): l'ha
   applicata Davide dal SQL Editor con il testo esatto e la riga di
   registrazione (sezione 8, "Migration che il connettore rifiuta").
@@ -7554,7 +7565,7 @@ accantonata. (2) Con un cambio di dieta e senza riga "allenamento" nel
 periodo in corso, la riga nuova prendeva il normale vecchio. Al 25/10
 (Cowork) i 3 profili hanno i giorni differenziati accesi e una riga
 "allenamento" nel periodo in corso: nessuno è colpito adesso. Commit 4:
-la migration `supabase/migrations/check_quantita_e_valori.sql` (26
+la migration `supabase/migrations/20261025194847_check_quantita_e_valori.sql` (26
 vincoli, §4, "Vincoli sui numeri") e i commenti in `tipi.ts`.
 **Applicata il 25/10** da Cowork con `apply_migration` (versione
 `20261025194847`), dopo l'"ok migration" di Davide. Prove: blocco
@@ -7576,7 +7587,7 @@ nell'app installata** da Davide: l'uso normale.
 **Foto profilo** (dal 25/10, branch `foto-profilo`; §3 "Profilo", "La
 foto profilo"; §4 "La foto profilo: solo online"; §9.6 "File in
 Storage"; mockup `docs/mockups/foto-profilo.html`). **Commit 3: migration scritta**
-(`supabase/migrations/foto_profilo.sql`, tipo `FotoProfilo` in
+(`supabase/migrations/20261025204607_foto_profilo.sql`, tipo `FotoProfilo` in
 `tipi.ts`), **applicata il 25/10** da Cowork (versione
 `20261025204607`; prove SQL prima "migration non applicata", dopo "52
 su 52"; `get_advisors` solo con l'avviso atteso; §4, "La foto profilo:

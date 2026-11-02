@@ -128,7 +128,10 @@ entrambe le checklist vanno verdi; un deploy può toccarne anche una sola.
 4. Colonna nuova `NOT NULL` solo con `DEFAULT`. Mai `NOT NULL` secco su una
    tabella non vuota.
 5. Ogni modifica di struttura passa da `apply_migration` (una migration =
-   un file versionato), mai da `execute_sql` a mano. Unica eccezione: se
+   un file versionato, `supabase/migrations/<version>_<name>.sql`: nasce
+   come `<name>.sql` e si rinomina con la versione assegnata da Supabase
+   nello stesso commit della migration applicata, PUNTO §8), mai da
+   `execute_sql` a mano. Unica eccezione: se
    il connettore rifiuta `apply_migration` senza chiedere conferma, la
    applica Davide dal SQL Editor con il testo esatto del file e la riga
    di registrazione — procedura in `PUNTO_DI_PARTENZA.md` §8, "Migration

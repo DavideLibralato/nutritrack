@@ -5,6 +5,18 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Nomi delle migration con la versione
+
+Su main, solo file. I 12 file di `supabase/migrations/` senza
+versione rinominati con `git mv` in `<version>_<name>.sql` (versioni
+lette dal server), contenuto invariato: rinomine al 100%. Aggiornati i
+percorsi in PUNTO (7 punti) e nel commento in testa a
+`src/lib/account/eliminaAccount.ts`. Regola nuova in PUNTO §8 e in
+`CLAUDE.md` A.5: il file nasce con un nome provvisorio e si rinomina con
+la versione assegnata da Supabase nello stesso commit della migration
+applicata. CHANGELOG storico e report dell'audit lasciati coi nomi
+vecchi.
+
 ## 2026-11-02 — Migration mancanti nel repository (audit #3)
 
 Su main, solo file: nessuna scrittura sul database. Le 14 migration

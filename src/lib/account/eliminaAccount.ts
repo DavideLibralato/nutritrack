@@ -1,6 +1,6 @@
 // "Elimina il mio account" (PUNTO_DI_PARTENZA.md §9.6): chiede al server di
 // cancellare l'account (funzione Postgres elimina_mio_account, migration
-// supabase/migrations/elimina_mio_account.sql) e, SOLO dopo il suo sì,
+// supabase/migrations/20261011155326_elimina_mio_account.sql) e, SOLO dopo il suo sì,
 // pulisce questo dispositivo ed esce. Il componente (EliminaAccount.tsx)
 // mostra l'esito; qui non c'è interfaccia.
 //
