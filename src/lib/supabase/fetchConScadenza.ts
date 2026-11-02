@@ -1,6 +1,7 @@
 // La fetch che il client Supabase usa per ogni richiesta (client.ts), con
 // una scadenza: dopo SCADENZA_FETCH_MS la richiesta viene ANNULLATA, non
-// solo abbandonata. Dal 10/10/2026.
+// solo abbandonata. Dal 10/10/2026. Dal 01/11/2026 ripete anche, una
+// volta, un 401 PGRST303 di PostgREST (sezione più sotto).
 //
 // Perché annullarla davvero: una richiesta abbandonata può arrivare al
 // server dopo. Esempio: un invio "100 g" resta appeso e scade, l'utente
@@ -30,6 +31,41 @@ export const SCADENZA_FETCH_MS = 30_000;
 
 export const MESSAGGIO_ANNULLATA = "Nessuna risposta dal server entro il tempo massimo.";
 
+// --- Un 401 PGRST303 si ripete una volta (dal 01/11/2026) -----------------
+//
+// PostgREST rifiuta ogni tanto un token appena emesso con 401, codice
+// PGRST303 "JWT issued at future". La causa è un bug di PostgREST prima
+// della 14.18 (issue #5196, "Fix sporadic PGRST303 JWT issued at future
+// errors"): dopo un periodo senza richieste, la sua "ora corrente" in
+// memoria può restare indietro di oltre i 30 s di tolleranza che concede
+// sulle date del token. Non è l'orologio del telefono: le date del token
+// le mette il server di Supabase Auth.
+//
+// I due casi del 01/11 (log di Supabase): alle 10:33:51 UTC su iPhone,
+// token di un accesso emesso meno di un secondo prima, GET composizioni
+// rifiutata mentre le altre 10 tabelle dello stesso scarico passavano; lo
+// stesso token, 0,8 s dopo, ha avuto 200. Alle 10:59:15 su Chrome, dopo
+// una registrazione, GET pasti. Senza la ripetizione basta una tabella su
+// 11 per far mostrare "Accesso scaduto" (statoSincronizzazione.ts).
+//
+// Regola: solo per PostgREST (/rest/v1/), solo con un 401 il cui corpo JSON
+// ha code "PGRST303", una volta sola, dopo RITARDO_RIPETIZIONE_MS, con lo
+// stesso token. Il codice e non il testo: dalla 14.18 il messaggio porta
+// anche i secondi. PGRST303 vale per tutti i rifiuti delle date del token,
+// anche "JWT expired": ripeterlo una volta non fa danni, e se il token è
+// davvero scaduto il secondo 401 arriva a chi chiama come prima.
+// Ripetere anche un invio (upsert) è sicuro: PostgREST controlla il token
+// prima di toccare il database, quindi la prima richiesta non ha scritto
+// niente.
+//
+// Il corpo si legge da un clone(): l'originale resta intatto per la
+// libreria Supabase. Le richieste HEAD (i conteggi) non hanno corpo e non
+// si ripetono: un loro errore è già trattato come conteggio non fatto.
+// La scadenza è una sola per le due prove: nessuna richiesta dura più di
+// SCADENZA_FETCH_MS in tutto.
+export const RITARDO_RIPETIZIONE_MS = 1000;
+export const CODICE_DATE_TOKEN = "PGRST303";
+
 // `fetchBase` serve ai test. Senza, si chiama la fetch globale al momento
 // della richiesta: un riferimento salvato prima e chiamato da solo
 // ("fetchBase(...)" invece di "window.fetch(...)") in alcuni browser dà
@@ -38,7 +74,7 @@ export function creaFetchConScadenza(
   ms: number = SCADENZA_FETCH_MS,
   fetchBase?: typeof fetch
 ): typeof fetch {
-  return (input, init) => {
+  return async (input, init) => {
     const controller = new AbortController();
     // Il timer non si ferma quando arrivano le intestazioni: anche la
     // lettura del corpo della risposta può bloccarsi. Annullare una
@@ -49,8 +85,71 @@ export function creaFetchConScadenza(
     );
     const segnale = init?.signal ? unisciSegnali(init.signal, controller.signal) : controller.signal;
     const opzioni = { ...init, signal: segnale };
-    return fetchBase ? fetchBase(input, opzioni) : fetch(input, opzioni);
+    const chiama = () => (fetchBase ? fetchBase(input, opzioni) : fetch(input, opzioni));
+
+    const risposta = await chiama();
+    if (!(await daRipetere(input, init, risposta))) return risposta;
+    console.warn(
+      `PostgREST ha rifiutato le date del token (${CODICE_DATE_TOKEN}): ripeto una volta.`,
+      indirizzo(input)
+    );
+    await attesa(RITARDO_RIPETIZIONE_MS, segnale);
+    return chiama();
   };
+}
+
+function indirizzo(input: RequestInfo | URL): string | null {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.href;
+  return null; // una Request: il suo corpo potrebbe essere già consumato
+}
+
+async function daRipetere(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  risposta: Response
+): Promise<boolean> {
+  if (risposta.status !== 401) return false;
+  const url = indirizzo(input);
+  if (url === null) return false;
+  try {
+    if (!new URL(url).pathname.startsWith("/rest/v1/")) return false;
+  } catch {
+    return false;
+  }
+  // Il corpo dell'invio deve poter ripartire uguale: la libreria Supabase
+  // manda sempre un testo (JSON) o niente.
+  if (init?.body != null && typeof init.body !== "string") return false;
+  try {
+    const corpo: unknown = await risposta.clone().json();
+    return (
+      typeof corpo === "object" &&
+      corpo !== null &&
+      (corpo as { code?: unknown }).code === CODICE_DATE_TOKEN
+    );
+  } catch {
+    return false; // corpo vuoto (HEAD) o non JSON
+  }
+}
+
+// Aspetta `ms`, ma si ferma con lo stesso motivo se il segnale si annulla
+// nel frattempo (la scadenza, o chi chiama).
+function attesa(ms: number, segnale: AbortSignal): Promise<void> {
+  return new Promise((risolvi, rifiuta) => {
+    if (segnale.aborted) {
+      rifiuta(segnale.reason);
+      return;
+    }
+    const timer = setTimeout(() => {
+      segnale.removeEventListener("abort", alAnnullamento);
+      risolvi();
+    }, ms);
+    function alAnnullamento() {
+      clearTimeout(timer);
+      rifiuta(segnale.reason);
+    }
+    segnale.addEventListener("abort", alAnnullamento, { once: true });
+  });
 }
 
 // Un segnale che si annulla quando si annulla uno dei due: la scadenza o

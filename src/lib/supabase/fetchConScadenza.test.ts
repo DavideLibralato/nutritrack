@@ -11,10 +11,17 @@
 // mai finché non viene annullata — come una rete appesa.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { creaFetchConScadenza, MESSAGGIO_ANNULLATA, SCADENZA_FETCH_MS } from "./fetchConScadenza";
+import {
+  creaFetchConScadenza,
+  MESSAGGIO_ANNULLATA,
+  RITARDO_RIPETIZIONE_MS,
+  SCADENZA_FETCH_MS,
+} from "./fetchConScadenza";
 import { createClient } from "./client";
 import { db } from "../db/database";
 import { sincronizzaOutbox } from "../sync/sincronizza";
+import { scaricaTutto } from "../sync/discesa";
+import { azzeraStatoGiri, leggiStatoGiri } from "../sync/statoSincronizzazione";
 import type { VoceOutbox } from "../sync/outbox";
 
 // Una fetch che non risponde mai: si chiude solo se il segnale la annulla,
@@ -179,5 +186,249 @@ describe("il client Supabase vero con una rete appesa", () => {
     expect(dopo?.tentativi).toBe(4);
     expect(dopo?.sospesa_il).toBeNull();
     expect(dopo?.ultimo_errore).toContain(MESSAGGIO_ANNULLATA);
+  });
+});
+
+// --- La ripetizione su 401 PGRST303 (dal 01/11/2026) ------------------------
+//
+// Il 01/11 PostgREST ha rifiutato due volte un token appena emesso con 401
+// PGRST303 "JWT issued at future" (bug di PostgREST prima della 14.18, vedi
+// fetchConScadenza.ts): una tabella su 11 e la pagina Sincronizzazione
+// mostrava "Accesso scaduto", con "Esci e rientra" come unica scelta. Lo
+// stesso token, un attimo dopo, passava. Qui: si ripete una volta sola,
+// dopo un secondo, solo per PostgREST e solo per quel codice; il corpo
+// resta leggibile; la scadenza resta una sola.
+
+const REST = "https://esempio.supabase.co/rest/v1/composizioni?select=*";
+
+function risposta401(codice: string, metodo = "GET"): Response {
+  if (metodo === "HEAD") return new Response(null, { status: 401 });
+  return new Response(
+    JSON.stringify({ code: codice, details: null, hint: null, message: "JWT issued at future" }),
+    { status: 401, headers: { "content-type": "application/json; charset=utf-8" } }
+  );
+}
+
+function rispostaJson(corpo: unknown, status = 200): Response {
+  return new Response(JSON.stringify(corpo), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
+// Fa avanzare il tempo finto a piccoli passi finché la promessa non è
+// finita: fra un passo e l'altro girano le letture di Dexie e dei corpi.
+async function finoAllaFine<T>(promessa: Promise<T>, passoMs = 100, passiMassimi = 600): Promise<T> {
+  let finita = false;
+  const seguita = promessa.finally(() => (finita = true));
+  seguita.catch(() => {});
+  for (let i = 0; i < passiMassimi && !finita; i++) {
+    await vi.advanceTimersByTimeAsync(passoMs);
+  }
+  return seguita;
+}
+
+describe("creaFetchConScadenza, 401 PGRST303", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  it("401 PGRST303 poi 200: chi chiama riceve il 200, la seconda prova parte dopo un secondo", async () => {
+    const finta = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(risposta401("PGRST303"))
+      .mockResolvedValueOnce(rispostaJson([]));
+    const promessa = creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST, { method: "GET" });
+
+    await vi.advanceTimersByTimeAsync(RITARDO_RIPETIZIONE_MS - 1);
+    expect(finta).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    const risposta = await promessa;
+    expect(risposta.status).toBe(200);
+    expect(await risposta.json()).toEqual([]);
+    expect(finta).toHaveBeenCalledTimes(2);
+  });
+
+  it("due PGRST303 di fila: il secondo 401 arriva a chi chiama, nessuna terza prova", async () => {
+    const finta = vi.fn<typeof fetch>(async () => risposta401("PGRST303"));
+    const risposta = await finoAllaFine(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST));
+    await vi.advanceTimersByTimeAsync(RITARDO_RIPETIZIONE_MS * 10);
+
+    expect(risposta.status).toBe(401);
+    expect(await risposta.json()).toMatchObject({ code: "PGRST303" });
+    expect(finta).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["401 con un altro codice (PGRST301)", REST, 401, "PGRST301"],
+    ["403 anche con code PGRST303 (si ripete solo il 401)", REST, 403, "PGRST303"],
+    ["401 PGRST303 da Supabase Auth, non da PostgREST", "https://esempio.supabase.co/auth/v1/user", 401, "PGRST303"],
+  ])("%s: nessuna ripetizione, corpo ancora leggibile", async (_nome, url, status, codice) => {
+    const finta = vi.fn<typeof fetch>(async () => rispostaJson({ code: codice }, status));
+    const risposta = await finoAllaFine(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(url));
+    await vi.advanceTimersByTimeAsync(RITARDO_RIPETIZIONE_MS * 5);
+
+    expect(risposta.status).toBe(status);
+    expect(await risposta.json()).toEqual({ code: codice });
+    expect(finta).toHaveBeenCalledTimes(1);
+  });
+
+  it("401 senza corpo (HEAD, i conteggi) o non JSON: nessuna ripetizione", async () => {
+    const senzaCorpo = vi.fn<typeof fetch>(async () => risposta401("PGRST303", "HEAD"));
+    const r1 = await finoAllaFine(creaFetchConScadenza(SCADENZA_FETCH_MS, senzaCorpo)(REST, { method: "HEAD" }));
+    const testo = vi.fn<typeof fetch>(async () => new Response("non autorizzato", { status: 401 }));
+    const r2 = await finoAllaFine(creaFetchConScadenza(SCADENZA_FETCH_MS, testo)(REST));
+    await vi.advanceTimersByTimeAsync(RITARDO_RIPETIZIONE_MS * 5);
+
+    expect(r1.status).toBe(401);
+    expect(r2.status).toBe(401);
+    expect(await r2.text()).toBe("non autorizzato");
+    expect(senzaCorpo).toHaveBeenCalledTimes(1);
+    expect(testo).toHaveBeenCalledTimes(1);
+  });
+
+  it("una richiesta non arrivata (status 0) non si ripete", async () => {
+    const finta = vi.fn<typeof fetch>(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    await expect(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST)).rejects.toThrow("Failed to fetch");
+    await vi.advanceTimersByTimeAsync(RITARDO_RIPETIZIONE_MS * 5);
+    expect(finta).toHaveBeenCalledTimes(1);
+  });
+
+  it("un invio (POST) riparte uguale: stesso metodo, stesso corpo, stesse intestazioni", async () => {
+    const finta = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(risposta401("PGRST303"))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    const corpo = JSON.stringify({ id: "p1", nome: "Pranzo" });
+    const intestazioni = { Authorization: "Bearer token-di-prova" };
+    const risposta = await finoAllaFine(
+      creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST, { method: "POST", body: corpo, headers: intestazioni })
+    );
+
+    expect(risposta.status).toBe(201);
+    expect(finta).toHaveBeenCalledTimes(2);
+    for (const [, init] of finta.mock.calls) {
+      expect(init).toMatchObject({ method: "POST", body: corpo, headers: intestazioni });
+    }
+  });
+
+  it("la scadenza è una sola: se scade durante l'attesa, AbortError e nessuna seconda prova", async () => {
+    // La prima risposta arriva a 29,5 s: l'attesa di un secondo supera i 30.
+    const finta = vi.fn<typeof fetch>(
+      () =>
+        new Promise<Response>((r) =>
+          setTimeout(() => r(risposta401("PGRST303")), SCADENZA_FETCH_MS - 500)
+        )
+    );
+    const esito = expect(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST)).rejects.toMatchObject({
+      name: "AbortError",
+      message: MESSAGGIO_ANNULLATA,
+    });
+    await vi.advanceTimersByTimeAsync(SCADENZA_FETCH_MS + RITARDO_RIPETIZIONE_MS);
+    await esito;
+    expect(finta).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("il client Supabase vero con un 401 PGRST303", () => {
+  beforeEach(async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://esempio.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "chiave-finta");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await db.outbox.clear();
+    await db.sync_cursori.clear();
+    azzeraStatoGiri();
+  });
+
+  // Il caso del 01/11: lo scarico completo dopo l'accesso, 11 tabelle in
+  // parallelo, una sola rifiutata.
+  it("discesa: una tabella rifiutata una volta non rende il giro \"sessione\", il giro è ok", async () => {
+    let rifiutate = 0;
+    const chiamate: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        chiamate.push(new URL(url).pathname);
+        if (url.includes("/rest/v1/composizioni?") && rifiutate === 0) {
+          rifiutate++;
+          return risposta401("PGRST303");
+        }
+        return rispostaJson([]);
+      })
+    );
+
+    const nonScaricate = await finoAllaFine(scaricaTutto("u-pgrst303"));
+
+    expect(nonScaricate).toEqual([]);
+    expect(leggiStatoGiri().discesa.esito).toBe("ok");
+    expect(chiamate.filter((p) => p === "/rest/v1/composizioni")).toHaveLength(2);
+  });
+
+  function voceDiProva(): VoceOutbox {
+    return {
+      id: "pasti:p1",
+      tabella: "pasti",
+      record_id: "p1",
+      dati: { id: "p1", user_id: "u1", updated_at: "2026-11-01T10:33:51.000Z", deleted_at: null },
+      creato_il: "2026-11-01T10:33:51.000Z",
+      tentativi: 0,
+      ultimo_errore: null,
+      sospesa_il: null,
+    };
+  }
+
+  function sessioneFinta() {
+    vi.spyOn(createClient().auth, "getSession").mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+      error: null,
+    } as never);
+  }
+
+  it("salita: un invio rifiutato una volta parte alla seconda prova, coda vuota, giro ok", async () => {
+    const corpi: (string | null)[] = [];
+    let rifiutate = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method !== "POST") return rispostaJson([]);
+        corpi.push((init.body as string) ?? null);
+        if (rifiutate++ === 0) return risposta401("PGRST303");
+        return new Response(null, { status: 201 });
+      })
+    );
+    await db.outbox.put(voceDiProva());
+    sessioneFinta();
+
+    expect(await finoAllaFine(sincronizzaOutbox())).toEqual({ inviate: 1, fallite: 0, sospese: 0 });
+    expect(await db.outbox.count()).toBe(0);
+    expect(leggiStatoGiri().salita.esito).toBe("ok");
+    expect(corpi).toHaveLength(2);
+    expect(corpi[1]).toBe(corpi[0]);
+  });
+
+  it("salita: rifiutato anche alla seconda prova, la voce resta con tentativi 0 (regola del 401 invariata)", async () => {
+    let invii = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method !== "POST") return rispostaJson([]);
+        invii++;
+        return risposta401("PGRST303");
+      })
+    );
+    await db.outbox.put(voceDiProva());
+    sessioneFinta();
+
+    expect(await finoAllaFine(sincronizzaOutbox())).toEqual({ inviate: 0, fallite: 1, sospese: 0 });
+    const dopo = await db.outbox.get("pasti:p1");
+    expect(dopo?.tentativi).toBe(0);
+    expect(dopo?.sospesa_il).toBeNull();
+    expect(leggiStatoGiri().salita.esito).toBe("sessione");
+    expect(invii).toBe(2);
   });
 });

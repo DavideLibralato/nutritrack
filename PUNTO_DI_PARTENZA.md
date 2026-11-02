@@ -5563,6 +5563,30 @@ Come, in concreto:
   - trenta secondi e non meno perché una pagina della discesa può avere
     500 righe: un limite stretto farebbe fallire a ripetizione la prima
     discesa di un dispositivo nuovo su una rete lenta
+- **un 401 PGRST303 di PostgREST si ripete una volta** (dal 01/11, nella
+  stessa fetch, `fetchConScadenza.ts`). PostgREST prima della 14.18 (issue
+  #5196) rifiuta ogni tanto un token appena emesso con "JWT issued at
+  future": dopo un periodo senza richieste la sua ora in memoria resta
+  indietro di oltre i 30 s di tolleranza. Il 01/11 è successo due volte
+  subito dopo un accesso o una registrazione: una tabella su 11 dello
+  scarico rifiutata, "Accesso scaduto" a schermo, e lo stesso token un
+  attimo dopo passava
+  - **la regola**: solo indirizzi `/rest/v1/`, solo un 401 il cui corpo
+    JSON ha `code` "PGRST303" (letto da un `clone()`, l'originale resta
+    alla libreria), una volta sola, dopo 1 secondo, stesso token, stesso
+    corpo. Dal codice e non dal testo: dalla 14.18 il messaggio porta i
+    secondi
+  - PGRST303 copre tutti i rifiuti delle date del token, anche "JWT
+    expired": ripetere una volta non fa danni, e se il token è davvero
+    scaduto il secondo 401 arriva come prima (in salita nessun tentativo
+    contato, indicatore "sessione")
+  - ripetere un invio è sicuro: il token si controlla prima di toccare il
+    database, la prima richiesta non ha scritto niente
+  - **una sola scadenza** per le due prove: in tutto la richiesta non dura
+    più di 30 s. Le HEAD (conteggi) non hanno corpo e non si ripetono
+  - il rimedio vero è lato Supabase (PostgREST ≥ 14.18): la ripetizione
+    resta comunque, costa un secondo solo quando serve
+  - Supabase aggiornato a PostgREST 14.18 il 01/11 (da 14.15)
 - **discesa**: legge da Supabase le righe cambiate e le scrive in Dexie
   (`src/lib/sync/discesa.ts`) — senza questa metà, Supabase era solo una
   destinazione: un dispositivo nuovo non vedeva mai i dati già presenti sul
@@ -5763,7 +5787,8 @@ senza polling:
 **Gli stati, uno alla volta, per priorità** (`statoDaMostrare`, funzione
 pura con i test):
 1. **accantonate** — modifiche su cui l'app ha smesso di riprovare;
-2. **sessione scaduta** — un 401, in salita o in discesa;
+2. **sessione scaduta** — un 401, in salita o in discesa (un PGRST303
+   conta solo se torna anche alla seconda prova, vedi la fetch sopra);
 3. **errore** — il server rifiuta, o una tabella non si scarica; porta da
    quando e, per la discesa, quali tabelle;
 4. **in corso** — un giro che dura da almeno un secondo (prima no: un
@@ -7579,6 +7604,11 @@ verifiche aperti", "Account eliminato da un altro dispositivo").
   (fase 5)
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
+  - copia manuale dei dati del 01/11, fatta prima dell'aggiornamento di
+    Supabase: in `C:\Users\david\Progetti\backup-libra`, fuori dal repo
+    (15 tabelle, 736 righe). Non va mai in git: contiene dati reali. È
+    una copia di un giorno, non sostituisce "Esporta i miei dati"
+    (audit #4)
 - Ora del consumo (`consumato_alle`) modificabile nello sheet. La
   gestione dei pasti in Impostazioni > Pasti e orari è completa (passi
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")

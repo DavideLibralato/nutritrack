@@ -5,6 +5,34 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-01 — Un 401 PGRST303 di PostgREST si ripete una volta
+
+Branch `accesso-scaduto`. Causa di "Accesso scaduto" subito dopo
+l'accesso, vista nei log del 01/11: PostgREST ha rifiutato un token
+appena emesso con 401 PGRST303 "JWT issued at future" (10:33:51 UTC su
+iPhone, GET composizioni, dopo un accesso; 10:59:15 su Chrome, GET
+pasti, dopo una registrazione). Bug di PostgREST prima della 14.18
+(issue #5196): dopo un periodo senza richieste la sua ora in memoria
+resta indietro oltre i 30 s di tolleranza. Una tabella su 11 bastava
+per l'esito "sessione"; lo stesso token, un attimo dopo, passava.
+Corretto in `fetchConScadenza.ts`, quindi per tutte le richieste
+dell'app: solo `/rest/v1/`, solo 401 con `code` "PGRST303" nel corpo
+JSON (letto da un `clone()`), una volta sola, dopo 1 s, stesso corpo.
+La scadenza di 30 s resta una sola per le due prove. Regola in
+PUNTO §9.2. 12 test nuovi in `fetchConScadenza.test.ts`, anche con il
+client Supabase vero: discesa con una tabella rifiutata una volta →
+giro "ok"; salita → voce inviata alla seconda prova; rifiutata due
+volte → tentativi 0 ed esito "sessione" come prima. Ognuno sa fallire
+(11 rotture: senza ripetizione, senza controllo di codice, percorso,
+status o attesa, ripetizioni senza limite, corpo letto dall'originale,
+attesa che ignora la scadenza, HEAD ripetute, seconda prova senza
+corpo, ripetizione di una richiesta non arrivata). Il 01/11 verso le
+21:50 Davide ha aggiornato il progetto Supabase: Postgres 17.6.1.155 →
+17.11, PostgREST 14.15 → 14.18 (il bug c'era); prima, copia dei dati
+in sola lettura fuori dal repo; dopo, righe, RLS e advisors verificati
+da Cowork. La ripetizione resta come rete di sicurezza. Aperto: le
+HEAD con PGRST303 non si ripetono (niente corpo da leggere).
+
 ## 2026-11-01 — Accedi: un secondo invio non parte più
 
 Branch `accesso-scaduto`. Bug visto nei log del 01/11: alle 10:33:52
