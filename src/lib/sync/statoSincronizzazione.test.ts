@@ -14,6 +14,7 @@ import {
   CHIAVE_ULTIMO_SUCCESSO,
   leggiStatoGiri,
   iscriviStatoGiri,
+  segnaFineGiro,
   statoDaMostrare,
   RITARDO_IN_CORSO_MS,
   type RiassuntoCoda,
@@ -58,7 +59,7 @@ const ADESSO = Date.parse("2026-10-10T14:30:00.000Z");
 const CODA_VUOTA: RiassuntoCoda = { inAttesa: 0, inAttesaDal: null, accantonate: 0 };
 
 function verso(parziale: Partial<StatoVerso> = {}): StatoVerso {
-  return { inCorso: false, esito: "ok", dal: null, diFila: 0, ...parziale };
+  return { inCorso: false, esito: "ok", dal: null, diFila: 0, dettagli: [], ...parziale };
 }
 
 function giri(parziale: {
@@ -110,7 +111,7 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
       giri({ salita: { esito: "errore", dal: "2026-10-10T14:00:00.000Z", diFila: 3 }, discesa: { esito: "sessione" } }),
       ADESSO
     );
-    expect(stato).toEqual({ tipo: "sessione", inAttesa: 2, pallino: true });
+    expect(stato).toEqual({ tipo: "sessione", inAttesa: 2, dettagli: [], pallino: true });
   });
 
   it("errore: il pallino si accende solo dal secondo giro fallito di fila", () => {
@@ -143,8 +144,44 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
       inAttesa: 0,
       dal: "2026-10-10T13:50:00.000Z",
       tabelleNonScaricate: ["pasti"],
+      dettagli: [],
       pallino: true,
     });
+  });
+
+  // Dal 02/11/2026: "Dettagli tecnici" per sessione ed errore. Prima la
+  // discesa, poi la salita; un verso andato bene non porta righe.
+  it("sessione ed errore portano i dettagli dei due versi, prima la discesa", () => {
+    const giu = { verso: "discesa" as const, tabella: "composizioni" as const, status: 401, codice: "PGRST303", messaggio: "JWT issued at future" };
+    const su = { verso: "salita" as const, tabella: "pasti" as const, status: 400, codice: "23514", messaggio: "violates check constraint" };
+
+    const sessione = statoDaMostrare(
+      CODA_VUOTA,
+      giri({ discesa: { esito: "sessione", dettagli: [giu] }, salita: { esito: "errore", diFila: 1, dettagli: [su] } }),
+      ADESSO
+    );
+    expect(sessione).toMatchObject({ tipo: "sessione", dettagli: [giu, su] });
+
+    const errore = statoDaMostrare(
+      CODA_VUOTA,
+      giri({ salita: { esito: "errore", diFila: 1, dettagli: [su] } }),
+      ADESSO
+    );
+    expect(errore).toMatchObject({ tipo: "errore", dettagli: [su] });
+  });
+
+  it("un giro andato bene toglie i dettagli del verso", () => {
+    azzeraStatoGiri();
+    segnaFineGiro("discesa", "sessione", {
+      parlatoColServer: true,
+      dettagli: [{ verso: "discesa", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: null }],
+    });
+    expect(leggiStatoGiri().discesa.dettagli).toHaveLength(1);
+    segnaFineGiro("discesa", "ok", {
+      parlatoColServer: true,
+      dettagli: [{ verso: "discesa", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: null }],
+    });
+    expect(leggiStatoGiri().discesa.dettagli).toEqual([]);
   });
 
   it("un errore resta a schermo mentre il giro dopo è in corso (niente sfarfallio)", () => {
@@ -287,8 +324,8 @@ describe("lo stato dei giri, aggiornato da salita e discesa", () => {
 
     expect(nonScaricate).toEqual(
       expect.arrayContaining([
-        { tabella: "pasti", esito: "sessione" },
-        { tabella: "alimenti", esito: "rete" },
+        { tabella: "pasti", esito: "sessione", status: 401, codice: null, messaggio: "JWT expired" },
+        { tabella: "alimenti", esito: "rete", status: 0, codice: null, messaggio: "FetchError: Load failed" },
       ])
     );
     expect(nonScaricate).toHaveLength(2);

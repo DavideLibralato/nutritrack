@@ -37,6 +37,22 @@ export type EsitoGiro = "ok" | "rete" | "sessione" | "errore";
 
 export type Verso = "salita" | "discesa";
 
+// Che cosa è andato storto in una richiesta, per "Dettagli tecnici" in
+// Impostazioni > Sincronizzazione (dal 02/11/2026): il 01/11 per sapere che
+// "Accesso scaduto" era un PGRST303 sono serviti i log di Supabase. Solo in
+// memoria, come il resto dei giri: niente in Dexie.
+// - status: lo status HTTP (0 = non arrivata), null = eccezione;
+// - codice: il codice dell'errore di PostgREST/Postgres ("PGRST303",
+//   "23503"...), null se la risposta non ne ha uno;
+// - messaggio: il testo dell'errore, così com'è.
+export interface DettaglioErrore {
+  verso: Verso;
+  tabella: NomeTabella;
+  status: number | null;
+  codice: string | null;
+  messaggio: string | null;
+}
+
 export interface StatoVerso {
   inCorso: boolean;
   // null = nessun giro finito in questa sessione dell'app.
@@ -48,6 +64,10 @@ export interface StatoVerso {
   // tab per "il server rifiuta" si accende dal secondo (decisione del
   // 10/10): un intoppo isolato non deve accendere niente.
   diFila: number;
+  // Le richieste fallite dell'ultimo giro (vuoto con esito ok): in
+  // discesa una per tabella non scaricata, in salita quella che ha fermato
+  // la coda.
+  dettagli: DettaglioErrore[];
 }
 
 export interface StatoGiri {
@@ -65,6 +85,10 @@ export interface StatoGiri {
 export interface TabellaNonScaricata {
   tabella: NomeTabella;
   esito: Exclude<EsitoGiro, "ok">;
+  // Dal 02/11/2026, per "Dettagli tecnici" (DettaglioErrore).
+  status: number | null;
+  codice: string | null;
+  messaggio: string | null;
 }
 
 // Lo status HTTP di una risposta, in esito. Stessa regola di
@@ -99,7 +123,7 @@ function salvaUltimoSuccesso(valore: string): void {
   }
 }
 
-const VERSO_VUOTO: StatoVerso = { inCorso: false, esito: null, dal: null, diFila: 0 };
+const VERSO_VUOTO: StatoVerso = { inCorso: false, esito: null, dal: null, diFila: 0, dettagli: [] };
 
 function statoIniziale(): StatoGiri {
   return {
@@ -198,10 +222,16 @@ export function segnaInizioGiro(verso: Verso): void {
 // `parlatoColServer`: il giro ha avuto almeno una risposta buona dal
 // server. Un giro di salita con la coda vuota finisce "ok" senza aver
 // mandato niente: non deve aggiornare "controllato alle".
+// `dettagli`: le richieste fallite del giro (DettaglioErrore); con esito
+// ok si ignorano.
 export function segnaFineGiro(
   verso: Verso,
   esito: EsitoGiro,
-  opzioni: { parlatoColServer: boolean; tabelleNonScaricate?: NomeTabella[] }
+  opzioni: {
+    parlatoColServer: boolean;
+    tabelleNonScaricate?: NomeTabella[];
+    dettagli?: DettaglioErrore[];
+  }
 ): void {
   const prima = leggiStatoGiri();
   const adesso = new Date().toISOString();
@@ -210,12 +240,13 @@ export function segnaFineGiro(
 
   const nuovoVerso: StatoVerso =
     esito === "ok"
-      ? { inCorso: false, esito, dal: null, diFila: 0 }
+      ? { inCorso: false, esito, dal: null, diFila: 0, dettagli: [] }
       : {
           inCorso: false,
           esito,
           dal: stessoEsito && precedente.dal ? precedente.dal : adesso,
           diFila: stessoEsito ? precedente.diFila + 1 : 1,
+          dettagli: opzioni.dettagli ?? [],
         };
 
   const successo = esito === "ok" && opzioni.parlatoColServer;
@@ -265,14 +296,17 @@ export const RITARDO_IN_CORSO_MS = 1000;
 // 6. sincronizzato, con l'ora dell'ultimo contatto riuscito.
 // Un errore resta a schermo anche mentre parte il giro dopo: sparisce
 // quando un giro finisce bene, non al suo inizio (niente sfarfallio).
+// "sessione" ed "errore" portano i `dettagli` dei versi non andati bene
+// (prima la discesa, poi la salita), per "Dettagli tecnici" (dal 02/11).
 export type StatoDaMostrare =
   | { tipo: "accantonate"; numero: number; pallino: true }
-  | { tipo: "sessione"; inAttesa: number; pallino: true }
+  | { tipo: "sessione"; inAttesa: number; dettagli: DettaglioErrore[]; pallino: true }
   | {
       tipo: "errore";
       inAttesa: number;
       dal: string | null;
       tabelleNonScaricate: NomeTabella[];
+      dettagli: DettaglioErrore[];
       pallino: boolean;
     }
   | { tipo: "in-attesa"; numero: number; dal: string | null; pallino: false }
@@ -292,8 +326,11 @@ export function statoDaMostrare(
     return { tipo: "accantonate", numero: coda.accantonate, pallino: true };
   }
 
+  // Un verso andato bene ha i dettagli vuoti (segnaFineGiro).
+  const dettagli = [...giri.discesa.dettagli, ...giri.salita.dettagli];
+
   if (giri.salita.esito === "sessione" || giri.discesa.esito === "sessione") {
-    return { tipo: "sessione", inAttesa: coda.inAttesa, pallino: true };
+    return { tipo: "sessione", inAttesa: coda.inAttesa, dettagli, pallino: true };
   }
 
   const erroreSalita = giri.salita.esito === "errore";
@@ -311,6 +348,7 @@ export function statoDaMostrare(
       inAttesa: coda.inAttesa,
       dal,
       tabelleNonScaricate: erroreDiscesa ? giri.discesa.tabelleNonScaricate : [],
+      dettagli,
       pallino: diFila >= GIRI_PER_IL_PALLINO,
     };
   }

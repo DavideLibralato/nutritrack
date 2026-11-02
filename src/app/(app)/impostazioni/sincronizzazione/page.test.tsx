@@ -134,15 +134,13 @@ describe("Impostazioni > Sincronizzazione — i sei stati", () => {
     expect(screen.getByText(/^Dalle \d{2}:\d{2}$/)).toBeTruthy();
   });
 
-  it("accesso scaduto: al posto di Sincronizza ora c'è Esci e rientra", async () => {
+  it("accesso scaduto: con le modifiche in attesa, quante e da quando", async () => {
     await db.outbox.put(voce("pasti:p1"));
     segnaFineGiro("salita", "sessione", { parlatoColServer: false });
     render(<SincronizzazionePage />);
 
     expect(await screen.findByRole("heading", { name: "Accesso scaduto" })).toBeTruthy();
     expect(screen.getByText("1 modifica in attesa dalle 14:02")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Esci e rientra" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Sincronizza ora" })).toBeNull();
   });
 
   it("accantonate: l'elenco in parole dell'utente, i dettagli tecnici chiusi", async () => {
@@ -162,6 +160,116 @@ describe("Impostazioni > Sincronizzazione — i sei stati", () => {
     const dettagli = screen.getByText("Dettagli tecnici").closest("details")!;
     expect(dettagli.open).toBe(false);
     expect(dettagli.textContent).toContain('pasti · 5 tentativi · 400 · invalid input syntax for type time: "25:00"');
+  });
+});
+
+// La disposizione C del mockup docs/mockups/sincronizzazione-sessione.html
+// (dal 02/11/2026). Il 01/11 "Accesso scaduto" era un rifiuto passeggero di
+// PostgREST, e sotto il riquadro c'era solo "Esci e rientra", che svuota il
+// telefono. Ora "Sincronizza ora" c'è sempre; "Esci e rientra", solo con la
+// sessione scaduta, sta nel gruppo dei dati sotto "Ricarica"; "Dettagli
+// tecnici" solo per sessione ed errore, e solo se c'è una riga.
+describe("Impostazioni > Sincronizzazione — disposizione dal 02/11", () => {
+  const PGRST303 = {
+    verso: "discesa" as const,
+    tabella: "composizioni" as const,
+    status: 401,
+    codice: "PGRST303",
+    messaggio: "JWT issued at future",
+  };
+
+  function esciERientra() {
+    return screen.queryByRole("button", { name: /^Esci e rientra/ });
+  }
+
+  it("sessione: Sincronizza ora c'è, Esci e rientra sta nel gruppo dei dati sotto Ricarica", async () => {
+    segnaFineGiro("discesa", "sessione", {
+      parlatoColServer: true,
+      tabelleNonScaricate: ["composizioni"],
+      dettagli: [PGRST303],
+    });
+    render(<SincronizzazionePage />);
+
+    expect(await screen.findByRole("heading", { name: "Accesso scaduto" })).toBeTruthy();
+    expect(screen.getByText("Prova con Sincronizza ora. Se torna, esci e rientra.")).toBeTruthy();
+    const sincronizza = screen.getByRole("button", { name: "Sincronizza ora" }) as HTMLButtonElement;
+    expect(sincronizza.disabled).toBe(false);
+
+    const esci = esciERientra()!;
+    expect(esci).toBeTruthy();
+    expect(esci.textContent).toContain("Svuota i dati di questo telefono e li riscarica dopo l'accesso.");
+    const gruppoDati = screen.getByRole("heading", { name: "Dati su questo dispositivo" }).closest("section")!;
+    const ricarica = screen.getByRole("button", { name: "Ricarica i dati dal tuo account" });
+    expect(gruppoDati.contains(esci)).toBe(true);
+    expect(gruppoDati.contains(ricarica)).toBe(true);
+    // Sotto Ricarica, non sopra.
+    expect(ricarica.compareDocumentPosition(esci) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // I Dettagli, chiusi, fra Sincronizza ora e il gruppo dei dati.
+    const dettagli = screen.getByText("Dettagli tecnici").closest("details")!;
+    expect(dettagli.open).toBe(false);
+    expect(dettagli.textContent).toContain("discesa · composizioni · 401 · PGRST303 · JWT issued at future");
+    expect(sincronizza.compareDocumentPosition(dettagli) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dettagli.compareDocumentPosition(gruppoDati) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("sessione: Sincronizza ora fa partire un giro (non apre Esci)", async () => {
+    segnaFineGiro("discesa", "sessione", { parlatoColServer: true, dettagli: [PGRST303] });
+    render(<SincronizzazionePage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Sincronizza ora" }));
+    expect(giri.bidirezionale).toHaveBeenCalledWith(USER_ID);
+  });
+
+  it("sessione senza righe da mostrare: niente Dettagli", async () => {
+    await db.outbox.put(voce("pasti:p1"));
+    segnaFineGiro("salita", "sessione", { parlatoColServer: false });
+    render(<SincronizzazionePage />);
+
+    await screen.findByRole("heading", { name: "Accesso scaduto" });
+    expect(esciERientra()).toBeTruthy();
+    expect(screen.queryByText("Dettagli tecnici")).toBeNull();
+  });
+
+  it("errore: i Dettagli ci sono, Esci e rientra no", async () => {
+    segnaFineGiro("discesa", "errore", {
+      parlatoColServer: true,
+      tabelleNonScaricate: ["misurazioni"],
+      dettagli: [
+        { verso: "discesa", tabella: "misurazioni", status: 403, codice: "42501", messaggio: "permission denied" },
+      ],
+    });
+    render(<SincronizzazionePage />);
+
+    expect(await screen.findByRole("heading", { name: "Non riesco a scaricare i dati dal server" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sincronizza ora" })).toBeTruthy();
+    expect(screen.getByText("Dettagli tecnici").closest("details")!.textContent).toContain(
+      "discesa · misurazioni · 403 · 42501 · permission denied"
+    );
+    expect(esciERientra()).toBeNull();
+  });
+
+  it("tutto salvato: niente Esci e rientra, niente Dettagli", async () => {
+    segnaFineGiro("discesa", "ok", { parlatoColServer: true, dettagli: [PGRST303] });
+    render(<SincronizzazionePage />);
+
+    await screen.findByRole("heading", { name: "Tutto salvato online" });
+    expect(screen.getByRole("button", { name: "Sincronizza ora" })).toBeTruthy();
+    expect(esciERientra()).toBeNull();
+    expect(screen.queryByText("Dettagli tecnici")).toBeNull();
+  });
+
+  it("in attesa (rete): niente Esci e rientra, niente Dettagli", async () => {
+    await db.outbox.put(voce("pasti:p1"));
+    segnaFineGiro("salita", "rete", {
+      parlatoColServer: false,
+      dettagli: [{ verso: "salita", tabella: "pasti", status: 0, codice: null, messaggio: "Failed to fetch" }],
+    });
+    render(<SincronizzazionePage />);
+
+    await screen.findByRole("heading", { name: "1 modifica in attesa" });
+    expect(esciERientra()).toBeNull();
+    expect(screen.queryByText("Dettagli tecnici")).toBeNull();
   });
 });
 

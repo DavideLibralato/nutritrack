@@ -13,12 +13,19 @@ describe("rigaSincronizzazione", () => {
       tono: "avviso",
       pulsa: false,
     });
-    expect(rigaSincronizzazione({ tipo: "sessione", inAttesa: 0, pallino: true })).toMatchObject({
+    expect(rigaSincronizzazione({ tipo: "sessione", inAttesa: 0, dettagli: [], pallino: true })).toMatchObject({
       testo: "Accedi di nuovo",
       tono: "avviso",
     });
     expect(
-      rigaSincronizzazione({ tipo: "errore", inAttesa: 1, dal: null, tabelleNonScaricate: [], pallino: false })
+      rigaSincronizzazione({
+        tipo: "errore",
+        inAttesa: 1,
+        dal: null,
+        tabelleNonScaricate: [],
+        dettagli: [],
+        pallino: false,
+      })
     ).toMatchObject({ testo: "Errore", tono: "avviso" });
   });
 

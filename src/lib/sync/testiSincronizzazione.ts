@@ -7,7 +7,7 @@
 import { formattaGiornoCorto, oggiLocale, giornoPrecedente } from "../dataGiorno";
 import { ETICHETTE } from "./ripristino";
 import { SOGLIA_SOSPENSIONE } from "./sincronizza";
-import type { RiassuntoCoda, StatoDaMostrare } from "./statoSincronizzazione";
+import type { DettaglioErrore, RiassuntoCoda, StatoDaMostrare } from "./statoSincronizzazione";
 import type { VoceOutbox } from "./outbox";
 
 // Il colore del riquadro (token del tema, sezione 7): verde per tutto a
@@ -89,13 +89,16 @@ export function testiStato(
         icona: "avviso",
       };
 
+    // Dal 02/11/2026 "Sincronizza ora" c'è anche qui (il 01/11 un rifiuto
+    // passeggero di PostgREST mostrava "Accesso scaduto" e l'unica via era
+    // Esci, che svuota il telefono): prima si riprova, poi si esce.
     case "sessione":
       return {
         titolo: "Accesso scaduto",
         testo:
           stato.inAttesa > 0
-            ? "Le modifiche restano su questo telefono. Esci e rientra per salvarle online."
-            : "Esci e rientra per sincronizzare di nuovo.",
+            ? "Le modifiche restano su questo telefono. Prova con Sincronizza ora; se non basta, esci e rientra."
+            : "Prova con Sincronizza ora. Se torna, esci e rientra.",
         quando:
           stato.inAttesa > 0 && coda.inAttesaDal
             ? `${modifiche(stato.inAttesa)} in attesa ${testoDaQuando(coda.inAttesaDal, adesso)}`
@@ -156,6 +159,16 @@ export function testiStato(
         icona: "fatto",
       };
   }
+}
+
+// Una riga di "Dettagli tecnici" per gli stati "sessione" ed "errore" (dal
+// 02/11/2026): "discesa · composizioni · 401 · PGRST303 · JWT issued at
+// future". Le parti che mancano (codice, status di un'eccezione,
+// messaggio) si saltano.
+export function rigaDettaglio(d: DettaglioErrore): string {
+  return [d.verso, d.tabella, d.status, d.codice, d.messaggio]
+    .filter((parte) => parte !== null && parte !== "")
+    .join(" · ");
 }
 
 // "gio 8 ott, 13:10": quando è stata fatta una modifica accantonata.

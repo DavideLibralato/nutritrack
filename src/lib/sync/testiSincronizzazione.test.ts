@@ -4,7 +4,13 @@
 // un'ora che sembra di oggi. Il giorno è quello del calendario locale.
 
 import { describe, it, expect } from "vitest";
-import { testoControllato, testoDaQuando, testiStato, riepilogoPerTipo } from "./testiSincronizzazione";
+import {
+  testoControllato,
+  testoDaQuando,
+  testiStato,
+  riepilogoPerTipo,
+  rigaDettaglio,
+} from "./testiSincronizzazione";
 import type { RiassuntoCoda } from "./statoSincronizzazione";
 import type { VoceOutbox } from "./outbox";
 
@@ -38,7 +44,7 @@ describe("testiStato", () => {
 
   it("errore in salita (modifiche in coda) e in discesa (nessuna)", () => {
     const salita = testiStato(
-      { tipo: "errore", inAttesa: 1, dal: OGGI_1402, tabelleNonScaricate: [], pallino: false },
+      { tipo: "errore", inAttesa: 1, dal: OGGI_1402, tabelleNonScaricate: [], dettagli: [], pallino: false },
       CODA,
       "",
       ADESSO
@@ -50,7 +56,7 @@ describe("testiStato", () => {
       tono: "avviso",
     });
     const discesa = testiStato(
-      { tipo: "errore", inAttesa: 0, dal: IERI_2341, tabelleNonScaricate: ["pasti"], pallino: true },
+      { tipo: "errore", inAttesa: 0, dal: IERI_2341, tabelleNonScaricate: ["pasti"], dettagli: [], pallino: true },
       CODA,
       "",
       ADESSO
@@ -60,12 +66,30 @@ describe("testiStato", () => {
 
   it("sessione scaduta: con modifiche in attesa dice quante e da quando", () => {
     const testi = testiStato(
-      { tipo: "sessione", inAttesa: 2, pallino: true },
+      { tipo: "sessione", inAttesa: 2, dettagli: [], pallino: true },
       { inAttesa: 2, inAttesaDal: OGGI_1402, accantonate: 0 },
       "",
       ADESSO
     );
     expect(testi).toMatchObject({ titolo: "Accesso scaduto", quando: "2 modifiche in attesa dalle 14:02", icona: "chiave" });
+  });
+
+  // Dal 02/11/2026 (mockup docs/mockups/sincronizzazione-sessione.html,
+  // proposta C): prima si riprova con "Sincronizza ora", poi si esce.
+  it("sessione scaduta: il testo manda prima a Sincronizza ora, con e senza modifiche in coda", () => {
+    const senza = testiStato({ tipo: "sessione", inAttesa: 0, dettagli: [], pallino: true }, CODA, "", ADESSO);
+    expect(senza.testo).toBe("Prova con Sincronizza ora. Se torna, esci e rientra.");
+    expect(senza.quando).toBeNull();
+
+    const con = testiStato(
+      { tipo: "sessione", inAttesa: 2, dettagli: [], pallino: true },
+      { inAttesa: 2, inAttesaDal: OGGI_1402, accantonate: 0 },
+      "",
+      ADESSO
+    );
+    expect(con.testo).toBe(
+      "Le modifiche restano su questo telefono. Prova con Sincronizza ora; se non basta, esci e rientra."
+    );
   });
 
   it("accantonate: titolo e riepilogo per tipo", () => {
@@ -89,5 +113,28 @@ describe("testiStato", () => {
   it("sincronizzato senza un'ora salvata: niente riga 'controllato'", () => {
     const testi = testiStato({ tipo: "sincronizzato", ultimoSuccesso: null, pallino: false }, CODA, "", ADESSO);
     expect(testi).toMatchObject({ titolo: "Tutto salvato online", quando: null, tono: "accento" });
+  });
+});
+
+describe("rigaDettaglio", () => {
+  it("verso · tabella · status · codice · messaggio, come il caso del 01/11", () => {
+    expect(
+      rigaDettaglio({
+        verso: "discesa",
+        tabella: "composizioni",
+        status: 401,
+        codice: "PGRST303",
+        messaggio: "JWT issued at future",
+      })
+    ).toBe("discesa · composizioni · 401 · PGRST303 · JWT issued at future");
+  });
+
+  it("le parti che mancano si saltano; lo status 0 resta", () => {
+    expect(
+      rigaDettaglio({ verso: "salita", tabella: "pasti", status: 0, codice: null, messaggio: "Failed to fetch" })
+    ).toBe("salita · pasti · 0 · Failed to fetch");
+    expect(
+      rigaDettaglio({ verso: "salita", tabella: "pasti", status: null, codice: null, messaggio: null })
+    ).toBe("salita · pasti");
   });
 });

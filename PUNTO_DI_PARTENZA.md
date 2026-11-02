@@ -5779,7 +5779,11 @@ senza polling:
   tabelle non scaricate (`scaricaTutto` le restituisce). Lo aggiornano
   `sincronizza.ts` e `discesa.ts` a inizio e fine giro; la pagina lo legge
   con `useSyncExternalStore`. Non si salva: all'apertura parte comunque un
-  giro;
+  giro. Dal 02/11 ogni verso tiene anche i **dettagli** delle richieste
+  fallite dell'ultimo giro (`DettaglioErrore`: verso, tabella, status,
+  codice dell'errore di PostgREST/Postgres, messaggio): in discesa una per
+  tabella non scaricata, in salita l'invio che ha fermato la coda. Solo in
+  memoria, nessun campo nuovo in Dexie; un giro andato bene li toglie;
 - **l'ora dell'ultimo contatto riuscito** in `localStorage` (una chiave per
   dispositivo): si aggiorna solo quando un giro ha davvero parlato col
   server (una salita con la coda vuota non conta).
@@ -5816,7 +5820,9 @@ attesa" in ocra; "Errore", "Accedi di nuovo", "Da controllare" in arancio.
 Stesso hook della pagina, quindi stesso stato.
 
 **La pagina** (dal 10/10, mockup approvato
-`docs/mockups/sincronizzazione.html`, "A · Riquadro"):
+`docs/mockups/sincronizzazione.html`, "A · Riquadro"; dal 02/11
+disposizione C di `docs/mockups/sincronizzazione-sessione.html`, branch
+`accesso-scaduto`):
 - in cima il **riquadro dello stato** (`RiquadroStatoSincronizzazione`):
   icona in un cerchio, titolo, testo e la riga "da quando" / "controllato
   alle" ("dalle 14:02", "da ieri alle 14:02", "da gio 8 ott alle 14:02").
@@ -5825,11 +5831,21 @@ Stesso hook della pagina, quindi stesso stato.
   sessione, errore e accantonate. "In corso" compare da solo dopo un
   secondo: l'hook `useStatoSincronizzazione` programma un timer per quel
   momento;
-- **"Sincronizza ora"** (discesa e salita), spento mentre un giro è in
-  corso. Con la sessione scaduta al suo posto c'è **"Esci e rientra"**: è
-  Esci (`EsciAccount` con un'altra etichetta), stesso percorso: con la
-  sessione scaduta e modifiche in coda non svuota niente (§9.6). Esci
-  azzera anche lo stato dei giri in memoria;
+- **"Sincronizza ora"** (discesa e salita), **sempre**, anche con la
+  sessione scaduta (dal 02/11; prima al suo posto c'era "Esci e rientra"),
+  spento mentre un giro è in corso. Il 01/11 "Accesso scaduto" era un
+  rifiuto passeggero di PostgREST (PGRST303, §9.2) e l'unica via era Esci,
+  che svuota il telefono: ora si riprova prima. Il testo di "Accesso
+  scaduto" lo dice: "Prova con Sincronizza ora. Se torna, esci e
+  rientra." (con modifiche in coda: "Le modifiche restano su questo
+  telefono. Prova con Sincronizza ora; se non basta, esci e rientra.");
+- con **"sessione" ed "errore"**, **"Dettagli tecnici"** chiuso
+  (`DettagliTecnici`, lo stesso delle accantonate), fra "Sincronizza ora"
+  e il gruppo dei dati, solo se c'è almeno una riga: una per tabella o
+  invio fallito, "verso · tabella · status · codice · messaggio" (es.
+  "discesa · composizioni · 401 · PGRST303 · JWT issued at future"; le
+  parti che mancano si saltano, `rigaDettaglio`). Così il codice si legge
+  da uno screenshot, senza console né log di Supabase;
 - con modifiche accantonate, il gruppo **"Non salvate online"**
   (`ModificheAccantonate`): che cosa, quale e quando, in parole
   dell'utente; **"Dettagli tecnici" chiuso di default** (tabella,
@@ -5837,7 +5853,18 @@ Stesso hook della pagina, quindi stesso stato.
   famiglia); **"Riprova a salvarle"** (`riprovaAccantonate`: rimette in
   coda come nuove solo le voci di quell'utente, poi un giro). Niente
   "Scarta": c'è già "Ricarica i dati dal tuo account";
-- in fondo, com'era, "Ricarica i dati dal tuo account".
+- in fondo il gruppo **"Dati su questo dispositivo"**: "Ricarica i dati dal
+  tuo account", com'era, e sotto, **solo con la sessione scaduta**, la
+  riga **"Esci e rientra"** (scritta arancio, freccia, sotto in grigio
+  "Svuota i dati di questo telefono e li riscarica dopo l'accesso."). Le
+  due azioni pesanti stanno insieme. È Esci (`EsciAccount`, variante
+  "riga"), stesso percorso: con la sessione scaduta e modifiche in coda
+  non svuota niente (§9.6). Esci azzera anche lo stato dei giri in
+  memoria. Differenza dal mockup: lì anche "Ricarica" è una riga con
+  freccia, nell'app resta il pulsante con la spiegazione sopra.
+
+Pallino, riga nell'elenco di Impostazioni e colori non sono cambiati il
+02/11.
 
 Solo le voci dell'utente entrano nei conteggi e nell'elenco
 (`codaDellUtente.ts`): su un dispositivo condiviso la coda può contenere

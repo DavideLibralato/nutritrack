@@ -124,10 +124,13 @@ export const TABELLE_DATI_ONBOARDING: NomeTabella[] = ["profili", "misurazioni",
 // rete assente, la sessione scaduta e un rifiuto vero (esitoDaStatus in
 // statoSincronizzazione.ts) senza leggere il testo dell'errore. Resta un
 // Error: chi lo cattura come tale (ripristino.ts) non cambia.
+// `codice` (dal 02/11/2026): il codice dell'errore di PostgREST/Postgres
+// ("PGRST303"...), per "Dettagli tecnici"; null se non c'è.
 export class ErroreRichiesta extends Error {
   constructor(
     messaggio: string,
-    readonly status: number
+    readonly status: number,
+    readonly codice: string | null = null
   ) {
     super(messaggio);
     this.name = "ErroreRichiesta";
@@ -204,7 +207,7 @@ export async function* pagineDaSupabase<T extends RigaBase>(
     }
     const { data, error } = risposta;
     if (error) {
-      throw new ErroreRichiesta(error.message, risposta.status);
+      throw new ErroreRichiesta(error.message, risposta.status, error.code || null);
     }
 
     const pagina = (data ?? []) as T[];
@@ -242,7 +245,7 @@ export async function contaRigheSulServer(
   }
   const { count, error } = risposta;
   if (error) {
-    throw new ErroreRichiesta(error.message, risposta.status);
+    throw new ErroreRichiesta(error.message, risposta.status, error.code || null);
   }
   if (count === null) {
     throw new Error(`Conteggio di "${nomeTabella}" non disponibile.`);
@@ -404,8 +407,15 @@ export async function scaricaTutto(userId: string): Promise<TabellaNonScaricata[
     if (risultato.status === "rejected") {
       const tabella = TABELLE_DISCESA[indice].nome;
       console.error(`Discesa: scarico fallito per "${tabella}".`, risultato.reason);
-      const status = risultato.reason instanceof ErroreRichiesta ? risultato.reason.status : null;
-      nonScaricate.push({ tabella, esito: esitoDaStatus(status) });
+      const errore = risultato.reason instanceof ErroreRichiesta ? risultato.reason : null;
+      const status = errore ? errore.status : null;
+      nonScaricate.push({
+        tabella,
+        esito: esitoDaStatus(status),
+        status,
+        codice: errore?.codice ?? null,
+        messaggio: risultato.reason instanceof Error ? risultato.reason.message : null,
+      });
     }
   });
 
@@ -425,6 +435,13 @@ export async function scaricaTutto(userId: string): Promise<TabellaNonScaricata[
   segnaFineGiro("discesa", esito, {
     parlatoColServer: nonScaricate.length < TABELLE_DISCESA.length,
     tabelleNonScaricate: nonScaricate.map((t) => t.tabella),
+    dettagli: nonScaricate.map(({ tabella, status, codice, messaggio }) => ({
+      verso: "discesa" as const,
+      tabella,
+      status,
+      codice,
+      messaggio,
+    })),
   });
   return nonScaricate;
 }

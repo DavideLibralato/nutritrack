@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Sincronizzazione: "Sincronizza ora" anche con l'accesso scaduto, e i dettagli tecnici
+
+Branch `accesso-scaduto`. Il 01/11 "Accesso scaduto" era un rifiuto
+passeggero di PostgREST, e sotto il riquadro c'era solo "Esci e
+rientra", che svuota il telefono; per sapere che era un PGRST303 sono
+serviti i log di Supabase. Disposizione C del mockup di Cowork
+(`docs/mockups/sincronizzazione-sessione.html`, nel commit):
+"Sincronizza ora" sempre; "Esci e rientra" solo con la sessione
+scaduta, come riga del gruppo dei dati sotto "Ricarica", con una riga
+grigia che dice cosa fa (`EsciAccount`, variante "riga", stesso
+flusso); "Dettagli tecnici" chiuso per "sessione" ed "errore", fra
+"Sincronizza ora" e il gruppo dei dati, una riga per tabella o invio
+fallito ("discesa · composizioni · 401 · PGRST303 · JWT issued at
+future"). Il codice arriva fino allo stato: `ErroreRichiesta` e
+`TabellaNonScaricata` lo portano, la salita tiene in memoria l'invio
+che ha fermato il giro (`DettaglioErrore`); niente in Dexie, nessuna
+version nuova. Testi di "Accesso scaduto" nuovi, gli altri stati,
+pallino, riga in Impostazioni e colori invariati. `DettagliTecnici`
+ora è un componente, lo usano anche le accantonate. Differenza dal
+mockup: "Ricarica" resta il pulsante con la spiegazione, non una riga
+con freccia. 15 test nuovi o riscritti (testi, stato, pagina, e il
+codice dalla risposta vera di PostgREST fino allo stato in discesa e
+salita), ognuno fallisce con almeno una delle 17 rotture provate.
+
 ## 2026-11-01 — Un 401 PGRST303 di PostgREST si ripete una volta
 
 Branch `accesso-scaduto`. Causa di "Accesso scaduto" subito dopo

@@ -23,6 +23,7 @@ import {
   esitoDaStatus,
   segnaFineGiro,
   segnaInizioGiro,
+  type DettaglioErrore,
   type EsitoGiro,
 } from "./statoSincronizzazione";
 
@@ -112,8 +113,11 @@ export function sincronizzaOutbox(): Promise<RisultatoSincronizzazione> {
 async function unGiroConStato(): Promise<RisultatoSincronizzazione> {
   segnaInizioGiro("salita");
   try {
-    const { risultato, esito } = await unGiro();
-    segnaFineGiro("salita", esito, { parlatoColServer: risultato.inviate > 0 });
+    const { risultato, esito, dettaglio } = await unGiro();
+    segnaFineGiro("salita", esito, {
+      parlatoColServer: risultato.inviate > 0,
+      dettagli: dettaglio ? [dettaglio] : [],
+    });
     return risultato;
   } catch (eccezione) {
     segnaFineGiro("salita", "errore", { parlatoColServer: false });
@@ -125,7 +129,13 @@ async function unGiroConStato(): Promise<RisultatoSincronizzazione> {
 // (rete, sessione, rifiuto del server), oppure "ok" se è arrivato in fondo.
 // Una voce accantonata non lo cambia: il giro prosegue, e le accantonate
 // l'indicatore le conta a parte, da Dexie.
-async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: EsitoGiro }> {
+// `dettaglio` (dal 02/11/2026): l'invio che ha fermato il giro, per
+// "Dettagli tecnici"; null se il giro non si è fermato su un invio.
+async function unGiro(): Promise<{
+  risultato: RisultatoSincronizzazione;
+  esito: EsitoGiro;
+  dettaglio: DettaglioErrore | null;
+}> {
   const supabase = createClient();
   // Solo le voci dell'utente della sessione (dall'11/10/2026). La coda può
   // contenere anche le modifiche lasciate da un altro utente che è uscito
@@ -154,6 +164,7 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
   let fallite = 0;
   let sospese = 0;
   let esito: EsitoGiro = !idUtente && daInviare.length > 0 ? "sessione" : "ok";
+  let dettaglio: DettaglioErrore | null = null;
 
   // In sequenza, non in parallelo: se due voci toccano righe collegate
   // (es. un obiettivo e il suo target, o un pasto e le sue voci di diario),
@@ -193,6 +204,7 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
     // `status` null = eccezione, nessuna risposta da leggere.
     let messaggioErrore: string | null = null;
     let status: number | null = null;
+    let codice: string | null = null;
     try {
       const risposta = await conTempoMassimo(supabase.from(voce.tabella).upsert(voce.dati));
       if (risposta === SCADUTA) {
@@ -202,11 +214,21 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
         status = 0;
       } else {
         messaggioErrore = risposta.error?.message ?? null;
+        codice = risposta.error?.code || null;
         status = risposta.status;
       }
     } catch (eccezione) {
       messaggioErrore = eccezione instanceof Error ? eccezione.message : "Errore di rete.";
     }
+    // Solo in memoria (StatoVerso.dettagli): in Dexie restano status e
+    // messaggio come prima, nessun campo nuovo nella coda.
+    const questoErrore: DettaglioErrore = {
+      verso: "salita",
+      tabella: voce.tabella,
+      status,
+      codice,
+      messaggio: messaggioErrore,
+    };
 
     // Da qui ogni scrittura sulla voce passa da seAncoraQuella (vedi sotto):
     // durante l'invio la stessa riga può essere stata riaccodata.
@@ -217,6 +239,7 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
       // che non è arrivata.
       fallite += 1;
       esito = esitoDaStatus(status);
+      dettaglio = questoErrore;
       await seAncoraQuella(voce, () =>
         db.outbox.update(voce.id, { ultimo_errore: messaggioErrore, ultimo_status: status })
       );
@@ -254,12 +277,14 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
         // le voci figlie dietro di lei aspettano: la prova il giro
         // prenotato, da zero tentativi.
         esito = "errore";
+        dettaglio = questoErrore;
         break;
       }
 
       // Rifiuto sotto la soglia: i tentativi contano solo per la versione
       // che il server ha davvero rifiutato, mai per quella arrivata dopo.
       esito = "errore";
+      dettaglio = questoErrore;
       await seAncoraQuella(voce, () =>
         db.outbox.update(voce.id, { tentativi, ultimo_errore: messaggioErrore, ultimo_status: status })
       );
@@ -272,7 +297,7 @@ async function unGiro(): Promise<{ risultato: RisultatoSincronizzazione; esito: 
     await seAncoraQuella(voce, () => db.outbox.delete(voce.id));
   }
 
-  return { risultato: { inviate, fallite, sospese }, esito };
+  return { risultato: { inviate, fallite, sospese }, esito, dettaglio };
 }
 
 // Scrive sulla voce di coda (cancella o aggiorna) solo se è ancora quella

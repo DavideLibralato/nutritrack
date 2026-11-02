@@ -32,6 +32,7 @@ import { descriviGruppo } from "./RicaricaDatiAccount";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { useOnline } from "@/lib/useOnline";
 import GruppoImpostazioni from "./GruppoImpostazioni";
+import { FrecciaDestra } from "./RigaImpostazioni";
 
 type Stato =
   | { fase: "inattivo" }
@@ -78,12 +79,22 @@ export function testoTieni(modifiche: ModificheNonInviate): string {
 // `etichetta`: il testo del pulsante. "Esci" in fondo all'elenco; "Esci e
 // rientra" in Impostazioni > Sincronizzazione con la sessione scaduta
 // (dal 10/10), stesso percorso.
+// `variante` (dal 02/11/2026): "gruppo" è la riga centrata nel suo gruppo,
+// com'era; "riga" è una riga dentro un gruppo che mette la pagina (il
+// gruppo Dati di Sincronizzazione, sotto "Ricarica i dati"): scritta
+// arancio a sinistra, `nota` grigia sotto, freccia a destra (mockup
+// docs/mockups/sincronizzazione-sessione.html, proposta C). Il flusso è lo
+// stesso.
 export default function EsciAccount({
   userId,
   etichetta = "Esci",
+  variante = "gruppo",
+  nota,
 }: {
   userId: string;
   etichetta?: string;
+  variante?: "gruppo" | "riga";
+  nota?: string;
 }) {
   const router = useRouter();
   const [stato, setStato] = useState<Stato>({ fase: "inattivo" });
@@ -144,30 +155,48 @@ export default function EsciAccount({
   }
 
   const occupato = stato.fase === "controllo" || stato.fase === "uscita";
+  const testoPulsante =
+    stato.fase === "controllo" ? "Controllo…" : stato.fase === "uscita" ? "Uscita…" : etichetta;
+
+  if (variante === "riga") {
+    return (
+      <div className="border-t border-border">
+        {stato.fase === "conferma" ? (
+          <ConfermaUscita
+            testo={stato.testo}
+            etichetta={stato.etichetta}
+            onResta={() => setStato({ fase: "inattivo" })}
+            onEsci={() => esci(stato.decisione, stato.firme)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={avvia}
+            disabled={occupato || !online}
+            className={`flex min-h-[52px] w-full items-center gap-2.5 px-4 py-3 text-left disabled:opacity-50 ${CLASSE_FOCUS}`}
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-medium text-warning">{testoPulsante}</span>
+              {nota && <span className="mt-0.5 block text-xs leading-snug text-muted">{nota}</span>}
+            </span>
+            <FrecciaDestra />
+          </button>
+        )}
+        <Messaggi online={online} stato={stato} className="px-4 pb-3 text-sm empty:hidden" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
       <GruppoImpostazioni>
         {stato.fase === "conferma" ? (
-          <div className="space-y-3 p-4">
-            <p className="text-sm text-warning">{stato.testo}</p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setStato({ fase: "inattivo" })}
-                className={`flex-1 rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
-              >
-                Resta
-              </button>
-              <button
-                type="button"
-                onClick={() => esci(stato.decisione, stato.firme)}
-                className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong ${CLASSE_FOCUS}`}
-              >
-                {stato.etichetta}
-              </button>
-            </div>
-          </div>
+          <ConfermaUscita
+            testo={stato.testo}
+            etichetta={stato.etichetta}
+            onResta={() => setStato({ fase: "inattivo" })}
+            onEsci={() => esci(stato.decisione, stato.firme)}
+          />
         ) : (
           <button
             type="button"
@@ -175,20 +204,61 @@ export default function EsciAccount({
             disabled={occupato || !online}
             className={`flex min-h-[52px] w-full items-center justify-center px-4 text-base font-medium text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
           >
-            {stato.fase === "controllo" ? "Controllo…" : stato.fase === "uscita" ? "Uscita…" : etichetta}
+            {testoPulsante}
           </button>
         )}
       </GruppoImpostazioni>
 
-      {/* role="status": gli screen reader leggono i messaggi quando
-          cambiano, senza spostare il fuoco. Sta sempre nella pagina (vuoto
-          = nascosto), altrimenti il primo messaggio non verrebbe letto. */}
-      <div role="status" className="mx-4 mt-2 text-sm empty:hidden">
-        {!online && stato.fase !== "errore" && (
-          <p className="text-muted">Per uscire serve la connessione.</p>
-        )}
-        {stato.fase === "errore" && <p className="text-warning">{stato.testo}</p>}
+      <Messaggi online={online} stato={stato} className="mx-4 mt-2 text-sm empty:hidden" />
+    </div>
+  );
+}
+
+// La conferma, dentro lo stesso riquadro (Resta / Esci e perdile...).
+function ConfermaUscita({
+  testo,
+  etichetta,
+  onResta,
+  onEsci,
+}: {
+  testo: string;
+  etichetta: string;
+  onResta: () => void;
+  onEsci: () => void;
+}) {
+  return (
+    <div className="space-y-3 p-4">
+      <p className="text-sm text-warning">{testo}</p>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={onResta}
+          className={`flex-1 rounded-lg border border-border p-2 ${CLASSE_FOCUS}`}
+        >
+          Resta
+        </button>
+        <button
+          type="button"
+          onClick={onEsci}
+          className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong ${CLASSE_FOCUS}`}
+        >
+          {etichetta}
+        </button>
       </div>
+    </div>
+  );
+}
+
+// role="status": gli screen reader leggono i messaggi quando cambiano,
+// senza spostare il fuoco. Sta sempre nella pagina (vuoto = nascosto),
+// altrimenti il primo messaggio non verrebbe letto.
+function Messaggi({ online, stato, className }: { online: boolean; stato: Stato; className: string }) {
+  return (
+    <div role="status" className={className}>
+      {!online && stato.fase !== "errore" && (
+        <p className="text-muted">Per uscire serve la connessione.</p>
+      )}
+      {stato.fase === "errore" && <p className="text-warning">{stato.testo}</p>}
     </div>
   );
 }

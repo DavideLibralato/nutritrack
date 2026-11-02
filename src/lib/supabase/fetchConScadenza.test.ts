@@ -21,7 +21,7 @@ import { createClient } from "./client";
 import { db } from "../db/database";
 import { sincronizzaOutbox } from "../sync/sincronizza";
 import { scaricaTutto } from "../sync/discesa";
-import { azzeraStatoGiri, leggiStatoGiri } from "../sync/statoSincronizzazione";
+import { azzeraStatoGiri, leggiStatoGiri, statoDaMostrare } from "../sync/statoSincronizzazione";
 import type { VoceOutbox } from "../sync/outbox";
 
 // Una fetch che non risponde mai: si chiude solo se il segnale la annulla,
@@ -430,5 +430,50 @@ describe("il client Supabase vero con un 401 PGRST303", () => {
     expect(dopo?.sospesa_il).toBeNull();
     expect(leggiStatoGiri().salita.esito).toBe("sessione");
     expect(invii).toBe(2);
+    // Il codice arriva fino allo stato (dal 02/11, "Dettagli tecnici").
+    expect(leggiStatoGiri().salita.dettagli).toEqual([
+      { verso: "salita", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: "JWT issued at future" },
+    ]);
+  });
+
+  // Dal 02/11/2026: per "Dettagli tecnici" il codice dell'errore deve
+  // arrivare dalla risposta vera di PostgREST (letta dalla libreria
+  // Supabase) fino allo stato dell'indicatore.
+  it("discesa: rifiutata anche alla seconda prova, nello stato c'è la riga con tabella, 401 e PGRST303", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).includes("/rest/v1/composizioni?") ? risposta401("PGRST303") : rispostaJson([])
+      )
+    );
+
+    const nonScaricate = await finoAllaFine(scaricaTutto("u-pgrst303"));
+
+    expect(nonScaricate).toEqual([
+      {
+        tabella: "composizioni",
+        esito: "sessione",
+        status: 401,
+        codice: "PGRST303",
+        messaggio: "JWT issued at future",
+      },
+    ]);
+    const stato = statoDaMostrare(
+      { inAttesa: 0, inAttesaDal: null, accantonate: 0 },
+      leggiStatoGiri(),
+      Date.now()
+    );
+    expect(stato).toMatchObject({
+      tipo: "sessione",
+      dettagli: [
+        {
+          verso: "discesa",
+          tabella: "composizioni",
+          status: 401,
+          codice: "PGRST303",
+          messaggio: "JWT issued at future",
+        },
+      ],
+    });
   });
 });

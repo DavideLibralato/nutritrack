@@ -76,7 +76,9 @@ export default function RigaImpostazioni({
   );
 }
 
-function FrecciaDestra() {
+// Esportata: la usa anche "Esci e rientra" nel gruppo Dati di
+// Impostazioni > Sincronizzazione (EsciAccount, variante "riga").
+export function FrecciaDestra() {
   return (
     <svg
       aria-hidden

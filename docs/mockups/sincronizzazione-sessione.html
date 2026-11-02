@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sincronizzazione: Accesso scaduto</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: barra delle scelte in alto; un telefono (pagina Sincronizzazione) accanto alle note di confronto. Token ripresi dal mockup del 10/10 (docs/mockups/sincronizzazione.html), cioè dai colori dell'app */
+:root{
+  --bg:#f6f1e8; --surface:#ffffff; --fg:#2a2520; --muted:#78705f;
+  --line:#e7e0d2; --accent:#3f7d4c; --accent-strong:#3f7d4c; --warn:#b65b2e; --info:#8a6d1f;
+  --soft:#efe9dd; --on-accent:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1815; --surface:#26221e; --fg:#f2ede4; --muted:#a39a8b;
+    --line:#3a342d; --accent:#7bb887; --accent-strong:#3f7d4c; --warn:#e8916f; --info:#d9b764;
+    --soft:#2f2a25; --on-accent:#ffffff; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1815; --surface:#26221e; --fg:#f2ede4; --muted:#a39a8b;
+  --line:#3a342d; --accent:#7bb887; --accent-strong:#3f7d4c; --warn:#e8916f; --info:#d9b764;
+  --soft:#2f2a25; --on-accent:#ffffff; color-scheme:dark;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:28px; max-width:980px; margin:0 auto;
+}
+h1{font-size:1.4rem; font-weight:800; letter-spacing:-.01em; margin:0 0 4px; text-wrap:balance}
+.lede{color:var(--muted); font-size:.92rem; line-height:1.55; margin:0 0 20px; max-width:70ch}
+.lede b{color:var(--fg)}
+
+.toolbar{display:flex; flex-direction:column; gap:10px; margin:0 0 24px; padding:12px; background:var(--surface); border:1px solid var(--line); border-radius:16px}
+.tb-riga{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.tb-riga > span{font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:700; min-width:96px}
+.seg{display:flex; gap:2px; background:var(--bg); border:1px solid var(--line); border-radius:18px; padding:2px; flex-wrap:wrap}
+.seg button{border:0; background:transparent; color:var(--muted); font-size:.8rem; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--fg); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+button:focus-visible, summary:focus-visible, .riga-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.main-grid{display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start}
+.colonna{display:flex; flex-direction:column; gap:8px; max-width:100%; min-width:0}
+.colonna.note-col{flex:1 1 300px}
+.didascalia{font-size:.74rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin:0 4px}
+
+.phone{
+  width:340px; max-width:100%; flex:none; border-radius:30px; background:var(--bg); color:var(--fg);
+  border:1px solid var(--line); box-shadow:0 18px 40px -16px rgba(0,0,0,.35);
+  overflow:hidden; position:relative; isolation:isolate; min-height:660px;
+}
+.ph-head{padding:16px 18px 6px}
+.indietro{font-size:.84rem; font-weight:600; color:var(--accent); margin:0 0 10px}
+.ph-titolo{font-size:1.25rem; font-weight:800; letter-spacing:-.01em; margin:0}
+.corpo{padding:8px 16px 40px}
+
+.gruppo-et{font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:18px 6px 7px}
+.gruppo{background:var(--surface); border-radius:16px; overflow:hidden}
+.gruppo.stacco{margin-top:12px}
+.riga-btn{display:flex; align-items:center; gap:10px; width:100%; border:0; background:transparent; color:inherit; font-family:inherit; text-align:left; padding:13px 14px; border-bottom:1px solid var(--line); cursor:pointer; font-size:.84rem; font-weight:700}
+.riga-btn:last-child{border-bottom:0}
+.riga-btn .nome{flex:1; min-width:0}
+.riga-btn .chev{color:var(--muted); font-size:1rem; opacity:.6}
+.riga-btn small{display:block; color:var(--muted); font-weight:500; font-size:.72rem; margin-top:2px}
+.warn-txt{color:var(--warn)}
+
+.stato-card{background:var(--surface); border-radius:18px; padding:18px 16px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; margin-top:6px}
+.icona{width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--tono) 16%, transparent); color:var(--tono)}
+.icona svg{width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.stato-card h2{font-size:1.02rem; font-weight:800; margin:6px 0 0; text-wrap:balance}
+.stato-card p{font-size:.8rem; color:var(--muted); margin:0; line-height:1.45; max-width:34ch}
+.quando{font-size:.74rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.spinner{width:22px; height:22px; border:2.5px solid color-mix(in srgb, var(--accent) 25%, transparent); border-top-color:var(--accent); border-radius:50%; animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spinner{animation:none}}
+
+/* Dettagli tecnici: stesso aspetto di quelli delle modifiche accantonate */
+details{margin-top:6px; width:100%; text-align:left}
+summary{font-size:.8rem; font-weight:700; color:var(--accent); cursor:pointer; padding:8px 2px; list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ "}
+details[open] summary::before{content:"▾ "}
+.tecnico{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.68rem; color:var(--muted); line-height:1.45; background:var(--bg); border-radius:10px; padding:8px 10px; margin:4px 0 6px; overflow-wrap:anywhere}
+.stato-card details{border-top:1px solid var(--line); margin-top:10px; padding-top:2px}
+.stato-card .tecnico{background:var(--soft)}
+
+.btn-p{width:100%; margin-top:12px; border:0; border-radius:14px; background:var(--accent-strong); color:var(--on-accent); font-weight:700; font-size:.9rem; padding:12px; font-family:inherit; cursor:pointer}
+.btn-p:disabled{opacity:.4; cursor:default}
+
+.toast{
+  position:absolute; left:14px; right:14px; bottom:18px; z-index:30;
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--line); border-radius:16px;
+  padding:11px 13px; font-size:.8rem; font-weight:600; box-shadow:0 10px 24px -14px rgba(0,0,0,.4);
+  transform:translateY(40px); opacity:0; transition:transform .22s ease, opacity .22s; pointer-events:none;
+}
+.toast.show{transform:translateY(0); opacity:1}
+
+.nota{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px}
+.nota h3{font-size:.88rem; margin:0 0 6px}
+.nota p, .nota li{font-size:.82rem; color:var(--muted); line-height:1.55; margin:0}
+.nota ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:4px}
+.nota b{color:var(--fg)}
+.nota.evid{border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
+.etichetta{display:inline-block; font-size:.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:2px}
+</style>
+</head>
+<body>
+
+<h1>Sincronizzazione: Accesso scaduto ed errori</h1>
+<p class="lede">Mockup per il commit 3 di <b>accesso-scaduto</b> (02/11). Parte dal mockup approvato il 10/10. Novità: <b>"Sincronizza ora" anche con "Accesso scaduto"</b> e <b>"Dettagli tecnici" anche per "sessione" ed "errore"</b>. In alto scegli lo stato e la proposta di disposizione. I pulsanti funzionano: con "Accesso scaduto", "Sincronizza ora" simula il caso del 01/11 (un rifiuto passeggero che sparisce al giro dopo).</p>
+
+<div class="toolbar" role="group" aria-label="Scelte del mockup">
+  <div class="tb-riga"><span>Stato</span>
+    <div class="seg" id="segStato">
+      <button type="button" data-v="sessione0" aria-pressed="true">Accesso scaduto</button>
+      <button type="button" data-v="sessione2" aria-pressed="false">Accesso scaduto + 2 modifiche</button>
+      <button type="button" data-v="errore" aria-pressed="false">Il server rifiuta</button>
+      <button type="button" data-v="ok" aria-pressed="false">Tutto salvato</button>
+    </div>
+  </div>
+  <div class="tb-riga"><span>Proposta</span>
+    <div class="seg" id="segProposta">
+      <button type="button" data-v="A" aria-pressed="true">A · Dettagli sotto il riquadro</button>
+      <button type="button" data-v="B" aria-pressed="false">B · Dettagli nel riquadro</button>
+      <button type="button" data-v="C" aria-pressed="false">C · Esci in "Dati"</button>
+    </div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="colonna">
+    <p class="didascalia">Impostazioni › Sincronizzazione</p>
+    <div class="phone">
+      <div class="ph-head"><p class="indietro">‹ Impostazioni</p><p class="ph-titolo">Sincronizzazione</p></div>
+      <div class="corpo" id="corpo"></div>
+      <div class="toast" id="toast" role="status"></div>
+    </div>
+  </div>
+
+  <div class="colonna note-col">
+    <p class="didascalia">Le tre proposte</p>
+    <div class="nota" id="notaA">
+      <h3>A · Dettagli sotto il riquadro <span class="etichetta">Claude Code</span></h3>
+      <ul>
+        <li>Riquadro, poi <b>Dettagli tecnici</b> chiuso, poi i due pulsanti.</li>
+        <li>"Esci e rientra" resta subito sotto "Sincronizza ora", come oggi.</li>
+        <li>Stesso posto dei Dettagli delle modifiche accantonate.</li>
+      </ul>
+    </div>
+    <div class="nota" id="notaB">
+      <h3>B · Dettagli nel riquadro</h3>
+      <ul>
+        <li>I Dettagli chiudono il riquadro, sotto una riga sottile.</li>
+        <li>Lo stato e il suo "perché" stanno in un oggetto solo.</li>
+        <li>Diverso dalle accantonate, dove i Dettagli sono fuori.</li>
+      </ul>
+    </div>
+    <div class="nota evid" id="notaC">
+      <h3>C · Esci in "Dati" <span class="etichetta">consiglio di Cowork</span></h3>
+      <ul>
+        <li>Sotto il riquadro solo <b>"Sincronizza ora"</b>: è la cosa da provare per prima.</li>
+        <li><b>"Esci e rientra"</b> scende nel gruppo <b>Dati</b>, accanto a "Ricarica i dati", con una riga che spiega cosa fa. Sono le due azioni pesanti: svuotano i dati del telefono e li riscaricano.</li>
+        <li>I Dettagli stanno fra il pulsante e "Dati": li apre chi vuole capire, non sono sulla strada di chi vuole solo risolvere.</li>
+      </ul>
+    </div>
+    <div class="nota">
+      <h3>Le tre scelte di Claude Code</h3>
+      <ul>
+        <li><b>1. Testo di "Accesso scaduto"</b>: in tutte le proposte c'è il suo testo. Scegli lo stato "+ 2 modifiche" per vedere la seconda versione.</li>
+        <li><b>2. Dettagli dentro o fuori</b>: è la differenza fra A/C (fuori) e B (dentro).</li>
+        <li><b>3. Codice anche per la salita</b>: le righe dei Dettagli mostrano già "discesa" e "salita". Solo in memoria, senza cambiare lo schema di Dexie: d'accordo.</li>
+      </ul>
+    </div>
+    <div class="nota">
+      <h3>Cosa non cambia</h3>
+      <p>Pallino sulla tab, riga in Impostazioni, colori e gli altri stati restano come il 10/10. Gli esempi nei Dettagli sono quelli veri del 01/11 (composizioni, PGRST303), per gli altri sono inventati.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const I = {
+  check:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  alert:'<svg viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>',
+  chiave:'<svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg>'
+};
+const STATI = {
+  sessione0:{tono:'--warn', icona:'chiave', titolo:'Accesso scaduto',
+    testo:'Prova con Sincronizza ora. Se torna, esci e rientra.',
+    quando:'Dalle 11:33', sessione:true,
+    dettagli:['discesa · composizioni · 401 · PGRST303 · JWT issued at future']},
+  sessione2:{tono:'--warn', icona:'chiave', titolo:'Accesso scaduto',
+    testo:'Le modifiche restano su questo telefono. Prova con Sincronizza ora; se non basta, esci e rientra.',
+    quando:'2 modifiche in attesa dalle 11:33', sessione:true,
+    dettagli:['discesa · composizioni · 401 · PGRST303 · JWT issued at future','salita · voci_diario · 401 · PGRST303 · JWT issued at future']},
+  errore:{tono:'--warn', icona:'alert', titolo:'Non riesco a salvare 2 modifiche online',
+    testo:'Il server le rifiuta. Riprovo da solo a ogni apertura.', quando:'Dalle 14:02',
+    dettagli:['salita · pasti · 400 · 22007 · invalid input syntax for type time: "25:00"','discesa · giorni · 500 · PGRST000 · Database connection error']},
+  ok:{tono:'--accent', icona:'check', titolo:'Tutto salvato online',
+    testo:'Le modifiche di questo telefono sono anche sul server.', quando:'Controllato alle 11:34', dettagli:[]},
+  corso:{tono:'--accent', icona:'spin', titolo:'Sincronizzazione in corso…', testo:'Scarico e invio le modifiche.', quando:'', dettagli:[]}
+};
+let stato='sessione0', proposta='A', apertoDettagli=false;
+
+function seg(id, cb){
+  const el=document.getElementById(id);
+  el.addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+    cb(b.dataset.v); disegna();
+  });
+}
+function premi(id, v){document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed', x.dataset.v===v?'true':'false'))}
+seg('segStato', v=>{stato=v});
+seg('segProposta', v=>{proposta=v});
+
+function icona(s){
+  if(s.icona==='spin') return '<div class="icona" style="--tono:var(--accent)"><span class="spinner"></span></div>';
+  return '<div class="icona" style="--tono:var('+s.tono+')">'+I[s.icona]+'</div>';
+}
+function dettagli(s){
+  if(!s.dettagli.length) return '';
+  return '<details id="det"'+(apertoDettagli?' open':'')+'><summary>Dettagli tecnici</summary>'+
+    s.dettagli.map(d=>'<p class="tecnico">'+d+'</p>').join('')+'</details>';
+}
+function disegna(){
+  const s=STATI[stato];
+  const dentro = proposta==='B';
+  let h='<div class="stato-card">'+icona(s)+'<h2>'+s.titolo+'</h2><p>'+s.testo+'</p>'+
+        (s.quando?'<span class="quando">'+s.quando+'</span>':'')+(dentro?dettagli(s):'')+'</div>';
+  const btn='<button type="button" class="btn-p" id="btnOra"'+(stato==='corso'?' disabled':'')+'>Sincronizza ora</button>';
+  const esciGruppo='<div class="gruppo stacco"><button type="button" class="riga-btn warn-txt" data-azione="esci"><span class="nome">Esci e rientra</span><span class="chev">›</span></button></div>';
+  const esciDati='<button type="button" class="riga-btn warn-txt" data-azione="esci"><span class="nome">Esci e rientra<small>Svuota i dati di questo telefono e li riscarica dopo l\'accesso.</small></span><span class="chev">›</span></button>';
+  const ricarica='<button type="button" class="riga-btn warn-txt" data-azione="ricarica"><span class="nome">Ricarica i dati dal tuo account</span><span class="chev">›</span></button>';
+
+  if(proposta==='A'){
+    h+=dettagli(s)+btn+(s.sessione?esciGruppo:'');
+    h+='<p class="gruppo-et">Dati</p><div class="gruppo">'+ricarica+'</div>';
+  } else if(proposta==='B'){
+    h+=btn+(s.sessione?esciGruppo:'');
+    h+='<p class="gruppo-et">Dati</p><div class="gruppo">'+ricarica+'</div>';
+  } else {
+    h+=btn+dettagli(s);
+    h+='<p class="gruppo-et">Dati</p><div class="gruppo">'+ricarica+(s.sessione?esciDati:'')+'</div>';
+  }
+  document.getElementById('corpo').innerHTML=h;
+  const det=document.getElementById('det');
+  if(det) det.addEventListener('toggle',()=>{apertoDettagli=det.open});
+}
+let timerToast=null;
+function toast(t){
+  const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show');
+  clearTimeout(timerToast); timerToast=setTimeout(()=>el.classList.remove('show'),2600);
+}
+document.getElementById('corpo').addEventListener('click', e=>{
+  if(e.target.closest('#btnOra')){
+    if(stato==='corso') return;
+    const fine = stato==='errore' ? 'errore' : 'ok';
+    stato='corso'; premi('segStato',''); disegna();
+    setTimeout(()=>{
+      stato=fine; premi('segStato', fine); disegna();
+      toast(fine==='ok' ? 'Tutto salvato online.' : 'Il server rifiuta ancora 2 modifiche.');
+    },1500);
+    return;
+  }
+  const r=e.target.closest('[data-azione]');
+  if(r) toast(r.dataset.azione==='esci' ? 'Qui si aprirebbe Esci (con il conteggio delle modifiche).' : 'Qui si aprirebbe Ricarica i dati.');
+});
+disegna();
+</script>
+</body>
+</html>
