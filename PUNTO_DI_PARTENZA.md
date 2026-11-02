@@ -4912,7 +4912,7 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
     MB su 100 GB, CDN Requests 33.000, ISR Reads 12.000
   - **Il matcher** (dove il proxy gira) ha un test:
     `src/proxyMatcher.test.ts`, con `unstable_doesMiddlewareMatch` di
-    Next (in 16.3.3 c'è solo con il nome vecchio). Fuori `sw.js`,
+    Next (in 16.4.3 c'è ancora solo con il nome vecchio). Fuori `sw.js`,
     `sw-strategia.js`, `offline.html`, `manifest.json` e `icons/`
     (un redirect a `/login` al posto di `sw.js` farebbe fallire in
     silenzio il service worker); dentro `/`, `/login`,

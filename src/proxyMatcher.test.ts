@@ -7,8 +7,8 @@
 // sarebbe aperta senza accesso.
 //
 // La verifica la fa Next con la sua logica di confronto, non una copia
-// nostra: unstable_doesMiddlewareMatch. In Next 16.3.3 c'è solo con il
-// nome vecchio; la documentazione la chiama già unstable_doesProxyMatch.
+// nostra: unstable_doesMiddlewareMatch. In Next 16.4.3 c'è ancora solo con
+// il nome vecchio; la documentazione la chiama già unstable_doesProxyMatch.
 // Quando Next la rinomina, si cambia qui.
 
 import { describe, it, expect } from "vitest";

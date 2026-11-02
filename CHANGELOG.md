@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Next.js 16.3.3 → 16.4.3 (audit #2)
+
+Branch `aggiorna-next`. `next` 16.3.3 → 16.4.3 ed `eslint-config-next`
+16.3.0 → 16.4.3, versioni esatte come prima. Non la 16.4.4, uscita il
+giorno stesso. Note di rilascio 16.4.0–16.4.3 lette: niente che tocchi
+proxy, matcher, `vercel.json`, `env`, redirect, header,
+`reactCompiler` o service worker. "Strict route matching" riguarda solo
+le route parallele, che qui non ci sono. `agentRules: false` spegne
+ancora il blocco per gli agenti, che ora va in `AGENTS.md`, non più in
+`CLAUDE.md`. `npm audit --omit=dev`: prima 3 vulnerabilità (next
+critica, sharp e source-map-js alte), dopo install e `npm audit fix`
+nessuna. Restano 16 moderate solo negli strumenti di sviluppo
+(`minimatch` sotto eslint): `--force` porterebbe eslint a 4.0.0, non
+applicato. Con `audit fix` salgono anche vite 8.3.5, vitest 5.1.0,
+sharp 0.35.5, zod 4.6.7, undici 8.12.3. tsc, lint, 1513 test e build
+verdi; nessun file generato cambiato. Aperto: le note della 16.4.4
+annunciano un rilascio di sicurezza per il 03/11, da valutare.
+
+## 2026-11-02 — Merge di `accesso-scaduto` su main, provato nell'app installata
+
+Unito il 02/11 con fast-forward, da `4960409` a `59c4ffe`, 5 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge Davide ha usato l'app
+installata il 02/11 alle 21:07: nei log di Supabase tutte le richieste
+200, nessun 401 né 403.
+
 ## 2026-11-02 — Tolta la prova 303; "Accesso scaduto" provato sull'anteprima
 
 Branch `accesso-scaduto`. Tolto tutto il commit 4 (blocco in
