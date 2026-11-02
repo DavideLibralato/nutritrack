@@ -5,6 +5,12 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-02 — Prova 303: 401 PGRST303 finto per l'anteprima (temporaneo, da togliere)
+
+Branch `accesso-scaduto`. Temporaneo, da togliere con il commit 5 prima
+del merge: `?prova303=una|sempre|no` fa rispondere alle GET su
+`composizioni` un 401 PGRST303 finto, spento su app-libra.vercel.app.
+
 ## 2026-11-02 — Sincronizzazione: "Sincronizza ora" anche con l'accesso scaduto, e i dettagli tecnici
 
 Branch `accesso-scaduto`. Il 01/11 "Accesso scaduto" era un rifiuto
