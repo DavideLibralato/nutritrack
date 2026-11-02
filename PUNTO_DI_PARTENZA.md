@@ -7642,6 +7642,14 @@ salvato"; doppio accesso con Slow 3G e Invio più volte: "Attendere..."
 fino a Oggi e un solo POST /token nei log. Nessun 401 vero durante le
 prove.
 
+**Next.js 16.4.3 e limite delle Server Actions a 1 MB** (dal 02/11,
+branch `aggiorna-next`, audit #2 e #8). **Provato il 02/11**
+sull'anteprima, Build `a630983`, account di prova: Oggi, Aggiungi +
+Annulla, Impostazioni, Sincronizzazione "Tutto salvato", ricarica,
+modalità aereo; nei log di Supabase 110 richieste tutte 200/201,
+nessun 401/403. Registrazione con codice invito non provata dal vivo
+(scelta di Davide), coperta dai test di `auth.ts`.
+
 ### Non ancora costruito
 
 - **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
@@ -7659,6 +7667,16 @@ prove.
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Rilascio di sicurezza di Next annunciato per il 03/11** (dalle note
+  della 16.4.4): da verificare se tocca la 16.4.3 installata il 02/11.
+  Se sì, un altro aggiornamento con la stessa procedura.
+
+- **16 avvisi "moderate" di `npm audit` su `minimatch`** (dal 02/11):
+  solo dentro eslint, strumenti di sviluppo, non nell'app pubblicata.
+  L'unica correzione è `--force`, che porterebbe eslint a 4.0.0 e
+  romperebbe il lint. Si lasciano finché eslint non esce con la
+  correzione. `npm audit --omit=dev` è pulito.
 
 - **Da tenere d'occhio: un test di Aggiungi fallito una volta** (23/10,
   branch `username-dopo-accesso`, commit 3). In `src/app/aggiungi/

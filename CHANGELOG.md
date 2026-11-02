@@ -17,6 +17,17 @@ far leggere al server con una sola richiesta. Al suo posto un commento
 di due righe sul perché. tsc, lint, 1513 test e build verdi; la build
 non elenca più `serverActions` fra gli esperimenti.
 
+Provati i due commit il 02/11 (21:26-21:28) sull'anteprima, Build
+`a630983`, account di prova: Oggi, Aggiungi + Annulla, Impostazioni,
+Sincronizzazione "Tutto salvato", ricarica, modalità aereo. Nei log di
+Supabase 110 richieste tutte 200/201, nessun 401/403; la voce di prova
+(Mela 100 g) cancellata anche sul server (verificato da Cowork).
+Registrazione con codice invito non provata dal vivo (scelta di Davide:
+4 campi di testo contro 1 MB), coperta dai test di `auth.ts`. Aperti in
+PUNTO §11: 16 avvisi "moderate" su `minimatch` (solo eslint, correzione
+solo con `--force`, che romperebbe il lint) e il rilascio di sicurezza
+di Next annunciato per il 03/11, da verificare.
+
 ## 2026-11-02 — Next.js 16.3.3 → 16.4.3 (audit #2)
 
 Branch `aggiorna-next`. `next` 16.3.3 → 16.4.3 ed `eslint-config-next`
