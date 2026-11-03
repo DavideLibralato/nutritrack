@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-03 — Next 16.4.5, esito delle prove sull'anteprima
+
+Branch `next-sicurezza-novembre`. Il 03/11 dalle 22:07 alle 22:10
+Davide ha provato l'anteprima da Safari su iPhone, con l'account di
+prova; Cowork ha controllato i log. Build del commit 1 ok. Da
+disconnesso l'app porta ad Accedi. Prima un accesso con password
+sbagliata (400 `invalid_credentials`, normale), poi accesso, Esci e
+nuovo accesso. Una voce aggiunta e annullata: annullata anche sul
+server. Una voce aggiunta in modalità aereo: sincronizzata al ritorno
+della rete, viva sul server. Aperti Sincronizzazione, Impostazioni,
+Alimenti e Amici. Nei log 128 letture e 23 HEAD, tutte 200; scritture
+201/200; nessun 401 né 403. Test: 5 giri di vitest, tutti 1513/1513;
+il fallimento singolo del primo giro resta non identificato.
+
 ## 2026-11-03 — Next 16.4.5 (rilascio di sicurezza di novembre)
 
 Branch `next-sicurezza-novembre`. `next` ed `eslint-config-next` da

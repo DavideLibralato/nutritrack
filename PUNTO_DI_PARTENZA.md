@@ -7683,7 +7683,13 @@ nessun 401/403. Registrazione con codice invito non provata dal vivo
 rilascio di sicurezza di novembre, 7 avvisi Moderate (elenco nel
 CHANGELOG del 03/11). Nessuna delle parti colpite è usata nell'app:
 `use cache`, `unstable_cache`, `next/image`, runtime Edge e route
-handler. Prove sull'anteprima da fare.
+handler. **Provato il 03/11** sull'anteprima, Build del commit 1,
+Safari su iPhone, account di prova. Accesso, accesso con password
+sbagliata (400, normale), Esci e nuovo accesso; voce aggiunta e
+annullata; voce aggiunta in modalità aereo e sincronizzata al ritorno
+della rete; Sincronizzazione, Impostazioni, Alimenti e Amici. Nei log
+di Supabase 128 letture e 23 HEAD tutte 200, scritture 201/200, nessun
+401/403.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -7709,7 +7715,7 @@ i numeri delle sue segnalazioni.
 
 - **Rilascio di sicurezza di Next del 03/11**: uscito come 16.4.5,
   aggiornamento sul branch `next-sicurezza-novembre` (sopra, "Next.js
-  16.4.5"). Restano da fare le prove sull'anteprima e il merge.
+  16.4.5"), provato sull'anteprima il 03/11. Resta il merge.
 
 - **16 avvisi "moderate" di `npm audit` su `minimatch`** (dal 02/11):
   solo dentro eslint, strumenti di sviluppo, non nell'app pubblicata.
