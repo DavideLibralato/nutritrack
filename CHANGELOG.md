@@ -5,6 +5,54 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-03 — Next 16.4.5 (rilascio di sicurezza di novembre)
+
+Branch `next-sicurezza-novembre`. `next` ed `eslint-config-next` da
+16.4.3 a 16.4.5 (pubblicata su npm il 03/11 alle 18:01 UTC). Poi
+`npm audit fix` senza `--force`, che non ha cambiato niente. Gli avvisi
+sono 7, tutti Moderate, pubblicati il 03/11 e corretti in 16.4.5 secondo
+le note di rilascio:
+
+- GHSA-mfr8-8qww-v76h: `use cache` chiamato tramite `unstable_cache`
+  passa dati da un utente all'altro.
+- GHSA-vc7v-qv4w-wrv8: la cache si mescola tra valori diversi dei root
+  params nei `use cache` annidati (seguito di un avviso precedente).
+- GHSA-vvgp-ww4w-46vf: le pagine "di riserva" condivise di Cache
+  Components si possono avvelenare con parametri di rotta finti.
+- GHSA-rhh4-g77r-r9qj: `use cache` con argomenti binari passa dati ad
+  altri utenti e la sua cache si può avvelenare.
+- GHSA-pc58-hwjq-p385: solo self-hosted, inoltrare risposte prese con
+  fetch può iniettare o mostrare risposte di altri client.
+- GHSA-7qx7-33qx-rqx2: solo self-hosted, `/_next/image` accetta un SVG
+  anche con `dangerouslyAllowSVG: false`.
+- GHSA-f3mh-rxg3-f5g2: sulle rotte Edge che impostano cookie con
+  `NextResponse`, l'header interno `x-middleware-set-cookie` rende i
+  cookie HttpOnly leggibili da JavaScript.
+
+Le versioni colpite su GitHub non tornano. Per f3mh e 7qx7 sono
+"≤ 16.4.2", per nessuno dei tre controllati è indicata una versione
+corretta, e `npm audit` non segnala la 16.4.3.
+
+Non eravamo esposti: in `src/` non usiamo `use cache`,
+`unstable_cache`, `next/image`, route handler né `runtime` Edge. Per
+f3mh: il proxy gira su Node dal 25/10. In più i cookie di sessione di
+`@supabase/ssr` non sono HttpOnly per scelta della libreria, perché li
+legge anche il client nel browser: `DEFAULT_COOKIE_OPTIONS` ha
+`httpOnly: false` nella 0.12.6 e noi non passiamo `cookieOptions`.
+L'avviso quindi non aggiungeva esposizione.
+
+Verifiche: build ok (16.4.5) e lint pulito. Vitest: 1513/1513, ma al
+primo giro completo 1 test è fallito per timeout di `waitFor` e non è
+stato identificato; i due giri dopo erano verdi. `npm audit` uguale a
+prima: 16 moderate su `minimatch` (solo eslint), `--omit=dev` a 0.
+
+## 2026-11-02 — Prova nell'app installata dopo l'audit #3
+
+Il 02/11 alle 21:57 Davide ha usato l'app installata (Build `8336990`,
+Oggi ok per Davide). Nei log di Supabase 24 richieste, tutte 200,
+nessun 401 né 403 (verificato da Cowork). Nessuna voce di merge:
+l'audit #3 è stato fatto direttamente su main.
+
 ## 2026-11-02 — Report dell'audit del 01/11 in docs/audit
 
 Su main. `AUDIT_2026-11-01.md`, finora fuori da git nella radice,

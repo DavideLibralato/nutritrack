@@ -4912,7 +4912,7 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
     MB su 100 GB, CDN Requests 33.000, ISR Reads 12.000
   - **Il matcher** (dove il proxy gira) ha un test:
     `src/proxyMatcher.test.ts`, con `unstable_doesMiddlewareMatch` di
-    Next (in 16.4.3 c'è ancora solo con il nome vecchio). Fuori `sw.js`,
+    Next (in 16.4.5 c'è ancora solo con il nome vecchio). Fuori `sw.js`,
     `sw-strategia.js`, `offline.html`, `manifest.json` e `icons/`
     (un redirect a `/login` al posto di `sw.js` farebbe fallire in
     silenzio il service worker); dentro `/`, `/login`,
@@ -7679,6 +7679,12 @@ modalità aereo; nei log di Supabase 110 richieste tutte 200/201,
 nessun 401/403. Registrazione con codice invito non provata dal vivo
 (scelta di Davide), coperta dai test di `auth.ts`.
 
+**Next.js 16.4.5** (dal 03/11, branch `next-sicurezza-novembre`): è il
+rilascio di sicurezza di novembre, 7 avvisi Moderate (elenco nel
+CHANGELOG del 03/11). Nessuna delle parti colpite è usata nell'app:
+`use cache`, `unstable_cache`, `next/image`, runtime Edge e route
+handler. Prove sull'anteprima da fare.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
@@ -7701,9 +7707,9 @@ i numeri delle sue segnalazioni.
 
 ### Difetti e verifiche aperti
 
-- **Rilascio di sicurezza di Next annunciato per il 03/11** (dalle note
-  della 16.4.4): da verificare se tocca la 16.4.3 installata il 02/11.
-  Se sì, un altro aggiornamento con la stessa procedura.
+- **Rilascio di sicurezza di Next del 03/11**: uscito come 16.4.5,
+  aggiornamento sul branch `next-sicurezza-novembre` (sopra, "Next.js
+  16.4.5"). Restano da fare le prove sull'anteprima e il merge.
 
 - **16 avvisi "moderate" di `npm audit` su `minimatch`** (dal 02/11):
   solo dentro eslint, strumenti di sviluppo, non nell'app pubblicata.
