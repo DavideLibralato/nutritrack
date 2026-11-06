@@ -7749,6 +7749,22 @@ della rete; Sincronizzazione, Impostazioni, Alimenti e Amici. Nei log
 di Supabase 128 letture e 23 HEAD tutte 200, scritture 201/200, nessun
 401/403.
 
+**Aggiungi: nuovo aspetto e ricerca nei pasti salvati** (dal 06/11,
+branch `aggiungi-nuovo-aspetto`; sezione 3, "Aspetto" e "Ricerca nei
+pasti salvati"). **Provato il 06/11** sull'anteprima da Davide, Safari
+su iPhone, account di prova; log e database controllati da Cowork.
+Build del commit 3, 22:02-22:15: aspetto di Aggiungi (riquadri, "+"
+tondi, "Crea alimento a mano" in fondo, con la tastiera aperta, tema
+chiaro e scuro), "+" da Recenti con Annulla, annullato anche sul server.
+Build `6b0e915` (commit 4), 22:18-22:22: creato il pasto salvato
+"Colazione test" (Mela, Yogurt greco bianco magro 0%); ricerca per
+alimento con "Contiene …", ricerca per nome, nessun risultato con Invio
+→ "Nuovo alimento", matita sul pasto; "+" di Colazione test dai
+risultati (22:22:40) e Annulla (22:22:41), tutte e due le voci annullate
+sul server. Letture tutte 200, scritture 201/200, nessun 401/403.
+Nell'account di prova restano due voci vive di Colazione test delle
+22:18:49 (Annulla non fatto in quella prova): innocue.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
@@ -7771,9 +7787,13 @@ i numeri delle sue segnalazioni.
 
 ### Difetti e verifiche aperti
 
-- **Rilascio di sicurezza di Next del 03/11**: uscito come 16.4.5,
-  aggiornamento sul branch `next-sicurezza-novembre` (sopra, "Next.js
-  16.4.5"), provato sull'anteprima il 03/11. Resta il merge.
+- **Aggiungi: nuovo aspetto e ricerca nei pasti salvati** (branch
+  `aggiungi-nuovo-aspetto`): provato sull'anteprima il 06/11 (sopra,
+  "Fatto"). Resta il merge.
+
+- ~~**Rilascio di sicurezza di Next del 03/11**~~: 16.4.5, provato
+  sull'anteprima e unito a main il 03/11 (sopra, "Next.js 16.4.5";
+  CHANGELOG, voce del merge).
 
 - **16 avvisi "moderate" di `npm audit` su `minimatch`** (dal 02/11):
   solo dentro eslint, strumenti di sviluppo, non nell'app pubblicata.

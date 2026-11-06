@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-06 — Aggiungi, esito delle prove sull'anteprima
+
+Branch `aggiungi-nuovo-aspetto`. Il 06/11 Davide ha provato l'anteprima
+da Safari su iPhone, con l'account di prova; Cowork ha controllato i
+log e il database. Dalle 22:02 alle 22:15, Build del commit 3: aspetto
+di Aggiungi (riquadri, "+" tondi, "Crea alimento a mano" in fondo, con
+la tastiera aperta, tema chiaro e scuro), "+" da Recenti con Annulla,
+annullato anche sul server. Dalle 22:18 alle 22:22, Build `6b0e915`
+(commit 4): creato il pasto salvato "Colazione test" (Mela, Yogurt
+greco bianco magro 0%); ricerca per alimento con "Contiene …", ricerca
+per nome, nessun risultato con Invio → "Nuovo alimento", matita sul
+pasto; "+" di Colazione test dai risultati alle 22:22:40 e Annulla alle
+22:22:41, tutte e due le voci annullate sul server. Letture tutte 200,
+scritture 201/200, nessun 401 né 403. Restano nell'account di prova due
+voci vive di Colazione test delle 22:18:49 (Annulla non fatto in quella
+prova): innocue. Nessun bug trovato. In PUNTO §11 anche la riga di
+`next-sicurezza-novembre` fra le verifiche aperte, rimasta a "Resta il
+merge" dopo il merge del 03/11.
+
 ## 2026-11-06 — Ricerca di Aggiungi anche nei pasti salvati
 
 Branch `aggiungi-nuovo-aspetto`, commit 4. La ricerca trova anche i
