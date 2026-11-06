@@ -57,6 +57,13 @@ import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import ServeConnessione from "@/components/ServeConnessione";
 import CreaAlimentoForm from "@/components/CreaAlimentoForm";
 import BarraAnnulla from "@/components/BarraAnnulla";
+import IconaIndietro from "@/components/IconaIndietro";
+import IconaGiu from "@/components/IconaGiu";
+import IconaLente from "@/components/IconaLente";
+import IconaPiu from "@/components/IconaPiu";
+import IconaCroce from "@/components/IconaCroce";
+import IconaMatita from "@/components/IconaMatita";
+import IconaPosate from "@/components/IconaPosate";
 import {
   messaggioDopoRipristino,
   testoRipristinoNonRiuscito,
@@ -329,7 +336,7 @@ function AggiungiContenuto() {
             aria-label="Indietro"
             className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
           >
-            <ChevronSinistra />
+            <IconaIndietro />
           </button>
           <h1 className="font-display text-2xl font-bold">Aggiungi</h1>
         </header>
@@ -568,7 +575,7 @@ function AggiungiContenuto() {
           aria-label="Indietro"
           className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
         >
-          <ChevronSinistra />
+          <IconaIndietro />
         </button>
 
         {/* Titolo = nome del pasto, toccabile: apre l'elenco dei pasti della
@@ -587,7 +594,7 @@ function AggiungiContenuto() {
               </option>
             ))}
           </select>
-          <ChevronGiu className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-muted" />
+          <IconaGiu className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-muted" />
         </div>
       </header>
 
@@ -633,7 +640,7 @@ function AggiungiContenuto() {
                 "Crea alimento manualmente" — un tap in meno, senza chiudere la
                 tastiera. `enterKeyHint` cambia l'etichetta di quel tasto. */}
             <div className="relative shrink-0">
-              <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+              <IconaLente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 type="search"
                 value={query}
@@ -661,7 +668,7 @@ function AggiungiContenuto() {
                   aria-label="Svuota la ricerca"
                   className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
                 >
-                  <Croce />
+                  <IconaCroce />
                 </button>
               )}
             </div>
@@ -756,7 +763,7 @@ function AggiungiContenuto() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 px-6 pt-10 text-center">
-                    <Posate className="text-muted" />
+                    <IconaPosate className="text-muted" />
                     <p className="font-medium">Cerca il tuo alimento</p>
                     <p className="text-sm leading-relaxed text-muted">
                       Scrivi il nome per cercarlo nel catalogo, oppure creane uno
@@ -798,7 +805,7 @@ function AggiungiContenuto() {
                             aria-label={`Modifica ${etichettaAlimento(a)}`}
                             className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
                           >
-                            <Matita />
+                            <IconaMatita />
                           </button>
                         )}
 
@@ -808,7 +815,7 @@ function AggiungiContenuto() {
                           aria-label={`Aggiungi ${etichettaAlimento(a)}`}
                           className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
                         >
-                          <Piu className="text-accent" />
+                          <IconaPiu className="text-accent" />
                         </button>
                       </li>
                     );
@@ -816,7 +823,7 @@ function AggiungiContenuto() {
                 </ul>
               ) : (
                 <div className="flex flex-col items-center gap-3 px-4 pt-10 text-center">
-                  <Lente className="text-muted" size={40} />
+                  <IconaLente className="text-muted" size={40} />
                   <p className="font-medium">Nessun risultato per «{query.trim()}»</p>
                   <p className="text-sm leading-relaxed text-muted">
                     Non è ancora nel catalogo. Puoi crearlo tu: resterà
@@ -836,7 +843,7 @@ function AggiungiContenuto() {
                 onClick={() => setCreando(true)}
                 className={`flex w-full items-center justify-center gap-2 rounded-full border border-accent py-3 font-medium text-accent ${CLASSE_FOCUS}`}
               >
-                <Piu size={18} />
+                <IconaPiu size={18} />
                 {query.trim() === ""
                   ? "Crea alimento manualmente"
                   : `Crea «${query.trim()}»`}
@@ -976,7 +983,7 @@ function RigaRapida({
           aria-label={`Modifica ${etichettaAlimento(alimento)}`}
           className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
         >
-          <Matita />
+          <IconaMatita />
         </button>
       )}
 
@@ -988,7 +995,7 @@ function RigaRapida({
         aria-label={`Aggiungi ${etichettaAlimento(alimento)}, ${quantitaG} g`}
         className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
       >
-        <Piu className="text-accent" />
+        <IconaPiu className="text-accent" />
       </button>
     </li>
   );
@@ -1029,7 +1036,7 @@ function RigaPastoSalvato({
         aria-label={`Modifica ${pasto.nome}`}
         className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
       >
-        <Matita />
+        <IconaMatita />
       </button>
 
       <button
@@ -1038,146 +1045,8 @@ function RigaPastoSalvato({
         aria-label={`Aggiungi ${pasto.nome}, ${sottotitolo}`}
         className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
       >
-        <Piu className="text-accent" />
+        <IconaPiu className="text-accent" />
       </button>
     </li>
-  );
-}
-
-function ChevronSinistra() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M15 6l-6 6 6 6" />
-    </svg>
-  );
-}
-
-function ChevronGiu({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-
-function Lente({ className, size = 18 }: { className?: string; size?: number }) {
-  return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={size >= 32 ? 1.6 : 2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
-    </svg>
-  );
-}
-
-function Piu({ className, size = 22 }: { className?: string; size?: number }) {
-  return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-// "×" per svuotare il campo di ricerca — stessa famiglia delle altre icone
-// (stroke currentColor, così eredita text-muted).
-function Croce({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  );
-}
-
-// Matita: modifica un alimento del catalogo (solo i propri, non verificati).
-function Matita({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
-
-// Icona posate (forchetta + cucchiaio) per lo stato vuoto della ricerca.
-function Posate({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="40"
-      height="40"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 3v7a3 3 0 0 0 6 0V3M9 10v11M17 3c-1.5 1.7-2 3.4-2 5.5S15.5 12.5 17 14v7" />
-    </svg>
   );
 }

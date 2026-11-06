@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-06 — Icone di Aggiungi in /components
+
+Branch `aggiungi-nuovo-aspetto`, commit 2. Le 7 icone che stavano in
+fondo a `src/app/aggiungi/page.tsx` sono ora un file ciascuna in
+`src/components` (regola di CLAUDE.md, un file per componente):
+`IconaIndietro`, `IconaGiu`, `IconaLente`, `IconaPiu`, `IconaCroce`,
+`IconaMatita`, `IconaPosate`. Nel piano erano 6: la settima è le posate
+dello stato vuoto. Nessun cambio visibile: SVG e props uguali a prima,
+controllati con uno script che confronta il markup vecchio e il nuovo e
+ricostruisce `page.tsx` atteso (blocco tolto, nomi e import), identico
+a quello reale. Le stesse icone copiate in Oggi, Impostazioni >
+Alimenti e ModificaPastoSalvato restano dove sono (lavoro a parte).
+Vitest 1513/1513, tsc, lint e build ok.
+
 ## 2026-11-06 — Test «Non aggiungerlo» non più dipendente dal carico
 
 Branch `aggiungi-nuovo-aspetto`, commit 1. Il test di
