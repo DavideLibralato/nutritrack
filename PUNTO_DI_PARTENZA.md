@@ -636,6 +636,25 @@ Ordine degli elementi:
    a destra
 4. **Preferiti** — stessa struttura, include i pasti salvati ("Colazione
    standard · 3 alimenti · 320 kcal")
+5. **"Crea alimento a mano"** in fondo, fisso, sempre raggiungibile; con
+   una ricerca scritta diventa "Crea «…»"
+
+**Aspetto** (dal 06/11, branch `aggiungi-nuovo-aspetto`; mockup
+`docs/mockups/aggiungi.html`, proposta A scelta da Davide il 03/11). Le
+righe di Recenti, Preferiti (un riquadro per Alimenti e uno per Pasti
+salvati) e risultati della ricerca stanno in riquadri come i gruppi di
+Impostazioni: `bg-surface`, bordo, angoli da 20 px, una linea fra le
+righe. Titoli di sezione come in Impostazioni (piccoli, maiuscoli,
+grigi). Riga alta almeno 60 px; "+", matita e freccia indietro sono
+pulsanti tondi da 44 pt, il "+" con un fondo d'accento leggero. Campo di
+ricerca alto 48 px, su tutta la larghezza. "Crea alimento a mano" sta in
+una barra in fondo con una linea sopra, come in ModificaPastoSalvato,
+con sotto lo spazio della barretta home. Testata senza linea sotto. Solo
+classi del tema, quindi anche al buio. Le classi stanno in costanti in
+cima a `src/app/aggiungi/page.tsx` (`CLASSE_RIQUADRO`, `CLASSE_RIGA`,
+`CLASSE_PIU`…), una sola definizione per le tre liste. Il pulsante
+della scansione del mockup non c'è ancora: arriva, già funzionante, con
+il lavoro codice-a-barre.
 
 **Salvare un pasto intero.** I preferiti non contengono solo alimenti singoli:
 contengono anche **pasti completi** ("Colazione standard · 3 alimenti"). La
@@ -1682,7 +1701,8 @@ Gestione del catalogo personale, in Impostazioni > Alimenti
 (`/impostazioni/alimenti`), con "‹ Impostazioni". Mockup approvato da
 Davide il 12/10: `docs/mockups/catalogo-alimenti.html`. Analisi e
 decisioni del 15/10. Non sostituisce niente: in Aggiungi ricerca, matita e
-"Crea alimento manualmente" restano come sono. Qui si guarda tutto il
+"Crea alimento a mano" (fino al 06/11 "Crea alimento manualmente")
+restano come sono. Qui si guarda tutto il
 catalogo, si corregge e si fa pulizia.
 
 - **Quali alimenti**: solo quelli modificabili, cioè dell'utente

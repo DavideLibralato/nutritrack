@@ -90,6 +90,30 @@ const NUMERO_RECENTI = 5;
 
 const ERRORE_AGGIUNTA = "Non è stato possibile aggiungere. Riprova.";
 
+// L'aspetto delle liste (mockup docs/mockups/aggiungi.html, proposta A):
+// le righe stanno in riquadri come i gruppi di Impostazioni
+// (GruppoImpostazioni: bg-surface, bordo, angoli da 20 px), separate da
+// una linea. Una sola definizione per Recenti, Preferiti e risultati della
+// ricerca, così le tre liste non possono divergere.
+const CLASSE_RIQUADRO =
+  "overflow-hidden rounded-[20px] border border-border bg-surface divide-y divide-border";
+// Riga alta almeno 60 px; a destra 6 px di margine per i pulsanti tondi.
+const CLASSE_RIGA = "flex min-h-[60px] items-center gap-1.5 py-1.5 pr-1.5 pl-3.5";
+// Il nome occupa tutta l'altezza della riga: il tocco arriva anche sopra e
+// sotto il testo.
+const CLASSE_NOME_RIGA = `flex min-w-0 flex-1 flex-col justify-center self-stretch rounded-lg text-left ${CLASSE_FOCUS}`;
+const CLASSE_SOTTOTITOLO_RIGA = "mt-0.5 text-[13px] text-muted tabular-nums";
+// "+" e matita da 44 pt (size-11), il minimo di Apple per un tocco sicuro.
+// Il "+" ha il fondo d'accento leggero del mockup.
+const CLASSE_PIU = `flex size-11 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent ${CLASSE_FOCUS}`;
+const CLASSE_MATITA = `flex size-11 shrink-0 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`;
+// Titoli di sezione come quelli di Impostazioni; il rientro li allinea al
+// testo delle righe.
+const CLASSE_TITOLO_SEZIONE = "mx-3.5 mb-2 text-xs font-medium uppercase tracking-[0.1em] text-muted";
+const CLASSE_SOTTOSEZIONE = "mx-3.5 mb-1.5 text-xs text-muted";
+// Freccia indietro della testata, anche lei da 44 pt.
+const CLASSE_INDIETRO = `flex size-11 shrink-0 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`;
+
 // Cosa si sta aggiungendo: un alimento o un pasto salvato, nel pasto scelto
 // al momento del tocco. `origine` dice dove mostrare un errore della prima
 // chiamata: nello sheet quantità, o sopra le liste per il "+".
@@ -329,16 +353,16 @@ function AggiungiContenuto() {
         style={{ top: areaVisibile.top, height: areaVisibile.height }}
         className="fixed inset-x-0 mx-auto flex w-full max-w-md flex-col overflow-hidden bg-background"
       >
-        <header className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
+        <header className="flex shrink-0 items-center gap-0.5 px-2.5 pt-2 pb-2">
           <button
             type="button"
             onClick={() => router.back()}
             aria-label="Indietro"
-            className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
+            className={CLASSE_INDIETRO}
           >
             <IconaIndietro />
           </button>
-          <h1 className="font-display text-2xl font-bold">Aggiungi</h1>
+          <h1 className="font-display text-[26px] font-bold">Aggiungi</h1>
         </header>
         <div className="px-4 pt-4">
           {!primoAvvio ? (
@@ -568,12 +592,14 @@ function AggiungiContenuto() {
       style={{ top: areaVisibile.top, height: areaVisibile.height }}
       className="fixed inset-x-0 mx-auto flex w-full max-w-md flex-col overflow-hidden bg-background"
     >
-      <header className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
+      {/* Senza linea sotto, come nel mockup: la separazione la fa il campo
+          di ricerca, subito sotto. */}
+      <header className="flex shrink-0 items-center gap-0.5 px-2.5 pt-2 pb-2">
         <button
           type="button"
           onClick={() => router.back()}
           aria-label="Indietro"
-          className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
+          className={CLASSE_INDIETRO}
         >
           <IconaIndietro />
         </button>
@@ -586,7 +612,7 @@ function AggiungiContenuto() {
             value={pastoSelezionatoId ?? ""}
             onChange={(e) => setPastoSelezionatoId(e.target.value)}
             aria-label="Pasto"
-            className={`appearance-none rounded bg-transparent pr-7 font-display text-2xl font-bold ${CLASSE_FOCUS}`}
+            className={`min-h-11 appearance-none rounded-lg bg-transparent pr-7 font-display text-[26px] font-bold ${CLASSE_FOCUS}`}
           >
             {pasti.map((p) => (
               <option key={p.id} value={p.id}>
@@ -598,9 +624,9 @@ function AggiungiContenuto() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col px-4 pt-4 pb-5">
+      <div className="flex min-h-0 flex-1 flex-col">
         {creando || alimentoInModifica ? (
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-5">
             <CreaAlimentoForm
               key={alimentoInModifica?.id ?? "nuovo"}
               userId={userId}
@@ -637,61 +663,66 @@ function AggiungiContenuto() {
           <>
             {/* Voce 2 punto 3: quando la ricerca non trova nulla, il tasto
                 Invio / "Vai" della tastiera fa la stessa cosa del pulsante
-                "Crea alimento manualmente" — un tap in meno, senza chiudere la
-                tastiera. `enterKeyHint` cambia l'etichetta di quel tasto. */}
-            <div className="relative shrink-0">
-              <IconaLente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Cerca un alimento"
-                enterKeyHint={
-                  query.trim() !== "" && risultati.length === 0 ? "go" : "search"
-                }
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    query.trim() !== "" &&
-                    risultati.length === 0
-                  ) {
-                    e.preventDefault();
-                    setCreando(true);
+                "Crea alimento a mano" — un tap in meno, senza chiudere la
+                tastiera. `enterKeyHint` cambia l'etichetta di quel tasto.
+                Campo alto 48 px su tutta la larghezza: il pulsante della
+                scansione del mockup arriva con il lavoro codice-a-barre. */}
+            <div className="shrink-0 px-4 pt-1 pb-3.5">
+              <div className="relative">
+                <IconaLente
+                  size={20}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+                />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Cerca un alimento"
+                  enterKeyHint={
+                    query.trim() !== "" && risultati.length === 0 ? "go" : "search"
                   }
-                }}
-                className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 ${CLASSE_FOCUS}`}
-              />
-              {query !== "" && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  aria-label="Svuota la ricerca"
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
-                >
-                  <IconaCroce />
-                </button>
-              )}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === "Enter" &&
+                      query.trim() !== "" &&
+                      risultati.length === 0
+                    ) {
+                      e.preventDefault();
+                      setCreando(true);
+                    }
+                  }}
+                  className={`h-12 w-full rounded-full border border-border bg-surface pl-12 pr-12 text-base ${CLASSE_FOCUS}`}
+                />
+                {query !== "" && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Svuota la ricerca"
+                    className={`absolute right-1.5 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`}
+                  >
+                    <IconaCroce />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Area scorrevole ancorata SUBITO SOTTO la barra di ricerca, non
                 centrata sullo schermo: così lo stato corrente (vuoto /
                 risultati / nessun risultato) resta visibile sopra la tastiera
                 in ogni caso (voce 2 punto 1). */}
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
               {query.trim() === "" ? (
                 recenti.length > 0 ||
                 preferitiAlimenti.length > 0 ||
                 preferitiPastiSalvati.length > 0 ? (
-                  <div className="pt-3">
+                  <div>
                     {erroreRapido && (
-                      <p className="px-1 pb-2 text-sm text-warning">{erroreRapido}</p>
+                      <p className="mx-3.5 mb-2 text-sm text-warning">{erroreRapido}</p>
                     )}
                     {recenti.length > 0 && (
-                      <>
-                        <p className="px-1 pb-1 text-xs uppercase tracking-wide text-muted">
-                          Recenti
-                        </p>
-                        <ul>
+                      <section>
+                        <h2 className={CLASSE_TITOLO_SEZIONE}>Recenti</h2>
+                        <ul className={CLASSE_RIQUADRO}>
                           {recenti.map(({ alimento, quantitaG }) => (
                             <RigaRapida
                               key={alimento.id}
@@ -704,26 +735,22 @@ function AggiungiContenuto() {
                             />
                           ))}
                         </ul>
-                      </>
+                      </section>
                     )}
 
                     {/* Preferiti: un'unica sezione, ma due sottogruppi
                         ordinati alfabeticamente ciascuno per conto suo —
                         alimenti singoli e pasti salvati sono dati diversi
                         (sezione 4), una lista sola li mescolerebbe senza
-                        criterio. */}
+                        criterio. Ogni sottogruppo ha il suo riquadro. */}
                     {(preferitiAlimenti.length > 0 || preferitiPastiSalvati.length > 0) && (
-                      <>
-                        <p
-                          className={`px-1 pb-1 text-xs uppercase tracking-wide text-muted ${recenti.length > 0 ? "mt-4" : ""}`}
-                        >
-                          Preferiti
-                        </p>
+                      <section className={recenti.length > 0 ? "mt-6" : ""}>
+                        <h2 className={CLASSE_TITOLO_SEZIONE}>Preferiti</h2>
 
                         {preferitiAlimenti.length > 0 && (
                           <>
-                            <p className="px-1 pb-1 text-xs text-muted">Alimenti</p>
-                            <ul>
+                            <h3 className={CLASSE_SOTTOSEZIONE}>Alimenti</h3>
+                            <ul className={CLASSE_RIQUADRO}>
                               {preferitiAlimenti.map(({ alimento, quantitaG }) => (
                                 <RigaRapida
                                   key={alimento.id}
@@ -741,12 +768,12 @@ function AggiungiContenuto() {
 
                         {preferitiPastiSalvati.length > 0 && (
                           <>
-                            <p
-                              className={`px-1 pb-1 text-xs text-muted ${preferitiAlimenti.length > 0 ? "mt-3" : ""}`}
+                            <h3
+                              className={`${CLASSE_SOTTOSEZIONE} ${preferitiAlimenti.length > 0 ? "mt-3" : ""}`}
                             >
                               Pasti salvati
-                            </p>
-                            <ul>
+                            </h3>
+                            <ul className={CLASSE_RIQUADRO}>
                               {preferitiPastiSalvati.map((pasto) => (
                                 <RigaPastoSalvato
                                   key={pasto.composizioneId}
@@ -758,7 +785,7 @@ function AggiungiContenuto() {
                             </ul>
                           </>
                         )}
-                      </>
+                      </section>
                     )}
                   </div>
                 ) : (
@@ -772,7 +799,7 @@ function AggiungiContenuto() {
                   </div>
                 )
               ) : risultati.length > 0 ? (
-                <ul className="mt-2">
+                <ul className={CLASSE_RIQUADRO}>
                   {risultati.map((a) => {
                     // Modificabile solo se è tuo e non ancora verificato
                     // (sezione 10.8). Sugli alimenti condivisi (user_id null)
@@ -780,19 +807,16 @@ function AggiungiContenuto() {
                     // nega comunque update/delete. Regola in eModificabile.
                     const modificabile = eModificabile(a, userId);
                     return (
-                      <li
-                        key={a.id}
-                        className="flex items-center gap-2 border-b border-border py-3.5"
-                      >
+                      <li key={a.id} className={CLASSE_RIGA}>
                         <button
                           type="button"
                           onClick={() => scegli(a)}
-                          className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
+                          className={CLASSE_NOME_RIGA}
                         >
                           {/* Con la marca valorizzata: "Nome · Marca", per
                               distinguere prodotti omonimi (voce 5). */}
                           <span className="truncate">{etichettaAlimento(a)}</span>
-                          <span className="mt-0.5 text-sm text-muted">
+                          <span className={CLASSE_SOTTOTITOLO_RIGA}>
                             {a.porzione_default_g} g ·{" "}
                             {Math.round((a.kcal_100g * a.porzione_default_g) / 100)} kcal
                           </span>
@@ -803,7 +827,7 @@ function AggiungiContenuto() {
                             type="button"
                             onClick={() => setAlimentoInModifica(a)}
                             aria-label={`Modifica ${etichettaAlimento(a)}`}
-                            className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
+                            className={CLASSE_MATITA}
                           >
                             <IconaMatita />
                           </button>
@@ -813,9 +837,9 @@ function AggiungiContenuto() {
                           type="button"
                           onClick={() => scegli(a)}
                           aria-label={`Aggiungi ${etichettaAlimento(a)}`}
-                          className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
+                          className={CLASSE_PIU}
                         >
-                          <IconaPiu className="text-accent" />
+                          <IconaPiu size={20} />
                         </button>
                       </li>
                     );
@@ -836,17 +860,20 @@ function AggiungiContenuto() {
             {/* Riga fissa, presente in ogni stato (voce 2 punto 2): creare a
                 mano è sempre raggiungibile — anche con dei risultati che però
                 non vanno bene — e resta sopra la tastiera perché è shrink-0 in
-                fondo alla colonna, fuori dall'area scorrevole. */}
-            <div className="shrink-0 pt-3">
+                fondo alla colonna, fuori dall'area scorrevole. Stessa barra
+                in fondo di ModificaPastoSalvato: linea sopra, e sotto lo
+                spazio della barretta home, perché il <main> arriva fino al
+                bordo dello schermo. Con la tastiera aperta va provata su
+                iPhone. */}
+            <div className="shrink-0 border-t border-border bg-background px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
               <button
                 type="button"
                 onClick={() => setCreando(true)}
-                className={`flex w-full items-center justify-center gap-2 rounded-full border border-accent py-3 font-medium text-accent ${CLASSE_FOCUS}`}
+                className={`flex h-[50px] w-full items-center justify-center rounded-full border border-accent px-4 text-base font-semibold text-accent ${CLASSE_FOCUS}`}
               >
-                <IconaPiu size={18} />
-                {query.trim() === ""
-                  ? "Crea alimento manualmente"
-                  : `Crea «${query.trim()}»`}
+                <span className="truncate">
+                  {query.trim() === "" ? "Crea alimento a mano" : `Crea «${query.trim()}»`}
+                </span>
               </button>
             </div>
           </>
@@ -961,17 +988,13 @@ function RigaRapida({
   const modificabile = eModificabile(alimento, userId);
 
   return (
-    <li className="flex items-center gap-2 border-b border-border py-3.5">
+    <li className={CLASSE_RIGA}>
       {/* Tap sul nome: stesso percorso della ricerca, sheet precompilato con
           porzione_default_g (sezione 3: "come già succede oggi per i
           risultati di ricerca"). */}
-      <button
-        type="button"
-        onClick={() => onScegli(alimento)}
-        className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
-      >
+      <button type="button" onClick={() => onScegli(alimento)} className={CLASSE_NOME_RIGA}>
         <span className="truncate">{etichettaAlimento(alimento)}</span>
-        <span className="mt-0.5 text-sm text-muted">
+        <span className={CLASSE_SOTTOTITOLO_RIGA}>
           {quantitaG} g · {Math.round((alimento.kcal_100g * quantitaG) / 100)} kcal
         </span>
       </button>
@@ -981,7 +1004,7 @@ function RigaRapida({
           type="button"
           onClick={() => onModifica(alimento)}
           aria-label={`Modifica ${etichettaAlimento(alimento)}`}
-          className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
+          className={CLASSE_MATITA}
         >
           <IconaMatita />
         </button>
@@ -993,9 +1016,9 @@ function RigaRapida({
         type="button"
         onClick={() => onAggiungiRapido(alimento, quantitaG)}
         aria-label={`Aggiungi ${etichettaAlimento(alimento)}, ${quantitaG} g`}
-        className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
+        className={CLASSE_PIU}
       >
-        <IconaPiu className="text-accent" />
+        <IconaPiu size={20} />
       </button>
     </li>
   );
@@ -1020,21 +1043,20 @@ function RigaPastoSalvato({
   const sottotitolo = sottotitoloPastoSalvato(pasto.voci.length, kcalPastoSalvato(pasto.voci));
 
   return (
-    <li className="flex items-center gap-2 border-b border-border py-3.5">
-      <button
-        type="button"
-        onClick={() => onAggiungi(pasto)}
-        className={`flex min-w-0 flex-1 flex-col text-left ${CLASSE_FOCUS}`}
-      >
+    <li className={CLASSE_RIGA}>
+      <button type="button" onClick={() => onAggiungi(pasto)} className={CLASSE_NOME_RIGA}>
         <span className="truncate">{pasto.nome}</span>
-        <span className="mt-0.5 text-sm text-muted">{sottotitolo}</span>
+        <span className={CLASSE_SOTTOTITOLO_RIGA}>{sottotitolo}</span>
       </button>
 
+      {/* La matita resta anche se il mockup non la disegna: da qui si
+          modifica un pasto salvato (decisione del 26/09, confermata da
+          Davide il 03/11). */}
       <button
         type="button"
         onClick={() => onModifica(pasto)}
         aria-label={`Modifica ${pasto.nome}`}
-        className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
+        className={CLASSE_MATITA}
       >
         <IconaMatita />
       </button>
@@ -1043,9 +1065,9 @@ function RigaPastoSalvato({
         type="button"
         onClick={() => onAggiungi(pasto)}
         aria-label={`Aggiungi ${pasto.nome}, ${sottotitolo}`}
-        className={`shrink-0 rounded p-1.5 text-accent ${CLASSE_FOCUS}`}
+        className={CLASSE_PIU}
       >
-        <IconaPiu className="text-accent" />
+        <IconaPiu size={20} />
       </button>
     </li>
   );

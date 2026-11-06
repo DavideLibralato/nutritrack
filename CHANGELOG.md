@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-06 — Nuovo aspetto di Aggiungi (mockup A)
+
+Branch `aggiungi-nuovo-aspetto`, commit 3. Aggiungi come nella proposta
+A di `docs/mockups/aggiungi.html`, senza il pulsante della scansione
+(arriva, già funzionante, con il lavoro codice-a-barre): Recenti,
+Preferiti (Alimenti e Pasti salvati) e risultati della ricerca in
+riquadri come i gruppi di Impostazioni; righe da 60 px; "+", matita e
+freccia indietro tondi da 44 pt; campo di ricerca da 48 px su tutta la
+larghezza; "Crea alimento a mano" (prima "Crea alimento manualmente")
+in una barra in fondo con la linea sopra, come in ModificaPastoSalvato;
+testata senza linea sotto. Solo classi del tema. Le classi in costanti
+in cima a `page.tsx`, una sola definizione per le tre liste.
+Comportamento, testi accessibili ed etichette invariati. Differenze dal
+mockup, decise con Davide: la matita sui pasti salvati resta; anello di
+fuoco di Libra invece del bordo d'accento del campo; angoli da 20 px
+come Impostazioni (mockup 18). PUNTO §3 aggiornato. Vitest 1513/1513,
+`npm run lint` e build ok. Da provare su iPhone: la barra in fondo con
+la tastiera aperta.
+
 ## 2026-11-06 — Icone di Aggiungi in /components
 
 Branch `aggiungi-nuovo-aspetto`, commit 2. Le 7 icone che stavano in
