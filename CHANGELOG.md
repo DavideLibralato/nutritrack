@@ -5,6 +5,41 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-06 — Test «Non aggiungerlo» non più dipendente dal carico
+
+Branch `aggiungi-nuovo-aspetto`, commit 1. Il test di
+`src/app/aggiungi/page.test.tsx` fallito il 23/10 (PUNTO §11, "Da
+tenere d'occhio") aveva una corsa, non una lentezza. Il foglio dei
+doppioni ascolta Esc da un `useEffect`, che React fa partire con
+`setImmediate` subito dopo averlo mostrato; `findByRole` riprende dopo
+un `setTimeout(0)`. In Node quale dei due arrivi prima non è garantito:
+con il PC carico Esc arrivava prima dell'ascolto, il foglio restava
+aperto e il `waitFor` scadeva al secondo (il fallimento del 23/10 durava
+1200 ms). Misurato prima: ogni passo del test sta fra 8 e 50 ms, anche
+nel giro completo, quindi non è lentezza. Riprodotto ritardando di 3 ms
+lo scheduler di React: fallito 3 volte su 3, sempre su Esc.
+
+Correzione nel solo test, nessun timeout cambiato: Esc si preme dentro
+`waitFor`, di nuovo a ogni controllo finché il foglio non si chiude, e
+solo se il foglio è ancora aperto, così a foglio chiuso non parte un Esc
+in più verso la pagina. Con la riproduzione attiva (3 e 30 ms) passato 5
+volte su 5; riproduzione tolta. Il test sa ancora fallire, con due
+rotture fatte da una copia e ripristinate: chiudere il foglio senza
+liberare il blocco, Esc che non chiude. Poi il file 20 volte su 20,
+`vitest run` 1513/1513, build e lint ok. Il fallimento del 03/11 resta
+non identificato: non si sa se fosse questo.
+
+Nello stesso commit il mockup scelto da Davide per il nuovo aspetto di
+Aggiungi, `docs/mockups/aggiungi.html` (proposta A).
+
+## 2026-11-03 — Merge di `next-sicurezza-novembre` su main, provato nell'app installata
+
+Unito il 03/11 con fast-forward, da `8336990` a `6a1e89e`, 2 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge Davide ha usato l'app
+installata il 03/11 alle 22:15, con il suo account: nei log di Supabase
+21 GET e 4 HEAD, tutte 200, nessun 401 né 403 (verificato da Cowork).
+
 ## 2026-11-03 — Next 16.4.5, esito delle prove sull'anteprima
 
 Branch `next-sicurezza-novembre`. Il 03/11 dalle 22:07 alle 22:10

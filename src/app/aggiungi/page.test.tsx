@@ -323,8 +323,20 @@ describe("Aggiungi: doppioni e aggiunta in corso", () => {
     fireEvent.click(screen.getByRole("button", { name: "Aggiungi Mela, 100 g" }));
     foglio = await screen.findByRole("dialog");
     // Anche Esc chiude senza scrivere, e libera il blocco.
-    fireEvent.keyDown(document, { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    //
+    // Esc si preme dentro waitFor, cioè di nuovo a ogni controllo finché il
+    // foglio non si chiude, e solo se è ancora aperto: a foglio chiuso non
+    // parte un Esc in più verso la pagina. Il foglio ascolta Esc da un
+    // useEffect, che React fa partire un attimo dopo averlo mostrato (con
+    // setImmediate). findByRole invece riprende dopo un setTimeout(0), e in
+    // Node quale dei due arrivi prima non è garantito: con il PC carico Esc
+    // arrivava prima dell'ascolto, il foglio restava aperto e il waitFor
+    // scadeva (23/10). Riprodotto ritardando di 3 ms lo scheduler di React:
+    // fallito 3 volte su 3 con un Esc solo, passato con questo.
+    await waitFor(() => {
+      if (screen.queryByRole("dialog")) fireEvent.keyDown(document, { key: "Escape" });
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
     fireEvent.click(screen.getByRole("button", { name: "Aggiungi Mela, 100 g" }));
     expect(await screen.findByRole("dialog")).toBeTruthy();
     expect(await vociDiOggi()).toEqual(primaVoci);

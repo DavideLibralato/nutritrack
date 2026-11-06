@@ -7723,15 +7723,21 @@ i numeri delle sue segnalazioni.
   romperebbe il lint. Si lasciano finché eslint non esce con la
   correzione. `npm audit --omit=dev` è pulito.
 
-- **Da tenere d'occhio: un test di Aggiungi fallito una volta** (23/10,
-  branch `username-dopo-accesso`, commit 3). In `src/app/aggiungi/
-  page.test.tsx`, «"Non aggiungerlo": si resta su /aggiungi, niente
-  scritto, e il «+» risponde di nuovo subito» è fallito in un giro
-  completo di `vitest run` (1200 ms, subito dopo aver fermato il server
-  di sviluppo), su codice che il branch non tocca. Rilanciato da solo è
-  passato 3 volte su 3, e il giro completo dopo era tutto verde. Sembra
-  un test sensibile ai tempi con il PC carico; se ricapita, va guardato
-  il suo modo di aspettare.
+- ~~**Da tenere d'occhio: un test di Aggiungi fallito una volta**~~
+  corretto il 06/11 (branch `aggiungi-nuovo-aspetto`, commit 1). In
+  `src/app/aggiungi/page.test.tsx`, «"Non aggiungerlo": si resta su
+  /aggiungi, niente scritto, e il «+» risponde di nuovo subito» era
+  fallito il 23/10 in un giro completo (1200 ms, PC carico). Era una
+  corsa nel test, non un difetto dell'app: Esc arrivava prima che il
+  foglio dei doppioni lo ascoltasse (l'ascolto parte da un `useEffect`,
+  con `setImmediate`; il test riprendeva dopo un `setTimeout(0)`, e in
+  Node l'ordine fra i due non è garantito). Ora il test preme Esc dentro
+  `waitFor`, finché il foglio non si chiude e solo se è ancora aperto.
+  Regola per i test nuovi: un tasto o un evento ascoltato da un
+  `useEffect` non si manda una volta sola subito dopo che l'elemento è
+  comparso. Il fallimento
+  singolo del 03/11 (giro completo, `waitFor` scaduto) non è stato
+  identificato: non si sa se fosse questo.
 
 - **Onboarding finito su un dispositivo e riaperto offline su un altro**
   (limite noto, accettato da Davide il 17/10; sezione 3, "Onboarding").
