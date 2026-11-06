@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-06 — Ricerca di Aggiungi anche nei pasti salvati
+
+Branch `aggiungi-nuovo-aspetto`, commit 4. La ricerca trova anche i
+pasti salvati (decisione del 13/10, regole del 03/11, scritte in PUNTO
+§3, "Ricerca nei pasti salvati"): per il nome del pasto o per il nome di
+un suo alimento, con `testoConfronto`. Trovato per un alimento: "Contiene
+<alimento>" in accento nella seconda riga, il primo nell'ordine del
+pasto. Prima la sezione "Alimenti", sotto "Pasti salvati"; tocco come nei
+Preferiti. "Nessun risultato" e Invio → Crea solo se non si trova niente
+in nessuna delle due. L'errore di un'aggiunta rapida ora compare anche
+sopra i risultati, perché un pasto trovato si aggiunge con un tocco.
+Il segnaposto del campo diventa "Cerca un alimento o un pasto" (scelta
+di Davide), con la stessa etichetta per i lettori di schermo (prima
+non c'era, valeva il segnaposto).
+
+Logica in `src/lib/inserimento/ricercaPastiSalvati.ts`, test permanente
+`ricercaPastiSalvati.test.ts` (9 test, passando da `pastiSalvati` per il
+caso dell'alimento uscito dal catalogo): visto fallire con tre rotture da
+una copia (senza il controllo sul nome, l'ultimo alimento invece del
+primo, senza `testoConfronto`). Tolto un ordinamento che ripeteva quello
+di `pastiSalvati` e che nessun test poteva vedere fallire. In
+`page.test.tsx` 3 test nuovi (solo un pasto trovato, alimenti sopra i
+pasti con "Contiene", nessun risultato con Invio → Crea), visti fallire
+con tre rotture da una copia; le funzioni di preparazione sono salite a
+livello di file per servire due gruppi. Vitest, `npm run lint` e build
+ok.
+
 ## 2026-11-06 — Nuovo aspetto di Aggiungi (mockup A)
 
 Branch `aggiungi-nuovo-aspetto`, commit 3. Aggiungi come nella proposta

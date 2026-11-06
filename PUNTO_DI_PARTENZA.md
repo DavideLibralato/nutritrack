@@ -630,7 +630,10 @@ Ordine degli elementi:
    fase 5)* — riquadro grande con l'accento, titolo e
    sottotitolo ("Valori letti in automatico"). È il differenziante, ma resta il
    *secondo* percorso
-2. **Campo di ricerca** con lente e placeholder "Cerca un alimento"
+2. **Campo di ricerca** con lente e placeholder "Cerca un alimento o un
+   pasto" (dal 06/11: trova anche i pasti salvati, vedi "Ricerca nei pasti
+   salvati"; prima "Cerca un alimento"). L'etichetta per i lettori di
+   schermo è lo stesso testo
 3. **Recenti** — righe con nome, e sotto in grigio **l'ultima quantità usata e le
    kcal corrispondenti** ("Petto di pollo · 150 g · 248 kcal"), con un **"+"**
    a destra
@@ -655,6 +658,41 @@ cima a `src/app/aggiungi/page.tsx` (`CLASSE_RIQUADRO`, `CLASSE_RIGA`,
 `CLASSE_PIU`…), una sola definizione per le tre liste. Il pulsante
 della scansione del mockup non c'è ancora: arriva, già funzionante, con
 il lavoro codice-a-barre.
+
+**Ricerca nei pasti salvati** (decisa il 13/10, regole del 03/11; dal
+06/11, branch `aggiungi-nuovo-aspetto`). Il campo di ricerca trova anche
+i pasti salvati, non solo gli alimenti:
+- **Quando compare un pasto**: se la parola è nel suo nome, oppure nel
+  nome di uno dei suoi alimenti. Il confronto è lo stesso della ricerca
+  degli alimenti (`testoConfronto`): maiuscole, accenti e spazi doppi
+  indifferenti, la parola può stare a metà ("riso" trova "Gallette di
+  riso"). Conta solo il nome dell'alimento, non la marca. Un alimento
+  uscito dal catalogo non fa trovare il pasto (le voci sono quelle di
+  `pastiSalvati`, che lo esclude già).
+- **"Contiene"**: se il pasto è trovato per un alimento, la seconda riga
+  comincia con "Contiene Gallette di riso", in accento, prima di "4
+  alimenti · 410 kcal". Se la parola è nel nome del pasto, niente
+  "Contiene", anche se c'è pure in un alimento. Con più alimenti che la
+  contengono si mostra **il primo nell'ordine del pasto**
+  (`composizioni_voci.ordine`).
+- **Ordine**: prima la sezione "Alimenti", sotto "Pasti salvati", ognuna
+  con il suo titolo e il suo riquadro. I pasti in ordine di nome, come
+  nei Preferiti.
+- **Il tocco** fa esattamente quello che fa nei Preferiti: nome e "+"
+  aggiungono subito il pasto intero (con i doppioni, se ci sono), la
+  matita apre la modifica del pasto. Un errore dell'aggiunta compare
+  sopra i risultati.
+- **"Nessun risultato" e Invio → Crea** solo quando non si trova né un
+  alimento né un pasto. Se si trova solo un pasto, Invio non apre "Nuovo
+  alimento" ("Crea «…»" in fondo resta sempre disponibile).
+
+Codice in `src/lib/inserimento/ricercaPastiSalvati.ts`
+(`cercaPastiSalvati`), test in `ricercaPastiSalvati.test.ts` e in
+`src/app/aggiungi/page.test.tsx`. Il segnaposto del campo dice "Cerca
+un alimento o un pasto" (deciso da Davide il 06/11; il mockup diceva
+"Cerca un alimento"), e l'etichetta per i lettori di schermo è la stessa.
+In ModificaPastoSalvato e in Impostazioni > Alimenti resta "Cerca un
+alimento": lì si cercano solo alimenti.
 
 **Salvare un pasto intero.** I preferiti non contengono solo alimenti singoli:
 contengono anche **pasti completi** ("Colazione standard · 3 alimenti"). La

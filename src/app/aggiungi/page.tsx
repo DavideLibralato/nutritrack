@@ -45,6 +45,7 @@ import {
   sottotitoloPastoSalvato,
   type PastoSalvato,
 } from "@/lib/inserimento/pastiSalvati";
+import { cercaPastiSalvati, testoContiene } from "@/lib/inserimento/ricercaPastiSalvati";
 import {
   ripristinaAlimentoEliminato,
   type TracciaRimozione,
@@ -89,6 +90,13 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 const NUMERO_RECENTI = 5;
 
 const ERRORE_AGGIUNTA = "Non è stato possibile aggiungere. Riprova.";
+
+// Segnaposto ed etichetta per i lettori di schermo del campo di ricerca:
+// lo stesso testo, perché il segnaposto sparisce appena si scrive. Dice
+// "o un pasto" perché la ricerca trova anche i pasti salvati
+// (cercaPastiSalvati; deciso da Davide il 06/11, il mockup diceva "Cerca
+// un alimento").
+const TESTO_RICERCA = "Cerca un alimento o un pasto";
 
 // L'aspetto delle liste (mockup docs/mockups/aggiungi.html, proposta A):
 // le righe stanno in riquadri come i gruppi di Impostazioni
@@ -381,6 +389,11 @@ function AggiungiContenuto() {
   const recenti = alimentiRecenti(catalogo, vociTutte ?? [], NUMERO_RECENTI);
   const preferitiAlimenti = alimentiPreferiti(catalogo, preferiti, vociTutte ?? []);
   const preferitiPastiSalvati = pastiSalvati(catalogo, composizioni, composizioniVoci);
+  // La ricerca guarda anche i pasti salvati, nel nome e negli alimenti
+  // (cercaPastiSalvati). "Nessun risultato" e Invio → Crea valgono solo
+  // quando non si trova né un alimento né un pasto.
+  const risultatiPasti = cercaPastiSalvati(preferitiPastiSalvati, query);
+  const nessunRisultato = risultati.length === 0 && risultatiPasti.length === 0;
   const nomePastoSelezionato =
     pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
 
@@ -677,16 +690,11 @@ function AggiungiContenuto() {
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Cerca un alimento"
-                  enterKeyHint={
-                    query.trim() !== "" && risultati.length === 0 ? "go" : "search"
-                  }
+                  placeholder={TESTO_RICERCA}
+                  aria-label={TESTO_RICERCA}
+                  enterKeyHint={query.trim() !== "" && nessunRisultato ? "go" : "search"}
                   onKeyDown={(e) => {
-                    if (
-                      e.key === "Enter" &&
-                      query.trim() !== "" &&
-                      risultati.length === 0
-                    ) {
+                    if (e.key === "Enter" && query.trim() !== "" && nessunRisultato) {
                       e.preventDefault();
                       setCreando(true);
                     }
@@ -798,53 +806,85 @@ function AggiungiContenuto() {
                     </p>
                   </div>
                 )
-              ) : risultati.length > 0 ? (
-                <ul className={CLASSE_RIQUADRO}>
-                  {risultati.map((a) => {
-                    // Modificabile solo se è tuo e non ancora verificato
-                    // (sezione 10.8). Sugli alimenti condivisi (user_id null)
-                    // o verificati la matita non compare — come la RLS che
-                    // nega comunque update/delete. Regola in eModificabile.
-                    const modificabile = eModificabile(a, userId);
-                    return (
-                      <li key={a.id} className={CLASSE_RIGA}>
-                        <button
-                          type="button"
-                          onClick={() => scegli(a)}
-                          className={CLASSE_NOME_RIGA}
-                        >
-                          {/* Con la marca valorizzata: "Nome · Marca", per
-                              distinguere prodotti omonimi (voce 5). */}
-                          <span className="truncate">{etichettaAlimento(a)}</span>
-                          <span className={CLASSE_SOTTOTITOLO_RIGA}>
-                            {a.porzione_default_g} g ·{" "}
-                            {Math.round((a.kcal_100g * a.porzione_default_g) / 100)} kcal
-                          </span>
-                        </button>
+              ) : !nessunRisultato ? (
+                // Prima gli alimenti, sotto i pasti salvati (decisione del
+                // 13/10), ognuno con il suo titolo e il suo riquadro.
+                <div>
+                  {/* Toccare un pasto salvato scrive subito, come nei
+                      Preferiti: un errore va mostrato anche qui. */}
+                  {erroreRapido && (
+                    <p className="mx-3.5 mb-2 text-sm text-warning">{erroreRapido}</p>
+                  )}
+                  {risultati.length > 0 && (
+                    <section>
+                      <h2 className={CLASSE_TITOLO_SEZIONE}>Alimenti</h2>
+                      <ul className={CLASSE_RIQUADRO}>
+                        {risultati.map((a) => {
+                          // Modificabile solo se è tuo e non ancora verificato
+                          // (sezione 10.8). Sugli alimenti condivisi (user_id null)
+                          // o verificati la matita non compare — come la RLS che
+                          // nega comunque update/delete. Regola in eModificabile.
+                          const modificabile = eModificabile(a, userId);
+                          return (
+                            <li key={a.id} className={CLASSE_RIGA}>
+                              <button
+                                type="button"
+                                onClick={() => scegli(a)}
+                                className={CLASSE_NOME_RIGA}
+                              >
+                                {/* Con la marca valorizzata: "Nome · Marca", per
+                                    distinguere prodotti omonimi (voce 5). */}
+                                <span className="truncate">{etichettaAlimento(a)}</span>
+                                <span className={CLASSE_SOTTOTITOLO_RIGA}>
+                                  {a.porzione_default_g} g ·{" "}
+                                  {Math.round((a.kcal_100g * a.porzione_default_g) / 100)} kcal
+                                </span>
+                              </button>
 
-                        {modificabile && (
-                          <button
-                            type="button"
-                            onClick={() => setAlimentoInModifica(a)}
-                            aria-label={`Modifica ${etichettaAlimento(a)}`}
-                            className={CLASSE_MATITA}
-                          >
-                            <IconaMatita />
-                          </button>
-                        )}
+                              {modificabile && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAlimentoInModifica(a)}
+                                  aria-label={`Modifica ${etichettaAlimento(a)}`}
+                                  className={CLASSE_MATITA}
+                                >
+                                  <IconaMatita />
+                                </button>
+                              )}
 
-                        <button
-                          type="button"
-                          onClick={() => scegli(a)}
-                          aria-label={`Aggiungi ${etichettaAlimento(a)}`}
-                          className={CLASSE_PIU}
-                        >
-                          <IconaPiu size={20} />
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                              <button
+                                type="button"
+                                onClick={() => scegli(a)}
+                                aria-label={`Aggiungi ${etichettaAlimento(a)}`}
+                                className={CLASSE_PIU}
+                              >
+                                <IconaPiu size={20} />
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
+                  {risultatiPasti.length > 0 && (
+                    <section className={risultati.length > 0 ? "mt-6" : ""}>
+                      <h2 className={CLASSE_TITOLO_SEZIONE}>Pasti salvati</h2>
+                      <ul className={CLASSE_RIQUADRO}>
+                        {/* Stessa riga e stesso tocco dei Preferiti: il nome
+                            e il "+" aggiungono il pasto, la matita lo apre. */}
+                        {risultatiPasti.map(({ pasto, contiene }) => (
+                          <RigaPastoSalvato
+                            key={pasto.composizioneId}
+                            pasto={pasto}
+                            contiene={contiene}
+                            onAggiungi={aggiungiPastoSalvatoRapido}
+                            onModifica={(p) => setPastoInModificaId(p.composizioneId)}
+                          />
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 px-4 pt-10 text-center">
                   <IconaLente className="text-muted" size={40} />
@@ -1031,12 +1071,18 @@ function RigaRapida({
 // quantità sono già tutte decise nella composizione. La matita non è
 // condizionale come nei risultati di ricerca: un pasto salvato è sempre tuo,
 // non esiste un equivalente di "condiviso/verificato".
+//
+// Nei risultati della ricerca, se il pasto è stato trovato per un suo
+// alimento (`contiene`), la seconda riga comincia con "Contiene …" in
+// accento (mockup); con un nome lungo la riga si accorcia con "…".
 function RigaPastoSalvato({
   pasto,
+  contiene = null,
   onAggiungi,
   onModifica,
 }: {
   pasto: PastoSalvato;
+  contiene?: string | null;
   onAggiungi: (p: PastoSalvato) => void;
   onModifica: (p: PastoSalvato) => void;
 }) {
@@ -1046,7 +1092,10 @@ function RigaPastoSalvato({
     <li className={CLASSE_RIGA}>
       <button type="button" onClick={() => onAggiungi(pasto)} className={CLASSE_NOME_RIGA}>
         <span className="truncate">{pasto.nome}</span>
-        <span className={CLASSE_SOTTOTITOLO_RIGA}>{sottotitolo}</span>
+        <span className={`${CLASSE_SOTTOTITOLO_RIGA} truncate`}>
+          {contiene && <span className="text-accent">{testoContiene(contiene)} · </span>}
+          {sottotitolo}
+        </span>
       </button>
 
       {/* La matita resta anche se il mockup non la disegna: da qui si

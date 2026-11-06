@@ -178,6 +178,37 @@ describe("Aggiungi: un giorno futuro, fino a oggi + 7", () => {
   });
 });
 
+// Funzioni di preparazione comuni ai gruppi qui sotto (doppioni, ricerca
+// nei pasti salvati).
+
+// Un solo pasto, valido sempre: è quello proposto a qualunque ora.
+async function preparaPranzo() {
+  return repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+}
+
+function creaAlimento(nome: string, kcal: number): Promise<Alimento> {
+  return repositoryAlimenti.crea({
+    user_id: utenteTest, nome, marca: null, barcode: null,
+    kcal_100g: kcal, proteine_100g: 1, carboidrati_100g: 10, grassi_100g: 1,
+    zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
+    porzione_default_g: 100, fonte: "manuale", verificato: false,
+  });
+}
+
+function creaVoce(alimento: Alimento, pastoId: string, data: string, grammi: number) {
+  return repositoryVociDiario.crea({
+    user_id: utenteTest, alimento_id: alimento.id, pasto_id: pastoId, gruppo_id: null,
+    quantita_g: grammi, data, creato_il: new Date().toISOString(), consumato_alle: null,
+    nome_alimento: alimento.nome, kcal_100g: alimento.kcal_100g, proteine_100g: 1,
+    carboidrati_100g: 10, grassi_100g: 1,
+  });
+}
+
+async function vociDiOggi() {
+  const oggi = oggiLocale();
+  return (await repositoryVociDiario.ottieniTutti(utenteTest)).filter((v) => v.data === oggi);
+}
+
 // I doppioni in /aggiungi (sezione 3, "Doppioni"): i tre percorsi passano
 // da aggiungiNelPasto, con il foglio quando l'alimento c'è già nel pasto, e
 // un blocco "aggiunta in corso" preso subito al tocco. Test permanenti: un
@@ -185,34 +216,6 @@ describe("Aggiungi: un giorno futuro, fino a oggi + 7", () => {
 // "Non aggiungerlo" (il "+" smette di rispondere, in silenzio), sono
 // esattamente i bug che non fanno rumore.
 describe("Aggiungi: doppioni e aggiunta in corso", () => {
-  // Un solo pasto, valido sempre: è quello proposto a qualunque ora.
-  async function preparaPranzo() {
-    return repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
-  }
-
-  function creaAlimento(nome: string, kcal: number): Promise<Alimento> {
-    return repositoryAlimenti.crea({
-      user_id: utenteTest, nome, marca: null, barcode: null,
-      kcal_100g: kcal, proteine_100g: 1, carboidrati_100g: 10, grassi_100g: 1,
-      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-      porzione_default_g: 100, fonte: "manuale", verificato: false,
-    });
-  }
-
-  function creaVoce(alimento: Alimento, pastoId: string, data: string, grammi: number) {
-    return repositoryVociDiario.crea({
-      user_id: utenteTest, alimento_id: alimento.id, pasto_id: pastoId, gruppo_id: null,
-      quantita_g: grammi, data, creato_il: new Date().toISOString(), consumato_alle: null,
-      nome_alimento: alimento.nome, kcal_100g: alimento.kcal_100g, proteine_100g: 1,
-      carboidrati_100g: 10, grassi_100g: 1,
-    });
-  }
-
-  async function vociDiOggi() {
-    const oggi = oggiLocale();
-    return (await repositoryVociDiario.ottieniTutti(utenteTest)).filter((v) => v.data === oggi);
-  }
-
   it("doppio tocco sul «+»: una riga sola, e nessun foglio dei doppioni", async () => {
     const pranzo = await preparaPranzo();
     const mela = await creaAlimento("Mela", 52);
@@ -378,5 +381,93 @@ describe("Aggiungi: doppioni e aggiunta in corso", () => {
       nome: "Merenda salvata",
       coda: "(2 alimenti)",
     });
+  });
+});
+
+// La ricerca anche nei pasti salvati (PUNTO §3, "Ricerca nei pasti
+// salvati"). Qui la pagina: dove compaiono, cosa fa il tocco, e che
+// "Nessun risultato" e Invio → Crea guardino anche i pasti. Le regole del
+// confronto ("Contiene", il primo alimento) sono nei test di
+// cercaPastiSalvati. Test permanenti: un Invio che apre "Nuovo alimento"
+// mentre c'è un pasto trovato, o i pasti sopra gli alimenti, non fanno
+// nessun errore.
+describe("Aggiungi: ricerca nei pasti salvati", () => {
+  async function creaPastoSalvato(nome: string, righe: [Alimento, number][]) {
+    const composizione = await repositoryComposizioni.crea({
+      user_id: utenteTest, nome, tipo: "pasto_salvato", alimento_id: null,
+    });
+    for (const [ordine, [alimento, grammi]] of righe.entries()) {
+      await repositoryComposizioniVoci.crea({
+        user_id: utenteTest, composizione_id: composizione.id, alimento_id: alimento.id,
+        quantita_g: grammi, ordine,
+      });
+    }
+  }
+
+  async function cerca(testo: string) {
+    // Il campo si trova per l'etichetta dei lettori di schermo; il
+    // segnaposto ha lo stesso testo.
+    const campo = await screen.findByRole("searchbox", { name: "Cerca un alimento o un pasto" });
+    expect(campo.getAttribute("placeholder")).toBe("Cerca un alimento o un pasto");
+    fireEvent.change(campo, { target: { value: testo } });
+    return campo;
+  }
+
+  it("solo un pasto trovato: nessun «Nessun risultato», Invio non apre «Nuovo alimento», il tocco lo aggiunge", async () => {
+    await preparaPranzo();
+    const mela = await creaAlimento("Mela", 52);
+    await creaPastoSalvato("Merenda salvata", [[mela, 150]]);
+    render(<AggiungiPage />);
+
+    const campo = await cerca("merenda");
+    const sezione = screen.getByRole("heading", { name: "Pasti salvati" }).closest("section")!;
+    expect(screen.queryByRole("heading", { name: "Alimenti" })).toBeNull();
+    expect(screen.queryByText(/Nessun risultato/)).toBeNull();
+    // Trovato per il nome: niente "Contiene".
+    expect(within(sezione).queryByText(/Contiene/)).toBeNull();
+
+    fireEvent.keyDown(campo, { key: "Enter" });
+    expect(screen.queryByRole("heading", { name: "Nuovo alimento" })).toBeNull();
+    expect(campo.getAttribute("enterkeyhint")).toBe("search");
+
+    // Come nei Preferiti: il tocco sul nome aggiunge subito il pasto.
+    fireEvent.click(within(sezione).getByRole("button", { name: /^Merenda salvata/ }));
+    await waitFor(() => expect(navigazione.replace).toHaveBeenCalledTimes(1));
+    const voci = await vociDiOggi();
+    expect(voci.map((v) => [v.nome_alimento, v.quantita_g])).toEqual([["Mela", 150]]);
+    expect(voci[0].gruppo_id).not.toBeNull();
+  });
+
+  it("parola in un alimento e in un pasto che lo contiene: prima gli alimenti, poi il pasto con «Contiene»", async () => {
+    await preparaPranzo();
+    const yogurt = await creaAlimento("Yogurt greco", 60);
+    const gallette = await creaAlimento("Gallette di riso", 380);
+    await creaPastoSalvato("Colazione proteica", [[yogurt, 170], [gallette, 20]]);
+    render(<AggiungiPage />);
+
+    await cerca("GALLETTE");
+    const titoli = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(titoli).toEqual(["Alimenti", "Pasti salvati"]);
+
+    const alimenti = screen.getByRole("heading", { name: "Alimenti" }).closest("section")!;
+    expect(within(alimenti).getByText("Gallette di riso")).toBeTruthy();
+    const pasti = screen.getByRole("heading", { name: "Pasti salvati" }).closest("section")!;
+    expect(within(pasti).getByText("Colazione proteica")).toBeTruthy();
+    expect(within(pasti).getByText(/Contiene Gallette di riso/)).toBeTruthy();
+  });
+
+  it("niente in alimenti né pasti: «Nessun risultato», e Invio apre «Nuovo alimento» con il nome scritto", async () => {
+    await preparaPranzo();
+    const mela = await creaAlimento("Mela", 52);
+    await creaPastoSalvato("Merenda salvata", [[mela, 150]]);
+    render(<AggiungiPage />);
+
+    const campo = await cerca("kiwi");
+    expect(screen.getByText("Nessun risultato per «kiwi»")).toBeTruthy();
+    expect(campo.getAttribute("enterkeyhint")).toBe("go");
+
+    fireEvent.keyDown(campo, { key: "Enter" });
+    expect(await screen.findByRole("heading", { name: "Nuovo alimento" })).toBeTruthy();
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("kiwi");
   });
 });
