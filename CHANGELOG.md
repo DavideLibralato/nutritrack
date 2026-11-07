@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre: stesso codice, stesso prodotto
+
+Branch `codice-a-barre`, commit 3, solo `src/lib`, nessuna schermata.
+`trovaDoppione` trova anche un alimento vivo dell'utente con lo stesso
+codice a barre non vuoto, con qualunque nome; il codice viene prima di
+nome e marca e conta anche con il nome vuoto. Nuove `stessoCodice` e
+`stessoProdotto`; `testoDoppione` dice il codice quando il doppione è
+per il codice. La regola vale da sola per il ripristino (Annulla) e il
+confronto degli alimenti in arrivo; la selezione multipla di quelli in
+arrivo non spunta insieme due con lo stesso codice (`spunta`,
+`selezionaTutti`, che ora confronta con ciascuna già scelta: è il buco
+trovato nel piano). `salvaAlimento` riceve l'origine (`barcode` e
+`fonte` 'off'/'barcode') e la scrive solo in creazione; in Modifica il
+codice non si confronta, così due alimenti con lo stesso codice nati
+offline non bloccano la modifica. Il form non la passa ancora (commit 4).
+25 test permanenti nuovi in quattro file, visti fallire con 14 rotture
+da una copia. Vitest 1591/1591, `npm run lint`, `tsc` e build ok.
+
 ## 2026-11-07 — Codice a barre: codice EAN e Open Food Facts
 
 Branch `codice-a-barre`, commit 2, solo `src/lib`, nessuna schermata.

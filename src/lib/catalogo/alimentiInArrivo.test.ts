@@ -258,3 +258,63 @@ describe("selezione multipla nel foglio", () => {
     expect([...selezioneValida(new Set(["hummus", "pane-paolo", "sparito"]), dopo)]).toEqual(["hummus"]);
   });
 });
+
+// Dal branch `codice-a-barre`: lo stesso codice a barre è lo stesso
+// prodotto anche per gli alimenti in arrivo. Senza, la funzione sul
+// server creerebbe una seconda copia con lo stesso codice (PUNTO §3,
+// "Condividere un alimento", "Quando nasce la copia").
+describe("alimenti in arrivo con il codice a barre", () => {
+  const NUTELLA = "3017620422003";
+
+  it("stesso codice di un mio alimento, nome diverso: è un doppione, non un nuovo", () => {
+    const catalogo = [mio("nutella", "Nutella", "Ferrero", { barcode: NUTELLA })];
+    const uguale = confrontaInArrivo(catalogo, inArrivo("a", "Crema alle nocciole", null, { barcode: NUTELLA }), IO);
+    expect(uguale.tipo).toBe("uguale");
+    const diverso = confrontaInArrivo(
+      catalogo,
+      inArrivo("b", "Crema alle nocciole", null, { barcode: NUTELLA, kcal_100g: 540 }),
+      IO
+    );
+    expect(diverso.tipo).toBe("diverso");
+    if (diverso.tipo === "diverso") expect(diverso.mio.id).toBe("nutella");
+  });
+
+  it("senza codice, o con un codice diverso, conta solo nome e marca", () => {
+    const catalogo = [mio("nutella", "Nutella", "Ferrero", { barcode: NUTELLA })];
+    expect(confrontaInArrivo(catalogo, inArrivo("a", "Crema", null), IO).tipo).toBe("nuovo");
+    expect(confrontaInArrivo(catalogo, inArrivo("a", "Crema", null, { barcode: "96385074" }), IO).tipo).toBe(
+      "nuovo"
+    );
+  });
+
+  function nuovo(riga: AlimentoCondiviso): VoceInArrivo {
+    return { riga, confronto: { tipo: "nuovo" } };
+  }
+  const voci = [
+    nuovo(inArrivo("crema-sara", "Crema alle nocciole", null, { barcode: NUTELLA })),
+    nuovo(inArrivo("hummus", "Hummus", null)),
+    nuovo(inArrivo("nutella-paolo", "Nutella", "Ferrero", { barcode: NUTELLA, user_id: "paolo" })),
+  ];
+
+  it("due in arrivo con lo stesso codice e nomi diversi: la spunta passa, mai tutti e due", () => {
+    const sara = spunta(new Set(["hummus"]), voci, "crema-sara");
+    const paolo = spunta(sara, voci, "nutella-paolo");
+    expect([...paolo].sort()).toEqual(["hummus", "nutella-paolo"]);
+  });
+
+  it("Seleziona tutti: uno solo per codice (il primo dell'elenco)", () => {
+    expect([...selezionaTutti(voci)].sort()).toEqual(["crema-sara", "hummus"]);
+  });
+
+  it("Seleziona tutti confronta con ciascuna già scelta: A e B stesso codice, B e C stesso nome", () => {
+    const catena = [
+      nuovo(inArrivo("a", "Crema", null, { barcode: NUTELLA })),
+      nuovo(inArrivo("b", "Nutella", null, { barcode: NUTELLA })),
+      nuovo(inArrivo("c", "Nutella", null)),
+    ];
+    // B si salta (stesso codice di A); C non è A (nome diverso, codice
+    // assente), quindi resta. Con una chiave sola per nome C sarebbe
+    // stata confrontata con B, che non è stato scelto.
+    expect([...selezionaTutti(catena)].sort()).toEqual(["a", "c"]);
+  });
+});

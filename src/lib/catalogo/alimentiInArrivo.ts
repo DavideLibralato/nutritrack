@@ -2,7 +2,7 @@
 // (PUNTO_DI_PARTENZA.md §3 "Amici", "Condividere un alimento"; decisioni
 // del 16/10). Per ogni alimento in arrivo:
 // - nuovo: nessun alimento vivo dell'utente con lo stesso nome e la stessa
-//   marca → Rifiuta / Aggiungi;
+//   marca, né con lo stesso codice a barre → Rifiuta / Aggiungi;
 // - uguale: c'è, con gli stessi valori → solo Ok;
 // - diverso: c'è, con valori diversi → "Usa questi valori" / "Tieni i
 //   miei", e la tabella del confronto.
@@ -13,16 +13,17 @@
 // numeric(7,2) e del form): 3,30 e 3,31 sono diversi. Un valore assente
 // non è uguale a 0.
 //
-// Due alimenti in arrivo uguali fra loro (stesso nome e marca, da due
-// amici o due prodotti dello stesso amico): nessuno dei due è un doppione
-// del catalogo, ma aggiungerli tutti e due ne farebbe due uguali. Nella
-// selezione multipla se ne spunta uno solo per chiave; dopo l'Aggiungi e
-// la discesa l'altro diventa un doppione normale.
+// Due alimenti in arrivo uguali fra loro (stesso nome e marca, o dal
+// branch `codice-a-barre` lo stesso codice a barre; da due amici o due
+// prodotti dello stesso amico): nessuno dei due è un doppione del
+// catalogo, ma aggiungerli tutti e due ne farebbe due uguali. Nella
+// selezione multipla se ne spunta uno solo (stessoProdotto); dopo
+// l'Aggiungi e la discesa l'altro diventa un doppione normale.
 //
 // Funzioni pure, senza Dexie: i test sono in alimentiInArrivo.test.ts.
 
 import type { Alimento, AlimentoCondiviso } from "../db/tipi";
-import { chiaveAlimento, trovaDoppione } from "./doppioniAlimenti";
+import { stessoProdotto, trovaDoppione } from "./doppioniAlimenti";
 import { eModificabile } from "./alimentiModificabili";
 
 // I nove valori che "Usa questi valori" scrive nel proprio alimento, e su
@@ -166,11 +167,11 @@ export function eSelezionabile(voce: VoceInArrivo): boolean {
   return voce.confronto.tipo === "nuovo";
 }
 
-// Spunta o toglie la spunta a una voce. Se un'altra voce con lo stesso
-// nome e la stessa marca è già spuntata, la spunta passa a questa: mai due
-// uguali nella stessa selezione. Una voce non selezionabile non cambia
-// niente. Restituisce un insieme nuovo (React vuole un oggetto nuovo per
-// ridisegnare).
+// Spunta o toglie la spunta a una voce. Se un'altra voce dello stesso
+// prodotto (stesso nome e marca, o stesso codice a barre) è già spuntata,
+// la spunta passa a questa: mai due uguali nella stessa selezione. Una
+// voce non selezionabile non cambia niente. Restituisce un insieme nuovo
+// (React vuole un oggetto nuovo per ridisegnare).
 export function spunta(selezione: Set<string>, voci: VoceInArrivo[], id: string): Set<string> {
   const voce = voci.find((v) => v.riga.id === id);
   if (!voce || !eSelezionabile(voce)) return selezione;
@@ -179,9 +180,8 @@ export function spunta(selezione: Set<string>, voci: VoceInArrivo[], id: string)
     nuova.delete(id);
     return nuova;
   }
-  const chiave = chiaveAlimento(voce.riga);
   for (const v of voci) {
-    if (v.riga.id !== id && nuova.has(v.riga.id) && chiaveAlimento(v.riga) === chiave) {
+    if (v.riga.id !== id && nuova.has(v.riga.id) && stessoProdotto(v.riga, voce.riga)) {
       nuova.delete(v.riga.id);
     }
   }
@@ -189,19 +189,19 @@ export function spunta(selezione: Set<string>, voci: VoceInArrivo[], id: string)
   return nuova;
 }
 
-// "Seleziona tutti": tutte le voci selezionabili, ma per ogni nome e marca
-// solo la prima nell'ordine dell'elenco (la più recente).
+// "Seleziona tutti": tutte le voci selezionabili, ma per ogni prodotto
+// solo la prima nell'ordine dell'elenco (la più recente). Il confronto è
+// con ciascuna già scelta, non con una chiave sola: con il codice a barre
+// "stesso prodotto" non si riduce a un testo (A e B possono avere lo
+// stesso codice e nomi diversi, B e C lo stesso nome e codici diversi).
 export function selezionaTutti(voci: VoceInArrivo[]): Set<string> {
-  const chiavi = new Set<string>();
-  const scelte = new Set<string>();
+  const scelte: AlimentoCondiviso[] = [];
   for (const v of voci) {
     if (!eSelezionabile(v)) continue;
-    const chiave = chiaveAlimento(v.riga);
-    if (chiavi.has(chiave)) continue;
-    chiavi.add(chiave);
-    scelte.add(v.riga.id);
+    if (scelte.some((s) => stessoProdotto(s, v.riga))) continue;
+    scelte.push(v.riga);
   }
-  return scelte;
+  return new Set(scelte.map((s) => s.id));
 }
 
 // Gli id ancora validi di una selezione dopo una rilettura: spariti gli

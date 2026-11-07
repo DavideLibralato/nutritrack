@@ -363,3 +363,33 @@ describe("ripristinaAlimenti", () => {
     expect(await nomiPastiSalvati()).toEqual(["Cena", "Colazione", "Spuntino"]);
   });
 });
+
+// Dal branch `codice-a-barre`: lo stesso codice a barre è lo stesso
+// prodotto anche per l'Annulla (PUNTO_DI_PARTENZA.md §3, "Codice a barre").
+describe("ripristinaAlimenti con il codice a barre", () => {
+  it("un alimento con lo stesso codice nato nel frattempo, con un altro nome: quello cancellato non torna", async () => {
+    await db.alimenti.put(alimento("mela", { nome: "Mela", barcode: "96385074" }));
+    const traccia = await eliminaAlimenti(USER, ["mela"]);
+    await db.alimenti.put(alimento("mela-scansionata", { nome: "Mele Golden", barcode: "96385074" }));
+
+    const esito = await ripristinaAlimenti(USER, traccia);
+
+    expect(esito.alimentiNonRipristinati.map((a) => a.nome)).toEqual(["Mela"]);
+    expect(await vivo("alimenti", "mela")).toBe(false);
+    expect(await vivo("alimenti", "mela-scansionata")).toBe(true);
+  });
+
+  it("un altro alimento senza codice, o con un altro codice, non blocca", async () => {
+    await db.alimenti.put(alimento("mela", { nome: "Mela", barcode: "96385074" }));
+    const traccia = await eliminaAlimenti(USER, ["mela"]);
+    await db.alimenti.bulkPut([
+      alimento("pera", { nome: "Pera" }),
+      alimento("kiwi", { nome: "Kiwi", barcode: "3017620422003" }),
+    ]);
+
+    const esito = await ripristinaAlimenti(USER, traccia);
+
+    expect(esito.alimentiNonRipristinati).toEqual([]);
+    expect(await vivo("alimenti", "mela")).toBe(true);
+  });
+});

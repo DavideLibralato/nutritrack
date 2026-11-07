@@ -8,7 +8,7 @@
 // delle due cose.
 
 import { db } from "../db/database";
-import type { Alimento } from "../db/tipi";
+import type { Alimento, FonteAlimento } from "../db/tipi";
 import { normalizzaSpazi, testoConfronto, trovaDoppione } from "../catalogo/doppioniAlimenti";
 import { campiDiversi, valoriDi, type ValoriAlimento } from "../catalogo/alimentiInArrivo";
 import { eModificabile } from "../catalogo/alimentiModificabili";
@@ -57,7 +57,8 @@ export async function alimentoPerCodice(userId: string, codice: string): Promise
 // I campi che "Nuovo alimento" e "Modifica alimento" scrivono
 // (CreaAlimentoForm). Il resto (fonte, verificato, barcode, i quattro
 // valori facoltativi) lo decide salvaAlimento: in creazione i valori di un
-// alimento scritto a mano, in modifica quelli che la riga aveva già.
+// alimento scritto a mano (o, con `origine`, codice e fonte di un codice a
+// barre), in modifica quelli che la riga aveva già.
 export type CampiForm = Pick<
   Alimento,
   | "nome"
@@ -71,9 +72,20 @@ export type CampiForm = Pick<
 
 export type EsitoSalvataggioAlimento =
   | { esito: "salvato"; alimento: Alimento }
-  // Nome e marca sono di un altro alimento vivo dell'utente: niente
-  // scritto. `doppione` è quello che c'è già (per "Hai già «…»" e "Apri").
+  // Nome e marca (o il codice a barre) sono di un altro alimento vivo
+  // dell'utente: niente scritto. `doppione` è quello che c'è già (per
+  // "Hai già «…»" e "Apri").
   | { esito: "doppione"; doppione: Alimento };
+
+// Un alimento nato da un codice a barre (PUNTO_DI_PARTENZA.md §3, "Codice
+// a barre", "`fonte` e `barcode`"): il codice, già nella forma di
+// leggiCodice, e la fonte — 'off' se almeno un valore viene da Open Food
+// Facts (anche se poi corretto), 'barcode' se i valori li ha scritti
+// l'utente.
+export interface OrigineCodice {
+  barcode: string;
+  fonte: Extract<FonteAlimento, "off" | "barcode">;
+}
 
 // Crea un alimento (senza `idDaModificare`) o aggiorna quello esistente,
 // solo se non nasce un doppione (src/lib/catalogo/doppioniAlimenti.ts).
@@ -91,16 +103,24 @@ export type EsitoSalvataggioAlimento =
 //
 // Nome e marca si salvano con gli spazi normalizzati (normalizzaSpazi);
 // una marca vuota diventa null.
+//
+// `origine` (solo in creazione): l'alimento nasce da un codice a barre.
+// Si scrivono il codice e la fonte, e il doppione si cerca anche per
+// codice, nella stessa transazione. In modifica si ignora: `barcode` e
+// `fonte` restano quelli della riga, e il codice non si confronta (non
+// cambia, quindi non può far nascere un doppione).
 export async function salvaAlimento(
   userId: string,
   campi: CampiForm,
-  idDaModificare?: string
+  idDaModificare?: string,
+  origine?: OrigineCodice
 ): Promise<EsitoSalvataggioAlimento> {
   const puliti: CampiForm = {
     ...campi,
     nome: normalizzaSpazi(campi.nome),
     marca: normalizzaSpazi(campi.marca ?? "") || null,
   };
+  const codice = idDaModificare ? null : (origine ?? null);
   return db.transaction(
     "rw",
     [db.alimenti, db.outbox],
@@ -108,7 +128,11 @@ export async function salvaAlimento(
     // prima scrittura (vedi ripristinaAlimenti in composizioni.ts).
     async (): Promise<EsitoSalvataggioAlimento> => {
       const catalogo = await catalogoLocale(userId);
-      const doppione = trovaDoppione(catalogo, puliti, { userId, escludiId: idDaModificare });
+      const doppione = trovaDoppione(
+        catalogo,
+        { ...puliti, barcode: codice?.barcode ?? null },
+        { userId, escludiId: idDaModificare }
+      );
       if (doppione) return { esito: "doppione", doppione };
 
       if (idDaModificare) {
@@ -119,13 +143,13 @@ export async function salvaAlimento(
       }
       const alimento = await repositoryAlimenti.crea({
         user_id: userId,
-        barcode: null,
+        barcode: codice?.barcode ?? null,
         ...puliti,
         zuccheri_100g: null,
         fibre_100g: null,
         saturi_100g: null,
         sale_100g: null,
-        fonte: "manuale",
+        fonte: codice?.fonte ?? "manuale",
         verificato: false,
       });
       return { esito: "salvato", alimento };

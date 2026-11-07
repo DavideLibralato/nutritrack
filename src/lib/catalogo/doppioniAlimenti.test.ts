@@ -8,6 +8,8 @@ import type { Alimento } from "../db/tipi";
 import {
   chiaveAlimento,
   normalizzaSpazi,
+  stessoCodice,
+  stessoProdotto,
   testoConfronto,
   testoDoppione,
   trovaDoppione,
@@ -133,5 +135,106 @@ describe("trovaDoppione", () => {
   it("con il nome vuoto non c'è doppione (manca il nome, lo dice già il form)", () => {
     const senzaNome = [alimento("x", "", null)];
     expect(doppione(senzaNome, "   ", null)).toBeNull();
+  });
+});
+
+// Dal branch `codice-a-barre`: stesso codice a barre = stesso prodotto
+// (PUNTO_DI_PARTENZA.md §3, "Codice a barre"). Un errore qui fa nascere
+// due alimenti con lo stesso codice, e la scansione dopo non sa più quale
+// aprire; oppure blocca un alimento senza codice per colpa di un altro.
+describe("trovaDoppione per codice a barre", () => {
+  const NUTELLA = "3017620422003";
+  const catalogo = [
+    alimento("nutella", "Nutella", "Ferrero", { barcode: NUTELLA }),
+    alimento("pane", "Pane", "Mulino"),
+  ];
+
+  function perCodice(
+    lista: Alimento[],
+    nome: string,
+    marca: string | null,
+    barcode: string | null,
+    escludiId?: string
+  ): string | null {
+    return trovaDoppione(lista, { nome, marca, barcode }, { userId: USER, escludiId })?.id ?? null;
+  }
+
+  it("stesso codice, nome e marca diversi: doppione", () => {
+    expect(perCodice(catalogo, "Crema spalmabile", "Altra marca", NUTELLA)).toBe("nutella");
+  });
+
+  it("stesso codice con il nome ancora vuoto: doppione (il modulo di un prodotto non trovato)", () => {
+    expect(perCodice(catalogo, "", null, NUTELLA)).toBe("nutella");
+  });
+
+  it("un codice diverso, o nessun codice, non rende doppione", () => {
+    expect(perCodice(catalogo, "Crema", null, "96385074")).toBeNull();
+    expect(perCodice(catalogo, "Crema", null, null)).toBeNull();
+    expect(perCodice(catalogo, "Crema", null, "")).toBeNull();
+  });
+
+  it("due alimenti senza codice non sono doppioni per il codice (null e vuoto non contano)", () => {
+    const senza = [alimento("a", "Mela", null), alimento("b", "Pera", null, { barcode: "" })];
+    expect(perCodice(senza, "Kiwi", null, null)).toBeNull();
+    expect(perCodice(senza, "Kiwi", null, "")).toBeNull();
+  });
+
+  it("il nome e la marca contano ancora, anche con un codice nuovo", () => {
+    expect(perCodice(catalogo, "Pane", "Mulino", "96385074")).toBe("pane");
+  });
+
+  it("se il codice è di uno e nome e marca di un altro, vince il codice", () => {
+    expect(perCodice(catalogo, "Pane", "Mulino", NUTELLA)).toBe("nutella");
+  });
+
+  it("contano solo i vivi dell'utente: non i cancellati, non il catalogo comune, non altri utenti", () => {
+    const altri = [
+      alimento("cancellato", "A", null, { barcode: NUTELLA, deleted_at: "2026-11-01T00:00:00.000Z" }),
+      alimento("comune", "B", null, { barcode: NUTELLA, user_id: null }),
+      alimento("altrui", "C", null, { barcode: NUTELLA, user_id: "u2" }),
+    ];
+    expect(perCodice(altri, "Nutella", null, NUTELLA)).toBeNull();
+  });
+
+  it("escludiId esclude anche per il codice (un ripristino non è doppione di sé stesso)", () => {
+    expect(perCodice(catalogo, "Nutella", "Ferrero", NUTELLA, "nutella")).toBeNull();
+  });
+});
+
+describe("stessoCodice e stessoProdotto", () => {
+  it("stesso codice non vuoto; null e vuoto non sono mai uguali", () => {
+    expect(stessoCodice({ barcode: "96385074" }, { barcode: "96385074" })).toBe(true);
+    expect(stessoCodice({ barcode: "96385074" }, { barcode: "3017620422003" })).toBe(false);
+    expect(stessoCodice({ barcode: null }, { barcode: null })).toBe(false);
+    expect(stessoCodice({ barcode: "" }, { barcode: "" })).toBe(false);
+    expect(stessoCodice({}, {})).toBe(false);
+  });
+
+  it("stesso prodotto: stesso nome e marca, oppure stesso codice", () => {
+    const a = { nome: "Nutella", marca: "Ferrero", barcode: "3017620422003" };
+    expect(stessoProdotto(a, { nome: "nutella", marca: "FERRERO", barcode: null })).toBe(true);
+    expect(stessoProdotto(a, { nome: "Crema", marca: null, barcode: "3017620422003" })).toBe(true);
+    expect(stessoProdotto(a, { nome: "Crema", marca: null, barcode: null })).toBe(false);
+  });
+});
+
+describe("testoDoppione per codice a barre", () => {
+  it("se il doppione è per il codice, il messaggio dice il codice, non nome e marca", () => {
+    const doppione = { nome: "Nutella", marca: "Ferrero", barcode: "3017620422003" };
+    expect(testoDoppione(doppione, { barcode: "3017620422003" })).toBe(
+      "Hai già un alimento con questo codice a barre: «Nutella · Ferrero»."
+    );
+    expect(testoDoppione({ ...doppione, marca: null }, { barcode: "3017620422003" })).toBe(
+      "Hai già un alimento con questo codice a barre: «Nutella»."
+    );
+  });
+
+  it("senza codice, o con un codice diverso, resta il messaggio di nome e marca", () => {
+    const doppione = { nome: "Pane", marca: "Mulino", barcode: "96385074" };
+    expect(testoDoppione(doppione)).toBe(
+      "Hai già un alimento con questo nome e questa marca: «Pane · Mulino»."
+    );
+    expect(testoDoppione(doppione, { barcode: null })).toBe(testoDoppione(doppione));
+    expect(testoDoppione(doppione, { barcode: "3017620422003" })).toBe(testoDoppione(doppione));
   });
 });

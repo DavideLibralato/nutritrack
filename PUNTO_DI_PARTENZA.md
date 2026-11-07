@@ -769,7 +769,24 @@ silenzio.
   «Hai già un alimento con questo codice a barre: «…»», con "Apri". Come
   per il nome, solo nell'app e non sul server; due telefoni offline
   possono ancora creare due alimenti con lo stesso codice, caso raro
-  accettato.
+  accettato. Dettagli (dal commit 3 del branch):
+  - **il codice viene prima**: se un alimento ha lo stesso codice e un
+    altro lo stesso nome e marca, il doppione è quello con il codice, e
+    il messaggio dice il codice. Conta anche con il nome ancora vuoto
+    (il modulo di un prodotto non trovato parte dal solo codice);
+  - **in Modifica il codice non si confronta**: non cambia, quindi non
+    può far nascere un doppione, e due alimenti con lo stesso codice
+    nati da due telefoni offline non devono bloccare per sempre la
+    modifica di uno dei due. Si confronta quando un alimento con un
+    codice sta per nascere: creazione, ripristino, copia in arrivo;
+  - **i messaggi dell'Annulla e degli alimenti in arrivo non cambiano**
+    («… no: ne hai già uno uguale.», «Hai già «…», con valori
+    diversi.»): dicono il nome dell'alimento che c'è già, ed è vero
+    anche quando l'uguaglianza è per il codice;
+  - nella selezione multipla degli alimenti in arrivo due con lo stesso
+    codice non si spuntano insieme (`stessoProdotto`); "Seleziona
+    tutti" confronta ogni voce con ciascuna già scelta, perché con il
+    codice "stesso prodotto" non si riduce a una chiave di testo.
 - **Errori.** Rete assente anche se il telefono dice di no, o nessuna
   risposta entro 10 s: «Non riesco a raggiungere Open Food Facts», con
   "Riprova" e "Crea a mano" (modulo vuoto, codice già compilato). OFF
