@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Il segno "discesa completa"
+
+Branch `esporta`, commit 2. Nuovo `src/lib/sync/discesaCompleta.ts`: un
+segno in localStorage per utente che `scaricaTutto` accende quando
+nessuna tabella di `TABELLE_DISCESA` fallisce nel giro; un giro fallito
+dopo non lo spegne. `copiaLocaleCompleta` lo considera valido solo con
+il profilo vivo dell'utente in Dexie (IndexedDB cancellato da Safari con
+il localStorage rimasto). Solo un'aggiunta: esito del giro, tabelle non
+scaricate e segno "discesa riuscita" dell'onboarding non cambiano. Esci
+lo toglie sempre, anche quando i dati restano (non quando la sessione
+resta dopo signOut: si è ancora dentro); Elimina account e account
+eliminato altrove lo tolgono con la pulizia del dispositivo. Test
+permanenti nuovi: 14 in `discesaCompleta.test.ts`, 2 in
+`esci.test.ts`, 1 in `eliminaAccount.test.ts`. Sette rotture da una
+copia dei file, ognuna presa dai test.
+
 ## 2026-11-07 — Esporta i miei dati: le decisioni
 
 Branch `esporta`, commit 1, solo documenti. In PUNTO §10.4 le decisioni

@@ -31,6 +31,7 @@ import {
 } from "../sync/ripristino";
 import { sincronizzaOutbox } from "../sync/sincronizza";
 import { attendiDiscesaInCorso } from "../sync/discesa";
+import { togliSegnoDiscesaCompleta } from "../sync/discesaCompleta";
 import { azzeraStatoGiri, CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
 import { cancellaNovita } from "../amici/novita";
 import { svuotaPagineSalvate } from "../serviceWorker";
@@ -144,6 +145,10 @@ export async function eseguiUscita(
   togliSegnoRipristino();
   // - le novità di Amici salvate per il pallino offline (dal 15/10);
   cancellaNovita(userId);
+  // - il segno "discesa completa" (dal 07/11, discesaCompleta.ts), anche
+  //   quando i dati restano: rientrando, Esporta aspetta una discesa
+  //   completa nuova;
+  togliSegnoDiscesaCompleta(userId);
   // - lo stato dei giri in memoria. Dopo aver tolto l'ora salvata:
   //   azzeraStatoGiri la rilegge da lì.
   azzeraStatoGiri();

@@ -7,8 +7,8 @@
 // vedere: le sue righe in Dexie, le sue voci in coda, la sua foto
 // (cancellaDatiUtente), le pagine salvate dal service worker, l'ora
 // dell'ultimo contatto col server, il segno del reset password, le novità
-// di Amici, l'esito dell'onboarding in sospeso, lo stato dei giri in
-// memoria. Gli altri utenti e il catalogo condiviso restano.
+// di Amici, l'esito dell'onboarding in sospeso, il segno "discesa
+// completa", lo stato dei giri in memoria. Gli altri utenti e il catalogo condiviso restano.
 //
 // NON tocca la sessione e NON tocca il segno "eliminazione in corso": li
 // gestisce chi chiama, ognuno nel suo ordine.
@@ -23,6 +23,7 @@ import { azzeraStatoGiri, CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizz
 import { cancellaNovita } from "../amici/novita";
 import { togliSegnoRipristino } from "../segnoRipristinoPassword";
 import { togliSegnoLocale } from "../onboarding/segnoOnboarding";
+import { togliSegnoDiscesaCompleta } from "../sync/discesaCompleta";
 
 export async function pulisciDispositivoDopoEliminazione(idUtente: string): Promise<boolean> {
   let dexiePulito = true;
@@ -44,6 +45,8 @@ export async function pulisciDispositivoDopoEliminazione(idUtente: string): Prom
   // L'esito dell'onboarding in sospeso (dal 17/10): l'account non c'è più,
   // non c'è niente a cui mandarlo.
   togliSegnoLocale(idUtente);
+  // Il segno "discesa completa" (dal 07/11, discesaCompleta.ts).
+  togliSegnoDiscesaCompleta(idUtente);
   // Dopo aver tolto l'ora salvata: azzeraStatoGiri la rilegge da lì.
   azzeraStatoGiri();
   return dexiePulito;

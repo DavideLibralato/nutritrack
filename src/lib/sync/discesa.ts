@@ -23,6 +23,7 @@ import {
   type TabellaNonScaricata,
 } from "./statoSincronizzazione";
 import type { NomeTabella, RigaBase } from "../db/tipi";
+import { segnaDiscesaCompleta } from "./discesaCompleta";
 
 export interface CursoreSync {
   // "<tabella>:<user_id>": stessa convenzione di outbox.ts. Per-utente:
@@ -422,6 +423,12 @@ export async function scaricaTutto(userId: string): Promise<TabellaNonScaricata[
   // Solo un segno in più: non cambia né le tabelle scaricate né l'esito.
   if (TABELLE_DATI_ONBOARDING.every((nome) => !nonScaricate.some((t) => t.tabella === nome))) {
     segnaDiscesaRiuscita(userId);
+  }
+  // Anche questo solo un segno in più (dal 07/11, per Esporta;
+  // discesaCompleta.ts): tutte le tabelle di TABELLE_DISCESA nello stesso
+  // giro. Un giro fallito non lo spegne.
+  if (nonScaricate.length === 0) {
+    segnaDiscesaCompleta(userId);
   }
 
   const esiti = nonScaricate.map((t) => t.esito);

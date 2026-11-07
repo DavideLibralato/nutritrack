@@ -15,6 +15,7 @@ import type { VoceOutbox } from "../sync/outbox";
 import { decidiUscita, eseguiUscita, preparaUscita } from "./esci";
 import { CHIAVE_USCITA, leggiSegnoUscita, riprendiUscitaInSospeso } from "./uscitaInCorso";
 import { CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
+import { segnaDiscesaCompleta, segnoDiscesaCompleta } from "../sync/discesaCompleta";
 import { chiaveNovita } from "../amici/novita";
 import { chiaveSegnoLocale, leggiSegnoLocale } from "../onboarding/segnoOnboarding";
 import { chiaveSessione } from "../supabase/utenteOffline";
@@ -198,6 +199,26 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
     expect(await contaDi(altro)).toEqual({ pasti: 1, coda: 1, cursori: 1 });
   });
 
+  // Il segno "discesa completa" (dal 07/11, discesaCompleta.ts): Esci lo
+  // toglie sempre, anche quando i dati restano. Dell'altro utente no.
+  it("il segno discesa completa: tolto con tieni e con svuota, quello dell'altro resta", async () => {
+    for (const conCoda of [true, false]) {
+      const { utente, altro } = await dispositivo({ conCoda });
+      server.getUser = conCoda ? scaduta : valida(utente);
+      segnaDiscesaCompleta(utente);
+      segnaDiscesaCompleta(altro);
+
+      const preparazione = await preparaUscita(utente);
+      if (preparazione.esito !== "pronta") throw new Error("preparazione non pronta");
+      expect(preparazione.decisione).toBe(conCoda ? "tieni" : "svuota");
+
+      expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe("uscito");
+      expect(segnoDiscesaCompleta(utente), `conCoda=${conCoda}`).toBe(false);
+      expect(segnoDiscesaCompleta(altro), `conCoda=${conCoda}`).toBe(true);
+      if (conCoda) expect(await contaDi(utente)).toEqual({ pasti: 1, coda: 1, cursori: 1 });
+    }
+  });
+
   it("la pulizia fallisce: si esce lo stesso, il segno resta per il prossimo avvio", async () => {
     const { utente } = await dispositivo({ conCoda: false });
     server.getUser = valida(utente);
@@ -231,6 +252,15 @@ describe("Esci — quando non si esce", () => {
     expect(await eseguiUscita(utente, "svuota", [])).toBe("sessione-rimasta");
     expect(scrittureSegno).toEqual([]);
     expect(await contaDi(utente)).toEqual({ pasti: 1, coda: 0, cursori: 1 });
+  });
+
+  it("la sessione resta dopo signOut: il segno discesa completa resta, si è ancora dentro", async () => {
+    const { utente } = await dispositivo({ conCoda: false });
+    server.sessioneDopoSignOut = true;
+    segnaDiscesaCompleta(utente);
+
+    expect(await eseguiUscita(utente, "svuota", [])).toBe("sessione-rimasta");
+    expect(segnoDiscesaCompleta(utente)).toBe(true);
   });
 });
 
