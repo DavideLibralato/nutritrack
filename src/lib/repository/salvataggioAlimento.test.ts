@@ -219,3 +219,90 @@ describe("salvaAlimento con il codice a barre", () => {
     expect((await db.alimenti.get("secondo"))?.nome).toBe("Crema alle nocciole");
   });
 });
+
+// Dal branch `alimenti-codice-a-barre` (PUNTO_DI_PARTENZA.md §3, "Codice
+// a barre", "Il codice in modifica"): il codice aggiunto a un alimento
+// che non ce l'aveva. Proteggono tre cose che a schermo non si vedono:
+// la regola "stesso codice = stesso prodotto" anche qui, nella
+// transazione; un codice arrivato con la sync che non va sovrascritto;
+// la fonte che non cambia.
+describe("salvaAlimento in Modifica con un codice da aggiungere", () => {
+  const PATATINE = "8000500310427";
+  const KETCHIPS = "8008714001827";
+
+  it("scrive codice e valori in un solo aggiornamento; la fonte non cambia", async () => {
+    await db.alimenti.put(arrivatoDallaSync("patatine", "Patatine", "San Carlo"));
+
+    const esito = await salvaAlimento(
+      USER,
+      { ...campi("Patatine", "San Carlo"), kcal_100g: 537 },
+      "patatine",
+      undefined,
+      PATATINE
+    );
+
+    expect(esito.esito).toBe("salvato");
+    expect(await db.alimenti.get("patatine")).toMatchObject({
+      barcode: PATATINE,
+      kcal_100g: 537,
+      fonte: "manuale",
+      verificato: false,
+    });
+    const coda = await db.outbox.toArray();
+    expect(coda).toHaveLength(1);
+    expect(coda[0].dati).toMatchObject({ id: "patatine", barcode: PATATINE, kcal_100g: 537 });
+  });
+
+  it("il codice è già di un altro alimento vivo: doppione, niente scritto", async () => {
+    await db.alimenti.bulkPut([
+      { ...arrivatoDallaSync("ketchips", "Ketchips", "Amica Chips"), barcode: KETCHIPS, fonte: "off" },
+      arrivatoDallaSync("patatine", "Patatine", null),
+    ]);
+
+    const esito = await salvaAlimento(USER, campi("Patatine fritte"), "patatine", undefined, KETCHIPS);
+
+    expect(esito).toMatchObject({ esito: "doppione", doppione: { id: "ketchips" } });
+    expect(await db.alimenti.get("patatine")).toMatchObject({ nome: "Patatine", barcode: null });
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("intanto la riga ha ricevuto un altro codice (sync): non si sovrascrive, niente scritto", async () => {
+    // Il form aveva letto la riga senza codice; poi arriva dalla sync la
+    // stessa riga con un codice messo da un altro telefono.
+    await db.alimenti.put({ ...arrivatoDallaSync("patatine", "Patatine", null), barcode: KETCHIPS });
+
+    const esito = await salvaAlimento(USER, campi("Patatine fritte"), "patatine", undefined, PATATINE);
+
+    expect(esito).toEqual({ esito: "ha-gia-codice", barcode: KETCHIPS });
+    expect(await db.alimenti.get("patatine")).toMatchObject({ nome: "Patatine", barcode: KETCHIPS });
+    expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("intanto la riga ha ricevuto lo stesso codice: si salva normalmente", async () => {
+    await db.alimenti.put({ ...arrivatoDallaSync("patatine", "Patatine", null), barcode: PATATINE });
+
+    const esito = await salvaAlimento(USER, campi("Patatine fritte"), "patatine", undefined, PATATINE);
+
+    expect(esito.esito).toBe("salvato");
+    expect(await db.alimenti.get("patatine")).toMatchObject({ nome: "Patatine fritte", barcode: PATATINE });
+  });
+
+  it("un alimento cancellato o del catalogo comune con lo stesso codice non blocca", async () => {
+    await db.alimenti.bulkPut([
+      { ...arrivatoDallaSync("cancellato", "Ketchips", null), barcode: KETCHIPS, deleted_at: "2026-11-01T00:00:00.000Z" },
+      { ...arrivatoDallaSync("comune", "Ketchips", null), barcode: PATATINE, user_id: null, verificato: true },
+      arrivatoDallaSync("a", "A", null),
+      arrivatoDallaSync("b", "B", null),
+    ]);
+
+    expect((await salvaAlimento(USER, campi("A"), "a", undefined, KETCHIPS)).esito).toBe("salvato");
+    expect((await salvaAlimento(USER, campi("B"), "b", undefined, PATATINE)).esito).toBe("salvato");
+  });
+
+  it("in creazione il codice da aggiungere si ignora: vale solo l'origine", async () => {
+    const esito = await salvaAlimento(USER, campi("Pane"), undefined, undefined, PATATINE);
+
+    expect(esito.esito).toBe("salvato");
+    expect((await vivi())[0]).toMatchObject({ barcode: null, fonte: "manuale" });
+  });
+});

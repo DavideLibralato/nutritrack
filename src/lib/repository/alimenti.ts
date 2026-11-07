@@ -58,7 +58,8 @@ export async function alimentoPerCodice(userId: string, codice: string): Promise
 // (CreaAlimentoForm). Il resto (fonte, verificato, barcode, i quattro
 // valori facoltativi) lo decide salvaAlimento: in creazione i valori di un
 // alimento scritto a mano (o, con `origine`, codice e fonte di un codice a
-// barre), in modifica quelli che la riga aveva già.
+// barre), in modifica quelli che la riga aveva già (tranne un codice da
+// aggiungere, `codiceDaAggiungere`).
 export type CampiForm = Pick<
   Alimento,
   | "nome"
@@ -75,7 +76,12 @@ export type EsitoSalvataggioAlimento =
   // Nome e marca (o il codice a barre) sono di un altro alimento vivo
   // dell'utente: niente scritto. `doppione` è quello che c'è già (per
   // "Hai già «…»" e "Apri").
-  | { esito: "doppione"; doppione: Alimento };
+  | { esito: "doppione"; doppione: Alimento }
+  // Solo con `codiceDaAggiungere`: intanto la riga ha ricevuto un altro
+  // codice (la sync da un altro telefono). Niente scritto, nemmeno i
+  // valori: il codice salvato non si sovrascrive. `barcode` è quello
+  // che la riga ha ora.
+  | { esito: "ha-gia-codice"; barcode: string };
 
 // Un alimento nato da un codice a barre (PUNTO_DI_PARTENZA.md §3, "Codice
 // a barre", "`fonte` e `barcode`"): il codice, già nella forma di
@@ -106,14 +112,30 @@ export interface OrigineCodice {
 //
 // `origine` (solo in creazione): l'alimento nasce da un codice a barre.
 // Si scrivono il codice e la fonte, e il doppione si cerca anche per
-// codice, nella stessa transazione. In modifica si ignora: `barcode` e
-// `fonte` restano quelli della riga, e il codice non si confronta (non
-// cambia, quindi non può far nascere un doppione).
+// codice, nella stessa transazione. In modifica si ignora: la `fonte`
+// resta quella della riga.
+//
+// `codiceDaAggiungere` (solo in modifica; PUNTO_DI_PARTENZA.md §3,
+// "Codice a barre", "Il codice in modifica"): il codice letto per un
+// alimento che non ce l'aveva, già nella forma di leggiCodice. Il codice
+// in modifica non si cambia e non si toglie, si può solo aggiungere:
+// - si scrive con gli altri campi, in un solo aggiornamento; la fonte
+//   non cambia;
+// - è un codice che sta per nascere, quindi si confronta (trovaDoppione
+//   con il codice): se è di un altro alimento vivo, niente scritto;
+// - se intanto la riga ha già un codice (sync), quello non si
+//   sovrascrive: "ha-gia-codice" se è un altro, e se è lo stesso si
+//   salva normalmente.
+// Senza `codiceDaAggiungere` il codice in modifica non si confronta: non
+// cambia, quindi non può far nascere un doppione (e due alimenti con lo
+// stesso codice nati da due telefoni offline non devono bloccare per
+// sempre la modifica di uno dei due). In creazione si ignora.
 export async function salvaAlimento(
   userId: string,
   campi: CampiForm,
   idDaModificare?: string,
-  origine?: OrigineCodice
+  origine?: OrigineCodice,
+  codiceDaAggiungere?: string
 ): Promise<EsitoSalvataggioAlimento> {
   const puliti: CampiForm = {
     ...campi,
@@ -121,24 +143,38 @@ export async function salvaAlimento(
     marca: normalizzaSpazi(campi.marca ?? "") || null,
   };
   const codice = idDaModificare ? null : (origine ?? null);
+  // Un codice vuoto non è un codice (stessoCodice lo tratta allo stesso
+  // modo).
+  const daAggiungere = idDaModificare && codiceDaAggiungere ? codiceDaAggiungere : null;
   return db.transaction(
     "rw",
     [db.alimenti, db.outbox],
     // async/await anche qui: senza, Dexie perde la transazione dopo la
     // prima scrittura (vedi ripristinaAlimenti in composizioni.ts).
     async (): Promise<EsitoSalvataggioAlimento> => {
+      if (daAggiungere) {
+        const riga = await db.alimenti.get(idDaModificare!);
+        const giaSalvato = riga?.barcode ?? "";
+        if (giaSalvato !== "" && giaSalvato !== daAggiungere) {
+          return { esito: "ha-gia-codice", barcode: giaSalvato };
+        }
+      }
+
       const catalogo = await catalogoLocale(userId);
       const doppione = trovaDoppione(
         catalogo,
-        { ...puliti, barcode: codice?.barcode ?? null },
+        { ...puliti, barcode: codice?.barcode ?? daAggiungere },
         { userId, escludiId: idDaModificare }
       );
       if (doppione) return { esito: "doppione", doppione };
 
       if (idDaModificare) {
-        // Stessa riga (stesso id): `verificato`, `fonte`, `barcode`
-        // restano quelli che erano.
-        const alimento = await repositoryAlimenti.aggiorna(idDaModificare, puliti);
+        // Stessa riga (stesso id): `verificato` e `fonte` restano quelli
+        // che erano; `barcode` anche, tranne il codice da aggiungere.
+        const alimento = await repositoryAlimenti.aggiorna(
+          idDaModificare,
+          daAggiungere ? { ...puliti, barcode: daAggiungere } : puliti
+        );
         return { esito: "salvato", alimento };
       }
       const alimento = await repositoryAlimenti.crea({

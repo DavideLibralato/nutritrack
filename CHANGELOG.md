@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — salvaAlimento aggiunge il codice in modifica
+
+Branch `alimenti-codice-a-barre`, commit 2. `salvaAlimento` riceve un
+parametro nuovo, `codiceDaAggiungere`, solo per la modifica (PUNTO §3,
+"Il codice in modifica"): il codice si scrive con gli altri campi in un
+solo aggiornamento, la fonte non cambia, e si confronta con
+`trovaDoppione` nella stessa transazione. Se intanto la riga ha ricevuto
+un altro codice dalla sync, niente scritto ed esito nuovo
+`"ha-gia-codice"`; con lo stesso codice si salva. `origine` resta solo
+per la creazione. Il form non passa ancora il codice (commit 4): oggi
+tratta ogni esito diverso da "salvato" come il doppione. Sei test
+permanenti nuovi in `salvataggioAlimento.test.ts`; tre li ho visti
+fallire rompendo il codice da una copia (codice non scritto, doppione
+non controllato, codice della sync sovrascritto). Vitest (1648), lint e
+build ok.
+
 ## 2026-11-07 — Catalogo alimenti e codice a barre: regole e mockup
 
 Branch `alimenti-codice-a-barre`. Decise con Davide il 07/11 le regole

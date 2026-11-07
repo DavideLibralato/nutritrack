@@ -205,10 +205,12 @@ export default function CreaAlimentoForm({
     setInCorso(true);
     try {
       const esito = await salvaAlimento(userId, campi, alimentoDaModificare?.id, origine);
-      if (esito.esito === "doppione") {
-        // Nato fra l'ultimo ridisegno e il tocco (un altro dispositivo, o
-        // il secondo di un doppio tocco): niente scritto. Il messaggio
-        // «Hai già …» lo mostra la lettura live, che l'ha già visto.
+      if (esito.esito !== "salvato") {
+        // "doppione": nato fra l'ultimo ridisegno e il tocco (un altro
+        // dispositivo, o il secondo di un doppio tocco): niente scritto.
+        // Il messaggio «Hai già …» lo mostra la lettura live, che l'ha già
+        // visto. "ha-gia-codice" arriva solo con un codice da aggiungere,
+        // che questo form non passa ancora.
         setInCorso(false);
         return;
       }
