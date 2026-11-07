@@ -107,9 +107,14 @@ function copiaCookieSessione(
 // I file del service worker (sw.js, sw-strategia.js, offline.html) devono
 // restare fuori: il browser li scarica anche senza login, e un redirect a
 // /login al loro posto farebbe fallire l'installazione del service worker.
+// Fuori anche il WebAssembly del lettore dei codici a barre (zxing/,
+// branch `codice-a-barre`): è un file statico, e sotto il proxy chi non
+// ha la sessione avrebbe ricevuto un redirect a /login al posto del file
+// (visto il 07/11 con `next start`), chi ce l'ha un controllo della
+// sessione su Supabase in più a ogni scansione.
 // Test: proxyMatcher.test.ts.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|sw-strategia.js|offline.html|apple-touch-icon.png|icons/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|sw-strategia.js|offline.html|apple-touch-icon.png|icons/|zxing/).*)',
   ],
 }

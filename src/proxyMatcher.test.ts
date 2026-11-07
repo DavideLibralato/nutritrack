@@ -27,6 +27,9 @@ describe("matcher del proxy", () => {
     "/manifest.json",
     "/icons/icon-192.png",
     "/icons/icon-512.png",
+    // Il WebAssembly del lettore dei codici a barre: un redirect a /login
+    // al suo posto romperebbe la scansione.
+    "/zxing/3.1.6/zxing_reader.wasm",
   ])("%s resta fuori", (url) => {
     expect(passaDalProxy(url)).toBe(false);
   });

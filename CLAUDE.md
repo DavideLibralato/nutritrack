@@ -48,6 +48,8 @@ complica lo schema, dimmelo con il motivo.
   direttamente, passa sempre dal livello repository (sezione 9.2)
 - PWA installabile: manifest + service worker
 - Tesseract.js per l'OCR delle etichette
+- barcode-detector (ZXing in WebAssembly, servito da `/public`) per il
+  codice a barre
 - Recharts per i grafici
 - Deploy su Vercel
 

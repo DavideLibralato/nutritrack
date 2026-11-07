@@ -700,6 +700,29 @@ silenzio.
   Scansiona: non pesa sul caricamento dell'app. Il suo WebAssembly
   (`zxing_reader.wasm`, circa 950 KB) è servito da `/public`
   (`locateFile`), mai da jsDelivr. Formati letti: EAN-13, EAN-8 e UPC-A.
+  Dal commit 5 del branch, in `src/lib/barcode/lettoreCodice.ts`
+  (`preparaLettore`, `primoCodiceValido`):
+  - il file sta in `public/zxing/<versione>/zxing_reader.wasm`, con la
+    versione nel percorso; `next.config.ts` lo mette in cache per un
+    anno (`immutable`), perché un file con quel nome non cambia mai;
+  - **è fuori dal proxy** (`zxing/` nel `matcher` di `src/proxy.ts`):
+    sotto il proxy, senza sessione, rispondeva con un redirect a
+    `/login` invece del file (visto il 07/11 con `next start`), e con
+    la sessione avrebbe fatto un controllo su Supabase a ogni
+    scansione. Verificato dopo la correzione: 200, `application/wasm`,
+    stessa impronta;
+  - **quando si aggiorna la libreria** il file si ricopia a mano da
+    `node_modules/zxing-wasm/dist/reader/zxing_reader.wasm` nella
+    cartella della versione nuova, e si cambia `VERSIONE_ZXING`. Se ci
+    si dimentica, `lettoreCodice.test.ts` fallisce: confronta
+    l'impronta del file con `ZXING_WASM_SHA256` della libreria
+    installata, e la versione con `ZXING_WASM_VERSION`;
+  - provato il 07/11 con uno script temporaneo (poi cancellato): il
+    file di `/public` legge un EAN-13, un EAN-8 e un UPC-A generati.
+    L'UPC-A ZXing lo restituisce già come EAN-13 a 13 cifre; se
+    arrivasse a 12, `leggiCodice` lo porta comunque a 13;
+  - una lettura con la cifra di controllo sbagliata, o di un altro
+    formato, si scarta e si riprova al fotogramma dopo.
 - **Il codice valido.** Solo cifre, 8, 12 o 13, con la **cifra di
   controllo** giusta; altrimenti in "Scrivi il codice" un messaggio e
   niente ricerca. Un UPC-A (12 cifre, prodotti americani) si
@@ -5195,6 +5218,14 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
 - **Dexie (IndexedDB)** — database locale sul dispositivo, fonte di verità
 - **PWA installabile** — nessuno store, nessun costo di pubblicazione
 - **Open Food Facts** — catalogo alimenti via API pubblica, gratuita, senza chiave
+- **barcode-detector** (dal branch `codice-a-barre`) — il lettore dei
+  codici a barre, licenza MIT, gratuito. Versione **esatta 3.2.3** in
+  `package.json` (pubblicata il 19/10, installata il 07/11); porta una
+  sola dipendenza, `zxing-wasm` 3.1.6, anche lei MIT, a versione esatta.
+  Il suo WebAssembly (`zxing_reader.wasm`, 946.860 byte) è copiato in
+  `public/zxing/3.1.6/` e servito da Libra, non da jsDelivr. Si scarica
+  **solo al tocco su Scansiona** (sezione 3, "Codice a barre", "La
+  libreria"). `npm audit --omit=dev` pulito dopo l'installazione
 - **Tesseract.js** per l'OCR, gira nel browser: zero costi server
 - **Recharts** per i grafici
 

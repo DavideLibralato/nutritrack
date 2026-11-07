@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre: il lettore, con il WebAssembly servito da Libra
+
+Branch `codice-a-barre`, commit 5. Installato `barcode-detector` 3.2.3
+a versione esatta (MIT, porta `zxing-wasm` 3.1.6, MIT; `npm audit
+--omit=dev` pulito). Il WebAssembly in `public/zxing/3.1.6/`, con cache
+di un anno in `next.config.ts` e `*.wasm` binario in `.gitattributes`.
+`src/lib/barcode/lettoreCodice.ts`: `preparaLettore` carica libreria e
+WebAssembly con `import()` una volta sola (e riprova se il caricamento
+fallisce), `primoCodiceValido` tiene il primo EAN-13, EAN-8 o UPC-A con
+la cifra di controllo giusta. **Bug trovato prima di arrivare al
+telefono**: con `next start` il file rispondeva 307 verso `/login`,
+perché passava dal proxy come una pagina protetta. Escluso `zxing/` dal
+`matcher` di `src/proxy.ts`, con il percorso in `proxyMatcher.test.ts`;
+dopo: 200, `application/wasm`, stessa impronta. Provato con uno script
+temporaneo, poi cancellato: il file di `/public` legge EAN-13, EAN-8 e
+UPC-A generati (l'UPC-A torna già a 13 cifre). Test permanenti: 6 in
+`lettoreCodice.test.ts` (impronta del file uguale a quella della
+libreria installata, versione, formati, codici scartati) e 1 nel test
+del proxy, visti fallire con 6 rotture, una sul file `.wasm` stesso.
+Il lettore non è ancora usato da nessuna pagina (commit 6). Vitest
+1605/1605, `npm run lint`, `tsc` e build ok.
+
 ## 2026-11-07 — Codice a barre: modulo precompilato da Open Food Facts
 
 Branch `codice-a-barre`, commit 4. `CreaAlimentoForm` riceve `daCodice`

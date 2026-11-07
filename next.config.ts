@@ -50,6 +50,18 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
         ],
       },
+      // Il WebAssembly del lettore dei codici a barre (src/lib/barcode/
+      // lettoreCodice.ts), circa 950 KB. La versione è nel percorso
+      // (/zxing/3.1.6/...): un file con quel nome non cambia mai, quindi
+      // il browser può tenerlo un anno senza richiederlo. Senza questa
+      // regola Vercel lo servirebbe con max-age=0, e il telefono
+      // ricontrollerebbe a ogni scansione.
+      {
+        source: "/zxing/:percorso*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };
