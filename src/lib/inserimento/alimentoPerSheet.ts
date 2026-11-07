@@ -2,8 +2,9 @@
 // si aspetta, indipendente da dove arriva l'alimento. È l'"Alimento
 // Normalizzato" della sezione 5, ridotto a quel che serve adesso: ricerca
 // manuale e creazione a mano lo producono oggi, la ricerca Open Food Facts
-// (fase 4) e la scansione etichetta (fase 5) lo produrranno domani senza
-// cambiare lo sheet.
+// per nome (fase 5) e l'OCR (fase 6) lo produrranno domani senza cambiare
+// lo sheet. Il codice a barre (fase 4) non ne ha bisogno: passa sempre da
+// una riga del catalogo (PUNTO_DI_PARTENZA.md §3, "Codice a barre").
 //
 // `alimento_id` può essere null in teoria (una sorgente futura potrebbe non
 // avere una riga in `alimenti`), ma per le due sorgenti di adesso è sempre

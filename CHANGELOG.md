@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre: codice EAN e Open Food Facts
+
+Branch `codice-a-barre`, commit 2, solo `src/lib`, nessuna schermata.
+In `src/lib/barcode/`: `leggiCodice` (8, 12 o 13 cifre, cifra di
+controllo; un UPC-A a 12 cifre diventa 13 con lo 0 davanti),
+`daOpenFoodFacts` (nome italiano poi generico, prima marca, quattro
+valori arrotondati, kcal dai kJ con 4,184 se mancano, zuccheri, fibre,
+saturi e sale scartati, nome e marca a 200 caratteri contati come
+Postgres), `cercaSuOpenFoodFacts` (API v3, `X-User-Agent`, 10 s con
+`creaFetchConScadenza`; 404 = non trovato, distinto da rete assente,
+429/503 e annullamento), `cercaCodice` (catalogo locale prima di OFF).
+In `src/lib/repository/alimenti.ts` `alimentoPerCodice`, con l'indice
+`barcode` di Dexie: solo i vivi, prima i propri, poi il catalogo comune.
+Quattro test permanenti, 41 test, ognuno visto fallire con 21 rotture
+fatte da una copia e rimesse a posto (il commento del test EAN diceva il
+contrario di quello che si è visto: con i pesi contati da sinistra
+falliscono gli EAN-13, non gli EAN-8; corretto). Aggiornati due commenti
+con le fasi vecchie (`alimenti.ts`, `alimentoPerSheet.ts`). Vitest
+1566/1566, `npm run lint`, `tsc` e build ok.
+
 ## 2026-11-07 — Codice a barre fuori dal backlog
 
 Branch `codice-a-barre`, commit 1, solo documenti. Il codice a barre

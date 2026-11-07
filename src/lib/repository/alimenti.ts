@@ -15,15 +15,43 @@ import { eModificabile } from "../catalogo/alimentiModificabili";
 import { repositoryAlimenti } from "./index";
 
 // Il catalogo locale visibile all'utente: i suoi alimenti privati più quelli
-// condivisi. Il livello 2 (catalogo condiviso via Supabase) e il livello 3
-// (Open Food Facts) della sezione 9.4 arrivano in fase 4 — qui c'è solo
-// IndexedDB.
+// condivisi. Qui c'è solo IndexedDB: Open Food Facts (livello 3 della
+// sezione 9.4) oggi si cerca solo per codice a barre, dopo questo catalogo
+// (src/lib/barcode/ricercaCodice.ts); il livello 2 oggi non serve (§9.4).
 export async function catalogoLocale(userId: string): Promise<Alimento[]> {
   return db.alimenti
     .filter(
       (a) => a.deleted_at === null && (a.user_id === userId || a.user_id === null)
     )
     .toArray();
+}
+
+// Fra gli alimenti con uno stesso codice a barre, quello che l'utente
+// vede nel catalogo (PUNTO_DI_PARTENZA.md §3, "Codice a barre", "Il
+// percorso"): solo i vivi, prima i suoi, poi quelli del catalogo comune.
+// Un alimento cancellato non conta: è ritirato dal futuro (§4, "Alimenti
+// cancellati"). Due suoi con lo stesso codice non dovrebbero esistere
+// (regola dei doppioni), ma due telefoni offline possono crearli: vince
+// il più recente. Funzione pura, per i test.
+export function sceltoPerCodice(conCodice: Alimento[], userId: string): Alimento | null {
+  const vivi = conCodice.filter((a) => a.deleted_at === null);
+  const piuRecente = (lista: Alimento[]) =>
+    lista.reduce<Alimento | null>(
+      (scelto, a) => (scelto === null || a.updated_at > scelto.updated_at ? a : scelto),
+      null
+    );
+  return (
+    piuRecente(vivi.filter((a) => a.user_id === userId)) ??
+    piuRecente(vivi.filter((a) => a.user_id === null))
+  );
+}
+
+// L'alimento del catalogo locale con questo codice (già normalizzato da
+// leggiCodice), se c'è. Usa l'indice `barcode` di Dexie, che esiste dalla
+// version(1): legge solo le righe con quel codice, non tutto il catalogo.
+export async function alimentoPerCodice(userId: string, codice: string): Promise<Alimento | null> {
+  const conCodice = await db.alimenti.where("barcode").equals(codice).toArray();
+  return sceltoPerCodice(conCodice, userId);
 }
 
 // I campi che "Nuovo alimento" e "Modifica alimento" scrivono

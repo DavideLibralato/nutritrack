@@ -780,6 +780,16 @@ silenzio.
   quando la rete cade a metà.
 - **Licenza.** In Impostazioni > Informazioni una riga «Dati dei
   prodotti: Open Food Facts, licenza ODbL», oltre a quella nel modulo.
+- **Il codice.** In `src/lib/barcode/`: `codiceEan.ts` (`leggiCodice`:
+  controllo e forma a 13/8 cifre), `valoriOpenFoodFacts.ts`
+  (`daOpenFoodFacts`: dalla risposta di OFF ai campi del modulo, kJ
+  compresi; `haValori` decide `'off'` o `'barcode'`), `openFoodFacts.ts`
+  (`cercaSuOpenFoodFacts`: la chiamata, con esiti trovato / non trovato
+  / rete / occupato / errore / annullata; un prodotto senza nome, marca
+  né valori vale "non trovato"), `ricercaCodice.ts` (`cercaCodice`:
+  l'ordine catalogo locale → OFF). La lettura di Dexie per codice sta
+  nel repository (`alimentoPerCodice` in
+  `src/lib/repository/alimenti.ts`). Ognuno ha il suo test permanente.
 - **Prove sull'anteprima.** Servono HTTPS (l'URL di anteprima di Vercel;
   `npm run dev` aperto dall'iPhone con l'IP del PC è HTTP, e lì la
   fotocamera non si apre), Safari su iPhone e l'app installata. L'app
