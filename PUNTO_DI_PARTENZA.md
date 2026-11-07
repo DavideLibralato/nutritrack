@@ -37,7 +37,7 @@ Decisioni prese:
 - Si tiene la vecchia spec come backlog, non come roadmap.
 - L'MVP è molto più piccolo: **una sola modalità di inserimento rifinita**
   (manuale) + recenti e preferiti. Dopo viene il **codice a barre** (deciso
-  da Davide il 03/11, in sviluppo dal 07/11, branch `codice-a-barre`;
+  da Davide il 03/11, fatto: unito a main il 07/11, `3e6ce01`;
   sezione 3, "Codice a barre"), poi la ricerca Open Food Facts per nome e
   l'OCR. Il codice a barre passa prima perché costa meno attrito di tutti:
   inquadri la confezione e, se il prodotto è già nel catalogo, sei ai
@@ -670,8 +670,9 @@ cima a `src/app/aggiungi/page.tsx` (`CLASSE_RIQUADRO`, `CLASSE_RIGA`,
 della scansione del mockup non c'è ancora: arriva, già funzionante, con
 il lavoro codice-a-barre (sotto, "Codice a barre").
 
-**Codice a barre** (deciso da Davide il 03/11, regole del 07/11; in
-sviluppo dal 07/11, branch `codice-a-barre`; mockup
+**Codice a barre** (deciso da Davide il 03/11, regole del 07/11; branch
+`codice-a-barre`, unito a main il 07/11, `3e6ce01`; nel catalogo dal
+07/11, branch `alimenti-codice-a-barre`, sotto "Nel catalogo"; mockup
 `docs/mockups/aggiungi.html`, schermate "Scansione", "Valori da Open
 Food Facts" e "Senza rete"). Regola di fondo: **stesso codice = stesso
 prodotto**; se è già nel catalogo si va dritti ai grammi, e i valori
@@ -843,7 +844,10 @@ silenzio.
   da Open Food Facts, anche se poi l'utente lo corregge; **`'barcode'`**
   se i valori li ha scritti a mano (prodotto non trovato, o trovato
   senza valori: su OFF esistono prodotti con solo nome e marca). In
-  Modifica `barcode` e `fonte` restano quelli della riga. Nessuna
+  Modifica la `fonte` resta quella della riga; il `barcode` non si
+  cambia e non si toglie, **si può solo aggiungere a una riga che non
+  ce l'ha** (dal branch `alimenti-codice-a-barre`, sotto "Il codice in
+  modifica"). Nessuna
   migration e nessuna version Dexie nuova (verificato il 07/11): le
   colonne, il check su `fonte` e l'indice `barcode` ci sono già.
 - **Stesso codice, stesso prodotto.** Due alimenti vivi dello stesso
@@ -874,6 +878,110 @@ silenzio.
     codice non si spuntano insieme (`stessoProdotto`); "Seleziona
     tutti" confronta ogni voce con ciascuna già scelta, perché con il
     codice "stesso prodotto" non si riduce a una chiave di testo.
+- **Nel catalogo** (Impostazioni > Alimenti; decisioni di Davide del
+  07/11, branch `alimenti-codice-a-barre`; mockup di Cowork approvato da
+  Davide il 07/11, `docs/mockups/catalogo-alimenti.html`, versione 4).
+  Le stesse
+  `SchermataScansione`, `cercaCodice` e `CreaAlimentoForm` con
+  `daCodice` di Aggiungi:
+  - il pulsante Scansiona tondo **da 44 px**, alto come "Cerca un
+    alimento" del catalogo (in Aggiungi campo e pulsante sono da 48 px:
+    qui ci si allinea alla ricerca che c'è), con le regole di Aggiungi:
+    grigio e spento senza rete, con sotto la riga «Senza connessione la
+    scansione non è disponibile»; la fotocamera si chiede dentro il
+    tocco. Non c'è in selezione multipla, come il "+". Titolo della
+    schermata: «Catalogo alimenti»;
+  - **catalogo vuoto** (proposta 2 del mockup): la riga della ricerca
+    resta, con il campo attenuato e il pulsante tondo, dove starà
+    sempre; sotto, la scheda «Ancora nessun alimento» con «Crea il
+    primo con il + qui sotto, oppure scansiona una confezione con il
+    pulsante accanto alla ricerca.»;
+  - **codice già nel catalogo** → "Modifica alimento" di quello, con in
+    cima l'avviso «Questo codice è già nel tuo catalogo.». Se
+    l'alimento trovato non è modificabile (catalogo comune o
+    verificato), la modifica non si apre: resta la schermata di
+    scansione con «È nel catalogo comune: «<nome · marca>». Non si
+    modifica, ma lo trovi in Aggiungi.» e "Scansiona un altro codice".
+    Oggi il caso non esiste (07/11, in sola lettura: 102 alimenti vivi,
+    tutti privati e non verificati; catalogo comune vuoto), ma il
+    codice lo gestisce;
+  - **trovato su Open Food Facts** → "Nuovo alimento" precompilato;
+    Salva torna al catalogo con la barra «Creato: <nome>», **senza sheet
+    quantità** (qui non si registra niente nel diario);
+  - **non trovato** → "Nuovo alimento" con il solo codice;
+  - **rete assente, OFF occupato o risposta inattesa** → i messaggi di
+    Aggiungi, con "Riprova", "Crea a mano" e "Scansiona un altro
+    codice".
+- **Il codice in modifica** (stesse decisioni, stesso branch):
+  - un alimento **con il codice** lo mostra in "Modifica alimento" in
+    sola lettura, dopo Marca, al posto del campo della creazione. Fino
+    al 07/11 in modifica il codice non si vedeva affatto. Non si
+    confronta (vale l'eccezione sopra, "in Modifica il codice non si
+    confronta");
+  - un alimento **senza codice**, **solo dal catalogo** (la matita di
+    Aggiungi non lo offre: lì si corregge al volo prima di registrare),
+    ha al suo posto, dopo Marca, la riga-pulsante **«Aggiungi codice a
+    barre»** (proposta 1 del mockup): a tutta larghezza, tratteggiata,
+    con l'icona del codice, almeno 44 px. Apre la scansione con il
+    titolo «Codice per «Nome»», che **legge il codice senza
+    cercarlo**: video, "Usa una foto" o "Scrivi il codice", niente
+    catalogo né Open Food Facts. Sotto il mirino «Il codice torna nel
+    modulo: si salva con Salva» al posto di «Si legge da solo…»;
+  - il codice letto torna nel modulo nel campo "Codice a barre" in sola
+    lettura, **alto 44 px, con dentro una × a destra** (`aria-label`
+    «Togli il codice»), come la croce della ricerca: un tocco da 44 px
+    che riporta il modulo a «Aggiungi codice a barre» (Davide, 07/11).
+    Sotto il campo la riga «Una volta salvato, il codice non si cambia
+    più.»;
+  - **si scrive solo al tocco su Salva**, insieme agli altri campi, in
+    un solo aggiornamento della riga, come tutto il resto del modulo:
+    "Torna al catalogo" non salva né i valori né il codice. La fonte
+    e i valori non cambiano per il codice aggiunto;
+  - **stesso codice = stesso prodotto anche qui**: se il codice è già
+    di un altro alimento vivo, bordo arancio sul campo, sotto «Hai già
+    un alimento con questo codice a barre: «…».» con "Apri", e Salva
+    spento; al Salva lo stesso controllo si rifà nella transazione
+    (`salvaAlimento`), e un doppione non scrive niente. Se intanto la
+    riga ha ricevuto un codice da un altro dispositivo (sync), quello
+    non si sovrascrive;
+  - **offline: Scansiona resta grigio, "Aggiungi codice a barre" no**
+    (decisione di Davide, 07/11). Scansiona, in Aggiungi e nel
+    catalogo, porta a una ricerca che per un prodotto nuovo ha bisogno
+    di Open Food Facts: senza rete finirebbe quasi sempre in un errore.
+    L'associazione invece legge solo il codice e scrive in Dexie, che
+    funziona offline e si sincronizza quando la rete torna. Il lettore
+    (WebAssembly) non è nella cache del service worker: se offline non
+    si carica, compare il suo messaggio («Il lettore dei codici non si
+    è caricato…») e "Scrivi il codice" resta;
+  - **un codice già salvato non si toglie** (la × vale solo prima del
+    Salva): limite noto, §11, "Difetti e verifiche aperti".
+- **"Apri" è un pulsante sotto il messaggio** (Davide, 07/11): «Apri
+  «<nome>»», con il solo nome, perché il messaggio sopra dice già nome
+  e marca; sotto «Hai già …», non più accanto. Vale in
+  `MessaggioDoppione`, quindi dappertutto: creazione e modifica, in
+  Aggiungi e nel catalogo, doppione per nome e marca o per codice.
+  Cosa apre non cambia (sezione 3, "Alimenti", "Mai due alimenti
+  uguali"), tranne il caso qui sotto.
+- **"Apri" porta il codice** (commit 6 del branch
+  `alimenti-codice-a-barre`). Quando il modulo nato da un codice trova
+  un doppione per nome e marca, e quell'alimento non ha codice, "Apri"
+  apre la sua modifica con il codice già nel campo, in sola lettura con
+  la ×, da salvare con Salva: così un prodotto creato a mano prima
+  della scansione prende il suo codice invece di perderlo. In cima
+  l'avviso «Questo alimento non aveva il codice: salvalo per
+  ritrovarlo la prossima volta che scansioni.». In questa modifica non
+  c'è «Aggiungi codice a barre»: con la × il campo sparisce e si torna
+  al modulo senza codice. Se l'alimento trovato ha già un altro codice,
+  "Apri" funziona come oggi, senza portare niente.
+  - **nel catalogo**: Salva torna al catalogo, come ogni modifica;
+  - **in Aggiungi** (strada A, Davide, 07/11): solo in questo caso
+    "Apri" porta alla modifica invece che allo sheet quantità. Il
+    pulsante dice **«Salva e scegli la quantità»**: salva valori e
+    codice, poi apre lo sheet quantità di quell'alimento, perché in
+    Aggiungi il percorso finisce sui grammi. **Niente Elimina** in
+    questa modifica (Davide, 07/11): ci si è arrivati per registrare.
+    "Torna alla ricerca" non salva niente. Negli altri casi "Apri" da "Nuovo alimento" apre lo
+    sheet quantità come prima.
 - **Errori.** Rete assente anche se il telefono dice di no, o nessuna
   risposta entro 10 s: «Non riesco a raggiungere Open Food Facts», con
   "Riprova" e "Crea a mano" (modulo vuoto, codice già compilato). OFF
@@ -2037,7 +2145,13 @@ catalogo, si corregge e si fa pulizia.
   `etichettaAlimento`), e sotto "165 kcal / 100 g".
 - **Catalogo vuoto**: niente ricerca né ordine, un riquadro "Ancora nessun
   alimento" — "Crea il primo con il + qui sotto, oppure da Aggiungi quando
-  la ricerca non trova quello che cerchi."
+  la ricerca non trova quello che cerchi." Dal branch
+  `alimenti-codice-a-barre` (07/11) la riga della ricerca resta anche
+  qui, con Scansiona, e il testo cambia (sezione 3, "Codice a barre",
+  "Nel catalogo").
+- **Codice a barre** (dal 07/11, branch `alimenti-codice-a-barre`):
+  Scansiona accanto alla ricerca e il codice in "Modifica alimento",
+  regole in "Codice a barre", "Nel catalogo" e "Il codice in modifica".
 - **"Più usati" conta le voci di diario vive** dell'utente con
   quell'`alimento_id`. Le righe dei pasti salvati (`composizioni_voci`) non
   contano: un pasto salvato è uno stampo, non un uso, e quando lo si
@@ -2177,11 +2291,17 @@ catalogo, si corregge e si fa pulizia.
     con `useLiveQuery`: anche un alimento arrivato con la sync compare
     subito. In Modifica l'alimento stesso non conta, quindi una rinomina
     che cambia solo maiuscole o accenti ("pane" → "Pane") passa.
-  - **"Apri"**, accanto al messaggio, porta all'alimento che c'è già: in
+  - **"Apri"** porta all'alimento che c'è già. Fino al 07/11 era un link
+    accanto al messaggio; dal branch `alimenti-codice-a-barre` è un
+    pulsante sotto, «Apri «<nome>»» (sezione 3, "Codice a
+    barre"). In
     Aggiungi da "Nuovo alimento" apre il suo **sheet quantità** (si stava
     cercando di registrarlo, come dopo "Crea e scegli la quantità");
     dalla matita in Aggiungi e da qui apre **"Modifica alimento"** di
-    quello. Se quello non si può modificare (verificato), "Apri" non c'è
+    quello. Eccezione dal commit 6 di `alimenti-codice-a-barre`: un
+    modulo nato da un codice, davanti a un alimento senza codice, apre
+    la modifica con il codice (sezione 3, "Codice a barre", "«Apri»
+    porta il codice"). Se quello non si può modificare (verificato), "Apri" non c'è
     e resta il messaggio. Le modifiche non salvate si perdono: non si
     potevano salvare comunque. Qui il form ha una `key` per alimento,
     così passando a un altro riparte dai suoi valori.
@@ -4457,8 +4577,8 @@ vuoi, senza rischio e senza migration dolorose.
   gratis dal punto di vista del prodotto — cambia il significato di "Rimangono
   620 kcal", che diventerebbe un bersaglio mobile. Resta fuori dal perimetro
 - Barcode: il campo su `alimenti` c'è già, serve solo la UI di scansione
-  (in sviluppo dal 07/11, branch `codice-a-barre`: verificato che non
-  servono né migration né version Dexie nuove; sezione 3, "Codice a
+  (fatta: unita a main il 07/11, `3e6ce01`; verificato che non
+  servivano né migration né version Dexie nuove; sezione 3, "Codice a
   barre")
 
 #### Il sonno: perché resta nel backlog
@@ -4531,8 +4651,8 @@ attaccati man mano.
 2. Inserimento manuale + pagina Oggi → **usarla davvero per una settimana**
 3. Recenti, preferiti e **pasti salvati**
 4. **Codice a barre**, con Open Food Facts cercato per codice (deciso da
-   Davide il 03/11, in sviluppo dal 07/11, branch `codice-a-barre`;
-   sezione 3, "Codice a barre")
+   Davide il 03/11, fatto: unito a main il 07/11, `3e6ce01`; sezione 3,
+   "Codice a barre")
 5. Ricerca Open Food Facts per nome
 6. OCR etichetta, come "Leggi dall'etichetta" in "Crea alimento a mano"
 7. Statistiche e peso
@@ -8109,7 +8229,11 @@ senza la domanda di iOS (sotto, "Difetti e verifiche aperti"). Dopo il
 commit `1946331`, app tolta e rimessa sulla Home (accessi alle 15:08 e
 15:09): la scansione funziona, senza una nuova richiesta, anche dopo
 aver chiuso e riaperto l'app. Letture tutte 200 (tranne i 403 della
-sessione copiata, sotto), nessun 401.
+sessione copiata, sotto), nessun 401. **Unito a main il 07/11**
+(fast-forward `dfa739d` → `3e6ce01`, 8 commit) e **provato nell'app
+installata** il 07/11 alle 15:20, con l'account di Davide, che ha
+provato la scansione: letture tutte 200, nessun 401 né 403 (verificato
+da Cowork).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -8117,8 +8241,10 @@ i numeri delle sue segnalazioni.
 
 ### Non ancora costruito
 
-- **Codice a barre** (fase 4): costruito e provato sull'anteprima il
-  07/11, branch `codice-a-barre` (sopra, "Fatto"). Resta il merge
+- **Codice a barre nel catalogo alimenti** (dal 07/11, branch
+  `alimenti-codice-a-barre`; sezione 3, "Codice a barre", "Nel
+  catalogo" e "Il codice in modifica"). Il codice a barre in Aggiungi
+  (fase 4) è fatto e unito a main il 07/11 (sopra, "Fatto")
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
 - **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
@@ -8177,6 +8303,20 @@ i numeri delle sue segnalazioni.
   per esempio da un Esci nell'altra copia dell'app installata, riga qui
   sopra), l'app deve portare ad Accedi invece di restare su
   "Caricamento...". Lavoro a sé, non del codice a barre.
+
+- **Limite noto: un codice a barre già salvato non si toglie** (deciso
+  da Davide il 07/11, branch `alimenti-codice-a-barre`). In "Modifica
+  alimento" il codice salvato si vede in sola lettura; "Togli" c'è solo
+  per un codice appena letto e non ancora salvato. Un codice sbagliato
+  salvato su un alimento resta lì. **Rimedio**: eliminare l'alimento e
+  ricrearlo (le voci del diario hanno la loro copia dei valori e non
+  cambiano; i pasti salvati che lo contengono lo perdono, come in ogni
+  eliminazione). Da riprendere se capita davvero.
+
+- ~~**Codice a barre**~~: provato sull'anteprima, unito a main e
+  provato nell'app installata il 07/11 (sopra, "Fatto"; CHANGELOG, voce
+  del merge). Branch cancellato in locale e su GitHub; nessuna Redirect
+  URL dell'anteprima da togliere.
 
 - ~~**Aggiungi: nuovo aspetto e ricerca nei pasti salvati**~~: provato
   sull'anteprima, unito a main e provato nell'app installata il 06/11
@@ -8870,6 +9010,6 @@ branch.
 9. ~~**Account eliminato da un altro dispositivo**~~ fatto: provato il
    01/11 sull'anteprima del branch `account-eliminato` (sopra, "Fatto" e
    "Difetti e verifiche aperti"). Resta il limite "più di un'ora dopo"
-10. **Codice a barre** (branch `codice-a-barre`, dal 07/11): provato
-    sull'anteprima il 07/11 (sopra, "Fatto"); resta il merge (sezione 3,
-    "Codice a barre"; sezione 6, punto 4)
+10. ~~**Codice a barre**~~ fatto: provato sull'anteprima e unito a main
+    il 07/11, `3e6ce01`, provato nell'app installata alle 15:20 (sopra,
+    "Fatto"; sezione 3, "Codice a barre"; sezione 6, punto 4)

@@ -5,6 +5,41 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Catalogo alimenti e codice a barre: regole e mockup
+
+Branch `alimenti-codice-a-barre`. Decise con Davide il 07/11 le regole
+per allineare Impostazioni > Alimenti al codice a barre di Aggiungi
+(PUNTO §3, "Codice a barre", "Nel catalogo" e "Il codice in
+modifica"): Scansiona da 44 px accanto alla ricerca del catalogo
+(anche a catalogo vuoto), con titolo «Catalogo alimenti»; un codice già
+presente apre la modifica con «Questo codice è già nel tuo catalogo.»;
+da Open Food Facts il modulo precompilato torna al catalogo senza sheet
+quantità. In modifica il codice si mostra in sola lettura, e su un
+alimento senza codice si può aggiungere (solo dal catalogo, con la
+riga «Aggiungi codice a barre» e la scansione «Codice per «Nome»» che
+legge il codice senza cercarlo, anche offline): si scrive al Salva,
+con la × «Togli il codice» dentro il campo prima, e con la regola
+"stesso codice = stesso prodotto". La fonte non cambia. "Apri" diventa
+un pulsante sotto il messaggio dei doppioni, «Apri «nome»», dappertutto.
+"Apri" porta il codice nella modifica di un alimento che non ce l'ha
+(commit 6); in Aggiungi con «Salva e scegli la quantità» e senza
+Elimina. Scritti in PUNTO §11 il limite noto (un codice già salvato non
+si toglie) e la chiusura di `codice-a-barre`. Mockup di Cowork in
+`docs/mockups/catalogo-alimenti.html` (versione 4), approvato da
+Davide. Verificato su Supabase in
+sola lettura: 102 alimenti vivi, tutti privati e non verificati, 1 con
+il codice; catalogo comune vuoto.
+
+## 2026-11-07 — Merge di `codice-a-barre` su main, provato nell'app installata
+
+Unito il 07/11 con fast-forward, da `dfa739d` a `3e6ce01`, 8 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge Davide ha provato la
+scansione nell'app installata il 07/11 alle 15:20, con il suo account:
+nei log di Supabase letture tutte 200, nessun 401 né 403 (verificato da
+Cowork). In CLAUDE.md il codice a barre passa da "in sviluppo" a fatto
+(main `3e6ce01`).
+
 ## 2026-11-07 — Codice a barre, esito delle prove sull'anteprima
 
 Branch `codice-a-barre`. Il 07/11 Davide ha provato l'anteprima su

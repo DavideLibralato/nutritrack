@@ -53,9 +53,9 @@ complica lo schema, dimmelo con il motivo.
 - Recharts per i grafici
 - Deploy su Vercel
 
-Il codice a barre è in sviluppo (dal 07/11, branch `codice-a-barre`;
-regole in `PUNTO_DI_PARTENZA.md` §3, "Codice a barre"): viene prima della
-ricerca Open Food Facts per nome e dell'OCR. L'AI resta nel backlog: non
+Il codice a barre è fatto (unito a main il 07/11, `3e6ce01`; regole in
+`PUNTO_DI_PARTENZA.md` §3, "Codice a barre"): viene prima della ricerca
+Open Food Facts per nome e dell'OCR. L'AI resta nel backlog: non
 introdurla finché il documento non dice il contrario.
 
 ## Convenzioni
