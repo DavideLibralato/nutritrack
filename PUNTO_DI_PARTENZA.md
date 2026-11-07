@@ -750,7 +750,17 @@ silenzio.
   fondo la riga «Dati da Open Food Facts · licenza ODbL». Validazione
   e Salva come sempre: un valore assurdo arrivato da OFF mostra il suo
   errore e spegne il Salva. **Niente si salva senza il tocco su
-  Salva.**
+  Salva.** Dal commit 4 del branch (`CreaAlimentoForm`, prop
+  `daCodice`): se OFF ha il prodotto ma nessuno dei quattro valori,
+  l'avviso dice invece «Prodotto trovato su Open Food Facts, ma senza
+  valori: scrivili dall'etichetta.»; la riga «Calcolate dai kJ…» resta
+  solo finché le kcal sono ancora quelle calcolate (corrette a mano,
+  non è più vera); un doppione per codice segna in arancio il campo del
+  codice, con il messaggio sotto, non nome e marca. **La riga della
+  licenza compare ogni volta che il prodotto è trovato**, anche senza
+  valori: nome e marca vengono comunque da OFF (decisione di Davide,
+  07/11; la fonte resta `'barcode'`). Prodotto non trovato: niente
+  avviso né licenza, solo il codice. In Modifica `daCodice` si ignora.
 - **`fonte` e `barcode`.** `salvaAlimento` scrive il codice (a 13 o 8
   cifre) e la fonte: **`'off'`** se almeno uno dei quattro valori viene
   da Open Food Facts, anche se poi l'utente lo corregge; **`'barcode'`**

@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre: modulo precompilato da Open Food Facts
+
+Branch `codice-a-barre`, commit 4. `CreaAlimentoForm` riceve `daCodice`
+(codice e prodotto di OFF, o null se non trovato), solo in creazione:
+campi compilati con la virgola, avviso in cima (con l'icona nuova
+`IconaInfo`), campo "Codice a barre" in sola lettura, «Calcolate dai kJ
+di Open Food Facts: controlla l'etichetta» sotto le kcal finché non le
+si cambia, riga della licenza ODbL in fondo. Al Salva passa a
+`salvaAlimento` codice e fonte ('off' se almeno un valore era di OFF,
+'barcode' altrimenti). Un doppione per codice segna il campo del codice,
+con il messaggio del codice. Testo nuovo, approvato da Davide: l'avviso
+per un prodotto trovato senza valori; anche lì la riga della licenza,
+perché nome e marca vengono da OFF (era già così nel codice, il test non
+lo controllava: ora sì, visto fallire). Il modulo non è ancora raggiungibile
+dall'app (arriva con la scansione, commit 6). 7 test nuovi in
+`CreaAlimentoForm.test.tsx`, visti fallire con 10 rotture da una copia;
+il test di Modifica esistente ora controlla anche che non passi
+un'origine. Vitest 1598/1598, `npm run lint`, `tsc` e build ok.
+
 ## 2026-11-07 — Codice a barre: stesso codice, stesso prodotto
 
 Branch `codice-a-barre`, commit 3, solo `src/lib`, nessuna schermata.

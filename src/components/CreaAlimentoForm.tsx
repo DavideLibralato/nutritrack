@@ -24,17 +24,40 @@
 // spegne il Salva. Al Salva salvaAlimento rilegge il
 // catalogo e scrive nella stessa transazione. Cosa fa "Apri" lo decide il
 // chiamante (`onApriEsistente`, `puoAprire`).
+//
+// Dal codice a barre (`daCodice`, solo in creazione; PUNTO_DI_PARTENZA.md
+// §3, "Codice a barre", "Il modulo precompilato"): il campo "Codice a
+// barre" in sola lettura, e — se il prodotto è stato trovato su Open Food
+// Facts — i campi già compilati, l'avviso in cima, la riga della licenza
+// in fondo e, se le kcal vengono dai kJ, una riga sotto le kcal. Niente si
+// salva senza il tocco su Salva: i valori dei volontari si controllano.
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { catalogoLocale, salvaAlimento } from "@/lib/repository/alimenti";
+import { catalogoLocale, salvaAlimento, type OrigineCodice } from "@/lib/repository/alimenti";
 import { eliminaAlimenti, type TracciaRimozione } from "@/lib/repository/composizioni";
-import { testoDoppione, trovaDoppione } from "@/lib/catalogo/doppioniAlimenti";
+import { stessoCodice, testoDoppione, trovaDoppione } from "@/lib/catalogo/doppioniAlimenti";
 import type { Alimento } from "@/lib/db/tipi";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { validaValoriAlimento, type CampoAlimento } from "@/lib/inserimento/valoriAlimento";
 import { grammiPerCampo } from "@/lib/inserimento/grammi";
 import { numeroPerCampo } from "@/lib/numeriDecimali";
+import { haValori, type ProdottoOpenFoodFacts } from "@/lib/barcode/valoriOpenFoodFacts";
+import IconaInfo from "./IconaInfo";
+
+// Un alimento che nasce da un codice a barre: il codice (già nella forma
+// di leggiCodice) e il prodotto trovato su Open Food Facts, oppure null se
+// non c'era (modulo vuoto con il solo codice).
+export interface DatiCodice {
+  barcode: string;
+  prodotto: ProdottoOpenFoodFacts | null;
+}
+
+// Un valore di Open Food Facts come testo di partenza del campo ("7,1");
+// vuoto se OFF non ce l'ha.
+function campoDa(valore: number | null | undefined): string {
+  return valore === null || valore === undefined ? "" : numeroPerCampo(valore, 2);
+}
 
 // Come si chiamano i campi nell'elenco "Per salvare mancano: ...".
 const ETICHETTE_MANCANTI: Record<CampoAlimento, string> = {
@@ -75,6 +98,9 @@ interface Props {
   // vivere qui: il chiamante smonta questo form subito dopo (vedi
   // /aggiungi, BarraAnnulla).
   onEliminato?: (alimento: Alimento, traccia: TracciaRimozione) => void;
+  // --- Solo in creazione da un codice a barre ---
+  // Ignorato in modifica: lì codice e fonte restano quelli della riga.
+  daCodice?: DatiCodice;
 }
 
 export default function CreaAlimentoForm({
@@ -89,21 +115,31 @@ export default function CreaAlimentoForm({
   alimentoDaModificare,
   onModificato,
   onEliminato,
+  daCodice: daCodiceProp,
 }: Props) {
   const modifica = !!alimentoDaModificare;
   const a = alimentoDaModificare;
+  // Il codice conta solo in creazione (vedi Props).
+  const daCodice = modifica ? undefined : daCodiceProp;
+  const off = daCodice?.prodotto ?? null;
+  const kcalOff = campoDa(off?.kcal_100g);
 
-  const [nome, setNome] = useState(a ? a.nome : nomeIniziale);
+  const [nome, setNome] = useState(a ? a.nome : off?.nome || nomeIniziale);
   // Marca facoltativa: due prodotti omonimi di marche diverse hanno valori
   // diversi (PUNTO_DI_PARTENZA.md §4, `alimenti`). La colonna
   // `alimenti.marca` esiste già.
-  const [marca, setMarca] = useState(a?.marca ?? "");
+  const [marca, setMarca] = useState(a ? (a.marca ?? "") : (off?.marca ?? ""));
   // In modifica i campi partono dai valori salvati, con la virgola ("0,9"):
-  // colonne numeric(7,2), quindi fino a due decimali.
-  const [kcal, setKcal] = useState(a ? numeroPerCampo(a.kcal_100g, 2) : "");
-  const [proteine, setProteine] = useState(a ? numeroPerCampo(a.proteine_100g, 2) : "");
-  const [carboidrati, setCarboidrati] = useState(a ? numeroPerCampo(a.carboidrati_100g, 2) : "");
-  const [grassi, setGrassi] = useState(a ? numeroPerCampo(a.grassi_100g, 2) : "");
+  // colonne numeric(7,2), quindi fino a due decimali. Da Open Food Facts
+  // allo stesso modo, vuoti quelli che OFF non ha.
+  const [kcal, setKcal] = useState(a ? numeroPerCampo(a.kcal_100g, 2) : kcalOff);
+  const [proteine, setProteine] = useState(
+    a ? numeroPerCampo(a.proteine_100g, 2) : campoDa(off?.proteine_100g)
+  );
+  const [carboidrati, setCarboidrati] = useState(
+    a ? numeroPerCampo(a.carboidrati_100g, 2) : campoDa(off?.carboidrati_100g)
+  );
+  const [grassi, setGrassi] = useState(a ? numeroPerCampo(a.grassi_100g, 2) : campoDa(off?.grassi_100g));
   const [porzione, setPorzione] = useState(a ? grammiPerCampo(a.porzione_default_g) : "100");
   const [errore, setErrore] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
@@ -123,9 +159,18 @@ export default function CreaAlimentoForm({
   // alimento arrivato con la sync da un altro telefono. undefined finché
   // la prima lettura non è pronta: lì il controllo lo fa solo il Salva.
   const catalogo = useLiveQuery(() => catalogoLocale(userId), [userId]);
+  const barcode = daCodice?.barcode ?? null;
   const doppione = catalogo
-    ? trovaDoppione(catalogo, { nome, marca }, { userId, escludiId: a?.id })
+    ? trovaDoppione(catalogo, { nome, marca, barcode }, { userId, escludiId: a?.id })
     : null;
+  // Doppione per il codice: in arancio il campo del codice, non nome e
+  // marca, che possono essere diversi (e cambiarli non servirebbe).
+  const doppionePerCodice = doppione !== null && stessoCodice(doppione, { barcode });
+  const doppionePerNome = doppione !== null && !doppionePerCodice;
+
+  // "Calcolate dai kJ": vale finché le kcal sono ancora quelle calcolate.
+  // Se l'utente le corregge con l'etichetta, la riga non è più vera.
+  const kcalDaKj = off?.kcalDaKj === true && kcal === kcalOff;
 
   const salvabile = validazione.valori !== null && nome.trim() !== "" && doppione === null;
 
@@ -150,9 +195,16 @@ export default function CreaAlimentoForm({
       porzione_default_g: valori.porzione_default_g,
     };
 
+    // Da un codice a barre: 'off' se almeno un valore è arrivato da Open
+    // Food Facts, anche se poi corretto; 'barcode' se li ha scritti
+    // l'utente (prodotto non trovato, o trovato senza valori).
+    const origine: OrigineCodice | undefined = daCodice
+      ? { barcode: daCodice.barcode, fonte: off && haValori(off) ? "off" : "barcode" }
+      : undefined;
+
     setInCorso(true);
     try {
-      const esito = await salvaAlimento(userId, campi, alimentoDaModificare?.id);
+      const esito = await salvaAlimento(userId, campi, alimentoDaModificare?.id, origine);
       if (esito.esito === "doppione") {
         // Nato fra l'ultimo ridisegno e il tocco (un altro dispositivo, o
         // il secondo di un doppio tocco): niente scritto. Il messaggio
@@ -212,6 +264,25 @@ export default function CreaAlimentoForm({
         </button>
       </div>
 
+      {/* L'avviso del mockup "Valori da Open Food Facts": i valori li
+          inseriscono dei volontari, si controllano con l'etichetta. Se OFF
+          ha solo nome e marca, lo dice: i valori vanno scritti. */}
+      {off && (
+        <div role="status" className="flex gap-2 rounded-xl bg-accent/10 p-3 text-sm">
+          <IconaInfo className="mt-0.5 shrink-0 text-accent" />
+          {haValori(off) ? (
+            <span>
+              Valori trovati su Open Food Facts. <b>Controllali con l&apos;etichetta</b> prima di
+              salvare: li inseriscono dei volontari.
+            </span>
+          ) : (
+            <span>
+              Prodotto trovato su Open Food Facts, ma senza valori: <b>scrivili dall&apos;etichetta</b>.
+            </span>
+          )}
+        </div>
+      )}
+
       <div>
         <label htmlFor="crea-nome" className="block text-sm font-medium mb-1">
           Nome
@@ -221,9 +292,9 @@ export default function CreaAlimentoForm({
           type="text"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          aria-invalid={doppione !== null}
-          aria-describedby={doppione ? "crea-doppione" : undefined}
-          className={`w-full rounded-lg border p-2 ${doppione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+          aria-invalid={doppionePerNome}
+          aria-describedby={doppionePerNome ? "crea-doppione" : undefined}
+          className={`w-full rounded-lg border p-2 ${doppionePerNome ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
         />
       </div>
 
@@ -236,33 +307,54 @@ export default function CreaAlimentoForm({
           type="text"
           value={marca}
           onChange={(e) => setMarca(e.target.value)}
-          aria-invalid={doppione !== null}
-          aria-describedby={doppione ? "crea-doppione" : undefined}
-          className={`w-full rounded-lg border p-2 ${doppione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+          aria-invalid={doppionePerNome}
+          aria-describedby={doppionePerNome ? "crea-doppione" : undefined}
+          className={`w-full rounded-lg border p-2 ${doppionePerNome ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
         />
         {/* Il doppione è la coppia nome + marca: il messaggio sta dopo
             tutti e due i campi, e tutti e due hanno il bordo arancio.
             Sotto il solo nome sembrava un errore sul nome (16/10). */}
-        {doppione && (
-          <div className="mt-1 flex items-baseline justify-between gap-3">
-            <p id="crea-doppione" className="text-sm text-warning">
-              {testoDoppione(doppione)}
-            </p>
-            {puoAprire(doppione) && (
-              <button
-                type="button"
-                onClick={() => onApriEsistente(doppione)}
-                className={`shrink-0 rounded text-sm font-medium text-accent underline ${CLASSE_FOCUS}`}
-              >
-                Apri
-              </button>
-            )}
-          </div>
+        {doppione && doppionePerNome && (
+          <MessaggioDoppione
+            doppione={doppione}
+            barcode={barcode}
+            puoAprire={puoAprire}
+            onApri={onApriEsistente}
+          />
         )}
         <p className="text-xs text-muted mt-1">
           Per distinguere due prodotti con lo stesso nome ma marca diversa.
         </p>
       </div>
+
+      {/* Il codice a barre, in sola lettura (decisione del 07/11): se è
+          sbagliato si torna indietro e si scansiona di nuovo. readOnly e
+          non disabled: si legge e si seleziona, e il lettore di schermo
+          lo annuncia come campo. */}
+      {daCodice && (
+        <div>
+          <label htmlFor="crea-codice" className="block text-sm font-medium mb-1">
+            Codice a barre
+          </label>
+          <input
+            id="crea-codice"
+            type="text"
+            readOnly
+            value={daCodice.barcode}
+            aria-invalid={doppionePerCodice}
+            aria-describedby={doppionePerCodice ? "crea-doppione" : undefined}
+            className={`w-full rounded-lg border bg-surface p-2 text-muted tabular-nums ${doppionePerCodice ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+          />
+          {doppione && doppionePerCodice && (
+            <MessaggioDoppione
+              doppione={doppione}
+              barcode={barcode}
+              puoAprire={puoAprire}
+              onApri={onApriEsistente}
+            />
+          )}
+        </div>
+      )}
 
       {/* Ordine come sulle etichette dei prodotti: Kcal, Grassi, Carboidrati,
           Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"). */}
@@ -273,6 +365,7 @@ export default function CreaAlimentoForm({
           etichetta="Calorie (kcal)"
           valore={kcal}
           errore={validazione.errori.kcal}
+          nota={kcalDaKj ? "Calcolate dai kJ di Open Food Facts: controlla l'etichetta" : undefined}
           onChange={setKcal}
         />
         <CampoNumero
@@ -337,6 +430,12 @@ export default function CreaAlimentoForm({
           Le modifiche valgono da ora e nei pasti salvati. Il diario già registrato non cambia.
         </p>
       )}
+
+      {/* La licenza dei dati (ODbL): chi li usa deve dire da dove vengono.
+          Ogni volta che il prodotto è trovato, anche senza valori: nome e
+          marca vengono comunque da OFF (Davide, 07/11). Solo un prodotto
+          non trovato non la mostra. */}
+      {off && <p className="text-xs text-muted">Dati da Open Food Facts · licenza ODbL</p>}
 
       {errore && <p className="text-sm text-warning">{errore}</p>}
 
@@ -405,15 +504,49 @@ export default function CreaAlimentoForm({
   );
 }
 
+// «Hai già …» con "Apri" accanto: sotto Nome e Marca se il doppione è per
+// nome e marca, sotto il codice se è per il codice (testoDoppione sceglie
+// le parole). Sempre un solo messaggio, con lo stesso id a cui puntano i
+// campi segnati.
+function MessaggioDoppione(props: {
+  doppione: Alimento;
+  barcode: string | null;
+  puoAprire: (alimento: Alimento) => boolean;
+  onApri: (alimento: Alimento) => void;
+}) {
+  const { doppione } = props;
+  return (
+    <div className="mt-1 flex items-baseline justify-between gap-3">
+      <p id="crea-doppione" className="text-sm text-warning">
+        {testoDoppione(doppione, { barcode: props.barcode })}
+      </p>
+      {props.puoAprire(doppione) && (
+        <button
+          type="button"
+          onClick={() => props.onApri(doppione)}
+          className={`shrink-0 rounded text-sm font-medium text-accent underline ${CLASSE_FOCUS}`}
+        >
+          Apri
+        </button>
+      )}
+    </div>
+  );
+}
+
 function CampoNumero(props: {
   id: string;
   etichetta: string;
   valore: string;
   // Messaggio sotto il campo, allineato a destra sotto l'input.
   errore?: string;
+  // Una riga grigia sotto il campo, che non è un errore (le kcal calcolate
+  // dai kJ). Con un errore, si mostra l'errore.
+  nota?: string;
   onChange: (valore: string) => void;
 }) {
   const idErrore = `${props.id}-errore`;
+  const idNota = `${props.id}-nota`;
+  const descrizione = props.errore ? idErrore : props.nota ? idNota : undefined;
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
@@ -427,14 +560,20 @@ function CampoNumero(props: {
           value={props.valore}
           onChange={(e) => props.onChange(e.target.value)}
           aria-invalid={!!props.errore}
-          aria-describedby={props.errore ? idErrore : undefined}
+          aria-describedby={descrizione}
           className={`w-28 rounded-lg border p-2 text-right ${props.errore ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
         />
       </div>
-      {props.errore && (
+      {props.errore ? (
         <p id={idErrore} className="mt-1 text-right text-sm text-warning">
           {props.errore}
         </p>
+      ) : (
+        props.nota && (
+          <p id={idNota} className="mt-1 text-right text-xs text-muted">
+            {props.nota}
+          </p>
+        )
       )}
     </div>
   );
