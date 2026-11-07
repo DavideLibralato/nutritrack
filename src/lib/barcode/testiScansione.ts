@@ -22,7 +22,7 @@ export const TESTO_LETTORE_NON_CARICATO =
 export const TESTI_CODICE_SBAGLIATO: Record<ErroreCodice, string> = {
   vuoto: "Scrivi le cifre che stanno sotto le barre.",
   "non-cifre": "Solo cifre, senza lettere né segni.",
-  lunghezza: "Il codice ha 8, 12 o 13 cifre.",
+  lunghezza: "Il codice deve avere 8, 12 o 13 cifre.",
   controllo: "Il codice non torna: controlla le cifre.",
 };
 

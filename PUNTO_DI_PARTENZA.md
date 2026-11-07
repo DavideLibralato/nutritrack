@@ -714,8 +714,9 @@ silenzio.
   - "Scrivi il codice" spegne la fotocamera (con la tastiera aperta non
     serve) e mostra il campo «Il codice sotto le barre», "Cerca" e
     "Torna alla fotocamera". Messaggi: «Scrivi le cifre che stanno sotto
-    le barre.», «Solo cifre, senza lettere né segni.», «Il codice ha 8,
-    12 o 13 cifre.», «Il codice non torna: controlla le cifre.»;
+    le barre.», «Solo cifre, senza lettere né segni.», «Il codice deve
+    avere 8, 12 o 13 cifre.» (dal 07/11, Davide; prima «Il codice ha
+    8, 12 o 13 cifre.»), «Il codice non torna: controlla le cifre.»;
   - permesso negato: «Non hai dato il permesso per la fotocamera. Puoi
     usare una foto o scrivere il codice.»; fotocamera assente: «La
     fotocamera non è disponibile. …»; una foto senza codice: «Nella foto
@@ -917,9 +918,16 @@ silenzio.
   installata dell'anteprima è un'app a parte sulla Home, con un altro
   indirizzo: a fine prova **si toglie dalla Home solo quella
   dell'anteprima, mai l'app vera**. Su iPhone il permesso della
-  fotocamera di Safari e quello dell'app installata sono separati, e
-  nell'app installata iOS può richiederlo più spesso: cosa succede
-  davvero si scrive qui dopo la prova.
+  fotocamera di Safari e quello dell'app installata sono separati.
+  **Cosa si è visto il 07/11** (iOS 18.7; §11, "Fatto", "Codice a
+  barre"): un "Non consentire" dato una volta resta ricordato dall'app
+  installata, che poi risponde sempre «Non hai dato il permesso» senza
+  chiedere; rimettere "Chiedi" nelle impostazioni del sito di Safari non
+  basta. Si sblocca togliendo l'app dalla Home e rimettendola. Dopo, il
+  permesso è rimasto valido anche chiudendo e riaprendo l'app, senza
+  una nuova richiesta. Aggiungere un sito alla Home copia anche la
+  sessione di Safari nell'app (§11, "Difetti e verifiche aperti",
+  "Sessione copiata nell'app installata").
 
 **Ricerca nei pasti salvati** (decisa il 13/10, regole del 03/11; dal
 06/11, branch `aggiungi-nuovo-aspetto`). Il campo di ricerca trova anche
@@ -8087,14 +8095,30 @@ nell'app installata** il 06/11 alle 22:27, con l'account di Davide:
 letture tutte 200, una scrittura 201 e una 200, nessun 401 né 403
 (verificato da Cowork).
 
+**Codice a barre** (dal 07/11, branch `codice-a-barre`; sezione 3,
+"Codice a barre"). **Provato il 07/11** sull'anteprima da Davide, iPhone
+con iOS 18.7, account di prova; log e database controllati da Cowork.
+Dalle 14:30 alle 14:48 in Safari (prima della correzione della
+fotocamera): scansionato "Ketchips · Amica Chips" (8008714001827),
+trovato su Open Food Facts, modulo precompilato, salvato con fonte
+`'off'` e aggiunto al diario; poi, con esito positivo secondo Davide e
+senza scritture sul server, le altre prove: secondo piano, rete che cade
+a metà, senza rete, permesso negato, tema scuro. Nell'app installata
+dalla Home, prima della correzione, sempre «Non hai dato il permesso»
+senza la domanda di iOS (sotto, "Difetti e verifiche aperti"). Dopo il
+commit `1946331`, app tolta e rimessa sulla Home (accessi alle 15:08 e
+15:09): la scansione funziona, senza una nuova richiesta, anche dopo
+aver chiuso e riaperto l'app. Letture tutte 200 (tranne i 403 della
+sessione copiata, sotto), nessun 401.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
 
 ### Non ancora costruito
 
-- **Codice a barre** (fase 4): in sviluppo dal 07/11, branch
-  `codice-a-barre` (sezione 3, "Codice a barre")
+- **Codice a barre** (fase 4): costruito e provato sull'anteprima il
+  07/11, branch `codice-a-barre` (sopra, "Fatto"). Resta il merge
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
 - **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
@@ -8111,25 +8135,48 @@ i numeri delle sue segnalazioni.
 
 ### Difetti e verifiche aperti
 
-- **Codice a barre, app installata: sempre "permesso negato"** (branch
-  `codice-a-barre`, trovato da Davide il 07/11 sull'anteprima, iPhone
-  con iOS 18.7). Nell'app aggiunta alla Home, Scansiona mostrava sempre
-  «Non hai dato il permesso per la fotocamera» e iOS non chiedeva mai
-  il permesso; in Safari, sulla stessa anteprima, lo chiedeva e la
-  scansione funzionava. **Causa non ancora dimostrata.** Nel codice non
-  c'era nessun `await` prima di `getUserMedia`, ma la chiamata partiva
-  da un `useEffect` della schermata, cioè dopo il ridisegno di React,
-  fuori dal gestore del tocco: ipotesi, l'app installata vuole la
-  richiesta dentro il tocco. L'errore era `NotAllowedError` o
-  `SecurityError` (gli unici due che danno quel messaggio), senza
-  sapere quale. Altre spiegazioni possibili, da escludere: un "Non
-  consentire" già dato una volta dentro l'app installata, che iOS
-  ricorda finché l'app non si toglie e si rimette sulla Home.
-  **Correzione** (da provare): `getUserMedia` parte come prima cosa nel
-  tocco, e sotto il messaggio c'è il nome tecnico dell'errore (§3,
-  "Codice a barre"). Prova: togliere dalla Home l'app dell'anteprima
-  (solo quella), rimetterla, toccare Scansiona; se il messaggio resta,
-  leggere la riga tecnica.
+- ~~**Codice a barre, app installata: sempre "permesso negato"**~~
+  (branch `codice-a-barre`, trovato da Davide il 07/11 sull'anteprima,
+  iPhone con iOS 18.7; chiuso lo stesso giorno). Nell'app aggiunta alla
+  Home, Scansiona mostrava sempre «Non hai dato il permesso per la
+  fotocamera» e iOS non chiedeva mai il permesso; in Safari, sulla
+  stessa anteprima, lo chiedeva e la scansione funzionava. Due
+  spiegazioni possibili: la richiesta partiva da un `useEffect` della
+  schermata, dopo il ridisegno, fuori dal gestore del tocco (nessun
+  `await` prima di `getUserMedia`); oppure un "Non consentire" dato da
+  Davide, che l'app installata ricordava (poi rimesso "Chiedi" nelle
+  impostazioni del sito di Safari, e Impostazioni > Safari > Fotocamera
+  = "Chiedi": non basta per l'app installata). **Correzione** (commit
+  `1946331`, resta): `getUserMedia` come prima cosa nel tocco, e sotto
+  il messaggio il nome tecnico dell'errore (§3, "Codice a barre").
+  Dopo la correzione, app tolta e rimessa sulla Home: funziona, senza
+  una nuova richiesta, anche chiudendo e riaprendo. **Causa più
+  probabile: il rifiuto ricordato dall'app installata; non
+  dimostrata**, perché la correzione e la reinstallazione sono arrivate
+  insieme. Se torna, la riga tecnica dirà l'errore.
+
+- **Sessione copiata nell'app installata** (osservazione del 07/11
+  durante le prove del codice a barre, non un difetto di quel lavoro;
+  verificata da Cowork nei log). Aggiungere un sito alla Home su iPhone
+  copia la sessione di Safari nell'app installata: le due copie sono la
+  stessa sessione su Supabase Auth. Un
+  Esci in una delle due alle 14:51:52 (`signOut({ scope: "local" })`,
+  che chiude comunque quella sessione sul server) l'ha chiusa per tutte
+  e due, e l'altra copia ha ricevuto 10 risposte 403
+  `session_not_found` su `GET /user` (alle 14:53:11 e alle 15:06:13).
+  Oggi `session_not_found` non fa niente di speciale: come gli altri
+  403 che non sono `user_not_found` (§9.6, "Altri dispositivi
+  collegati"), l'hook resta senza utente. È il caso rimandato il 02/11
+  nel DA_FARE del Project, "Rimandati da Accesso scaduto" (riga qui
+  sotto).
+
+- **Con `session_not_found` mandare ad Accedi** (aperto; rimandato il
+  02/11 nel DA_FARE del Project, fuori dal repo, sezione "Rimandati da
+  Accesso scaduto"; da qui sta anche nel repo). Quando `GET /user`
+  risponde 403 `session_not_found` (la sessione è stata chiusa altrove,
+  per esempio da un Esci nell'altra copia dell'app installata, riga qui
+  sopra), l'app deve portare ad Accedi invece di restare su
+  "Caricamento...". Lavoro a sé, non del codice a barre.
 
 - ~~**Aggiungi: nuovo aspetto e ricerca nei pasti salvati**~~: provato
   sull'anteprima, unito a main e provato nell'app installata il 06/11
@@ -8823,5 +8870,6 @@ branch.
 9. ~~**Account eliminato da un altro dispositivo**~~ fatto: provato il
    01/11 sull'anteprima del branch `account-eliminato` (sopra, "Fatto" e
    "Difetti e verifiche aperti"). Resta il limite "più di un'ora dopo"
-10. **Codice a barre** (branch `codice-a-barre`, dal 07/11): in corso
-    (sezione 3, "Codice a barre"; sezione 6, punto 4)
+10. **Codice a barre** (branch `codice-a-barre`, dal 07/11): provato
+    sull'anteprima il 07/11 (sopra, "Fatto"); resta il merge (sezione 3,
+    "Codice a barre"; sezione 6, punto 4)

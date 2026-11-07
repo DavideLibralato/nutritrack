@@ -710,6 +710,19 @@ describe("Aggiungi: scansione del codice a barre", () => {
     expect(screen.queryByRole("dialog", { name: "Scansione del codice a barre" })).toBeNull();
   });
 
+  it("un codice scritto della lunghezza sbagliata: il messaggio, e nessuna ricerca", async () => {
+    await preparaPranzo();
+    const fetchFinta = vi.fn(async () => risposta({}, 404));
+    vi.stubGlobal("fetch", fetchFinta);
+    render(<AggiungiPage />);
+
+    const scansione = await scriviCodice("1234567");
+
+    // Testo del 07/11 (Davide): "deve avere", non "ha".
+    expect(within(scansione).getByText("Il codice deve avere 8, 12 o 13 cifre.")).toBeTruthy();
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+
   it("un codice scritto con la cifra di controllo sbagliata: il messaggio, e nessuna ricerca", async () => {
     await preparaPranzo();
     const fetchFinta = vi.fn(async () => risposta({}, 404));

@@ -5,6 +5,35 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre, esito delle prove sull'anteprima
+
+Branch `codice-a-barre`. Il 07/11 Davide ha provato l'anteprima su
+iPhone con iOS 18.7, account di prova; Cowork ha controllato i log e il
+database. Dalle 14:30 alle 14:48 in Safari, prima della correzione della
+fotocamera: scansionato "Ketchips · Amica Chips" (8008714001827),
+trovato su Open Food Facts, modulo precompilato, salvato con fonte
+`'off'` e aggiunto al diario; poi secondo piano, rete che cade, senza
+rete, permesso negato e tema scuro, con esito positivo secondo Davide e
+senza scritture sul server. Nell'app installata dalla Home, prima della
+correzione, sempre «Non hai dato il permesso» senza la domanda di iOS;
+Davide aveva rifiutato il permesso (poi rimesso "Chiedi" nelle
+impostazioni del sito di Safari, Impostazioni > Safari > Fotocamera =
+"Chiedi"). Dopo `1946331`, app tolta e rimessa sulla Home (accessi alle
+15:08 e 15:09): la scansione funziona, senza una nuova richiesta, anche
+dopo aver chiuso e riaperto l'app. Causa più probabile: il rifiuto
+ricordato dall'app installata, non dimostrata; la correzione resta.
+Osservazione, non un difetto di questo lavoro: aggiungere un sito alla
+Home copia la sessione di Safari nell'app; un Esci alle 14:51:52 (scope
+local) ha chiuso la sessione condivisa, e l'altra copia ha ricevuto 10
+risposte 403 `session_not_found` su `GET /user` (14:53:11 e 15:06:13);
+scritta in PUNTO §11: è il caso rimandato il 02/11 nel DA_FARE del
+Project ("Rimandati da Accesso scaduto": con `session_not_found` mandare
+ad Accedi invece di restare su "Caricamento..."), che da ora è anche in
+PUNTO §11 come riga aperta. Tutte le altre letture 200, nessun 401. Testo
+cambiato su richiesta di Davide: «Il codice deve avere 8, 12 o 13
+cifre.» (prima «Il codice ha…»), con un test nuovo nella pagina, visto
+fallire con il testo vecchio. Vitest, `npm run lint` e build ok.
+
 ## 2026-11-07 — Codice a barre: la fotocamera chiesta dentro il tocco
 
 Branch `codice-a-barre`. Difetto trovato da Davide sull'anteprima,
