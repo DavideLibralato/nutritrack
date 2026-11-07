@@ -125,6 +125,30 @@
   --ritaglio-bordo:
     var(--se-chiaro, color-mix(in srgb, #ffffff 90%, transparent))
     var(--se-scuro, color-mix(in srgb, #ffffff 90%, transparent));
+  /* La schermata di scansione del codice a barre (SchermataScansione,
+     classi bg-scan, text-on-scan... da @theme qui sotto): scura in tutti e
+     due i temi, apposta, come il ritaglio della foto e come la fotocamera
+     di sistema. Sta intorno al video, e il bianco sopra il nero si legge
+     con qualunque inquadratura. Come nel mockup docs/mockups/aggiungi.html,
+     "Scansione".
+     --scansione-fondo: dietro il video e nelle fasce sopra e sotto.
+     --scansione-testo / --scansione-tenue: testo principale e secondario.
+     --scansione-tasto: il fondo dei pulsanti tondi e di quelli in basso.
+     --scansione-bordo: il bordo dei pulsanti in basso e del campo.
+     --scansione-mirino: la linea al centro del mirino: l'accento del tema
+     scuro, che sul nero si vede (segue il colore principale scelto). */
+  --scansione-fondo: var(--se-chiaro, #14120f) var(--se-scuro, #14120f);
+  --scansione-testo: var(--se-chiaro, #ffffff) var(--se-scuro, #ffffff);
+  --scansione-tenue:
+    var(--se-chiaro, color-mix(in srgb, #ffffff 72%, transparent))
+    var(--se-scuro, color-mix(in srgb, #ffffff 72%, transparent));
+  --scansione-tasto:
+    var(--se-chiaro, color-mix(in srgb, #ffffff 14%, transparent))
+    var(--se-scuro, color-mix(in srgb, #ffffff 14%, transparent));
+  --scansione-bordo:
+    var(--se-chiaro, color-mix(in srgb, #ffffff 35%, transparent))
+    var(--se-scuro, color-mix(in srgb, #ffffff 35%, transparent));
+  --scansione-mirino: var(--accento-scuro);
 }
 
 /* GLI INTERRUTTORI: quale tema è acceso.
@@ -710,6 +734,12 @@ input[type="time"].campo-data::-webkit-date-and-time-value {
   --color-danger-strong: var(--pericolo-pieno);
   --color-on-strong: var(--su-pieno);
   --color-veil: var(--velo);
+  --color-scan: var(--scansione-fondo);
+  --color-on-scan: var(--scansione-testo);
+  --color-scan-muted: var(--scansione-tenue);
+  --color-scan-key: var(--scansione-tasto);
+  --color-scan-line: var(--scansione-bordo);
+  --color-scan-aim: var(--scansione-mirino);
   /* --font-sans e' il font di testo di default di Tailwind (font-sans),
      --font-display e' il nuovo font per titoli e numeri (classe font-display). */
   --font-sans: var(--font-body);

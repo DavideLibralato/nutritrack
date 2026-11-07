@@ -60,6 +60,12 @@ vi.mock("@/lib/repository/vociDiario", async (importOriginal) => {
   };
 });
 
+// Il lettore dei codici a barre senza WebAssembly: in jsdom non c'è un
+// video da leggere, e i test della scansione passano da "Scrivi il codice".
+vi.mock("@/lib/barcode/lettoreCodice", () => ({
+  preparaLettore: () => Promise.resolve({ leggi: async () => null }),
+}));
+
 // Rete assente: si esercita solo la parte locale.
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
@@ -407,8 +413,8 @@ describe("Aggiungi: ricerca nei pasti salvati", () => {
   async function cerca(testo: string) {
     // Il campo si trova per l'etichetta dei lettori di schermo; il
     // segnaposto ha lo stesso testo.
-    const campo = await screen.findByRole("searchbox", { name: "Cerca un alimento o un pasto" });
-    expect(campo.getAttribute("placeholder")).toBe("Cerca un alimento o un pasto");
+    const campo = await screen.findByRole("searchbox", { name: "Cerca alimento o pasto" });
+    expect(campo.getAttribute("placeholder")).toBe("Cerca alimento o pasto");
     fireEvent.change(campo, { target: { value: testo } });
     return campo;
   }
@@ -469,5 +475,141 @@ describe("Aggiungi: ricerca nei pasti salvati", () => {
     fireEvent.keyDown(campo, { key: "Enter" });
     expect(await screen.findByRole("heading", { name: "Nuovo alimento" })).toBeTruthy();
     expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("kiwi");
+  });
+});
+
+// La scansione del codice a barre (PUNTO_DI_PARTENZA.md §3, "Codice a
+// barre"). Test permanenti per quello che sbaglierebbe in silenzio: il
+// pulsante acceso senza rete; un prodotto già nel catalogo che apre
+// "Nuovo alimento" (e diventa un secondo alimento con lo stesso codice)
+// invece dello sheet; un UPC-A cercato a 12 cifre (mai trovato nel
+// catalogo, dove è a 13); un errore di rete senza "Crea a mano". La rete è
+// finta (fetch sostituita), la fotocamera in jsdom non c'è.
+describe("Aggiungi: scansione del codice a barre", () => {
+  const NUTELLA = "3017620422003";
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => true });
+  });
+
+  function risposta(corpo: unknown, status = 200) {
+    return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+  }
+
+  // Apre la scansione e scrive il codice a mano, come si farebbe con la
+  // fotocamera negata.
+  async function scriviCodice(codice: string) {
+    fireEvent.click(await screen.findByRole("button", { name: "Scansiona il codice a barre" }));
+    const scansione = await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
+    fireEvent.click(within(scansione).getByRole("button", { name: /Scrivi il codice/ }));
+    fireEvent.change(within(scansione).getByLabelText("Il codice sotto le barre"), {
+      target: { value: codice },
+    });
+    fireEvent.click(within(scansione).getByRole("button", { name: "Cerca" }));
+    return scansione;
+  }
+
+  it("con la rete il pulsante è acceso, senza è spento e la riga dice perché", async () => {
+    await preparaPranzo();
+    const { unmount } = render(<AggiungiPage />);
+    const acceso = (await screen.findByRole("button", { name: "Scansiona il codice a barre" })) as HTMLButtonElement;
+    expect(acceso.disabled).toBe(false);
+    expect(screen.queryByText("Senza connessione la scansione non è disponibile")).toBeNull();
+    unmount();
+
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => false });
+    render(<AggiungiPage />);
+    const spento = (await screen.findByRole("button", {
+      name: "Scansione non disponibile senza connessione",
+    })) as HTMLButtonElement;
+    expect(spento.disabled).toBe(true);
+    expect(screen.getByText("Senza connessione la scansione non è disponibile")).toBeTruthy();
+  });
+
+  it("codice di un alimento già nel catalogo: sheet quantità, Open Food Facts non si chiama", async () => {
+    await preparaPranzo();
+    const nutella = await creaAlimento("Nutella", 539);
+    await repositoryAlimenti.aggiorna(nutella.id, { barcode: NUTELLA });
+    const fetchFinta = vi.fn(async () => risposta({ product: { product_name: "Altro" } }));
+    vi.stubGlobal("fetch", fetchFinta);
+    render(<AggiungiPage />);
+
+    await scriviCodice(NUTELLA);
+
+    expect(await screen.findByRole("dialog", { name: "Quantità di Nutella" })).toBeTruthy();
+    expect(screen.queryByText("Nuovo alimento")).toBeNull();
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+
+  it("un UPC-A a 12 cifre si cerca e si compila a 13; non trovato su OFF: modulo vuoto con il codice", async () => {
+    await preparaPranzo();
+    const fetchFinta = vi.fn<typeof fetch>(async () => risposta({ result: { id: "product_not_found" } }, 404));
+    vi.stubGlobal("fetch", fetchFinta);
+    render(<AggiungiPage />);
+
+    await scriviCodice("036000291452");
+
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe("0036000291452");
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("");
+    expect(String(fetchFinta.mock.calls[0][0])).toContain("/product/0036000291452?");
+  });
+
+  it("trovato su Open Food Facts: modulo precompilato, niente salvato da solo", async () => {
+    await preparaPranzo();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        risposta({
+          product: {
+            product_name_it: "Nutella",
+            brands: "Nutella, Ferrero",
+            nutriments: { "energy-kcal_100g": 539, proteins_100g: 6.3, carbohydrates_100g: 57.5, fat_100g: 30.9 },
+          },
+        })
+      )
+    );
+    render(<AggiungiPage />);
+
+    await scriviCodice(NUTELLA);
+
+    expect(await screen.findByText(/Valori trovati su Open Food Facts/)).toBeTruthy();
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("Nutella");
+    expect((screen.getByLabelText("Calorie (kcal)") as HTMLInputElement).value).toBe("539");
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(NUTELLA);
+    expect(await repositoryAlimenti.ottieniTutti(utenteTest)).toHaveLength(0);
+  });
+
+  it("rete assente anche se il telefono dice di no: messaggio, e «Crea a mano» apre il modulo con il codice", async () => {
+    await preparaPranzo();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Load failed");
+      })
+    );
+    render(<AggiungiPage />);
+
+    const scansione = await scriviCodice(NUTELLA);
+
+    expect(await within(scansione).findByText(/Non riesco a raggiungere Open Food Facts/)).toBeTruthy();
+    fireEvent.click(within(scansione).getByRole("button", { name: "Crea a mano" }));
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(NUTELLA);
+    expect(screen.queryByRole("dialog", { name: "Scansione del codice a barre" })).toBeNull();
+  });
+
+  it("un codice scritto con la cifra di controllo sbagliata: il messaggio, e nessuna ricerca", async () => {
+    await preparaPranzo();
+    const fetchFinta = vi.fn(async () => risposta({}, 404));
+    vi.stubGlobal("fetch", fetchFinta);
+    render(<AggiungiPage />);
+
+    const scansione = await scriviCodice("3017620422004");
+
+    expect(within(scansione).getByText("Il codice non torna: controlla le cifre.")).toBeTruthy();
+    expect(screen.queryByText("Nuovo alimento")).toBeNull();
+    expect(fetchFinta).not.toHaveBeenCalled();
   });
 });

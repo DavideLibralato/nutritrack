@@ -631,11 +631,14 @@ Si apre a tutto schermo con freccia indietro e, come titolo, **il nome del pasto
 
 Ordine degli elementi:
 
-1. **Campo di ricerca** con lente e placeholder "Cerca un alimento o un
-   pasto" (dal 06/11: trova anche i pasti salvati, vedi "Ricerca nei pasti
-   salvati"; prima "Cerca un alimento"). L'etichetta per i lettori di
-   schermo è lo stesso testo. Accanto, il pulsante tondo **Scansiona** da
-   48 px *(in sviluppo, branch `codice-a-barre`)*: vedi "Codice a barre"
+1. **Campo di ricerca** con lente e placeholder "Cerca alimento o pasto"
+   (dal branch `codice-a-barre`, 07/11: accanto c'è il pulsante e "Cerca
+   un alimento o un pasto" a 390 px non ci stava più; dal 06/11 al 07/11
+   "Cerca un alimento o un pasto", prima "Cerca un alimento"). Trova anche
+   i pasti salvati, vedi "Ricerca nei pasti salvati". L'etichetta per i
+   lettori di schermo è lo stesso testo. Accanto, il pulsante tondo
+   **Scansiona** da 48 px *(branch `codice-a-barre`)*: vedi "Codice a
+   barre"
 2. **Recenti** — righe con nome, e sotto in grigio **l'ultima quantità usata e le
    kcal corrispondenti** ("Petto di pollo · 150 g · 248 kcal"), con un **"+"**
    a destra
@@ -695,6 +698,34 @@ silenzio.
   disponibile anche con il permesso negato) e **"Scrivi il codice"**
   (`inputMode="numeric"`). La torcia del mockup compare solo se la
   fotocamera la supporta.
+  Come è fatta (dal commit 6 del branch; `SchermataScansione` in
+  `src/components`, la fotocamera in `src/lib/barcode/useFotocamera.ts`,
+  i testi in `src/lib/barcode/testiScansione.ts`):
+  - **scura in tutti e due i temi**, come la fotocamera di sistema e il
+    ritaglio della foto: colori `--scansione-*` in `globals.css`
+    (classi `bg-scan`, `text-on-scan`…), uguali al chiaro e al buio; la
+    linea del mirino è l'accento del tema scuro, quindi segue il colore
+    principale scelto;
+  - testata: chiudi, «Aggiungi a <pasto>», torcia (se c'è); al centro il
+    mirino con «Inquadra il codice a barre della confezione» e «Si legge
+    da solo, senza premere niente»; un fotogramma ogni 200 ms, uno alla
+    volta; il primo codice valido spegne la fotocamera e fa partire la
+    ricerca («Cerco il prodotto…» con il codice sotto);
+  - "Scrivi il codice" spegne la fotocamera (con la tastiera aperta non
+    serve) e mostra il campo «Il codice sotto le barre», "Cerca" e
+    "Torna alla fotocamera". Messaggi: «Scrivi le cifre che stanno sotto
+    le barre.», «Solo cifre, senza lettere né segni.», «Il codice ha 8,
+    12 o 13 cifre.», «Il codice non torna: controlla le cifre.»;
+  - permesso negato: «Non hai dato il permesso per la fotocamera. Puoi
+    usare una foto o scrivere il codice.»; fotocamera assente: «La
+    fotocamera non è disponibile. …»; una foto senza codice: «Nella foto
+    non trovo un codice a barre. Riprova più da vicino, o scrivi il
+    codice.»; lettore non caricato (rete caduta proprio al tocco): «Il
+    lettore dei codici non si è caricato. …», con "Riprova" ("Scrivi il
+    codice" resta, non ha bisogno del lettore);
+  - un permesso che arriva dopo la chiusura o dopo il secondo piano (il
+    popup può restare aperto secondi) non lascia una fotocamera accesa:
+    lo stream arrivato tardi si spegne subito.
 - **La libreria.** `barcode-detector` a versione esatta (3.2.3, che usa
   `zxing-wasm` 3.1.6), caricata con `import()` solo al tocco su
   Scansiona: non pesa sul caricamento dell'app. Il suo WebAssembly
@@ -827,9 +858,20 @@ silenzio.
   messaggio simile. Permesso della fotocamera negato: restano "Usa una
   foto" e "Scrivi il codice". La ricerca nel catalogo locale viene
   prima della rete, quindi un prodotto già nel catalogo si trova anche
-  quando la rete cade a metà.
+  quando la rete cade a metà. Testi esatti (dal commit 6): «Non riesco a
+  raggiungere Open Food Facts. Controlla la connessione, oppure crea
+  l'alimento a mano: il codice è già compilato.», «Open Food Facts è
+  occupato in questo momento. Riprova fra poco, oppure …», «Open Food
+  Facts ha risposto in modo inatteso. Riprova, oppure …»; sotto, il
+  codice, "Riprova", "Crea a mano" e "Scansiona un altro codice".
 - **Licenza.** In Impostazioni > Informazioni una riga «Dati dei
   prodotti: Open Food Facts, licenza ODbL», oltre a quella nel modulo.
+  Una riga di testo sotto il gruppo Versione/Build, non una riga del
+  gruppo: etichetta e valore insieme a 390 px non ci starebbero.
+- **Peso nella build** (07/11): la libreria è un pezzo a parte di 41 KB
+  (circa 14 KB compressi) che `/aggiungi` non carica all'apertura, solo
+  con `import()` al tocco su Scansiona; il WebAssembly (946.860 byte) si
+  scarica nello stesso momento.
 - **Il codice.** In `src/lib/barcode/`: `codiceEan.ts` (`leggiCodice`:
   controllo e forma a 13/8 cifre), `valoriOpenFoodFacts.ts`
   (`daOpenFoodFacts`: dalla risposta di OFF ai campi del modulo, kJ
@@ -840,6 +882,13 @@ silenzio.
   l'ordine catalogo locale → OFF). La lettura di Dexie per codice sta
   nel repository (`alimentoPerCodice` in
   `src/lib/repository/alimenti.ts`). Ognuno ha il suo test permanente.
+  Dal commit 6: `useFotocamera.ts` (accende e spegne la fotocamera; test
+  `useFotocamera.test.tsx` con una `getUserMedia` finta),
+  `testiScansione.ts`, `SchermataScansione` in `src/components`, e i
+  test del percorso intero in `src/app/aggiungi/page.test.tsx` (pulsante
+  spento senza rete, nel catalogo → sheet, UPC-A cercato a 13 cifre,
+  trovato → modulo precompilato, rete assente → "Crea a mano", codice
+  sbagliato → nessuna ricerca).
 - **Prove sull'anteprima.** Servono HTTPS (l'URL di anteprima di Vercel;
   `npm run dev` aperto dall'iPhone con l'IP del PC è HTTP, e lì la
   fotocamera non si apre), Safari su iPhone e l'app installata. L'app
@@ -880,8 +929,10 @@ i pasti salvati, non solo gli alimenti:
 Codice in `src/lib/inserimento/ricercaPastiSalvati.ts`
 (`cercaPastiSalvati`), test in `ricercaPastiSalvati.test.ts` e in
 `src/app/aggiungi/page.test.tsx`. Il segnaposto del campo dice "Cerca
-un alimento o un pasto" (deciso da Davide il 06/11; il mockup diceva
-"Cerca un alimento"), e l'etichetta per i lettori di schermo è la stessa.
+alimento o pasto" (dal 07/11, branch `codice-a-barre`, per far posto al
+pulsante Scansiona, come previsto da Davide il 03/11; dal 06/11 era
+"Cerca un alimento o un pasto", il mockup diceva "Cerca un alimento"), e
+l'etichetta per i lettori di schermo è la stessa.
 In ModificaPastoSalvato e in Impostazioni > Alimenti resta "Cerca un
 alimento": lì si cercano solo alimenti.
 
@@ -1225,7 +1276,9 @@ un comando che non fa niente sembra rotto):
   controllare");
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
-  `next.config.ts`; in locale "sviluppo");
+  `next.config.ts`; in locale "sviluppo"; sotto, dal branch
+  `codice-a-barre`, la riga «Dati dei prodotti: Open Food Facts, licenza
+  ODbL»);
 - **Esci** in fondo, in arancio, con la conferma di sempre;
 - sotto Esci, in un gruppo suo, **Elimina il mio account** (costruita
   e provata su iPhone l'11/10, branch `elimina-account`; mockup

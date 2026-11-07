@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre: la scansione in Aggiungi
+
+Branch `codice-a-barre`, commit 6. Il pulsante Scansiona da 48 px accanto
+alla ricerca (mockup A), spento e grigio senza rete con la riga «Senza
+connessione la scansione non è disponibile»; il segnaposto diventa
+"Cerca alimento o pasto" per far posto al pulsante. `SchermataScansione`
+(scura in tutti e due i temi, colori `--scansione-*` nuovi in
+`globals.css`): video dal vivo della fotocamera posteriore, "Usa una
+foto", "Scrivi il codice", torcia solo se c'è, poi `cercaCodice`. Nel
+catalogo → sheet quantità; trovato su OFF → modulo precompilato; non
+trovato → modulo con il solo codice; rete, OFF occupato o risposta
+strana → messaggio con "Riprova", "Crea a mano" e "Scansiona un altro
+codice". `useFotocamera` accende e spegne: spenta alla chiusura, in
+secondo piano e a `pagehide`, al ritorno "Riattiva la fotocamera"; uno
+stream arrivato dopo la chiusura si spegne subito. Cinque icone nuove,
+un file ciascuna. In Impostazioni > Informazioni la riga «Dati dei
+prodotti: Open Food Facts, licenza ODbL». Aggiornato l'ultimo commento
+con le fasi vecchie (`aggiungi/page.tsx`). Il React Compiler non
+accettava un ref passato all'hook: l'hook espone una funzione
+`collegaVideo` (ref a funzione) e `fotogramma()`. Nel build la libreria
+è un pezzo a parte di 41 KB (14 KB compressi) che `/aggiungi` non
+carica all'apertura. Test permanenti: 10 in `useFotocamera.test.tsx` e 6
+nel test della pagina, visti fallire con 14 rotture da una copia; il
+test del segnaposto aggiornato. **Non provato in un browser**: in questa
+sessione non c'è un browser da pilotare, e la fotocamera vera serve
+comunque l'iPhone. Vitest 1621/1621, `npm run lint`, `tsc` e build ok.
+
 ## 2026-11-07 — Codice a barre: il lettore, con il WebAssembly servito da Libra
 
 Branch `codice-a-barre`, commit 5. Installato `barcode-detector` 3.2.3

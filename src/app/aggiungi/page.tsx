@@ -9,7 +9,9 @@
 // della ricerca (alimenti singoli e pasti salvati mescolati — sono dati
 // diversi ma la sezione UI è una sola), creazione a mano se non si trova, e
 // lo sheet quantità unico (sezione 5) — con la stella per aggiungere/togliere
-// un preferito. Fuori da questo pezzo: "Scansiona etichetta" (fase 5).
+// un preferito, e dal branch `codice-a-barre` il pulsante Scansiona accanto
+// alla ricerca (sezione 3, "Codice a barre"; SchermataScansione). Fuori da
+// questo pezzo: l'OCR, "Leggi dall'etichetta" (fase 6).
 //
 // useSearchParams() legge ?giorno=YYYY-MM-DD passato da Oggi, così salvare
 // riporta all'Oggi del giorno giusto (anche un giorno passato). Va avvolto
@@ -56,7 +58,12 @@ import SheetQuantita from "@/components/SheetQuantita";
 import SheetDoppioni from "@/components/SheetDoppioni";
 import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import ServeConnessione from "@/components/ServeConnessione";
-import CreaAlimentoForm from "@/components/CreaAlimentoForm";
+import CreaAlimentoForm, { type DatiCodice } from "@/components/CreaAlimentoForm";
+import SchermataScansione from "@/components/SchermataScansione";
+import IconaCodiceBarre from "@/components/IconaCodiceBarre";
+import IconaSenzaRete from "@/components/IconaSenzaRete";
+import { useOnline } from "@/lib/useOnline";
+import { TESTO_SENZA_RETE } from "@/lib/barcode/testiScansione";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import IconaIndietro from "@/components/IconaIndietro";
 import IconaGiu from "@/components/IconaGiu";
@@ -95,8 +102,18 @@ const ERRORE_AGGIUNTA = "Non è stato possibile aggiungere. Riprova.";
 // lo stesso testo, perché il segnaposto sparisce appena si scrive. Dice
 // "o un pasto" perché la ricerca trova anche i pasti salvati
 // (cercaPastiSalvati; deciso da Davide il 06/11, il mockup diceva "Cerca
-// un alimento").
-const TESTO_RICERCA = "Cerca un alimento o un pasto";
+// un alimento"). Dal branch `codice-a-barre` senza articoli: accanto c'è
+// il pulsante Scansiona da 48 px, e a 390 px di larghezza "Cerca un
+// alimento o un pasto" non ci stava più intero (deciso da Davide il 03/11:
+// "se serve diventa Cerca alimento o pasto").
+const TESTO_RICERCA = "Cerca alimento o pasto";
+
+// Il pulsante Scansiona (mockup A): tondo da 48 px come il campo, pieno
+// d'accento. Senza rete grigio con il bordo tratteggiato, come nel mockup
+// "Senza rete".
+const CLASSE_SCANSIONA = `flex size-12 shrink-0 items-center justify-center rounded-full ${CLASSE_FOCUS}`;
+const CLASSE_SCANSIONA_ATTIVO = "bg-accent-strong text-on-strong";
+const CLASSE_SCANSIONA_SPENTO = "border border-dashed border-border bg-surface text-muted";
 
 // L'aspetto delle liste (mockup docs/mockups/aggiungi.html, proposta A):
 // le righe stanno in riquadri come i gruppi di Impostazioni
@@ -272,6 +289,17 @@ function AggiungiContenuto() {
 
   const [query, setQuery] = useState("");
   const [creando, setCreando] = useState(false);
+  // La scansione del codice a barre (sezione 3, "Codice a barre"): aperta
+  // dal pulsante Scansiona. `daCodice` è quello che porta a "Nuovo
+  // alimento": il codice e il prodotto di Open Food Facts, o null se non
+  // trovato. Con `creando` acceso e `daCodice` valorizzato il modulo parte
+  // da lì invece che dalla ricerca scritta.
+  const [scansione, setScansione] = useState(false);
+  const [daCodice, setDaCodice] = useState<DatiCodice | null>(null);
+  // Senza rete il pulsante è spento (scelta di Davide). navigator.onLine
+  // su iPhone arriva in ritardo: per questo anche la schermata ha i suoi
+  // messaggi di rete (SchermataScansione).
+  const online = useOnline();
   // L'alimento del catalogo che si sta modificando (solo i propri e non
   // verificati — vedi il gate nella lista risultati). Diverso da
   // `alimentoScelto`, che è la voce da aggiungere al diario.
@@ -641,18 +669,25 @@ function AggiungiContenuto() {
         {creando || alimentoInModifica ? (
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-5">
             <CreaAlimentoForm
-              key={alimentoInModifica?.id ?? "nuovo"}
+              // Una key per il codice: dopo una seconda scansione il
+              // modulo riparte dai valori nuovi, non da quelli di prima.
+              key={alimentoInModifica?.id ?? (daCodice ? `codice-${daCodice.barcode}` : "nuovo")}
               userId={userId}
-              nomeIniziale={query.trim()}
+              // Da un codice il nome lo dà Open Food Facts (o resta vuoto),
+              // non la ricerca scritta prima di scansionare.
+              nomeIniziale={daCodice ? "" : query.trim()}
               etichettaIndietro="Torna alla ricerca"
               etichettaCrea="Crea e scegli la quantità"
               alimentoDaModificare={alimentoInModifica ?? undefined}
+              daCodice={daCodice ?? undefined}
               onAnnulla={() => {
                 setCreando(false);
+                setDaCodice(null);
                 setAlimentoInModifica(null);
               }}
               onCreato={(a) => {
                 setCreando(false);
+                setDaCodice(null);
                 scegli(a);
               }}
               // "Apri" sull'alimento che c'è già: da "Nuovo alimento" il suo
@@ -664,6 +699,7 @@ function AggiungiContenuto() {
                   setAlimentoInModifica(esistente);
                 } else {
                   setCreando(false);
+                  setDaCodice(null);
                   scegli(esistente);
                 }
               }}
@@ -678,10 +714,10 @@ function AggiungiContenuto() {
                 Invio / "Vai" della tastiera fa la stessa cosa del pulsante
                 "Crea alimento a mano" — un tap in meno, senza chiudere la
                 tastiera. `enterKeyHint` cambia l'etichetta di quel tasto.
-                Campo alto 48 px su tutta la larghezza: il pulsante della
-                scansione del mockup arriva con il lavoro codice-a-barre. */}
-            <div className="shrink-0 px-4 pt-1 pb-3.5">
-              <div className="relative">
+                Campo alto 48 px, e accanto il pulsante Scansiona da 48 px
+                (mockup A). */}
+            <div className="flex shrink-0 gap-2 px-4 pt-1 pb-3.5">
+              <div className="relative min-w-0 flex-1">
                 <IconaLente
                   size={20}
                   className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
@@ -712,7 +748,27 @@ function AggiungiContenuto() {
                   </button>
                 )}
               </div>
+              {/* Senza rete: spento, grigio, con la sua etichetta (mockup
+                  "Senza rete"); la riga qui sotto dice perché. */}
+              <button
+                type="button"
+                onClick={() => setScansione(true)}
+                disabled={!online}
+                aria-label={online ? "Scansiona il codice a barre" : "Scansione non disponibile senza connessione"}
+                className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
+              >
+                <IconaCodiceBarre />
+              </button>
             </div>
+            {!online && (
+              <p
+                role="status"
+                className="mx-4 mb-3.5 flex shrink-0 items-center gap-2 rounded-xl bg-surface px-3.5 py-2.5 text-sm text-muted"
+              >
+                <IconaSenzaRete className="shrink-0" />
+                {TESTO_SENZA_RETE}
+              </p>
+            )}
 
             {/* Area scorrevole ancorata SUBITO SOTTO la barra di ricerca, non
                 centrata sullo schermo: così lo stato corrente (vuoto /
@@ -960,6 +1016,28 @@ function AggiungiContenuto() {
 
       {/* Copre tutta la pagina (absolute dentro il <main>, che è già
           agganciato al visual viewport). */}
+      {/* La scansione (sezione 3, "Codice a barre"): copre la pagina. Già
+          nel catalogo → lo sheet quantità, come un tocco su un risultato;
+          altrimenti "Nuovo alimento" con il codice (e i valori di Open
+          Food Facts, se c'erano). */}
+      {scansione && (
+        <SchermataScansione
+          userId={userId}
+          nomePasto={nomePastoSelezionato}
+          onChiudi={() => setScansione(false)}
+          onNelCatalogo={(alimento) => {
+            setScansione(false);
+            scegli(alimento);
+          }}
+          onModulo={(dati) => {
+            setScansione(false);
+            setAlimentoInModifica(null);
+            setDaCodice(dati);
+            setCreando(true);
+          }}
+        />
+      )}
+
       {pastoInModificaId && (
         <ModificaPastoSalvato
           userId={userId}
