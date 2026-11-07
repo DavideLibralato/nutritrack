@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — La schermata di scansione per leggere solo il codice
+
+Branch `alimenti-codice-a-barre`, commit 3. `SchermataScansione` riceve
+il titolo da chi la apre (Aggiungi passa «Aggiungi a <pasto>», come
+prima) e un `uso`: `"cerca"`, il percorso di oggi, o `"solo-codice"`,
+che restituisce il codice letto senza cercarlo né nel catalogo né su
+Open Food Facts (per «Aggiungi codice a barre», commit 4-5). In
+"solo-codice" sotto il mirino «Il codice torna nel modulo: si salva con
+Salva», e in "Scrivi il codice" il pulsante dice «Usa questo codice»
+invece di «Cerca» (confermato da Davide) e il tasto Invio della
+tastiera è "Fine" invece di "Cerca" (`enterKeyHint`). Aggiungi non
+cambia: i suoi test passano senza modifiche. Quattro test permanenti in
+`SchermataScansione.test.tsx`, visti fallire rompendo il codice da una
+copia (codice cercato anche in "solo-codice", codice non portato a 13
+cifre, riga sotto il mirino sbagliata, tasto Invio uguale nei due usi).
+
 ## 2026-11-07 — salvaAlimento aggiunge il codice in modifica
 
 Branch `alimenti-codice-a-barre`, commit 2. `salvaAlimento` riceve un

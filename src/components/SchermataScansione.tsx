@@ -1,8 +1,18 @@
 "use client";
 
 // La schermata di scansione del codice a barre (PUNTO_DI_PARTENZA.md §3,
-// "Codice a barre"; mockup docs/mockups/aggiungi.html, "Scansione"). Si
-// apre dal pulsante Scansiona di Aggiungi e copre la pagina.
+// "Codice a barre"; mockup docs/mockups/aggiungi.html, "Scansione", e
+// docs/mockups/catalogo-alimenti.html). Copre la pagina. Il titolo lo
+// dà chi la apre («Aggiungi a <pasto>», «Catalogo alimenti», «Codice per
+// «Nome»»).
+//
+// Due usi (`uso`):
+// - "cerca": il codice letto si cerca (sotto). Da Scansiona, in Aggiungi
+//   e nel catalogo;
+// - "solo-codice": il codice letto torna a chi ha aperto la schermata,
+//   senza cercarlo, né nel catalogo né su Open Food Facts. Da «Aggiungi
+//   codice a barre» in "Modifica alimento" (§3, "Il codice in modifica"):
+//   non ha bisogno della rete, solo del lettore (o di "Scrivi il codice").
 //
 // Tre modi di dare il codice, tutti verso la stessa ricerca:
 // - il video dal vivo della fotocamera posteriore, letto ogni ~200 ms
@@ -11,7 +21,7 @@
 //   non chiede il permesso della pagina, quindi va anche se è stato negato;
 // - "Scrivi il codice": le cifre sotto le barre, controllate da leggiCodice.
 //
-// Poi cercaCodice: prima il catalogo locale, poi Open Food Facts. Cosa
+// Nell'uso "cerca", poi cercaCodice: prima il catalogo locale, poi Open Food Facts. Cosa
 // succede dopo lo decide la pagina (onNelCatalogo → sheet quantità,
 // onModulo → "Nuovo alimento"); qui restano solo l'attesa e gli errori di
 // rete, sempre con "Crea a mano" e il codice già compilato.
@@ -35,6 +45,7 @@ import {
   TESTO_FOTO_SENZA_CODICE,
   TESTO_INQUADRA,
   TESTO_LETTORE_NON_CARICATO,
+  TESTO_TORNA_NEL_MODULO,
   testoFotocamera,
   type ErroreRicerca,
 } from "@/lib/barcode/testiScansione";
@@ -57,29 +68,42 @@ type Fase =
   | { tipo: "ricerca"; codice: string }
   | { tipo: "errore"; codice: string; errore: ErroreRicerca };
 
+// Cosa fare con il codice letto (vedi in cima).
+export type UsoScansione =
+  | {
+      tipo: "cerca";
+      // Il prodotto è già nel catalogo: in Aggiungi lo sheet quantità.
+      onNelCatalogo: (alimento: Alimento) => void;
+      // "Nuovo alimento": precompilato (trovato su OFF) o con il solo codice.
+      onModulo: (daCodice: DatiCodice) => void;
+    }
+  | {
+      tipo: "solo-codice";
+      // Il codice, già nella forma di leggiCodice (UPC-A a 13 cifre).
+      onCodice: (codice: string) => void;
+    };
+
 interface Props {
   userId: string;
-  // La getUserMedia già partita nel gestore del tocco su Scansiona
-  // (richiediFotocamera in useFotocamera.ts), o null se il browser non ha
-  // la fotocamera. Non la chiede la schermata all'apertura: sarebbe dopo
-  // il ridisegno, fuori dal tocco (difetto del 07/11 nell'app installata).
+  // La getUserMedia già partita nel gestore del tocco che apre la
+  // schermata (richiediFotocamera in useFotocamera.ts), o null se il
+  // browser non ha la fotocamera. Non la chiede la schermata all'apertura:
+  // sarebbe dopo il ridisegno, fuori dal tocco (difetto del 07/11 nell'app
+  // installata).
   richiestaFotocamera: Promise<MediaStream> | null;
-  nomePasto: string;
+  titolo: string;
   onChiudi: () => void;
-  // Il prodotto è già nel catalogo: sheet quantità.
-  onNelCatalogo: (alimento: Alimento) => void;
-  // "Nuovo alimento": precompilato (trovato su OFF) o con il solo codice.
-  onModulo: (daCodice: DatiCodice) => void;
+  uso: UsoScansione;
 }
 
 export default function SchermataScansione({
   userId,
   richiestaFotocamera,
-  nomePasto,
+  titolo,
   onChiudi,
-  onNelCatalogo,
-  onModulo,
+  uso,
 }: Props) {
+  const soloCodice = uso.tipo === "solo-codice";
   const areaVisibile = useAreaVisibile();
 
   const inputFoto = useRef<HTMLInputElement>(null);
@@ -141,10 +165,16 @@ export default function SchermataScansione({
   }
 
   // Il codice è letto (dal video, da una foto o scritto): si spegne la
-  // fotocamera e si cerca.
+  // fotocamera e si cerca. Nell'uso "solo-codice" non si cerca: il codice
+  // torna a chi ha aperto la schermata.
   async function cerca(codice: string) {
     trovato.current = true;
     ferma();
+    if (uso.tipo === "solo-codice") {
+      uso.onCodice(codice);
+      return;
+    }
+    const { onNelCatalogo, onModulo } = uso;
     ricerca.current?.abort();
     const controller = new AbortController();
     ricerca.current = controller;
@@ -269,7 +299,7 @@ export default function SchermataScansione({
         <button type="button" onClick={onChiudi} aria-label="Chiudi la scansione" className={CLASSE_TONDO}>
           <IconaCroce />
         </button>
-        <span className="min-w-0 truncate text-[15px] font-semibold">Aggiungi a {nomePasto}</span>
+        <span className="min-w-0 truncate text-[15px] font-semibold">{titolo}</span>
         {torciaDisponibile && fase.tipo === "fotocamera" ? (
           <button
             type="button"
@@ -328,7 +358,9 @@ export default function SchermataScansione({
             ) : (
               <div>
                 <p className="max-w-[260px] text-base leading-snug">{TESTO_INQUADRA}</p>
-                <p className="mt-2 text-[13px] text-scan-muted">{TESTO_DA_SOLO}</p>
+                <p className="mt-2 text-[13px] text-scan-muted">
+                  {soloCodice ? TESTO_TORNA_NEL_MODULO : TESTO_DA_SOLO}
+                </p>
               </div>
             )}
             {avvisoFoto && (
@@ -349,7 +381,8 @@ export default function SchermataScansione({
               type="text"
               inputMode="numeric"
               autoComplete="off"
-              enterKeyHint="search"
+              // Il tasto Invio della tastiera dice «Cerca» solo dove si cerca.
+              enterKeyHint={soloCodice ? "done" : "search"}
               autoFocus
               value={scritto}
               onChange={(e) => {
@@ -365,8 +398,10 @@ export default function SchermataScansione({
                 {erroreScritto}
               </p>
             )}
+            {/* "Cerca" sarebbe falso nell'uso "solo-codice": lì non si
+                cerca niente, il codice torna nel modulo. */}
             <button type="submit" className={`${CLASSE_AZIONE} mt-4 w-full flex-none`}>
-              Cerca
+              {soloCodice ? "Usa questo codice" : "Cerca"}
             </button>
             <button
               type="button"
@@ -396,7 +431,7 @@ export default function SchermataScansione({
             </button>
             <button
               type="button"
-              onClick={() => onModulo({ barcode: fase.codice, prodotto: null })}
+              onClick={() => uso.tipo === "cerca" && uso.onModulo({ barcode: fase.codice, prodotto: null })}
               className={`${CLASSE_AZIONE} flex-none`}
             >
               Crea a mano

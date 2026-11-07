@@ -11,6 +11,9 @@ import type { StatoFotocamera } from "./useFotocamera";
 
 export const TESTO_INQUADRA = "Inquadra il codice a barre della confezione";
 export const TESTO_DA_SOLO = "Si legge da solo, senza premere niente";
+// Al posto di TESTO_DA_SOLO quando la scansione legge solo il codice per
+// "Modifica alimento" (uso "solo-codice" di SchermataScansione).
+export const TESTO_TORNA_NEL_MODULO = "Il codice torna nel modulo: si salva con Salva";
 export const TESTO_SENZA_RETE = "Senza connessione la scansione non è disponibile";
 export const TESTO_CERCO = "Cerco il prodotto…";
 export const TESTO_FOTO_SENZA_CODICE =

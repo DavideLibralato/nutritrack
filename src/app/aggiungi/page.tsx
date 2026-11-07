@@ -1031,17 +1031,20 @@ function AggiungiContenuto() {
         <SchermataScansione
           userId={userId}
           richiestaFotocamera={scansione}
-          nomePasto={nomePastoSelezionato}
+          titolo={`Aggiungi a ${nomePastoSelezionato}`}
           onChiudi={() => setScansione(undefined)}
-          onNelCatalogo={(alimento) => {
-            setScansione(undefined);
-            scegli(alimento);
-          }}
-          onModulo={(dati) => {
-            setScansione(undefined);
-            setAlimentoInModifica(null);
-            setDaCodice(dati);
-            setCreando(true);
+          uso={{
+            tipo: "cerca",
+            onNelCatalogo: (alimento) => {
+              setScansione(undefined);
+              scegli(alimento);
+            },
+            onModulo: (dati) => {
+              setScansione(undefined);
+              setAlimentoInModifica(null);
+              setDaCodice(dati);
+              setCreando(true);
+            },
           }}
         />
       )}

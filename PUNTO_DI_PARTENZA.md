@@ -926,7 +926,16 @@ silenzio.
     titolo «Codice per «Nome»», che **legge il codice senza
     cercarlo**: video, "Usa una foto" o "Scrivi il codice", niente
     catalogo né Open Food Facts. Sotto il mirino «Il codice torna nel
-    modulo: si salva con Salva» al posto di «Si legge da solo…»;
+    modulo: si salva con Salva» al posto di «Si legge da solo…», e in
+    "Scrivi il codice" il pulsante dice **«Usa questo codice»** invece
+    di «Cerca», che qui sarebbe falso (confermato da Davide, 07/11); per
+    lo stesso motivo il tasto Invio della tastiera è "Fine"
+    (`enterKeyHint="done"`) invece di "Cerca". Com'è fatta (commit 3 del
+    branch): `SchermataScansione` riceve il `titolo` da chi la apre e
+    un `uso`, `"cerca"` (Aggiungi e catalogo, con `onNelCatalogo` e
+    `onModulo`) o `"solo-codice"` (con `onCodice`, che riceve il codice
+    già nella forma di `leggiCodice`); test in
+    `SchermataScansione.test.tsx`;
   - il codice letto torna nel modulo nel campo "Codice a barre" in sola
     lettura, **alto 44 px, con dentro una × a destra** (`aria-label`
     «Togli il codice»), come la croce della ricerca: un tocco da 44 px
