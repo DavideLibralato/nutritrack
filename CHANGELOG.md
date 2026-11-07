@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Il codice a barre in "Modifica alimento"
+
+Branch `alimenti-codice-a-barre`, commit 4. In `CreaAlimentoForm` un
+alimento con il codice lo mostra in sola lettura dopo Marca (fino a oggi
+in modifica non si vedeva). Con la prop nuova `aggiungiCodice` (dal
+catalogo, commit 5) un alimento senza codice ha «Aggiungi codice a
+barre»: apre la scansione del solo codice, e il codice letto torna nel
+campo alto 44 px con la × «Togli il codice» e la riga «Una volta
+salvato, il codice non si cambia più.»; si scrive solo con Salva. Un
+codice già di un altro alimento segna il campo e spegne Salva. Con
+"ha-gia-codice" il modulo dice «Intanto questo alimento ha ricevuto il
+codice … da un altro dispositivo.», tiene i valori e un secondo Salva
+li salva. "Apri" diventa un pulsante sotto il messaggio dei doppioni,
+«Apri «nome»», dappertutto. La scansione sta fuori dal `<form>`: dentro,
+«Usa questo codice» faceva partire il Salva (visto con una rottura).
+Sette test permanenti nuovi in `CreaAlimentoForm.test.tsx`, e due test
+vecchi aggiornati perché `salvaAlimento` riceve ora un quinto argomento
+(`undefined` senza codice da aggiungere). Sei rotture da una copia, ognuna presa
+dai test. Nessun test cercava "Apri" per nome: non c'era niente da
+aggiornare per il pulsante, al contrario di quanto previsto nel piano.
+
 ## 2026-11-07 — La schermata di scansione per leggere solo il codice
 
 Branch `alimenti-codice-a-barre`, commit 3. `SchermataScansione` riceve

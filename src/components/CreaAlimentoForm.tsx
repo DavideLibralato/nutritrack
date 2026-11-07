@@ -31,6 +31,15 @@
 // Facts — i campi già compilati, l'avviso in cima, la riga della licenza
 // in fondo e, se le kcal vengono dai kJ, una riga sotto le kcal. Niente si
 // salva senza il tocco su Salva: i valori dei volontari si controllano.
+//
+// Il codice in modifica (PUNTO_DI_PARTENZA.md §3, "Codice a barre", "Il
+// codice in modifica"): un alimento con il codice lo mostra in sola
+// lettura dopo Marca. Senza codice, e solo se chi apre il form lo chiede
+// (`aggiungiCodice`, dal catalogo), al suo posto c'è «Aggiungi codice a
+// barre»: apre la scansione che legge solo il codice; il codice letto
+// torna nel campo con la × «Togli il codice» e si scrive solo con Salva
+// (salvaAlimento, `codiceDaAggiungere`), con il controllo dei doppioni
+// anche per il codice.
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -43,7 +52,11 @@ import { validaValoriAlimento, type CampoAlimento } from "@/lib/inserimento/valo
 import { grammiPerCampo } from "@/lib/inserimento/grammi";
 import { numeroPerCampo } from "@/lib/numeriDecimali";
 import { haValori, type ProdottoOpenFoodFacts } from "@/lib/barcode/valoriOpenFoodFacts";
+import { richiediFotocamera } from "@/lib/barcode/useFotocamera";
 import IconaInfo from "./IconaInfo";
+import IconaCroce from "./IconaCroce";
+import IconaCodiceBarre from "./IconaCodiceBarre";
+import SchermataScansione from "./SchermataScansione";
 
 // Un alimento che nasce da un codice a barre: il codice (già nella forma
 // di leggiCodice) e il prodotto trovato su Open Food Facts, oppure null se
@@ -98,6 +111,10 @@ interface Props {
   // vivere qui: il chiamante smonta questo form subito dopo (vedi
   // /aggiungi, BarraAnnulla).
   onEliminato?: (alimento: Alimento, traccia: TracciaRimozione) => void;
+  // «Aggiungi codice a barre» per un alimento senza codice. Solo dal
+  // catalogo: dalla matita di Aggiungi no, lì si corregge al volo prima
+  // di registrare (PUNTO_DI_PARTENZA.md §3, "Il codice in modifica").
+  aggiungiCodice?: boolean;
   // --- Solo in creazione da un codice a barre ---
   // Ignorato in modifica: lì codice e fonte restano quelli della riga.
   daCodice?: DatiCodice;
@@ -115,6 +132,7 @@ export default function CreaAlimentoForm({
   alimentoDaModificare,
   onModificato,
   onEliminato,
+  aggiungiCodice = false,
   daCodice: daCodiceProp,
 }: Props) {
   const modifica = !!alimentoDaModificare;
@@ -144,6 +162,16 @@ export default function CreaAlimentoForm({
   const [errore, setErrore] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
   const [confermaElim, setConfermaElim] = useState(false);
+  // Il codice letto per un alimento che non ce l'aveva, non ancora
+  // salvato: lo scrive il Salva, la × lo toglie.
+  const [codiceNuovo, setCodiceNuovo] = useState<string | null>(null);
+  // Il Salva ha trovato la riga con un altro codice, arrivato intanto da
+  // un altro dispositivo (salvaAlimento: "ha-gia-codice").
+  const [codiceArrivato, setCodiceArrivato] = useState<string | null>(null);
+  // La scansione del solo codice: la richiesta della fotocamera partita
+  // al tocco su «Aggiungi codice a barre» (null se il telefono non ce
+  // l'ha); undefined = chiusa.
+  const [scansione, setScansione] = useState<Promise<MediaStream> | null | undefined>(undefined);
 
   // Validazione a ogni ridisegno (src/lib/inserimento/valoriAlimento.ts):
   // limiti di numeric(7,2), arrotondamento a due decimali, limiti fisici per
@@ -159,7 +187,20 @@ export default function CreaAlimentoForm({
   // alimento arrivato con la sync da un altro telefono. undefined finché
   // la prima lettura non è pronta: lì il controllo lo fa solo il Salva.
   const catalogo = useLiveQuery(() => catalogoLocale(userId), [userId]);
-  const barcode = daCodice?.barcode ?? null;
+  // Il codice che sta per nascere: quello della creazione o quello da
+  // aggiungere in modifica. Si confronta con il catalogo; il codice già
+  // salvato su questa riga no (vedi trovaDoppione).
+  const barcode = daCodice?.barcode ?? codiceNuovo;
+  // Il codice già salvato, letto anche dal catalogo live: uno arrivato con
+  // la sync mentre il form è aperto compare subito.
+  const rigaViva = a ? catalogo?.find((x) => x.id === a.id) : undefined;
+  const codiceSalvato = a ? (rigaViva ?? a).barcode || null : null;
+  // Cosa mostra il campo "Codice a barre", in ordine: il codice della
+  // creazione, quello appena letto (con la ×), quello arrivato al Salva,
+  // quello salvato. Nessuno: in modifica, se chiesto, «Aggiungi codice a
+  // barre».
+  const codiceInCampo = daCodice?.barcode ?? codiceNuovo ?? codiceArrivato ?? codiceSalvato;
+  const conTogli = !daCodice && codiceNuovo !== null;
   const doppione = catalogo
     ? trovaDoppione(catalogo, { nome, marca, barcode }, { userId, escludiId: a?.id })
     : null;
@@ -204,13 +245,26 @@ export default function CreaAlimentoForm({
 
     setInCorso(true);
     try {
-      const esito = await salvaAlimento(userId, campi, alimentoDaModificare?.id, origine);
-      if (esito.esito !== "salvato") {
-        // "doppione": nato fra l'ultimo ridisegno e il tocco (un altro
-        // dispositivo, o il secondo di un doppio tocco): niente scritto.
-        // Il messaggio «Hai già …» lo mostra la lettura live, che l'ha già
-        // visto. "ha-gia-codice" arriva solo con un codice da aggiungere,
-        // che questo form non passa ancora.
+      const esito = await salvaAlimento(
+        userId,
+        campi,
+        alimentoDaModificare?.id,
+        origine,
+        codiceNuovo ?? undefined
+      );
+      if (esito.esito === "doppione") {
+        // Nato fra l'ultimo ridisegno e il tocco (un altro dispositivo, o
+        // il secondo di un doppio tocco): niente scritto. Il messaggio
+        // «Hai già …» lo mostra la lettura live, che l'ha già visto.
+        setInCorso(false);
+        return;
+      }
+      if (esito.esito === "ha-gia-codice") {
+        // Niente scritto. Il campo passa al codice arrivato, senza ×; i
+        // valori scritti restano nel modulo, e un secondo Salva li salva
+        // (senza codice da aggiungere).
+        setCodiceNuovo(null);
+        setCodiceArrivato(esito.barcode);
         setInCorso(false);
         return;
       }
@@ -252,6 +306,7 @@ export default function CreaAlimentoForm({
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-bold">
@@ -332,21 +387,44 @@ export default function CreaAlimentoForm({
       {/* Il codice a barre, in sola lettura (decisione del 07/11): se è
           sbagliato si torna indietro e si scansiona di nuovo. readOnly e
           non disabled: si legge e si seleziona, e il lettore di schermo
-          lo annuncia come campo. */}
-      {daCodice && (
+          lo annuncia come campo. Un codice appena letto in modifica ha la
+          × dentro il campo, alto 44 px perché la × sia un tocco da 44
+          (mockup catalogo-alimenti.html): una volta salvato non si toglie
+          più. */}
+      {codiceInCampo ? (
         <div>
           <label htmlFor="crea-codice" className="block text-sm font-medium mb-1">
             Codice a barre
           </label>
-          <input
-            id="crea-codice"
-            type="text"
-            readOnly
-            value={daCodice.barcode}
-            aria-invalid={doppionePerCodice}
-            aria-describedby={doppionePerCodice ? "crea-doppione" : undefined}
-            className={`w-full rounded-lg border bg-surface p-2 text-muted tabular-nums ${doppionePerCodice ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
-          />
+          <div className="relative">
+            <input
+              id="crea-codice"
+              type="text"
+              readOnly
+              value={codiceInCampo}
+              aria-invalid={doppionePerCodice}
+              aria-describedby={doppionePerCodice ? "crea-doppione" : undefined}
+              className={`w-full rounded-lg border bg-surface p-2 text-muted tabular-nums ${conTogli ? "h-11 pr-12" : ""} ${doppionePerCodice ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+            />
+            {conTogli && (
+              <button
+                type="button"
+                onClick={() => setCodiceNuovo(null)}
+                aria-label="Togli il codice"
+                className={`absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`}
+              >
+                <IconaCroce />
+              </button>
+            )}
+          </div>
+          {conTogli && (
+            <p className="text-xs text-muted mt-1">Una volta salvato, il codice non si cambia più.</p>
+          )}
+          {codiceArrivato && !codiceNuovo && (
+            <p role="status" className="mt-1 text-sm text-muted">
+              Intanto questo alimento ha ricevuto il codice {codiceArrivato} da un altro dispositivo.
+            </p>
+          )}
           {doppione && doppionePerCodice && (
             <MessaggioDoppione
               doppione={doppione}
@@ -356,6 +434,22 @@ export default function CreaAlimentoForm({
             />
           )}
         </div>
+      ) : (
+        modifica &&
+        aggiungiCodice && (
+          /* Dove, negli alimenti con il codice, c'è il campo (proposta 1
+             del mockup). Acceso anche senza rete: legge solo il codice.
+             La fotocamera si chiede dentro il tocco (richiediFotocamera),
+             come Scansiona in Aggiungi. */
+          <button
+            type="button"
+            onClick={() => setScansione(richiediFotocamera())}
+            className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-dashed border-accent px-3 text-[15px] font-semibold text-accent ${CLASSE_FOCUS}`}
+          >
+            <IconaCodiceBarre size={20} />
+            Aggiungi codice a barre
+          </button>
+        )
       )}
 
       {/* Ordine come sulle etichette dei prodotti: Kcal, Grassi, Carboidrati,
@@ -503,13 +597,37 @@ export default function CreaAlimentoForm({
         </button>
       )}
     </form>
+
+    {/* Fuori dal <form>: la schermata ha il suo <form> ("Scrivi il
+        codice"), e un submit lì dentro risalirebbe fino a questo, cioè
+        al Salva. */}
+    {scansione !== undefined && a && (
+      <SchermataScansione
+        userId={userId}
+        richiestaFotocamera={scansione}
+        titolo={`Codice per «${a.nome}»`}
+        onChiudi={() => setScansione(undefined)}
+        uso={{
+          tipo: "solo-codice",
+          onCodice: (codice) => {
+            setScansione(undefined);
+            setCodiceArrivato(null);
+            setCodiceNuovo(codice);
+          },
+        }}
+      />
+    )}
+    </>
   );
 }
 
-// «Hai già …» con "Apri" accanto: sotto Nome e Marca se il doppione è per
-// nome e marca, sotto il codice se è per il codice (testoDoppione sceglie
-// le parole). Sempre un solo messaggio, con lo stesso id a cui puntano i
-// campi segnati.
+// «Hai già …» e sotto il pulsante «Apri «nome»»: sotto Nome e Marca se il
+// doppione è per nome e marca, sotto il codice se è per il codice
+// (testoDoppione sceglie le parole). Sempre un solo messaggio, con lo
+// stesso id a cui puntano i campi segnati. "Apri" è un pulsante vero da
+// 44 px, non più un link accanto al messaggio (Davide, 07/11; mockup
+// catalogo-alimenti.html), con il solo nome: nome e marca li dice già il
+// messaggio sopra.
 function MessaggioDoppione(props: {
   doppione: Alimento;
   barcode: string | null;
@@ -518,7 +636,7 @@ function MessaggioDoppione(props: {
 }) {
   const { doppione } = props;
   return (
-    <div className="mt-1 flex items-baseline justify-between gap-3">
+    <div className="mt-1">
       <p id="crea-doppione" className="text-sm text-warning">
         {testoDoppione(doppione, { barcode: props.barcode })}
       </p>
@@ -526,9 +644,9 @@ function MessaggioDoppione(props: {
         <button
           type="button"
           onClick={() => props.onApri(doppione)}
-          className={`shrink-0 rounded text-sm font-medium text-accent underline ${CLASSE_FOCUS}`}
+          className={`mt-2 inline-flex min-h-11 items-center rounded-lg border border-accent px-4 text-[15px] font-semibold text-accent ${CLASSE_FOCUS}`}
         >
-          Apri
+          Apri «{doppione.nome}»
         </button>
       )}
     </div>

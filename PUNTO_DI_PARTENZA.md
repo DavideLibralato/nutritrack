@@ -953,6 +953,23 @@ silenzio.
     (`salvaAlimento`), e un doppione non scrive niente. Se intanto la
     riga ha ricevuto un codice da un altro dispositivo (sync), quello
     non si sovrascrive;
+  - **codice arrivato da un altro dispositivo al Salva** (esito
+    `"ha-gia-codice"` di `salvaAlimento`; Davide, 07/11): niente
+    scritto. Il modulo dice «Intanto questo alimento ha ricevuto il
+    codice <codice> da un altro dispositivo.», il campo passa a quel
+    codice in sola lettura senza ×, i valori scritti restano nel modulo
+    e un secondo Salva li salva (senza codice da aggiungere). Lo stesso
+    codice arrivato dalla sync non è un conflitto: si salva;
+  - com'è fatto (commit 4 del branch): in `CreaAlimentoForm`, prop
+    `aggiungiCodice` (la passa solo il catalogo). Il campo mostra, in
+    quest'ordine, il codice della creazione, quello appena letto (con
+    la ×), quello arrivato al Salva, quello salvato, letto anche dal
+    catalogo live (un codice arrivato con la sync a modulo aperto
+    compare subito). La scansione la apre il form stesso, uso
+    `"solo-codice"`, **fuori dal suo `<form>`**: la schermata ha il suo
+    `<form>` per "Scrivi il codice", e un submit lì dentro risalirebbe
+    fino al Salva (visto con una rottura: «Usa questo codice» salvava).
+    Test in `CreaAlimentoForm.test.tsx`;
   - **offline: Scansiona resta grigio, "Aggiungi codice a barre" no**
     (decisione di Davide, 07/11). Scansiona, in Aggiungi e nel
     catalogo, porta a una ricerca che per un prodotto nuovo ha bisogno
