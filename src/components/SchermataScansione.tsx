@@ -59,6 +59,11 @@ type Fase =
 
 interface Props {
   userId: string;
+  // La getUserMedia già partita nel gestore del tocco su Scansiona
+  // (richiediFotocamera in useFotocamera.ts), o null se il browser non ha
+  // la fotocamera. Non la chiede la schermata all'apertura: sarebbe dopo
+  // il ridisegno, fuori dal tocco (difetto del 07/11 nell'app installata).
+  richiestaFotocamera: Promise<MediaStream> | null;
   nomePasto: string;
   onChiudi: () => void;
   // Il prodotto è già nel catalogo: sheet quantità.
@@ -67,14 +72,30 @@ interface Props {
   onModulo: (daCodice: DatiCodice) => void;
 }
 
-export default function SchermataScansione({ userId, nomePasto, onChiudi, onNelCatalogo, onModulo }: Props) {
+export default function SchermataScansione({
+  userId,
+  richiestaFotocamera,
+  nomePasto,
+  onChiudi,
+  onNelCatalogo,
+  onModulo,
+}: Props) {
   const areaVisibile = useAreaVisibile();
 
   const inputFoto = useRef<HTMLInputElement>(null);
   // I campi presi uno per uno: `collegaVideo` va in ref={...}, e il React
   // Compiler tratterebbe da ref tutto l'oggetto che lo contiene.
-  const { collegaVideo, fotogramma, stato, avvia, ferma, torciaDisponibile, torciaAccesa, cambiaTorcia } =
-    useFotocamera();
+  const {
+    collegaVideo,
+    fotogramma,
+    stato,
+    erroreTecnico,
+    avvia,
+    ferma,
+    torciaDisponibile,
+    torciaAccesa,
+    cambiaTorcia,
+  } = useFotocamera();
   const [fase, setFase] = useState<Fase>({ tipo: "fotocamera" });
   const [lettore, setLettore] = useState<Lettore | null>(null);
   const [lettoreFallito, setLettoreFallito] = useState(false);
@@ -88,11 +109,17 @@ export default function SchermataScansione({ userId, nomePasto, onChiudi, onNelC
   const trovato = useRef(false);
 
 
-  // All'apertura (cioè al tocco su Scansiona): fotocamera e lettore
-  // partono insieme. Alla chiusura la ricerca in corso si annulla; la
-  // fotocamera la spegne useFotocamera da sé.
+  // All'apertura la fotocamera prende in mano la richiesta partita al
+  // tocco su Scansiona; il lettore si carica in parallelo (effetto sotto),
+  // mai prima. La richiesta si usa una volta sola: in sviluppo React monta
+  // gli effetti due volte (Strict Mode), e il secondo giro ne chiede una
+  // nuova. Alla chiusura la ricerca in corso si annulla; la fotocamera la
+  // spegne useFotocamera da sé.
+  const richiestaIniziale = useRef<Promise<MediaStream> | null | undefined>(richiestaFotocamera);
   useEffect(() => {
-    avvia();
+    const richiesta = richiestaIniziale.current;
+    richiestaIniziale.current = undefined;
+    avvia(richiesta);
     return () => ricerca.current?.abort();
   }, [avvia]);
 
@@ -280,9 +307,20 @@ export default function SchermataScansione({ userId, nomePasto, onChiudi, onNelC
                 </button>
               </>
             ) : testoStato ? (
-              <p role="alert" className="max-w-[300px] text-base leading-snug">
-                {testoStato}
-              </p>
+              <div className="max-w-[300px]">
+                <p role="alert" className="text-base leading-snug">
+                  {testoStato}
+                </p>
+                {/* Il nome tecnico dell'errore, piccolo: per capire dal
+                    telefono cosa ha risposto iOS (difetto del 07/11). Come
+                    "Dettagli tecnici" di Sincronizzazione, ma sempre
+                    visibile e nei colori della scansione. */}
+                {erroreTecnico && (
+                  <p className="mt-2 font-mono text-[11px] leading-snug break-words text-scan-muted">
+                    {erroreTecnico}
+                  </p>
+                )}
+              </div>
             ) : inPausa ? (
               <button type="button" onClick={tornaAllaFotocamera} className={`${CLASSE_AZIONE} max-w-[260px] flex-none px-6`}>
                 Riattiva la fotocamera

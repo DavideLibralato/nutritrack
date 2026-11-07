@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre: la fotocamera chiesta dentro il tocco
+
+Branch `codice-a-barre`. Difetto trovato da Davide sull'anteprima,
+iPhone con iOS 18.7: nell'app installata dalla Home Scansiona mostrava
+sempre «Non hai dato il permesso per la fotocamera», senza che iOS lo
+chiedesse; in Safari funzionava. Causa non dimostrata (PUNTO §11): nel
+codice nessun `await` prima di `getUserMedia`, ma la chiamata partiva da
+un `useEffect` della schermata, dopo il ridisegno, fuori dal tocco.
+Correzione: `richiediFotocamera()` chiama `getUserMedia` come prima
+cosa nel gestore del tocco su Scansiona, e la schermata riceve la
+richiesta già partita; il lettore si carica dopo. Gli errori passano da
+`statoDaErrore` (`NotAllowedError` e `SecurityError` → permesso, tutti
+gli altri → non disponibile), e sotto il messaggio c'è una riga con il
+nome tecnico, per leggerlo dal telefono. 20 test nuovi (ordine
+"getUserMedia dentro il tocco, prima del lettore, una volta sola",
+traduzione di ogni errore, riga tecnica; e, chiesti da Davide, lo stream
+che risponde dopo la chiusura della scansione, dopo aver lasciato
+Aggiungi o dopo il secondo piano, con la richiesta partita dal tocco),
+visti fallire con 11 rotture, fra cui il codice di prima (richiesta
+dalla schermata), un `await` prima di `getUserMedia` e il controllo
+dello stream tardivo saltato solo per la richiesta partita dal tocco
+(i test di prima restavano verdi, i 4 nuovi no). Vitest 1641/1641,
+`npm run lint`, `tsc` e build ok.
+
 ## 2026-11-07 — Codice a barre: la scansione in Aggiungi
 
 Branch `codice-a-barre`, commit 6. Il pulsante Scansiona da 48 px accanto

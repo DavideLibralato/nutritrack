@@ -725,7 +725,29 @@ silenzio.
     codice" resta, non ha bisogno del lettore);
   - un permesso che arriva dopo la chiusura o dopo il secondo piano (il
     popup può restare aperto secondi) non lascia una fotocamera accesa:
-    lo stream arrivato tardi si spegne subito.
+    lo stream arrivato tardi si spegne subito;
+  - **`getUserMedia` parte dentro il gestore del tocco**, come prima
+    cosa: il tocco su Scansiona chiama `richiediFotocamera()` e passa la
+    richiesta già partita alla schermata, che la prende in mano; il
+    lettore si carica dopo, in parallelo. "Riattiva la fotocamera" e
+    "Torna alla fotocamera" la chiedono dal loro `onClick`. Prima
+    partiva da un `useEffect` della schermata, dopo il ridisegno (vedi
+    §11, "Difetti e verifiche aperti", il difetto del 07/11). La regola
+    dello stream arrivato tardi vale anche qui: se la richiesta partita
+    dal tocco risponde dopo la chiusura della scansione, dopo aver
+    lasciato Aggiungi o in secondo piano, lo stream si spegne (test
+    nell'hook e nella pagina);
+  - **gli errori di `getUserMedia`** (`statoDaErrore`):
+    `NotAllowedError` e `SecurityError` → «Non hai dato il permesso per
+    la fotocamera…»; tutti gli altri (`NotFoundError`,
+    `NotReadableError`, `OverconstrainedError`, `AbortError`,
+    `TypeError`, un rifiuto qualunque) e un browser senza
+    `getUserMedia` → «La fotocamera non è disponibile…». **Sotto il
+    messaggio una riga piccola, sempre visibile, con il nome tecnico**
+    (e il messaggio del browser, se c'è: «NotAllowedError: The request
+    is not allowed by the user agent»), come "Dettagli tecnici" di
+    Sincronizzazione ma nei colori della scansione: così dal telefono si
+    vede cosa ha risposto iOS.
 - **La libreria.** `barcode-detector` a versione esatta (3.2.3, che usa
   `zxing-wasm` 3.1.6), caricata con `import()` solo al tocco su
   Scansiona: non pesa sul caricamento dell'app. Il suo WebAssembly
@@ -8088,6 +8110,26 @@ i numeri delle sue segnalazioni.
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Codice a barre, app installata: sempre "permesso negato"** (branch
+  `codice-a-barre`, trovato da Davide il 07/11 sull'anteprima, iPhone
+  con iOS 18.7). Nell'app aggiunta alla Home, Scansiona mostrava sempre
+  «Non hai dato il permesso per la fotocamera» e iOS non chiedeva mai
+  il permesso; in Safari, sulla stessa anteprima, lo chiedeva e la
+  scansione funzionava. **Causa non ancora dimostrata.** Nel codice non
+  c'era nessun `await` prima di `getUserMedia`, ma la chiamata partiva
+  da un `useEffect` della schermata, cioè dopo il ridisegno di React,
+  fuori dal gestore del tocco: ipotesi, l'app installata vuole la
+  richiesta dentro il tocco. L'errore era `NotAllowedError` o
+  `SecurityError` (gli unici due che danno quel messaggio), senza
+  sapere quale. Altre spiegazioni possibili, da escludere: un "Non
+  consentire" già dato una volta dentro l'app installata, che iOS
+  ricorda finché l'app non si toglie e si rimette sulla Home.
+  **Correzione** (da provare): `getUserMedia` parte come prima cosa nel
+  tocco, e sotto il messaggio c'è il nome tecnico dell'errore (§3,
+  "Codice a barre"). Prova: togliere dalla Home l'app dell'anteprima
+  (solo quella), rimetterla, toccare Scansiona; se il messaggio resta,
+  leggere la riga tecnica.
 
 - ~~**Aggiungi: nuovo aspetto e ricerca nei pasti salvati**~~: provato
   sull'anteprima, unito a main e provato nell'app installata il 06/11

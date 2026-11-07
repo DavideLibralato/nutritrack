@@ -8,9 +8,17 @@
 //
 // Le regole, perché una fotocamera rimasta accesa è un difetto silenzioso
 // (batteria, e la spia verde dell'iPhone che resta accesa):
-// - si accende solo con `avvia()`, che la schermata chiama all'apertura
-//   (cioè al tocco su Scansiona) o al tocco su "Riattiva la fotocamera":
-//   la richiesta del permesso arriva sempre dopo un tocco;
+// - si accende solo con `avvia()`, e getUserMedia parte **dentro il
+//   gestore del tocco**, senza niente prima (nessun await, nessun
+//   ridisegno di React in mezzo): il tocco su Scansiona chiama
+//   richiediFotocamera() e passa la richiesta già partita alla schermata;
+//   "Riattiva la fotocamera" e "Torna alla fotocamera" chiamano avvia()
+//   dal loro onClick. Motivo (difetto del 07/11): nell'app installata
+//   dalla Home, su iPhone con iOS 18.7, Scansiona dava sempre "permesso
+//   negato" senza che iOS lo chiedesse, mentre in Safari funzionava.
+//   Prima getUserMedia partiva da un useEffect, cioè dopo il ridisegno,
+//   fuori dal tocco. Che fosse questa la causa non è dimostrato: da qui
+//   in poi l'errore vero si legge sotto il messaggio (`erroreTecnico`);
 // - si spegne (tutti i track fermati) con `ferma()`, quando la schermata
 //   si chiude (il componente si smonta) e quando l'app va in secondo piano
 //   (visibilitychange, pagehide);
@@ -36,6 +44,46 @@ export type StatoFotocamera =
 // TypeScript: si leggono così.
 type CapacitaConTorcia = MediaTrackCapabilities & { torch?: boolean };
 
+// Cosa si chiede: la fotocamera posteriore, se c'è ("ideal": altrimenti
+// va bene anche un'altra), senza audio.
+export const VINCOLI_FOTOCAMERA: MediaStreamConstraints = {
+  audio: false,
+  video: { facingMode: { ideal: "environment" } },
+};
+
+// Chiede la fotocamera ADESSO, in modo sincrono: da chiamare come prima
+// cosa nel gestore di un tocco. null se il browser non la offre. Il catch
+// vuoto evita l'avviso "promessa rifiutata e non gestita" nell'istante fra
+// la richiesta e il momento in cui avvia() la prende in mano: il rifiuto
+// arriva lo stesso a chi aggancia .then/.catch dopo.
+export function richiediFotocamera(): Promise<MediaStream> | null {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return null;
+  const richiesta = navigator.mediaDevices.getUserMedia(VINCOLI_FOTOCAMERA);
+  richiesta.catch(() => {});
+  return richiesta;
+}
+
+// Da un errore di getUserMedia allo stato da mostrare, più il nome tecnico
+// per la riga sotto il messaggio. Solo il permesso rifiutato
+// (NotAllowedError) e il contesto non sicuro (SecurityError: pagina non in
+// HTTPS, o fotocamera vietata alla pagina) dicono "permesso"; tutto il resto
+// (NotFoundError: nessuna fotocamera; NotReadableError: occupata da
+// un'altra app o guasta; OverconstrainedError; AbortError; TypeError; un
+// errore qualunque) dice "non disponibile". Funzione pura, per i test.
+export function statoDaErrore(errore: unknown): {
+  stato: "negata" | "non-disponibile";
+  tecnico: string;
+} {
+  const nome =
+    errore instanceof Error || errore instanceof DOMException ? errore.name : typeof errore;
+  const messaggio =
+    errore instanceof Error || errore instanceof DOMException ? errore.message.trim() : "";
+  return {
+    stato: nome === "NotAllowedError" || nome === "SecurityError" ? "negata" : "non-disponibile",
+    tecnico: messaggio ? `${nome}: ${messaggio}` : nome,
+  };
+}
+
 export interface Fotocamera {
   // Da mettere sull'elemento <video> della schermata:
   // ref={fotocamera.collegaVideo}. È un "ref a funzione": React la chiama
@@ -45,7 +93,13 @@ export interface Fotocamera {
   // Il video da leggere adesso, solo se ha già un fotogramma; altrimenti null.
   fotogramma: () => HTMLVideoElement | null;
   stato: StatoFotocamera;
-  avvia: () => void;
+  // Il nome (e il messaggio) dell'ultimo errore di getUserMedia, per la
+  // riga tecnica sotto il messaggio; null se non c'è stato.
+  erroreTecnico: string | null;
+  // `richiesta`: una getUserMedia già partita nel gestore del tocco
+  // (richiediFotocamera). Senza, la chiede avvia() stessa: va bene solo se
+  // avvia() è chiamata direttamente in un onClick.
+  avvia: (richiesta?: Promise<MediaStream> | null) => void;
   ferma: () => void;
   // La torcia, solo se il telefono la offre (su iPhone di solito no).
   torciaDisponibile: boolean;
@@ -56,6 +110,7 @@ export interface Fotocamera {
 export function useFotocamera(): Fotocamera {
   const video = useRef<HTMLVideoElement | null>(null);
   const [stato, setStato] = useState<StatoFotocamera>("spenta");
+  const [erroreTecnico, setErroreTecnico] = useState<string | null>(null);
   const [torciaDisponibile, setTorciaDisponibile] = useState(false);
   const [torciaAccesa, setTorciaAccesa] = useState(false);
   const stream = useRef<MediaStream | null>(null);
@@ -88,16 +143,20 @@ export function useFotocamera(): Fotocamera {
     if (prima === "attiva" || prima === "avvio") cambiaStato("in-pausa");
   }, [spegni, cambiaStato]);
 
-  const avvia = useCallback(() => {
+  const avvia = useCallback((richiestaGiaPartita?: Promise<MediaStream> | null) => {
+    // Prima di tutto la richiesta, se non è già partita: niente prima di
+    // getUserMedia (vedi in cima).
+    const richiesta = richiestaGiaPartita ?? richiediFotocamera();
     spegni();
     const mio = generazione.current;
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    setErroreTecnico(null);
+    if (!richiesta) {
       cambiaStato("non-disponibile");
+      setErroreTecnico("navigator.mediaDevices.getUserMedia assente");
       return;
     }
     cambiaStato("avvio");
-    navigator.mediaDevices
-      .getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" } } })
+    richiesta
       .then(async (nuovo) => {
         if (mio !== generazione.current) {
           // Arrivato tardi: la schermata è chiusa, o l'app è in secondo
@@ -122,8 +181,9 @@ export function useFotocamera(): Fotocamera {
       })
       .catch((errore: unknown) => {
         if (mio !== generazione.current) return;
-        const nome = errore instanceof DOMException ? errore.name : "";
-        cambiaStato(nome === "NotAllowedError" || nome === "SecurityError" ? "negata" : "non-disponibile");
+        const { stato: nuovo, tecnico } = statoDaErrore(errore);
+        setErroreTecnico(tecnico);
+        cambiaStato(nuovo);
       });
   }, [spegni, cambiaStato]);
 
@@ -168,5 +228,5 @@ export function useFotocamera(): Fotocamera {
   // La schermata si chiude: si spegne.
   useEffect(() => spegni, [spegni]);
 
-  return { collegaVideo, fotogramma, stato, avvia, ferma, torciaDisponibile, torciaAccesa, cambiaTorcia };
+  return { collegaVideo, fotogramma, stato, erroreTecnico, avvia, ferma, torciaDisponibile, torciaAccesa, cambiaTorcia };
 }

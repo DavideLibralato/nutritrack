@@ -6,7 +6,7 @@
 // voce in un pasto che quel giorno non esiste, e nessuno se ne accorgerebbe.
 
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
+import { act, render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import AggiungiPage from "./page";
 import {
   repositoryAlimenti,
@@ -62,8 +62,14 @@ vi.mock("@/lib/repository/vociDiario", async (importOriginal) => {
 
 // Il lettore dei codici a barre senza WebAssembly: in jsdom non c'è un
 // video da leggere, e i test della scansione passano da "Scrivi il codice".
+// `ordine` registra quando parte il caricamento del lettore, per il test
+// "getUserMedia prima di tutto".
+const ordineScansione = vi.hoisted(() => ({ eventi: [] as string[] }));
 vi.mock("@/lib/barcode/lettoreCodice", () => ({
-  preparaLettore: () => Promise.resolve({ leggi: async () => null }),
+  preparaLettore: () => {
+    ordineScansione.eventi.push("lettore");
+    return Promise.resolve({ leggi: async () => null });
+  },
 }));
 
 // Rete assente: si esercita solo la parte locale.
@@ -491,6 +497,8 @@ describe("Aggiungi: scansione del codice a barre", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => true });
+    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: undefined });
+    ordineScansione.eventi = [];
   });
 
   function risposta(corpo: unknown, status = 200) {
@@ -509,6 +517,108 @@ describe("Aggiungi: scansione del codice a barre", () => {
     fireEvent.click(within(scansione).getByRole("button", { name: "Cerca" }));
     return scansione;
   }
+
+  // Difetto del 07/11: nell'app installata dalla Home (iOS 18.7) sempre
+  // "permesso negato", senza la domanda di iOS; in Safari funzionava.
+  // Prima getUserMedia partiva da un useEffect della schermata, dopo il
+  // ridisegno, fuori dal tocco. Ora deve partire DENTRO il gestore del
+  // tocco, prima di aprire la schermata e prima del lettore. Il tocco si
+  // misura con due ascoltatori: uno che si accende all'inizio dell'evento
+  // (fase di cattura sul document, prima di React) e uno che si spegne
+  // alla fine (risalita sulla window, dopo React).
+  it("getUserMedia parte dentro il tocco su Scansiona, prima del lettore, e una volta sola", async () => {
+    await preparaPranzo();
+    render(<AggiungiPage />);
+    const pulsante = await screen.findByRole("button", { name: "Scansiona il codice a barre" });
+
+    let nelTocco = false;
+    const getUserMedia = vi.fn(() => {
+      ordineScansione.eventi.push(nelTocco ? "fotocamera nel tocco" : "fotocamera fuori dal tocco");
+      return new Promise<MediaStream>(() => {});
+    });
+    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+    const inizio = () => {
+      nelTocco = true;
+    };
+    const fine = () => {
+      nelTocco = false;
+    };
+    document.addEventListener("click", inizio, true);
+    window.addEventListener("click", fine);
+    try {
+      fireEvent.click(pulsante);
+    } finally {
+      document.removeEventListener("click", inizio, true);
+      window.removeEventListener("click", fine);
+    }
+
+    await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
+    expect(ordineScansione.eventi[0]).toBe("fotocamera nel tocco");
+    expect(ordineScansione.eventi).toContain("lettore");
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+  });
+
+  // La richiesta parte nel tocco, quindi può rispondere quando la schermata
+  // è già chiusa o Aggiungi è già lasciata: lo stream arrivato dopo deve
+  // spegnersi, altrimenti la fotocamera resta accesa senza che nessuno la
+  // veda (spia verde, batteria).
+  function fotocameraInSospeso() {
+    let rispondi!: (s: MediaStream) => void;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((ok) => {
+          rispondi = ok;
+        })
+    );
+    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+    const traccia = { stop: vi.fn(), getCapabilities: () => ({}) };
+    const stream = { getTracks: () => [traccia], getVideoTracks: () => [traccia] } as unknown as MediaStream;
+    return { traccia, rispondi: () => rispondi(stream) };
+  }
+
+  it("permesso arrivato dopo la chiusura della scansione: lo stream si spegne", async () => {
+    await preparaPranzo();
+    const fotocamera = fotocameraInSospeso();
+    render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Scansiona il codice a barre" }));
+    const scansione = await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
+    fireEvent.click(within(scansione).getByRole("button", { name: "Chiudi la scansione" }));
+    expect(screen.queryByRole("dialog", { name: "Scansione del codice a barre" })).toBeNull();
+
+    await act(async () => fotocamera.rispondi());
+    expect(fotocamera.traccia.stop).toHaveBeenCalled();
+  });
+
+  it("permesso arrivato dopo aver lasciato Aggiungi: lo stream si spegne", async () => {
+    await preparaPranzo();
+    const fotocamera = fotocameraInSospeso();
+    const { unmount } = render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Scansiona il codice a barre" }));
+    await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
+    unmount();
+
+    await act(async () => fotocamera.rispondi());
+    expect(fotocamera.traccia.stop).toHaveBeenCalled();
+  });
+
+  it("permesso rifiutato: il messaggio, e sotto il nome tecnico dell'errore", async () => {
+    await preparaPranzo();
+    const getUserMedia = vi.fn(() =>
+      Promise.reject(new DOMException("The request is not allowed by the user agent", "NotAllowedError"))
+    );
+    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+    render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Scansiona il codice a barre" }));
+
+    const scansione = await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
+    expect(await within(scansione).findByText(/Non hai dato il permesso per la fotocamera/)).toBeTruthy();
+    expect(
+      within(scansione).getByText("NotAllowedError: The request is not allowed by the user agent")
+    ).toBeTruthy();
+  });
 
   it("con la rete il pulsante è acceso, senza è spento e la riga dice perché", async () => {
     await preparaPranzo();

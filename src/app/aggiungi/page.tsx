@@ -64,6 +64,7 @@ import IconaCodiceBarre from "@/components/IconaCodiceBarre";
 import IconaSenzaRete from "@/components/IconaSenzaRete";
 import { useOnline } from "@/lib/useOnline";
 import { TESTO_SENZA_RETE } from "@/lib/barcode/testiScansione";
+import { richiediFotocamera } from "@/lib/barcode/useFotocamera";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import IconaIndietro from "@/components/IconaIndietro";
 import IconaGiu from "@/components/IconaGiu";
@@ -294,7 +295,10 @@ function AggiungiContenuto() {
   // alimento": il codice e il prodotto di Open Food Facts, o null se non
   // trovato. Con `creando` acceso e `daCodice` valorizzato il modulo parte
   // da lì invece che dalla ricerca scritta.
-  const [scansione, setScansione] = useState(false);
+  // `scansione` è la richiesta della fotocamera partita al tocco
+  // (richiediFotocamera), o null se il telefono non ce l'ha; undefined =
+  // schermata chiusa.
+  const [scansione, setScansione] = useState<Promise<MediaStream> | null | undefined>(undefined);
   const [daCodice, setDaCodice] = useState<DatiCodice | null>(null);
   // Senza rete il pulsante è spento (scelta di Davide). navigator.onLine
   // su iPhone arriva in ritardo: per questo anche la schermata ha i suoi
@@ -752,7 +756,10 @@ function AggiungiContenuto() {
                   "Senza rete"); la riga qui sotto dice perché. */}
               <button
                 type="button"
-                onClick={() => setScansione(true)}
+                // getUserMedia come PRIMA cosa del tocco, prima di aprire
+                // la schermata: nell'app installata iOS non chiedeva il
+                // permesso quando partiva dopo il ridisegno (07/11).
+                onClick={() => setScansione(richiediFotocamera())}
                 disabled={!online}
                 aria-label={online ? "Scansiona il codice a barre" : "Scansione non disponibile senza connessione"}
                 className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
@@ -1020,17 +1027,18 @@ function AggiungiContenuto() {
           nel catalogo → lo sheet quantità, come un tocco su un risultato;
           altrimenti "Nuovo alimento" con il codice (e i valori di Open
           Food Facts, se c'erano). */}
-      {scansione && (
+      {scansione !== undefined && (
         <SchermataScansione
           userId={userId}
+          richiestaFotocamera={scansione}
           nomePasto={nomePastoSelezionato}
-          onChiudi={() => setScansione(false)}
+          onChiudi={() => setScansione(undefined)}
           onNelCatalogo={(alimento) => {
-            setScansione(false);
+            setScansione(undefined);
             scegli(alimento);
           }}
           onModulo={(dati) => {
-            setScansione(false);
+            setScansione(undefined);
             setAlimentoInModifica(null);
             setDaCodice(dati);
             setCreando(true);
