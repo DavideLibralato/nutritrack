@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Formato e raccolta del JSON di Esporta
+
+Branch `esporta`, commit 3. Nuovi `src/lib/esporta/formatoEsportazione.ts`
+(formato `libra-dati` versione 1: `formato`, `intestazione`, `dati`,
+`foto`; ora con il fuso, nome del file dal giorno locale) e
+`raccoltaDati.ts`: una lettura di Dexie in una transazione, solo con il
+segno "discesa completa" e il profilo vivo, poi una funzione pura che
+tiene le righe vive dell'utente di tutte le tabelle di
+`TABELLE_DISCESA`, toglie preferiti e righe di pasti salvati su alimenti
+cancellati (come l'interfaccia, verificato nel codice e scritto in PUNTO
+§10.4), toglie i target di un obiettivo cancellato e aggiunge
+`alimenti_cancellati_citati` (citati da voci vive o da pasti salvati
+vivi), `pasti_cancellati_citati` (citati da voci vive) e
+`alimenti_comuni_citati`. Le regole seguono le 7 foreign key di
+Supabase; unica eccezione dichiarata, da gestire in Importa: una
+propria voce su un alimento o un pasto di un altro utente (telefono
+condiviso). La foto arriva nel commit dopo: qui lo stato e i byte si
+ricevono da chi chiama. 23 test permanenti nuovi in
+`raccoltaDati.test.ts`, fra cui uno di integrità sulle 7 foreign key.
+Diciotto rotture da una copia dei file, tutte prese dai test: due
+(alimento e pasto cancellati di un altro utente) solo dopo aver
+corretto il test, che usava una voce già esclusa.
+
 ## 2026-11-07 — Il segno "discesa completa"
 
 Branch `esporta`, commit 2. Nuovo `src/lib/sync/discesaCompleta.ts`: un

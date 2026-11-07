@@ -7209,8 +7209,41 @@ quell'alimento Importa non potrebbe riscrivere la voce così com'è. Per
 questo il JSON ha una sezione a parte, `alimenti_cancellati_citati`: i
 soli alimenti cancellati citati da voci vive, con il loro `deleted_at`.
 I preferiti e le righe dei pasti salvati che puntano a un alimento
-cancellato restano fuori, perché l'interfaccia già non li mostra (da
-verificare nel codice prima della raccolta dei dati).
+cancellato restano fuori, perché l'interfaccia già non li mostra
+(verificato il 07/11: `alimentiPreferiti` in
+`src/lib/inserimento/preferiti.ts` e `pastiSalvati` in
+`src/lib/inserimento/pastiSalvati.ts` cercano l'alimento solo nel
+catalogo vivo, `catalogoLocale`, e saltano la riga se non c'è; li usano
+Aggiungi, Impostazioni > Preferiti e la riga Preferiti di Impostazioni).
+Fuori anche la riga di un pasto salvato cancellato. Gli alimenti del
+catalogo comune (`user_id` null) citati da una riga esportata vanno in
+un'altra sezione, `alimenti_comuni_citati`: sono dati pubblici, non di
+un altro utente (il 07/11 il catalogo comune è vuoto).
+
+**Le 7 foreign key fra le tabelle** (lette da `pg_constraint` il 07/11)
+decidono cosa succede quando una riga viva punta a una riga cancellata:
+- `voci_diario.alimento_id` e `composizioni.alimento_id` (le ricette,
+  oggi nessuna): la riga resta, l'alimento va in
+  `alimenti_cancellati_citati`;
+- `voci_diario.pasto_id`: la voce resta, il pasto va in una terza
+  sezione, `pasti_cancellati_citati`, con il suo `deleted_at`. Succede
+  con una voce aggiunta da un telefono non allineato su un pasto
+  eliminato (sezione 3, "Elimina pasto"), che Oggi mostra con la rete di
+  sicurezza, «Non più in uso» (`pastiDaMostrare` in
+  `src/lib/pasti/validitaPasti.ts`). Il 07/11 su Supabase: 0 voci vive
+  su pasti cancellati, 20 cancellate;
+- `preferiti.alimento_id`, `composizioni_voci.alimento_id` e
+  `composizioni_voci.composizione_id`: la riga resta fuori (sopra);
+- `obiettivi_target.obiettivo_id`: il target resta fuori. Oggi e
+  Obiettivi leggono i target solo dell'obiettivo vivo in vigore.
+
+Un test permanente prova che ogni riferimento di una riga esportata
+trova la sua riga nel file. **Unica eccezione, che Importa dovrà
+gestire:** il telefono condiviso. Una propria voce può puntare a un
+alimento (o, in teoria, a un pasto) di un altro utente rimasto in
+Dexie: è un dato di un altro, non entra, e la voce resta con un
+riferimento che nel file non c'è. Importa lo metterà a null (la voce ha
+già la sua copia di nome e valori), senza rifiutare la voce.
 
 **Intestazione del JSON:** versione del formato, versione dell'app e
 Build (le stesse di Impostazioni > Informazioni), data e ora con il
