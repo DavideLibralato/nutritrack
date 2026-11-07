@@ -7174,6 +7174,105 @@ Due difese, entrambe gratuite: la copia locale IndexedDB (che c'è già, per alt
 motivi) e un pulsante **"Esporta i miei dati"** in JSON o CSV. Vale anche come
 promessa di riservatezza: i dati sono tuoi e te li puoi portare via.
 
+La copia in IndexedDB da sola non è un backup: Esci la svuota (§9.6) e
+Safari può cancellarla. Fino a Esporta l'unica copia fuori da Supabase è
+quella manuale del 01/11 (§11, "Non ancora costruito").
+
+#### "Esporta i miei dati" (decisioni del 07/11, branch `esporta`)
+
+Subito dopo viene **Importa** ("Ripristina in un account vuoto"), un
+lavoro a parte: il formato del JSON è progettato fin da ora per essere
+riletto.
+
+**Due file da due azioni distinte, niente ZIP:**
+- `libra-dati-AAAA-MM-GG.json`: il backup completo, l'unico che Importa
+  leggerà;
+- `libra-diario-AAAA-MM-GG.csv`: solo le voci vive del diario, da aprire
+  in Excel o Numbers.
+
+La data nel nome è il giorno locale.
+
+**Da dove e cosa.** Si legge da Dexie: funziona offline, costa zero e
+comprende le modifiche non ancora sincronizzate. Dentro ci sono solo le
+righe dell'utente e solo quelle vive, dalle tabelle di `TABELLE_DISCESA`
+(profili, obiettivi, obiettivi_target, giorni, pasti, alimenti propri,
+voci_diario, composizioni, composizioni_voci, misurazioni, preferiti),
+più la foto profilo. Fuori: amicizie, alimenti_condivisi, gli username,
+le righe con `deleted_at`, con l'unica eccezione qui sotto. Nessuna
+migration, nessuna `version()` Dexie nuova, nessuna scrittura su
+Supabase.
+
+**Alimenti cancellati citati.** Una voce viva può puntare a un alimento
+cancellato (§4, "Alimenti cancellati": resta nel diario), e su Supabase
+`voci_diario.alimento_id` ha la foreign key verso `alimenti`. Senza
+quell'alimento Importa non potrebbe riscrivere la voce così com'è. Per
+questo il JSON ha una sezione a parte, `alimenti_cancellati_citati`: i
+soli alimenti cancellati citati da voci vive, con il loro `deleted_at`.
+I preferiti e le righe dei pasti salvati che puntano a un alimento
+cancellato restano fuori, perché l'interfaccia già non li mostra (da
+verificare nel codice prima della raccolta dei dati).
+
+**Intestazione del JSON:** versione del formato, versione dell'app e
+Build (le stesse di Impostazioni > Informazioni), data e ora con il
+fuso, `user_id` originale (serve a Importa per riconoscere i 5 pasti di
+base, il cui id è calcolato da utente e nome), ora dell'ultimo contatto
+col server, stato della foto e conteggi per tabella.
+
+**Il segno "discesa completa".** Esporta non parte se non sa che la
+copia locale è completa, e spiega perché. Il segno "discesa riuscita"
+dell'onboarding non basta (sta solo in memoria e copre tre tabelle) e
+non si tocca. Ne nasce uno nuovo, in localStorage per utente:
+- si accende quando nello stesso giro scendono **tutte** le tabelle di
+  `TABELLE_DISCESA` (nessun numero scritto nel codice);
+- vale solo se in Dexie c'è anche il profilo vivo di quell'utente:
+  Safari può cancellare IndexedDB lasciando il localStorage, e il segno
+  direbbe "completo" su una copia vuota;
+- lo tolgono Esci ed Elimina account.
+
+**La foto profilo** va dentro il JSON (base64 e tipo MIME). Prima un
+aggiornamento dal server con un tempo massimo di 8 secondi, poi la copia
+sul telefono (`foto_locale`). Conta l'esito della richiesta, mai
+`navigator.onLine` (su iPhone è in ritardo, lezione del 23/10).
+Intestazione e riepilogo distinguono tre casi: inclusa / l'utente non ha
+la foto / non inclusa (serve la rete: offline e senza copia sul
+telefono non si sa se c'è). Per la foto inclusa l'intestazione dice
+anche se è stata verificata col server o è la copia del telefono.
+
+**Il CSV.** Le voci vive, con data, pasto, ora, alimento, marca, grammi,
+kcal e macro, calcolati con le stesse funzioni di Oggi. Per Excel in
+italiano: separatore `;`, virgola decimale, BOM UTF-8, virgolette dove
+servono. Ogni campo di testo (nome, marca, pasto) che comincia con un
+carattere da formula (`=`, `+`, `-`, `@`) viene reso innocuo: Excel lo
+eseguirebbe.
+
+**Salvare il file su iPhone.** Il file si prepara prima del tocco: la
+condivisione vuole un tocco appena fatto, e un'attesa in mezzo la fa
+rifiutare. Le strade, nell'ordine:
+1. condivisione con il file (foglio di iOS → «Salva su File») se
+   `canShare({ files })` accetta il tipo vero (`application/json`,
+   `text/csv`);
+2. lo stesso file come `text/plain`, con la stessa estensione;
+3. il download con `<a download>`, solo dove è sicuro (PC, Safari non
+   installato: da verificare). Nell'app installata dalla Home niente
+   download, ma un messaggio chiaro con il motivo.
+
+Se l'utente annulla il foglio non cambia niente.
+
+**Il promemoria.** «Ultima esportazione: oggi», «ieri», «N giorni fa»,
+oppure «Mai esportato»: una riga di solo testo sotto «Esporta i miei
+dati», niente pallino, niente avvisi. Lo aggiorna solo il JSON (il CSV
+non è un backup), e solo a salvataggio riuscito. Vale per il
+dispositivo (localStorage per utente); Esci ed Elimina account lo
+tolgono.
+
+**Dove.** Una riga «Esporta i miei dati» in Impostazioni porta alla
+pagina dedicata `/impostazioni/esporta`: riepilogo (voci con la prima e
+l'ultima data, alimenti, …, più la riga della foto), l'avviso che il
+file contiene dati personali e di salute e che il posto dove salvarlo lo
+sceglie l'utente, poi «Esporta» (JSON) e, a parte, «Esporta il diario
+(CSV)». L'aspetto lo decide il mockup di Cowork, prima del codice di
+interfaccia.
+
 ### 10.5 Cinque funzioni da testare sul serio
 
 Non serve testare tutto. Servono test su cinque pezzi di logica pura, che non
@@ -8324,7 +8423,11 @@ nessun 401 né 403. Prove:
 
 Catalogo vuoto e rete che cade a metà ricerca: coperti dai test, non
 provati a mano. Nell'account di prova restano questi alimenti e la
-voce delle Gocciole: innocui. Resta il merge.
+voce delle Gocciole: innocui. **Unito a main il 07/11** (fast-forward
+`3e6ce01` → `3c82695`, 7 commit) e **provato nell'app installata** il
+07/11 dalle 19:24 alle 19:25, con l'account di Davide: letture tutte
+200, due scritture 200 sul codice del «Burro d'arachidi · Fiorentini»,
+nessun 401 né 403 (verificato da Cowork).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -8332,16 +8435,13 @@ i numeri delle sue segnalazioni.
 
 ### Non ancora costruito
 
-- **Codice a barre nel catalogo alimenti** (dal 07/11, branch
-  `alimenti-codice-a-barre`; sezione 3, "Codice a barre", "Nel
-  catalogo" e "Il codice in modifica"): costruito e provato
-  sull'anteprima il 07/11 (sopra, "Fatto"). Resta il merge. Il codice a
-  barre in Aggiungi (fase 4) è fatto e unito a main il 07/11
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
 - **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
-  **"Esporta i miei dati"** (10.4)
+  **"Esporta i miei dati"** (10.4; in costruzione dal 07/11, branch
+  `esporta`, decisioni in 10.4, "Esporta i miei dati"). Subito dopo,
+  **Importa** ("Ripristina in un account vuoto"), un lavoro a parte
   - copia manuale dei dati del 01/11, fatta prima dell'aggiornamento di
     Supabase: in `C:\Users\david\Progetti\backup-libra`, fuori dal repo
     (15 tabelle, 736 righe). Non va mai in git: contiene dati reali. È
@@ -8404,6 +8504,11 @@ i numeri delle sue segnalazioni.
   ricrearlo (le voci del diario hanno la loro copia dei valori e non
   cambiano; i pasti salvati che lo contengono lo perdono, come in ogni
   eliminazione). Da riprendere se capita davvero.
+
+- ~~**Codice a barre nel catalogo alimenti**~~: provato sull'anteprima,
+  unito a main e provato nell'app installata il 07/11 (sopra, "Fatto";
+  CHANGELOG, voce del merge). Branch cancellato in locale e su GitHub;
+  nessuna Redirect URL dell'anteprima da togliere.
 
 - ~~**Codice a barre**~~: provato sull'anteprima, unito a main e
   provato nell'app installata il 07/11 (sopra, "Fatto"; CHANGELOG, voce
@@ -9105,3 +9210,8 @@ branch.
 10. ~~**Codice a barre**~~ fatto: provato sull'anteprima e unito a main
     il 07/11, `3e6ce01`, provato nell'app installata alle 15:20 (sopra,
     "Fatto"; sezione 3, "Codice a barre"; sezione 6, punto 4)
+11. ~~**Codice a barre nel catalogo alimenti**~~ fatto: provato
+    sull'anteprima e unito a main il 07/11, `3c82695`, provato nell'app
+    installata alle 19:24 (sopra, "Fatto"; sezione 3, "Codice a barre")
+12. **"Esporta i miei dati"** (audit #4; dal 07/11, branch `esporta`;
+    sezione 10.4), poi **Importa** in un lavoro a parte

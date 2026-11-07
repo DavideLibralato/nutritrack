@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Esporta i miei dati: le decisioni
+
+Branch `esporta`, commit 1, solo documenti. In PUNTO §10.4 le decisioni
+di "Esporta i miei dati" (audit #4): due file da due azioni (JSON
+completo, l'unico che Importa leggerà, e CSV del diario), letti da
+Dexie; segno nuovo "discesa completa" in localStorage per utente, valido
+solo con il profilo vivo in Dexie; foto dal server con 8 s di tempo
+massimo, poi dalla copia sul telefono; sezione
+`alimenti_cancellati_citati` per le foreign key delle voci; strade per
+salvare il file su iPhone; promemoria aggiornato solo dal JSON. Importa
+è il lavoro successivo. In §11 Esporta fra i lavori in corso e nei
+prossimi passi. Verificato su Supabase in sola lettura: 266 voci vive
+(355 con le cancellate), nessuna riga che punta ad alimenti di altri,
+catalogo comune vuoto, un preferito vivo su un alimento cancellato.
+
+## 2026-11-07 — Merge di `alimenti-codice-a-barre` su main, provato nell'app installata
+
+Unito il 07/11 con fast-forward, da `3e6ce01` a `3c82695`, 7 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge Davide ha provato l'app
+installata il 07/11 dalle 19:24 alle 19:25, con il suo account: nei log
+di Supabase letture tutte 200, due scritture 200 sul codice del «Burro
+d'arachidi · Fiorentini», nessun 401 né 403 (verificato da Cowork). In
+PUNTO §11 il lavoro passa da "resta il merge" a unito.
+
 ## 2026-11-07 — Catalogo e codice a barre, esito delle prove sull'anteprima
 
 Branch `alimenti-codice-a-barre`. Il 07/11 dalle 19:07 alle 19:21
