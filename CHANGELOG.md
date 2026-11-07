@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — "Apri" porta il codice
+
+Branch `alimenti-codice-a-barre`, commit 6. Quando il modulo nato da una
+scansione trova lo stesso prodotto per nome e marca, creato a mano
+senza codice, «Apri «nome»» apre la modifica di quell'alimento con il
+codice già nel campo (con la ×) e in cima «Questo alimento non aveva il
+codice: salvalo per ritrovarlo la prossima volta che scansioni.», che
+sparisce togliendo il codice con la ×. Nel catalogo Salva torna
+all'elenco, e dopo la × torna «Aggiungi codice a barre». In Aggiungi
+(strada A) il pulsante è «Salva e scegli la quantità», senza Elimina né
+«Aggiungi codice a barre», e dopo il Salva si apre lo sheet quantità;
+"Torna alla ricerca" non salva niente, e la matita dopo è una modifica
+normale. Con un altro codice, o un alimento che non si modifica, "Apri"
+come prima. `CreaAlimentoForm`: `onApriEsistente` riceve il codice,
+prop nuove `codiceIniziale`, `etichettaSalva`, `senzaElimina`,
+`onModificato` riceve l'alimento salvato. Nove test permanenti nuovi
+(tre nel form, quattro in Aggiungi, due nel catalogo) e due test del
+form aggiornati, che ora controllano anche che lì il codice non si
+porti; i test di "Apri" in Aggiungi e nel catalogo controllano in Dexie
+codice e fonte invariata. Dieci rotture da una copia, ognuna presa dai
+test.
+
 ## 2026-11-07 — Scansiona nel catalogo alimenti
 
 Branch `alimenti-codice-a-barre`, commit 5. In Impostazioni > Alimenti

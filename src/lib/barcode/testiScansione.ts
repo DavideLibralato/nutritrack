@@ -27,6 +27,10 @@ export const TITOLO_SCANSIONE_CATALOGO = "Catalogo alimenti";
 // In cima a "Modifica alimento", quando il codice scansionato è già di un
 // alimento del catalogo.
 export const TESTO_GIA_NEL_CATALOGO = "Questo codice è già nel tuo catalogo.";
+// In cima a "Modifica alimento" aperta da "Apri" con il codice (§3, "«Apri»
+// porta il codice"), in Aggiungi e nel catalogo.
+export const TESTO_CODICE_DA_PORTARE =
+  "Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni.";
 // Il codice è di un alimento che non si modifica: resta la schermata di
 // scansione con questo testo. `etichetta` come etichettaAlimento
 // ("Nome · Marca"). Il catalogo comune è il testo approvato nel mockup;

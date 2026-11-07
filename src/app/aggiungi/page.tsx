@@ -63,7 +63,7 @@ import SchermataScansione from "@/components/SchermataScansione";
 import IconaCodiceBarre from "@/components/IconaCodiceBarre";
 import IconaSenzaRete from "@/components/IconaSenzaRete";
 import { useOnline } from "@/lib/useOnline";
-import { TESTO_SENZA_RETE } from "@/lib/barcode/testiScansione";
+import { TESTO_CODICE_DA_PORTARE, TESTO_SENZA_RETE } from "@/lib/barcode/testiScansione";
 import { richiediFotocamera } from "@/lib/barcode/useFotocamera";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import IconaIndietro from "@/components/IconaIndietro";
@@ -308,6 +308,12 @@ function AggiungiContenuto() {
   // verificati — vedi il gate nella lista risultati). Diverso da
   // `alimentoScelto`, che è la voce da aggiungere al diario.
   const [alimentoInModifica, setAlimentoInModifica] = useState<Alimento | null>(null);
+  // Il codice portato da "Apri" (sezione 3, "«Apri» porta il codice"): il
+  // modulo nato da una scansione ha trovato lo stesso prodotto, creato a
+  // mano senza codice. Con questo valorizzato la modifica parte con il
+  // codice, dice «Salva e scegli la quantità», non ha Elimina, e dopo il
+  // Salva apre lo sheet quantità di quell'alimento.
+  const [codiceDaPortare, setCodiceDaPortare] = useState<string | null>(null);
 
   // L'alimento scelto per lo sheet quantità. Si tiene solo l'oggetto
   // catturato al tap, ma si legge sempre la versione VIVA dal `catalogo`
@@ -675,7 +681,13 @@ function AggiungiContenuto() {
             <CreaAlimentoForm
               // Una key per il codice: dopo una seconda scansione il
               // modulo riparte dai valori nuovi, non da quelli di prima.
-              key={alimentoInModifica?.id ?? (daCodice ? `codice-${daCodice.barcode}` : "nuovo")}
+              key={
+                alimentoInModifica
+                  ? `${alimentoInModifica.id}-${codiceDaPortare ?? ""}`
+                  : daCodice
+                    ? `codice-${daCodice.barcode}`
+                    : "nuovo"
+              }
               userId={userId}
               // Da un codice il nome lo dà Open Food Facts (o resta vuoto),
               // non la ricerca scritta prima di scansionare.
@@ -684,10 +696,15 @@ function AggiungiContenuto() {
               etichettaCrea="Crea e scegli la quantità"
               alimentoDaModificare={alimentoInModifica ?? undefined}
               daCodice={daCodice ?? undefined}
+              codiceIniziale={codiceDaPortare ?? undefined}
+              avviso={codiceDaPortare ? TESTO_CODICE_DA_PORTARE : undefined}
+              etichettaSalva={codiceDaPortare ? "Salva e scegli la quantità" : undefined}
+              senzaElimina={codiceDaPortare !== null}
               onAnnulla={() => {
                 setCreando(false);
                 setDaCodice(null);
                 setAlimentoInModifica(null);
+                setCodiceDaPortare(null);
               }}
               onCreato={(a) => {
                 setCreando(false);
@@ -697,9 +714,19 @@ function AggiungiContenuto() {
               // "Apri" sull'alimento che c'è già: da "Nuovo alimento" il suo
               // sheet quantità, come dopo "Crea e scegli la quantità";
               // dalla matita "Modifica alimento" di quello (la `key` cambia,
-              // il form riparte dai suoi valori).
-              onApriEsistente={(esistente) => {
+              // il form riparte dai suoi valori). Con il codice (il modulo
+              // nato da una scansione ha trovato lo stesso prodotto senza
+              // codice, sezione 3, "«Apri» porta il codice") la modifica di
+              // quello con il codice, se si può modificare; se no lo sheet,
+              // come sempre.
+              onApriEsistente={(esistente, codice) => {
                 if (alimentoInModifica) {
+                  setCodiceDaPortare(null);
+                  setAlimentoInModifica(esistente);
+                } else if (codice && eModificabile(esistente, userId)) {
+                  setCreando(false);
+                  setDaCodice(null);
+                  setCodiceDaPortare(codice);
                   setAlimentoInModifica(esistente);
                 } else {
                   setCreando(false);
@@ -708,7 +735,15 @@ function AggiungiContenuto() {
                 }
               }}
               puoAprire={(esistente) => !alimentoInModifica || eModificabile(esistente, userId)}
-              onModificato={() => setAlimentoInModifica(null)}
+              onModificato={(salvato) => {
+                setAlimentoInModifica(null);
+                // Dopo «Salva e scegli la quantità»: i grammi, come dopo
+                // "Crea e scegli la quantità".
+                if (codiceDaPortare) {
+                  setCodiceDaPortare(null);
+                  scegli(salvato);
+                }
+              }}
               onEliminato={onAlimentoEliminato}
             />
           </div>

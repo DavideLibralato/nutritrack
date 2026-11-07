@@ -270,6 +270,66 @@ describe("Catalogo alimenti: Scansiona", () => {
   });
 });
 
+// "Apri" porta il codice (PUNTO §3, "«Apri» porta il codice"): nel
+// catalogo il Salva torna all'elenco, come ogni modifica.
+describe("Catalogo alimenti: «Apri» porta il codice", () => {
+  function patatineSuOff() {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        risposta({
+          product: {
+            product_name_it: "Patatine classiche",
+            brands: "San Carlo",
+            nutriments: { "energy-kcal_100g": 537, proteins_100g: 6, carbohydrates_100g: 52, fat_100g: 33 },
+          },
+        })
+      )
+    );
+  }
+
+  it("Open Food Facts trova un alimento uguale senza codice: «Apri» ne apre la modifica con il codice, Salva lo scrive e torna", async () => {
+    const mia = await creaAlimento("Patatine classiche", "San Carlo", null);
+    patatineSuOff();
+    render(<AlimentiPage />);
+
+    await scansionaScrivendo(PATATINE);
+    fireEvent.click(await screen.findByRole("button", { name: "Apri «Patatine classiche»" }));
+
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni."
+      )
+    ).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(PATATINE);
+    expect((await db.alimenti.get(mia.id))?.barcode).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(async () => expect((await db.alimenti.get(mia.id))?.barcode).toBe(PATATINE));
+    // La fonte resta quella della riga: i valori non vengono da OFF.
+    expect((await db.alimenti.get(mia.id))?.fonte).toBe("manuale");
+    expect(await screen.findByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
+    expect(await repositoryAlimenti.ottieniTutti(USER_ID)).toHaveLength(1);
+  });
+
+  it("con la × il codice e il suo avviso spariscono, e torna «Aggiungi codice a barre»", async () => {
+    await creaAlimento("Patatine classiche", "San Carlo", null);
+    patatineSuOff();
+    render(<AlimentiPage />);
+
+    await scansionaScrivendo(PATATINE);
+    fireEvent.click(await screen.findByRole("button", { name: "Apri «Patatine classiche»" }));
+    expect(await screen.findByText(/Questo alimento non aveva il codice/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Togli il codice" }));
+
+    expect(screen.queryByLabelText("Codice a barre")).toBeNull();
+    expect(screen.queryByText(/Questo alimento non aveva il codice/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Aggiungi codice a barre" })).toBeTruthy();
+  });
+});
+
 describe("Catalogo alimenti: «Aggiungi codice a barre»", () => {
   it("dalla modifica di un alimento senza codice: il codice letto si scrive in Dexie con Salva, la fonte non cambia", async () => {
     const patatine = await creaAlimento("Patatine", "San Carlo", null);

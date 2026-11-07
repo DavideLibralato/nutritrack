@@ -420,7 +420,8 @@ describe("CreaAlimentoForm, il codice in modifica", () => {
     expect(screen.getByLabelText("Codice a barre").getAttribute("aria-invalid")).toBe("true");
     expect(salvaPulsante().disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Apri «Ketchips»" }));
-    expect(onApriEsistente).toHaveBeenCalledWith(ketchips);
+    // In modifica non si porta nessun codice: "Apri" come sempre.
+    expect(onApriEsistente).toHaveBeenCalledWith(ketchips, undefined);
   });
 
   it("codice arrivato da un altro dispositivo al Salva: lo dice, campo senza ×, valori restano, il secondo Salva salva", async () => {
@@ -475,6 +476,86 @@ describe("CreaAlimentoForm, «Apri «nome»»", () => {
       screen.getByText("Hai già un alimento con questo nome e questa marca: «Pane · Mulino».")
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Apri «Pane»" }));
-    expect(onApriEsistente).toHaveBeenCalledWith(pane);
+    // Un modulo che non nasce da un codice non ne porta nessuno.
+    expect(onApriEsistente).toHaveBeenCalledWith(pane, undefined);
+  });
+});
+
+// "Apri" porta il codice (PUNTO_DI_PARTENZA.md §3, "«Apri» porta il
+// codice"): solo da un modulo nato da un codice, solo per un doppione per
+// nome e marca, solo verso un alimento senza codice.
+describe("CreaAlimentoForm, «Apri» porta il codice", () => {
+  const NUTELLA = "3017620422003";
+  const PRODOTTO: ProdottoOpenFoodFacts = {
+    nome: "Nutella",
+    marca: null,
+    kcal_100g: 539,
+    proteine_100g: 6.3,
+    carboidrati_100g: 57.5,
+    grassi_100g: 30.9,
+    kcalDaKj: false,
+  };
+
+  function apriDaCodice() {
+    const onApriEsistente = vi.fn();
+    render(
+      <CreaAlimentoForm
+        userId="u1"
+        nomeIniziale=""
+        etichettaIndietro="Torna alla ricerca"
+        etichettaCrea="Crea e scegli la quantità"
+        onAnnulla={() => {}}
+        onCreato={() => {}}
+        onApriEsistente={onApriEsistente}
+        puoAprire={() => true}
+        daCodice={{ barcode: NUTELLA, prodotto: PRODOTTO }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Apri «Nutella»" }));
+    return onApriEsistente;
+  }
+
+  it("uguale per nome e marca, senza codice: il codice va con «Apri»", () => {
+    const mia = { ...MELA, id: "mia", nome: "Nutella", barcode: null };
+    finto.catalogo = [mia];
+
+    expect(apriDaCodice()).toHaveBeenCalledWith(mia, NUTELLA);
+  });
+
+  it("uguale per nome e marca ma con un altro codice: «Apri» senza codice", () => {
+    const mia = { ...MELA, id: "mia", nome: "Nutella", barcode: "96385074" };
+    finto.catalogo = [mia];
+
+    expect(apriDaCodice()).toHaveBeenCalledWith(mia, undefined);
+  });
+
+  it("codiceIniziale, «Salva e scegli la quantità» e niente Elimina: Salva passa il codice", async () => {
+    salvaAlimento.mockResolvedValue({ esito: "salvato", alimento: MELA });
+    const onModificato = vi.fn();
+    render(
+      <CreaAlimentoForm
+        userId="u1"
+        nomeIniziale=""
+        etichettaIndietro="Torna alla ricerca"
+        etichettaCrea="Crea e scegli la quantità"
+        onAnnulla={() => {}}
+        onCreato={() => {}}
+        onApriEsistente={() => {}}
+        puoAprire={() => true}
+        alimentoDaModificare={MELA}
+        onModificato={onModificato}
+        codiceIniziale={NUTELLA}
+        etichettaSalva="Salva e scegli la quantità"
+        senzaElimina
+      />
+    );
+
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(NUTELLA);
+    expect(screen.getByRole("button", { name: "Togli il codice" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Elimina" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva e scegli la quantità" }));
+    await waitFor(() => expect(onModificato).toHaveBeenCalledWith(MELA));
+    expect(salvaAlimento.mock.calls[0][4]).toBe(NUTELLA);
   });
 });

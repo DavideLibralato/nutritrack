@@ -102,11 +102,27 @@ interface Props {
   // voleva registrarlo); altrove apre "Modifica alimento" di quello.
   // `puoAprire` dice se quell'alimento si può aprire (in Modifica solo se
   // modificabile): se no, il messaggio resta e "Apri" non compare.
-  onApriEsistente: (alimento: Alimento) => void;
+  //
+  // `codice` (PUNTO_DI_PARTENZA.md §3, "Codice a barre", "«Apri» porta il
+  // codice"): c'è quando questo modulo nasce da un codice e il doppione è
+  // per nome e marca, su un alimento senza codice. Chi apre la sua
+  // modifica ce lo porta (`codiceIniziale`), così il codice non si perde.
+  onApriEsistente: (alimento: Alimento, codice?: string) => void;
   puoAprire: (alimento: Alimento) => boolean;
   // --- Solo in modifica di un alimento esistente ---
   alimentoDaModificare?: Alimento;
-  onModificato?: () => void;
+  // Riceve l'alimento come è stato salvato (in Aggiungi, dopo "Apri" con il
+  // codice, si va al suo sheet quantità).
+  onModificato?: (alimento: Alimento) => void;
+  // Un codice già letto da aggiungere, portato da "Apri": parte nel campo
+  // con la ×, e si scrive con Salva.
+  codiceIniziale?: string;
+  // Il testo del Salva in modifica (predefinito "Salva"; in Aggiungi dopo
+  // "Apri" con il codice «Salva e scegli la quantità»).
+  etichettaSalva?: string;
+  // Niente Elimina (in Aggiungi dopo "Apri" con il codice: ci si è
+  // arrivati per registrare).
+  senzaElimina?: boolean;
   // Riceve cosa ha toccato la cancellazione, perché l'"Annulla" non può
   // vivere qui: il chiamante smonta questo form subito dopo (vedi
   // /aggiungi, BarraAnnulla).
@@ -135,6 +151,9 @@ export default function CreaAlimentoForm({
   puoAprire,
   alimentoDaModificare,
   onModificato,
+  codiceIniziale,
+  etichettaSalva = "Salva",
+  senzaElimina = false,
   onEliminato,
   aggiungiCodice = false,
   avviso,
@@ -169,7 +188,9 @@ export default function CreaAlimentoForm({
   const [confermaElim, setConfermaElim] = useState(false);
   // Il codice letto per un alimento che non ce l'aveva, non ancora
   // salvato: lo scrive il Salva, la × lo toglie.
-  const [codiceNuovo, setCodiceNuovo] = useState<string | null>(null);
+  const [codiceNuovo, setCodiceNuovo] = useState<string | null>(
+    modifica ? (codiceIniziale ?? null) : null
+  );
   // Il Salva ha trovato la riga con un altro codice, arrivato intanto da
   // un altro dispositivo (salvaAlimento: "ha-gia-codice").
   const [codiceArrivato, setCodiceArrivato] = useState<string | null>(null);
@@ -219,6 +240,16 @@ export default function CreaAlimentoForm({
   const kcalDaKj = off?.kcalDaKj === true && kcal === kcalOff;
 
   const salvabile = validazione.valori !== null && nome.trim() !== "" && doppione === null;
+
+  // "Apri" sull'alimento che c'è già. Se questo modulo nasce da un codice e
+  // l'altro è uguale per nome e marca ma senza codice, il codice va con lui
+  // (PUNTO_DI_PARTENZA.md §3, "«Apri» porta il codice"): è lo stesso
+  // prodotto, creato a mano prima della scansione. Con un altro codice, o
+  // con un doppione per codice, "Apri" come sempre.
+  function apriEsistente(esistente: Alimento) {
+    const porta = daCodice && doppionePerNome && !esistente.barcode ? daCodice.barcode : undefined;
+    onApriEsistente(esistente, porta);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -273,7 +304,7 @@ export default function CreaAlimentoForm({
         setInCorso(false);
         return;
       }
-      if (alimentoDaModificare) onModificato?.();
+      if (alimentoDaModificare) onModificato?.(esito.alimento);
       else onCreato(esito.alimento);
     } catch {
       setInCorso(false);
@@ -326,7 +357,10 @@ export default function CreaAlimentoForm({
         </button>
       </div>
 
-      {avviso && (
+      {/* Con un codice portato da "Apri" l'avviso parla di quel codice
+          («…salvalo per ritrovarlo…»): tolto con la ×, non è più vero e
+          sparisce (Davide, 07/11). */}
+      {avviso && !(codiceIniziale && codiceNuovo === null) && (
         <div role="status" className="flex gap-2 rounded-xl bg-accent/10 p-3 text-sm">
           <IconaInfo className="mt-0.5 shrink-0 text-accent" />
           <span>{avviso}</span>
@@ -388,7 +422,7 @@ export default function CreaAlimentoForm({
             doppione={doppione}
             barcode={barcode}
             puoAprire={puoAprire}
-            onApri={onApriEsistente}
+            onApri={apriEsistente}
           />
         )}
         <p className="text-xs text-muted mt-1">
@@ -442,7 +476,7 @@ export default function CreaAlimentoForm({
               doppione={doppione}
               barcode={barcode}
               puoAprire={puoAprire}
-              onApri={onApriEsistente}
+              onApri={apriEsistente}
             />
           )}
         </div>
@@ -554,7 +588,17 @@ export default function CreaAlimentoForm({
         <p className="text-sm text-muted">Per salvare mancano: {mancanti.join(", ")}.</p>
       )}
 
-      {modifica ? (
+      {modifica && senzaElimina ? (
+        /* Solo il Salva, a tutta larghezza (in Aggiungi dopo "Apri" con il
+           codice: «Salva e scegli la quantità», niente Elimina). */
+        <button
+          type="submit"
+          disabled={inCorso || !salvabile}
+          className={`w-full rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+        >
+          {inCorso ? "Salvataggio..." : etichettaSalva}
+        </button>
+      ) : modifica ? (
         /* Riga pulsanti in modifica: [Elimina] [Salva]; il tap su Elimina
            la trasforma in [No] [Sì, elimina] (conferma inline, stessa
            posizione). Per annullare la modifica si usa "Torna alla ricerca"
@@ -594,7 +638,7 @@ export default function CreaAlimentoForm({
                 disabled={inCorso || !salvabile}
                 className={`flex-1 rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
               >
-                {inCorso ? "Salvataggio..." : "Salva"}
+                {inCorso ? "Salvataggio..." : etichettaSalva}
               </button>
             </>
           )}

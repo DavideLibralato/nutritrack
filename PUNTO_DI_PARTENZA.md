@@ -1011,19 +1011,37 @@ silenzio.
   la ×, da salvare con Salva: così un prodotto creato a mano prima
   della scansione prende il suo codice invece di perderlo. In cima
   l'avviso «Questo alimento non aveva il codice: salvalo per
-  ritrovarlo la prossima volta che scansioni.». In questa modifica non
-  c'è «Aggiungi codice a barre»: con la × il campo sparisce e si torna
-  al modulo senza codice. Se l'alimento trovato ha già un altro codice,
-  "Apri" funziona come oggi, senza portare niente.
-  - **nel catalogo**: Salva torna al catalogo, come ogni modifica;
+  ritrovarlo la prossima volta che scansioni.», che **sparisce quando
+  si toglie il codice con la ×** (non sarebbe più vero; Davide, 07/11).
+  Se l'alimento trovato ha già un altro codice, "Apri" funziona come
+  oggi, senza portare niente.
+  - **nel catalogo**: Salva torna al catalogo, come ogni modifica. Dopo
+    la × **torna la riga «Aggiungi codice a barre»**, come nella
+    modifica aperta dall'elenco (Davide, 07/11);
   - **in Aggiungi** (strada A, Davide, 07/11): solo in questo caso
     "Apri" porta alla modifica invece che allo sheet quantità. Il
     pulsante dice **«Salva e scegli la quantità»**: salva valori e
     codice, poi apre lo sheet quantità di quell'alimento, perché in
     Aggiungi il percorso finisce sui grammi. **Niente Elimina** in
     questa modifica (Davide, 07/11): ci si è arrivati per registrare.
-    "Torna alla ricerca" non salva niente. Negli altri casi "Apri" da "Nuovo alimento" apre lo
-    sheet quantità come prima.
+    Dopo la × nessuna riga «Aggiungi codice a barre»: in Aggiungi non
+    c'è mai (sopra, "Il codice in modifica").
+    "Torna alla ricerca" non salva niente, e la matita dopo è una
+    modifica normale. Negli altri casi "Apri" da "Nuovo alimento" apre lo
+    sheet quantità come prima. In Aggiungi serve anche che l'alimento
+    si possa modificare; se no, lo sheet come sempre;
+  - com'è fatto (commit 6 del branch): `CreaAlimentoForm` chiama
+    `onApriEsistente(alimento, codice)`, con il codice solo quando
+    questo modulo nasce da un codice, il doppione è per nome e marca e
+    l'altro non ha codice. Chi apre la modifica passa `codiceIniziale`
+    (il codice parte nel campo con la ×) e l'avviso; Aggiungi passa
+    anche `etichettaSalva` («Salva e scegli la quantità») e
+    `senzaElimina`, e `onModificato` riceve l'alimento salvato per il
+    suo sheet. Il catalogo passa `aggiungiCodice` anche qui. L'avviso
+    di un codice portato (`avviso` insieme a `codiceIniziale`) il form
+    lo mostra solo finché il codice è nel campo. Test in
+    `CreaAlimentoForm.test.tsx`, `src/app/aggiungi/page.test.tsx` e nel
+    test del catalogo.
 - **Errori.** Rete assente anche se il telefono dice di no, o nessuna
   risposta entro 10 s: «Non riesco a raggiungere Open Food Facts», con
   "Riprova" e "Crea a mano" (modulo vuoto, codice già compilato). OFF

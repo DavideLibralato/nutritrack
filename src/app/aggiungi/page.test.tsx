@@ -735,4 +735,110 @@ describe("Aggiungi: scansione del codice a barre", () => {
     expect(screen.queryByText("Nuovo alimento")).toBeNull();
     expect(fetchFinta).not.toHaveBeenCalled();
   });
+
+  // "Apri" porta il codice (sezione 3, "«Apri» porta il codice"; strada A,
+  // Davide, 07/11). Il rischio è silenzioso: senza, il codice si perde, e
+  // a ogni scansione di quel prodotto si ricomincia da Open Food Facts.
+  function nutellaSuOff() {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        risposta({
+          product: {
+            product_name_it: "Nutella",
+            nutriments: { "energy-kcal_100g": 539, proteins_100g: 6.3, carbohydrates_100g: 57.5, fat_100g: 30.9 },
+          },
+        })
+      )
+    );
+  }
+
+  it("«Apri» su un alimento uguale senza codice: la sua modifica con il codice, poi lo sheet quantità", async () => {
+    await preparaPranzo();
+    const mia = await creaAlimento("Nutella", 530);
+    nutellaSuOff();
+    render(<AggiungiPage />);
+
+    await scriviCodice(NUTELLA);
+    expect(await screen.findByText("Hai già «Nutella», senza marca.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Apri «Nutella»" }));
+
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni."
+      )
+    ).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(NUTELLA);
+    expect(screen.getByRole("button", { name: "Togli il codice" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Elimina" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Aggiungi codice a barre" })).toBeNull();
+    // Niente salvato finché non si tocca il pulsante.
+    expect((await repositoryAlimenti.ottieniPerId(mia.id))?.barcode).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Salva e scegli la quantità" }));
+
+    expect(await screen.findByRole("dialog", { name: "Quantità di Nutella" })).toBeTruthy();
+    expect(await repositoryAlimenti.ottieniPerId(mia.id)).toMatchObject({
+      barcode: NUTELLA,
+      kcal_100g: 530,
+      fonte: "manuale",
+    });
+    expect(await repositoryAlimenti.ottieniTutti(utenteTest)).toHaveLength(1);
+  });
+
+  it("dalla modifica con il codice, «Torna alla ricerca» non salva niente, e la matita dopo parte senza codice", async () => {
+    await preparaPranzo();
+    const mia = await creaAlimento("Nutella", 530);
+    nutellaSuOff();
+    render(<AggiungiPage />);
+
+    await scriviCodice(NUTELLA);
+    fireEvent.click(await screen.findByRole("button", { name: "Apri «Nutella»" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Torna alla ricerca" }));
+
+    const ricerca = await screen.findByRole("searchbox", { name: "Cerca alimento o pasto" });
+    expect((await repositoryAlimenti.ottieniPerId(mia.id))?.barcode).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Quantità di Nutella" })).toBeNull();
+
+    // Il codice portato non resta appeso: la matita è una modifica normale.
+    fireEvent.change(ricerca, { target: { value: "Nutella" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Modifica Nutella" }));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect(screen.queryByLabelText("Codice a barre")).toBeNull();
+    expect(screen.getByRole("button", { name: "Elimina" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Salva" })).toBeTruthy();
+  });
+
+  it("con la × il codice e il suo avviso spariscono, e in Aggiungi nessuna riga «Aggiungi codice a barre»", async () => {
+    await preparaPranzo();
+    await creaAlimento("Nutella", 530);
+    nutellaSuOff();
+    render(<AggiungiPage />);
+
+    await scriviCodice(NUTELLA);
+    fireEvent.click(await screen.findByRole("button", { name: "Apri «Nutella»" }));
+    expect(await screen.findByText(/Questo alimento non aveva il codice/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Togli il codice" }));
+
+    expect(screen.queryByLabelText("Codice a barre")).toBeNull();
+    expect(screen.queryByText(/Questo alimento non aveva il codice/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Aggiungi codice a barre" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Salva e scegli la quantità" })).toBeTruthy();
+  });
+
+  it("un alimento uguale ma con un altro codice: «Apri» porta allo sheet quantità, come prima", async () => {
+    await preparaPranzo();
+    const mia = await creaAlimento("Nutella", 530);
+    await repositoryAlimenti.aggiorna(mia.id, { barcode: "96385074" });
+    nutellaSuOff();
+    render(<AggiungiPage />);
+
+    await scriviCodice(NUTELLA);
+    fireEvent.click(await screen.findByRole("button", { name: "Apri «Nutella»" }));
+
+    expect(await screen.findByRole("dialog", { name: "Quantità di Nutella" })).toBeTruthy();
+    expect(screen.queryByText("Modifica alimento")).toBeNull();
+    expect((await repositoryAlimenti.ottieniPerId(mia.id))?.barcode).toBe("96385074");
+  });
 });

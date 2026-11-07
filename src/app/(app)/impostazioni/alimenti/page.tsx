@@ -92,6 +92,7 @@ import type { Alimento } from "@/lib/db/tipi";
 import { etichettaAlimento } from "@/lib/repository/alimenti";
 import { richiediFotocamera } from "@/lib/barcode/useFotocamera";
 import {
+  TESTO_CODICE_DA_PORTARE,
   TESTO_GIA_NEL_CATALOGO,
   TESTO_SENZA_RETE,
   TITOLO_SCANSIONE_CATALOGO,
@@ -129,7 +130,9 @@ const CLASSE_PAGINA =
 // nuovo, `avviso` per uno che c'era già.
 type Modulo =
   | { tipo: "nuovo"; daCodice?: DatiCodice }
-  | { tipo: "modifica"; alimento: Alimento; avviso?: string };
+  // `codiceDaPortare`: aperta da "Apri" in un modulo nato da un codice
+  // (PUNTO §3, "«Apri» porta il codice"); il codice parte nel campo.
+  | { tipo: "modifica"; alimento: Alimento; avviso?: string; codiceDaPortare?: string };
 
 // Il pulsante Scansiona: tondo da 44 px, alto come la ricerca del catalogo
 // (in Aggiungi 48 px, come il suo campo; mockup catalogo-alimenti.html).
@@ -391,7 +394,13 @@ export default function AlimentiPage() {
         userId={userId}
         modulo={modulo}
         onChiudi={() => setModulo(null)}
-        onApri={(a) => setModulo({ tipo: "modifica", alimento: a })}
+        onApri={(a, codice) =>
+          setModulo(
+            codice
+              ? { tipo: "modifica", alimento: a, codiceDaPortare: codice, avviso: TESTO_CODICE_DA_PORTARE }
+              : { tipo: "modifica", alimento: a }
+          )
+        }
         puoAprire={(a) => eModificabile(a, userId)}
         onCreato={(a) => {
           setModulo(null);
@@ -716,7 +725,7 @@ function SchermataModulo({
   userId: string;
   modulo: Modulo;
   onChiudi: () => void;
-  onApri: (alimento: Alimento) => void;
+  onApri: (alimento: Alimento, codice?: string) => void;
   puoAprire: (alimento: Alimento) => boolean;
   onCreato: (alimento: Alimento) => void;
   onEliminato: (alimento: Alimento, traccia: TracciaRimozione) => void;
@@ -746,7 +755,7 @@ function SchermataModulo({
         <CreaAlimentoForm
           key={
             modulo.tipo === "modifica"
-              ? modulo.alimento.id
+              ? `${modulo.alimento.id}-${modulo.codiceDaPortare ?? ""}`
               : modulo.daCodice
                 ? `codice-${modulo.daCodice.barcode}`
                 : "nuovo"
@@ -758,8 +767,11 @@ function SchermataModulo({
           alimentoDaModificare={modulo.tipo === "modifica" ? modulo.alimento : undefined}
           daCodice={modulo.tipo === "nuovo" ? modulo.daCodice : undefined}
           avviso={modulo.tipo === "modifica" ? modulo.avviso : undefined}
+          codiceIniziale={modulo.tipo === "modifica" ? modulo.codiceDaPortare : undefined}
           // «Aggiungi codice a barre»: solo da qui, non dalla matita di
-          // Aggiungi (PUNTO §3, "Il codice in modifica").
+          // Aggiungi (PUNTO §3, "Il codice in modifica"). Anche nella
+          // modifica aperta da "Apri" con il codice: tolto con la ×, torna
+          // la riga, come nella modifica aperta dall'elenco (Davide, 07/11).
           aggiungiCodice
           onAnnulla={onChiudi}
           onCreato={onCreato}
