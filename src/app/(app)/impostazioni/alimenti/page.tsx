@@ -29,6 +29,14 @@
 //   appena arrivata con la sync cambia subito le scelte degli altri. La
 //   barra dopo "Usa questi valori", con il suo Annulla, è della pagina:
 //   con il foglio aperto sale sopra il velo.
+// - Scansiona accanto alla ricerca (PUNTO_DI_PARTENZA.md §3, "Codice a
+//   barre", "Nel catalogo"), anche a catalogo vuoto: la stessa
+//   SchermataScansione di Aggiungi, «Catalogo alimenti». Un codice già
+//   nel catalogo apre "Modifica alimento" con «Questo codice è già nel
+//   tuo catalogo.»; uno nuovo apre "Nuovo alimento" (precompilato da Open
+//   Food Facts o con il solo codice), e Salva torna qui, senza sheet
+//   quantità. In "Modifica alimento" c'è «Aggiungi codice a barre»
+//   (CreaAlimentoForm, `aggiungiCodice`).
 
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -81,9 +89,20 @@ import { useTieniPremuto, type RigaPremuta } from "@/lib/tieniPremuto";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import type { Alimento } from "@/lib/db/tipi";
+import { etichettaAlimento } from "@/lib/repository/alimenti";
+import { richiediFotocamera } from "@/lib/barcode/useFotocamera";
+import {
+  TESTO_GIA_NEL_CATALOGO,
+  TESTO_SENZA_RETE,
+  TITOLO_SCANSIONE_CATALOGO,
+  testoNonModificabile,
+} from "@/lib/barcode/testiScansione";
 import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
 import RigaAlimentoCatalogo from "@/components/RigaAlimentoCatalogo";
-import CreaAlimentoForm from "@/components/CreaAlimentoForm";
+import CreaAlimentoForm, { type DatiCodice } from "@/components/CreaAlimentoForm";
+import SchermataScansione from "@/components/SchermataScansione";
+import IconaCodiceBarre from "@/components/IconaCodiceBarre";
+import IconaSenzaRete from "@/components/IconaSenzaRete";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import SheetConferma from "@/components/SheetConferma";
 import SheetCondividiCon from "@/components/SheetCondividiCon";
@@ -106,7 +125,18 @@ const TIPI_RIGA: readonly "alimento"[] = ["alimento"];
 const CLASSE_PAGINA =
   "mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-6 pb-[calc(var(--ingombro-oggi)+1.5rem)]";
 
-type Modulo = { tipo: "nuovo" } | { tipo: "modifica"; alimento: Alimento };
+// Il form a pagina intera. Dopo una scansione: `daCodice` per un alimento
+// nuovo, `avviso` per uno che c'era già.
+type Modulo =
+  | { tipo: "nuovo"; daCodice?: DatiCodice }
+  | { tipo: "modifica"; alimento: Alimento; avviso?: string };
+
+// Il pulsante Scansiona: tondo da 44 px, alto come la ricerca del catalogo
+// (in Aggiungi 48 px, come il suo campo; mockup catalogo-alimenti.html).
+// Senza rete grigio con il bordo tratteggiato, come in Aggiungi.
+const CLASSE_SCANSIONA = `flex size-11 shrink-0 items-center justify-center rounded-full ${CLASSE_FOCUS}`;
+const CLASSE_SCANSIONA_ATTIVO = "bg-accent-strong text-on-strong";
+const CLASSE_SCANSIONA_SPENTO = "border border-dashed border-border bg-surface text-muted";
 
 type Barra = MessaggioBarra & {
   // Cambia a ogni messaggio: è la `key` della barra, così il timer riparte.
@@ -169,6 +199,10 @@ export default function AlimentiPage() {
   const [foglioInArrivo, setFoglioInArrivo] = useState(false);
   const inArrivo = useAlimentiInArrivo(userId ?? null);
   const online = useOnline();
+  // La scansione: la richiesta della fotocamera partita al tocco su
+  // Scansiona (richiediFotocamera), o null se il telefono non ce l'ha;
+  // undefined = chiusa.
+  const [scansione, setScansione] = useState<Promise<MediaStream> | null | undefined>(undefined);
 
   // Il tieni premuto entra in selezione con quella riga spuntata (o la
   // aggiunge, se si è già in selezione). Tutti e due i rami del gesto
@@ -265,6 +299,17 @@ export default function AlimentiPage() {
     scorrimentoElenco.current = window.scrollY;
     setBarra(null);
     setModulo(m);
+  }
+
+  // Il codice scansionato è già nel catalogo (cercaCodice): la sua
+  // modifica, con l'avviso. Uno che non si modifica (catalogo comune o
+  // verificato) non si apre: la schermata resta e lo dice.
+  function nelCatalogo(alimento: Alimento): string | void {
+    if (!eModificabile(alimento, userId!)) {
+      return testoNonModificabile(etichettaAlimento(alimento), alimento.user_id === null);
+    }
+    setScansione(undefined);
+    apri({ tipo: "modifica", alimento, avviso: TESTO_GIA_NEL_CATALOGO });
   }
 
   function tocco(a: Alimento) {
@@ -381,39 +426,72 @@ export default function AlimentiPage() {
         />
       )}
 
+      {/* La ricerca con Scansiona accanto. Anche a catalogo vuoto
+          (proposta 2 del mockup): il pulsante sta dove starà sempre, e il
+          campo resta, attenuato e spento, perché non c'è niente da
+          cercare. In selezione Scansiona non c'è, come il "+". */}
+      <div className="flex gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cerca un alimento"
+            aria-label="Cerca un alimento"
+            enterKeyHint="search"
+            disabled={miei.length === 0}
+            className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 text-base disabled:opacity-[0.55] ${CLASSE_FOCUS}`}
+          />
+          {query !== "" && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Svuota la ricerca"
+              className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
+            >
+              <Croce />
+            </button>
+          )}
+        </div>
+        {!selezione && (
+          <button
+            type="button"
+            // getUserMedia come PRIMA cosa del tocco, come in Aggiungi:
+            // nell'app installata iOS non chiedeva il permesso quando
+            // partiva dopo il ridisegno (07/11).
+            onClick={() => {
+              setBarra(null);
+              setScansione(richiediFotocamera());
+            }}
+            disabled={!online}
+            aria-label={online ? "Scansiona il codice a barre" : "Scansione non disponibile senza connessione"}
+            className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
+          >
+            <IconaCodiceBarre />
+          </button>
+        )}
+      </div>
+      {!online && !selezione && (
+        <p
+          role="status"
+          className="-mt-2 flex items-center gap-2 rounded-xl bg-surface px-3.5 py-2.5 text-sm text-muted"
+        >
+          <IconaSenzaRete className="shrink-0" />
+          {TESTO_SENZA_RETE}
+        </p>
+      )}
+
       {miei.length === 0 ? (
         <div className="rounded-[20px] border border-border bg-surface px-[18px] py-[22px]">
           <h2 className="font-semibold">Ancora nessun alimento</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-muted">
-            Crea il primo con il + qui sotto, oppure da Aggiungi quando la ricerca non trova
-            quello che cerchi.
+            Crea il primo con il + qui sotto, oppure scansiona una confezione con il pulsante
+            accanto alla ricerca.
           </p>
         </div>
       ) : (
         <>
-          <div className="relative">
-            <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cerca un alimento"
-              aria-label="Cerca un alimento"
-              enterKeyHint="search"
-              className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 text-base ${CLASSE_FOCUS}`}
-            />
-            {query !== "" && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Svuota la ricerca"
-                className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
-              >
-                <Croce />
-              </button>
-            )}
-          </div>
-
           <div className="-mt-1 flex items-center justify-between px-1">
             <p className="text-sm text-muted">
               {elenco.length === 1 ? "1 alimento" : `${elenco.length} alimenti`}
@@ -559,6 +637,27 @@ export default function AlimentiPage() {
         </div>
       )}
 
+      {/* La scansione (PUNTO §3, "Codice a barre", "Nel catalogo"):
+          copre la pagina. Già nel catalogo → "Modifica alimento";
+          altrimenti "Nuovo alimento" con il codice (e i valori di Open
+          Food Facts, se c'erano), che con Salva torna qui. */}
+      {scansione !== undefined && (
+        <SchermataScansione
+          userId={userId}
+          richiestaFotocamera={scansione}
+          titolo={TITOLO_SCANSIONE_CATALOGO}
+          onChiudi={() => setScansione(undefined)}
+          uso={{
+            tipo: "cerca",
+            onNelCatalogo: nelCatalogo,
+            onModulo: (daCodice) => {
+              setScansione(undefined);
+              apri({ tipo: "nuovo", daCodice });
+            },
+          }}
+        />
+      )}
+
       {conferma && (
         <SheetConferma
           titolo={conferma.titolo}
@@ -641,14 +740,27 @@ function SchermataModulo({
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-5">
         {/* La `key` fa ripartire il form da capo quando "Apri" passa a un
-            altro alimento: senza, React terrebbe i campi già scritti. */}
+            altro alimento: senza, React terrebbe i campi già scritti. Lo
+            stesso per un codice scansionato: il modulo parte dai suoi
+            valori. */}
         <CreaAlimentoForm
-          key={modulo.tipo === "modifica" ? modulo.alimento.id : "nuovo"}
+          key={
+            modulo.tipo === "modifica"
+              ? modulo.alimento.id
+              : modulo.daCodice
+                ? `codice-${modulo.daCodice.barcode}`
+                : "nuovo"
+          }
           userId={userId}
           nomeIniziale=""
           etichettaIndietro="Torna al catalogo"
           etichettaCrea="Salva"
           alimentoDaModificare={modulo.tipo === "modifica" ? modulo.alimento : undefined}
+          daCodice={modulo.tipo === "nuovo" ? modulo.daCodice : undefined}
+          avviso={modulo.tipo === "modifica" ? modulo.avviso : undefined}
+          // «Aggiungi codice a barre»: solo da qui, non dalla matita di
+          // Aggiungi (PUNTO §3, "Il codice in modifica").
+          aggiungiCodice
           onAnnulla={onChiudi}
           onCreato={onCreato}
           onApriEsistente={onApri}

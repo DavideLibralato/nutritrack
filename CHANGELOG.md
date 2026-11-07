@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Scansiona nel catalogo alimenti
+
+Branch `alimenti-codice-a-barre`, commit 5. In Impostazioni > Alimenti
+il pulsante Scansiona da 44 px accanto alla ricerca, anche a catalogo
+vuoto (ricerca spenta, testo nuovo della scheda), grigio senza rete con
+la sua riga, assente in selezione. La scansione «Catalogo alimenti»:
+codice già nel catalogo → "Modifica alimento" con «Questo codice è già
+nel tuo catalogo.» (prop nuova `avviso` del form); alimento non
+modificabile → la schermata resta con «È nel catalogo comune: «…». Non
+si modifica, ma lo trovi in Aggiungi.» (fase nuova "avviso" di
+`SchermataScansione`: `onNelCatalogo` può restituire un testo); trovato
+su Open Food Facts o non trovato → "Nuovo alimento" con il codice, e
+Salva torna al catalogo con «Creato:», senza sheet quantità. La modifica
+dal catalogo passa `aggiungiCodice`. Per un alimento proprio ma
+verificato (oggi non esiste) «È un alimento verificato: «…». Non si
+modifica, ma lo trovi in Aggiungi.» (Davide). Primo file di test della
+pagina, nove test permanenti, compresi la rete che cade con "Crea a
+mano" fino al ritorno al catalogo e Scansiona assente in selezione;
+dieci rotture da una copia, ognuna presa dai test. I test di Aggiungi
+e di `SchermataScansione` passano senza modifiche.
+
 ## 2026-11-07 — Il codice a barre in "Modifica alimento"
 
 Branch `alimenti-codice-a-barre`, commit 4. In `CreaAlimentoForm` un

@@ -911,7 +911,23 @@ silenzio.
   - **non trovato** → "Nuovo alimento" con il solo codice;
   - **rete assente, OFF occupato o risposta inattesa** → i messaggi di
     Aggiungi, con "Riprova", "Crea a mano" e "Scansiona un altro
-    codice".
+    codice";
+  - com'è fatto (commit 5 del branch): in
+    `src/app/(app)/impostazioni/alimenti/page.tsx` la scansione è uno
+    stato della pagina, come il form; il form riceve `daCodice` (con
+    una `key` per codice), l'avviso (prop `avviso` di
+    `CreaAlimentoForm`, nello stile di quello di Open Food Facts) e
+    `aggiungiCodice`. Per il caso non modificabile `onNelCatalogo` di
+    `SchermataScansione` può restituire un testo: la schermata resta
+    aperta e lo mostra (fase "avviso"). Il testo per un alimento
+    proprio ma verificato, che oggi non esiste, è «È un alimento
+    verificato: «<nome · marca>». Non si modifica, ma lo trovi in
+    Aggiungi.» (Davide, 07/11). A catalogo vuoto il campo di ricerca è
+    spento (`disabled`, opacità 0,55). Senza rete la riga «Senza
+    connessione…» sta sotto la ricerca, e in selezione non c'è, come il
+    pulsante. Testi in `src/lib/barcode/testiScansione.ts`; test in
+    `src/app/(app)/impostazioni/alimenti/page.test.tsx`, il primo file
+    di test della pagina.
 - **Il codice in modifica** (stesse decisioni, stesso branch):
   - un alimento **con il codice** lo mostra in "Modifica alimento" in
     sola lettura, dopo Marca, al posto del campo della creazione. Fino

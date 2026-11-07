@@ -115,6 +115,10 @@ interface Props {
   // catalogo: dalla matita di Aggiungi no, lì si corregge al volo prima
   // di registrare (PUNTO_DI_PARTENZA.md §3, "Il codice in modifica").
   aggiungiCodice?: boolean;
+  // Un avviso in cima, nello stile di quello di Open Food Facts: perché si
+  // è finiti qui (nel catalogo, dopo una scansione: «Questo codice è già
+  // nel tuo catalogo.»).
+  avviso?: string;
   // --- Solo in creazione da un codice a barre ---
   // Ignorato in modifica: lì codice e fonte restano quelli della riga.
   daCodice?: DatiCodice;
@@ -133,6 +137,7 @@ export default function CreaAlimentoForm({
   onModificato,
   onEliminato,
   aggiungiCodice = false,
+  avviso,
   daCodice: daCodiceProp,
 }: Props) {
   const modifica = !!alimentoDaModificare;
@@ -320,6 +325,13 @@ export default function CreaAlimentoForm({
           {etichettaIndietro}
         </button>
       </div>
+
+      {avviso && (
+        <div role="status" className="flex gap-2 rounded-xl bg-accent/10 p-3 text-sm">
+          <IconaInfo className="mt-0.5 shrink-0 text-accent" />
+          <span>{avviso}</span>
+        </div>
+      )}
 
       {/* L'avviso del mockup "Valori da Open Food Facts": i valori li
           inseriscono dei volontari, si controllano con l'etichetta. Se OFF

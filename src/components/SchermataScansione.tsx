@@ -66,14 +66,20 @@ type Fase =
   | { tipo: "fotocamera" }
   | { tipo: "scrivi" }
   | { tipo: "ricerca"; codice: string }
-  | { tipo: "errore"; codice: string; errore: ErroreRicerca };
+  | { tipo: "errore"; codice: string; errore: ErroreRicerca }
+  // Il prodotto è nel catalogo, ma chi ha aperto la schermata non può
+  // usarlo (nel catalogo alimenti: non modificabile) e lo dice.
+  | { tipo: "avviso"; codice: string; testo: string };
 
 // Cosa fare con il codice letto (vedi in cima).
 export type UsoScansione =
   | {
       tipo: "cerca";
-      // Il prodotto è già nel catalogo: in Aggiungi lo sheet quantità.
-      onNelCatalogo: (alimento: Alimento) => void;
+      // Il prodotto è già nel catalogo: in Aggiungi lo sheet quantità, nel
+      // catalogo alimenti "Modifica alimento". Se restituisce un testo, la
+      // schermata resta aperta e lo mostra, con "Scansiona un altro
+      // codice" (nel catalogo: un alimento che non si può modificare).
+      onNelCatalogo: (alimento: Alimento) => string | void;
       // "Nuovo alimento": precompilato (trovato su OFF) o con il solo codice.
       onModulo: (daCodice: DatiCodice) => void;
     }
@@ -188,9 +194,11 @@ export default function SchermataScansione({
     }
     if (controller.signal.aborted) return;
     switch (esito.esito) {
-      case "nel-catalogo":
-        onNelCatalogo(esito.alimento);
+      case "nel-catalogo": {
+        const testo = onNelCatalogo(esito.alimento);
+        if (typeof testo === "string") setFase({ tipo: "avviso", codice, testo });
         return;
+      }
       case "open-food-facts":
         onModulo({ barcode: codice, prodotto: esito.prodotto });
         return;
@@ -441,6 +449,18 @@ export default function SchermataScansione({
               onClick={tornaAllaFotocamera}
               className={`w-full rounded py-2 text-center text-sm text-scan-muted underline ${CLASSE_FOCUS}`}
             >
+              Scansiona un altro codice
+            </button>
+          </div>
+        )}
+
+        {fase.tipo === "avviso" && (
+          <div className="flex w-full max-w-[320px] flex-col gap-3">
+            <p role="status" className="text-base leading-snug">
+              {fase.testo}
+            </p>
+            <p className="text-sm tabular-nums text-scan-muted">{fase.codice}</p>
+            <button type="button" onClick={tornaAllaFotocamera} className={`${CLASSE_AZIONE} flex-none`}>
               Scansiona un altro codice
             </button>
           </div>

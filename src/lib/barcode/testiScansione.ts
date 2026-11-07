@@ -21,6 +21,23 @@ export const TESTO_FOTO_SENZA_CODICE =
 export const TESTO_LETTORE_NON_CARICATO =
   "Il lettore dei codici non si è caricato. Controlla la connessione e riprova, oppure scrivi il codice.";
 
+// La scansione dal catalogo alimenti (PUNTO_DI_PARTENZA.md §3, "Codice a
+// barre", "Nel catalogo").
+export const TITOLO_SCANSIONE_CATALOGO = "Catalogo alimenti";
+// In cima a "Modifica alimento", quando il codice scansionato è già di un
+// alimento del catalogo.
+export const TESTO_GIA_NEL_CATALOGO = "Questo codice è già nel tuo catalogo.";
+// Il codice è di un alimento che non si modifica: resta la schermata di
+// scansione con questo testo. `etichetta` come etichettaAlimento
+// ("Nome · Marca"). Il catalogo comune è il testo approvato nel mockup;
+// quello di un alimento proprio ma verificato, che oggi non esiste, è di
+// Davide (07/11).
+export function testoNonModificabile(etichetta: string, comune: boolean): string {
+  return comune
+    ? `È nel catalogo comune: «${etichetta}». Non si modifica, ma lo trovi in Aggiungi.`
+    : `È un alimento verificato: «${etichetta}». Non si modifica, ma lo trovi in Aggiungi.`;
+}
+
 // "Scrivi il codice": perché il codice scritto non va.
 export const TESTI_CODICE_SBAGLIATO: Record<ErroreCodice, string> = {
   vuoto: "Scrivi le cifre che stanno sotto le barre.",
