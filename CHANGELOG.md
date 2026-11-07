@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — La foto profilo nel JSON di Esporta
+
+Branch `esporta`, commit 4. Nuovo `src/lib/esporta/fotoEsportazione.ts`:
+prima `aggiornaMiaFoto` (la stessa dell'apertura dell'app, solo
+letture sul server) con un tempo massimo di 8 secondi, poi la copia in
+`foto_locale`, in base64 con il tipo MIME. Conta l'esito della
+richiesta, non `navigator.onLine`. Quattro esiti: inclusa e verificata
+col server, inclusa dalla copia del telefono (server senza risposta o
+foto nuova non arrivata), assente (lo dice il server), non inclusa
+(server senza risposta e nessuna copia). 25 test permanenti nuovi in
+`fotoEsportazione.test.ts`, con server e Storage finti in errore,
+lenti, che lanciano o non rispondono mai; uno passa la foto nel file
+vero e lo rilegge. Sette rotture da una copia del file, tutte prese.
+
 ## 2026-11-07 — Formato e raccolta del JSON di Esporta
 
 Branch `esporta`, commit 3. Nuovi `src/lib/esporta/formatoEsportazione.ts`
