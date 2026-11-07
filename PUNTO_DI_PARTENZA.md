@@ -36,8 +36,13 @@ Decisioni prese:
 
 - Si tiene la vecchia spec come backlog, non come roadmap.
 - L'MVP è molto più piccolo: **una sola modalità di inserimento rifinita**
-  (manuale) + recenti e preferiti. L'OCR arriva subito dopo.
-- Rimandate: barcode, foto piatto AI, inserimento vocale, inserimento testuale AI,
+  (manuale) + recenti e preferiti. Dopo viene il **codice a barre** (deciso
+  da Davide il 03/11, in sviluppo dal 07/11, branch `codice-a-barre`;
+  sezione 3, "Codice a barre"), poi la ricerca Open Food Facts per nome e
+  l'OCR. Il codice a barre passa prima perché costa meno attrito di tutti:
+  inquadri la confezione e, se il prodotto è già nel catalogo, sei ai
+  grammi.
+- Rimandate: foto piatto AI, inserimento vocale, inserimento testuale AI,
   insight AI, assistente AI, meal planner, community, condivisione nutrizionista,
   database ristoranti, gamification, export multiformato, integrazione fitness.
   La "community" resta rimandata: **Amici** (dal 15/10, sezione 3) non lo è,
@@ -626,21 +631,24 @@ Si apre a tutto schermo con freccia indietro e, come titolo, **il nome del pasto
 
 Ordine degli elementi:
 
-1. **"Scansiona etichetta"** *(non ancora costruito: arriva con l'OCR,
-   fase 5)* — riquadro grande con l'accento, titolo e
-   sottotitolo ("Valori letti in automatico"). È il differenziante, ma resta il
-   *secondo* percorso
-2. **Campo di ricerca** con lente e placeholder "Cerca un alimento o un
+1. **Campo di ricerca** con lente e placeholder "Cerca un alimento o un
    pasto" (dal 06/11: trova anche i pasti salvati, vedi "Ricerca nei pasti
    salvati"; prima "Cerca un alimento"). L'etichetta per i lettori di
-   schermo è lo stesso testo
-3. **Recenti** — righe con nome, e sotto in grigio **l'ultima quantità usata e le
+   schermo è lo stesso testo. Accanto, il pulsante tondo **Scansiona** da
+   48 px *(in sviluppo, branch `codice-a-barre`)*: vedi "Codice a barre"
+2. **Recenti** — righe con nome, e sotto in grigio **l'ultima quantità usata e le
    kcal corrispondenti** ("Petto di pollo · 150 g · 248 kcal"), con un **"+"**
    a destra
-4. **Preferiti** — stessa struttura, include i pasti salvati ("Colazione
+3. **Preferiti** — stessa struttura, include i pasti salvati ("Colazione
    standard · 3 alimenti · 320 kcal")
-5. **"Crea alimento a mano"** in fondo, fisso, sempre raggiungibile; con
+4. **"Crea alimento a mano"** in fondo, fisso, sempre raggiungibile; con
    una ricerca scritta diventa "Crea «…»"
+
+Il riquadro "Scansiona etichetta" che stava in cima è tolto (07/11): il
+primo percorso con la fotocamera è il codice a barre. L'OCR, quando
+arriverà, sarà **"Leggi dall'etichetta" in cima a "Crea alimento a
+mano"**: riempie i campi del modulo che si sta già compilando, non apre
+un percorso a parte.
 
 **Aspetto** (dal 06/11, branch `aggiungi-nuovo-aspetto`; mockup
 `docs/mockups/aggiungi.html`, proposta A scelta da Davide il 03/11). Le
@@ -657,7 +665,130 @@ classi del tema, quindi anche al buio. Le classi stanno in costanti in
 cima a `src/app/aggiungi/page.tsx` (`CLASSE_RIQUADRO`, `CLASSE_RIGA`,
 `CLASSE_PIU`…), una sola definizione per le tre liste. Il pulsante
 della scansione del mockup non c'è ancora: arriva, già funzionante, con
-il lavoro codice-a-barre.
+il lavoro codice-a-barre (sotto, "Codice a barre").
+
+**Codice a barre** (deciso da Davide il 03/11, regole del 07/11; in
+sviluppo dal 07/11, branch `codice-a-barre`; mockup
+`docs/mockups/aggiungi.html`, schermate "Scansione", "Valori da Open
+Food Facts" e "Senza rete"). Regola di fondo: **stesso codice = stesso
+prodotto**; se è già nel catalogo si va dritti ai grammi, e i valori
+presi da Open Food Facts si confermano sempre, non si salvano mai in
+silenzio.
+
+- **Il pulsante.** "Scansiona" tondo da 48 px accanto al campo di
+  ricerca, come nella proposta A, `aria-label` "Scansiona il codice a
+  barre". **Senza rete è grigio e spento** (scelta di Davide), con sotto
+  la riga «Senza connessione la scansione non è disponibile»; il resto
+  della pagina funziona offline come prima. Lo stato viene da
+  `useOnline` (`navigator.onLine`), che su iPhone arriva in ritardo: per
+  questo una chiamata fallita ha comunque il suo messaggio (sotto,
+  "Errori").
+- **La schermata di scansione.** Video dal vivo della fotocamera
+  posteriore (`getUserMedia`, `facingMode: "environment"`). Il permesso
+  si chiede **solo al tocco** su Scansiona. La fotocamera si spegne
+  (tutti i track fermati) alla chiusura e quando l'app va in secondo
+  piano; al ritorno **non si riaccende da sola**, compare "Riattiva la
+  fotocamera", così la richiesta di permesso non arriva mai senza un
+  tocco. La lettura parte da sola, senza premere niente. In fondo due
+  alternative: **"Usa una foto"** (input file con `capture`, che apre la
+  fotocamera di sistema e non chiede il permesso della pagina: resta
+  disponibile anche con il permesso negato) e **"Scrivi il codice"**
+  (`inputMode="numeric"`). La torcia del mockup compare solo se la
+  fotocamera la supporta.
+- **La libreria.** `barcode-detector` a versione esatta (3.2.3, che usa
+  `zxing-wasm` 3.1.6), caricata con `import()` solo al tocco su
+  Scansiona: non pesa sul caricamento dell'app. Il suo WebAssembly
+  (`zxing_reader.wasm`, circa 950 KB) è servito da `/public`
+  (`locateFile`), mai da jsDelivr. Formati letti: EAN-13, EAN-8 e UPC-A.
+- **Il codice valido.** Solo cifre, 8, 12 o 13, con la **cifra di
+  controllo** giusta; altrimenti in "Scrivi il codice" un messaggio e
+  niente ricerca. Un UPC-A (12 cifre, prodotti americani) si
+  **salva e si cerca sempre a 13 cifre, con uno 0 davanti** (decisione
+  di Davide, 07/11): è lo stesso numero come EAN-13, quindi lo stesso
+  prodotto ha sempre lo stesso codice, letto dal video, da una foto o
+  scritto a mano. Gli EAN-8 restano a 8.
+- **Il percorso.** Codice letto → si cerca nel catalogo locale per
+  `barcode` (indice Dexie già presente): prima fra gli alimenti vivi
+  dell'utente, poi fra quelli vivi del catalogo comune. Un alimento
+  cancellato non conta (è ritirato dal futuro, "Alimenti cancellati" in
+  sezione 4). **Se c'è → sheet quantità**, come un tocco su un
+  risultato. **Se no → Open Food Facts** (sotto). Prodotto trovato →
+  "Nuovo alimento" precompilato. Prodotto non trovato → "Nuovo
+  alimento" vuoto, con il codice già compilato.
+- **Open Food Facts.** Chiamato **dal browser**, endpoint v3
+  (`/api/v3/product/<codice>`, quello raccomandato; la v2 è
+  deprecata), solo i campi che servono (`product_name`,
+  `product_name_it`, `brands`, `nutriments`), con l'header
+  **`X-User-Agent: Libra/<versione> (libra.app.supporto@gmail.com)`**:
+  il browser non lascia cambiare `User-Agent`, e OFF accetta
+  `X-User-Agent` dal browser (CORS verificato il 07/11). La versione è
+  `VERSIONE_APP`, quella di Impostazioni > Informazioni (package.json).
+  **Tempo massimo 10 secondi**, con la richiesta annullata davvero come
+  in `fetchConScadenza` (più corto dei 30 s della sync: chi scansiona
+  aspetta con il telefono in mano, e "Crea a mano" è subito pronto). La
+  chiamata si annulla anche se si chiude la schermata. Nessuna chiave,
+  nessun costo. Se `X-User-Agent` un giorno non bastasse, la riserva è
+  una route su Vercel che chiama OFF con il suo `User-Agent`.
+- **Cosa si prende da OFF.** Nome: `product_name_it`, se vuoto
+  `product_name`. Marca: il primo nome di `brands` ("Nutella, Ferrero"
+  → "Nutella"). Nome e marca con gli spazi normalizzati e al massimo 200
+  caratteri (il limite di `alimenti_condivisi`, altrimenti l'alimento
+  non si potrebbe mandare a un amico). Valori per 100 g: kcal,
+  proteine, carboidrati, grassi, arrotondati con `arrotondaDecimali` a
+  due decimali; un valore mancante o non numerico resta vuoto.
+  **Zuccheri, fibre, saturi e sale si scartano**: oggi non si mostrano
+  e non si controllano, e salvarli vorrebbe dire tenere dati non
+  verificati da nessuno. **kcal mancanti ma kJ presenti**: si convertono
+  (1 kcal = 4,184 kJ, il fattore delle etichette UE) e sotto il campo
+  compare «Calcolate dai kJ di Open Food Facts: controlla l'etichetta»
+  (decisione di Davide, 07/11).
+- **Il modulo precompilato.** È "Nuovo alimento" (`CreaAlimentoForm`),
+  con in cima l'avviso «Valori trovati su Open Food Facts. Controllali
+  con l'etichetta prima di salvare: li inseriscono dei volontari.», il
+  campo **"Codice a barre" in sola lettura** (se è sbagliato si torna
+  indietro e si scansiona di nuovo; decisione di Davide, 07/11) e in
+  fondo la riga «Dati da Open Food Facts · licenza ODbL». Validazione
+  e Salva come sempre: un valore assurdo arrivato da OFF mostra il suo
+  errore e spegne il Salva. **Niente si salva senza il tocco su
+  Salva.**
+- **`fonte` e `barcode`.** `salvaAlimento` scrive il codice (a 13 o 8
+  cifre) e la fonte: **`'off'`** se almeno uno dei quattro valori viene
+  da Open Food Facts, anche se poi l'utente lo corregge; **`'barcode'`**
+  se i valori li ha scritti a mano (prodotto non trovato, o trovato
+  senza valori: su OFF esistono prodotti con solo nome e marca). In
+  Modifica `barcode` e `fonte` restano quelli della riga. Nessuna
+  migration e nessuna version Dexie nuova (verificato il 07/11): le
+  colonne, il check su `fonte` e l'indice `barcode` ci sono già.
+- **Stesso codice, stesso prodotto.** Due alimenti vivi dello stesso
+  utente non hanno lo stesso `barcode`. È la regola dei doppioni, accanto
+  a "Mai due alimenti uguali" (sezione 3, "Alimenti"), nella stessa
+  funzione (`trovaDoppione`): doppione = stesso nome e marca, **oppure**
+  stesso codice non vuoto. Vale quindi in tutti i posti che la usano già:
+  il modulo mentre si scrive e al Salva (nella transazione), l'Annulla
+  dopo un'eliminazione e gli alimenti in arrivo dagli amici. Messaggio
+  «Hai già un alimento con questo codice a barre: «…»», con "Apri". Come
+  per il nome, solo nell'app e non sul server; due telefoni offline
+  possono ancora creare due alimenti con lo stesso codice, caso raro
+  accettato.
+- **Errori.** Rete assente anche se il telefono dice di no, o nessuna
+  risposta entro 10 s: «Non riesco a raggiungere Open Food Facts», con
+  "Riprova" e "Crea a mano" (modulo vuoto, codice già compilato). OFF
+  occupato (429/503: il limite è 15 letture al minuto per indirizzo IP):
+  messaggio simile. Permesso della fotocamera negato: restano "Usa una
+  foto" e "Scrivi il codice". La ricerca nel catalogo locale viene
+  prima della rete, quindi un prodotto già nel catalogo si trova anche
+  quando la rete cade a metà.
+- **Licenza.** In Impostazioni > Informazioni una riga «Dati dei
+  prodotti: Open Food Facts, licenza ODbL», oltre a quella nel modulo.
+- **Prove sull'anteprima.** Servono HTTPS (l'URL di anteprima di Vercel;
+  `npm run dev` aperto dall'iPhone con l'IP del PC è HTTP, e lì la
+  fotocamera non si apre), Safari su iPhone e l'app installata. L'app
+  installata dell'anteprima è un'app a parte sulla Home, con un altro
+  indirizzo: a fine prova **si toglie dalla Home solo quella
+  dell'anteprima, mai l'app vera**. Su iPhone il permesso della
+  fotocamera di Safari e quello dell'app installata sono separati, e
+  nell'app installata iOS può richiederlo più spesso: cosa succede
+  davvero si scrive qui dopo la prova.
 
 **Ricerca nei pasti salvati** (decisa il 13/10, regole del 03/11; dal
 06/11, branch `aggiungi-nuovo-aspetto`). Il campo di ricerca trova anche
@@ -869,8 +1000,9 @@ sbagliato: si elencano sopra il pulsante ("Per salvare mancano: …").
 **Zuccheri, fibre, saturi e sale non sono nel form, per scelta** (decisa il
 2026-09-26): quattro campi in più da compilare a ogni alimento creato a
 mano aumentano l'attrito (sezione 1). Si scrivono `null`, e in modifica
-restano quelli che erano. Arriveranno con l'OCR (fase 5), che li leggerà
-dall'etichetta. La validazione li copre già, comprese le regole
+restano quelli che erano. Arriveranno con l'OCR (fase 6), che li leggerà
+dall'etichetta. Anche il codice a barre li scrive `null`: quelli di Open
+Food Facts si scartano (sopra, "Codice a barre"). La validazione li copre già, comprese le regole
 zuccheri ≤ carboidrati e saturi ≤ grassi, che oggi quindi non possono
 scattare.
 
@@ -1870,6 +2002,10 @@ catalogo, si corregge e si fa pulizia.
   ordine scelto perché un guasto a metà lasciasse uno stato visibile).
 - **Mai due alimenti uguali** (decisioni del 16/10, branch
   `alimenti-doppi`). Stesso nome **e** stessa marca = stesso prodotto.
+  Dal branch `codice-a-barre` (07/11) anche **stesso codice a barre non
+  vuoto = stesso prodotto**, con qualunque nome: stessa funzione, stesse
+  regole sui vivi e sul catalogo comune (sopra, Aggiungi, "Codice a
+  barre").
   - **Il confronto**: maiuscole e accenti indifferenti (come la ricerca),
     spazi ai bordi ignorati, spazi doppi interni contati come uno. La
     marca vuota conta come una marca: due "Banana" senza marca sono
@@ -2373,6 +2509,18 @@ proposta **B**, scelta il 16/10)
   stessa regola del catalogo (sopra, "Alimenti", "Mai due alimenti
   uguali"), già scritta: `trovaDoppione` in
   `src/lib/catalogo/doppioniAlimenti.ts`, da usare così com'è.
+  Dal branch `codice-a-barre` (07/11) è doppione anche un alimento in
+  arrivo con lo **stesso codice a barre** di uno dei propri, con
+  qualunque nome; e in una selezione multipla due alimenti in arrivo con
+  lo stesso codice non si spuntano insieme, come oggi due con lo stesso
+  nome e marca. **Quando nasce la copia**: la crea
+  `rispondi_alimenti_condivisi` sul server solo alla risposta
+  "aggiungi", e l'app la chiama solo dopo aver rifatto il confronto su
+  Dexie: la copia non nasce mai prima del confronto. Il confronto però
+  vede il catalogo **di questo telefono**: un alimento con lo stesso
+  codice creato su un altro dispositivo e non ancora sceso qui non lo
+  ferma, e la funzione sul server non controlla i doppioni. Stesso
+  limite, già accettato, del nome e della marca.
   - **Valori diversi**: "Hai già «nome · marca», con valori diversi.", il
     collegamento **"Confronta i valori"** (una tabella, chiusa
     all'inizio: il tuo e quello in arrivo per kcal, grassi, carboidrati,
@@ -4166,6 +4314,9 @@ vuoi, senza rischio e senza migration dolorose.
   gratis dal punto di vista del prodotto — cambia il significato di "Rimangono
   620 kcal", che diventerebbe un bersaglio mobile. Resta fuori dal perimetro
 - Barcode: il campo su `alimenti` c'è già, serve solo la UI di scansione
+  (in sviluppo dal 07/11, branch `codice-a-barre`: verificato che non
+  servono né migration né version Dexie nuove; sezione 3, "Codice a
+  barre")
 
 #### Il sonno: perché resta nel backlog
 
@@ -4210,7 +4361,13 @@ SorgenteAlimento.ottieni() → AlimentoNormalizzato {
 
 *(Non ancora nel codice: resta il progetto da seguire quando arriveranno Open
 Food Facts e l'OCR. Oggi esiste solo l'inserimento manuale, che passa già
-dall'unico sheet quantità.)*
+dall'unico sheet quantità. Il codice a barre (branch `codice-a-barre`, dal
+07/11) non costruisce ancora questa interfaccia: il suo percorso finisce
+nelle due schermate uniche che ci sono già, il modulo "Nuovo alimento" e
+lo sheet quantità, quindi l'obiettivo — una sola conferma per ogni
+sorgente — è rispettato senza scrivere l'astrazione per una sorgente
+sola. Si scrive quando le sorgenti diventano due, con la ricerca OFF per
+nome o l'OCR.)*
 
 Implementazioni: `RicercaManuale`, `RicercaOpenFoodFacts`, `ScansioneEtichetta`,
 e in futuro `Barcode`, `FotoPiatto`, `Testo`, `Voce`.
@@ -4230,10 +4387,19 @@ attaccati man mano.
 1. Schema database + auth + profilo + calcolo fabbisogno
 2. Inserimento manuale + pagina Oggi → **usarla davvero per una settimana**
 3. Recenti, preferiti e **pasti salvati**
-4. Ricerca Open Food Facts
-5. OCR etichetta
-6. Statistiche e peso
-7. Solo dopo: barcode, AI, il resto del backlog
+4. **Codice a barre**, con Open Food Facts cercato per codice (deciso da
+   Davide il 03/11, in sviluppo dal 07/11, branch `codice-a-barre`;
+   sezione 3, "Codice a barre")
+5. Ricerca Open Food Facts per nome
+6. OCR etichetta, come "Leggi dall'etichetta" in "Crea alimento a mano"
+7. Statistiche e peso
+8. Solo dopo: AI, il resto del backlog
+
+Fino al 03/11 l'ordine era ricerca OFF (4), OCR (5), statistiche (6) e il
+barcode solo dopo (7). Il codice a barre è passato davanti perché, fra
+le sorgenti con la fotocamera, è quella con meno attrito e meno codice:
+un numero esatto invece di un testo da interpretare, e su OFF un
+prodotto per codice si trova con una chiamata sola.
 
 I punti 3 e 4 sono il vero test del prodotto. Se dopo recenti+preferiti i pasti
 si registrano in 5 secondi senza mai usare la fotocamera, è un'informazione
@@ -4246,7 +4412,7 @@ importante sul prodotto, ottenuta avendo scritto pochissimo codice.
 Confermate dai mockup, con una correzione.
 
 - **Un solo colore d'accento: il verde.** Usato per l'azione principale
-  (il pulsante "+ Aggiungi", il riquadro "Scansiona etichetta"), per lo stato
+  (il pulsante "+ Aggiungi", il pulsante Scansiona di Aggiungi), per lo stato
   attivo (tab selezionata, obiettivo selezionato) e per l'anello delle calorie.
   Tutto il resto è neutro: nero per i numeri, grigio per le etichette
 - Nessun bordo dove non serve: separatori sottili tra le righe, niente card
@@ -6033,7 +6199,7 @@ Perché ora e non dopo: il local-first non è una feature, è *dove vive il dato
 Aggiungerlo in seguito significa riscrivere ogni lettura e ogni scrittura
 dell'app. Effetto collaterale previsto: con Tesseract nel browser, **l'app
 funzionerà interamente offline, OCR compreso** — quando l'OCR ci sarà (oggi
-non è ancora costruito, fase 5) **e a una condizione**: tesseract.js da solo
+non è ancora costruito, fase 6) **e a una condizione**: tesseract.js da solo
 non è offline. Verificato nel codice della versione installata (7.0.0,
 `src/worker/browser/defaultOptions.js`, `src/worker-script/browser/getCore.js`,
 `src/worker-script/index.js`) e in `docs/local-installation.md` del
@@ -6158,6 +6324,15 @@ tornerà necessaria.
 Quando scegli un alimento da OFF, viene **copiato nella tabella `alimenti`** con
 `fonte = 'off'`, il barcode e `verificato = false`. Il catalogo cresce da solo
 con quello che mangi davvero.
+
+Con il codice a barre (dal 07/11, branch `codice-a-barre`; sezione 3,
+"Codice a barre") la copia nasce **solo dopo la conferma** nel modulo
+"Nuovo alimento" precompilato, ed è un alimento **privato** di chi lo
+salva (`user_id` suo), come uno scritto a mano: nel catalogo comune
+(`user_id` null) non entra niente. OFF si cerca per codice, senza
+digitazione, quindi il `debounce` qui non serve; servirà alla ricerca
+per nome. Lo `User-Agent` dal browser non si può impostare: si manda
+`X-User-Agent`, che OFF accetta.
 
 Perché non l'import massivo: il piano gratuito Supabase ha 500 MB e i dati OFF
 sono spesso duplicati o incompleti. Perché non il solo manuale: i primi giorni
@@ -7763,7 +7938,11 @@ alimento con "Contiene …", ricerca per nome, nessun risultato con Invio
 risultati (22:22:40) e Annulla (22:22:41), tutte e due le voci annullate
 sul server. Letture tutte 200, scritture 201/200, nessun 401/403.
 Nell'account di prova restano due voci vive di Colazione test delle
-22:18:49 (Annulla non fatto in quella prova): innocue.
+22:18:49 (Annulla non fatto in quella prova): innocue. **Unito a main il
+06/11** (fast-forward `6a1e89e` → `dfa739d`, 5 commit) e **provato
+nell'app installata** il 06/11 alle 22:27, con l'account di Davide:
+letture tutte 200, una scrittura 201 e una 200, nessun 401 né 403
+(verificato da Cowork).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -7771,9 +7950,11 @@ i numeri delle sue segnalazioni.
 
 ### Non ancora costruito
 
-- **Statistiche** e storico del peso (fase 6): la pagina è un segnaposto
-- **Ricerca Open Food Facts** (fase 4) e **OCR / "Scansiona etichetta"**
-  (fase 5)
+- **Codice a barre** (fase 4): in sviluppo dal 07/11, branch
+  `codice-a-barre` (sezione 3, "Codice a barre")
+- **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
+  dall'etichetta"** (fase 6)
+- **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4)
   - copia manuale dei dati del 01/11, fatta prima dell'aggiornamento di
@@ -7787,9 +7968,10 @@ i numeri delle sue segnalazioni.
 
 ### Difetti e verifiche aperti
 
-- **Aggiungi: nuovo aspetto e ricerca nei pasti salvati** (branch
-  `aggiungi-nuovo-aspetto`): provato sull'anteprima il 06/11 (sopra,
-  "Fatto"). Resta il merge.
+- ~~**Aggiungi: nuovo aspetto e ricerca nei pasti salvati**~~: provato
+  sull'anteprima, unito a main e provato nell'app installata il 06/11
+  (sopra, "Fatto"; CHANGELOG, voce del merge). Branch cancellato in
+  locale e su GitHub; nessuna Redirect URL dell'anteprima da togliere.
 
 - ~~**Rilascio di sicurezza di Next del 03/11**~~: 16.4.5, provato
   sull'anteprima e unito a main il 03/11 (sopra, "Next.js 16.4.5";
@@ -8478,3 +8660,5 @@ branch.
 9. ~~**Account eliminato da un altro dispositivo**~~ fatto: provato il
    01/11 sull'anteprima del branch `account-eliminato` (sopra, "Fatto" e
    "Difetti e verifiche aperti"). Resta il limite "più di un'ora dopo"
+10. **Codice a barre** (branch `codice-a-barre`, dal 07/11): in corso
+    (sezione 3, "Codice a barre"; sezione 6, punto 4)

@@ -51,8 +51,10 @@ complica lo schema, dimmelo con il motivo.
 - Recharts per i grafici
 - Deploy su Vercel
 
-Barcode e AI sono nel backlog, non nell'MVP: non introdurli finché il documento
-non dice il contrario.
+Il codice a barre è in sviluppo (dal 07/11, branch `codice-a-barre`;
+regole in `PUNTO_DI_PARTENZA.md` §3, "Codice a barre"): viene prima della
+ricerca Open Food Facts per nome e dell'OCR. L'AI resta nel backlog: non
+introdurla finché il documento non dice il contrario.
 
 ## Convenzioni
 

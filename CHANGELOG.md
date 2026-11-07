@@ -5,6 +5,37 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Codice a barre fuori dal backlog
+
+Branch `codice-a-barre`, commit 1, solo documenti. Il codice a barre
+esce dal backlog e diventa la fase 4, prima della ricerca Open Food
+Facts per nome (5) e dell'OCR (6) (PUNTO §2 e §6). Tolto da Aggiungi il
+riquadro "Scansiona etichetta": l'OCR entrerà come "Leggi
+dall'etichetta" in cima a "Crea alimento a mano" (PUNTO §3 e §7). Le
+regole decise con Davide il 03/11 e il 07/11 in PUNTO §3, "Codice a
+barre": pulsante spento senza rete, scansione dal vivo con "Usa una
+foto" e "Scrivi il codice", EAN-13, EAN-8 e UPC-A salvato a 13 cifre,
+catalogo locale prima di Open Food Facts (v3, `X-User-Agent`, 10 s),
+modulo precompilato mai salvato in silenzio, `fonte` `off`/`barcode`,
+kJ convertiti con 4,184, stesso codice = stesso prodotto anche per gli
+alimenti in arrivo dagli amici (con il limite del catalogo non ancora
+sceso). Verificato su Supabase in sola lettura: colonne, check su
+`fonte` e indice `barcode` ci sono già, nessuna migration; nessuna
+version Dexie nuova. In CLAUDE.md il barcode è in sviluppo, l'AI resta
+nel backlog. Chiusa in PUNTO §11 la riga di `aggiungi-nuovo-aspetto`.
+Restano da aggiornare, con i commit che toccano quei file, tre commenti
+nel codice che citano le fasi vecchie (`alimenti.ts`,
+`alimentoPerSheet.ts`, `aggiungi/page.tsx`).
+
+## 2026-11-06 — Merge di `aggiungi-nuovo-aspetto` su main, provato nell'app installata
+
+Unito il 06/11 con fast-forward, da `6a1e89e` a `dfa739d`, 5 commit.
+Branch cancellato in locale e su GitHub. Nessuna Redirect URL
+dell'anteprima da togliere. Dopo il merge Davide ha usato l'app
+installata il 06/11 alle 22:27, con il suo account: nei log di Supabase
+letture tutte 200, una scrittura 201 e una 200, nessun 401 né 403
+(verificato da Cowork).
+
 ## 2026-11-06 — Aggiungi, esito delle prove sull'anteprima
 
 Branch `aggiungi-nuovo-aspetto`. Il 06/11 Davide ha provato l'anteprima
