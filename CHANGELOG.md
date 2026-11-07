@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-07 — Catalogo e codice a barre, esito delle prove sull'anteprima
+
+Branch `alimenti-codice-a-barre`. Il 07/11 dalle 19:07 alle 19:21
+Davide ha provato l'anteprima, Build del commit 6, Safari su iPhone,
+account di prova; Cowork ha verificato log e database: 209 risposte,
+207 con 200 e 2 con 201, nessun 401 né 403. Dal catalogo: «Le patatine
+originali · McCain» (8710438115741) da Open Food Facts, fonte `off`,
+ritorno al catalogo senza sheet quantità (19:09); Ketchips → modifica
+con «Questo codice è già nel tuo catalogo.»; 2000000000008 → modulo con
+il solo codice; senza rete pulsante grigio. «Aggiungi codice a barre»:
+«Yogurt greco bianco magro 0% · Kionas» (8000500415573), fonte
+`manuale` invariata (19:14), × e riga che torna. Doppione per codice
+8008714001827: campo arancio, «Apri «Ketchips»», Salva spento.
+Associazione offline: «Mela» (2000000000015), fonte `manuale`, arrivata
+al server con la rete (19:16). "Apri" porta il codice in Aggiungi:
+«Gocciole chocolate · Pavesi» creato a mano (19:18), poi codice
+8013355999143, fonte `manuale` invariata, voce nel diario dallo sheet
+quantità (19:20). Tema scuro e fotocamera dall'app sulla Home visti da
+Davide. Catalogo vuoto, rete che cade a metà ricerca e "Apri" nel
+catalogo: coperti dai test, non provati a mano. Nell'account di prova
+restano gli alimenti delle prove e la voce delle Gocciole, innocui.
+Nessun difetto trovato.
+
 ## 2026-11-07 — "Apri" porta il codice
 
 Branch `alimenti-codice-a-barre`, commit 6. Quando il modulo nato da una

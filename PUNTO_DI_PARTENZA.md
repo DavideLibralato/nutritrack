@@ -8295,6 +8295,37 @@ installata** il 07/11 alle 15:20, con l'account di Davide, che ha
 provato la scansione: letture tutte 200, nessun 401 né 403 (verificato
 da Cowork).
 
+**Codice a barre nel catalogo alimenti** (dal 07/11, branch
+`alimenti-codice-a-barre`; sezione 3, "Codice a barre", "Nel catalogo",
+"Il codice in modifica" e "«Apri» porta il codice"). **Provato il
+07/11** sull'anteprima da Davide, dalle 19:07 alle 19:21, Safari su
+iPhone, account di prova, Build del commit 6 controllata da Davide; log
+e database verificati da Cowork: 209 risposte, 207 con 200 e 2 con 201,
+nessun 401 né 403. Prove:
+1. catalogo, prodotto nuovo da Open Food Facts: «Le patatine originali
+   · McCain» (8710438115741), fonte `'off'`, ritorno al catalogo senza
+   sheet quantità (19:09);
+2. Ketchips → "Modifica alimento" con «Questo codice è già nel tuo
+   catalogo.»; 3. codice 2000000000008 → modulo con il solo codice;
+   4. senza rete pulsante grigio (viste da Davide, nessuna scrittura);
+5. «Aggiungi codice a barre»: «Yogurt greco bianco magro 0% · Kionas»
+   (8000500415573), fonte `'manuale'` invariata (19:14); la × e la riga
+   che torna viste da Davide;
+6. doppione per codice 8008714001827: campo arancio, «Apri
+   «Ketchips»», Salva spento (visto da Davide);
+7. associazione offline: «Mela» (2000000000015), fonte `'manuale'`
+   invariata, arrivata al server dopo il ritorno della rete (19:16);
+8. "Apri" porta il codice in Aggiungi: «Gocciole chocolate · Pavesi»
+   creato a mano (19:18), poi codice 8013355999143 con fonte
+   `'manuale'` invariata e voce nel diario dallo sheet quantità
+   (19:20). Nel catalogo non provato a mano: coperto dai test;
+9. tema scuro e 10. fotocamera dall'app aggiunta alla Home (senza Esci):
+   visti da Davide.
+
+Catalogo vuoto e rete che cade a metà ricerca: coperti dai test, non
+provati a mano. Nell'account di prova restano questi alimenti e la
+voce delle Gocciole: innocui. Resta il merge.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
@@ -8303,8 +8334,9 @@ i numeri delle sue segnalazioni.
 
 - **Codice a barre nel catalogo alimenti** (dal 07/11, branch
   `alimenti-codice-a-barre`; sezione 3, "Codice a barre", "Nel
-  catalogo" e "Il codice in modifica"). Il codice a barre in Aggiungi
-  (fase 4) è fatto e unito a main il 07/11 (sopra, "Fatto")
+  catalogo" e "Il codice in modifica"): costruito e provato
+  sull'anteprima il 07/11 (sopra, "Fatto"). Resta il merge. Il codice a
+  barre in Aggiungi (fase 4) è fatto e unito a main il 07/11
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
 - **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
