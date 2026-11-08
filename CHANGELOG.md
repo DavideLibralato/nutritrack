@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Mockup di Esporta i miei dati
+
+Branch `esporta`, commit 7, solo documenti. Il mockup di Cowork,
+approvato da Davide (versione 2), in `docs/mockups/esporta.html`
+(md5 `8e2fe664c30ce8155cbcf696fc0920d4`, 29594 byte, fine riga LF,
+controllati prima del `git add`). Scelte scritte in PUNTO §10.4: gruppo
+nuovo «I tuoi dati» fra App e Informazioni con il promemoria nella
+nota; pagina `/impostazioni/esporta` con testo d'apertura, gruppo «Nel
+file», nota con l'ultimo collegamento al server, avviso sui dati
+personali e di salute, un solo pulsante pieno «Esporta i miei dati»
+(JSON) con nome, peso del file e promemoria sotto; il CSV come riga
+«Esporta il diario per Excel» nel gruppo «Solo il diario», spenta con il
+diario vuoto. Stati e testi come nel mockup, compresi «Manca il tuo
+profilo» (diverso da «Dati non ancora scaricati»), la foto dalla copia
+del telefono, l'app installata senza condivisione e l'errore con
+«Riprova».
+
 ## 2026-11-08 — Salvare il file e il promemoria dell'ultima esportazione
 
 Branch `esporta`, commit 6. Nuovi in `src/lib/esporta/`:

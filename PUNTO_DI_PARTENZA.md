@@ -7313,13 +7313,64 @@ tolgono. I giorni si contano sul calendario locale, non per blocchi di
 legale non sposta niente. Una data nel futuro (orologio spostato) vale
 «oggi».
 
-**Dove.** Una riga «Esporta i miei dati» in Impostazioni porta alla
-pagina dedicata `/impostazioni/esporta`: riepilogo (voci con la prima e
-l'ultima data, alimenti, …, più la riga della foto), l'avviso che il
-file contiene dati personali e di salute e che il posto dove salvarlo lo
-sceglie l'utente, poi «Esporta» (JSON) e, a parte, «Esporta il diario
-(CSV)». L'aspetto lo decide il mockup di Cowork, prima del codice di
-interfaccia.
+**Dove e com'è fatta** (mockup di Cowork `docs/mockups/esporta.html`,
+versione 2, approvato da Davide l'08/11).
+
+In Impostazioni, un gruppo nuovo **«I tuoi dati»** fra App e
+Informazioni, con la sola riga «Esporta i miei dati» e il promemoria
+nella nota del gruppo.
+
+La pagina `/impostazioni/esporta`, dall'alto:
+- testo d'apertura: «Una copia di tutti i tuoi dati in un file. Tienila
+  in un posto sicuro: servirà per ripristinarli se un giorno li
+  perdessi.»;
+- gruppo **«Nel file»**: Diario («266 voci dal 21/09 al 07/11»,
+  «Nessuna voce» con il diario vuoto), Alimenti, Pasti salvati, Pesate,
+  Obiettivi, Foto profilo («Inclusa», «Non hai una foto», «Non
+  inclusa»). Nota sotto: «Sono i dati di questo telefono. Ultimo
+  collegamento al server: oggi alle 07:52.»;
+- avviso: «Il file contiene dati personali e di salute: cosa mangi, il
+  peso, i tuoi obiettivi. Dove salvarlo lo scegli tu; evita le cartelle
+  condivise.»;
+- un solo pulsante pieno **«Esporta i miei dati»** (il JSON), con sotto
+  nome e peso del file e il promemoria;
+- gruppo **«Solo il diario»**: la riga «Esporta il diario per Excel»
+  (il CSV), con «File CSV con le voci del diario. Non serve per
+  ripristinare i dati.», spenta con «Il diario è vuoto.». Non deve
+  sembrare l'esportazione principale.
+
+Gli stati, con i testi del mockup:
+- **preparazione**: il file si prepara all'apertura della pagina, i
+  numeri si caricano, la foto mostra «Controllo…» (al massimo 8 s) e il
+  pulsante «Preparo il file…»; al tocco il foglio di iOS si apre subito;
+- **foto dalla copia del telefono**: «Inclusa», e al posto della nota
+  sotto il riepilogo «La foto è quella salvata su questo telefono: senza
+  rete non ho potuto controllare che sia l'ultima.»;
+- **foto non inclusa**: «Non inclusa» in colore di avviso, nota «Senza
+  rete non so se hai una foto aggiornata, quindi resta fuori. Tutto il
+  resto è nel file. Con la rete, riapri questa pagina.»;
+- **dati non ancora scaricati** (manca il segno "discesa completa"):
+  pagina al posto del riepilogo, «Dati non ancora scaricati» / «Su
+  questo telefono non ci sono ancora tutti i tuoi dati. Collegati a
+  internet e tieni Libra aperta finché la sincronizzazione non finisce,
+  poi torna qui.», pulsante «Vai a Sincronizzazione»;
+- **manca il profilo** (segno presente, nessun profilo vivo in Dexie:
+  per esempio chi ha saltato l'onboarding): «Manca il tuo profilo» /
+  «Per esportare serve il profilo, che crei nei primi passi dopo la
+  registrazione. Completalo e torna qui.», pulsante «Completa il
+  profilo». Messaggio diverso da quello dei dati non scaricati: la
+  pagina deve sapere quale dei due manca;
+- **app installata senza condivisione**: «Da qui non riesco a salvare
+  il file. Apri app-libra.vercel.app in Safari, accedi ed esporta da
+  lì.»;
+- **errore**: «Il file non è stato salvato. Riprova; se succede ancora,
+  chiudi e riapri Libra.», e il pulsante diventa «Riprova»;
+- **salvato**: messaggio in basso «File salvato» e promemoria «oggi»,
+  qui e in Impostazioni (solo per il JSON);
+- **annullato**: non cambia niente e non compare nessun messaggio.
+
+La pagina non mostra l'intestazione del file (versione del formato,
+Build, `user_id`, conteggi): serve a Importa.
 
 ### 10.5 Cinque funzioni da testare sul serio
 

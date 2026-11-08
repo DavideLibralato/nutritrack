@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Esporta i miei dati</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: barra delle scelte in alto; due telefoni (Impostazioni e la pagina Esporta) accanto alle note. Token presi da src/app/globals.css di Libra (sfondo, superficie, linea, tenue, accento, avviso) e font dell'app (Bricolage Grotesque per i titoli, Hanken Grotesk per il testo). */
+:root{
+  --bg:#faf7f2; --sup:#ffffff; --fg:#1f1b16; --linea:#e7e0d2; --tenue:#78705f;
+  --acc:#3f7d4c; --acc-pieno:#3f7d4c; --su-pieno:#faf7f2; --avv:#b5533c; --peric:#b3261e;
+  --caps:rgba(63,125,76,.12); --fondo-tavolo:#ece6db; --velo:rgba(31,27,22,.38); --ombra:rgba(31,27,22,.16);
+  --f-titoli:"Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
+  --f-testo:"Hanken Grotesk", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1815; --sup:#26221e; --fg:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+    --acc:#7bb887; --acc-pieno:#3f7d4c; --su-pieno:#ffffff; --avv:#e8916f; --peric:#f2938a;
+    --caps:rgba(123,184,135,.16); --fondo-tavolo:#141210; --velo:rgba(0,0,0,.55); --ombra:rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1815; --sup:#26221e; --fg:#f2ede4; --linea:#3a342d; --tenue:#a39a8b;
+  --acc:#7bb887; --acc-pieno:#3f7d4c; --su-pieno:#ffffff; --avv:#e8916f; --peric:#f2938a;
+  --caps:rgba(123,184,135,.16); --fondo-tavolo:#141210; --velo:rgba(0,0,0,.55); --ombra:rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+body{
+  background:var(--fondo-tavolo); color:var(--fg); font-family:var(--f-testo); font-size:15px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:28px; max-width:1180px; margin:0 auto;
+}
+h1.ttl{font-family:var(--f-titoli); font-size:1.6rem; font-weight:800; margin:0 0 6px; text-wrap:balance}
+.lede{color:var(--tenue); font-size:.95rem; line-height:1.55; margin:0 0 20px; max-width:72ch}
+.lede b{color:var(--fg)}
+button{font-family:inherit}
+button:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+
+.toolbar{display:flex; flex-direction:column; gap:10px; margin:0 0 26px; padding:12px; background:var(--sup); border:1px solid var(--linea); border-radius:18px}
+.tb-riga{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.tb-riga > span{font-size:.72rem; color:var(--tenue); text-transform:uppercase; letter-spacing:.08em; font-weight:700; min-width:92px}
+.seg{display:flex; gap:2px; background:var(--bg); border:1px solid var(--linea); border-radius:18px; padding:2px; flex-wrap:wrap}
+.seg button{border:0; background:transparent; color:var(--tenue); font-size:.8rem; font-weight:600; padding:6px 11px; border-radius:999px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--sup); color:var(--fg); box-shadow:0 1px 2px var(--ombra)}
+
+.griglia{display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start}
+.colonna{display:flex; flex-direction:column; gap:8px; min-width:0; max-width:100%}
+.colonna.note{flex:1 1 300px}
+.didascalia{font-size:.72rem; color:var(--tenue); font-weight:700; text-transform:uppercase; letter-spacing:.08em; margin:0 6px}
+
+/* Il telefono */
+.phone{width:350px; max-width:100%; flex:none; border-radius:34px; background:var(--bg); border:1px solid var(--linea); box-shadow:0 22px 44px -20px var(--ombra); overflow:hidden; position:relative; isolation:isolate; min-height:720px}
+.sb{display:flex; justify-content:space-between; padding:12px 26px 0; font-size:.78rem; font-weight:700; font-variant-numeric:tabular-nums}
+.cnt{padding:10px 16px 36px; display:flex; flex-direction:column; gap:20px}
+.indietro{display:flex; align-items:center; gap:4px; color:var(--acc); font-weight:600; font-size:.95rem; margin:0}
+.indietro svg{transform:rotate(180deg)}
+.grande{font-family:var(--f-titoli); font-size:30px; font-weight:700; line-height:1.1; margin:-8px 2px 0; text-wrap:balance}
+.taglio{font-size:.72rem; color:var(--tenue); text-align:center; margin:0; letter-spacing:.02em}
+
+.gr{display:flex; flex-direction:column; gap:7px}
+.gr-tit{font-size:.7rem; font-weight:500; text-transform:uppercase; letter-spacing:.1em; color:var(--tenue); margin:0 16px}
+.gr-box{background:var(--sup); border:1px solid var(--linea); border-radius:20px; overflow:hidden}
+.gr-nota{font-size:.84rem; line-height:1.4; color:var(--tenue); margin:0 16px}
+.gr.nuovo .gr-box{border-color:var(--acc)}
+.gr.nuovo .gr-tit{color:var(--acc)}
+
+.riga{display:flex; align-items:center; gap:12px; width:100%; min-height:48px; padding:10px 14px; border:0; background:transparent; color:inherit; text-align:left; font-size:.95rem; position:relative}
+.riga + .riga::before{content:""; position:absolute; top:0; right:0; left:58px; border-top:1px solid var(--linea)}
+.gr-box.senza-ico .riga + .riga::before{left:16px}
+button.riga{cursor:pointer}
+button.riga:disabled{cursor:default}
+.riga .eti{flex:1; min-width:0}
+.riga .eti small{display:block; color:var(--tenue); font-size:.8rem; margin-top:2px; line-height:1.35}
+.riga .val{color:var(--tenue); font-size:.9rem; font-variant-numeric:tabular-nums; text-align:right}
+.riga .val.avv{color:var(--avv)}
+.riga .ch{color:var(--tenue); opacity:.55; flex:none}
+.riga.peric{color:var(--peric)}
+.riga.spenta{opacity:.45}
+.ico{width:32px; height:32px; border-radius:10px; background:var(--caps); color:var(--acc); display:flex; align-items:center; justify-content:center; flex:none}
+.ico svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+
+.testo{font-size:.92rem; line-height:1.5; margin:0 4px; color:var(--fg)}
+.avviso{display:flex; gap:12px; align-items:flex-start; background:var(--sup); border:1px solid var(--linea); border-radius:20px; padding:13px 14px}
+.avviso .ico{background:color-mix(in srgb, var(--avv) 14%, transparent); color:var(--avv)}
+.avviso p{margin:0; font-size:.86rem; line-height:1.45}
+.avviso p b{font-weight:700}
+
+.azione{display:flex; flex-direction:column; gap:8px}
+.btn-p{width:100%; min-height:50px; border:0; border-radius:16px; background:var(--acc-pieno); color:var(--su-pieno); font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px}
+.btn-p:disabled{opacity:.42; cursor:default}
+.btn-s{width:100%; min-height:46px; border:1px solid var(--linea); border-radius:16px; background:var(--sup); color:var(--acc); font-weight:700; font-size:.95rem; cursor:pointer}
+.file-info{display:flex; justify-content:space-between; gap:10px; font-size:.78rem; color:var(--tenue); margin:0 6px; font-variant-numeric:tabular-nums}
+.file-info span:first-child{overflow-wrap:anywhere}
+.promem{font-size:.84rem; color:var(--tenue); margin:0 6px}
+.msg{border-radius:16px; padding:11px 13px; font-size:.86rem; line-height:1.45; margin:0; background:color-mix(in srgb, var(--avv) 11%, var(--sup)); color:var(--fg); border:1px solid color-mix(in srgb, var(--avv) 35%, var(--linea))}
+.msg b{color:var(--avv)}
+.indirizzo{font-weight:700; user-select:all}
+
+.carica{display:inline-block; width:3.2em; height:.9em; border-radius:6px; background:linear-gradient(90deg, var(--linea), color-mix(in srgb, var(--linea) 40%, var(--sup)), var(--linea)); background-size:200% 100%; animation:luce 1.2s linear infinite; vertical-align:-1px}
+@keyframes luce{to{background-position:-200% 0}}
+.spinner{width:18px; height:18px; border:2.5px solid color-mix(in srgb, var(--su-pieno) 35%, transparent); border-top-color:var(--su-pieno); border-radius:50%; animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.carica,.spinner{animation:none}}
+
+.stato{background:var(--sup); border:1px solid var(--linea); border-radius:20px; padding:22px 18px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px}
+.stato .ico{width:48px; height:48px; border-radius:50%}
+.stato .ico svg{width:24px; height:24px}
+.stato h2{font-family:var(--f-titoli); font-size:1.1rem; margin:4px 0 0; text-wrap:balance}
+.stato p{margin:0; font-size:.88rem; line-height:1.45; color:var(--tenue); max-width:32ch}
+.stato .btn-s{margin-top:8px}
+
+/* Foglio di condivisione (simulato) */
+.velo{position:absolute; inset:0; background:var(--velo); z-index:20; opacity:0; pointer-events:none; transition:opacity .2s}
+.foglio{position:absolute; left:0; right:0; bottom:0; z-index:21; background:var(--sup); border-radius:22px 22px 0 0; padding:10px 16px 26px; transform:translateY(105%); transition:transform .26s ease; display:flex; flex-direction:column; gap:12px}
+.phone.foglio-aperto .velo{opacity:1; pointer-events:auto}
+.phone.foglio-aperto .foglio{transform:translateY(0)}
+@media (prefers-reduced-motion: reduce){.velo,.foglio{transition:none}}
+.maniglia{width:38px; height:5px; border-radius:3px; background:var(--linea); margin:0 auto}
+.f-testa{display:flex; align-items:center; gap:12px}
+.f-file{width:40px; height:48px; border-radius:8px; border:1px solid var(--linea); background:var(--bg); display:flex; align-items:flex-end; justify-content:center; padding-bottom:6px; font-size:.6rem; font-weight:700; color:var(--tenue)}
+.f-testa .eti{flex:1; min-width:0; font-size:.86rem; font-weight:700; overflow-wrap:anywhere}
+.f-testa .eti small{display:block; font-weight:500; color:var(--tenue)}
+.chiudi{width:32px; height:32px; border-radius:50%; border:0; background:var(--bg); color:var(--tenue); font-size:1.1rem; cursor:pointer}
+.f-lista{background:var(--bg); border-radius:14px; overflow:hidden}
+.f-lista button{display:flex; justify-content:space-between; width:100%; border:0; background:transparent; color:var(--fg); padding:13px 14px; font-size:.92rem; cursor:pointer; text-align:left}
+.f-lista button + button{border-top:1px solid var(--linea)}
+.f-lista button span:last-child{color:var(--tenue)}
+.f-nota{font-size:.72rem; color:var(--tenue); text-align:center; margin:0}
+
+.toast{position:absolute; left:14px; right:14px; bottom:20px; z-index:30; background:color-mix(in srgb, var(--sup) 92%, transparent); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid var(--linea); border-radius:16px; padding:12px 14px; font-size:.86rem; font-weight:600; box-shadow:0 10px 24px -14px var(--ombra); transform:translateY(40px); opacity:0; transition:transform .22s, opacity .22s; pointer-events:none}
+.toast.show{transform:none; opacity:1}
+
+/* Note */
+.nota{background:var(--sup); border:1px solid var(--linea); border-radius:18px; padding:14px 16px}
+.nota h3{font-family:var(--f-titoli); font-size:1rem; margin:0 0 8px; text-wrap:balance}
+.nota p, .nota li{font-size:.86rem; color:var(--tenue); line-height:1.55; margin:0}
+.nota ul, .nota ol{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px}
+.nota b{color:var(--fg)}
+.nota.scelta{border-color:color-mix(in srgb, var(--acc) 50%, var(--linea))}
+.nota code{font-size:.8rem; background:var(--bg); border-radius:6px; padding:1px 5px; overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<h1 class="ttl">Esporta i miei dati</h1>
+<p class="lede">Mockup per il commit 8 del branch <b>esporta</b> (08/11). Nella barra scegli lo stato della pagina e il promemoria; i pulsanti funzionano: <b>«Esporta i miei dati»</b> apre un foglio di condivisione simulato (quello vero è di iOS), dove «Salva su File» riesce e la × annulla. I numeri del riepilogo sono quelli del tuo account letti il 07/11; nome del file e dimensione sono indicativi.</p>
+
+<div class="toolbar" role="group" aria-label="Scelte del mockup">
+  <div class="tb-riga"><span>Stato</span>
+    <div class="seg" id="segStato">
+      <button type="button" data-v="pronta" aria-pressed="true">Pronta</button>
+      <button type="button" data-v="prepara" aria-pressed="false">Preparazione</button>
+      <button type="button" data-v="fotoTelefono" aria-pressed="false">Foto: copia del telefono</button>
+      <button type="button" data-v="fotoRete" aria-pressed="false">Foto: serve la rete</button>
+      <button type="button" data-v="senzaFoto" aria-pressed="false">Senza foto</button>
+      <button type="button" data-v="diarioVuoto" aria-pressed="false">Diario vuoto</button>
+      <button type="button" data-v="incompleta" aria-pressed="false">Dati non scaricati</button>
+      <button type="button" data-v="senzaProfilo" aria-pressed="false">Senza profilo</button>
+      <button type="button" data-v="installata" aria-pressed="false">App installata, niente condivisione</button>
+      <button type="button" data-v="errore" aria-pressed="false">Errore</button>
+    </div>
+  </div>
+  <div class="tb-riga"><span>Promemoria</span>
+    <div class="seg" id="segProm">
+      <button type="button" data-v="mai" aria-pressed="false">Mai esportato</button>
+      <button type="button" data-v="0" aria-pressed="false">Oggi</button>
+      <button type="button" data-v="1" aria-pressed="false">Ieri</button>
+      <button type="button" data-v="12" aria-pressed="true">12 giorni fa</button>
+    </div>
+  </div>
+  <div class="tb-riga"><span>Tema</span>
+    <div class="seg" id="segTema">
+      <button type="button" data-v="" aria-pressed="true">Sistema</button>
+      <button type="button" data-v="light" aria-pressed="false">Chiaro</button>
+      <button type="button" data-v="dark" aria-pressed="false">Scuro</button>
+    </div>
+  </div>
+</div>
+
+<div class="griglia">
+  <div class="colonna">
+    <p class="didascalia">1 · Impostazioni (parte bassa)</p>
+    <div class="phone" id="telImp">
+      <div class="sb"><span>07:58</span><span>●●● ▭</span></div>
+      <div class="cnt">
+        <p class="taglio">… sopra: scheda dell'account, Alimentazione, Amici</p>
+        <section class="gr">
+          <h2 class="gr-tit">App</h2>
+          <div class="gr-box">
+            <div class="riga"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></span><span class="eti">Aspetto</span><span class="val">Sistema</span><svg class="ch" width="8" height="14" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+            <div class="riga"><span class="ico"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 01-14 5.3M4 12a8 8 0 0114-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span><span class="eti">Sincronizzazione</span><span class="val">Tutto salvato</span><svg class="ch" width="8" height="14" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+          </div>
+        </section>
+        <section class="gr nuovo">
+          <h2 class="gr-tit">I tuoi dati</h2>
+          <div class="gr-box">
+            <button type="button" class="riga" id="vaiEsporta"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span><span class="eti">Esporta i miei dati</span><svg class="ch" width="8" height="14" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l6 6-6 6"/></svg></button>
+          </div>
+          <p class="gr-nota" data-promemoria></p>
+        </section>
+        <section class="gr">
+          <div class="gr-box">
+            <div class="riga"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/></svg></span><span class="eti">Informazioni</span><span class="val">v0.1.0</span><svg class="ch" width="8" height="14" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div>
+          </div>
+        </section>
+        <section class="gr"><div class="gr-box senza-ico"><div class="riga" style="justify-content:center; color:var(--acc); font-weight:600">Esci</div></div></section>
+        <section class="gr"><div class="gr-box senza-ico"><div class="riga peric"><span class="eti">Elimina il mio account</span><svg class="ch" width="8" height="14" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l6 6-6 6"/></svg></div></div></section>
+      </div>
+    </div>
+  </div>
+
+  <div class="colonna">
+    <p class="didascalia">2 · Impostazioni › Esporta i miei dati</p>
+    <div class="phone" id="telEsp">
+      <div class="sb"><span>07:58</span><span>●●● ▭</span></div>
+      <div class="cnt" id="corpo"></div>
+      <div class="velo" id="velo"></div>
+      <div class="foglio" id="foglio" role="dialog" aria-label="Condivisione (simulata)">
+        <div class="maniglia"></div>
+        <div class="f-testa">
+          <div class="f-file" id="fTipo">JSON</div>
+          <div class="eti"><span id="fNome">libra-dati-2026-11-08.json</span><small id="fPeso">circa 240 KB</small></div>
+          <button type="button" class="chiudi" id="fChiudi" aria-label="Chiudi senza salvare">×</button>
+        </div>
+        <div class="f-lista">
+          <button type="button" id="fSalva"><span>Salva su File</span><span>›</span></button>
+          <button type="button" data-annulla><span>Invia con Mail</span><span>›</span></button>
+          <button type="button" data-annulla><span>AirDrop</span><span>›</span></button>
+        </div>
+        <p class="f-nota">Foglio di iOS simulato: nel mockup solo «Salva su File» salva; le altre voci e la × chiudono senza salvare.</p>
+      </div>
+      <div class="toast" id="toast" role="status"></div>
+    </div>
+  </div>
+
+  <div class="colonna note">
+    <p class="didascalia">Note</p>
+    <div class="nota scelta">
+      <h3>Da scegliere</h3>
+      <ol>
+        <li><b>Il gruppo «I tuoi dati»</b> fra App e Informazioni, con il promemoria come nota sotto il gruppo (proposta di Claude Code). Alternativa: la riga in fondo al gruppo App, senza un gruppo nuovo.</li>
+        <li><b>Un solo pulsante pieno</b>, per il JSON (il backup). Il CSV sta sotto, in un gruppo «Solo il diario», come riga normale: non deve sembrare l'esportazione principale.</li>
+        <li><b>I testi</b> dell'avviso, di «Dati non ancora scaricati» e dei due casi nuovi: <b>Senza profilo</b> (uno può saltare l'onboarding) e <b>App installata senza condivisione</b>.</li>
+        <li><b>Mostrare nome e peso del file</b> sotto il pulsante: aiuta a riconoscerlo in File, ma è un dettaglio tecnico in più.</li>
+      </ol>
+    </div>
+    <div class="nota">
+      <h3>Cosa succede al tocco</h3>
+      <ul>
+        <li>Il file si prepara all'apertura della pagina (stato <b>Preparazione</b>, al massimo 8 s per la foto): al tocco il foglio di iOS si apre subito.</li>
+        <li><b>Salvato</b>: messaggio in basso «File salvato» e promemoria «oggi», qui e in Impostazioni.</li>
+        <li><b>Annullato</b> (× o tocco fuori): non cambia niente e non compare nessun messaggio.</li>
+        <li>Il <b>CSV</b> usa lo stesso foglio ma non aggiorna il promemoria.</li>
+      </ul>
+    </div>
+    <div class="nota">
+      <h3>Cosa resta fuori dalla pagina</h3>
+      <p>L'intestazione del file (versione del formato, Build, <code>user_id</code>, conteggi) non si mostra: serve a Importa. Della foto la pagina dice solo «Inclusa»; quando viene dalla copia del telefono lo spiega la nota sotto il riepilogo (stato «Foto: copia del telefono»). La riga «Ultimo collegamento» sotto il riepilogo viene dall'ora dell'ultimo contatto col server già salvata.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const IC = {
+  diario:'<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>',
+  alimenti:'<svg viewBox="0 0 24 24"><path d="M12 7c-3-3-8-1-7 4 .8 4 3.5 8 7 8s6.2-4 7-8c1-5-4-7-7-4z"/><path d="M12 7c0-2 1-3 3-3.5"/></svg>',
+  pasti:'<svg viewBox="0 0 24 24"><path d="M4 13h16a8 8 0 01-16 0z"/><path d="M9 9c0-2 2-2 2-4M14 9c0-2 2-2 2-4"/></svg>',
+  peso:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="4"/><path d="M9 10a4 4 0 016 0l-2 2.5"/></svg>',
+  obiettivi:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>',
+  foto:'<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c1-3.8 4-5.5 7-5.5s6 1.7 7 5.5"/></svg>',
+  csv:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14.5h16M10 5v14"/></svg>',
+  lucchetto:'<svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></svg>',
+  nuvola:'<svg viewBox="0 0 24 24"><path d="M7 18a4 4 0 01-.6-8A5.5 5.5 0 0117 8.5 4.5 4.5 0 0117 18"/><path d="M12 11v7M9.5 15.5L12 18l2.5-2.5"/></svg>',
+  persona:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1-3.8 4-5.5 7-5.5s6 1.7 7 5.5"/><path d="M18 4v4M16 6h4"/></svg>',
+  freccia:'<svg width="8" height="14" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l6 6-6 6"/></svg>'
+};
+const CH = '<svg class="ch" width="8" height="14" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 1.5l6 6-6 6"/></svg>';
+
+let stato = 'pronta';
+let promem = '12';
+let erroreMostrato = false;
+
+function testoPromemoria(){
+  if (promem === 'mai') return 'Mai esportato';
+  if (promem === '0') return 'Ultima esportazione: oggi';
+  if (promem === '1') return 'Ultima esportazione: ieri';
+  return `Ultima esportazione: ${promem} giorni fa`;
+}
+
+function riga(icona, eti, val, cls=''){
+  return `<div class="riga"><span class="ico">${IC[icona]}</span><span class="eti">${eti}</span><span class="val ${cls}">${val}</span></div>`;
+}
+
+function render(){
+  const corpo = document.getElementById('corpo');
+  const testa = `<p class="indietro">${IC.freccia} Impostazioni</p><h1 class="grande">Esporta i miei dati</h1>`;
+  document.querySelectorAll('[data-promemoria]').forEach(n => n.textContent = testoPromemoria());
+
+  if (stato === 'incompleta' || stato === 'senzaProfilo'){
+    const inc = stato === 'incompleta';
+    corpo.innerHTML = testa + `
+      <div class="stato">
+        <span class="ico">${inc ? IC.nuvola : IC.persona}</span>
+        <h2>${inc ? 'Dati non ancora scaricati' : 'Manca il tuo profilo'}</h2>
+        <p>${inc
+          ? 'Su questo telefono non ci sono ancora tutti i tuoi dati. Collegati a internet e tieni Libra aperta finché la sincronizzazione non finisce, poi torna qui.'
+          : 'Per esportare serve il profilo, che crei nei primi passi dopo la registrazione. Completalo e torna qui.'}</p>
+        <button type="button" class="btn-s">${inc ? 'Vai a Sincronizzazione' : 'Completa il profilo'}</button>
+      </div>
+      <p class="promem">${testoPromemoria()}</p>`;
+    return;
+  }
+
+  const prepara = stato === 'prepara';
+  const vuoto = stato === 'diarioVuoto';
+  const c = (v) => prepara ? '<span class="carica" aria-label="in preparazione"></span>' : v;
+  let foto = 'Inclusa', fotoCls = '', fotoNota = '';
+  if (prepara) foto = 'Controllo…';
+  if (stato === 'fotoRete'){ foto = 'Non inclusa'; fotoCls = 'avv'; fotoNota = '<p class="gr-nota">Senza rete non so se hai una foto aggiornata, quindi resta fuori. Tutto il resto è nel file. Con la rete, riapri questa pagina.</p>'; }
+  if (stato === 'senzaFoto') foto = 'Non hai una foto';
+  if (stato === 'fotoTelefono'){ foto = 'Inclusa'; fotoNota = '<p class="gr-nota">La foto è quella salvata su questo telefono: senza rete non ho potuto controllare che sia l\'ultima.</p>'; }
+  if (vuoto) foto = 'Non hai una foto';
+
+  const peso = vuoto ? 'circa 4 KB' : (stato === 'fotoRete' || stato === 'senzaFoto') ? 'circa 170 KB' : 'circa 240 KB';
+  let msg = '';
+  if (stato === 'installata') msg = `<p class="msg"><b>Da qui non riesco a salvare il file.</b> Apri <span class="indirizzo">app-libra.vercel.app</span> in Safari, accedi ed esporta da lì.</p>`;
+  if (stato === 'errore' || erroreMostrato) msg = `<p class="msg"><b>Il file non è stato salvato.</b> Riprova; se succede ancora, chiudi e riapri Libra.</p>`;
+
+  corpo.innerHTML = testa + `
+    <p class="testo">Una copia di tutti i tuoi dati in un file. Tienila in un posto sicuro: servirà per ripristinarli se un giorno li perdessi.</p>
+    <section class="gr">
+      <h2 class="gr-tit">Nel file</h2>
+      <div class="gr-box">
+        ${riga('diario', 'Diario', vuoto ? 'Nessuna voce' : c('266 voci<br><small style="font-size:.78rem">dal 21/09 al 07/11</small>'))}
+        ${riga('alimenti', 'Alimenti', vuoto ? '0' : c('54'))}
+        ${riga('pasti', 'Pasti salvati', vuoto ? '0' : c('5'))}
+        ${riga('peso', 'Pesate', vuoto ? '1' : c('8'))}
+        ${riga('obiettivi', 'Obiettivi', c('1'))}
+        ${riga('foto', 'Foto profilo', foto, fotoCls)}
+      </div>
+      ${fotoNota || '<p class="gr-nota">Sono i dati di questo telefono. Ultimo collegamento al server: oggi alle 07:52.</p>'}
+    </section>
+    <div class="avviso"><span class="ico">${IC.lucchetto}</span><p><b>Il file contiene dati personali e di salute:</b> cosa mangi, il peso, i tuoi obiettivi. Dove salvarlo lo scegli tu; evita le cartelle condivise.</p></div>
+    <div class="azione">
+      ${msg}
+      <button type="button" class="btn-p" id="btnJson" ${prepara ? 'disabled' : ''}>${prepara ? '<span class="spinner"></span>Preparo il file…' : (stato === 'errore' || erroreMostrato) ? 'Riprova' : 'Esporta i miei dati'}</button>
+      <p class="file-info"><span>libra-dati-2026-11-08.json</span><span>${prepara ? '' : peso}</span></p>
+      <p class="promem">${testoPromemoria()}</p>
+    </div>
+    <section class="gr">
+      <h2 class="gr-tit">Solo il diario</h2>
+      <div class="gr-box">
+        <button type="button" class="riga ${vuoto || prepara ? 'spenta' : ''}" id="btnCsv" ${vuoto || prepara ? 'disabled' : ''}><span class="ico">${IC.csv}</span><span class="eti">Esporta il diario per Excel<small>${vuoto ? 'Il diario è vuoto.' : 'File CSV con le voci del diario. Non serve per ripristinare i dati.'}</small></span>${CH}</button>
+      </div>
+    </section>`;
+
+  const bJ = document.getElementById('btnJson');
+  if (bJ) bJ.addEventListener('click', () => {
+    if (stato === 'installata') { toast('Nell\'app installata la condivisione non c\'è: vedi il messaggio sopra.'); return; }
+    if (stato === 'errore' && !erroreMostrato) { erroreMostrato = false; }
+    apriFoglio('json');
+  });
+  const bC = document.getElementById('btnCsv');
+  if (bC) bC.addEventListener('click', () => {
+    if (stato === 'installata') { toast('Nell\'app installata la condivisione non c\'è: vedi il messaggio sopra.'); return; }
+    apriFoglio('csv');
+  });
+}
+
+let tipoAperto = 'json';
+function apriFoglio(tipo){
+  tipoAperto = tipo;
+  document.getElementById('fTipo').textContent = tipo === 'json' ? 'JSON' : 'CSV';
+  document.getElementById('fNome').textContent = tipo === 'json' ? 'libra-dati-2026-11-08.json' : 'libra-diario-2026-11-08.csv';
+  document.getElementById('fPeso').textContent = tipo === 'json' ? 'circa 240 KB' : 'circa 30 KB';
+  document.getElementById('telEsp').classList.add('foglio-aperto');
+  document.getElementById('fSalva').focus({preventScroll:true});
+}
+function chiudiFoglio(){ document.getElementById('telEsp').classList.remove('foglio-aperto'); }
+
+let tToast;
+function toast(t){
+  const el = document.getElementById('toast');
+  el.textContent = t; el.classList.add('show');
+  clearTimeout(tToast); tToast = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+document.getElementById('fSalva').addEventListener('click', () => {
+  chiudiFoglio();
+  // Nello stato "Errore" il secondo tentativo (Riprova) riesce.
+  if (stato === 'errore') { stato = 'pronta'; segna('segStato', 'pronta'); }
+  if (tipoAperto === 'json') { promem = '0'; segna('segProm', '0'); erroreMostrato = false; }
+  render();
+  toast('File salvato');
+});
+document.getElementById('fChiudi').addEventListener('click', chiudiFoglio);
+document.getElementById('velo').addEventListener('click', chiudiFoglio);
+document.querySelectorAll('[data-annulla]').forEach(b => b.addEventListener('click', chiudiFoglio));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiFoglio(); });
+document.getElementById('vaiEsporta').addEventListener('click', () => document.getElementById('telEsp').scrollIntoView({behavior:'smooth', block:'start'}));
+
+function segna(id, v){
+  document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+}
+document.querySelectorAll('#segStato button').forEach(b => b.addEventListener('click', () => {
+  stato = b.dataset.v; erroreMostrato = false; segna('segStato', stato); chiudiFoglio(); render();
+}));
+document.querySelectorAll('#segProm button').forEach(b => b.addEventListener('click', () => {
+  promem = b.dataset.v; segna('segProm', promem); render();
+}));
+document.querySelectorAll('#segTema button').forEach(b => b.addEventListener('click', () => {
+  const v = b.dataset.v;
+  if (v) document.documentElement.setAttribute('data-theme', v); else document.documentElement.removeAttribute('data-theme');
+  segna('segTema', v);
+}));
+
+render();
+</script>
+</body>
+</html>
