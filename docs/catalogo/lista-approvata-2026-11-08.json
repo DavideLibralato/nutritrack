@@ -1,0 +1,2680 @@
+{
+ "descrizione": "Lista del catalogo precaricato approvata da Davide l'08/11/2026 (183 alimenti). I valori qui sono quelli letti da Cowork l'08/11 per la revisione: lo script li deve rileggere dalle fonti e confrontarli, non copiarli.",
+ "fonti": {
+  "ciqual": "Anses, Table Ciqual 2025, V1.0 del 19/11/2025, doi:10.57745/RDMHWY, Licence Ouverte / Etalab 2.0",
+  "off": "Open Food Facts, openfoodfacts.org, ODbL"
+ },
+ "alimenti": [
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "ciqual",
+   "codice_ciqual": "9811",
+   "nome": "Pasta di semola (cotta)",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 167,
+    "proteine": 6.1,
+    "carboidrati": 31.4,
+    "grassi": 1.1
+   },
+   "nome_ciqual_fr": "Pâtes sèches, standard, cuites, sans sel ajouté"
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "ciqual",
+   "codice_ciqual": "9104",
+   "nome": "Riso bianco (cotto)",
+   "marca": null,
+   "porzione_default_g": 180,
+   "valori_letti_08_11": {
+    "kcal": 155,
+    "proteine": 3.15,
+    "carboidrati": 33.2,
+    "grassi": 0.7
+   },
+   "nome_ciqual_fr": "Riz blanc, cuit, sans sel ajouté"
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "ciqual",
+   "codice_ciqual": "9681",
+   "nome": "Couscous (secco)",
+   "marca": null,
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 366,
+    "proteine": 12.3,
+    "carboidrati": 72.7,
+    "grassi": 1.32
+   },
+   "nome_ciqual_fr": "Graine de couscous, à cuire"
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "ciqual",
+   "codice_ciqual": "9340",
+   "nome": "Quinoa (cruda)",
+   "marca": null,
+   "porzione_default_g": 70,
+   "valori_letti_08_11": {
+    "kcal": 358,
+    "proteine": 13.2,
+    "carboidrati": 58.1,
+    "grassi": 6.07
+   },
+   "nome_ciqual_fr": "Quinoa, cru"
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "ciqual",
+   "codice_ciqual": "9001",
+   "nome": "Farro (crudo)",
+   "marca": null,
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 344,
+    "proteine": 14.6,
+    "carboidrati": 59.5,
+    "grassi": 2.43
+   },
+   "nome_ciqual_fr": "Épeautre, cru"
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "ciqual",
+   "codice_ciqual": "9321",
+   "nome": "Orzo perlato (crudo)",
+   "marca": null,
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 346,
+    "proteine": 9.91,
+    "carboidrati": 68.6,
+    "grassi": 1.16
+   },
+   "nome_ciqual_fr": "Orge perlée, crue"
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8076800195057",
+   "nome": "Spaghetti n.5",
+   "marca": "Barilla",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 359,
+    "proteine": 13,
+    "carboidrati": 71,
+    "grassi": 2
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8076802085738",
+   "nome": "Penne rigate n.73",
+   "marca": "Barilla",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 359,
+    "proteine": 13,
+    "carboidrati": 71,
+    "grassi": 2
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8076802085981",
+   "nome": "Fusilli",
+   "marca": "Barilla",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 359,
+    "proteine": 13,
+    "carboidrati": 71,
+    "grassi": 2
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8001250120120",
+   "nome": "Spaghetti n.12",
+   "marca": "De Cecco",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 351,
+    "proteine": 14,
+    "carboidrati": 69,
+    "grassi": 1.5
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8008343200660",
+   "nome": "Penne rigate n.66",
+   "marca": "Rummo",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 356,
+    "proteine": 14.5,
+    "carboidrati": 69.5,
+    "grassi": 1.6
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8008343700481",
+   "nome": "Fusilli integrali n.48",
+   "marca": "Rummo",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 348,
+    "proteine": 14,
+    "carboidrati": 65.8,
+    "grassi": 1.9
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8008343201179",
+   "nome": "Gnocchi di patate",
+   "marca": "Rummo",
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 159,
+    "proteine": 5,
+    "carboidrati": 33,
+    "grassi": 0.4
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8001420001716",
+   "nome": "Riso per risotti",
+   "marca": "Riso Gallo",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 342,
+    "proteine": 6.9,
+    "carboidrati": 77,
+    "grassi": 1
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8051770850465",
+   "nome": "Riso Carnaroli",
+   "marca": "Selezione PerTe",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 349,
+    "proteine": 7.4,
+    "carboidrati": 78,
+    "grassi": 0.6
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "20003166",
+   "nome": "Fiocchi d'avena",
+   "marca": "Crownfield",
+   "porzione_default_g": 40,
+   "valori_letti_08_11": {
+    "kcal": 372,
+    "proteine": 13.5,
+    "carboidrati": 58.7,
+    "grassi": 7
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8003170055797",
+   "nome": "Fiocchi di avena",
+   "marca": "Conad",
+   "porzione_default_g": 40,
+   "valori_letti_08_11": {
+    "kcal": 372,
+    "proteine": 13,
+    "carboidrati": 59,
+    "grassi": 7
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "20003234",
+   "nome": "Muesli integrale alla frutta",
+   "marca": "Crownfield",
+   "porzione_default_g": 40,
+   "valori_letti_08_11": {
+    "kcal": 345,
+    "proteine": 8.8,
+    "carboidrati": 60.1,
+    "grassi": 5.6
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8003100818768",
+   "nome": "Muesli croccante al cioccolato",
+   "marca": "Selex",
+   "porzione_default_g": 40,
+   "valori_letti_08_11": {
+    "kcal": 462,
+    "proteine": 8.5,
+    "carboidrati": 61,
+    "grassi": 19
+   }
+  },
+  {
+   "categoria": "Pasta e cereali",
+   "fonte": "off",
+   "barcode": "8003100896209",
+   "nome": "Corn flakes",
+   "marca": "Selex",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 385,
+    "proteine": 8,
+    "carboidrati": 84,
+    "grassi": 1
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "ciqual",
+   "codice_ciqual": "7001",
+   "nome": "Pane bianco",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 287,
+    "proteine": 8.27,
+    "carboidrati": 58.3,
+    "grassi": 1.4
+   },
+   "nome_ciqual_fr": "Pain blanc (baguette, boule…)"
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "ciqual",
+   "codice_ciqual": "7110",
+   "nome": "Pane integrale",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 234,
+    "proteine": 8.66,
+    "carboidrati": 41.2,
+    "grassi": 1.7
+   },
+   "nome_ciqual_fr": "Pain complet ou intégral (T150)"
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "ciqual",
+   "codice_ciqual": "7100",
+   "nome": "Pane casereccio",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 253,
+    "proteine": 7.52,
+    "carboidrati": 50,
+    "grassi": 1.3
+   },
+   "nome_ciqual_fr": "Pain de campagne"
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8076809504720",
+   "nome": "Pan Bauletto bianco",
+   "marca": "Mulino Bianco",
+   "porzione_default_g": 25,
+   "valori_letti_08_11": {
+    "kcal": 272,
+    "proteine": 8.5,
+    "carboidrati": 48.4,
+    "grassi": 3.9
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8076809504751",
+   "nome": "Pan Bauletto integrale",
+   "marca": "Mulino Bianco",
+   "porzione_default_g": 25,
+   "valori_letti_08_11": {
+    "kcal": 276,
+    "proteine": 11.2,
+    "carboidrati": 38.4,
+    "grassi": 6.8
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8003100004710",
+   "nome": "Pan bauletto integrale",
+   "marca": "Selex",
+   "porzione_default_g": 25,
+   "valori_letti_08_11": {
+    "kcal": 258,
+    "proteine": 10,
+    "carboidrati": 39,
+    "grassi": 5.1
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8076809512077",
+   "nome": "Fette biscottate integrali",
+   "marca": "Mulino Bianco",
+   "porzione_default_g": 16,
+   "valori_letti_08_11": {
+    "kcal": 384,
+    "proteine": 13.5,
+    "carboidrati": 63,
+    "grassi": 6
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8013355999679",
+   "nome": "Gran Pavesi cracker",
+   "marca": "Pavesi",
+   "porzione_default_g": 25,
+   "valori_letti_08_11": {
+    "kcal": 438,
+    "proteine": 10,
+    "carboidrati": 67.7,
+    "grassi": 13
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8000605830745",
+   "nome": "Crackers integrali",
+   "marca": "Doriano",
+   "porzione_default_g": 25,
+   "valori_letti_08_11": {
+    "kcal": 446,
+    "proteine": 10,
+    "carboidrati": 62,
+    "grassi": 16
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8003100865908",
+   "nome": "Crostini integrali",
+   "marca": "Selex",
+   "porzione_default_g": 25,
+   "valori_letti_08_11": {
+    "kcal": 442,
+    "proteine": 11.6,
+    "carboidrati": 70.4,
+    "grassi": 11
+   }
+  },
+  {
+   "categoria": "Pane e sostituti",
+   "fonte": "off",
+   "barcode": "8017596079725",
+   "nome": "Gallette di riso",
+   "marca": "Eurospin",
+   "porzione_default_g": 10,
+   "valori_letti_08_11": {
+    "kcal": 367,
+    "proteine": 8.3,
+    "carboidrati": 80,
+    "grassi": 1.3
+   }
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "36017",
+   "nome": "Petto di pollo (crudo)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 110,
+    "proteine": 23.4,
+    "carboidrati": 0,
+    "grassi": 1.5
+   },
+   "nome_ciqual_fr": "Poulet, filet sans peau cru"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "36024",
+   "nome": "Coscia di pollo senza pelle (cruda)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 114,
+    "proteine": 19.3,
+    "carboidrati": 0,
+    "grassi": 4.05
+   },
+   "nome_ciqual_fr": "Poulet, cuisse, viande crue"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "36304",
+   "nome": "Fesa di tacchino (cruda)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 108,
+    "proteine": 23.7,
+    "carboidrati": 0,
+    "grassi": 1.48
+   },
+   "nome_ciqual_fr": "Dinde, escalope crue"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "6250",
+   "nome": "Macinato di manzo magro 5%",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 130,
+    "proteine": 21.9,
+    "carboidrati": 0.3,
+    "grassi": 4.59
+   },
+   "nome_ciqual_fr": "Boeuf, steak haché 5% MG cru"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "6254",
+   "nome": "Hamburger di manzo 15%",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 215,
+    "proteine": 20.2,
+    "carboidrati": 0.47,
+    "grassi": 14.8
+   },
+   "nome_ciqual_fr": "Boeuf, steak haché 15% MG cru"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "6206",
+   "nome": "Manzo magro, scamone (crudo)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 118,
+    "proteine": 23.5,
+    "carboidrati": 0.4,
+    "grassi": 2.5
+   },
+   "nome_ciqual_fr": "Boeuf, rumsteck cru"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "6521",
+   "nome": "Fesa di vitello (cruda)",
+   "marca": null,
+   "porzione_default_g": 120,
+   "valori_letti_08_11": {
+    "kcal": 114,
+    "proteine": 20.5,
+    "carboidrati": 0.58,
+    "grassi": 3.28
+   },
+   "nome_ciqual_fr": "Veau, escalope crue"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "28204",
+   "nome": "Filetto di maiale (crudo)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 123,
+    "proteine": 21.2,
+    "carboidrati": 0.4,
+    "grassi": 4.09
+   },
+   "nome_ciqual_fr": "Porc, filet mignon cru"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "28100",
+   "nome": "Braciola di maiale (cruda)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 164,
+    "proteine": 19.8,
+    "carboidrati": 0.38,
+    "grassi": 9.3
+   },
+   "nome_ciqual_fr": "Porc, côte crue"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "ciqual",
+   "codice_ciqual": "30110",
+   "nome": "Salsiccia di maiale (cruda)",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 321,
+    "proteine": 13.3,
+    "carboidrati": 0.64,
+    "grassi": 29.5
+   },
+   "nome_ciqual_fr": "Saucisse de Toulouse crue"
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "off",
+   "barcode": "8006473019107",
+   "nome": "Hamburger ricetta classica",
+   "marca": "Amadori",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 147,
+    "proteine": 17,
+    "carboidrati": 5,
+    "grassi": 6.2
+   }
+  },
+  {
+   "categoria": "Carne",
+   "fonte": "off",
+   "barcode": "8008110002008",
+   "nome": "Wudy classico",
+   "marca": "Aia",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 240,
+    "proteine": 15,
+    "carboidrati": 0,
+    "grassi": 20
+   }
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "ciqual",
+   "codice_ciqual": "26036",
+   "nome": "Salmone (crudo)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 193,
+    "proteine": 20.5,
+    "carboidrati": "traces",
+    "grassi": 12.4
+   },
+   "nome_ciqual_fr": "Saumon, élevage, cru"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "ciqual",
+   "codice_ciqual": "26043",
+   "nome": "Merluzzo (crudo)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 77.4,
+    "proteine": 18.1,
+    "carboidrati": "traces",
+    "grassi": 0.57
+   },
+   "nome_ciqual_fr": "Cabillaud, cru"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "ciqual",
+   "codice_ciqual": "26044",
+   "nome": "Nasello (crudo)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 82.6,
+    "proteine": 17.6,
+    "carboidrati": 0,
+    "grassi": 1.35
+   },
+   "nome_ciqual_fr": "Merlu, cru"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "ciqual",
+   "codice_ciqual": "26072",
+   "nome": "Branzino (crudo)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 86.1,
+    "proteine": 19.1,
+    "carboidrati": 0.9,
+    "grassi": 0.7
+   },
+   "nome_ciqual_fr": "Bar commun ou loup, cru"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "ciqual",
+   "codice_ciqual": "26088",
+   "nome": "Orata (cruda)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 129,
+    "proteine": 20.9,
+    "carboidrati": "traces",
+    "grassi": 5.1
+   },
+   "nome_ciqual_fr": "Dorade royale, élevage, crue"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "ciqual",
+   "codice_ciqual": "10021",
+   "nome": "Gamberi (crudi)",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 99,
+    "proteine": 19.7,
+    "carboidrati": 3.21,
+    "grassi": 0.84
+   },
+   "nome_ciqual_fr": "Crevette, crue"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "ciqual",
+   "codice_ciqual": "10001",
+   "nome": "Calamari (crudi)",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 77,
+    "proteine": 14.4,
+    "carboidrati": 2.17,
+    "grassi": 1.19
+   },
+   "nome_ciqual_fr": "Calmar ou encornet, cru"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "off",
+   "barcode": "8004030383555",
+   "nome": "Tonno all'olio d'oliva",
+   "marca": "Rio Mare",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 403,
+    "proteine": 17,
+    "carboidrati": 0,
+    "grassi": 37
+   },
+   "nota": "da decidere: valori con l'olio; Rio Mare all'estero ne dichiara 213"
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "off",
+   "barcode": "8003294528757",
+   "nome": "Filetti di tonno al naturale",
+   "marca": "Asdomar",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 99,
+    "proteine": 22,
+    "carboidrati": 0,
+    "grassi": 1.2
+   }
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "off",
+   "barcode": "80026808",
+   "nome": "Tonno all'olio d'oliva",
+   "marca": "Mareblu",
+   "porzione_default_g": 52,
+   "valori_letti_08_11": {
+    "kcal": 245,
+    "proteine": 23,
+    "carboidrati": 0.2,
+    "grassi": 17
+   }
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "off",
+   "barcode": "8057018222506",
+   "nome": "Filetti di merluzzo surgelati",
+   "marca": "Findus",
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 74,
+    "proteine": 16,
+    "carboidrati": 0,
+    "grassi": 1.1
+   }
+  },
+  {
+   "categoria": "Pesce",
+   "fonte": "off",
+   "barcode": "8057018222988",
+   "nome": "Bastoncini",
+   "marca": "Findus",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 213,
+    "proteine": 13,
+    "carboidrati": 21,
+    "grassi": 8.3
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "ciqual",
+   "codice_ciqual": "22000",
+   "nome": "Uovo",
+   "marca": null,
+   "porzione_default_g": 60,
+   "valori_letti_08_11": {
+    "kcal": 140,
+    "proteine": 12.8,
+    "carboidrati": 0.06,
+    "grassi": 9.83
+   },
+   "nome_ciqual_fr": "Oeuf cru"
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "ciqual",
+   "codice_ciqual": "16400",
+   "nome": "Burro",
+   "marca": null,
+   "porzione_default_g": 10,
+   "valori_letti_08_11": {
+    "kcal": 753,
+    "proteine": 0.64,
+    "carboidrati": 0.71,
+    "grassi": 83
+   },
+   "nome_ciqual_fr": "Beurre à 80% MG minimum, doux"
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "8008110561420",
+   "nome": "Albume d'uovo",
+   "marca": "Aia",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 47,
+    "proteine": 11,
+    "carboidrati": 0.8,
+    "grassi": 0
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "8002670168631",
+   "nome": "Latte parzialmente scremato UHT",
+   "marca": "Granarolo",
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 48,
+    "proteine": 3.4,
+    "carboidrati": 5,
+    "grassi": 1.6
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "8002580027004",
+   "nome": "Latte parzialmente scremato",
+   "marca": "Parmalat",
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 46,
+    "proteine": 3.3,
+    "carboidrati": 4.9,
+    "grassi": 1.6
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "8002580004166",
+   "nome": "Latte senza lattosio",
+   "marca": "Zymil",
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 41,
+    "proteine": 3.2,
+    "carboidrati": 4.9,
+    "grassi": 1
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "5201054017616",
+   "nome": "Yogurt greco Total 0%",
+   "marca": "Fage",
+   "porzione_default_g": 170,
+   "valori_letti_08_11": {
+    "kcal": 54,
+    "proteine": 10.3,
+    "carboidrati": 3,
+    "grassi": 0
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "4056489055952",
+   "nome": "Yogurt greco senza grassi",
+   "marca": "Milbona",
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 58,
+    "proteine": 10,
+    "carboidrati": 4.5,
+    "grassi": 0
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "20692285",
+   "nome": "Skyr bianco",
+   "marca": "Milbona",
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 62,
+    "proteine": 11,
+    "carboidrati": 4,
+    "grassi": 0.2
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "4056489187813",
+   "nome": "Fiocchi di latte (cottage)",
+   "marca": "Milbona",
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 100,
+    "proteine": 12.5,
+    "carboidrati": 3.5,
+    "grassi": 4
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "4056489216162",
+   "nome": "Dessert proteico al cioccolato",
+   "marca": "Milbona",
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 76,
+    "proteine": 10,
+    "carboidrati": 5.2,
+    "grassi": 1.5
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "8005350310115",
+   "nome": "Yogurt magro bianco",
+   "marca": "Yomo",
+   "porzione_default_g": 125,
+   "valori_letti_08_11": {
+    "kcal": 52,
+    "proteine": 5,
+    "carboidrati": 7,
+    "grassi": 0.1
+   }
+  },
+  {
+   "categoria": "Uova e latticini",
+   "fonte": "off",
+   "barcode": "8051770853237",
+   "nome": "Bevanda di soia",
+   "marca": "Selezione PerTe",
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 47,
+    "proteine": 3.5,
+    "carboidrati": 3.7,
+    "grassi": 1.8
+   }
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "ciqual",
+   "codice_ciqual": "12123",
+   "nome": "Grana Padano",
+   "marca": null,
+   "porzione_default_g": 20,
+   "valori_letti_08_11": {
+    "kcal": 399,
+    "proteine": 33.9,
+    "carboidrati": 1.17,
+    "grassi": 28.5
+   },
+   "nome_ciqual_fr": "Grana Padano"
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "ciqual",
+   "codice_ciqual": "12120",
+   "nome": "Parmigiano Reggiano",
+   "marca": null,
+   "porzione_default_g": 20,
+   "valori_letti_08_11": {
+    "kcal": 411,
+    "proteine": 31.1,
+    "carboidrati": 1.14,
+    "grassi": 31
+   },
+   "nome_ciqual_fr": "Parmesan"
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "ciqual",
+   "codice_ciqual": "12122",
+   "nome": "Pecorino",
+   "marca": null,
+   "porzione_default_g": 20,
+   "valori_letti_08_11": {
+    "kcal": 383,
+    "proteine": 25.5,
+    "carboidrati": 1,
+    "grassi": 31
+   },
+   "nome_ciqual_fr": "Pecorino (fromage de brebis)"
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "ciqual",
+   "codice_ciqual": "19591",
+   "nome": "Mozzarella di bufala",
+   "marca": null,
+   "porzione_default_g": 125,
+   "valori_letti_08_11": {
+    "kcal": 260,
+    "proteine": 14.5,
+    "carboidrati": 0.18,
+    "grassi": 22.3
+   },
+   "nome_ciqual_fr": "Mozzarella di bufala"
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "ciqual",
+   "codice_ciqual": "12072",
+   "nome": "Burrata",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 259,
+    "proteine": 10.8,
+    "carboidrati": 0.93,
+    "grassi": 23.4
+   },
+   "nome_ciqual_fr": "Burrata"
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "ciqual",
+   "codice_ciqual": "12115",
+   "nome": "Emmental",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 373,
+    "proteine": 27.9,
+    "carboidrati": "traces",
+    "grassi": 28.8
+   },
+   "nome_ciqual_fr": "Emmental"
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "off",
+   "barcode": "8000430138719",
+   "nome": "Mozzarella",
+   "marca": "Galbani",
+   "porzione_default_g": 125,
+   "valori_letti_08_11": {
+    "kcal": 238,
+    "proteine": 17,
+    "carboidrati": 2,
+    "grassi": 18
+   }
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "off",
+   "barcode": "8000430194227",
+   "nome": "Ricotta",
+   "marca": "Santa Lucia",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 146,
+    "proteine": 8,
+    "carboidrati": 6.6,
+    "grassi": 10
+   }
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "off",
+   "barcode": "8000430172010",
+   "nome": "Mascarpone",
+   "marca": "Galbani",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 403,
+    "proteine": 4.5,
+    "carboidrati": 4,
+    "grassi": 41
+   }
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "off",
+   "barcode": "8002670007879",
+   "nome": "Stracchino",
+   "marca": "Granarolo",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 269,
+    "proteine": 12,
+    "carboidrati": 1.2,
+    "grassi": 24
+   }
+  },
+  {
+   "categoria": "Formaggi",
+   "fonte": "off",
+   "barcode": "8007222405165",
+   "nome": "Robiola",
+   "marca": "Nonno Nanni",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 315,
+    "proteine": 6.8,
+    "carboidrati": 2.3,
+    "grassi": 31
+   }
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "ciqual",
+   "codice_ciqual": "28844",
+   "nome": "Prosciutto crudo",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 248,
+    "proteine": 27.2,
+    "carboidrati": 0.3,
+    "grassi": 15.4
+   },
+   "nome_ciqual_fr": "Jambon sec de Parme"
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "ciqual",
+   "codice_ciqual": "28900",
+   "nome": "Prosciutto cotto",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 113,
+    "proteine": 21,
+    "carboidrati": 0.76,
+    "grassi": 2.83
+   },
+   "nome_ciqual_fr": "Jambon cuit, supérieur"
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "ciqual",
+   "codice_ciqual": "28503",
+   "nome": "Bresaola",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 172,
+    "proteine": 32.8,
+    "carboidrati": 0.49,
+    "grassi": 4.3
+   },
+   "nome_ciqual_fr": "Bresaola"
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "ciqual",
+   "codice_ciqual": "30350",
+   "nome": "Salame",
+   "marca": null,
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 457,
+    "proteine": 17.7,
+    "carboidrati": 2.59,
+    "grassi": 41.8
+   },
+   "nome_ciqual_fr": "Salami"
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "off",
+   "barcode": "8007141516836",
+   "nome": "Grancotto",
+   "marca": "Rovagnati",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 102,
+    "proteine": 20,
+    "carboidrati": 0.9,
+    "grassi": 2
+   }
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "off",
+   "barcode": "80529262",
+   "nome": "Prosciutto crudo Tagliofresco",
+   "marca": "Citterio",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 229,
+    "proteine": 28,
+    "carboidrati": 0.4,
+    "grassi": 13
+   }
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "off",
+   "barcode": "8007660489413",
+   "nome": "Bresaola della Valtellina IGP",
+   "marca": "Beretta",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 165,
+    "proteine": 34,
+    "carboidrati": 0.5,
+    "grassi": 3
+   }
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "off",
+   "barcode": "8007141520048",
+   "nome": "Mortadella Bologna IGP",
+   "marca": "Rovagnati",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 285,
+    "proteine": 15,
+    "carboidrati": 0,
+    "grassi": 25
+   }
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "off",
+   "barcode": "8007141516812",
+   "nome": "Fesa di tacchino al forno",
+   "marca": "Rovagnati",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 97,
+    "proteine": 18,
+    "carboidrati": 3.6,
+    "grassi": 1.2
+   }
+  },
+  {
+   "categoria": "Affettati",
+   "fonte": "off",
+   "barcode": "8008110034092",
+   "nome": "Petto di tacchino",
+   "marca": "Aia",
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 96,
+    "proteine": 18,
+    "carboidrati": 2.5,
+    "grassi": 1.5
+   }
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20020",
+   "nome": "Zucchine",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 16.7,
+    "proteine": 1.21,
+    "carboidrati": 1.75,
+    "grassi": 0.32
+   },
+   "nome_ciqual_fr": "Courgette, chair et peau, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20385",
+   "nome": "Pomodori",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 19.2,
+    "proteine": 0.6,
+    "carboidrati": 3.69,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Tomate sans précision, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20172",
+   "nome": "Pomodorini",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 31.8,
+    "proteine": 1.31,
+    "carboidrati": 5.62,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Tomate cerise, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20009",
+   "nome": "Carote",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 30.2,
+    "proteine": 0.78,
+    "carboidrati": 5.16,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Carotte, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20087",
+   "nome": "Peperone rosso",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 33.6,
+    "proteine": 1.06,
+    "carboidrati": 5.98,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Poivron rouge, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20168",
+   "nome": "Peperone giallo",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 29.4,
+    "proteine": 0.94,
+    "carboidrati": 4.73,
+    "grassi": 0.3
+   },
+   "nome_ciqual_fr": "Poivron jaune, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20053",
+   "nome": "Melanzane",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 22.9,
+    "proteine": 0.98,
+    "carboidrati": 2.7,
+    "grassi": 0.18
+   },
+   "nome_ciqual_fr": "Aubergine, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20019",
+   "nome": "Cetriolo",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 16.8,
+    "proteine": 0.65,
+    "carboidrati": 2.87,
+    "grassi": 0.11
+   },
+   "nome_ciqual_fr": "Concombre, chair et peau, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20239",
+   "nome": "Cipolla",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 35.9,
+    "proteine": 1.19,
+    "carboidrati": 6.39,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Oignon jaune, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "11000",
+   "nome": "Aglio",
+   "marca": null,
+   "porzione_default_g": 5,
+   "valori_letti_08_11": {
+    "kcal": 109,
+    "proteine": 5.31,
+    "carboidrati": 18.6,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Ail, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20059",
+   "nome": "Spinaci",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 33.3,
+    "proteine": 2.68,
+    "carboidrati": 3.06,
+    "grassi": 0.39
+   },
+   "nome_ciqual_fr": "Épinard, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20057",
+   "nome": "Broccoli",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 31.9,
+    "proteine": 2.9,
+    "carboidrati": 2.15,
+    "grassi": 0.36
+   },
+   "nome_ciqual_fr": "Brocoli, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20016",
+   "nome": "Cavolfiore",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 24.9,
+    "proteine": 1.81,
+    "carboidrati": 2.13,
+    "grassi": 0.7
+   },
+   "nome_ciqual_fr": "Chou-fleur, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20116",
+   "nome": "Cavolo cappuccio bianco",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 35.2,
+    "proteine": 1.38,
+    "carboidrati": 4.63,
+    "grassi": 0.6
+   },
+   "nome_ciqual_fr": "Chou blanc, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20014",
+   "nome": "Cavolo cappuccio rosso",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 26.4,
+    "proteine": 1.13,
+    "carboidrati": 4.33,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Chou rouge, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20028",
+   "nome": "Finocchio",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 18.2,
+    "proteine": 1,
+    "carboidrati": 2.63,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Fenouil, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20023",
+   "nome": "Sedano",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 15.4,
+    "proteine": 0.63,
+    "carboidrati": 2.41,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Céleri branche, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20052",
+   "nome": "Carciofi",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 45.4,
+    "proteine": 3.27,
+    "carboidrati": 4.84,
+    "grassi": 0.15
+   },
+   "nome_ciqual_fr": "Artichaut, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20279",
+   "nome": "Asparagi",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 24.7,
+    "proteine": 2.46,
+    "carboidrati": 2.03,
+    "grassi": 0.27
+   },
+   "nome_ciqual_fr": "Asperge, verte, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20061",
+   "nome": "Fagiolini",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 31.9,
+    "proteine": 1.83,
+    "carboidrati": 4.14,
+    "grassi": 0.22
+   },
+   "nome_ciqual_fr": "Haricot vert, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20044",
+   "nome": "Zucca",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 20.1,
+    "proteine": 1.05,
+    "carboidrati": 3.5,
+    "grassi": 0.1
+   },
+   "nome_ciqual_fr": "Potiron, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20031",
+   "nome": "Lattuga",
+   "marca": null,
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 14.7,
+    "proteine": 1.35,
+    "carboidrati": 1.22,
+    "grassi": 0.2
+   },
+   "nome_ciqual_fr": "Laitue, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20012",
+   "nome": "Insalata riccia",
+   "marca": null,
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 26,
+    "proteine": 1.7,
+    "carboidrati": 2.13,
+    "grassi": 0.3
+   },
+   "nome_ciqual_fr": "Salade ou chicorée frisée, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20217",
+   "nome": "Rucola",
+   "marca": null,
+   "porzione_default_g": 50,
+   "valori_letti_08_11": {
+    "kcal": 27.9,
+    "proteine": 2.58,
+    "carboidrati": 2.1,
+    "grassi": 0.66
+   },
+   "nome_ciqual_fr": "Roquette, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20056",
+   "nome": "Funghi champignon",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 21,
+    "proteine": 2.11,
+    "carboidrati": 1.83,
+    "grassi": 0.36
+   },
+   "nome_ciqual_fr": "Champignon de Paris, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20039",
+   "nome": "Porri",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 30.4,
+    "proteine": 1.5,
+    "carboidrati": 4.55,
+    "grassi": 0.3
+   },
+   "nome_ciqual_fr": "Poireau, cru"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "20301",
+   "nome": "Bietole (cotte)",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 15.6,
+    "proteine": 0.88,
+    "carboidrati": 1.43,
+    "grassi": 0.3
+   },
+   "nome_ciqual_fr": "Bette, côte et feuille, cuite à l'eau"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "ciqual",
+   "codice_ciqual": "4008",
+   "nome": "Patate",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 80,
+    "proteine": 2.02,
+    "carboidrati": 16.2,
+    "grassi": 0.09
+   },
+   "nome_ciqual_fr": "Pomme de terre, sans peau, crue"
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "off",
+   "barcode": "80042556",
+   "nome": "Polpa di pomodoro in pezzi",
+   "marca": "Mutti",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 26,
+    "proteine": 1.2,
+    "carboidrati": 3.9,
+    "grassi": 0.2
+   }
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "off",
+   "barcode": "80042563",
+   "nome": "Passata di pomodoro",
+   "marca": "Mutti",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 36,
+    "proteine": 1.6,
+    "carboidrati": 5.1,
+    "grassi": 0.5
+   }
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "off",
+   "barcode": "8005110140013",
+   "nome": "Triplo concentrato di pomodoro",
+   "marca": "Mutti",
+   "porzione_default_g": 15,
+   "valori_letti_08_11": {
+    "kcal": 127,
+    "proteine": 5.7,
+    "carboidrati": 23,
+    "grassi": 0.2
+   }
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "off",
+   "barcode": "3083680025881",
+   "nome": "Mais cotto al vapore",
+   "marca": "Bonduelle",
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 80,
+    "proteine": 2.9,
+    "carboidrati": 10.8,
+    "grassi": 1.9
+   }
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "off",
+   "barcode": "8003495104668",
+   "nome": "Minestrone Leggerezza",
+   "marca": "Orogel",
+   "porzione_default_g": 300,
+   "valori_letti_08_11": {
+    "kcal": 21,
+    "proteine": 1.1,
+    "carboidrati": 2.9,
+    "grassi": 0
+   }
+  },
+  {
+   "categoria": "Verdura",
+   "fonte": "off",
+   "barcode": "8003495104071",
+   "nome": "Spinaci a cubetti",
+   "marca": "Orogel",
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 30.7,
+    "proteine": 3,
+    "carboidrati": 1.93,
+    "grassi": 0.733
+   }
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13039",
+   "nome": "Mela",
+   "marca": null,
+   "porzione_default_g": 180,
+   "valori_letti_08_11": {
+    "kcal": 54,
+    "proteine": 0.25,
+    "carboidrati": 11.6,
+    "grassi": 0.25
+   },
+   "nome_ciqual_fr": "Pomme, chair et peau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13037",
+   "nome": "Pera",
+   "marca": null,
+   "porzione_default_g": 170,
+   "valori_letti_08_11": {
+    "kcal": 56.6,
+    "proteine": 0.36,
+    "carboidrati": 12.3,
+    "grassi": 0.27
+   },
+   "nome_ciqual_fr": "Poire, chair et peau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13005",
+   "nome": "Banana",
+   "marca": null,
+   "porzione_default_g": 120,
+   "valori_letti_08_11": {
+    "kcal": 87.6,
+    "proteine": 1.06,
+    "carboidrati": 19.7,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Banane, chair sans peau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13034",
+   "nome": "Arancia",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 42,
+    "proteine": 0.75,
+    "carboidrati": 8.03,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Orange, chair sans peau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13024",
+   "nome": "Mandarino o clementina",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 45.5,
+    "proteine": 0.81,
+    "carboidrati": 9.17,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Clémentine ou mandarine, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13021",
+   "nome": "Kiwi",
+   "marca": null,
+   "porzione_default_g": 80,
+   "valori_letti_08_11": {
+    "kcal": 60.9,
+    "proteine": 0.88,
+    "carboidrati": 11,
+    "grassi": 0.6
+   },
+   "nome_ciqual_fr": "Kiwi, chair sans peau, cru"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13014",
+   "nome": "Fragole",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 35.1,
+    "proteine": 0.63,
+    "carboidrati": 6.03,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Fraise, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13101",
+   "nome": "Uva bianca",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 77.8,
+    "proteine": 0.75,
+    "carboidrati": 16.9,
+    "grassi": 0.5
+   },
+   "nome_ciqual_fr": "Raisin Chasselas, cru"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13045",
+   "nome": "Uva nera",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 69.5,
+    "proteine": 0.57,
+    "carboidrati": 15.6,
+    "grassi": 0.25
+   },
+   "nome_ciqual_fr": "Raisin noir, cru"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13043",
+   "nome": "Pesca",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 37.9,
+    "proteine": 0.91,
+    "carboidrati": 7.55,
+    "grassi": 0.25
+   },
+   "nome_ciqual_fr": "Pêche, chair et peau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13399",
+   "nome": "Nettarina",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 49.5,
+    "proteine": 0.74,
+    "carboidrati": 11.3,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Nectarine, chair et peau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13000",
+   "nome": "Albicocche",
+   "marca": null,
+   "porzione_default_g": 120,
+   "valori_letti_08_11": {
+    "kcal": 44.1,
+    "proteine": 0.81,
+    "carboidrati": 9.01,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Abricot, dénoyauté, cru"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13100",
+   "nome": "Prugne",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 51.6,
+    "proteine": 0.7,
+    "carboidrati": 9.92,
+    "grassi": 0.28
+   },
+   "nome_ciqual_fr": "Prune, sans noyau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13008",
+   "nome": "Ciliegie",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 53.7,
+    "proteine": 0.81,
+    "carboidrati": 13,
+    "grassi": "< 0.3"
+   },
+   "nome_ciqual_fr": "Cerise, chair et peau, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13002",
+   "nome": "Ananas",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 51.6,
+    "proteine": 0.25,
+    "carboidrati": 11.7,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Ananas, chair sans peau, cru"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13026",
+   "nome": "Melone",
+   "marca": null,
+   "porzione_default_g": 200,
+   "valori_letti_08_11": {
+    "kcal": 59.8,
+    "proteine": 1.13,
+    "carboidrati": 14.8,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Melon cantaloup, cru"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13036",
+   "nome": "Anguria",
+   "marca": null,
+   "porzione_default_g": 300,
+   "valori_letti_08_11": {
+    "kcal": 35.4,
+    "proteine": 0.69,
+    "carboidrati": 8.33,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Pastèque, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13012",
+   "nome": "Fichi",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 67.6,
+    "proteine": 1.19,
+    "carboidrati": 13.5,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Figue, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13025",
+   "nome": "Mango",
+   "marca": null,
+   "porzione_default_g": 150,
+   "valori_letti_08_11": {
+    "kcal": 71.1,
+    "proteine": 0.63,
+    "carboidrati": 14.3,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Mangue, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13028",
+   "nome": "Mirtilli",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 57.7,
+    "proteine": 0.87,
+    "carboidrati": 10.6,
+    "grassi": 0.33
+   },
+   "nome_ciqual_fr": "Myrtille, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13015",
+   "nome": "Lamponi",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 47.9,
+    "proteine": 1.19,
+    "carboidrati": 5.83,
+    "grassi": 0.8
+   },
+   "nome_ciqual_fr": "Framboise, crue"
+  },
+  {
+   "categoria": "Frutta",
+   "fonte": "ciqual",
+   "codice_ciqual": "13004",
+   "nome": "Avocado",
+   "marca": null,
+   "porzione_default_g": 70,
+   "valori_letti_08_11": {
+    "kcal": 203,
+    "proteine": 1.56,
+    "carboidrati": "traces",
+    "grassi": 20.6
+   },
+   "nome_ciqual_fr": "Avocat, cru"
+  },
+  {
+   "categoria": "Frutta secca e semi",
+   "fonte": "ciqual",
+   "codice_ciqual": "15000",
+   "nome": "Mandorle",
+   "marca": null,
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 615,
+    "proteine": 18.8,
+    "carboidrati": 9.51,
+    "grassi": 51.3
+   },
+   "nome_ciqual_fr": "Amande, avec peau, sans sel"
+  },
+  {
+   "categoria": "Frutta secca e semi",
+   "fonte": "ciqual",
+   "codice_ciqual": "15004",
+   "nome": "Nocciole",
+   "marca": null,
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 632,
+    "proteine": 14.4,
+    "carboidrati": 7.16,
+    "grassi": 56.9
+   },
+   "nome_ciqual_fr": "Noisette, sans sel"
+  },
+  {
+   "categoria": "Frutta secca e semi",
+   "fonte": "off",
+   "barcode": "20005733",
+   "nome": "Noci",
+   "marca": "Alesto",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 712,
+    "proteine": 15.5,
+    "carboidrati": 3.7,
+    "grassi": 69.1
+   }
+  },
+  {
+   "categoria": "Frutta secca e semi",
+   "fonte": "off",
+   "barcode": "20267605",
+   "nome": "Anacardi",
+   "marca": "Alesto",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 600,
+    "proteine": 20.5,
+    "carboidrati": 19.8,
+    "grassi": 47.6
+   }
+  },
+  {
+   "categoria": "Frutta secca e semi",
+   "fonte": "off",
+   "barcode": "4056489405740",
+   "nome": "Pistacchi",
+   "marca": "Alesto",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 605,
+    "proteine": 26.5,
+    "carboidrati": 10.3,
+    "grassi": 49.2
+   }
+  },
+  {
+   "categoria": "Frutta secca e semi",
+   "fonte": "off",
+   "barcode": "20815394",
+   "nome": "Mix di frutta secca",
+   "marca": "Alesto",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 504,
+    "proteine": 10.8,
+    "carboidrati": 40.5,
+    "grassi": 31.7
+   }
+  },
+  {
+   "categoria": "Frutta secca e semi",
+   "fonte": "off",
+   "barcode": "8003170093157",
+   "nome": "Crema 100% arachidi",
+   "marca": "Conad",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 601,
+    "proteine": 28,
+    "carboidrati": 17,
+    "grassi": 46
+   }
+  },
+  {
+   "categoria": "Legumi",
+   "fonte": "ciqual",
+   "codice_ciqual": "20585",
+   "nome": "Lenticchie (secche)",
+   "marca": null,
+   "porzione_default_g": 70,
+   "valori_letti_08_11": {
+    "kcal": 327,
+    "proteine": 25.1,
+    "carboidrati": 44.5,
+    "grassi": 1.8
+   },
+   "nome_ciqual_fr": "Lentille verte, sèche"
+  },
+  {
+   "categoria": "Legumi",
+   "fonte": "ciqual",
+   "codice_ciqual": "20516",
+   "nome": "Ceci (secchi)",
+   "marca": null,
+   "porzione_default_g": 70,
+   "valori_letti_08_11": {
+    "kcal": 350,
+    "proteine": 20.5,
+    "carboidrati": 47.5,
+    "grassi": 6.04
+   },
+   "nome_ciqual_fr": "Pois chiche, sec"
+  },
+  {
+   "categoria": "Legumi",
+   "fonte": "ciqual",
+   "codice_ciqual": "20501",
+   "nome": "Fagioli cannellini (secchi)",
+   "marca": null,
+   "porzione_default_g": 70,
+   "valori_letti_08_11": {
+    "kcal": 307,
+    "proteine": 23.4,
+    "carboidrati": 43.9,
+    "grassi": 0.85
+   },
+   "nome_ciqual_fr": "Haricot blanc, sec"
+  },
+  {
+   "categoria": "Legumi",
+   "fonte": "ciqual",
+   "codice_ciqual": "20904",
+   "nome": "Tofu",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 147,
+    "proteine": 13.4,
+    "carboidrati": 2.87,
+    "grassi": 8.5
+   },
+   "nome_ciqual_fr": "Tofu nature"
+  },
+  {
+   "categoria": "Legumi",
+   "fonte": "off",
+   "barcode": "3083681003949",
+   "nome": "Ceci al vapore",
+   "marca": "Bonduelle",
+   "porzione_default_g": 120,
+   "valori_letti_08_11": {
+    "kcal": 120,
+    "proteine": 6.4,
+    "carboidrati": 14.7,
+    "grassi": 2.2
+   }
+  },
+  {
+   "categoria": "Legumi",
+   "fonte": "off",
+   "barcode": "3083681003963",
+   "nome": "Lenticchie al vapore",
+   "marca": "Bonduelle",
+   "porzione_default_g": 120,
+   "valori_letti_08_11": {
+    "kcal": 107,
+    "proteine": 8.5,
+    "carboidrati": 14.2,
+    "grassi": 0.7
+   }
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "ciqual",
+   "codice_ciqual": "17270",
+   "nome": "Olio extravergine d'oliva",
+   "marca": null,
+   "porzione_default_g": 10,
+   "valori_letti_08_11": {
+    "kcal": 899,
+    "proteine": 0.25,
+    "carboidrati": "traces",
+    "grassi": 99.9
+   },
+   "nome_ciqual_fr": "Huile d'olive vierge extra"
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "ciqual",
+   "codice_ciqual": "11091",
+   "nome": "Aceto balsamico",
+   "marca": null,
+   "porzione_default_g": 10,
+   "valori_letti_08_11": {
+    "kcal": 91.7,
+    "proteine": 0.69,
+    "carboidrati": 18,
+    "grassi": "< 0.6"
+   },
+   "nome_ciqual_fr": "Vinaigre balsamique"
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "ciqual",
+   "codice_ciqual": "11220",
+   "nome": "Aceto di vino",
+   "marca": null,
+   "porzione_default_g": 10,
+   "valori_letti_08_11": {
+    "kcal": 20.6,
+    "proteine": 0.25,
+    "carboidrati": "traces",
+    "grassi": 0
+   },
+   "nome_ciqual_fr": "Vinaigre de vin rouge"
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "ciqual",
+   "codice_ciqual": "31008",
+   "nome": "Miele",
+   "marca": null,
+   "porzione_default_g": 10,
+   "valori_letti_08_11": {
+    "kcal": 331,
+    "proteine": 0.65,
+    "carboidrati": 82.1,
+    "grassi": 0
+   },
+   "nome_ciqual_fr": "Miel"
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "ciqual",
+   "codice_ciqual": "31016",
+   "nome": "Zucchero",
+   "marca": null,
+   "porzione_default_g": 5,
+   "valori_letti_08_11": {
+    "kcal": 399,
+    "proteine": 0,
+    "carboidrati": 99.7,
+    "grassi": 0
+   },
+   "nome_ciqual_fr": "Sucre blanc"
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "ciqual",
+   "codice_ciqual": "31006",
+   "nome": "Marmellata",
+   "marca": null,
+   "porzione_default_g": 20,
+   "valori_letti_08_11": {
+    "kcal": 244,
+    "proteine": 0.33,
+    "carboidrati": 59.3,
+    "grassi": 0.28
+   },
+   "nome_ciqual_fr": "Confiture ou marmelade (aliment moyen)"
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "off",
+   "barcode": "8076809513722",
+   "nome": "Sugo al basilico",
+   "marca": "Barilla",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 64,
+    "proteine": 1.6,
+    "carboidrati": 7.6,
+    "grassi": 2.6
+   }
+  },
+  {
+   "categoria": "Condimenti",
+   "fonte": "off",
+   "barcode": "8001440134180",
+   "nome": "Ragù di carne",
+   "marca": "Cirio",
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 137,
+    "proteine": 7.2,
+    "carboidrati": 6.3,
+    "grassi": 8.8
+   }
+  },
+  {
+   "categoria": "Bevande",
+   "fonte": "ciqual",
+   "codice_ciqual": "18071",
+   "nome": "Caffè espresso",
+   "marca": null,
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 6.54,
+    "proteine": 0.25,
+    "carboidrati": 1.16,
+    "grassi": 0.2
+   },
+   "nome_ciqual_fr": "Café expresso, sans sucres ajoutés"
+  },
+  {
+   "categoria": "Bevande",
+   "fonte": "ciqual",
+   "codice_ciqual": "18020",
+   "nome": "Tè",
+   "marca": null,
+   "porzione_default_g": 250,
+   "valori_letti_08_11": {
+    "kcal": 0.4,
+    "proteine": 0.1,
+    "carboidrati": 0,
+    "grassi": 0
+   },
+   "nome_ciqual_fr": "Thé infusé, sans sucres ajoutés"
+  },
+  {
+   "categoria": "Bevande",
+   "fonte": "ciqual",
+   "codice_ciqual": "5001",
+   "nome": "Birra chiara",
+   "marca": null,
+   "porzione_default_g": 330,
+   "valori_letti_08_11": {
+    "kcal": 39,
+    "proteine": 0.39,
+    "carboidrati": 3.12,
+    "grassi": 0
+   },
+   "nome_ciqual_fr": "Bière 4-5° alcool",
+   "nota": "le kcal comprendono l'alcol: non tornano con P, C e G"
+  },
+  {
+   "categoria": "Bevande",
+   "fonte": "ciqual",
+   "codice_ciqual": "5214",
+   "nome": "Vino rosso",
+   "marca": null,
+   "porzione_default_g": 125,
+   "valori_letti_08_11": {
+    "kcal": 75.7,
+    "proteine": 0.16,
+    "carboidrati": 0,
+    "grassi": "< 0.5"
+   },
+   "nome_ciqual_fr": "Vin rouge",
+   "nota": "come la birra"
+  },
+  {
+   "categoria": "Bevande",
+   "fonte": "off",
+   "barcode": "5449000214911",
+   "nome": "Coca-Cola",
+   "marca": "Coca-Cola",
+   "porzione_default_g": 330,
+   "valori_letti_08_11": {
+    "kcal": 42,
+    "proteine": 0,
+    "carboidrati": 10.6,
+    "grassi": 0
+   }
+  },
+  {
+   "categoria": "Bevande",
+   "fonte": "off",
+   "barcode": "5449000214799",
+   "nome": "Coca-Cola Zero",
+   "marca": "Coca-Cola",
+   "porzione_default_g": 330,
+   "valori_letti_08_11": {
+    "kcal": 0.3,
+    "proteine": 0,
+    "carboidrati": 0,
+    "grassi": 0
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "ciqual",
+   "codice_ciqual": "7603",
+   "nome": "Cornetto",
+   "marca": null,
+   "porzione_default_g": 60,
+   "valori_letti_08_11": {
+    "kcal": 417,
+    "proteine": 6.56,
+    "carboidrati": 46.2,
+    "grassi": 22.1
+   },
+   "nome_ciqual_fr": "Croissant (aliment moyen)"
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "ciqual",
+   "codice_ciqual": "39500",
+   "nome": "Gelato",
+   "marca": null,
+   "porzione_default_g": 100,
+   "valori_letti_08_11": {
+    "kcal": 249,
+    "proteine": 2.73,
+    "carboidrati": 32,
+    "grassi": 11.9
+   },
+   "nome_ciqual_fr": "Glace ou crème glacée (aliment moyen)"
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "3017620422003",
+   "nome": "Nutella",
+   "marca": "Ferrero",
+   "porzione_default_g": 15,
+   "valori_letti_08_11": {
+    "kcal": 539,
+    "proteine": 6.3,
+    "carboidrati": 57.5,
+    "grassi": 30.9
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "8013355999143",
+   "nome": "Gocciole chocolate",
+   "marca": "Pavesi",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 488,
+    "proteine": 6.5,
+    "carboidrati": 64,
+    "grassi": 22
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "8076809573252",
+   "nome": "Baiocchi",
+   "marca": "Mulino Bianco",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 510,
+    "proteine": 8,
+    "carboidrati": 59,
+    "grassi": 26
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "8076809544504",
+   "nome": "Molinetti",
+   "marca": "Mulino Bianco",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 466,
+    "proteine": 7.5,
+    "carboidrati": 63.2,
+    "grassi": 19
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "8017596105165",
+   "nome": "Frollini integrali",
+   "marca": "Eurospin",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 451,
+    "proteine": 7.6,
+    "carboidrati": 65,
+    "grassi": 16
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "8000500111581",
+   "nome": "Kinder Cioccolato",
+   "marca": "Ferrero",
+   "porzione_default_g": 12.5,
+   "valori_letti_08_11": {
+    "kcal": 566,
+    "proteine": 8.7,
+    "carboidrati": 53.5,
+    "grassi": 35
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "3046920028004",
+   "nome": "Excellence 70% fondente",
+   "marca": "Lindt",
+   "porzione_default_g": 20,
+   "valori_letti_08_11": {
+    "kcal": 566,
+    "proteine": 9.5,
+    "carboidrati": 34,
+    "grassi": 41
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "3046920028363",
+   "nome": "Excellence 85% fondente",
+   "marca": "Lindt",
+   "porzione_default_g": 20,
+   "valori_letti_08_11": {
+    "kcal": 584,
+    "proteine": 12.5,
+    "carboidrati": 22,
+    "grassi": 46
+   }
+  },
+  {
+   "categoria": "Dolci e snack",
+   "fonte": "off",
+   "barcode": "5053990156009",
+   "nome": "Pringles Original",
+   "marca": "Pringles",
+   "porzione_default_g": 30,
+   "valori_letti_08_11": {
+    "kcal": 534,
+    "proteine": 5.9,
+    "carboidrati": 56,
+    "grassi": 31
+   }
+  }
+ ]
+}

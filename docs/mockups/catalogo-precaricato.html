@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catalogo in Alimenti</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Mockup del catalogo precaricato (08/11/2026): Alimenti con le schede «I miei» e
+   «Catalogo», la scheda di un alimento del catalogo, il riquadro «Nel catalogo» in
+   Aggiungi, la scansione di un codice del catalogo. Colori dai token di globals.css
+   (accento verde), misure dei componenti di oggi. Telefoni in tema chiaro e scuro. */
+:root{
+  --pagina:#e4dfd5;--pagina-testo:#1f1b16;--pagina-tenue:#5d574b;--pagina-riquadro:#f3efe7;--pagina-linea:#cfc7b8;--pagina-acc:#3f7d4c;
+  --bg:#faf7f2;--fg:#1f1b16;--linea:#e7e0d2;--tenue:#78705f;--acc:#3f7d4c;--acc-pieno:#3f7d4c;--avviso:#b5533c;--sup:#ffffff;--su-pieno:#faf7f2;
+  --grigio:#efe9de;--grigio-bordo:#b9b09e;--grigio-testo:#8c8473;--ombra:rgba(0,0,0,.22);--velo:rgba(31,27,22,.38);
+  --acc-tenue:#e6efe5;--acc-bordo:#bfd5c1;
+  --scan:#14120f;--scan-testo:#ffffff;--scan-tenue:rgba(255,255,255,.7);--scan-tasto:rgba(255,255,255,.14);--scan-bordo:rgba(255,255,255,.35);--scan-mira:#7bb887;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;
+  --bg:#1b1815;--fg:#f2ede4;--linea:#3a342d;--tenue:#a39a8b;--acc:#7bb887;--acc-pieno:#3f7d4c;--avviso:#e8916f;--sup:#26221e;--su-pieno:#ffffff;
+  --grigio:#2b2723;--grigio-bordo:#5a5248;--grigio-testo:#8c8473;--ombra:rgba(0,0,0,.5);--velo:rgba(0,0,0,.55);
+  --acc-tenue:#1f2b21;--acc-bordo:#36503a;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;
+  --bg:#1b1815;--fg:#f2ede4;--linea:#3a342d;--tenue:#a39a8b;--acc:#7bb887;--acc-pieno:#3f7d4c;--avviso:#e8916f;--sup:#26221e;--su-pieno:#ffffff;
+  --grigio:#2b2723;--grigio-bordo:#5a5248;--grigio-testo:#8c8473;--ombra:rgba(0,0,0,.5);--velo:rgba(0,0,0,.55);
+  --acc-tenue:#1f2b21;--acc-bordo:#36503a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--pagina);color:var(--pagina-testo);font-family:'Hanken Grotesk',system-ui,sans-serif;margin:0;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.testa,.decisioni,.gruppo{max-width:2100px;margin-inline:auto}
+.testa{margin-bottom:24px}
+.testa h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:clamp(26px,4vw,34px);margin:0 0 8px;text-wrap:balance}
+.testa p{margin:0;color:var(--pagina-tenue);max-width:76ch;line-height:1.5}
+.decisioni{margin-bottom:36px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.dec{background:var(--pagina-riquadro);border:1px solid var(--pagina-linea);border-radius:14px;padding:14px 16px}
+.dec b{display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--pagina-acc);margin-bottom:6px}
+.dec p{margin:0;font-size:14px;line-height:1.45}
+.dec.aperta{border-style:dashed;border-color:var(--pagina-acc)}
+.gruppo{margin-bottom:48px}
+.gruppo>h2{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:22px;margin:0 0 4px}
+.gruppo>p{margin:0 0 18px;color:var(--pagina-tenue);max-width:82ch;line-height:1.5;font-size:14.5px}
+.colonne{display:flex;flex-wrap:wrap;gap:28px}
+.col{width:390px;max-width:100%;min-width:0}
+.col h3{font-size:16px;margin:0 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-size:11px;letter-spacing:.8px;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--pagina-acc);color:var(--pagina-acc)}
+.col .nota{font-size:13.5px;color:var(--pagina-tenue);margin:0 0 12px;line-height:1.45;min-height:76px}
+.tel{width:390px;max-width:100%;overflow:hidden;border-radius:40px;box-shadow:0 10px 36px var(--ombra)}
+.sch{width:390px;height:844px;background:var(--bg);color:var(--fg);display:flex;flex-direction:column;position:relative;overflow:hidden;font-size:16px}
+.ico{width:20px;height:20px;flex:none}
+/* pagina Alimenti */
+.cat{padding:52px 16px 0;display:flex;flex-direction:column;gap:14px;flex:1;min-height:0}
+.indietro{color:var(--acc);display:inline-flex;align-items:center;gap:4px;font-size:16px;margin-left:-4px}
+.h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;font-size:34px;line-height:1.1;margin:2px 4px 0}
+.schede{display:grid;grid-template-columns:1fr 1fr;background:var(--grigio);border-radius:999px;padding:4px;gap:4px}
+.schede span{height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:600;color:var(--tenue)}
+.schede span.on{background:var(--sup);color:var(--fg);box-shadow:0 1px 3px var(--ombra)}
+.schede small{font-weight:500;font-size:13px;color:var(--tenue);font-variant-numeric:tabular-nums}
+.cerca-riga{display:flex;gap:8px;align-items:center}
+.cerca{flex:1;min-width:0;height:44px;border:1px solid var(--linea);border-radius:999px;background:var(--bg);display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--tenue)}
+.cerca.piena{color:var(--fg)}
+.btn-scan{width:44px;height:44px;border-radius:999px;border:0;background:var(--acc-pieno);color:var(--su-pieno);display:flex;align-items:center;justify-content:center;flex:none;padding:0}
+.filtri{display:flex;gap:8px;overflow:hidden;margin:0 -16px;padding:0 16px;mask-image:linear-gradient(90deg,#000 85%,transparent)}
+.filtri span{flex:none;height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--linea);display:flex;align-items:center;font-size:14px;color:var(--fg);white-space:nowrap}
+.filtri span.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.riga-info{display:flex;justify-content:space-between;align-items:center;padding:0 4px;font-size:14px;color:var(--tenue);margin-top:-4px;gap:8px}
+.riga-info b{color:var(--fg);font-weight:600}
+.interr{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--fg)}
+.toggle{width:40px;height:24px;border-radius:999px;background:var(--grigio-bordo);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;width:20px;height:20px;border-radius:999px;background:var(--sup);top:2px;left:2px}
+.toggle.on{background:var(--acc-pieno)}.toggle.on::after{left:18px}
+.lista{list-style:none;margin:-6px 0 0;padding:0}
+.lista li{border-bottom:1px solid var(--linea);padding:11px 0;display:flex;align-items:center;gap:12px;min-height:64px}
+.lista .testo{flex:1;min-width:0}
+.lista .n{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lista .n i{font-style:normal;color:var(--tenue)}
+.lista .k{display:block;font-size:14px;color:var(--tenue);margin-top:2px;font-variant-numeric:tabular-nums}
+.lista .k em{font-style:normal;color:var(--acc);font-weight:500}
+.prendi{flex:none;height:36px;padding:0 12px 0 10px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:4px;position:relative}
+.prendi::before{content:"";position:absolute;inset:-4px}
+.preso{flex:none;height:36px;padding:0 4px;display:inline-flex;align-items:center;gap:5px;font-size:14px;color:var(--tenue)}
+.preso svg{color:var(--acc)}
+.lista li.fatto .n{color:var(--tenue)}
+.fonte{font-size:12px;color:var(--tenue);text-align:center;margin:4px 0 0;line-height:1.5}
+.piu-fisso{position:absolute;right:20px;bottom:40px;width:56px;height:56px;border-radius:999px;background:var(--acc-pieno);color:var(--su-pieno);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px var(--ombra)}
+.barra{position:absolute;left:16px;right:16px;bottom:40px;background:var(--fg);color:var(--bg);border-radius:14px;padding:10px 8px 10px 14px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 6px 18px var(--ombra)}
+.barra .az{display:flex;gap:2px;flex:none}
+.barra .az span{height:36px;display:flex;align-items:center;padding:0 10px;font-weight:600;color:var(--bg);border-radius:8px}
+.barra .az span.acc{color:color-mix(in srgb,var(--acc) 45%,var(--bg))}
+/* foglio dal basso */
+.velo{position:absolute;inset:0;background:var(--velo)}
+.foglio{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:22px 22px 0 0;padding:10px 20px 34px;display:flex;flex-direction:column;gap:14px;box-shadow:0 -6px 24px var(--ombra)}
+.maniglia{width:40px;height:5px;border-radius:9px;background:var(--grigio-bordo);align-self:center}
+.f-testa{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.f-testa h4{margin:0;font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:22px;line-height:1.15}
+.f-testa p{margin:4px 0 0;color:var(--tenue);font-size:14px}
+.chiudi{width:36px;height:36px;border-radius:999px;background:var(--grigio);display:flex;align-items:center;justify-content:center;flex:none;color:var(--tenue)}
+.macro{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.macro div{background:var(--sup);border:1px solid var(--linea);border-radius:12px;padding:10px 8px;text-align:center}
+.macro b{display:block;font-size:20px;font-variant-numeric:tabular-nums;font-weight:600}
+.macro span{font-size:12px;color:var(--tenue)}
+.dett{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-size:14px;margin:0}
+.dett dt{color:var(--tenue)}.dett dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
+.etich{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--tenue);font-weight:600;margin:0}
+.b-pieno{height:50px;border-radius:12px;background:var(--acc-pieno);color:var(--su-pieno);font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.b-linea{height:50px;border-radius:12px;border:1px solid var(--acc);color:var(--acc);font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.piccolo{font-size:13px;color:var(--tenue);margin:0;line-height:1.45;text-align:center}
+.avv{display:flex;gap:8px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--acc) 12%,transparent);font-size:14px;line-height:1.4}
+.avv svg{color:var(--acc);margin-top:1px}
+.avv.ar{background:color-mix(in srgb,var(--avviso) 12%,transparent)}
+.avv.ar svg{color:var(--avviso)}
+/* Aggiungi */
+.agg{padding:52px 16px 0;display:flex;flex-direction:column;gap:14px;flex:1;min-height:0}
+.agg-testa{display:flex;justify-content:space-between;align-items:center}
+.agg-testa h4{margin:0;font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:24px}
+.agg-testa span{font-size:15px;color:var(--acc);font-weight:600}
+.pasto{font-size:14px;color:var(--tenue);margin:-10px 0 0}
+.cerca.alta{height:48px}
+.btn-scan.alto{width:48px;height:48px}
+.nessuno{text-align:center;padding:6px 8px 0;color:var(--tenue);font-size:15px;line-height:1.5}
+.nessuno b{color:var(--fg);display:block;font-size:16px;margin-bottom:2px}
+.riquadro{border:1px solid var(--acc-bordo);background:var(--acc-tenue);border-radius:18px;padding:14px 14px 6px}
+.riq-testa{display:flex;gap:10px;align-items:flex-start;margin-bottom:2px}
+.riq-testa .bollo{width:32px;height:32px;border-radius:10px;background:var(--acc-pieno);color:var(--su-pieno);display:flex;align-items:center;justify-content:center;flex:none}
+.riq-testa b{display:block;font-size:15px}
+.riq-testa span{font-size:13px;color:var(--tenue);line-height:1.4}
+.riquadro .lista{margin:6px 0 0}
+.riquadro .lista li{border-color:var(--acc-bordo);min-height:58px}
+.riquadro .lista li:last-child{border-bottom:0}
+.tondo-piu{width:40px;height:40px;border-radius:999px;background:var(--acc-pieno);color:var(--su-pieno);display:flex;align-items:center;justify-content:center;flex:none;position:relative}
+.tondo-piu::before{content:"";position:absolute;inset:-4px}
+.vedi{display:flex;align-items:center;justify-content:center;gap:4px;height:44px;color:var(--acc);font-weight:600;font-size:15px;border-top:1px solid var(--acc-bordo)}
+.crea{height:48px;border-radius:12px;border:1px dashed var(--grigio-bordo);display:flex;align-items:center;justify-content:center;gap:8px;color:var(--fg);font-size:15px;font-weight:500}
+.tastiera{margin-top:auto;height:250px;background:var(--grigio);border-top:1px solid var(--linea);display:grid;grid-template-columns:repeat(10,1fr);gap:6px;padding:10px 6px 30px;align-content:start}
+.tastiera i{height:40px;border-radius:6px;background:var(--sup);display:block}
+/* sheet quantità */
+.q-num{display:flex;align-items:baseline;justify-content:center;gap:6px;padding:8px 0}
+.q-num b{font-size:44px;font-variant-numeric:tabular-nums;border-bottom:2px solid var(--acc);padding:0 10px;line-height:1.15}
+.q-num span{color:var(--tenue);font-size:18px}
+.q-tot{display:flex;justify-content:center;gap:16px;font-size:14px;color:var(--tenue);font-variant-numeric:tabular-nums}
+.q-tot b{color:var(--fg)}
+.toast-alto{position:absolute;top:56px;left:16px;right:16px;background:var(--fg);color:var(--bg);border-radius:14px;padding:12px 14px;font-size:14px;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px var(--ombra)}
+.toast-alto svg{color:color-mix(in srgb,var(--acc) 45%,var(--bg))}
+/* scansione */
+.scan{background:var(--scan);color:var(--scan-testo)}
+.scan-testa{display:flex;align-items:center;justify-content:space-between;padding:48px 12px 0;gap:8px}
+.scan-testa span{font-size:15px;font-weight:600;text-align:center}
+.tondo{width:44px;height:44px;border-radius:999px;background:var(--scan-tasto);display:flex;align-items:center;justify-content:center;flex:none}
+.scan-centro{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:0 20px}
+.pannello{width:100%;background:rgba(255,255,255,.08);border:1px solid var(--scan-bordo);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.pannello p{margin:0;font-size:15px;line-height:1.45}
+.pannello .nome{font-size:19px;font-weight:600;margin:0}
+.pannello .k{font-size:14px;color:var(--scan-tenue);margin:-10px 0 0;font-variant-numeric:tabular-nums}
+.pannello .etichetta{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--scan-mira);font-weight:600;margin:0}
+.az-chiaro{height:52px;border-radius:999px;background:var(--scan-testo);color:var(--scan);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.az-scuro{height:52px;border-radius:999px;border:1px solid var(--scan-bordo);color:var(--scan-testo);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M13.5 8v8M17 8v8"/></symbol>
+    <symbol id="i-lente" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g></symbol>
+    <symbol id="i-sx" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-dx" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-giu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-piu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></g></symbol>
+    <symbol id="i-libro" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M8 7h8M8 11h6"/></symbol>
+    <symbol id="i-torcia" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 6c0 2-2 2-2 4v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V10c0-2-2-2-2-4V2h12zM6 6h12M12 12v1"/></symbol>
+  </defs>
+</svg>
+
+<header class="testa">
+  <h1>Catalogo in Alimenti</h1>
+  <p>Mockup del <b>catalogo precaricato</b> (08/11/2026, audit #5). Il catalogo è un elenco di alimenti pronti: da lì li <b>aggiungi ai tuoi</b> con un tocco, e da quel momento sono tuoi e li puoi modificare. La ricerca di Aggiungi resta sui tuoi alimenti. Mostra la disposizione: colori e misure sono quelli dei componenti di oggi, i telefoni seguono il tema chiaro o scuro. Nomi e valori vengono dalla proposta di catalogo dell'08/11.</p>
+</header>
+
+<div class="decisioni">
+  <div class="dec"><b>Due schede</b><p>In Impostazioni &gt; Alimenti: «I miei» (la pagina di oggi) e «Catalogo». Nessuna voce nuova in Impostazioni.</p></div>
+  <div class="dec"><b>La copia è tua</b><p>«Aggiungi ai miei» crea un alimento tuo, privato e modificabile. Il catalogo non si tocca e non entra mai nel diario.</p></div>
+  <div class="dec"><b>Già nei tuoi: dall'id</b><p>La copia nasce con un id calcolato da te + l'alimento del catalogo, come i pasti di base. Cambiare nome o marca non conta: resta «Nei tuoi». Da verificare nel piano.</p></div>
+  <div class="dec"><b>Mai due uguali</b><p>Se hai già un alimento con lo stesso codice a barre, o nome e marca, il catalogo lo dice e al posto di «Aggiungi» c'è «Apri».</p></div>
+  <div class="dec"><b>Anche senza rete</b><p>Il catalogo è un file dentro l'app, non su Supabase: si sfoglia e si aggiunge offline. Le copie salgono con la sync di oggi.</p></div>
+  <div class="dec"><b>Scelte dell'08/11</b><p>«dal catalogo» sotto le copie, nella scheda «I miei»: sì. La scansione trova anche i codici del catalogo: sì.</p></div>
+  <div class="dec aperta"><b>Da decidere nel piano</b><p>Una copia cancellata e poi aggiunta di nuovo: per Davide nasce una riga nuova. Claude Code confronta con «torna in vita la stessa riga» e propone.</p></div>
+</div>
+
+<!-- ============ 1. ALIMENTI ============ -->
+<section class="gruppo">
+  <h2>1 · Alimenti, due schede</h2>
+  <p>Sotto il titolo il selettore «I miei · Catalogo», con il numero di ciascuno. La scheda «I miei» è la pagina di oggi. Nel catalogo ogni riga ha a destra il suo stato: «Aggiungi», oppure «Nei tuoi» con la spunta. I filtri per categoria scorrono in orizzontale.</p>
+  <div class="colonne">
+
+    <div class="col"><h3>«I miei»</h3><p class="nota">La pagina di oggi, con il selettore sopra la ricerca. Le copie prese dal catalogo hanno sotto «dal catalogo» in verde, per riconoscerle (scelta di Davide, 08/11).</p>
+      <div class="tel"><div class="sch">
+        <div class="cat">
+          <span class="indietro"><svg class="ico"><use href="#i-sx"/></svg>Impostazioni</span>
+          <div class="h1">Alimenti</div>
+          <div class="schede" role="tablist"><span class="on" role="tab" aria-selected="true">I miei <small>55</small></span><span role="tab" aria-selected="false">Catalogo <small>183</small></span></div>
+          <div class="cerca-riga">
+            <div class="cerca"><svg class="ico"><use href="#i-lente"/></svg>Cerca nei tuoi alimenti</div>
+            <button class="btn-scan" aria-label="Scansiona il codice a barre"><svg class="ico" style="width:22px;height:22px"><use href="#i-scan"/></svg></button>
+          </div>
+          <div class="riga-info"><span>55 alimenti</span><b>Più usati <svg class="ico" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-giu"/></svg></b></div>
+          <ul class="lista">
+            <li><div class="testo"><span class="n">Fiocchi di avena <i>· Germinal</i></span><span class="k">375 kcal / 100 g</span></div></li>
+            <li><div class="testo"><span class="n">Yogurt greco bianco magro 0% <i>· Kionas</i></span><span class="k">58 kcal / 100 g</span></div></li>
+            <li><div class="testo"><span class="n">Crackers integrali <i>· Doriano</i></span><span class="k">452 kcal / 100 g</span></div></li>
+            <li><div class="testo"><span class="n">Riso basmati <i>· Riso Gallo</i></span><span class="k">352 kcal / 100 g</span></div></li>
+            <li><div class="testo"><span class="n">Mandorle tostate</span><span class="k">615 kcal / 100 g · <em>dal catalogo</em></span></div></li>
+            <li><div class="testo"><span class="n">Pollo</span><span class="k">100 kcal / 100 g</span></div></li>
+            <li><div class="testo"><span class="n">Fiocchi di latte <i>· Milbona</i></span><span class="k">100 kcal / 100 g · <em>dal catalogo</em></span></div></li>
+          </ul>
+        </div>
+        <span class="piu-fisso" aria-label="Nuovo alimento"><svg class="ico" style="width:26px;height:26px"><use href="#i-piu"/></svg></span>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>«Catalogo»</h3><p class="nota">Ricerca nel catalogo, filtri per categoria, e l'interruttore «Nascondi quelli che hai». «Aggiungi» è un pulsante vero, alto 36 px con l'area di tocco allargata a 44. Il resto della riga apre la scheda dell'alimento. Niente «+» in basso: qui non si crea.</p>
+      <div class="tel"><div class="sch">
+        <div class="cat">
+          <span class="indietro"><svg class="ico"><use href="#i-sx"/></svg>Impostazioni</span>
+          <div class="h1">Alimenti</div>
+          <div class="schede" role="tablist"><span role="tab" aria-selected="false">I miei <small>55</small></span><span class="on" role="tab" aria-selected="true">Catalogo <small>183</small></span></div>
+          <div class="cerca-riga"><div class="cerca"><svg class="ico"><use href="#i-lente"/></svg>Cerca nel catalogo</div></div>
+          <div class="filtri"><span class="on">Tutti</span><span>Frutta secca</span><span>Latticini</span><span>Pasta e cereali</span><span>Verdura</span></div>
+          <div class="riga-info"><span>183 · 2 già nei tuoi</span><span class="interr">Nascondi quelli che hai<span class="toggle" role="switch" aria-checked="false"></span></span></div>
+          <ul class="lista">
+            <li><div class="testo"><span class="n">Anacardi <i>· Alesto</i></span><span class="k">600 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li><div class="testo"><span class="n">Pistacchi <i>· Alesto</i></span><span class="k">605 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li class="fatto"><div class="testo"><span class="n">Mandorle</span><span class="k">615 kcal / 100 g · 30 g</span></div><span class="preso"><svg class="ico" style="width:18px;height:18px"><use href="#i-ok"/></svg>Nei tuoi</span></li>
+            <li><div class="testo"><span class="n">Mix di frutta secca <i>· Alesto</i></span><span class="k">504 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li><div class="testo"><span class="n">Nocciole</span><span class="k">632 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li class="fatto"><div class="testo"><span class="n">Noci <i>· Alesto</i></span><span class="k">712 kcal / 100 g · 30 g</span></div><span class="preso"><svg class="ico" style="width:18px;height:18px"><use href="#i-ok"/></svg>Nei tuoi</span></li>
+          </ul>
+          <p class="fonte">Valori da Open Food Facts (ODbL) e Ciqual 2025 (Anses, Licence Ouverte)</p>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>«Nascondi quelli che hai» acceso</h3><p class="nota">Restano solo gli alimenti che puoi ancora aggiungere. Il conteggio lo dice. L'interruttore si ricorda la scelta solo in questo telefono.</p>
+      <div class="tel"><div class="sch">
+        <div class="cat">
+          <span class="indietro"><svg class="ico"><use href="#i-sx"/></svg>Impostazioni</span>
+          <div class="h1">Alimenti</div>
+          <div class="schede" role="tablist"><span role="tab" aria-selected="false">I miei <small>55</small></span><span class="on" role="tab" aria-selected="true">Catalogo <small>183</small></span></div>
+          <div class="cerca-riga"><div class="cerca"><svg class="ico"><use href="#i-lente"/></svg>Cerca nel catalogo</div></div>
+          <div class="filtri"><span>Tutti</span><span class="on">Frutta secca</span><span>Latticini</span><span>Pasta e cereali</span><span>Verdura</span></div>
+          <div class="riga-info"><span>5 da aggiungere</span><span class="interr">Nascondi quelli che hai<span class="toggle on" role="switch" aria-checked="true"></span></span></div>
+          <ul class="lista">
+            <li><div class="testo"><span class="n">Anacardi <i>· Alesto</i></span><span class="k">600 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li><div class="testo"><span class="n">Pistacchi <i>· Alesto</i></span><span class="k">605 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li><div class="testo"><span class="n">Crema 100% arachidi <i>· Conad</i></span><span class="k">601 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li><div class="testo"><span class="n">Mix di frutta secca <i>· Alesto</i></span><span class="k">504 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li><div class="testo"><span class="n">Nocciole</span><span class="k">632 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+          </ul>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>Dopo «Aggiungi»</h3><p class="nota">La riga passa subito a «Nei tuoi», senza spostarsi. In basso la barra di sempre: «Apri» porta alla modifica della copia (per cambiare nome o porzione), «Annulla» la toglie.</p>
+      <div class="tel"><div class="sch">
+        <div class="cat">
+          <span class="indietro"><svg class="ico"><use href="#i-sx"/></svg>Impostazioni</span>
+          <div class="h1">Alimenti</div>
+          <div class="schede" role="tablist"><span role="tab" aria-selected="false">I miei <small>56</small></span><span class="on" role="tab" aria-selected="true">Catalogo <small>183</small></span></div>
+          <div class="cerca-riga"><div class="cerca"><svg class="ico"><use href="#i-lente"/></svg>Cerca nel catalogo</div></div>
+          <div class="filtri"><span>Tutti</span><span class="on">Frutta secca</span><span>Latticini</span><span>Pasta e cereali</span><span>Verdura</span></div>
+          <div class="riga-info"><span>7 · 3 già nei tuoi</span><span class="interr">Nascondi quelli che hai<span class="toggle" role="switch" aria-checked="false"></span></span></div>
+          <ul class="lista">
+            <li class="fatto"><div class="testo"><span class="n">Anacardi <i>· Alesto</i></span><span class="k">600 kcal / 100 g · 30 g</span></div><span class="preso"><svg class="ico" style="width:18px;height:18px"><use href="#i-ok"/></svg>Nei tuoi</span></li>
+            <li><div class="testo"><span class="n">Pistacchi <i>· Alesto</i></span><span class="k">605 kcal / 100 g · 30 g</span></div><span class="prendi"><svg class="ico" style="width:18px;height:18px"><use href="#i-piu"/></svg>Aggiungi</span></li>
+            <li class="fatto"><div class="testo"><span class="n">Mandorle</span><span class="k">615 kcal / 100 g · 30 g</span></div><span class="preso"><svg class="ico" style="width:18px;height:18px"><use href="#i-ok"/></svg>Nei tuoi</span></li>
+          </ul>
+        </div>
+        <div class="barra" role="status"><span>Aggiunto ai tuoi: Anacardi · Alesto</span><span class="az"><span class="acc">Apri</span><span>Annulla</span></span></div>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ 2. LA SCHEDA ============ -->
+<section class="gruppo">
+  <h2>2 · La scheda di un alimento del catalogo</h2>
+  <p>Si apre dal basso toccando una riga. Prima di prenderlo mostra i quattro valori per 100 g, la porzione proposta, il codice a barre e la fonte. È anche il posto dove si vede perché un alimento non si può aggiungere.</p>
+  <div class="colonne">
+
+    <div class="col"><h3>Da aggiungere</h3><p class="nota">Solo le quattro cifre che l'app usa: kcal, proteine, carboidrati e grassi. Zuccheri, fibre, saturi e sale non si mostrano (scelta di Davide, 08/11). Poi porzione e codice. Il pulsante dice cosa succede, e sotto una riga ricorda che dopo potrai cambiare tutto.</p>
+      <div class="tel"><div class="sch">
+        <div class="cat" style="filter:saturate(.9)">
+          <span class="indietro"><svg class="ico"><use href="#i-sx"/></svg>Impostazioni</span>
+          <div class="h1">Alimenti</div>
+          <div class="schede"><span>I miei <small>55</small></span><span class="on">Catalogo <small>183</small></span></div>
+        </div>
+        <div class="velo"></div>
+        <div class="foglio" role="dialog" aria-label="Fiocchi di latte · Milbona">
+          <span class="maniglia"></span>
+          <div class="f-testa"><div><h4>Fiocchi di latte</h4><p>Milbona · Uova e latticini</p></div><span class="chiudi" aria-label="Chiudi"><svg class="ico" style="width:18px;height:18px"><use href="#i-x"/></svg></span></div>
+          <p class="etich">Per 100 g</p>
+          <div class="macro"><div><b>100</b><span>kcal</span></div><div><b>12,5</b><span>proteine</span></div><div><b>3,5</b><span>carboidrati</span></div><div><b>4</b><span>grassi</span></div></div>
+          <dl class="dett"><dt>Porzione proposta</dt><dd>150 g</dd><dt>Codice a barre</dt><dd>4056489187813</dd></dl>
+          <div class="b-pieno"><svg class="ico"><use href="#i-piu"/></svg>Aggiungi ai miei alimenti</div>
+          <p class="piccolo">Diventa un alimento tuo: dopo puoi cambiare nome, marca e valori.<br>Fonte: Open Food Facts</p>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>Già nei tuoi</h3><p class="nota">Riconosciuto dall'id della copia, anche se l'hai rinominata («Mandorle tostate» qui). Il pulsante porta alla tua copia. I valori in grande sono quelli del catalogo: i tuoi possono essere diversi.</p>
+      <div class="tel"><div class="sch">
+        <div class="cat">
+          <span class="indietro"><svg class="ico"><use href="#i-sx"/></svg>Impostazioni</span>
+          <div class="h1">Alimenti</div>
+          <div class="schede"><span>I miei <small>55</small></span><span class="on">Catalogo <small>183</small></span></div>
+        </div>
+        <div class="velo"></div>
+        <div class="foglio" role="dialog" aria-label="Mandorle">
+          <span class="maniglia"></span>
+          <div class="f-testa"><div><h4>Mandorle</h4><p>Senza marca · Frutta secca e semi</p></div><span class="chiudi" aria-label="Chiudi"><svg class="ico" style="width:18px;height:18px"><use href="#i-x"/></svg></span></div>
+          <div class="avv" role="status"><svg class="ico"><use href="#i-ok"/></svg><span>È già nei tuoi alimenti come <b>«Mandorle tostate»</b>.</span></div>
+          <p class="etich">Per 100 g, nel catalogo</p>
+          <div class="macro"><div><b>615</b><span>kcal</span></div><div><b>18,8</b><span>proteine</span></div><div><b>9,5</b><span>carboidrati</span></div><div><b>51,3</b><span>grassi</span></div></div>
+          <dl class="dett"><dt>Porzione proposta</dt><dd>30 g</dd><dt>Codice a barre</dt><dd>nessuno (sfuso)</dd></dl>
+          <div class="b-linea">Apri «Mandorle tostate»<svg class="ico"><use href="#i-dx"/></svg></div>
+          <p class="piccolo">Fonte: Ciqual 2025 (Anses)</p>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>Lo stesso prodotto, creato a mano</h3><p class="nota">Caso vero dell'account di prova: «Gocciole chocolate · Pavesi» creato con il codice 8013355999143, che è anche nel catalogo. Stesso codice = stesso prodotto: niente «Aggiungi», c'è «Apri». Nella lista la riga dice «Nei tuoi».</p>
+      <div class="tel"><div class="sch">
+        <div class="cat">
+          <span class="indietro"><svg class="ico"><use href="#i-sx"/></svg>Impostazioni</span>
+          <div class="h1">Alimenti</div>
+          <div class="schede"><span>I miei <small>43</small></span><span class="on">Catalogo <small>183</small></span></div>
+        </div>
+        <div class="velo"></div>
+        <div class="foglio" role="dialog" aria-label="Gocciole chocolate · Pavesi">
+          <span class="maniglia"></span>
+          <div class="f-testa"><div><h4>Gocciole chocolate</h4><p>Pavesi · Dolci e snack</p></div><span class="chiudi" aria-label="Chiudi"><svg class="ico" style="width:18px;height:18px"><use href="#i-x"/></svg></span></div>
+          <div class="avv" role="status"><svg class="ico"><use href="#i-info"/></svg><span>Hai già un alimento con questo codice a barre: <b>«Gocciole chocolate · Pavesi»</b>.</span></div>
+          <p class="etich">Per 100 g, nel catalogo</p>
+          <div class="macro"><div><b>488</b><span>kcal</span></div><div><b>6,5</b><span>proteine</span></div><div><b>64</b><span>carboidrati</span></div><div><b>22</b><span>grassi</span></div></div>
+          <dl class="dett"><dt>Porzione proposta</dt><dd>30 g</dd><dt>Codice a barre</dt><dd>8013355999143</dd></dl>
+          <div class="b-linea">Apri «Gocciole chocolate»<svg class="ico"><use href="#i-dx"/></svg></div>
+          <p class="piccolo">Fonte: Open Food Facts</p>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ 3. AGGIUNGI ============ -->
+<section class="gruppo">
+  <h2>3 · In Aggiungi, quando non trovi niente</h2>
+  <p>La ricerca resta sui tuoi alimenti. Solo quando non trova niente, sotto «Nessun alimento tuo» compare il riquadro verde «Nel catalogo»: si vede che è un'altra cosa, non uno dei tuoi. Mostra al massimo 3 risultati, tolti quelli che hai già. Il «+» tondo aggiunge l'alimento ai tuoi e apre subito i grammi.</p>
+  <div class="colonne">
+
+    <div class="col"><h3>Nessun alimento tuo, ma c'è nel catalogo</h3><p class="nota">Il riquadro ha il colore del catalogo, la sua icona e una frase che spiega cosa fa il «+». In fondo «Vedi tutto il catalogo» porta alla scheda con la ricerca già scritta. Sotto resta «Crea «mandorle»», come oggi.</p>
+      <div class="tel"><div class="sch">
+        <div class="agg">
+          <div class="agg-testa"><h4>Aggiungi</h4><span>Fine</span></div>
+          <p class="pasto">Spuntino pomeriggio · oggi</p>
+          <div class="cerca-riga">
+            <div class="cerca alta piena"><svg class="ico"><use href="#i-lente"/></svg>mandorle</div>
+            <button class="btn-scan alto" aria-label="Scansiona il codice a barre"><svg class="ico" style="width:22px;height:22px"><use href="#i-scan"/></svg></button>
+          </div>
+          <p class="nessuno"><b>Nessun alimento tuo con «mandorle»</b></p>
+          <div class="riquadro" role="region" aria-label="Nel catalogo">
+            <div class="riq-testa"><span class="bollo"><svg class="ico" style="width:18px;height:18px"><use href="#i-libro"/></svg></span><div><b>Nel catalogo</b><span>Con il + lo aggiungi ai tuoi alimenti e scegli i grammi.</span></div></div>
+            <ul class="lista">
+              <li><div class="testo"><span class="n">Mandorle</span><span class="k">615 kcal / 100 g</span></div><span class="tondo-piu" aria-label="Aggiungi Mandorle ai tuoi e scegli i grammi"><svg class="ico"><use href="#i-piu"/></svg></span></li>
+            </ul>
+            <div class="vedi">Vedi tutto il catalogo<svg class="ico" style="width:18px;height:18px"><use href="#i-dx"/></svg></div>
+          </div>
+          <div class="crea"><svg class="ico"><use href="#i-piu"/></svg>Crea «mandorle»</div>
+          <div class="tastiera" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>Dopo il «+»: i grammi</h3><p class="nota">Lo sheet quantità di oggi, con la porzione del catalogo già scritta e selezionata. In alto la conferma «Aggiunto ai tuoi alimenti». Se chiudi senza registrare, l'alimento resta comunque nei tuoi.</p>
+      <div class="tel"><div class="sch">
+        <div class="agg">
+          <div class="agg-testa"><h4>Aggiungi</h4><span>Fine</span></div>
+          <p class="pasto">Spuntino pomeriggio · oggi</p>
+          <div class="cerca-riga">
+            <div class="cerca alta piena"><svg class="ico"><use href="#i-lente"/></svg>mandorle</div>
+            <button class="btn-scan alto" aria-label="Scansiona il codice a barre"><svg class="ico" style="width:22px;height:22px"><use href="#i-scan"/></svg></button>
+          </div>
+        </div>
+        <div class="velo"></div>
+        <div class="toast-alto" role="status"><svg class="ico"><use href="#i-ok"/></svg>Aggiunto ai tuoi alimenti: Mandorle</div>
+        <div class="foglio">
+          <span class="maniglia"></span>
+          <div class="f-testa"><div><h4>Mandorle</h4><p>615 kcal / 100 g</p></div><span class="chiudi" aria-label="Chiudi"><svg class="ico" style="width:18px;height:18px"><use href="#i-x"/></svg></span></div>
+          <div class="q-num"><b>30</b><span>g</span></div>
+          <div class="q-tot"><span><b>185</b> kcal</span><span>P <b>5,6</b></span><span>C <b>2,9</b></span><span>G <b>15,4</b></span></div>
+          <div class="b-pieno">Aggiungi a Spuntino pomeriggio</div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>Con almeno un risultato tuo</h3><p class="nota">Se trovi anche un solo alimento tuo, il riquadro non c'è: la ricerca è quella di oggi. Il catalogo resta a un tocco da Impostazioni &gt; Alimenti.</p>
+      <div class="tel"><div class="sch">
+        <div class="agg">
+          <div class="agg-testa"><h4>Aggiungi</h4><span>Fine</span></div>
+          <p class="pasto">Colazione · oggi</p>
+          <div class="cerca-riga">
+            <div class="cerca alta piena"><svg class="ico"><use href="#i-lente"/></svg>fiocchi</div>
+            <button class="btn-scan alto" aria-label="Scansiona il codice a barre"><svg class="ico" style="width:22px;height:22px"><use href="#i-scan"/></svg></button>
+          </div>
+          <ul class="lista" style="margin-top:0">
+            <li><div class="testo"><span class="n">Fiocchi di avena <i>· Germinal</i></span><span class="k">375 kcal / 100 g · 60 g</span></div><span class="tondo-piu" aria-label="Aggiungi 60 g"><svg class="ico"><use href="#i-piu"/></svg></span></li>
+            <li><div class="testo"><span class="n">Fiocchi di latte high protein <i>· Bayernland</i></span><span class="k">63 kcal / 100 g · 150 g</span></div><span class="tondo-piu" aria-label="Aggiungi 150 g"><svg class="ico"><use href="#i-piu"/></svg></span></li>
+            <li><div class="testo"><span class="n">Fiocchi di latte <i>· Bayernland</i></span><span class="k">83 kcal / 100 g · 150 g</span></div><span class="tondo-piu" aria-label="Aggiungi 150 g"><svg class="ico"><use href="#i-piu"/></svg></span></li>
+          </ul>
+          <div class="crea"><svg class="ico"><use href="#i-piu"/></svg>Crea «fiocchi»</div>
+          <div class="tastiera" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col"><h3>Scansione di un codice del catalogo</h3><p class="nota">Se il codice non è fra i tuoi ma è nel catalogo, lo si trova nel telefono, senza chiedere a Open Food Facts (scelta di Davide, 08/11). Stesso pannello della scansione di oggi, con la scritta «Nel catalogo». Il pulsante Scansiona resta spento senza rete, come oggi.</p>
+      <div class="tel"><div class="sch scan">
+        <div class="scan-testa"><span class="tondo" aria-label="Chiudi"><svg class="ico"><use href="#i-x"/></svg></span><span>Aggiungi a Colazione</span><span class="tondo" aria-label="Torcia"><svg class="ico"><use href="#i-torcia"/></svg></span></div>
+        <div class="scan-centro">
+          <div class="pannello" role="status">
+            <p class="etichetta">Nel catalogo</p>
+            <p class="nome">Yogurt greco Total 0% · Fage</p>
+            <p class="k">54 kcal / 100 g · porzione 170 g</p>
+            <p>Non è ancora fra i tuoi alimenti. Lo aggiungi e scegli i grammi?</p>
+            <span class="az-chiaro"><svg class="ico"><use href="#i-piu"/></svg>Aggiungi ai miei e scegli i grammi</span>
+            <span class="az-scuro">Scansiona un altro codice</span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+</body>
+</html>

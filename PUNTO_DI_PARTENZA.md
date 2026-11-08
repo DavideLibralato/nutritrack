@@ -6639,8 +6639,11 @@ Per non pagare l'attrito su ogni pasto:
 
 Nessun import massivo. La ricerca funziona a **tre livelli**, non due:
 
-1. **catalogo locale** (IndexedDB): il set precaricato, i recenti, i preferiti e
-   gli alimenti già usati — risponde istantaneamente e anche offline
+1. **catalogo locale** (IndexedDB): i recenti, i preferiti e gli alimenti
+   già usati — risponde istantaneamente e anche offline. Il catalogo
+   precaricato (sezione 10.1, dall'08/11) **non** è qui e non è su
+   Supabase: è un file dentro l'app, solo da leggere, e la ricerca di
+   Aggiungi lo mostra solo quando fra i miei alimenti non trova niente
 2. **catalogo condiviso su Supabase**, se la ricerca locale non basta e c'è rete.
    **Questo livello mancava nella versione precedente del documento**, e senza di
    esso il catalogo condiviso non serve a niente: l'etichetta scansionata da un
@@ -6655,7 +6658,9 @@ trova già, anche offline. Va ripreso se il catalogo condiviso diventa troppo
 grande per stare intero su ogni dispositivo — per esempio quando gli
 alimenti copiati da Open Food Facts cominceranno ad accumularsi: a quel
 punto la discesa del catalogo andrà limitata e la ricerca su Supabase
-tornerà necessaria.
+tornerà necessaria. All'08/11 il catalogo condiviso è vuoto (0 righe con
+`user_id` null), e il catalogo precaricato non lo riempie: resta nel
+file dell'app (sezione 10.1).
 
 Quando scegli un alimento da OFF, viene **copiato nella tabella `alimenti`** con
 `fonte = 'off'`, il barcode e `verificato = false`. Il catalogo cresce da solo
@@ -7138,16 +7143,88 @@ la prima settimana non ha recenti, non ha preferiti e non ha catalogo: ogni
 alimento va scritto a mano con i suoi valori. L'attrito è **massimo** proprio nel
 momento in cui l'utente decide se l'app gli piace.
 
-Rimedio, gratuito e da fare prima del lancio: **precaricare il catalogo con
-150-200 alimenti comuni italiani** — pasta, riso, pane, uova, latte, petto di
-pollo, tonno in scatola, olio, i formaggi e gli affettati più diffusi. Un file
-CSV importato una volta, marcati `verificato`. Copre gran parte di quello che si
-mangia davvero, e l'utente nuovo trova qualcosa fin dalla prima ricerca.
+Rimedio, gratuito e da fare prima del lancio: **un catalogo di 183
+alimenti comuni** — pasta, riso, pane, uova, latte, petto di pollo, tonno
+in scatola, olio, i formaggi e gli affettati più diffusi, frutta e
+verdura. Copre gran parte di quello che si mangia davvero, e l'utente
+nuovo trova qualcosa fin dal primo giorno.
 
-**Va precaricato anche in locale**, non solo su Supabase: al primo avvio
-IndexedDB è vuoto, e un utente senza rete il primo giorno si troverebbe di nuovo
-davanti al nulla. Il file viaggia dentro l'app e popola IndexedDB alla prima
-apertura.
+**Il modello (deciso da Davide l'08/11, branch `catalogo`, audit #5;
+mockup `docs/mockups/catalogo-precaricato.html`).** Fino all'08/11 qui
+c'era un'altra idea: righe su Supabase con `user_id` null e `verificato`,
+copiate anche in IndexedDB alla prima apertura. **Superata**: il catalogo
+non va su Supabase.
+
+- **La lista**: `docs/catalogo/lista-approvata-2026-11-08.json`, 183
+  alimenti, 106 sfusi da Ciqual 2025 (Anses) e 77 di marca da Open Food
+  Facts. Nome, marca, porzione e categoria li ha decisi Davide; i valori
+  dentro (`valori_letti_08_11`) sono quelli letti da Cowork l'08/11 per
+  la revisione. Lo script che genera il file dell'app rilegge i valori
+  dalle fonti e segnala le differenze, senza correggerle da solo.
+- **Un file dentro l'app, solo da leggere.** Niente righe con `user_id`
+  null, niente `verificato = true`. Funziona offline dal primo giorno,
+  Esci ed Elimina account non lo toccano, e si aggiorna con una versione
+  nuova dell'app. Il file porta la sua versione; quando cambia, le copie
+  già prese non cambiano.
+- **Impostazioni > Alimenti ha due schede**: «I miei» (la pagina di
+  oggi) e «Catalogo». Nel catalogo: ricerca su nome **e marca** (in
+  Aggiungi la ricerca resta sul solo nome), filtri per categoria,
+  l'interruttore «Nascondi quelli che hai» e, per ogni riga, «Aggiungi»
+  oppure «Nei tuoi». Un tocco sulla riga apre dal basso una scheda con
+  solo kcal, P, C, G, la porzione, il codice a barre e la fonte. Dopo
+  «Aggiungi» la barra mostra «Apri» e «Annulla».
+- **«Aggiungi» crea un alimento mio**, privato e modificabile, che sale
+  con la sync di oggi. Zuccheri, fibre, saturi e sale si salvano nella
+  copia ma non si mostrano. Nella scheda «I miei» le copie hanno sotto
+  «dal catalogo».
+- **Una riga nuova a ogni aggiunta**, con la colonna nuova
+  `catalogo_id` (`text`, null ammesso; migration additiva) che dice da
+  quale alimento del catalogo viene. Scartato l'id deterministico
+  (UUID v5 da utente e alimento del catalogo): una copia cancellata e poi
+  riaggiunta tornerebbe in vita con `deleted_at = null`, e la discesa,
+  dove la cancellazione arrivata dal server vince sempre (sezione 9.2),
+  potrebbe farla sparire di nuovo. È lo stesso motivo di "Annulla solo
+  in avanti" (sezione 3). Due telefoni offline possono creare due copie:
+  caso raro, accettato come per "Mai due alimenti uguali".
+- **Gli id del catalogo**: `ciqual:<codice Ciqual>` per gli sfusi,
+  `off:<codice a barre>` per quelli di marca.
+- **`fonte` della copia**: `'off'` per i prodotti di marca, `'manuale'`
+  per gli sfusi. Nessun vincolo toccato: un valore nuovo vorrebbe dire
+  cambiare i check di `alimenti` e `alimenti_condivisi` e la funzione
+  `manda_alimenti`, altrimenti la condivisione di una copia verrebbe
+  rifiutata. L'origine vera la dice `catalogo_id`; `fonte` oggi non si
+  mostra e non decide niente.
+- **«Nei tuoi»**: c'è fra i miei alimenti vivi una copia con quel
+  `catalogo_id`, anche rinominata, **oppure** un doppione per codice a
+  barre o per nome e marca (sezione 3, "Mai due alimenti uguali"). Al
+  posto di «Aggiungi» c'è «Apri». Caso vero sull'account di prova:
+  «Gocciole chocolate · Pavesi» con il codice 8013355999143, che è anche
+  nel catalogo.
+- **In Aggiungi** la ricerca resta solo sui miei alimenti. Solo quando
+  non trova niente compare il riquadro «Nel catalogo» (al massimo 3
+  risultati, tolti quelli che ho già); il «+» crea la copia e apre lo
+  sheet quantità con la porzione del catalogo; «Vedi tutto il catalogo»
+  apre la scheda con la ricerca già scritta.
+- **La scansione**: un codice che non è fra i miei ma è nel catalogo lo
+  trova il catalogo, senza chiamare Open Food Facts. In Aggiungi apre il
+  pannello «Nel catalogo»; in Impostazioni > Alimenti apre la sua scheda
+  nella scheda «Catalogo». È l'ultimo commit del branch, così si può
+  togliere.
+- **I valori nascosti in modifica** (Davide, 08/11): se cambiano i
+  carboidrati, zuccheri e fibre diventano null; se cambiano i grassi,
+  diventano null i saturi; il sale resta. Se cambiano solo kcal o
+  proteine non si tocca niente. Così una copia corretta non tiene
+  zuccheri più alti dei carboidrati che il modulo non può mostrare.
+- **Esporta**: le copie escono con `catalogo_id`, e `VERSIONE_FORMATO`
+  passa a 2.
+- **Licenze**: Ciqual (Licence Ouverte Etalab 2.0) con la citazione e la
+  nota delle modifiche; Open Food Facts (ODbL) con la riga che c'è già e,
+  perché il file è un database derivato usato in pubblico (ODbL §4.4 e
+  §4.6), i 77 prodotti di marca anche come file a parte in
+  `public/catalogo/`, fuori dal proxy, con la sua licenza e il link da
+  Informazioni. Nessuna immagine di Open Food Facts.
+
+Com'è fatto: si scrive qui a lavoro finito.
 
 ### 10.2 Se aggiungere costa un tap, annullare deve costarne uno
 
@@ -8598,7 +8675,19 @@ della prova 4 (alimento 201 alle 08:50:38, giorno 201 e voce 201 alle
 08:50:39, una modifica della voce 200 alle 08:51:00). L'unica richiesta
 di Esporta è la firma per leggere la foto (08:46:55, 200). In tutto 182
 GET, 34 HEAD, 47 OPTIONS, 4 rinnovi dell'accesso, nessun 401 né 403.
-Resta il merge.
+**Unito a main l'08/11** (fast-forward `3c82695` → `323fb4c`, 9
+commit; test, `tsc`, eslint e `npm run build` verdi su main prima del
+push; branch cancellato in locale e su GitHub; nessuna Redirect URL
+dell'anteprima da togliere: Esporta non manda email) e **provato
+nell'app installata** l'08/11 dalle 09:10 alle 09:13, con l'account di
+Davide, Build `323fb4c`: scarico completo alle 09:10:46 e lettura della
+foto alle 09:10:56, tutte 200; JSON salvato con «Salva su File» (il
+primo backup vero); nessun 401 né 403, nessuna scrittura di Esporta
+(266 voci vive invariate). Alle 09:13:06 una scrittura 201 su
+`alimenti`, dall'uso normale dell'app. Verificato da Cowork nei log e
+nelle tabelle. Restano aperte la protezione dalle formule nel CSV e il
+tipo accettato da `canShare` su iOS (sotto, "Difetti e verifiche
+aperti"; sezione 10.4).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -8609,11 +8698,11 @@ i numeri delle sue segnalazioni.
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
 - **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
-- Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
-  **"Esporta i miei dati"** (10.4; dal 07/11, branch `esporta`,
-  decisioni in 10.4, "Esporta i miei dati"): costruito e provato
-  sull'anteprima l'08/11 (sopra, "Fatto"), resta il merge. Subito dopo,
-  **Importa** ("Ripristina in un account vuoto"), un lavoro a parte
+- Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1;
+  dall'08/11, branch `catalogo`, audit #5) e **Importa** ("Ripristina in
+  un account vuoto", 10.4), un lavoro a parte. ~~**"Esporta i miei
+  dati"**~~ (10.4) è fatto: unito a main e provato nell'app installata
+  l'08/11 (sopra, "Fatto")
   - copia manuale dei dati del 01/11, fatta prima dell'aggiornamento di
     Supabase: in `C:\Users\david\Progetti\backup-libra`, fuori dal repo
     (15 tabelle, 736 righe). Non va mai in git: contiene dati reali. È
@@ -8690,6 +8779,13 @@ i numeri delle sue segnalazioni.
   ricrearlo (le voci del diario hanno la loro copia dei valori e non
   cambiano; i pasti salvati che lo contengono lo perdono, come in ogni
   eliminazione). Da riprendere se capita davvero.
+
+- ~~**Esporta i miei dati**~~: provato sull'anteprima, unito a main e
+  provato nell'app installata l'08/11 (sopra, "Fatto"; CHANGELOG, voce
+  del merge). Branch cancellato in locale e su GitHub; nessuna Redirect
+  URL dell'anteprima da togliere. Restano aperte, qui sopra, la
+  protezione dalle formule nel CSV e (sezione 10.4) il tipo accettato
+  da `canShare` su iOS.
 
 - ~~**Codice a barre nel catalogo alimenti**~~: provato sull'anteprima,
   unito a main e provato nell'app installata il 07/11 (sopra, "Fatto";
@@ -9399,6 +9495,9 @@ branch.
 11. ~~**Codice a barre nel catalogo alimenti**~~ fatto: provato
     sull'anteprima e unito a main il 07/11, `3c82695`, provato nell'app
     installata alle 19:24 (sopra, "Fatto"; sezione 3, "Codice a barre")
-12. **"Esporta i miei dati"** (audit #4; dal 07/11, branch `esporta`;
-    sezione 10.4): provato sull'anteprima l'08/11, resta il merge; poi
-    **Importa** in un lavoro a parte
+12. ~~**"Esporta i miei dati"**~~ fatto (audit #4): provato
+    sull'anteprima e unito a main l'08/11, `323fb4c`, provato nell'app
+    installata alle 09:10 (sopra, "Fatto"; sezione 10.4). Poi
+    **Importa**, in un lavoro a parte
+13. **Catalogo precaricato** (audit #5; dall'08/11, branch `catalogo`;
+    sezione 10.1)

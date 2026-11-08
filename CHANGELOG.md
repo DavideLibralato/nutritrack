@@ -5,6 +5,42 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Catalogo precaricato: decisioni, mockup e lista
+
+Branch `catalogo`, commit 1 (solo documenti; audit #5). Il modello
+deciso da Davide l'08/11 in PUNTO §10.1, che sostituisce quello di
+prima: il catalogo è un file dentro l'app, solo da leggere, non righe
+su Supabase; «Aggiungi» crea un alimento mio, una riga nuova a ogni
+aggiunta con la colonna nuova `catalogo_id` (scartato l'id
+deterministico: una copia riaggiunta tornerebbe in vita e la discesa
+potrebbe cancellarla di nuovo); `fonte` `'off'` o `'manuale'`, nessun
+vincolo toccato. §9.4 aggiornata: il precaricato non è nel catalogo
+locale né in quello condiviso. Entrano il mockup
+`docs/mockups/catalogo-precaricato.html` e la lista approvata
+`docs/catalogo/lista-approvata-2026-11-08.json` (183 alimenti), tutti e
+due scritti da Cowork, md5 controllati prima del `git add`. Niente
+codice, niente migration.
+
+## 2026-11-08 — Esporta i miei dati unito a main
+
+Unito a main l'08/11 con fast-forward da `3c82695` a `323fb4c`, senza
+commit di merge, 9 commit: `38cc3ad` (decisioni), `1f150fc` (segno
+"discesa completa"), `17043e4` (formato e raccolta del JSON), `9133cf1`
+(la foto nel JSON), `9a67ace` (il CSV), `6c78a8f` (salvare il file e il
+promemoria), `7f72b00` (mockup), `5ae9942` (la pagina), `323fb4c`
+(provato, documenti). Branch cancellato in locale e su GitHub; nessuna
+Redirect URL dell'anteprima da togliere (Esporta non manda email).
+Test, `tsc`, eslint e `npm run build` verdi su main prima del push.
+**Provato nell'app installata** l'08/11 dalle 09:10 alle 09:13, account
+di Davide, Build `323fb4c`: scarico completo alle 09:10:46 e lettura
+della foto alle 09:10:56, tutte 200; JSON salvato con «Salva su File»
+(il primo backup vero); nessun 401 né 403, nessuna scrittura di Esporta
+(266 voci vive invariate); alle 09:13:06 una scrittura 201 su
+`alimenti` dall'uso normale. Verificato da Cowork nei log e nelle
+tabelle. Restano aperti la protezione dalle formule nel CSV, non
+provata dal vivo, e il tipo accettato da `canShare` su iOS. Questa voce
+è scritta nel commit 1 del branch `catalogo`.
+
 ## 2026-11-08 — Esporta i miei dati: provato sull'anteprima
 
 Branch `esporta`. L'08/11 dalle 08:44 alle 08:58 Davide ha provato
