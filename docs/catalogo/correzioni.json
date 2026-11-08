@@ -1,0 +1,17 @@
+{
+ "descrizione": "Correzioni ai valori letti dalle fonti, decise da Davide, applicate da scripts/catalogo/generaCatalogo.mjs con una riga di log. La lista approvata non si tocca.",
+ "correzioni": {
+  "off:8000430138719": {
+   "alimento": "Mozzarella · Galbani",
+   "valori": { "kcal_100g": 238 },
+   "motivo": "kcal dell'API incoerenti con i macro; valore coerente dell'08/11",
+   "deciso_il": "2026-11-08"
+  },
+  "off:8003294528757": {
+   "alimento": "Filetti di tonno al naturale · Asdomar",
+   "valori": { "kcal_100g": 99 },
+   "motivo": "kcal dell'API incoerenti con i macro; valore coerente dell'08/11",
+   "deciso_il": "2026-11-08"
+  }
+ }
+}

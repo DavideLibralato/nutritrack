@@ -5,6 +5,43 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Catalogo precaricato: lo script e il file generato
+
+Branch `catalogo`, commit 2. `scripts/catalogo/generaCatalogo.mjs`
+genera `src/lib/catalogo/catalogoPrecaricato.json` (183 alimenti, 70 KB,
+circa 9 KB compressi) dalla lista approvata: i 106 sfusi dai due XML di
+Ciqual 2025 (md5 controllati, UTF-8 con BOM), i 77 di marca da Open Food
+Facts, una lettura ogni 5 secondi (la documentazione dell'API dà 15
+letture di prodotto al minuto per indirizzo IP). Nome, marca, porzione e
+categoria dalla lista; id `ciqual:<codice>` e `off:<codice a barre>`.
+Regole: «traces» e «< X» → 0; kcal, P, C o G mancanti fermano lo
+script; i quattro valori nascosti mancanti → null; nel file kcal intere,
+P, C, G, zuccheri e saturi a un decimale (Davide: "Modifica alimento"
+mostra due decimali, e una copia avrebbe mostrato «386,36»; elenchi e
+sheet quantità arrotondano già); un valore nascosto più grande del suo
+totale → null, con il log: solo gli zuccheri dell'avocado (carboidrati
+«traces»). Confronto con `valori_letti_08_11`: i 106 di Ciqual uguali;
+68 valori diversi in 27 prodotti di Open Food Facts. **Tenuti i valori
+letti ora dall'API** (Davide): Cowork l'08/11 aveva confrontato con
+l'indice di search.openfoodfacts.org, che è in ritardo, e i valori letti
+ora tornano con le etichette che Davide ha a casa (Doriano 452 / 9,7 /
+17; Rio Mare 401 / 17 / 0 / 37). **Rio Mare** resta 403 / 17 / 0 / 37,
+nessuna correzione. **Coerenza delle kcal, solo Open Food Facts**
+(Davide, dopo il controllo di Cowork sul file): se |kcal − (4·P + 4·C +
+9·G + 2·fibre)| supera il più grande fra 15 kcal e il 12% delle kcal, lo
+script si ferma su quel prodotto, a meno che non abbia una correzione;
+Ciqual no (aceto, birra e vino: acidi e alcol). Lo superavano solo due
+prodotti, corretti in `docs/catalogo/correzioni.json` con il motivo
+«kcal dell'API incoerenti con i macro; valore coerente dell'08/11» e una
+riga nel rapporto: Mozzarella · Galbani 184 → 238 (P 17, C 2, G 18) e
+Filetti di tonno al naturale · Asdomar 118 → 99 (P 22, G 1,2). Lo script
+senza correzioni si ferma su tutti e due e non scrive il file (provato).
+Test permanente `catalogoPrecaricato.test.ts` (12 casi: uguale alla
+lista, id, validazione del modulo con i valori nascosti, decimali, la
+regola dell'avocado, coerenza delle kcal di Open Food Facts, correzioni
+nel file, codici validi, nessun doppione), ognuno rotto da una copia del
+file e ripristinato. Niente codice dell'app usa ancora il file.
+
 ## 2026-11-08 — Catalogo precaricato: decisioni, mockup e lista
 
 Branch `catalogo`, commit 1 (solo documenti; audit #5). Il modello
