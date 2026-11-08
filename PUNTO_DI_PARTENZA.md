@@ -7308,6 +7308,14 @@ L'app installata si riconosce da `display-mode: standalone` o da
 `navigator.standalone`. Un download avviato conta come salvato: il
 browser non dice se il file è arrivato.
 
+Viste dal vivo l'08/11 sull'anteprima (Build `5ae9942`; sezione 11,
+"Fatto"): su iPhone il foglio di iOS si apre sia in Safari sia
+dall'anteprima aggiunta alla Home, quindi il messaggio «apri in Safari»
+non è servito; «Salva su File» salva il JSON e il CSV. Sul PC, in Chrome,
+il CSV parte come download. **Non verificato**: quale tipo ha accettato
+`canShare` su iOS, il tipo vero (`application/json`, `text/csv`) o la
+riserva `text/plain`. Dalle prove non si vede.
+
 **Il promemoria.** «Ultima esportazione: oggi», «ieri», «N giorni fa»,
 oppure «Mai esportato»: una riga di solo testo sotto «Esporta i miei
 dati», niente pallino, niente avvisi. Lo aggiorna solo il JSON (il CSV
@@ -7557,7 +7565,9 @@ che scrivono dati (utente nuovo, cambio vero, ...), mentre l'app
 installata resta sull'account vero. Non va cancellato. Dall'11/10 i
 vincoli verso `auth.users` permettono di cancellarlo (sotto, "Fatto"):
 la prova è stata fatta in una transazione annullata, l'account è intatto
-e resta il primo caso di prova per "elimina account".
+e resta il primo caso di prova per "elimina account". Dalle prove di
+Esporta dell'08/11 ci restano l'alimento «Test formula» e la sua voce
+da 50 g dell'08/11: innocui.
 
 Dal 15/10 ci sono anche **due account usa e getta di Amici** (branch
 `amici`), per le prove con due utenti:
@@ -8557,6 +8567,39 @@ voce delle Gocciole: innocui. **Unito a main il 07/11** (fast-forward
 200, due scritture 200 sul codice del «Burro d'arachidi · Fiorentini»,
 nessun 401 né 403 (verificato da Cowork).
 
+**Esporta i miei dati** (dal 07/11, branch `esporta`; sezione 10.4,
+"Esporta i miei dati"; mockup `docs/mockups/esporta.html`). **Provato
+l'08/11** sull'anteprima da Davide, dalle 08:44 alle 08:58, Build
+`5ae9942`, account di prova (`bda4a549`), Safari su iPhone salvo dove
+indicato; log e tabelle controllati da Cowork. Tutte riuscite secondo
+Davide:
+1. Impostazioni: il gruppo «I tuoi dati» fra App e Informazioni, «Mai
+   esportato»;
+2. pagina Esporta: preparazione e riepilogo con i numeri del server;
+3. foglio di iOS chiuso senza scegliere: nessun messaggio, promemoria
+   invariato;
+4. alimento creato a mano «Test formula» (senza trattino davanti: la
+   prova dell'apostrofo non è stata fatta, sotto "Difetti e verifiche
+   aperti") e una voce da 50 g di oggi;
+5. CSV con «Salva su File»: «File salvato», promemoria ancora «Mai
+   esportato»;
+6. JSON con «Salva su File»: «File salvato», promemoria «oggi» in
+   Esporta e in Impostazioni;
+7. il CSV aperto in Numbers su iPhone e in Excel sul PC: colonne,
+   accenti e numeri corretti;
+8. offline: la pagina si apre, la foto «Inclusa» con la nota della
+   copia del telefono, il foglio di iOS si apre;
+9. anteprima aggiunta alla Home: il foglio di iOS si apre direttamente,
+   il messaggio «apri in Safari» non è servito;
+10. PC, Chrome, account di prova: il CSV parte come download.
+
+Sul server Esporta non ha scritto niente: le sole scritture sono quelle
+della prova 4 (alimento 201 alle 08:50:38, giorno 201 e voce 201 alle
+08:50:39, una modifica della voce 200 alle 08:51:00). L'unica richiesta
+di Esporta è la firma per leggere la foto (08:46:55, 200). In tutto 182
+GET, 34 HEAD, 47 OPTIONS, 4 rinnovi dell'accesso, nessun 401 né 403.
+Resta il merge.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
@@ -8568,8 +8611,8 @@ i numeri delle sue segnalazioni.
 - **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
   **"Esporta i miei dati"** (10.4; dal 07/11, branch `esporta`,
-  decisioni in 10.4, "Esporta i miei dati"; costruita l'08/11, da
-  provare su iPhone sull'anteprima). Subito dopo,
+  decisioni in 10.4, "Esporta i miei dati"): costruito e provato
+  sull'anteprima l'08/11 (sopra, "Fatto"), resta il merge. Subito dopo,
   **Importa** ("Ripristina in un account vuoto"), un lavoro a parte
   - copia manuale dei dati del 01/11, fatta prima dell'aggiornamento di
     Supabase: in `C:\Users\david\Progetti\backup-libra`, fuori dal repo
@@ -8581,6 +8624,12 @@ i numeri delle sue segnalazioni.
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Esporta, la protezione dalle formule nel CSV** (branch `esporta`,
+  sezione 10.4, "Il CSV"): coperta dai test, non provata dal vivo. Nella
+  prova dell'08/11 l'alimento «Test formula» non cominciava con un
+  carattere da formula, quindi l'apostrofo non è stato visto in Excel o
+  Numbers. Da provare con un nome come «=1+1» o «-light».
 
 - ~~**Codice a barre, app installata: sempre "permesso negato"**~~
   (branch `codice-a-barre`, trovato da Davide il 07/11 sull'anteprima,
@@ -9351,4 +9400,5 @@ branch.
     sull'anteprima e unito a main il 07/11, `3c82695`, provato nell'app
     installata alle 19:24 (sopra, "Fatto"; sezione 3, "Codice a barre")
 12. **"Esporta i miei dati"** (audit #4; dal 07/11, branch `esporta`;
-    sezione 10.4), poi **Importa** in un lavoro a parte
+    sezione 10.4): provato sull'anteprima l'08/11, resta il merge; poi
+    **Importa** in un lavoro a parte

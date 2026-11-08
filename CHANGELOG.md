@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Esporta i miei dati: provato sull'anteprima
+
+Branch `esporta`. L'08/11 dalle 08:44 alle 08:58 Davide ha provato
+l'anteprima, Build `5ae9942`, account di prova (`bda4a549`), Safari su
+iPhone salvo dove indicato; Cowork ha controllato log e tabelle. Tutte
+riuscite: gruppo «I tuoi dati» fra App e Informazioni con «Mai
+esportato»; preparazione e riepilogo con i numeri del server; foglio di
+iOS chiuso senza scegliere, nessun messaggio e promemoria invariato;
+alimento a mano «Test formula» e una voce da 50 g; CSV con «Salva su
+File», «File salvato» e promemoria ancora «Mai esportato»; JSON con
+«Salva su File», promemoria «oggi» in Esporta e in Impostazioni; CSV
+aperto in Numbers su iPhone e in Excel sul PC, colonne, accenti e numeri
+corretti; offline la pagina si apre, foto «Inclusa» con la nota della
+copia del telefono, il foglio si apre; dall'anteprima sulla Home il
+foglio di iOS si apre (il messaggio «apri in Safari» non è servito); sul
+PC in Chrome il CSV parte come download. Sul server Esporta non ha
+scritto niente: solo le scritture della prova 4 (alimento 201 alle
+08:50:38, giorno e voce 201 alle 08:50:39, modifica della voce 200 alle
+08:51:00); l'unica richiesta di Esporta è la firma per la foto
+(08:46:55, 200). 182 GET, 34 HEAD, 47 OPTIONS, 4 rinnovi dell'accesso,
+nessun 401 né 403. Non provati dal vivo: l'apostrofo davanti alle
+formule (il nome non cominciava con un carattere da formula; coperto dai
+test, aperto in PUNTO §11) e quale tipo ha accettato `canShare` su iOS
+(non si vede dalle prove, scritto in PUNTO §10.4). Nell'account di prova
+restano «Test formula» e la sua voce: innocui. In PUNTO §11 Esporta è
+provato, resta il merge.
+
 ## 2026-11-08 — La pagina Esporta i miei dati
 
 Branch `esporta`, commit 8. La pagina `/impostazioni/esporta` e il
