@@ -278,6 +278,34 @@ export class NutriTrackDatabase extends Dexie {
       sync_cursori: "id, tabella, user_id",
       foto_locale: "user_id",
     });
+
+    // version(10): campo nuovo su alimenti, catalogo_id (l'id dell'alimento
+    // del catalogo precaricato da cui viene una copia, `ciqual:<codice>` o
+    // `off:<codice a barre>`; branch catalogo, PUNTO_DI_PARTENZA.md §10.1;
+    // migration alimenti_catalogo_id). Non indicizzato: «Nei tuoi» si
+    // calcola in memoria sul catalogo dell'utente, come i doppioni. Quindi
+    // .stores() è identico alla version(9): cambia la forma delle righe,
+    // non gli indici, come in version(3), (6), (7) e (8). Nessun .upgrade()
+    // (regola B.4): il campo è facoltativo, una riga salvata prima non ha
+    // la chiave e vale null (nessuna copia dal catalogo esisteva prima),
+    // e chi lo legge usa `?? null`. Verificato da aggiornamentoSchema.test.ts
+    // (regola B.7).
+    this.version(10).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+      sync_cursori: "id, tabella, user_id",
+      foto_locale: "user_id",
+    });
   }
 }
 

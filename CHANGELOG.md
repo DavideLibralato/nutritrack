@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Catalogo precaricato: la colonna catalogo_id (non applicata) e Dexie version(10)
+
+Branch `catalogo`, commit 3. Migration `alimenti_catalogo_id`, nel file
+`supabase/migrations/alimenti_catalogo_id.sql` con il nome provvisorio
+(PUNTO §8): aggiunge a `alimenti` la colonna `catalogo_id text`, null
+ammesso, senza default, senza CHECK né indice; RLS, policy e permessi
+invariati (i permessi sono a livello di tabella, letti l'08/11 in sola
+lettura). **Non applicata**: prove nel file temporaneo
+`prove_alimenti_catalogo_id.sql`, fuori da git (18 casi, blocco annullato
+RESOCONTO, da eseguire nel SQL Editor). Si applica con l'«ok migration»
+prima del push del commit che scrive la colonna. Dexie `version(10)`:
+stessi `.stores()` della 9, nessun `.upgrade()` (regola B.4: campo
+facoltativo, letto con `?? null`). `aggiornamentoSchema.test.ts` con lo
+schema fisso della 9, partenza anche dalla 9, il campo nuovo assente
+sulle righe vecchie e scrivibile, due schede 9 → 10; rotto da una copia
+di `database.ts` in tre modi (senza la 10, con un `.upgrade()` che
+riscrive gli alimenti, senza l'indice `barcode`) e ripristinato.
+`tipi.ts` e la descrizione in PUNTO §4 arrivano con la migration
+applicata. Nessun codice scrive ancora la colonna.
+
 ## 2026-11-08 — Catalogo precaricato: lo script e il file generato
 
 Branch `catalogo`, commit 2. `scripts/catalogo/generaCatalogo.mjs`
