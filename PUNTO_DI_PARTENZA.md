@@ -1308,8 +1308,17 @@ sbagliato: si elencano sopra il pulsante ("Per salvare mancano: …").
 
 **Zuccheri, fibre, saturi e sale non sono nel form, per scelta** (decisa il
 2026-09-26): quattro campi in più da compilare a ogni alimento creato a
-mano aumentano l'attrito (sezione 1). Si scrivono `null`, e in modifica
-restano quelli che erano. Arriveranno con l'OCR (fase 6), che li leggerà
+mano aumentano l'attrito (sezione 1). Si scrivono `null`. In modifica
+restano quelli che erano, **tranne quelli che i valori nuovi
+smentiscono** (dall'08/11, branch `catalogo`, decisione di Davide;
+`valoriNascostiDaTogliere` in `src/lib/repository/alimenti.ts`, test in
+`valoriNascostiInModifica.test.ts`): se cambiano i carboidrati, zuccheri
+e fibre diventano `null`; se cambiano i grassi, diventano `null` i
+saturi; il sale resta; kcal, proteine, nome, marca e porzione non
+toccano niente. Vale per ogni alimento: le copie dal catalogo
+precaricato (sezione 10.1) e quelli arrivati da un amico hanno i quattro
+valori pieni, e il modulo non potrebbe dire «zuccheri oltre i
+carboidrati» su un campo che non mostra. Arriveranno con l'OCR (fase 6), che li leggerà
 dall'etichetta. Anche il codice a barre li scrive `null`: quelli di Open
 Food Facts si scartano (sopra, "Codice a barre"). La validazione li copre già, comprese le regole
 zuccheri ≤ carboidrati e saturi ≤ grassi, che oggi quindi non possono

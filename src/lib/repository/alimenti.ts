@@ -95,6 +95,30 @@ export interface OrigineCodice {
   fonte: Extract<FonteAlimento, "off" | "barcode">;
 }
 
+// I valori nascosti (zuccheri, fibre, saturi, sale: salvati ma non nel
+// modulo) che una modifica deve togliere, perché non descrivono più
+// l'alimento corretto (Davide, 08/11; PUNTO_DI_PARTENZA.md §10.1, "I
+// valori nascosti in modifica"):
+// - cambiano i carboidrati → zuccheri e fibre null (gli zuccheri ne sono
+//   una parte, e il modulo non può dire «zuccheri oltre i carboidrati»
+//   su un campo che non mostra);
+// - cambiano i grassi → saturi null;
+// - il sale resta sempre; kcal, proteine, nome, marca e porzione non
+//   toccano niente.
+// Vale per ogni alimento, non solo per le copie dal catalogo: anche uno
+// arrivato da un amico ha i quattro valori. Il confronto è sui valori già
+// arrotondati del modulo e su quelli della riga, esatti: risalvare senza
+// cambiare non toglie niente. Funzione pura.
+export function valoriNascostiDaTogliere(
+  prima: Pick<Alimento, "carboidrati_100g" | "grassi_100g">,
+  dopo: Pick<CampiForm, "carboidrati_100g" | "grassi_100g">
+): Partial<Pick<Alimento, "zuccheri_100g" | "fibre_100g" | "saturi_100g">> {
+  return {
+    ...(dopo.carboidrati_100g !== prima.carboidrati_100g ? { zuccheri_100g: null, fibre_100g: null } : {}),
+    ...(dopo.grassi_100g !== prima.grassi_100g ? { saturi_100g: null } : {}),
+  };
+}
+
 // Crea un alimento (senza `idDaModificare`) o aggiorna quello esistente,
 // solo se non nasce un doppione (src/lib/catalogo/doppioniAlimenti.ts).
 //
@@ -171,12 +195,17 @@ export async function salvaAlimento(
       if (doppione) return { esito: "doppione", doppione };
 
       if (idDaModificare) {
-        // Stessa riga (stesso id): `verificato` e `fonte` restano quelli
-        // che erano; `barcode` anche, tranne il codice da aggiungere.
-        const alimento = await repositoryAlimenti.aggiorna(
-          idDaModificare,
-          daAggiungere ? { ...puliti, barcode: daAggiungere } : puliti
-        );
+        // Stessa riga (stesso id): `verificato`, `fonte` e `catalogo_id`
+        // restano quelli che erano; `barcode` anche, tranne il codice da
+        // aggiungere. I valori nascosti che non tornano più con i valori
+        // nuovi diventano null (valoriNascostiDaTogliere), letti dalla riga
+        // nella stessa transazione.
+        const prima = await db.alimenti.get(idDaModificare);
+        const alimento = await repositoryAlimenti.aggiorna(idDaModificare, {
+          ...puliti,
+          ...(prima ? valoriNascostiDaTogliere(prima, puliti) : {}),
+          ...(daAggiungere ? { barcode: daAggiungere } : {}),
+        });
         return { esito: "salvato", alimento };
       }
       const alimento = await repositoryAlimenti.crea({

@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — I valori nascosti in modifica
+
+Branch `catalogo`, commit 5. In `salvaAlimento`, in modifica
+(`valoriNascostiDaTogliere`, funzione pura, sulla riga letta nella
+stessa transazione): se cambiano i carboidrati, zuccheri e fibre
+diventano null; se cambiano i grassi, i saturi; il sale resta; kcal,
+proteine, nome, marca e porzione non toccano niente, e risalvare senza
+cambiare non toglie niente. Vale per tutti gli alimenti, non solo per
+le copie dal catalogo (Davide, 08/11): una copia corretta non tiene
+zuccheri più alti dei carboidrati che il modulo non può mostrare.
+`fonte` e `catalogo_id` restano. PUNTO §3 ("Zuccheri, fibre, saturi e
+sale non sono nel form"). Test permanente
+`valoriNascostiInModifica.test.ts` (11 casi, anche i null che vanno in
+coda per il server), rotto da una copia di `alimenti.ts` in 6 modi e
+ripristinato. «Usa questi valori» degli alimenti in arrivo non passa da
+qui: scrive i valori dell'amico, nascosti compresi, come prima.
+
 ## 2026-11-08 — Catalogo precaricato: migration applicata, «Aggiungi dal catalogo» e «Nei tuoi»
 
 Branch `catalogo`, commit 4. Migration `alimenti_catalogo_id`
