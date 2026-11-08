@@ -628,20 +628,20 @@ describe("rilettura", () => {
 describe("senza il segno discesa completa non parte", () => {
   it("niente segno: copia-incompleta, anche con i dati in Dexie", async () => {
     await scriviInDexie(dispositivo().vivi);
-    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta" });
+    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta", manca: "non-scaricata" });
   });
 
   it("segno acceso ma nessun profilo vivo in Dexie: copia-incompleta", async () => {
     const { vivi } = dispositivo();
     await scriviInDexie({ ...vivi, profili: [] });
     segnaDiscesaCompleta(IO);
-    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta" });
+    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta", manca: "senza-profilo" });
   });
 
   it("il segno di un altro utente non basta", async () => {
     await scriviInDexie(dispositivo().vivi);
     segnaDiscesaCompleta(ALTRO);
-    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta" });
+    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta", manca: "non-scaricata" });
   });
 });
 

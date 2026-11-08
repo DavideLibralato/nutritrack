@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, act } from "@testing-library/react";
 import ImpostazioniPage from "./page";
 import { db } from "@/lib/db/database";
 import type { VoceOutbox } from "@/lib/sync/outbox";
@@ -83,5 +83,35 @@ describe("Impostazioni — la riga Sincronizzazione", () => {
     const testo = await screen.findByText("Errore");
     expect(rigaSincronizzazione().contains(testo)).toBe(true);
     expect(testo.className).toContain("text-warning");
+  });
+});
+
+// Il gruppo «I tuoi dati» (dal 08/11, branch esporta; mockup
+// docs/mockups/esporta.html): fra App e Informazioni, la riga verso Esporta
+// e il promemoria nella nota del gruppo.
+describe("Impostazioni — il gruppo I tuoi dati", () => {
+  it("fra App e Informazioni, con la riga verso Esporta e «Mai esportato»", async () => {
+    render(<ImpostazioniPage />);
+    const riga = screen.getByRole("link", { name: /^Esporta i miei dati/ });
+    expect(riga.getAttribute("href")).toBe("/impostazioni/esporta");
+    expect(await screen.findByText("Mai esportato")).toBeTruthy();
+
+    // L'ordine dei titoli e delle righe nella pagina.
+    const testo = document.body.textContent ?? "";
+    const app = testo.indexOf("Sincronizzazione");
+    const tuoiDati = testo.indexOf("I tuoi dati");
+    const informazioni = testo.indexOf("Informazioni");
+    expect(app).toBeLessThan(tuoiDati);
+    expect(tuoiDati).toBeLessThan(informazioni);
+  });
+
+  it("dopo un'esportazione: «Ultima esportazione: oggi», e si aggiorna senza ricaricare", async () => {
+    const { segnaEsportazione, togliUltimaEsportazione } = await import("@/lib/esporta/ultimaEsportazione");
+    render(<ImpostazioniPage />);
+    expect(await screen.findByText("Mai esportato")).toBeTruthy();
+    act(() => segnaEsportazione(USER_ID));
+    expect(await screen.findByText("Ultima esportazione: oggi")).toBeTruthy();
+    act(() => togliUltimaEsportazione(USER_ID));
+    expect(await screen.findByText("Mai esportato")).toBeTruthy();
   });
 });

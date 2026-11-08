@@ -44,7 +44,7 @@ import type { Table } from "dexie";
 import { db } from "../db/database";
 import type { Alimento, RigaBase } from "../db/tipi";
 import { TABELLE_DISCESA } from "../sync/discesa";
-import { copiaLocaleCompleta } from "../sync/discesaCompleta";
+import { statoCopiaLocale, type StatoCopiaLocale } from "../sync/discesaCompleta";
 import { leggiStatoGiri } from "../sync/statoSincronizzazione";
 import { oggiLocale } from "../dataGiorno";
 import {
@@ -207,16 +207,18 @@ async function leggiTutteLeRighe(): Promise<RighePerTabella> {
 }
 
 export type EsitoRaccolta =
-  // Il segno "discesa completa" manca, o in Dexie non c'è il profilo vivo:
-  // la copia locale potrebbe non avere tutto. Esporta non parte.
-  | { esito: "copia-incompleta" }
+  // Il segno "discesa completa" manca ("non-scaricata"), o in Dexie non
+  // c'è il profilo vivo ("senza-profilo"): la copia locale potrebbe non
+  // avere tutto. Esporta non parte.
+  | { esito: "copia-incompleta"; manca: Exclude<StatoCopiaLocale, "completa"> }
   | { esito: "pronta"; esportazione: EsportazioneDati };
 
 export async function raccogliEsportazione(
   userId: string,
   contorno: DatiContorno
 ): Promise<EsitoRaccolta> {
-  if (!(await copiaLocaleCompleta(userId))) return { esito: "copia-incompleta" };
+  const copia = await statoCopiaLocale(userId);
+  if (copia !== "completa") return { esito: "copia-incompleta", manca: copia };
   const tutte = await leggiTutteLeRighe();
   return { esito: "pronta", esportazione: costruisciEsportazione(tutte, userId, contorno) };
 }

@@ -14,10 +14,12 @@ import {
   copiaLocaleCompleta,
   segnaDiscesaCompleta,
   segnoDiscesaCompleta,
+  statoCopiaLocale,
+  TABELLE_DATI,
   togliSegnoDiscesaCompleta,
 } from "./discesaCompleta";
 import { db } from "../db/database";
-import type { Profilo } from "../db/tipi";
+import type { Pasto, Profilo } from "../db/tipi";
 
 // --- Client Supabase finto ---------------------------------------------------
 // Ogni tabella risponde vuota, salvo quelle in `rispostePerTabella`.
@@ -61,11 +63,23 @@ function profilo(userId: string, deletedAt: string | null = null): Profilo {
   };
 }
 
+function pasto(userId: string, deletedAt: string | null = null): Pasto {
+  return {
+    id: crypto.randomUUID(),
+    user_id: userId,
+    updated_at: "2026-11-07T08:00:00.000Z",
+    deleted_at: deletedAt,
+    nome: "Pranzo",
+    ora_inizio: "12:30",
+    ordine: 2,
+  };
+}
+
 beforeEach(async () => {
   server.rispostePerTabella = {};
   window.localStorage.clear();
   azzeraStatoGiri();
-  await db.profili.clear();
+  for (const { tabella } of TABELLE_DISCESA) await tabella.clear();
   await db.sync_cursori.clear();
 });
 
@@ -159,6 +173,59 @@ describe("copiaLocaleCompleta: il segno più il profilo vivo in Dexie", () => {
     await db.profili.put(profilo("u1", "2026-11-07T09:00:00.000Z"));
     await scaricaTutto("u1");
     expect(await copiaLocaleCompleta("u1")).toBe(false);
+  });
+
+  it("senza segno: non-scaricata, anche con il profilo vivo in Dexie", async () => {
+    expect(await statoCopiaLocale("u1")).toBe("non-scaricata");
+    await db.profili.put(profilo("u1"));
+    expect(await statoCopiaLocale("u1")).toBe("non-scaricata");
+  });
+
+  it("segno e profilo vivo: completa", async () => {
+    segnaDiscesaCompleta("u1");
+    await db.profili.put(profilo("u1"));
+    expect(await statoCopiaLocale("u1")).toBe("completa");
+  });
+
+  it("segno ma nessuna riga viva dell'utente (Safari ha svuotato IndexedDB): non-scaricata, non senza-profilo", async () => {
+    segnaDiscesaCompleta("u1");
+    expect(await statoCopiaLocale("u1")).toBe("non-scaricata");
+    // Righe cancellate dell'utente e righe vive di un altro utente non
+    // contano: la copia di u1 è comunque vuota.
+    await db.profili.put(profilo("u1", "2026-11-07T09:00:00.000Z"));
+    await db.pasti.put(pasto("u1", "2026-11-07T09:00:00.000Z"));
+    await db.profili.put(profilo("u2"));
+    await db.pasti.put(pasto("u2"));
+    expect(await statoCopiaLocale("u1")).toBe("non-scaricata");
+  });
+
+  it("segno, niente profilo, ma altre righe vive dell'utente: senza-profilo", async () => {
+    segnaDiscesaCompleta("u1");
+    await db.pasti.put(pasto("u1"));
+    expect(await statoCopiaLocale("u1")).toBe("senza-profilo");
+    // Anche con un profilo solo cancellato.
+    await db.profili.put(profilo("u1", "2026-11-07T09:00:00.000Z"));
+    expect(await statoCopiaLocale("u1")).toBe("senza-profilo");
+  });
+
+  it("senza-profilo vale per una riga viva in qualunque tabella di TABELLE_DISCESA", async () => {
+    for (const { nome, tabella } of TABELLE_DISCESA) {
+      if (nome === "profili") continue;
+      for (const { tabella: t } of TABELLE_DISCESA) await t.clear();
+      window.localStorage.clear();
+      segnaDiscesaCompleta("u1");
+      await tabella.put({
+        id: crypto.randomUUID(),
+        user_id: "u1",
+        updated_at: "2026-11-07T08:00:00.000Z",
+        deleted_at: null,
+      });
+      expect(await statoCopiaLocale("u1"), nome).toBe("senza-profilo");
+    }
+  });
+
+  it("le tabelle guardate sono esattamente quelle di TABELLE_DISCESA", () => {
+    expect(Object.keys(TABELLE_DATI).sort()).toEqual(TABELLE_DISCESA.map((t) => t.nome).sort());
   });
 
   it("profilo vivo ma niente segno: non completa", async () => {

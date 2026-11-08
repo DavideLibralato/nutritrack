@@ -58,6 +58,7 @@ describe("scegliStrategia", () => {
       "/impostazioni/amici",
       "/impostazioni/sincronizzazione",
       "/impostazioni/informazioni",
+      "/impostazioni/esporta",
       "/impostazioni/elimina-account",
       "/impostazioni/password",
       "/onboarding",

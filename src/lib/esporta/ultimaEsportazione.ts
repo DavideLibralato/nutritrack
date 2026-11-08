@@ -19,12 +19,28 @@ export function chiaveUltimaEsportazione(userId: string): string {
 }
 
 // Il valore salvato è l'istante (ISO 8601); i giorni si ricavano leggendo.
+// Chi mostra il promemoria si iscrive qui (useUltimaEsportazione): segna e
+// togli avvisano, così la riga cambia senza ricaricare la pagina.
+const ascoltatori = new Set<() => void>();
+
+export function iscriviUltimaEsportazione(ascoltatore: () => void): () => void {
+  ascoltatori.add(ascoltatore);
+  return () => {
+    ascoltatori.delete(ascoltatore);
+  };
+}
+
+function avvisa(): void {
+  for (const ascoltatore of ascoltatori) ascoltatore();
+}
+
 export function segnaEsportazione(userId: string, adesso: Date = new Date()): void {
   try {
     window.localStorage.setItem(chiaveUltimaEsportazione(userId), adesso.toISOString());
   } catch {
     // Niente localStorage: il promemoria resta «Mai esportato».
   }
+  avvisa();
 }
 
 export function leggiUltimaEsportazione(userId: string): string | null {
@@ -41,6 +57,7 @@ export function togliUltimaEsportazione(userId: string): void {
   } catch {
     // Niente localStorage: non c'era niente da togliere.
   }
+  avvisa();
 }
 
 // Quanti giorni del calendario locale fra due istanti (0 = stesso giorno).

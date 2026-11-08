@@ -5,6 +5,45 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — La pagina Esporta i miei dati
+
+Branch `esporta`, commit 8. La pagina `/impostazioni/esporta` e il
+gruppo «I tuoi dati» in Impostazioni, come nel mockup approvato.
+- `preparaEsportazione.ts`: all'apertura della pagina controlla la
+  copia locale, verifica la foto, raccoglie i dati e prepara i due
+  testi, così al tocco il foglio di iOS si apre subito;
+- `statoCopiaLocale` in `discesaCompleta.ts`: «non-scaricata» (senza
+  segno, o con il segno e nessuna riga viva dell'utente: Safari ha
+  svuotato IndexedDB) o «senza-profilo» (segno e altre righe, ma niente
+  profilo), per i due messaggi diversi; la raccolta dice quale. «Vai al
+  profilo» apre Impostazioni > Profilo, con il testo «Per esportare serve
+  il tuo profilo. Compilalo e torna qui.» (decisione di Davide: nel
+  mockup c'era l'onboarding, che con il segno «fatto» porterebbe a
+  Oggi). Con la copia incompleta la pagina riprova da sola alla fine di
+  ogni giro. Limite noto in PUNTO §11: con IndexedDB svuotato si aspetta
+  la discesa, Esporta non crea profili;
+- `testiEsporta.ts`: testi del mockup, periodo del diario, nota
+  dell'ultimo collegamento, peso del file; un testo in più per il
+  browser che non sa salvare;
+- `useUltimaEsportazione.ts`: il promemoria letto con
+  `useSyncExternalStore`, che si aggiorna da solo quando la data cambia;
+- `RigaImpostazioni`: `sottotitolo` e `spenta`, per la riga del CSV;
+- `globals.css`: segnaposto dei numeri, rotellina e riquadro dei
+  messaggi, solo da variabili, fermi con il movimento ridotto;
+- `/impostazioni/esporta` in `PAGINE_APP` del service worker (con la
+  riga in `sw.js`), perché funziona offline.
+
+Test permanenti nuovi: 17 della pagina in `esporta/page.test.tsx`, 7 in
+`testiEsporta.test.ts`, 2 in `useUltimaEsportazione.test.tsx`, 2 del
+gruppo in `impostazioni/page.test.tsx`, 6 di `statoCopiaLocale`; il test
+del service worker con la pagina nuova. Ventidue rotture da una copia
+dei file, tutte prese (una rifatta perché Git Bash riscriveva un
+argomento che inizia con «/» come un percorso); due solo dopo un test in più: il foglio
+annullato dopo un errore (deve lasciare il messaggio) e l'hook del
+promemoria da solo (nelle pagine altri ridisegni nascondevano un hook
+che non si aggiorna). `npm run build` riuscito. Da provare su iPhone
+sull'anteprima.
+
 ## 2026-11-08 — Mockup di Esporta i miei dati
 
 Branch `esporta`, commit 7, solo documenti. Il mockup di Cowork,

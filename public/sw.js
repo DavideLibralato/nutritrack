@@ -45,6 +45,9 @@ importScripts("/sw-strategia.js");
 // 25/10/2026, branch "proxy-rete-lenta": tempo massimo di 3 s per le
 // pagine con copia (navigazioneConTempoMassimo). Nessuna cache nuova: la
 // forma di ciò che è salvato non cambia.
+// 08/11/2026, branch "esporta": /impostazioni/esporta in PAGINE_APP,
+// perché Esporta funziona anche offline (legge Dexie). Nessuna cache nuova,
+// come per Amici.
 const {
   navigazioneConTempoMassimo,
   PAGINE_APP,

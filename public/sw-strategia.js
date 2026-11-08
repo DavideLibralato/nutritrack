@@ -32,6 +32,8 @@
     "/impostazioni/amici",
     "/impostazioni/sincronizzazione",
     "/impostazioni/informazioni",
+    // Dal 08/11 (branch esporta): Esporta funziona offline, legge Dexie.
+    "/impostazioni/esporta",
     "/impostazioni/elimina-account",
     "/impostazioni/password",
     // Fuori dalla tab bar, come /aggiungi: deve riaprirsi anche offline

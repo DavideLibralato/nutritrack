@@ -44,6 +44,13 @@
 // delle novità (dal passo 7, useNovitaAmici) al posto del numero c'è "2
 // nuove" in colore principale con il pallino.
 //
+// Il gruppo «I tuoi dati» (dal 08/11, branch esporta; mockup
+// docs/mockups/esporta.html), fra App e Informazioni: la riga «Esporta i miei
+// dati» e, nella nota del gruppo, il promemoria «Ultima esportazione: …» o
+// «Mai esportato» (testoPromemoria, con il suo test). Solo testo, niente
+// pallino. Si legge da localStorage, quindi niente finché la pagina non è
+// nel browser.
+//
 // Questa pagina non ha un modulo: niente da salvare, quindi niente
 // guardiano delle modifiche. Esci in fondo, con la sua conferma.
 
@@ -82,6 +89,7 @@ import { useAmicizie } from "@/lib/amici/useAmicizie";
 import { testoNovitaRiga, testoRigaAmici } from "@/lib/amici/testiAmici";
 import { testoRigaImpostazioniInArrivo } from "@/lib/catalogo/testiAlimentiInArrivo";
 import { useNovitaAmici } from "@/lib/amici/novita";
+import { useUltimaEsportazione } from "@/lib/esporta/useUltimaEsportazione";
 
 export default function ImpostazioniPage() {
   const userId = useUtenteId();
@@ -167,6 +175,9 @@ export default function ImpostazioniPage() {
     ]);
     return testoRigaPreferiti(contaPreferiti(catalogo, preferiti, composizioni, composizioniVoci));
   }, [userId]);
+
+  // Il promemoria dell'ultima esportazione (localStorage, solo nel browser).
+  const promemoria = useUltimaEsportazione(userId);
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-[22px] px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+1.5rem)]">
@@ -267,6 +278,14 @@ export default function ImpostazioniPage() {
             )
           }
           href="/impostazioni/sincronizzazione"
+        />
+      </GruppoImpostazioni>
+
+      <GruppoImpostazioni titolo="I tuoi dati" nota={promemoria}>
+        <RigaImpostazioni
+          etichetta="Esporta i miei dati"
+          icona={<IconaEsporta />}
+          href="/impostazioni/esporta"
         />
       </GruppoImpostazioni>
 
@@ -385,6 +404,16 @@ function IconaSincronizzazione() {
     <svg {...TRATTO}>
       <path d="M19 8a7 7 0 00-12.6-1.5M5 4v3h3" />
       <path d="M5 16a7 7 0 0012.6 1.5M19 20v-3h-3" />
+    </svg>
+  );
+}
+
+// Una freccia che scende su una linea: il file che arriva sul telefono.
+function IconaEsporta() {
+  return (
+    <svg {...TRATTO}>
+      <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" />
+      <path d="M5 19h14" />
     </svg>
   );
 }

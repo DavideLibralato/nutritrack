@@ -1472,6 +1472,10 @@ un comando che non fa niente sembra rotto):
   pagina con l'indicatore dal 10/10, sezione 9.2; a destra della riga lo stato in breve con un pallino colorato: "Tutto
   salvato", "In corso…", "2 in attesa", "Errore", "Accedi di nuovo", "Da
   controllare");
+- gruppo **I tuoi dati** (dall'08/11, branch `esporta`; mockup
+  `docs/mockups/esporta.html`): la riga **Esporta i miei dati** e, nella
+  nota del gruppo, il promemoria «Ultima esportazione: …» o «Mai
+  esportato» (sezione 10.4);
 - **Informazioni** (versione da `package.json` e commit corto del deploy,
   `VERCEL_GIT_COMMIT_SHA`, scritti nel codice alla build da `env` in
   `next.config.ts`; in locale "sviluppo"; sotto, dal branch
@@ -1490,7 +1494,8 @@ un comando che non fa niente sembra rotto):
 `/impostazioni/alimenti` (branch `catalogo-alimenti`),
 `/impostazioni/amici` (branch `amici`, in `PAGINE_APP` dal passo 6),
 `/impostazioni/sincronizzazione`, `/impostazioni/informazioni`;
-`/impostazioni/elimina-account` (branch `elimina-account`).
+`/impostazioni/elimina-account` (branch `elimina-account`);
+`/impostazioni/esporta` (branch `esporta`).
 Le cartelle stanno in `src/app/(app)/impostazioni/`, quindi ereditano il
 layout con la tab bar. "‹ Impostazioni" è un link a `/impostazioni`, non un
 "torna indietro": aperta da un indirizzo diretto, o ricaricata offline, la
@@ -7349,17 +7354,26 @@ Gli stati, con i testi del mockup:
 - **foto non inclusa**: «Non inclusa» in colore di avviso, nota «Senza
   rete non so se hai una foto aggiornata, quindi resta fuori. Tutto il
   resto è nel file. Con la rete, riapri questa pagina.»;
-- **dati non ancora scaricati** (manca il segno "discesa completa"):
-  pagina al posto del riepilogo, «Dati non ancora scaricati» / «Su
-  questo telefono non ci sono ancora tutti i tuoi dati. Collegati a
-  internet e tieni Libra aperta finché la sincronizzazione non finisce,
-  poi torna qui.», pulsante «Vai a Sincronizzazione»;
-- **manca il profilo** (segno presente, nessun profilo vivo in Dexie:
-  per esempio chi ha saltato l'onboarding): «Manca il tuo profilo» /
-  «Per esportare serve il profilo, che crei nei primi passi dopo la
-  registrazione. Completalo e torna qui.», pulsante «Completa il
-  profilo». Messaggio diverso da quello dei dati non scaricati: la
-  pagina deve sapere quale dei due manca;
+- **dati non ancora scaricati** (manca il segno "discesa completa",
+  oppure il segno c'è ma in Dexie non c'è nessuna riga viva
+  dell'utente: Safari ha svuotato IndexedDB e lasciato il localStorage,
+  e il profilo sul server può esserci): pagina al posto del riepilogo,
+  «Dati non ancora scaricati» / «Su questo telefono non ci sono ancora
+  tutti i tuoi dati. Collegati a internet e tieni Libra aperta finché la
+  sincronizzazione non finisce, poi torna qui.», pulsante «Vai a
+  Sincronizzazione»;
+- **manca il profilo** (segno presente, nessun profilo vivo, ma altre
+  righe dell'utente sì, almeno i pasti di base: chi ha rimandato
+  l'onboarding): «Manca il tuo profilo» / «Per esportare serve il tuo
+  profilo. Compilalo e torna qui.», pulsante «Vai al profilo», che apre
+  Impostazioni > Profilo (deciso da Davide l'08/11; nel mockup c'era
+  «Completa il profilo» verso l'onboarding, che con il segno «fatto» o
+  senza segno porterebbe a Oggi). Profilo crea il profilo se manca,
+  qualunque sia il segno, e una volta sola: `salvaProfilo` rilegge Dexie
+  a ogni salvataggio e dal secondo aggiorna; sul server c'è comunque
+  `profili_user_id_key` (UNIQUE su `user_id`). Con il segno «da_fare»
+  questa pagina non si vede: la guardia del layout porta prima
+  all'onboarding (`GuardiaOnboarding`), che crea il profilo al passo 2;
 - **app installata senza condivisione**: «Da qui non riesco a salvare
   il file. Apri app-libra.vercel.app in Safari, accedi ed esporta da
   lì.»;
@@ -7371,6 +7385,21 @@ Gli stati, con i testi del mockup:
 
 La pagina non mostra l'intestazione del file (versione del formato,
 Build, `user_id`, conteggi): serve a Importa.
+
+**Come è costruita** (dall'08/11, commit 8 del branch): la pagina chiama
+solo `preparaEsportazione` (`src/lib/esporta/preparaEsportazione.ts`,
+dove sta l'unica lettura di Supabase, la foto) all'apertura e tiene in
+memoria i due testi pronti; i pulsanti li passano a `salvaJson` e
+`salvaCsv`. Il file è quello di quando si è aperta la pagina: i dati non
+si rileggono mentre è aperta. Con la copia incompleta (dati non
+scaricati o profilo mancante) la pagina riprova da sola alla fine di
+ogni giro della sincronizzazione. `statoCopiaLocale` (`discesaCompleta.ts`)
+dice quale dei due manca: senza segno, o con il segno e nessuna riga viva
+dell'utente in nessuna tabella di `TABELLE_DISCESA`, «non-scaricata»;
+con il segno, senza profilo ma con altre righe, «senza-profilo». La pagina è in `PAGINE_APP` del service worker:
+funziona anche offline. Un testo in più rispetto al mockup, per un
+browser senza condivisione e senza download: «Questo browser non sa
+salvare il file. Prova con Safari o Chrome aggiornati.»
 
 ### 10.5 Cinque funzioni da testare sul serio
 
@@ -8538,8 +8567,9 @@ i numeri delle sue segnalazioni.
   dall'etichetta"** (fase 6)
 - **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
 - Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1),
-  **"Esporta i miei dati"** (10.4; in costruzione dal 07/11, branch
-  `esporta`, decisioni in 10.4, "Esporta i miei dati"). Subito dopo,
+  **"Esporta i miei dati"** (10.4; dal 07/11, branch `esporta`,
+  decisioni in 10.4, "Esporta i miei dati"; costruita l'08/11, da
+  provare su iPhone sull'anteprima). Subito dopo,
   **Importa** ("Ripristina in un account vuoto"), un lavoro a parte
   - copia manuale dei dati del 01/11, fatta prima dell'aggiornamento di
     Supabase: in `C:\Users\david\Progetti\backup-libra`, fuori dal repo
@@ -8594,6 +8624,14 @@ i numeri delle sue segnalazioni.
   per esempio da un Esci nell'altra copia dell'app installata, riga qui
   sopra), l'app deve portare ad Accedi invece di restare su
   "Caricamento...". Lavoro a sé, non del codice a barre.
+
+- **Limite noto: se Safari svuota IndexedDB, Esporta aspetta la discesa
+  successiva** (deciso da Davide l'08/11, branch `esporta`; sezione
+  10.4). Il segno "discesa completa" sta in localStorage, che può
+  sopravvivere: con il segno e nessuna riga viva in Dexie la pagina dice
+  «Dati non ancora scaricati» e riprova da sola alla fine di ogni giro.
+  Esporta non crea mai un profilo: quello sul server torna con la
+  discesa.
 
 - **Limite noto: un codice a barre già salvato non si toglie** (deciso
   da Davide il 07/11, branch `alimenti-codice-a-barre`). In "Modifica

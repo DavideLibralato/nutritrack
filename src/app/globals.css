@@ -876,3 +876,48 @@ button:not(:disabled) {
     display: none;
   }
 }
+
+/* Esporta i miei dati (dal 08/11, mockup docs/mockups/esporta.html).
+   - .carica-esporta: il segnaposto di un numero ancora da leggere, una
+     luce che scorre sulla linea;
+   - .giro-esporta: la rotellina nel pulsante «Preparo il file…», del
+     colore del testo sul pieno;
+   - .avviso-esporta: il riquadro dei messaggi sopra il pulsante (errore,
+     app installata), su un fondo appena tinto di avviso.
+   Con prefers-reduced-motion niente movimento: restano fermi. */
+.carica-esporta {
+  vertical-align: -1px;
+  background: linear-gradient(
+    90deg,
+    var(--linea),
+    color-mix(in srgb, var(--linea) 40%, var(--superficie)),
+    var(--linea)
+  );
+  background-size: 200% 100%;
+  animation: carica-esporta 1.2s linear infinite;
+}
+@keyframes carica-esporta {
+  to {
+    background-position: -200% 0;
+  }
+}
+.giro-esporta {
+  border-color: color-mix(in srgb, var(--su-pieno) 35%, transparent);
+  border-top-color: var(--su-pieno);
+  animation: giro-esporta 0.8s linear infinite;
+}
+@keyframes giro-esporta {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.avviso-esporta {
+  background: color-mix(in srgb, var(--avviso) 11%, var(--superficie));
+  border-color: color-mix(in srgb, var(--avviso) 35%, var(--linea));
+}
+@media (prefers-reduced-motion: reduce) {
+  .carica-esporta,
+  .giro-esporta {
+    animation: none;
+  }
+}

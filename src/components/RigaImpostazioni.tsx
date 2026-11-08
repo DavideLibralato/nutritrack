@@ -10,6 +10,10 @@
 // (--capsula-attiva), valore e freccia in --tenue. Con `pericolo`
 // l'etichetta è rossa (--pericolo): solo per le azioni che non si possono
 // annullare ("Elimina il mio account", sezione 7).
+//
+// Dal 08/11 (Esporta, riga «Esporta il diario per Excel»): `sottotitolo`,
+// una riga di testo piccolo sotto l'etichetta, che va a capo invece di
+// accorciarsi; `spenta`, il pulsante non si tocca e la riga è più chiara.
 
 //
 // Il link passa dal guardiano delle modifiche non salvate (LinkProtetto,
@@ -28,6 +32,8 @@ export default function RigaImpostazioni({
   href,
   onClick,
   pericolo = false,
+  sottotitolo,
+  spenta = false,
 }: {
   etichetta: string;
   icona?: ReactNode;
@@ -35,6 +41,8 @@ export default function RigaImpostazioni({
   href?: string;
   onClick?: () => void;
   pericolo?: boolean;
+  sottotitolo?: ReactNode;
+  spenta?: boolean;
 }) {
   const stile = { "--rientro-linea": icona ? "58px" : "16px" } as CSSProperties;
   const contenuto = (
@@ -47,7 +55,14 @@ export default function RigaImpostazioni({
           {icona}
         </span>
       )}
-      <span className={`min-w-0 flex-1 truncate ${pericolo ? "text-danger" : ""}`}>{etichetta}</span>
+      {sottotitolo ? (
+        <span className="min-w-0 flex-1 py-2.5">
+          <span className={`block truncate ${pericolo ? "text-danger" : ""}`}>{etichetta}</span>
+          <span className="mt-0.5 block text-[13px] leading-snug text-muted">{sottotitolo}</span>
+        </span>
+      ) : (
+        <span className={`min-w-0 flex-1 truncate ${pericolo ? "text-danger" : ""}`}>{etichetta}</span>
+      )}
       {valore != null && <span className="shrink-0 text-[15px] text-muted">{valore}</span>}
       {(href || onClick) && <FrecciaDestra />}
     </>
@@ -64,7 +79,13 @@ export default function RigaImpostazioni({
   }
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} style={stile} className={`${classe} w-full text-left ${CLASSE_FOCUS}`}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={spenta}
+        style={stile}
+        className={`${classe} w-full text-left disabled:opacity-50 ${CLASSE_FOCUS}`}
+      >
         {contenuto}
       </button>
     );
