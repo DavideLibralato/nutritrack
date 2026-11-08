@@ -32,6 +32,7 @@ import {
 import { sincronizzaOutbox } from "../sync/sincronizza";
 import { attendiDiscesaInCorso } from "../sync/discesa";
 import { togliSegnoDiscesaCompleta } from "../sync/discesaCompleta";
+import { togliUltimaEsportazione } from "../esporta/ultimaEsportazione";
 import { azzeraStatoGiri, CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
 import { cancellaNovita } from "../amici/novita";
 import { svuotaPagineSalvate } from "../serviceWorker";
@@ -149,6 +150,9 @@ export async function eseguiUscita(
   //   quando i dati restano: rientrando, Esporta aspetta una discesa
   //   completa nuova;
   togliSegnoDiscesaCompleta(userId);
+  // - la data dell'ultima esportazione (dal 08/11, ultimaEsportazione.ts):
+  //   vale per il dispositivo e per chi era dentro;
+  togliUltimaEsportazione(userId);
   // - lo stato dei giri in memoria. Dopo aver tolto l'ora salvata:
   //   azzeraStatoGiri la rilegge da lì.
   azzeraStatoGiri();

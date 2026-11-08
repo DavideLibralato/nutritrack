@@ -18,6 +18,7 @@ import { db } from "../db/database";
 import type { Pasto } from "../db/tipi";
 import { CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
 import { segnaDiscesaCompleta, segnoDiscesaCompleta } from "../sync/discesaCompleta";
+import { leggiUltimaEsportazione, segnaEsportazione } from "../esporta/ultimaEsportazione";
 import { chiaveNovita } from "../amici/novita";
 import { chiaveSegnoLocale } from "../onboarding/segnoOnboarding";
 import { leggiSegnoEliminazione } from "./eliminazioneInCorso";
@@ -141,6 +142,14 @@ describe("eliminaAccount", () => {
     expect(await eliminaAccount(ID)).toBe("eliminato");
     expect(segnoDiscesaCompleta(ID)).toBe(false);
     expect(segnoDiscesaCompleta(ALTRO)).toBe(true);
+  });
+
+  it("ok del server: toglie la data dell'ultima esportazione di questo utente, non di un altro", async () => {
+    segnaEsportazione(ID);
+    segnaEsportazione(ALTRO);
+    expect(await eliminaAccount(ID)).toBe("eliminato");
+    expect(leggiUltimaEsportazione(ID)).toBeNull();
+    expect(leggiUltimaEsportazione(ALTRO)).not.toBeNull();
   });
 
   it("ok del server: pulisce, lascia il segno confermata, toglie l'ora salvata, chiude la sessione", async () => {

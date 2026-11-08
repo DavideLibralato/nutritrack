@@ -16,6 +16,7 @@ import { decidiUscita, eseguiUscita, preparaUscita } from "./esci";
 import { CHIAVE_USCITA, leggiSegnoUscita, riprendiUscitaInSospeso } from "./uscitaInCorso";
 import { CHIAVE_ULTIMO_SUCCESSO } from "../sync/statoSincronizzazione";
 import { segnaDiscesaCompleta, segnoDiscesaCompleta } from "../sync/discesaCompleta";
+import { leggiUltimaEsportazione, segnaEsportazione } from "../esporta/ultimaEsportazione";
 import { chiaveNovita } from "../amici/novita";
 import { chiaveSegnoLocale, leggiSegnoLocale } from "../onboarding/segnoOnboarding";
 import { chiaveSessione } from "../supabase/utenteOffline";
@@ -201,12 +202,14 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
 
   // Il segno "discesa completa" (dal 07/11, discesaCompleta.ts): Esci lo
   // toglie sempre, anche quando i dati restano. Dell'altro utente no.
-  it("il segno discesa completa: tolto con tieni e con svuota, quello dell'altro resta", async () => {
+  it("segno discesa completa e ultima esportazione: tolti con tieni e con svuota, quelli dell'altro restano", async () => {
     for (const conCoda of [true, false]) {
       const { utente, altro } = await dispositivo({ conCoda });
       server.getUser = conCoda ? scaduta : valida(utente);
       segnaDiscesaCompleta(utente);
       segnaDiscesaCompleta(altro);
+      segnaEsportazione(utente);
+      segnaEsportazione(altro);
 
       const preparazione = await preparaUscita(utente);
       if (preparazione.esito !== "pronta") throw new Error("preparazione non pronta");
@@ -215,6 +218,9 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
       expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe("uscito");
       expect(segnoDiscesaCompleta(utente), `conCoda=${conCoda}`).toBe(false);
       expect(segnoDiscesaCompleta(altro), `conCoda=${conCoda}`).toBe(true);
+      // Anche la data dell'ultima esportazione (dal 08/11).
+      expect(leggiUltimaEsportazione(utente), `conCoda=${conCoda}`).toBeNull();
+      expect(leggiUltimaEsportazione(altro), `conCoda=${conCoda}`).not.toBeNull();
       if (conCoda) expect(await contaDi(utente)).toEqual({ pasti: 1, coda: 1, cursori: 1 });
     }
   });

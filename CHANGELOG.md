@@ -5,6 +5,34 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Salvare il file e il promemoria dell'ultima esportazione
+
+Branch `esporta`, commit 6. Nuovi in `src/lib/esporta/`:
+- `condividiFile.ts`: le strade per consegnare il file. Condivisione
+  con il tipo vero (`application/json`, `text/csv`), poi lo stesso file
+  come `text/plain` con la stessa estensione, poi `<a download>` solo
+  fuori dall'app installata; nell'app installata senza condivisione,
+  «impossibile» con il motivo. Foglio chiuso (`AbortError`) =
+  annullato. Il nome dell'errore si legge da qualunque oggetto con
+  `name` stringa (`nomeErrore`, per share e per il download): su Safari
+  share() rifiuta con una DOMException, che non in tutte le versioni è
+  `instanceof Error`. `salvaFile` arriva a `navigator.share()` senza
+  attese;
+- `ultimaEsportazione.ts`: la data in localStorage per utente e il
+  testo «Mai esportato» / «oggi» / «ieri» / «N giorni fa», contati sul
+  calendario locale;
+- `salvaEsportazione.ts`: il JSON aggiorna il promemoria solo a
+  salvataggio riuscito, il CSV mai.
+
+Esci (sempre) ed Elimina account tolgono la data. Dettagli in PUNTO
+§10.4. Test permanenti nuovi: 16 in `condividiFile.test.ts`, 10 in
+`ultimaEsportazione.test.ts`, 1 in `eliminaAccount.test.ts`, più il test
+di Esci esteso. Diciotto rotture da una copia dei file (tre per
+`nomeErrore`), ogni giro controllato che i test siano davvero partiti:
+tutte prese. Da provare su
+iPhone: quali tipi accetta `canShare`, «Salva su File», il download in
+Safari non installato.
+
 ## 2026-11-08 — Il CSV del diario
 
 Branch `esporta`, commit 5. Nuovo `src/lib/esporta/diarioCsv.ts`: il

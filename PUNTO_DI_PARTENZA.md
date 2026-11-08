@@ -7296,14 +7296,22 @@ rifiutare. Le strade, nell'ordine:
    installato: da verificare). Nell'app installata dalla Home niente
    download, ma un messaggio chiaro con il motivo.
 
-Se l'utente annulla il foglio non cambia niente.
+Se l'utente annulla il foglio non cambia niente. Il codice è in
+`src/lib/esporta/condividiFile.ts` (dall'08/11): `salvaFile` arriva a
+`navigator.share()` senza nessuna attesa davanti, e un test lo prova.
+L'app installata si riconosce da `display-mode: standalone` o da
+`navigator.standalone`. Un download avviato conta come salvato: il
+browser non dice se il file è arrivato.
 
 **Il promemoria.** «Ultima esportazione: oggi», «ieri», «N giorni fa»,
 oppure «Mai esportato»: una riga di solo testo sotto «Esporta i miei
 dati», niente pallino, niente avvisi. Lo aggiorna solo il JSON (il CSV
 non è un backup), e solo a salvataggio riuscito. Vale per il
 dispositivo (localStorage per utente); Esci ed Elimina account lo
-tolgono.
+tolgono. I giorni si contano sul calendario locale, non per blocchi di
+24 ore: esportato alle 23:50 e guardato alle 00:10 è «ieri», e l'ora
+legale non sposta niente. Una data nel futuro (orologio spostato) vale
+«oggi».
 
 **Dove.** Una riga «Esporta i miei dati» in Impostazioni porta alla
 pagina dedicata `/impostazioni/esporta`: riepilogo (voci con la prima e
