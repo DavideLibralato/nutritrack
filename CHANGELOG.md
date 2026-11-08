@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Il CSV del diario
+
+Branch `esporta`, commit 5. Nuovo `src/lib/esporta/diarioCsv.ts`: il
+file `libra-diario-AAAA-MM-GG.csv` dalle stesse voci del JSON, con
+nome del pasto e marca cercati solo dentro il file (anche nei pasti e
+negli alimenti citati). Kcal come la riga in Oggi, macro a un decimale,
+grammi come salvati; separatore `;`, virgola decimale, BOM UTF-8, CRLF,
+virgolette dove servono, apostrofo davanti ai campi di testo che
+Excel prenderebbe per formule (alimento, marca, pasto). Colonne e
+regole scritte in PUNTO §10.4. 14 test permanenti nuovi in
+`diarioCsv.test.ts`, con un lettore CSV come quello di Excel per
+rileggere i campi. Diciassette rotture da una copia del file: il primo
+giro non era valido (vitest non caricava il file di test, errore
+interno «reading 'config'», sparito al giro dopo). Rifatta da sola, la
+rottura delle kcal troncate non era presa: test rafforzato con un
+valore a ,94. Al secondo giro altre due non prese: ordine per testo
+(test con un orario in un altro fuso) e voci cancellate (filtro
+doppione tolto: le voci arrivano già vive dal JSON). Dopo le
+correzioni tutte prese.
+
 ## 2026-11-07 — La foto profilo nel JSON di Esporta
 
 Branch `esporta`, commit 4. Nuovo `src/lib/esporta/fotoEsportazione.ts`:

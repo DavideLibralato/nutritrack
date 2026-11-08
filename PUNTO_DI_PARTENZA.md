@@ -7271,12 +7271,19 @@ la foto / non inclusa (serve la rete: offline e senza copia sul
 telefono non si sa se c'è). Per la foto inclusa l'intestazione dice
 anche se è stata verificata col server o è la copia del telefono.
 
-**Il CSV.** Le voci vive, con data, pasto, ora, alimento, marca, grammi,
-kcal e macro, calcolati con le stesse funzioni di Oggi. Per Excel in
-italiano: separatore `;`, virgola decimale, BOM UTF-8, virgolette dove
-servono. Ogni campo di testo (nome, marca, pasto) che comincia con un
-carattere da formula (`=`, `+`, `-`, `@`) viene reso innocuo: Excel lo
-eseguirebbe.
+**Il CSV.** Si costruisce dalla stessa raccolta del JSON, quindi le voci
+sono le stesse. Colonne: Data (gg/mm/aaaa), Pasto, Ora (del consumo,
+ora locale, vuota se manca), Alimento, Marca, Grammi, Kcal, Proteine
+(g), Carboidrati (g), Grassi (g). Le kcal della voce sono quelle della
+sua riga in Oggi (`Math.round(totaleVoce(voce).kcal)`); i macro a un
+decimale, perché Oggi li mostra solo come totali del giorno. La marca è
+quella attuale dell'alimento: la voce copia solo nome e valori. Ordine:
+giorno, pasto per orario, ora di inserimento. Per Excel in italiano:
+separatore `;`, virgola decimale senza punto delle migliaia, BOM UTF-8,
+righe chiuse da CRLF, virgolette dove servono. Ogni campo di testo
+(alimento, marca, pasto) che comincia con un carattere da formula
+(`=`, `+`, `-`, `@`, tab, a capo) riceve un apostrofo davanti: Excel lo
+eseguirebbe. Che Numbers lo apra bene si prova a mano.
 
 **Salvare il file su iPhone.** Il file si prepara prima del tocco: la
 condivisione vuole un tocco appena fatto, e un'attesa in mezzo la fa
