@@ -176,6 +176,16 @@ export interface Alimento extends RigaBase {
   porzione_default_g: number; // NOT NULL sul database
   fonte: FonteAlimento;
   verificato: boolean;
+  // L'alimento del catalogo precaricato da cui viene questa copia
+  // (`ciqual:<codice>` o `off:<codice a barre>`, src/lib/catalogo/
+  // catalogoPrecaricato.ts); null per tutti gli altri. Colonna `text`
+  // nullable senza default né vincoli (migration alimenti_catalogo_id,
+  // 08/11; confrontata con information_schema.columns lo stesso giorno).
+  // Facoltativo (`?`), non solo nullable, come valido_dal dei pasti: una
+  // riga salvata su Dexie prima della version(10) non ha la chiave.
+  // Leggerlo sempre con `?? null`. Una riga nuova lo scrive sempre, anche
+  // null (salvaAlimento, aggiungiDalCatalogo); una modifica non lo tocca.
+  catalogo_id?: string | null;
 }
 
 export interface VoceDiario extends RigaBase {

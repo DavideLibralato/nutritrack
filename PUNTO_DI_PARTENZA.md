@@ -4122,6 +4122,19 @@ serviranno, ma la loro forma condiziona le altre e va decisa adesso.
 - `porzione_default_g`
 - `fonte` (manuale / etichetta / barcode / off / ai / ricetta)
 - `verificato`
+- **`catalogo_id`** (`text`, nullable, nessun default, nessun vincolo né
+  indice; migration `alimenti_catalogo_id`, testo in
+  `supabase/migrations/20261108134603_alimenti_catalogo_id.sql`,
+  applicata da Cowork l'08/11 dopo il blocco di prove RESOCONTO eseguito
+  da Davide: colonna verificata, RLS con le sue 4 policy, 139 righe con
+  il valore null, advisors senza avvisi nuovi). L'alimento del catalogo
+  precaricato da cui viene una copia: `ciqual:<codice>` o `off:<codice a
+  barre>` (sezione 10.1). Null per tutti gli altri, compresi quelli
+  arrivati da un amico (`manda_alimenti` e `rispondi_alimenti_condivisi`
+  elencano le colonne e non la copiano). Lo scrivono `aggiungiDalCatalogo`
+  (con l'id) e `salvaAlimento` (null, in creazione); una modifica non lo
+  tocca. Su Dexie `version(10)`, stessi indici della 9: il campo è
+  facoltativo, una riga salvata prima non ha la chiave e vale null
 
 **`voci_diario`** — la riga di diario
 - riferimento all'alimento, `quantita_g`, `data`

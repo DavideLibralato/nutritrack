@@ -12,6 +12,8 @@ import type { Alimento, FonteAlimento } from "../db/tipi";
 import { normalizzaSpazi, testoConfronto, trovaDoppione } from "../catalogo/doppioniAlimenti";
 import { campiDiversi, valoriDi, type ValoriAlimento } from "../catalogo/alimentiInArrivo";
 import { eModificabile } from "../catalogo/alimentiModificabili";
+import type { AlimentoCatalogo } from "../catalogo/catalogoPrecaricato";
+import { statoNelCatalogo } from "../catalogo/neiTuoi";
 import { repositoryAlimenti } from "./index";
 
 // Il catalogo locale visibile all'utente: i suoi alimenti privati più quelli
@@ -187,8 +189,73 @@ export async function salvaAlimento(
         sale_100g: null,
         fonte: codice?.fonte ?? "manuale",
         verificato: false,
+        // Sempre scritto, anche null: una riga nuova ha tutte le chiavi
+        // (tipi.ts, Alimento.catalogo_id).
+        catalogo_id: null,
       });
       return { esito: "salvato", alimento };
+    }
+  );
+}
+
+// --- «Aggiungi» dal catalogo precaricato (PUNTO_DI_PARTENZA.md §10.1) ---
+
+export type EsitoAggiuntaDalCatalogo =
+  | { esito: "aggiunto"; alimento: Alimento }
+  // Era già fra i suoi (una copia, anche rinominata, o un doppione per
+  // codice o per nome e marca: statoNelCatalogo). Niente scritto;
+  // `alimento` è quello che «Apri» apre.
+  | { esito: "nei-tuoi"; alimento: Alimento };
+
+// Crea un alimento dell'utente dall'alimento del catalogo: una riga nuova a
+// ogni aggiunta (id nuovo, mai uno calcolato), con `catalogo_id` che dice
+// da dove viene. Così una copia cancellata e poi riaggiunta nasce di nuovo
+// invece di tornare in vita, che la discesa potrebbe annullare (§10.1, §9.2).
+//
+// Come salvaAlimento: si rilegge il catalogo dell'utente e si scrive nella
+// stessa transazione (`alimenti` + `outbox`). Un doppio tocco su «Aggiungi»
+// fa due transazioni una dopo l'altra: la seconda trova la copia della
+// prima e non scrive. La copia sale con la sync di sempre.
+//
+// Cosa si copia: nome, marca, codice, porzione, i quattro valori e anche
+// zuccheri, fibre, saturi e sale (si salvano, non si mostrano). `fonte`
+// 'off' per i prodotti di Open Food Facts, 'manuale' per gli sfusi di
+// Ciqual: nessun valore nuovo nel vincolo del database, l'origine vera la
+// dice `catalogo_id`. Privato, non verificato: si modifica come ogni altro
+// alimento suo.
+//
+// L'Annulla dopo «Aggiungi» è l'eliminazione di sempre
+// (eliminaAlimenti in composizioni.ts, con il solo id della copia).
+export async function aggiungiDalCatalogo(
+  userId: string,
+  voce: AlimentoCatalogo
+): Promise<EsitoAggiuntaDalCatalogo> {
+  return db.transaction(
+    "rw",
+    [db.alimenti, db.outbox],
+    // async/await: vedi salvaAlimento.
+    async (): Promise<EsitoAggiuntaDalCatalogo> => {
+      const stato = statoNelCatalogo(voce, await catalogoLocale(userId), userId);
+      if (stato.stato === "nei-tuoi") return { esito: "nei-tuoi", alimento: stato.alimento };
+      const alimento = await repositoryAlimenti.crea({
+        user_id: userId,
+        nome: voce.nome,
+        marca: voce.marca,
+        barcode: voce.barcode,
+        kcal_100g: voce.kcal_100g,
+        proteine_100g: voce.proteine_100g,
+        carboidrati_100g: voce.carboidrati_100g,
+        grassi_100g: voce.grassi_100g,
+        zuccheri_100g: voce.zuccheri_100g,
+        fibre_100g: voce.fibre_100g,
+        saturi_100g: voce.saturi_100g,
+        sale_100g: voce.sale_100g,
+        porzione_default_g: voce.porzione_default_g,
+        fonte: voce.origine === "off" ? "off" : "manuale",
+        verificato: false,
+        catalogo_id: voce.id,
+      });
+      return { esito: "aggiunto", alimento };
     }
   );
 }

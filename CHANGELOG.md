@@ -5,6 +5,32 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Catalogo precaricato: migration applicata, «Aggiungi dal catalogo» e «Nei tuoi»
+
+Branch `catalogo`, commit 4. Migration `alimenti_catalogo_id`
+**applicata** da Cowork alle 14:46, versione `20261108134603`, dopo il
+blocco di prove RESOCONTO eseguito da Davide nel SQL Editor; file
+rinominato con `git mv` in `20261108134603_alimenti_catalogo_id.sql`
+(md5 del file uguale a quello del testo registrato su Supabase,
+`d531e34f…`). Verificati da Cowork colonna, RLS con 4 policy, 139 righe
+con il valore null, `get_advisors` senza avvisi nuovi. `tipi.ts`:
+`catalogo_id?: string | null` su `Alimento`, confrontato con
+`information_schema.columns` (sul server c'è anche `creato_il`, con il
+default `now()`, che `tipi.ts` non ha da prima: non toccato). PUNTO §4,
+la colonna. Codice: `catalogoPrecaricato.ts` (il file del catalogo,
+tipizzato), `statoNelCatalogo` in `neiTuoi.ts` (una copia con quel
+`catalogo_id` anche rinominata, oppure un doppione per codice o per nome
+e marca; contano solo i vivi dell'utente), `aggiungiDalCatalogo` in
+`repository/alimenti.ts` (una riga nuova a ogni aggiunta, nella
+transazione con `outbox`, tutti i valori compresi i quattro nascosti,
+`fonte` 'off' o 'manuale'); `salvaAlimento` scrive `catalogo_id: null`
+in creazione. Test permanenti `neiTuoi.test.ts` (9) e
+`aggiuntaDalCatalogo.test.ts` (9: valori, salita al server con
+`catalogo_id`, sfuso, doppio tocco, doppione per codice e per nome e
+marca, copia rinominata, Annulla e riaggiunta con riga nuova, alimento
+a mano con null), rotti da copie dei due file in 11 modi e ripristinati.
+Nessuna interfaccia ancora: il catalogo non si vede.
+
 ## 2026-11-08 — Catalogo precaricato: la colonna catalogo_id (non applicata) e Dexie version(10)
 
 Branch `catalogo`, commit 3. Migration `alimenti_catalogo_id`, nel file
