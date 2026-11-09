@@ -5,6 +5,52 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-08 — Catalogo precaricato: le schede di Impostazioni > Alimenti
+
+Branch `catalogo`, commit 6. Impostazioni > Alimenti ha due schede,
+«I miei» (la pagina di prima) e «Catalogo», con `SelettoreSegmenti` (ora
+con un conteggio facoltativo). La scheda «Catalogo» (`SchedaCatalogo`):
+ricerca su nome e marca, filtri per categoria, «Nascondi quelli che hai»
+(in localStorage, solo su questo telefono), il conteggio («183 · 2 già
+nei tuoi», «181 da aggiungere»), le righe con «Aggiungi» o «Nei tuoi»
+(`RigaCatalogoPrecaricato`), in fondo le fonti. Un tocco sulla riga apre
+dal basso `SchedaAlimentoCatalogo` (`FoglioDalBasso`, ora con
+sottotitolo e «Chiudi» facoltativi): kcal, P, C, G, porzione, codice,
+fonte; «Aggiungi ai miei alimenti», oppure il motivo di «Nei tuoi» e
+«Apri «nome»». Dopo «Aggiungi» la barra «Aggiunto ai tuoi: …» con
+«Apri» (la modifica della copia) e «Annulla» (`eliminaAlimenti`). Nel
+catalogo niente «+» né selezione. In «I miei» le copie hanno «dal
+catalogo». Logica pura in `elencoCatalogo.ts`. Test permanenti
+`elencoCatalogo.test.ts` (9) e 6 casi nuovi in `page.test.tsx` (le
+Gocciole «Nei tuoi» per codice con «Apri», Aggiungi e Annulla, Apri
+dalla barra e «dal catalogo», Aggiungi dalla scheda, Nascondi ricordato,
+senza rete), rotti da copie dei file in 10 modi e ripristinati.
+**Difetto trovato e corretto prima del commit** (09/11): il test di
+«Apri» dalla barra è caduto 1 volta su 30 giri (0 su 30 senza rottura;
+output salvato). Causa: «Apri» cercava la copia appena nata nell'elenco
+della pagina, che arriva dalla lettura live di Dexie e si aggiorna un
+attimo dopo la scrittura; un tocco arrivato prima non la trovava, la
+barra spariva e non si apriva niente. Provato rallentando di 300 ms la
+lettura live su una copia di `page.tsx`: 3 fallimenti su 3, con la copia
+assente dall'elenco. Ora «Apri» rilegge la copia da Dexie per id al
+tocco: viva → la sua modifica, cancellata intanto → niente. Test
+permanente `page.apriDopoAggiunta.test.tsx` (lettura live rallentata
+apposta: senza la correzione fallisce sempre, 3 su 3; e la copia
+cancellata che non si apre), rotto da una copia in 2 modi. Cercato lo
+stesso schema nel resto dell'app: nessun altro caso; le altre letture
+per id da un elenco live o trovano una riga che c'era già prima
+dell'azione, o tengono come ripiego l'oggetto restituito dalla scrittura
+(Aggiungi, `alimentoScelto`; `CreaAlimentoForm`, `rigaViva`;
+`ModificaPastoSalvato`). **Per il commit del riquadro «Nel catalogo» in
+Aggiungi**: il «+» apre lo sheet quantità con l'alimento restituito da
+`aggiungiDalCatalogo`, mai cercandolo nell'elenco della pagina. Nella build il catalogo sta nel file JS della pagina Alimenti,
+citato dal suo HTML, quindi il service worker lo mette in cache con la
+pagina. **Verifica** (Davide): risalvare un alimento con più di due
+decimali nei carboidrati o nei grassi non toglie i valori nascosti,
+perché il caso non esiste. Le colonne sono `numeric(7,2)` su Supabase
+(0 righe con più decimali) e ogni scrittura in Dexie arrotonda a due
+decimali. Nessun confronto arrotondato aggiunto.
+
 ## 2026-11-08 — I valori nascosti in modifica
 
 Branch `catalogo`, commit 5. In `salvaAlimento`, in modifica

@@ -136,6 +136,13 @@ export function messaggioAlimentoCreato(nome: string): MessaggioBarra {
   return { testo: "Creato:", nome, icona: "spunta" };
 }
 
+// Impostazioni > Alimenti, scheda «Catalogo», dopo «Aggiungi»
+// (PUNTO_DI_PARTENZA.md §10.1; mockup catalogo-precaricato.html): con
+// «Apri» e «Annulla». `etichetta`: «Nome · Marca».
+export function messaggioAggiuntoDalCatalogo(etichetta: string): MessaggioBarra {
+  return { testo: "Aggiunto ai tuoi:", nome: etichetta, icona: "spunta" };
+}
+
 export const MESSAGGIO_ANNULLATO: MessaggioBarra = {
   testo: "Annullato.",
   icona: "annulla",

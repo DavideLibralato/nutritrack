@@ -39,6 +39,14 @@ export default function RigaAlimentoCatalogo({ alimento, selezionato, onTocco }:
           <span className="truncate">{etichettaAlimento(alimento)}</span>
           <span className="mt-0.5 text-sm text-muted">
             {Math.round(alimento.kcal_100g)} kcal / 100 g
+            {/* Una copia presa dal catalogo precaricato, per riconoscerla
+                (PUNTO §10.1; scelta di Davide, 08/11). */}
+            {(alimento.catalogo_id ?? null) !== null && (
+              <>
+                {" · "}
+                <span className="font-medium text-accent">dal catalogo</span>
+              </>
+            )}
           </span>
         </span>
       </button>

@@ -13,15 +13,24 @@
 
 import { useEffect, useId, type ReactNode } from "react";
 import { useAreaVisibile } from "@/lib/areaVisibile";
+import { CLASSE_FOCUS } from "@/lib/classeFocus";
 
 export default function FoglioDalBasso({
   titolo,
+  sottotitolo,
+  conChiudi = false,
   bloccato = false,
   ruolo = "dialog",
   onChiudi,
   children,
 }: {
   titolo: string;
+  // Una riga grigia sotto il titolo (la scheda di un alimento del
+  // catalogo: «Pavesi · Dolci e snack»).
+  sottotitolo?: string;
+  // Il pulsante tondo «Chiudi» a destra del titolo, come nel mockup del
+  // catalogo precaricato.
+  conChiudi?: boolean;
   bloccato?: boolean;
   // "alertdialog" per una conferma di qualcosa che non si annulla.
   ruolo?: "dialog" | "alertdialog";
@@ -59,9 +68,39 @@ export default function FoglioDalBasso({
           onClick={(e) => e.stopPropagation()}
         >
           <span aria-hidden className="h-[5px] w-9 self-center rounded-full bg-border" />
-          <h2 id={idTitolo} className="font-display text-xl font-bold">
-            {titolo}
-          </h2>
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 id={idTitolo} className="font-display text-xl font-bold">
+                {titolo}
+              </h2>
+              {sottotitolo && <p className="mt-1 text-sm text-muted">{sottotitolo}</p>}
+            </div>
+            {conChiudi && (
+              // 44 px di tocco, il cerchio grigio dentro è il disegno.
+              <button
+                type="button"
+                onClick={chiudi}
+                aria-label="Chiudi"
+                className={`-m-1 flex size-11 shrink-0 items-center justify-center rounded-full ${CLASSE_FOCUS}`}
+              >
+                <span className="flex size-9 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--linea)_70%,transparent)] text-muted">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </span>
+              </button>
+            )}
+          </div>
           {children}
         </div>
       </div>

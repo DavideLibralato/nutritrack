@@ -2,7 +2,8 @@
 // docs/mockups/impostazioni.html, "Normale | Allenamento"): due o tre scelte
 // affiancate in una capsula grigia, quella attiva su una pastiglia più
 // chiara (--segmento-attivo: bianca in chiaro, marrone chiaro al buio).
-// Lo usano Obiettivi (Normale | Allenamento) e Profilo (il sesso).
+// Lo usano Obiettivi (Normale | Allenamento), Profilo (il sesso) e
+// Impostazioni > Alimenti (I miei | Catalogo).
 //
 // Ogni segmento è un bottone con aria-pressed, come i pulsanti di scelta di
 // prima. `pallino`: un puntino d'accento accanto all'etichetta, per dire che
@@ -16,6 +17,9 @@ export interface Segmento<T extends string> {
   // Nome completo per lo screen reader, se l'etichetta è abbreviata.
   etichettaAccessibile?: string;
   pallino?: boolean;
+  // Un numero piccolo e grigio dopo l'etichetta («I miei 55», Impostazioni
+  // > Alimenti; mockup catalogo-precaricato.html).
+  conteggio?: number;
 }
 
 export default function SelettoreSegmenti<T extends string>({
@@ -51,6 +55,9 @@ export default function SelettoreSegmenti<T extends string>({
             } ${CLASSE_FOCUS}`}
           >
             {s.etichetta}
+            {s.conteggio !== undefined && (
+              <span className="text-[13px] font-normal tabular-nums text-muted">{s.conteggio}</span>
+            )}
             {s.pallino && (
               <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
             )}

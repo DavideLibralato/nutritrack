@@ -354,3 +354,103 @@ describe("Catalogo alimenti: «Aggiungi codice a barre»", () => {
     expect(await screen.findByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
   });
 });
+
+// La scheda «Catalogo» (PUNTO_DI_PARTENZA.md §10.1; mockup
+// docs/mockups/catalogo-precaricato.html). Test permanenti per quello che
+// sbaglierebbe in silenzio: un prodotto che hai già (stesso codice) che si
+// può aggiungere una seconda volta; «Aggiungi» che non crea la copia in
+// Dexie, o «Annulla» che non la toglie; «Apri» che apre un altro
+// alimento; «Nascondi quelli che hai» che non si ricorda.
+describe("Catalogo precaricato: la scheda «Catalogo»", () => {
+  async function apriCatalogo() {
+    fireEvent.click(await screen.findByRole("button", { name: /^Catalogo/ }));
+    return screen.findByRole("searchbox", { name: "Cerca nel catalogo" });
+  }
+
+  it("le Gocciole con lo stesso codice sono «Nei tuoi»: la scheda lo dice e «Apri» apre le tue", async () => {
+    await creaAlimento("Gocciole chocolate", "Pavesi", "8013355999143");
+    render(<AlimentiPage />);
+    fireEvent.change(await apriCatalogo(), { target: { value: "gocciole" } });
+
+    expect(screen.queryByRole("button", { name: "Aggiungi Gocciole chocolate · Pavesi ai tuoi alimenti" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Gocciole chocolate · Pavesi, 488 kcal per 100 g, già nei tuoi$/ }));
+    const scheda = await screen.findByRole("dialog", { name: "Gocciole chocolate" });
+    expect(within(scheda).getByText("Hai già un alimento con questo codice a barre: «Gocciole chocolate · Pavesi».")).toBeTruthy();
+    expect(within(scheda).getByText("Per 100 g, nel catalogo")).toBeTruthy();
+    expect(within(scheda).queryByRole("button", { name: "Aggiungi ai miei alimenti" })).toBeNull();
+
+    fireEvent.click(within(scheda).getByRole("button", { name: "Apri «Gocciole chocolate»" }));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("Gocciole chocolate");
+  });
+
+  it("«Aggiungi» crea la copia, la riga passa a «Nei tuoi», «Annulla» la toglie", async () => {
+    render(<AlimentiPage />);
+    fireEvent.change(await apriCatalogo(), { target: { value: "mandorle" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti" }));
+
+    expect(await screen.findByText("Aggiunto ai tuoi:")).toBeTruthy();
+    const copie = await db.alimenti.filter((a) => a.catalogo_id === "ciqual:15000").toArray();
+    expect(copie).toHaveLength(1);
+    expect(copie[0]).toMatchObject({ user_id: USER_ID, nome: "Mandorle", fonte: "manuale", deleted_at: null });
+    expect(await screen.findByRole("button", { name: /^Mandorle, \d+ kcal per 100 g, già nei tuoi$/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+    await waitFor(async () => expect((await db.alimenti.get(copie[0].id))?.deleted_at).not.toBeNull());
+    expect(await screen.findByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti" })).toBeTruthy();
+  });
+
+  it("«Apri» nella barra apre la modifica della copia; in «I miei» la copia dice «dal catalogo»", async () => {
+    render(<AlimentiPage />);
+    fireEvent.change(await apriCatalogo(), { target: { value: "mandorle" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apri" }));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("Mandorle");
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Torna al catalogo" })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: /^I miei/ }));
+    const riga = await screen.findByRole("button", { name: /Mandorle/ });
+    expect(within(riga).getByText("dal catalogo")).toBeTruthy();
+  });
+
+  it("dalla scheda: «Aggiungi ai miei alimenti» crea la copia e la scheda si chiude", async () => {
+    render(<AlimentiPage />);
+    fireEvent.change(await apriCatalogo(), { target: { value: "spaghetti" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Spaghetti n\.5 · Barilla, / }));
+    const scheda = await screen.findByRole("dialog", { name: "Spaghetti n.5" });
+    expect(within(scheda).getByText("8076800195057")).toBeTruthy();
+    expect(within(scheda).getByText(/Fonte: Open Food Facts$/)).toBeTruthy();
+    fireEvent.click(within(scheda).getByRole("button", { name: "Aggiungi ai miei alimenti" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Spaghetti n.5" })).toBeNull());
+    expect(await db.alimenti.filter((a) => a.catalogo_id === "off:8076800195057").count()).toBe(1);
+  });
+
+  it("«Nascondi quelli che hai»: toglie quelli che hai, il conteggio lo dice, e si ricorda", async () => {
+    window.localStorage.removeItem("nutritrack:catalogo:nascondi-quelli-che-hai");
+    await creaAlimento("Gocciole chocolate", "Pavesi", "8013355999143");
+    render(<AlimentiPage />);
+    await apriCatalogo();
+    expect(screen.getByText("183 · 1 già nei tuoi")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("switch", { name: "Nascondi quelli che hai" }));
+    expect(screen.getByText("182 da aggiungere")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Gocciole chocolate · Pavesi, / })).toBeNull();
+    expect(window.localStorage.getItem("nutritrack:catalogo:nascondi-quelli-che-hai")).toBe("1");
+
+    cleanup();
+    render(<AlimentiPage />);
+    await apriCatalogo();
+    expect(screen.getByRole("switch", { name: "Nascondi quelli che hai" }).getAttribute("aria-checked")).toBe("true");
+    window.localStorage.removeItem("nutritrack:catalogo:nascondi-quelli-che-hai");
+  });
+
+  it("senza rete il catalogo si sfoglia e si aggiunge lo stesso", async () => {
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => false });
+    render(<AlimentiPage />);
+    fireEvent.change(await apriCatalogo(), { target: { value: "carote" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aggiungi Carote ai tuoi alimenti" }));
+    await waitFor(async () => expect(await db.alimenti.filter((a) => a.catalogo_id === "ciqual:20009").count()).toBe(1));
+  });
+});

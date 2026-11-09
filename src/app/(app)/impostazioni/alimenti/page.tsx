@@ -37,11 +37,20 @@
 //   Food Facts o con il solo codice), e Salva torna qui, senza sheet
 //   quantità. In "Modifica alimento" c'è «Aggiungi codice a barre»
 //   (CreaAlimentoForm, `aggiungiCodice`).
+// - Due schede sotto il titolo (PUNTO_DI_PARTENZA.md §10.1; mockup
+//   docs/mockups/catalogo-precaricato.html): «I miei», tutto quello qui
+//   sopra, e «Catalogo», il catalogo precaricato (SchedaCatalogo). A ogni
+//   visita si parte da «I miei». Nel catalogo niente «+», niente
+//   selezione, niente riga degli alimenti in arrivo; dopo «Aggiungi» la
+//   barra «Aggiunto ai tuoi: …» con «Apri» (la modifica della copia) e
+//   «Annulla» (eliminaAlimenti con la sola copia). In «I miei» le copie
+//   hanno sotto «dal catalogo».
 
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import {
+  repositoryAlimenti,
   repositoryComposizioni,
   repositoryComposizioniVoci,
   repositoryPreferiti,
@@ -69,11 +78,16 @@ import {
   testoRipristinoNonRiuscito,
 } from "@/lib/inserimento/testiAlimentiCancellati";
 import {
+  MESSAGGIO_ANNULLATO,
+  messaggioAggiuntoDalCatalogo,
   messaggioAlimentiEliminati,
   messaggioAlimentoCreato,
   messaggioRipristinato,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
+import { CATALOGO_PRECARICATO } from "@/lib/catalogo/catalogoPrecaricato";
+import SelettoreSegmenti from "@/components/SelettoreSegmenti";
+import SchedaCatalogo from "@/components/SchedaCatalogo";
 import { useOnline } from "@/lib/useOnline";
 import { createClient } from "@/lib/supabase/client";
 import { useAlimentiInArrivo } from "@/lib/amici/useAlimentiInArrivo";
@@ -149,7 +163,12 @@ type Barra = MessaggioBarra & {
   annullabile?: { nomi: string[]; traccia: TracciaEliminazioneAlimenti };
   // Presente solo dopo "Usa questi valori": cosa rimettere con "Annulla".
   annullaValori?: AnnullaValori;
+  // Presente solo dopo «Aggiungi» nel catalogo: la copia appena nata, per
+  // «Apri» e «Annulla».
+  aggiuntoDalCatalogo?: Alimento;
 };
+
+type Scheda = "miei" | "catalogo";
 
 // Lo sheet di conferma dell'eliminazione dalla selezione. Gli id e i nomi
 // sono fissati all'apertura: è su quell'elenco che l'utente conferma.
@@ -189,6 +208,7 @@ export default function AlimentiPage() {
     return repositoryPreferiti.ottieniTutti(userId);
   }, [userId]);
 
+  const [scheda, setScheda] = useState<Scheda>("miei");
   const [query, setQuery] = useState("");
   const [ordine, setOrdine] = useState<OrdineCatalogo>("piu-usati");
   const [modulo, setModulo] = useState<Modulo | null>(null);
@@ -369,6 +389,44 @@ export default function AlimentiPage() {
     }
   }
 
+  // «Annulla» dopo «Aggiungi» nel catalogo: la copia si elimina come ogni
+  // alimento (eliminaAlimenti, logico), e una nuova «Aggiungi» farà una
+  // riga nuova (PUNTO §10.1). La barra si toglie prima di scrivere, come
+  // sotto.
+  async function annullaAggiunta() {
+    const copia = barra?.aggiuntoDalCatalogo;
+    if (!userId || !copia) return;
+    setBarra(null);
+    try {
+      await eliminaAlimenti(userId, [copia.id]);
+      mostra(MESSAGGIO_ANNULLATO);
+    } catch {
+      // Non è cambiato niente: la barra offre di nuovo «Annulla».
+      setBarra({ id: crypto.randomUUID(), testo: "Non sono riuscito ad annullare. Riprova.", aggiuntoDalCatalogo: copia });
+    }
+  }
+
+  // «Apri» dopo «Aggiungi»: la modifica della copia, per cambiare nome o
+  // porzione. La copia si rilegge da Dexie per id al tocco: viva → la sua
+  // modifica, cancellata intanto (sync) → niente. NON dall'elenco della
+  // pagina (`catalogo`): la lettura live si aggiorna un attimo dopo la
+  // scrittura, e un tocco arrivato prima non ci trovava la copia appena
+  // nata (la barra spariva senza aprire niente; trovato il 09/11 da un
+  // test caduto 1 volta su 30, test in page.apriDopoAggiunta.test.tsx).
+  async function apriAggiunta() {
+    const copia = barra?.aggiuntoDalCatalogo;
+    if (!copia) return;
+    setBarra(null);
+    const viva = await repositoryAlimenti.ottieniPerId(copia.id);
+    if (viva && viva.deleted_at === null) apri({ tipo: "modifica", alimento: viva });
+  }
+
+  function cambiaScheda(nuova: Scheda) {
+    setScheda(nuova);
+    setSelezione(null);
+    setBarra(null);
+  }
+
   // "Annulla" nella barra, dopo un'eliminazione dal form o dalla
   // selezione. La barra si toglie PRIMA di scrivere, così un secondo tocco
   // ravvicinato non lancia un secondo ripristino.
@@ -421,134 +479,162 @@ export default function AlimentiPage() {
     <main className={CLASSE_PAGINA}>
       <IntestazioneSottopagina titolo="Alimenti" />
 
-      {/* Anche con il catalogo vuoto: è il primo giorno, quando un alimento
-          mandato serve di più. Non in selezione, dove un tocco qui
-          confonderebbe le due cose. */}
-      {vociInArrivo.length > 0 && !selezione && (
-        <RigaAlimentiInArrivo
-          numero={vociInArrivo.length}
-          mittenti={usernameMittenti(righeInArrivo, nomiInArrivo)}
-          onApri={() => {
-            setBarra(null);
-            setFoglioInArrivo(true);
-          }}
+      <SelettoreSegmenti
+        etichetta="Quali alimenti"
+        valore={scheda}
+        onCambia={cambiaScheda}
+        segmenti={[
+          { valore: "miei", etichetta: "I miei", conteggio: miei.length },
+          { valore: "catalogo", etichetta: "Catalogo", conteggio: CATALOGO_PRECARICATO.length },
+        ]}
+      />
+
+      {scheda === "catalogo" ? (
+        <SchedaCatalogo
+          userId={userId}
+          catalogoUtente={catalogo}
+          puoAprire={(a) => eModificabile(a, userId)}
+          onAggiunto={(copia) =>
+            setBarra({
+              id: crypto.randomUUID(),
+              ...messaggioAggiuntoDalCatalogo(etichettaAlimento(copia)),
+              aggiuntoDalCatalogo: copia,
+            })
+          }
+          onApri={(a) => apri({ tipo: "modifica", alimento: a })}
         />
-      )}
-
-      {/* La ricerca con Scansiona accanto. Anche a catalogo vuoto
-          (proposta 2 del mockup): il pulsante sta dove starà sempre, e il
-          campo resta, attenuato e spento, perché non c'è niente da
-          cercare. In selezione Scansiona non c'è, come il "+". */}
-      <div className="flex gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca un alimento"
-            aria-label="Cerca un alimento"
-            enterKeyHint="search"
-            disabled={miei.length === 0}
-            className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 text-base disabled:opacity-[0.55] ${CLASSE_FOCUS}`}
-          />
-          {query !== "" && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Svuota la ricerca"
-              className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
-            >
-              <Croce />
-            </button>
-          )}
-        </div>
-        {!selezione && (
-          <button
-            type="button"
-            // getUserMedia come PRIMA cosa del tocco, come in Aggiungi:
-            // nell'app installata iOS non chiedeva il permesso quando
-            // partiva dopo il ridisegno (07/11).
-            onClick={() => {
-              setBarra(null);
-              setScansione(richiediFotocamera());
-            }}
-            disabled={!online}
-            aria-label={online ? "Scansiona il codice a barre" : "Scansione non disponibile senza connessione"}
-            className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
-          >
-            <IconaCodiceBarre />
-          </button>
-        )}
-      </div>
-      {!online && !selezione && (
-        <p
-          role="status"
-          className="-mt-2 flex items-center gap-2 rounded-xl bg-surface px-3.5 py-2.5 text-sm text-muted"
-        >
-          <IconaSenzaRete className="shrink-0" />
-          {TESTO_SENZA_RETE}
-        </p>
-      )}
-
-      {miei.length === 0 ? (
-        <div className="rounded-[20px] border border-border bg-surface px-[18px] py-[22px]">
-          <h2 className="font-semibold">Ancora nessun alimento</h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted">
-            Crea il primo con il + qui sotto, oppure scansiona una confezione con il pulsante
-            accanto alla ricerca.
-          </p>
-        </div>
       ) : (
         <>
-          <div className="-mt-1 flex items-center justify-between px-1">
-            <p className="text-sm text-muted">
-              {elenco.length === 1 ? "1 alimento" : `${elenco.length} alimenti`}
-            </p>
-            {/* Un <select> nativo: sul telefono apre il selettore di
-                sistema, come il titolo del pasto in Aggiungi. */}
-            <div className="relative">
-              <select
-                value={ordine}
-                onChange={(e) => setOrdine(e.target.value as OrdineCatalogo)}
-                aria-label="Ordina"
-                className={`min-h-11 appearance-none rounded bg-transparent pr-6 text-right text-sm font-semibold ${CLASSE_FOCUS}`}
-              >
-                {ORDINI.map((o) => (
-                  <option key={o.valore} value={o.valore}>
-                    {o.etichetta}
-                  </option>
-                ))}
-              </select>
-              <ChevronGiu className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-muted" />
-            </div>
-          </div>
+          {/* Anche con il catalogo vuoto: è il primo giorno, quando un alimento
+              mandato serve di più. Non in selezione, dove un tocco qui
+              confonderebbe le due cose. */}
+          {vociInArrivo.length > 0 && !selezione && (
+            <RigaAlimentiInArrivo
+              numero={vociInArrivo.length}
+              mittenti={usernameMittenti(righeInArrivo, nomiInArrivo)}
+              onApri={() => {
+                setBarra(null);
+                setFoglioInArrivo(true);
+              }}
+            />
+          )}
 
-          {/* Come nel mockup, sopra l'elenco; non in selezione, dove si sa
-              già, e non con un alimento solo, dove non serve. */}
-          {!selezione && miei.length > 1 && (
-            <p className="-mt-2 px-1 text-sm text-muted">
-              Tieni premuto su un alimento per selezionarne più di uno insieme.
+          {/* La ricerca con Scansiona accanto. Anche a catalogo vuoto
+              (proposta 2 del mockup): il pulsante sta dove starà sempre, e il
+              campo resta, attenuato e spento, perché non c'è niente da
+              cercare. In selezione Scansiona non c'è, come il "+". */}
+          <div className="flex gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cerca un alimento"
+                aria-label="Cerca un alimento"
+                enterKeyHint="search"
+                disabled={miei.length === 0}
+                className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 text-base disabled:opacity-[0.55] ${CLASSE_FOCUS}`}
+              />
+              {query !== "" && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="Svuota la ricerca"
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
+                >
+                  <Croce />
+                </button>
+              )}
+            </div>
+            {!selezione && (
+              <button
+                type="button"
+                // getUserMedia come PRIMA cosa del tocco, come in Aggiungi:
+                // nell'app installata iOS non chiedeva il permesso quando
+                // partiva dopo il ridisegno (07/11).
+                onClick={() => {
+                  setBarra(null);
+                  setScansione(richiediFotocamera());
+                }}
+                disabled={!online}
+                aria-label={online ? "Scansiona il codice a barre" : "Scansione non disponibile senza connessione"}
+                className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
+              >
+                <IconaCodiceBarre />
+              </button>
+            )}
+          </div>
+          {!online && !selezione && (
+            <p
+              role="status"
+              className="-mt-2 flex items-center gap-2 rounded-xl bg-surface px-3.5 py-2.5 text-sm text-muted"
+            >
+              <IconaSenzaRete className="shrink-0" />
+              {TESTO_SENZA_RETE}
             </p>
           )}
 
-          {elenco.length > 0 ? (
-            <ul ref={rifLista} className="-mt-2">
-              {elenco.map((a) => (
-                <RigaAlimentoCatalogo
-                  key={a.id}
-                  alimento={a}
-                  selezionato={selezione ? selezione.has(a.id) : null}
-                  onTocco={() => tocco(a)}
-                />
-              ))}
-            </ul>
+          {miei.length === 0 ? (
+            <div className="rounded-[20px] border border-border bg-surface px-[18px] py-[22px]">
+              <h2 className="font-semibold">Ancora nessun alimento</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                Crea il primo con il + qui sotto, oppure scansiona una confezione con il pulsante
+                accanto alla ricerca.
+              </p>
+            </div>
           ) : (
-            <p className="px-6 pt-10 text-center text-sm leading-relaxed text-muted">
-              Nessun alimento trovato.
-              <br />
-              Prova un altro termine di ricerca.
-            </p>
+            <>
+              <div className="-mt-1 flex items-center justify-between px-1">
+                <p className="text-sm text-muted">
+                  {elenco.length === 1 ? "1 alimento" : `${elenco.length} alimenti`}
+                </p>
+                {/* Un <select> nativo: sul telefono apre il selettore di
+                    sistema, come il titolo del pasto in Aggiungi. */}
+                <div className="relative">
+                  <select
+                    value={ordine}
+                    onChange={(e) => setOrdine(e.target.value as OrdineCatalogo)}
+                    aria-label="Ordina"
+                    className={`min-h-11 appearance-none rounded bg-transparent pr-6 text-right text-sm font-semibold ${CLASSE_FOCUS}`}
+                  >
+                    {ORDINI.map((o) => (
+                      <option key={o.valore} value={o.valore}>
+                        {o.etichetta}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronGiu className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-muted" />
+                </div>
+              </div>
+
+              {/* Come nel mockup, sopra l'elenco; non in selezione, dove si sa
+                  già, e non con un alimento solo, dove non serve. */}
+              {!selezione && miei.length > 1 && (
+                <p className="-mt-2 px-1 text-sm text-muted">
+                  Tieni premuto su un alimento per selezionarne più di uno insieme.
+                </p>
+              )}
+
+              {elenco.length > 0 ? (
+                <ul ref={rifLista} className="-mt-2">
+                  {elenco.map((a) => (
+                    <RigaAlimentoCatalogo
+                      key={a.id}
+                      alimento={a}
+                      selezionato={selezione ? selezione.has(a.id) : null}
+                      onTocco={() => tocco(a)}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <p className="px-6 pt-10 text-center text-sm leading-relaxed text-muted">
+                  Nessun alimento trovato.
+                  <br />
+                  Prova un altro termine di ricerca.
+                </p>
+              )}
+            </>
           )}
         </>
       )}
@@ -579,13 +665,19 @@ export default function AlimentiPage() {
                 ? { etichetta: "Annulla", onClick: () => void annullaEliminazione() }
                 : barra.annullaValori
                   ? { etichetta: "Annulla", onClick: () => void annullaValori() }
-                  : undefined
+                  : barra.aggiuntoDalCatalogo
+                    ? { etichetta: "Annulla", onClick: () => void annullaAggiunta() }
+                    : undefined
+            }
+            azioneSecondaria={
+              barra.aggiuntoDalCatalogo ? { etichetta: "Apri", onClick: () => void apriAggiunta() } : undefined
             }
             sopra
             onChiudi={() => setBarra(null)}
           />
         )}
-        {!selezione && !foglioVisibile && (
+        {/* Nel catalogo niente «+»: lì non si crea (mockup). */}
+        {scheda === "miei" && !selezione && !foglioVisibile && (
           <div className="flex justify-end px-4">
             <button
               type="button"
