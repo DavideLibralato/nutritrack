@@ -1481,27 +1481,107 @@ descritto nella sezione 7.
 
 ### Statistiche
 
-- **Selettore Settimana / Mese** in alto, a segmenti
-- **Due riquadri di sintesi**: "Media kcal 2043" e "Media proteine 126 g". Numero
-  grande, etichetta piccola sopra. **La media conta solo i giorni con almeno una
-  voce**: dividere per 7 quando due giorni sono vuoti abbassa la media senza che
-  nessuno se ne accorga, e fa sembrare un deficit una settimana normale in cui
-  hai solo dimenticato di registrare. Sotto il numero, in piccolo, su quanti
-  giorni è calcolata ("su 5 giorni")
-- **Grafico a barre "Calorie giornaliere"**: una barra per giorno (L M M G V S D),
-  con **linea tratteggiata dell'obiettivo** etichettata ("obiettivo 2200").
-  Attenzione: con i giorni differenziati l'obiettivo **non è più unico** — la
-  linea continua diventa un trattino sopra ogni singola barra, e l'etichetta
-  sparisce. Anche la media settimanale va letta con prudenza quando mescola
-  giorni con target diversi. Il colore è informazione: barra normale = dentro l'obiettivo, barra calda = sopra
-  l'obiettivo, barra grigia = giorno senza dati. Nessuna legenda: il significato
-  si legge dal confronto con la linea
-- **Grafico a linea "Peso"**, con l'intervallo agli estremi ("6 sett. fa" →
-  "78,4 kg"), e la linea del peso obiettivo se impostato
+Decise il 09/11 sul mockup `docs/mockups/statistiche.html` (approvato da
+Davide; pubblicato in https://claude.ai/artifact/CLV3kpuTMFaerSVzZC5WMX),
+branch `statistiche`. Sostituiscono il testo di prima (due riquadri,
+linea dell'obiettivo legata all'interruttore, Recharts).
 
-Possibile più avanti, e senza bisogno di nessun dato esterno: **"Quando mangio"**,
-la distribuzione degli orari dei pasti e l'ora media dell'ultimo pasto. È una
-descrizione di un'abitudine, non un consiglio — resta dentro il perimetro.
+**Il periodo**
+- **Selettore Settimana / Mese**, a segmenti. Settimana di calendario
+  lunedì–domenica, mese di calendario. Frecce ‹ › per il periodo
+  precedente e successivo: non si va oltre il periodo in corso, né prima
+  del periodo della prima voce con data fino a oggi. Si parte dalla
+  settimana in corso
+- **Titolo del periodo**: "2 – 8 novembre" se la settimana sta in un mese
+  solo, "27 ott – 2 nov" a cavallo di due mesi, "Novembre 2026" per il
+  mese. Sotto: "Questa settimana", "Settimana scorsa" o "Questo mese"
+  (niente per gli altri periodi)
+- **Il periodo sta nell'indirizzo** (`/statistiche?vista=mese&dal=2026-10-01`):
+  dopo "Apri il giorno", il tasto indietro riporta allo stesso periodo.
+  `vista` e `dal` si controllano come `?giorno=` di Oggi (`dataScrivibile`):
+  un valore non valido, futuro o fuori dai limiti delle frecce riporta
+  alla settimana in corso, senza errori. Offline la pagina si apre con i
+  parametri come `/?giorno=`: il service worker salva la pagina per
+  percorso, senza la query (`chiavePagina`)
+
+**Quattro riquadri**, griglia 2×2, nell'ordine dell'app: Kcal, Grassi,
+Carboidrati, Proteine. Ognuno ha:
+- la **media**, che **conta solo i giorni con almeno una voce, fino a
+  oggi** (`eFuturo`): dividere per 7 quando due giorni sono vuoti abbassa la
+  media senza che nessuno se ne accorga, e fa sembrare un deficit una
+  settimana in cui hai solo dimenticato di registrare; una voce pianificata
+  per domani non conta;
+- "su N giorni";
+- "obiettivo X", oppure **"obiettivo medio X"** se l'obiettivo cambia fra i
+  giorni contati. L'obiettivo medio si calcola **sugli stessi giorni contati
+  nella media**; per ogni giorno vale il target di quel giorno (il periodo
+  valido quel giorno, `obiettivoValidoPer`, e il tipo di giorno effettivo,
+  con lo stesso ripiego su "normale" di Oggi);
+- lo **stato** in una pastiglia: "sotto", "in linea", "sopra" (regola dei
+  colori qui sotto). Per il tipo di obiettivo di una media vale quello
+  dell'**ultimo giorno contato**: è il periodo in cui sei.
+
+Senza giorni contati: "—" e "nessun giorno registrato", mai 0.
+
+**Barre "Calorie giornaliere"**, una per giorno
+- **Il segno dell'obiettivo lo decidono i dati, non l'interruttore dei
+  giorni differenziati**: se tutti i giorni del periodo hanno lo stesso
+  target, linea tratteggiata continua con l'etichetta "obiettivo 2200";
+  se no, un trattino sopra ogni barra con l'obiettivo di quel giorno,
+  senza etichetta. Motivo: anche a interruttore spento l'obiettivo cambia
+  quando a metà settimana inizia un periodo nuovo, o per un giorno scritto
+  "allenamento" quando l'interruttore era acceso (vince la riga scritta,
+  come in Oggi); una linea unica lì direbbe il falso
+- Un giorno passato senza voci: un trattino grigio basso. Un giorno futuro:
+  solo l'etichetta sbiadita, senza barra
+- Etichette: L M M G V S D nella settimana; nel mese solo 1, 8, 15, 22, 29
+  e oggi
+- **Tocco su una barra**: evidenzia la colonna e mostra il valore sopra.
+  Sotto il grafico un riquadro con il giorno, il tipo (Normale /
+  Allenamento), kcal / obiettivo con lo stato, Grassi · Carboidrati ·
+  Proteine (proteine / obiettivo) e "Apri il giorno", che porta a Oggi su
+  quella data (`/?giorno=`). Un secondo tocco chiude. Senza tocco: "Tocca
+  una barra per vedere il giorno". Il tipo si mostra solo con i giorni
+  differenziati accesi o se non è "normale" (da spenti, "Normale" su ogni
+  giorno è rumore), ed è quello mostrato da Oggi: mai "Allenamento" sopra
+  numeri che sono di "Normale"
+
+**Peso**: non segue il selettore
+- Le pesate (`misurazioni` di tipo peso, vive, non future, una per giorno)
+  delle **ultime 12 settimane**, o tutte se sono meno, su un asse di date
+  vere che arriva fino a oggi. Un punto su ogni pesata; il primo e l'ultimo
+  valore scritti
+- Sopra a destra "+1,0 kg dal 20 set"; sotto "Ultima pesata 24 ott, 16
+  giorni fa" ("oggi" e "ieri" al posto di 0 e 1 giorni) e "Registra peso ›"
+  (Impostazioni > Peso)
+- La linea del **peso obiettivo** solo se il periodo in corso ne ha uno; entra
+  nella scala del grafico anche se è lontana (da guardare su iPhone)
+- Una sola pesata: un punto, senza la differenza. Pesate solo più vecchie di
+  12 settimane: "Nessuna pesata nelle ultime 12 settimane" e la riga
+  "Ultima pesata…"
+
+**Stati vuoti**
+- Utente nuovo (**nessuna voce viva, in assoluto**): riquadri "—"; al posto
+  delle barre "Le medie e le barre compaiono dal primo pasto che registri"
+  con il pulsante "Registra il primo pasto"; al posto del peso "Nessuna
+  pesata" con "Registra peso"; frecce spente. Chi ha solo voci future vede
+  la pagina normale con "nessun giorno registrato"
+- Periodo senza voci: trattini grigi e "nessun giorno registrato"
+
+**Come è fatta**
+- Grafici disegnati in **SVG dall'app**, come l'anello di Oggi, con i
+  colori dai token (chiaro e scuro; `temaScuro.test` e `contrasti.test`).
+  **Niente Recharts**: si toglie dal progetto
+- Legge **solo da Dexie**, come Oggi: funziona offline. **Non scrive
+  niente**, né in Dexie né su Supabase. Nessuna migration, nessuna
+  `version()` nuova
+- Nessun caricamento pigro di codice (`next/dynamic`): il service worker
+  salva solo i file citati dall'HTML della pagina
+
+**Fuori da questo lavoro**: "Quando mangio" (la distribuzione degli orari
+dei pasti e l'ora media dell'ultimo pasto: una descrizione di un'abitudine,
+non un consiglio, resta dentro il perimetro) e i grafici di carboidrati e
+grassi.
 
 Niente insight AI in V1: prima servono dati veri da interpretare.
 
@@ -4939,14 +5019,17 @@ Confermate dai mockup, con una correzione.
   "Libra" accanto alla bilancia) è a 700, perché è un logo e non testo
   dell'interfaccia (decisione di Davide del 25/10; mockup testata-login
   del 18/10)
-- **Il colore nei grafici segnala, non decora.** Nel grafico calorie del
-  mockup (la pagina Statistiche non è ancora costruita) funziona così: verde =
-  dentro l'obiettivo, arancio = sopra, grigio = giorno senza dati
-- **Attenzione a una trappola**: per le calorie il verde è *restare sotto* il
-  target, per le proteine è *arrivarci*. Sono posizioni opposte rispetto alla
-  soglia, quindi la regola non è "verde = sotto" ma **"verde = stai andando come
-  volevi, arancio = hai superato"**. Va scritta così nel codice, altrimenti si
-  finisce con due componenti che colorano al contrario
+- **Il colore nei grafici segnala, non decora.** La regola è una sola per
+  tutta l'app, in "Le barre macro" più sotto ("La regola dei colori"): neutro,
+  verde, arancio, più il grigio del giorno senza dati
+- **Attenzione a una trappola**: per le calorie con Dimagrire il verde è
+  *restare sotto* il target, per le proteine è *arrivarci*. Sono posizioni
+  opposte rispetto alla soglia, quindi la regola non è "verde = sotto" ma
+  **"verde = stai andando come volevi, arancio = hai superato"**. Sta in una
+  funzione sola (`esitoRispettoObiettivo`), altrimenti si finisce con due
+  componenti che colorano al contrario: è successo (fino al 09/11 l'anello
+  diceva "superato = sopra l'obiettivo", BarraMacro "raggiunto = esattamente
+  uguale")
 
 ### Nome e icona (dall'11/10, branch `nome-libra`)
 
@@ -5344,8 +5427,8 @@ principale").
   e `ACCENTI` coincidano; `contrasti.test.ts` ne misura i contrasti.
 - **Dove il colore non passa dalle variabili** (cercato il 3/10): da
   nessuna parte nell'app. Anello, barre, icone e bottoni usano già le
-  classi dei token; Recharts non è ancora usato (Statistiche è un
-  segnaposto: i grafici, quando arriveranno, dovranno prendere i colori
+  classi dei token; niente Recharts (deciso il 09/11: i grafici di
+  Statistiche sono SVG disegnati dall'app, come l'anello, e prendono i colori
   dalle variabili); nessun colore in JavaScript. `offline.html` segue il
   colore (`CACHE_STATICI` v5). **Restano fissi apposta**: le icone
   dell'app e `manifest.json` (icona scura con "NT" bianco, sfondo crema:
@@ -5501,13 +5584,44 @@ dello stesso neutro scuro.** Il colore non aggiungeva informazione — l'etichet
 dice già "Proteine" — e l'arancio significa già "sopra l'obiettivo" nelle
 Statistiche: stesso colore, due significati.
 
-Il colore entra solo quando dice qualcosa:
+Il colore entra solo quando dice qualcosa.
 
-- neutro: sotto il target
-- accento: target raggiunto
-- arancio: target superato
+#### La regola dei colori (decisa il 09/11, branch `statistiche`)
 
-Una regola sola, valida in tutta l'app.
+Una funzione pura sola per tutta l'app, `esitoRispettoObiettivo` in
+`src/lib/esitoObiettivo.ts`: Statistiche (barre, riquadri, dettaglio) e
+Oggi (anello, barre macro, la riga "X kcal oltre l'obiettivo"). Prima ognuno
+faceva a modo suo: l'anello "superato = sopra l'obiettivo", BarraMacro
+"raggiunto = esattamente uguale". In Oggi la regola nuova entra nel commit 4
+del branch, da solo: cambiano solo i colori, non i numeri.
+
+- **Kcal con obiettivo Dimagrire** (un tetto): verde fino all'obiettivo,
+  arancio sopra, anche di 1 kcal. Nessuna fascia sopra il tetto: è la regola
+  che l'anello aveva già. La pastiglia dice il fatto, il colore il giudizio:
+  sotto la fascia "sotto" ma verde
+- **Kcal con Massa o Mantenere, e sempre proteine, carboidrati e grassi**:
+  neutro sotto la fascia, verde dentro, arancio sopra la fascia
+- **Grassi e carboidrati con Dimagrire si trattano come le proteine**
+  (fascia), non come le kcal (tetto): il deficit lo misurano già le kcal; con
+  un tetto un giorno con 10 g di grassi su 70 sarebbe verde, e mangiare
+  troppo poco non è "come volevi"; sono la ripartizione decisa dal
+  nutrizionista, conta arrivarci. Così l'eccezione è una sola
+- Il tipo di obiettivo è quello del **periodo valido quel giorno**
+- **Fascia ±5%, PROVVISORIA**, in una costante sola (`FASCIA_PERCENTO`): si
+  fissa dopo averla vista su iPhone (lezione del 24/10). I bordi sono
+  inclusi (2200 → in linea da 2090 a 2310) e si calcolano in aritmetica
+  intera: `2200 * 0.95` in JavaScript non dà esattamente 2090
+- Valore e obiettivo si confrontano **arrotondati all'intero**, come a
+  schermo: il colore dice quello che il numero mostra
+- Senza obiettivo (o con obiettivo 0): nessuno stato, colore neutro
+- **Verde = il colore principale** (`--accento`, blu se l'utente ha scelto
+  il blu), arancio = `--avviso`, **neutro = un grigio caldo derivato dai
+  token** (`--neutro`), diverso dal grigio del giorno senza dati
+  (`--linea`)
+
+Con Massa l'anello di Oggi resta neutro per quasi tutta la giornata, finché
+non si entra nella fascia: si guarda su iPhone (prova del commit 4). Se non
+convince, si valuta di tenere la regola vecchia solo per il giorno in corso.
 
 **Ordine: Kcal → Grassi → Carboidrati → Proteine**, ovunque i quattro valori
 compaiono insieme (form crea/modifica alimento, anteprima dello sheet
@@ -5622,7 +5736,10 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
   **solo al tocco su Scansiona** (sezione 3, "Codice a barre", "La
   libreria"). `npm audit --omit=dev` pulito dopo l'installazione
 - **Tesseract.js** per l'OCR, gira nel browser: zero costi server
-- **Recharts** per i grafici
+- **Grafici in SVG disegnati dall'app** (deciso il 09/11, branch
+  `statistiche`), come l'anello di Oggi: colori dai token, nessuna
+  libreria. Recharts era in `package.json` ma mai usato: si toglie in un
+  commit a parte
 
 Costi reali solo su API AI (V2) e dominio personalizzato (opzionale).
 
@@ -8880,8 +8997,9 @@ tipo accettato da `canShare` su iOS (sotto, "Difetti e verifiche
 aperti"; sezione 10.4).
 
 **Catalogo precaricato** (dall'08/11, branch `catalogo`, audit #5;
-sezione 10.1; mockup `docs/mockups/catalogo-precaricato.html`). In
-corso. **Provata su iPhone la parte di Impostazioni > Alimenti** (il
+sezione 10.1; mockup `docs/mockups/catalogo-precaricato.html`). **Unito
+a main e provato nell'app vera** il 09/11 (in fondo a questo paragrafo).
+**Provata su iPhone la parte di Impostazioni > Alimenti** (il
 09/11 dalle 20:10 alle 20:13, anteprima, account di prova, Safari;
 verificato da Cowork su Supabase, tabella e log, tutte le risposte
 200/201):
@@ -8904,8 +9022,8 @@ il 09/11 dalle 20:55 alle 21:01, anteprima, account di prova, Safari;
 verificato da Cowork su Supabase, tabelle e log, tutte le risposte
 200/201):
 1. licenze: le righe in Informazioni viste, il file ODbL si apre dal
-   link. **La prova senza accesso** (il file fuori dal proxy) si fa
-   sull'app vera dopo il merge (sotto, "Difetti e verifiche aperti");
+   link. **La prova senza accesso** (il file fuori dal proxy) è fatta
+   sull'app vera dopo il merge (qui sotto);
 2. riquadro in Aggiungi: «papaya» senza riquadro; «anacardi» → il
    riquadro, il «+», lo sheet a 30 g con la conferma, voce registrata
    (copia `off:20267605` alle 20:56:06, voce alle 20:56:18); poi
@@ -8925,7 +9043,13 @@ verificato da Cowork su Supabase, tabelle e log, tutte le risposte
 6. offline: Scansiona grigio; «pistacchi» dal riquadro, copia e voce
    creati offline alle 21:00:39, arrivati al server alle 21:00:46-47.
 
-Resta il merge.
+**Unito a main il 09/11** (fast-forward `323fb4c` → `2ab33fe`, 11
+commit; 1900 test verdi in 156 file, `tsc`, eslint e `npm run build`
+puliti su main prima del push; branch cancellato in locale e su GitHub;
+nessuna Redirect URL dell'anteprima da togliere) e **provato nell'app
+vera** la sera del 09/11, Build `2ab33fe`: la scheda «Catalogo» vista;
+`/catalogo/catalogo-open-food-facts-odbl.json` aperto **senza accesso**,
+in una finestra privata.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -8935,12 +9059,14 @@ i numeri delle sue segnalazioni.
 
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
-- **Statistiche** e storico del peso (fase 7): la pagina è un segnaposto
-- Rimedi della sezione 10 ancora da fare: **catalogo precaricato** (10.1;
-  dall'08/11, branch `catalogo`, audit #5) e **Importa** ("Ripristina in
+- **Statistiche** e storico del peso (fase 7): in corso dal 09/11, branch
+  `statistiche` (sezione 3, "Statistiche"); su main la pagina è ancora un
+  segnaposto
+- Rimedi della sezione 10 ancora da fare: **Importa** ("Ripristina in
   un account vuoto", 10.4), un lavoro a parte. ~~**"Esporta i miei
   dati"**~~ (10.4) è fatto: unito a main e provato nell'app installata
-  l'08/11 (sopra, "Fatto")
+  l'08/11 (sopra, "Fatto"). ~~**Catalogo precaricato**~~ (10.1, audit #5)
+  è fatto: unito a main e provato nell'app vera il 09/11 (sopra, "Fatto")
   - copia manuale dei dati del 01/11, fatta prima dell'aggiornamento di
     Supabase: in `C:\Users\david\Progetti\backup-libra`, fuori dal repo
     (15 tabelle, 736 righe). Non va mai in git: contiene dati reali. È
@@ -8951,13 +9077,6 @@ i numeri delle sue segnalazioni.
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
-
-- **Catalogo precaricato, il file ODbL senza accesso** (branch
-  `catalogo`, sezione 10.1, "Licenze"): provato con `next start` in
-  locale (200 senza sessione) e sull'anteprima dal link, con l'accesso.
-  Da provare sull'app vera dopo il merge: aprire
-  `/catalogo/catalogo-open-food-facts-odbl.json` senza essere entrati
-  (per esempio in una finestra privata).
 
 - **Esporta, la protezione dalle formule nel CSV** (branch `esporta`,
   sezione 10.4, "Il CSV"): coperta dai test, non provata dal vivo. Nella
@@ -9024,6 +9143,13 @@ i numeri delle sue segnalazioni.
   ricrearlo (le voci del diario hanno la loro copia dei valori e non
   cambiano; i pasti salvati che lo contengono lo perdono, come in ogni
   eliminazione). Da riprendere se capita davvero.
+
+- ~~**Catalogo precaricato, il file ODbL senza accesso**~~: provato con
+  `next start` in locale (200 senza sessione), sull'anteprima dal link e,
+  dopo il merge, **nell'app vera senza accesso** in una finestra privata,
+  la sera del 09/11, Build `2ab33fe` (sopra, "Fatto"; CHANGELOG, voce del
+  merge). Branch `catalogo` cancellato in locale e su GitHub; nessuna
+  Redirect URL dell'anteprima da togliere.
 
 - ~~**Esporta i miei dati**~~: provato sull'anteprima, unito a main e
   provato nell'app installata l'08/11 (sopra, "Fatto"; CHANGELOG, voce
@@ -9744,5 +9870,8 @@ branch.
     sull'anteprima e unito a main l'08/11, `323fb4c`, provato nell'app
     installata alle 09:10 (sopra, "Fatto"; sezione 10.4). Poi
     **Importa**, in un lavoro a parte
-13. **Catalogo precaricato** (audit #5; dall'08/11, branch `catalogo`;
-    sezione 10.1)
+13. ~~**Catalogo precaricato**~~ fatto (audit #5): provato
+    sull'anteprima e unito a main il 09/11, `2ab33fe`, provato nell'app
+    vera la sera del 09/11 (sopra, "Fatto"; sezione 10.1)
+14. **Statistiche** (fase 7; dal 09/11, branch `statistiche`; sezione 3,
+    "Statistiche")

@@ -5,6 +5,39 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-09 — Statistiche: decisioni e mockup
+
+Branch `statistiche`, commit 1 (solo documenti). Le decisioni prese da
+Davide il 09/11 sul mockup `docs/mockups/statistiche.html` (scritto da
+Cowork, md5 controllato prima del `git add`) sostituiscono in PUNTO §3
+"Statistiche" il testo di prima: Settimana/Mese con frecce e periodo
+nell'indirizzo, quattro riquadri con media, obiettivo medio e stato,
+barre con il segno dell'obiettivo deciso dai dati, dettaglio del giorno,
+peso delle ultime 12 settimane, stati vuoti. In §7 la **regola unica dei
+colori** (`esitoRispettoObiettivo`, fascia ±5% provvisoria) al posto delle
+due che c'erano: l'anello "superato = sopra" e BarraMacro "raggiunto =
+uguale". In §8 niente Recharts: grafici SVG dall'app. Nessuna migration,
+nessuna scrittura.
+
+## 2026-11-09 — Catalogo precaricato unito a main
+
+Unito a main il 09/11 con fast-forward da `323fb4c` a `2ab33fe`, senza
+commit di merge, 11 commit: `bcc9f5f` (decisioni, mockup e lista; merge
+di esporta), `b32e37c` (script e file del catalogo), `d875212`
+(`catalogo_id`, migration non applicata, Dexie `version(10)`), `d4c52e2`
+(«Aggiungi dal catalogo», «Nei tuoi», migration `20261108134603`
+applicata), `9d3c5fd` (valori nascosti in modifica), `d7cb102` (schede di
+Impostazioni > Alimenti), `1d411ba` (licenze), `8fa00cb` (riquadro in
+Aggiungi), `d5b60d2` (documenti), `2caef97` (scansione), `2ab33fe` (esito
+del secondo giro). Branch cancellato in locale e su GitHub; nessuna
+Redirect URL dell'anteprima da togliere. Su main prima del push: 1900 test
+verdi in 156 file, `tsc`, eslint e `npm run build` puliti. **Provato
+nell'app vera** la sera del 09/11, Build `2ab33fe`: la scheda «Catalogo»
+vista; `/catalogo/catalogo-open-food-facts-odbl.json` aperto senza
+accesso in una finestra privata, così si chiude l'ultima verifica aperta
+del catalogo. Questa voce è scritta nel commit 1 del branch
+`statistiche`.
+
 ## 2026-11-09 — Catalogo precaricato: provati su iPhone licenze, riquadro e scansione
 
 Branch `catalogo`. Secondo giro di prove di Davide sull'anteprima, il

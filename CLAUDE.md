@@ -50,7 +50,8 @@ complica lo schema, dimmelo con il motivo.
 - Tesseract.js per l'OCR delle etichette
 - barcode-detector (ZXing in WebAssembly, servito da `/public`) per il
   codice a barre
-- Recharts per i grafici
+- Grafici in SVG disegnati dall'app, colori dai token (niente Recharts,
+  deciso il 09/11: `PUNTO_DI_PARTENZA.md` §3, "Statistiche")
 - Deploy su Vercel
 
 Il codice a barre è fatto (unito a main il 07/11, `3e6ce01`; regole in

@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Statistiche di Libra</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Mockup della pagina Statistiche (09/11/2026). Colori dai token di globals.css
+   (accento verde, --avviso per "superato"), caratteri e misure del mockup del
+   catalogo. Layout: in alto le decisioni, poi i telefoni a gruppi (Settimana,
+   Mese, colori a confronto, stati vuoti). I grafici sono disegnati da JS a
+   partire dai dati veri dell'account e4c44f51 (sola lettura, 09/11). */
+:root{
+  --pagina:#e4dfd5;--pagina-testo:#1f1b16;--pagina-tenue:#5d574b;--pagina-riquadro:#f3efe7;--pagina-linea:#cfc7b8;--pagina-acc:#3f7d4c;
+  --bg:#faf7f2;--fg:#1f1b16;--linea:#e7e0d2;--tenue:#78705f;--acc:#3f7d4c;--acc-pieno:#3f7d4c;--avviso:#b5533c;--sup:#ffffff;--su-pieno:#faf7f2;
+  --grigio:#efe9de;--grigio-bordo:#b9b09e;--ombra:rgba(0,0,0,.22);
+  --acc-tenue:#e6efe5;--avviso-tenue:#f6e4dd;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;
+  --bg:#1b1815;--fg:#f2ede4;--linea:#3a342d;--tenue:#a39a8b;--acc:#7bb887;--acc-pieno:#3f7d4c;--avviso:#e8916f;--sup:#26221e;--su-pieno:#ffffff;
+  --grigio:#2b2723;--grigio-bordo:#5a5248;--ombra:rgba(0,0,0,.5);
+  --acc-tenue:#1f2b21;--avviso-tenue:#3a251d;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;
+  --bg:#1b1815;--fg:#f2ede4;--linea:#3a342d;--tenue:#a39a8b;--acc:#7bb887;--acc-pieno:#3f7d4c;--avviso:#e8916f;--sup:#26221e;--su-pieno:#ffffff;
+  --grigio:#2b2723;--grigio-bordo:#5a5248;--ombra:rgba(0,0,0,.5);
+  --acc-tenue:#1f2b21;--avviso-tenue:#3a251d;color-scheme:dark}
+:root{
+  /* derivati: si ricalcolano da soli con i valori del tema in uso */
+  --neutro:color-mix(in srgb,var(--fg) 34%,var(--bg));
+  --trattino:color-mix(in srgb,var(--fg) 78%,var(--bg));
+  --evidenza:color-mix(in srgb,var(--fg) 6%,transparent);
+  --capsula:color-mix(in srgb,var(--acc) 14%,transparent);
+  --vetro:color-mix(in srgb,var(--sup) 82%,transparent);
+}
+*{box-sizing:border-box}
+body{background:var(--pagina);color:var(--pagina-testo);font-family:'Hanken Grotesk',system-ui,sans-serif;margin:0;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit}
+.testa,.decisioni,.gruppo{max-width:1700px;margin-inline:auto}
+.testa{margin-bottom:24px;display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between}
+.testa>div{max-width:80ch;min-width:0}
+.testa h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:clamp(26px,4vw,34px);margin:0 0 8px;text-wrap:balance}
+.testa p{margin:0;color:var(--pagina-tenue);line-height:1.5}
+.temi{display:flex;gap:4px;background:var(--pagina-riquadro);border:1px solid var(--pagina-linea);border-radius:999px;padding:4px}
+.temi button{border:0;background:none;height:34px;padding:0 14px;border-radius:999px;font-size:14px;cursor:pointer;color:var(--pagina-tenue)}
+.temi button[aria-pressed="true"]{background:var(--pagina-testo);color:var(--pagina)}
+.decisioni{margin-bottom:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.dec{background:var(--pagina-riquadro);border:1px solid var(--pagina-linea);border-radius:14px;padding:14px 16px}
+.dec b{display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--pagina-acc);margin-bottom:6px}
+.dec p{margin:0;font-size:14px;line-height:1.45}
+.dec.aperta{border-style:dashed;border-color:var(--pagina-acc)}
+.gruppo{margin-bottom:52px}
+.gruppo>h2{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:22px;margin:0 0 4px}
+.gruppo>p{margin:0 0 18px;color:var(--pagina-tenue);max-width:82ch;line-height:1.5;font-size:14.5px}
+.colonne{display:flex;flex-wrap:wrap;gap:28px}
+.col{width:390px;max-width:100%;min-width:0}
+.col h3{font-size:16px;margin:0 0 4px}
+.col .nota{font-size:13.5px;color:var(--pagina-tenue);margin:0 0 12px;line-height:1.45;min-height:58px}
+.tel{width:390px;max-width:100%;overflow:hidden;border-radius:40px;box-shadow:0 10px 36px var(--ombra)}
+.sch{width:390px;min-height:844px;background:var(--bg);color:var(--fg);position:relative;font-size:16px;padding:52px 16px 112px;display:flex;flex-direction:column;gap:16px}
+.ico{width:20px;height:20px;flex:none}
+.h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;font-size:34px;line-height:1.1;margin:2px 4px 0}
+.schede{display:grid;grid-template-columns:1fr 1fr;background:var(--grigio);border-radius:999px;padding:4px;gap:4px}
+.schede button{height:40px;border:0;background:none;border-radius:999px;font-size:15px;font-weight:600;color:var(--tenue);cursor:pointer}
+.schede button.on{background:var(--sup);color:var(--fg);box-shadow:0 1px 3px var(--ombra)}
+.periodo{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:-4px}
+.freccia{width:44px;height:44px;border-radius:999px;border:1px solid var(--linea);background:none;display:flex;align-items:center;justify-content:center;color:var(--fg);cursor:pointer;flex:none;padding:0}
+.freccia:disabled{color:var(--linea);cursor:default}
+.per-testo{text-align:center;min-width:0}
+.per-testo b{display:block;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.per-testo small{display:block;font-size:13px;color:var(--tenue);min-height:17px}
+.riquadri{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.riq{background:var(--sup);border-radius:16px;padding:14px 14px 13px;display:flex;flex-direction:column;gap:2px;min-width:0;box-shadow:0 1px 2px var(--ombra)}
+.riq-testa{display:flex;justify-content:space-between;align-items:center;gap:6px;min-height:22px}
+.riq-lab{font-size:13px;color:var(--tenue)}
+.riq-num{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:4px}
+.riq-num small{font-size:18px;font-weight:500}
+.riq-sub{font-size:13px;color:var(--tenue);font-variant-numeric:tabular-nums}
+.stato{font-size:11.5px;font-weight:600;letter-spacing:.3px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.stato.ok{background:var(--acc-tenue);color:var(--acc)}
+.stato.sopra{background:var(--avviso-tenue);color:var(--avviso)}
+.stato.sotto{background:var(--grigio);color:var(--tenue)}
+.sezione{display:flex;flex-direction:column;gap:8px}
+.sez-testa{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:0 4px}
+.sez-lab{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tenue);font-weight:500}
+.sez-dx{font-size:13px;color:var(--tenue);font-variant-numeric:tabular-nums}
+svg.graf{display:block;width:100%;height:auto;overflow:visible}
+svg.graf text{font-family:'Hanken Grotesk',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.colonna{cursor:pointer;outline:none}
+.colonna:focus-visible .bersaglio{stroke:var(--acc);stroke-width:2}
+.dettaglio{background:var(--sup);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px var(--ombra)}
+.det-testa{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px}
+.det-testa b{font-weight:600}
+.tipo{font-size:12px;color:var(--tenue);border:1px solid var(--linea);border-radius:999px;padding:1px 8px}
+.det-kcal{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.det-kcal b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.det-kcal span{color:var(--tenue);font-variant-numeric:tabular-nums}
+.det-macro{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12.5px;color:var(--tenue);font-variant-numeric:tabular-nums}
+.det-macro span{display:flex;flex-direction:column;gap:1px}
+.det-macro em{font-style:normal;color:var(--fg);font-size:15px;font-weight:500}
+.link{color:var(--acc);font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:2px;align-self:flex-start;min-height:32px}
+.suggerimento{font-size:13px;color:var(--tenue);text-align:center;margin:0;min-height:20px}
+.vuoto{border:1px dashed var(--linea);border-radius:14px;padding:22px 16px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.vuoto p{margin:0;color:var(--tenue);font-size:14px;line-height:1.45;max-width:30ch}
+.btn{height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--acc-pieno);color:var(--su-pieno);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.peso-piede{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 4px;font-size:13.5px;color:var(--tenue)}
+.pillola{position:absolute;left:16px;right:16px;bottom:16px;height:64px;border-radius:999px;background:var(--vetro);backdrop-filter:blur(14px);box-shadow:0 4px 16px var(--ombra);display:grid;grid-template-columns:repeat(3,1fr);padding:6px}
+.pillola span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;color:var(--tenue);border-radius:999px}
+.pillola span.on{background:var(--capsula);color:var(--acc);font-weight:600}
+/* confronto dei colori */
+.confronto{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.tavola{background:var(--bg);color:var(--fg);border-radius:18px;padding:16px;width:390px;max-width:100%;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 24px var(--ombra)}
+.tavola h3{margin:0;font-size:15px}
+.tavola p{margin:0;font-size:13px;color:var(--tenue);line-height:1.45}
+.regolatore{background:var(--pagina-riquadro);border:1px solid var(--pagina-linea);border-radius:14px;padding:14px 16px;width:320px;max-width:100%;display:flex;flex-direction:column;gap:10px}
+.regolatore label{font-size:14px;font-weight:600}
+.regolatore input{width:100%;accent-color:var(--pagina-acc)}
+.regolatore p{margin:0;font-size:13.5px;color:var(--pagina-tenue);line-height:1.45}
+.regolatore output{font-variant-numeric:tabular-nums}
+.tab-giorni{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.tab-giorni td,.tab-giorni th{padding:4px 2px;border-bottom:1px solid var(--linea);text-align:right}
+.tab-giorni th{color:var(--tenue);font-weight:500}
+.tab-giorni td:first-child,.tab-giorni th:first-child{text-align:left}
+.pallino{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
+@media (prefers-reduced-motion:no-preference){.colonna rect.barra{transition:fill .15s}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-sx" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-dx" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-oggi" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g></symbol>
+    <symbol id="i-stat" viewBox="0 0 24 24"><g fill="currentColor"><rect x="4" y="11" width="4" height="9" rx="1.2"/><rect x="10" y="5" width="4" height="15" rx="1.2"/><rect x="16" y="8" width="4" height="12" rx="1.2"/></g></symbol>
+    <symbol id="i-imp" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></g></symbol>
+    <symbol id="i-piu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  </defs>
+</svg>
+
+<header class="testa">
+  <div>
+    <h1>Statistiche</h1>
+    <p>Mockup della pagina Statistiche (09/11/2026), fatto con i tuoi dati veri dal 21 settembre a oggi. Le barre si possono toccare, il selettore e le frecce funzionano. Colori e misure sono quelli dell'app. Con il selettore qui accanto vedi la pagina in chiaro e in scuro. Oggi, per il mockup, è lunedì 9 novembre.</p>
+  </div>
+  <div class="temi" role="group" aria-label="Tema">
+    <button type="button" data-tema="" aria-pressed="true">Sistema</button>
+    <button type="button" data-tema="light" aria-pressed="false">Chiaro</button>
+    <button type="button" data-tema="dark" aria-pressed="false">Scuro</button>
+  </div>
+</header>
+
+<section class="decisioni" aria-label="Decisioni">
+  <div class="dec aperta"><b>1 · Colori, da vedere dal vero</b><p>Sei in <b>Massa</b>, quindi le kcal si leggono come le proteine: <b>neutre</b> sotto l'obiettivo, <b>verdi</b> nella fascia intorno all'obiettivo, <b>arancio</b> sopra la fascia. Con Dimagrire resta la regola di oggi (verdi fino all'obiettivo). La fascia (qui ±5%) la fissi tu più sotto, nel confronto.</p></div>
+  <div class="dec"><b>2 · Periodi</b><p>Settimana da lunedì a domenica e mese di calendario, con le frecce ‹ ›. Un giorno passato senza voci ha un trattino grigio. Un giorno futuro ha solo l'etichetta, senza barra.</p></div>
+  <div class="dec"><b>3 · L'obiettivo di quel giorno</b><p>Con i giorni differenziati, sopra ogni barra c'è un trattino all'altezza dell'obiettivo valido quel giorno (periodo e tipo di giorno). Nei riquadri trovi l'«obiettivo medio» degli stessi giorni contati nella media.</p></div>
+  <div class="dec"><b>4 · Tocca una barra</b><p>Sotto il grafico compaiono il giorno, il tipo, kcal e obiettivo, grassi, carboidrati e proteine, e «Apri il giorno», che porta a Oggi su quella data. Così si capisce anche un giorno registrato a metà.</p></div>
+  <div class="dec"><b>5 · Peso a parte</b><p>Il grafico del peso non segue Settimana/Mese: mostra tutte le pesate delle ultime 12 settimane, sulle date vere, fino a oggi. Così si vedono anche i giorni senza pesate. La linea dell'obiettivo compare solo se hai un peso obiettivo.</p></div>
+  <div class="dec"><b>6 · Medie e grafici</b><p>Le medie contano solo i giorni con almeno una voce, fino a oggi. I grafici sono disegnati in SVG dall'app stessa, senza recharts, quindi funzionano senza rete come il resto.</p></div>
+  <div class="dec"><b>7 · Quattro riquadri</b><p>Medie di kcal, grassi, carboidrati e proteine, nell'ordine di tutta l'app (come le etichette dei prodotti). Ognuno con «su N giorni», il suo obiettivo (medio, se cambia fra i giorni) e lo stato con la stessa regola dei colori. Grafici solo per le kcal.</p></div>
+</section>
+
+<section class="gruppo">
+  <h2>Settimana</h2>
+  <p>A sinistra la settimana scorsa, con venerdì toccato. A destra questa settimana: oggi è lunedì, quindi la media è su 1 giorno e gli altri giorni non hanno ancora la barra.</p>
+  <div class="colonne">
+    <div class="col"><h3>Settimana scorsa, tocco su venerdì</h3><p class="nota">Sei giorni con voci, il 5 novembre è vuoto. Tre giorni di allenamento e tre normali: media 2552 contro un obiettivo medio di 2725, quindi «sotto». Una linea fissa a 2500 l'avrebbe fatta sembrare sopra. I grassi (80 g su 60) sono sopra.</p>
+      <div class="tel"><div class="sch" data-stato='{"modo":"settimana","inizio":"2026-11-02","sel":"2026-11-06"}'></div></div></div>
+    <div class="col"><h3>Questa settimana</h3><p class="nota">Lunedì è un giorno di allenamento (obiettivo 2950). La freccia › è spenta: non si va nel futuro.</p>
+      <div class="tel"><div class="sch" data-stato='{"modo":"settimana","inizio":"2026-11-09","sel":null}'></div></div></div>
+  </div>
+</section>
+
+<section class="gruppo">
+  <h2>Mese</h2>
+  <p>Una barra sottile per giorno, con le etichette solo su 1, 8, 15, 22 e 29. Ottobre ha il buco dal 15 al 25 e alcuni giorni registrati a metà: l'11 ottobre ha 554 kcal ed è toccato, per far vedere che il dettaglio lo spiega.</p>
+  <div class="colonne">
+    <div class="col"><h3>Ottobre, tocco sull'11</h3><p class="nota">12 giorni con voci su 31. La media (1814) li conta tutti e 12, anche quelli a metà: è la regola di PUNTO §3, e il tocco serve a capire da dove viene.</p>
+      <div class="tel"><div class="sch" data-stato='{"modo":"mese","inizio":"2026-10-01","sel":"2026-10-11"}'></div></div></div>
+    <div class="col"><h3>Questo mese</h3><p class="nota">Novembre fino a oggi: i giorni dal 10 in poi hanno solo il posto vuoto.</p>
+      <div class="tel"><div class="sch" data-stato='{"modo":"mese","inizio":"2026-11-01","sel":null}'></div></div></div>
+  </div>
+</section>
+
+<section class="gruppo" id="colori">
+  <h2>Colori: la regola del vecchio mockup e la proposta</h2>
+  <p>La stessa settimana (2–8 novembre) colorata nei due modi. Sposta la fascia per vedere come cambiano le barre, qui e in tutti i telefoni della pagina.</p>
+  <div class="confronto">
+    <div class="tavola"><h3>Regola del vecchio mockup</h3><p>Verde fino all'obiettivo, arancio sopra. Va bene per chi dimagrisce. In Massa il 7 novembre (1813 kcal, quasi 700 sotto) è verde, il 6 novembre (2997, appena sopra) è arancio.</p><div data-confronto="vecchia"></div></div>
+    <div class="tavola"><h3>Proposta per Massa e Mantenere</h3><p>Neutro sotto la fascia, verde dentro, arancio sopra la fascia. Il trattino è l'obiettivo di quel giorno.</p><div data-confronto="nuova"></div></div>
+    <div class="regolatore">
+      <label for="fascia">Fascia intorno all'obiettivo: ±<output id="fascia-val">5</output>%</label>
+      <input type="range" id="fascia" min="0" max="10" step="1" value="5">
+      <p>Con lo 0% il verde vuol dire «esattamente l'obiettivo», come oggi le barre delle proteine in Oggi, dove 151 g su 150 è già arancio. La percentuale si fissa dopo averla vista sul telefono (lezione del 24/10).</p>
+      <table class="tab-giorni" aria-label="Giorni della settimana 2–8 novembre"><thead><tr><th>Giorno</th><th>kcal</th><th>obiettivo</th><th>scarto</th></tr></thead><tbody id="tab-giorni"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<section class="gruppo">
+  <h2>Stati vuoti</h2>
+  <p>A sinistra una settimana passata senza voci: è vera, dal 19 al 25 ottobre. Il peso invece c'è, perché lì ti sei pesato due volte. A destra un utente appena registrato, senza pasti e senza pesate.</p>
+  <div class="colonne">
+    <div class="col"><h3>Settimana senza voci</h3><p class="nota">I riquadri dicono «—» e il motivo, mai 0: zero kcal sarebbe un dato falso. Le barre restano trattini grigi.</p>
+      <div class="tel"><div class="sch" data-stato='{"modo":"settimana","inizio":"2026-10-19","sel":null}'></div></div></div>
+    <div class="col"><h3>Utente nuovo</h3><p class="nota">Niente grafici vuoti: una frase che dice cosa comparirà e il pulsante per cominciare. Le frecce sono spente.</p>
+      <div class="tel"><div class="sch" data-stato='{"modo":"settimana","inizio":"2026-11-09","sel":null,"nuovo":true}'></div></div></div>
+  </div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+  var OGGI = "2026-11-09";
+  var DIFFERENZIATI = true;
+  var TARGET = { n: { k: 2500, p: 150, c: 340, g: 60 }, a: { k: 2950, p: 150, c: 450, g: 60 } };
+  // [kcal, proteine, carboidrati, grassi, tipo giorno] per giorno (account e4c44f51, 09/11)
+  var D = {
+    "2026-09-21":[2139,137,213,77,"n"],"2026-09-22":[2309,146,277,63,"a"],"2026-09-23":[2256,153,251,67,"n"],
+    "2026-09-24":[2359,132,311,57,"a"],"2026-09-25":[2914,149,398,76,"a"],"2026-09-26":[1532,131,176,29,"n"],
+    "2026-09-27":[1627,108,163,24,"n"],"2026-09-28":[2598,155,386,49,"a"],"2026-09-29":[772,63,74,21,"n"],
+    "2026-10-02":[2377,163,295,61,"a"],"2026-10-03":[1225,88,165,22,"n"],"2026-10-05":[1829,124,250,42,"n"],
+    "2026-10-06":[2810,154,346,91,"a"],"2026-10-07":[2542,169,303,68,"a"],"2026-10-08":[2246,137,297,54,"n"],
+    "2026-10-09":[1650,106,194,54,"n"],"2026-10-10":[914,77,52,45,"n"],"2026-10-11":[554,41,51,19,"a"],
+    "2026-10-12":[1386,109,161,32,"n"],"2026-10-14":[1944,119,229,63,"n"],"2026-10-26":[2292,136,265,71,"n"],
+    "2026-11-02":[2679,150,307,92,"a"],"2026-11-03":[2832,164,378,73,"a"],"2026-11-04":[2850,155,230,79,"n"],
+    "2026-11-06":[2997,163,379,93,"a"],"2026-11-07":[1813,119,232,54,"n"],"2026-11-08":[2143,151,173,89,"n"],
+    "2026-11-09":[1885,135,229,44,"a"]
+  };
+  var PESATE = [["2026-09-20",82],["2026-09-26",85],["2026-10-03",82.5],["2026-10-11",82.5],["2026-10-12",81.6],["2026-10-18",81.6],["2026-10-19",82],["2026-10-24",83]];
+  var PRIMA_SETTIMANA = "2026-09-21", PRIMO_MESE = "2026-09-01";
+  var MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+  var MESI_BREVI = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+  var GIORNI = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
+  var LETTERE = ["L","M","M","G","V","S","D"];
+  var fascia = 0.05;
+
+  function data(iso){ var p = iso.split("-"); return new Date(Date.UTC(+p[0], +p[1]-1, +p[2])); }
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function piuGiorni(s, n){ var d = data(s); d.setUTCDate(d.getUTCDate()+n); return iso(d); }
+  function dow(s){ return (data(s).getUTCDay()+6)%7; } // 0 = lunedì
+  function lunedi(s){ return piuGiorni(s, -dow(s)); }
+  function primoDelMese(s){ return s.slice(0,8)+"01"; }
+  function giorniFra(a, b){ return Math.round((data(b)-data(a))/86400000); }
+  function meseDopo(s, n){ var d = data(s); d.setUTCMonth(d.getUTCMonth()+n); return iso(d); }
+  function virgola(n, dec){ return n.toFixed(dec).replace(".", ","); }
+  function ggMese(s){ var d = data(s); return d.getUTCDate()+" "+MESI[d.getUTCMonth()]; }
+  function ggBreve(s){ var d = data(s); return d.getUTCDate()+" "+MESI_BREVI[d.getUTCMonth()]; }
+
+  function esito(v, t, regola){
+    if (regola === "vecchia") return v <= t ? "ok" : "sopra";
+    if (v < t*(1-fascia)) return "sotto";
+    if (v <= t*(1+fascia)) return "ok";
+    return "sopra";
+  }
+  var COLORE = { ok: "var(--acc)", sopra: "var(--avviso)", sotto: "var(--neutro)" };
+  var TESTO_ESITO = { ok: "in linea", sopra: "sopra", sotto: "sotto" };
+
+  function giorniDelPeriodo(st){
+    var out = [], n;
+    if (st.modo === "settimana") { n = 7; }
+    else { var d = data(st.inizio); n = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 0)).getUTCDate(); }
+    for (var i=0;i<n;i++){ var g = piuGiorni(st.inizio, i); out.push({ g:g, futuro: g > OGGI, v: st.nuovo ? null : (D[g] || null) }); }
+    return out;
+  }
+
+  function riepilogo(giorni){
+    var c = giorni.filter(function(x){ return x.v && !x.futuro; });
+    if (!c.length) return null;
+    // indici nella riga di D: 0 kcal, 1 proteine, 2 carboidrati, 3 grassi
+    var r = { n:c.length };
+    [["k",0],["p",1],["c",2],["g",3]].forEach(function(m){
+      var sv=0, stt=0, set={};
+      c.forEach(function(x){ var t = TARGET[x.v[4]][m[0]]; sv+=x.v[m[1]]; stt+=t; set[t]=1; });
+      r[m[0]] = { v:Math.round(sv/c.length), t:Math.round(stt/c.length), unico:Object.keys(set).length===1 };
+    });
+    return r;
+  }
+
+  // --- grafico a barre ---
+  function barre(st, regola, interattivo){
+    var giorni = giorniDelPeriodo(st), n = giorni.length, sett = st.modo === "settimana";
+    var W=358, top=22, base=160, H=192;
+    var max = 3200;
+    giorni.forEach(function(x){ if (x.v && x.v[0]*1.06 > max) max = Math.ceil(x.v[0]*1.06/100)*100; });
+    var y = function(v){ return base - v/max*(base-top); };
+    var slot = W/n, bw = sett ? 30 : Math.max(4, slot-4.5), r = sett ? 6 : 2.5;
+    var s = '<svg class="graf" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Calorie giornaliere">';
+    s += '<line x1="0" x2="'+W+'" y1="'+base+'" y2="'+base+'" stroke="var(--linea)" stroke-width="1"/>';
+    var ticks = DIFFERENZIATI;
+    giorni.forEach(function(x, i){
+      var cx = i*slot + slot/2, sel = st.sel === x.g;
+      var lab = sett ? LETTERE[i] : ([1,8,15,22,29].indexOf(i+1) >= 0 || x.g === OGGI ? String(i+1) : "");
+      var g = '';
+      if (sel) g += '<rect x="'+(i*slot+1)+'" y="4" width="'+(slot-2)+'" height="'+(H-4)+'" rx="'+(sett?10:4)+'" fill="var(--evidenza)"/>';
+      if (!x.futuro && x.v) {
+        var v = x.v[0], t = TARGET[x.v[4]].k, h = base - y(v), e = esito(v, t, regola);
+        g += '<rect class="barra" x="'+(cx-bw/2)+'" y="'+y(v)+'" width="'+bw+'" height="'+h+'" rx="'+Math.min(r, h/2)+'" fill="'+COLORE[e]+'"/>';
+        if (ticks) { var tw = bw/2 + (sett ? 6 : 2); g += '<line x1="'+(cx-tw)+'" x2="'+(cx+tw)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--trattino)" stroke-width="'+(sett?2.5:2)+'" stroke-linecap="round"/>'; }
+        if (sel) g += '<text x="'+cx+'" y="'+Math.min(y(v), y(t))+'" dy="-8" text-anchor="middle" font-size="12" font-weight="600" fill="var(--fg)">'+v+'</text>';
+      } else if (!x.futuro) {
+        g += '<rect x="'+(cx-bw/2)+'" y="'+(base-7)+'" width="'+bw+'" height="7" rx="'+Math.min(r,3)+'" fill="var(--linea)"/>';
+      }
+      if (lab) g += '<text x="'+cx+'" y="'+(base+20)+'" text-anchor="middle" font-size="'+(sett?13:11.5)+'" font-weight="'+(x.g===OGGI?600:400)+'" fill="'+(x.g===OGGI?"var(--fg)":"var(--tenue)")+'"'+(x.futuro?' opacity=".5"':'')+'>'+lab+'</text>';
+      if (x.g === OGGI) g += '<circle cx="'+cx+'" cy="'+(base+28)+'" r="2" fill="var(--acc)"/>';
+      if (interattivo && x.v && !x.futuro) {
+        var nome = GIORNI[dow(x.g)]+" "+ggMese(x.g)+", "+x.v[0]+" kcal";
+        s += '<g class="colonna" tabindex="0" role="button" aria-pressed="'+sel+'" aria-label="'+nome+'" data-giorno="'+x.g+'">'+g+'<rect class="bersaglio" x="'+(i*slot)+'" y="0" width="'+slot+'" height="'+H+'" fill="transparent"/></g>';
+      } else s += g;
+    });
+    return s + '</svg>';
+  }
+
+  // --- grafico del peso ---
+  function peso(){
+    var W=358, H=150, sx=30, dx=W-34, top=20, bot=112;
+    var inizio = PESATE[0][0], giorniTot = giorniFra(inizio, OGGI);
+    var lo=81, hi=85.5;
+    var X = function(g){ return sx + giorniFra(inizio, g)/giorniTot*(dx-sx); };
+    var Y = function(v){ return bot - (v-lo)/(hi-lo)*(bot-top); };
+    var s = '<svg class="graf" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Andamento del peso">';
+    [82,84].forEach(function(v){ s += '<line x1="'+sx+'" x2="'+W+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--linea)" stroke-width="1"/><text x="0" y="'+Y(v)+'" dy="4" font-size="11.5" fill="var(--tenue)">'+v+'</text>'; });
+    ["2026-10-01","2026-11-01"].forEach(function(g){ s += '<line x1="'+X(g)+'" x2="'+X(g)+'" y1="'+bot+'" y2="'+(bot+5)+'" stroke="var(--linea)"/><text x="'+X(g)+'" y="'+(bot+22)+'" text-anchor="middle" font-size="11.5" fill="var(--tenue)">1 '+MESI_BREVI[data(g).getUTCMonth()]+'</text>'; });
+    s += '<text x="'+sx+'" y="'+(bot+22)+'" font-size="11.5" fill="var(--tenue)">'+ggBreve(inizio)+'</text>';
+    s += '<line x1="'+X(OGGI)+'" x2="'+X(OGGI)+'" y1="'+top+'" y2="'+bot+'" stroke="var(--grigio-bordo)" stroke-dasharray="3 4"/><text x="'+X(OGGI)+'" y="'+(bot+22)+'" text-anchor="end" font-size="11.5" font-weight="600" fill="var(--fg)">oggi</text>';
+    s += '<polyline fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="'+PESATE.map(function(p){ return X(p[0])+","+Y(p[1]); }).join(" ")+'"/>';
+    PESATE.forEach(function(p, i){
+      var ultimo = i === PESATE.length-1;
+      s += '<circle cx="'+X(p[0])+'" cy="'+Y(p[1])+'" r="'+(ultimo?5:3.2)+'" fill="'+(ultimo?"var(--fg)":"var(--bg)")+'" stroke="var(--fg)" stroke-width="2"/>';
+    });
+    var u = PESATE[PESATE.length-1];
+    s += '<text x="'+X(u[0])+'" y="'+Y(u[1])+'" dy="-12" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--fg)">'+virgola(u[1],1)+'</text>';
+    s += '<text x="'+X(PESATE[0][0])+'" y="'+Y(PESATE[0][1])+'" dy="20" text-anchor="middle" font-size="12.5" fill="var(--tenue)">'+virgola(PESATE[0][1],1)+'</text>';
+    return s + '</svg>';
+  }
+
+  function riquadro(lab, num, unita, r, tipo){
+    if (!r) return '<div class="riq"><div class="riq-testa"><span class="riq-lab">'+lab+'</span></div><div class="riq-num">—</div><span class="riq-sub">nessun giorno registrato</span><span class="riq-sub">&nbsp;</span></div>';
+    var m = r[tipo], v = m.v, t = m.t, e = esito(v, t, "nuova");
+    var ob = (m.unico ? "obiettivo " : "obiettivo medio ") + t + (unita ? " "+unita.trim() : "");
+    return '<div class="riq"><div class="riq-testa"><span class="riq-lab">'+lab+'</span></div><div class="riq-num"><span>'+v+(unita?'<small>'+unita+'</small>':'')+'</span><span class="stato '+e+'">'+TESTO_ESITO[e]+'</span></div><span class="riq-sub">su '+r.n+(r.n===1?' giorno':' giorni')+'</span><span class="riq-sub">'+ob+'</span></div>';
+  }
+
+  function dettaglio(st){
+    if (!st.sel || !D[st.sel]) return '<p class="suggerimento">Tocca una barra per vedere il giorno.</p>';
+    var v = D[st.sel], t = TARGET[v[4]], e = esito(v[0], t.k, "nuova");
+    return '<div class="dettaglio" role="status"><div class="det-testa"><b>'+GIORNI[dow(st.sel)]+' '+ggMese(st.sel)+'</b><span class="tipo">'+(v[4]==="a"?"Allenamento":"Normale")+'</span></div>'+
+      '<div class="det-kcal"><b>'+v[0]+' kcal</b><span>/ '+t.k+'</span><span class="stato '+e+'">'+TESTO_ESITO[e]+'</span></div>'+
+      '<div class="det-macro"><span>Grassi<em>'+v[3]+' g</em></span><span>Carboidrati<em>'+v[2]+' g</em></span><span>Proteine<em>'+v[1]+' / '+t.p+' g</em></span></div>'+
+      '<span class="link">Apri il giorno<svg class="ico" style="width:18px;height:18px"><use href="#i-dx"/></svg></span></div>';
+  }
+
+  function etichettaPeriodo(st){
+    if (st.modo === "settimana") {
+      var fine = piuGiorni(st.inizio, 6), a = data(st.inizio), b = data(fine), t;
+      t = a.getUTCMonth() === b.getUTCMonth() ? a.getUTCDate()+" – "+ggMese(fine) : ggBreve(st.inizio)+" – "+ggBreve(fine);
+      var sotto = st.inizio === lunedi(OGGI) ? "Questa settimana" : (st.inizio === piuGiorni(lunedi(OGGI), -7) ? "Settimana scorsa" : "");
+      return { t:t, s:sotto };
+    }
+    var d = data(st.inizio), nome = MESI[d.getUTCMonth()];
+    return { t: nome.charAt(0).toUpperCase()+nome.slice(1)+" "+d.getUTCFullYear(), s: primoDelMese(OGGI) === st.inizio ? "Questo mese" : "" };
+  }
+
+  function disegna(el){
+    var st = el._st, giorni = giorniDelPeriodo(st), r = riepilogo(giorni), et = etichettaPeriodo(st);
+    var minimo = st.modo === "settimana" ? PRIMA_SETTIMANA : PRIMO_MESE;
+    var massimo = st.modo === "settimana" ? lunedi(OGGI) : primoDelMese(OGGI);
+    var h = '<h1 class="h1">Statistiche</h1>';
+    h += '<div class="schede" role="tablist"><button type="button" role="tab" data-az="settimana" aria-selected="'+(st.modo==="settimana")+'" class="'+(st.modo==="settimana"?"on":"")+'">Settimana</button><button type="button" role="tab" data-az="mese" aria-selected="'+(st.modo==="mese")+'" class="'+(st.modo==="mese"?"on":"")+'">Mese</button></div>';
+    h += '<div class="periodo"><button type="button" class="freccia" data-az="prec" aria-label="Periodo precedente"'+(st.nuovo||st.inizio<=minimo?" disabled":"")+'><svg class="ico"><use href="#i-sx"/></svg></button><div class="per-testo"><b>'+et.t+'</b><small>'+et.s+'</small></div><button type="button" class="freccia" data-az="succ" aria-label="Periodo successivo"'+(st.nuovo||st.inizio>=massimo?" disabled":"")+'><svg class="ico"><use href="#i-dx"/></svg></button></div>';
+    if (st.nuovo) {
+      h += '<div class="riquadri">'+riquadro("Media kcal",0,"",null)+riquadro("Media grassi",0,"",null)+riquadro("Media carboidrati",0,"",null)+riquadro("Media proteine",0,"",null)+'</div>';
+      h += '<div class="sezione"><div class="sez-testa"><span class="sez-lab">Calorie giornaliere</span></div><div class="vuoto"><p>Le medie e le barre compaiono dal primo pasto che registri.</p><span class="btn"><svg class="ico"><use href="#i-piu"/></svg>Registra il primo pasto</span></div></div>';
+      h += '<div class="sezione"><div class="sez-testa"><span class="sez-lab">Peso</span></div><div class="vuoto"><p>Nessuna pesata. Ogni pesata diventa un punto del grafico.</p><span class="link">Registra peso<svg class="ico" style="width:18px;height:18px"><use href="#i-dx"/></svg></span></div></div>';
+    } else {
+      h += '<div class="riquadri">'+riquadro("Media kcal",0,"",r,"k")+riquadro("Media grassi",0," g",r,"g")+riquadro("Media carboidrati",0," g",r,"c")+riquadro("Media proteine",0," g",r,"p")+'</div>';
+      h += '<div class="sezione"><div class="sez-testa"><span class="sez-lab">Calorie giornaliere</span><span class="sez-dx">'+(r?"":"nessun giorno registrato")+'</span></div>'+barre(st, "nuova", true)+dettaglio(st)+'</div>';
+      var u = PESATE[PESATE.length-1], diff = u[1]-PESATE[0][1];
+      h += '<div class="sezione"><div class="sez-testa"><span class="sez-lab">Peso</span><span class="sez-dx">'+(diff>=0?"+":"−")+virgola(Math.abs(diff),1)+' kg dal '+ggBreve(PESATE[0][0])+'</span></div>'+peso()+
+        '<div class="peso-piede"><span>Ultima pesata '+ggBreve(u[0])+', '+giorniFra(u[0],OGGI)+' giorni fa</span><span class="link">Registra peso<svg class="ico" style="width:18px;height:18px"><use href="#i-dx"/></svg></span></div></div>';
+    }
+    h += '<nav class="pillola" aria-label="Sezioni"><span><svg class="ico"><use href="#i-oggi"/></svg>Oggi</span><span class="on" aria-current="page"><svg class="ico"><use href="#i-stat"/></svg>Statistiche</span><span><svg class="ico"><use href="#i-imp"/></svg>Impostazioni</span></nav>';
+    el.innerHTML = h;
+  }
+
+  function azione(el, az){
+    var st = el._st;
+    if (az === "settimana" || az === "mese") {
+      if (st.modo === az) return;
+      if (az === "mese") st.inizio = primoDelMese(st.inizio);
+      else { var l = lunedi(st.inizio); st.inizio = l < PRIMA_SETTIMANA ? PRIMA_SETTIMANA : l; }
+      st.modo = az; st.sel = null;
+    } else if (az === "prec" || az === "succ") {
+      var k = az === "prec" ? -1 : 1;
+      st.inizio = st.modo === "settimana" ? piuGiorni(st.inizio, 7*k) : meseDopo(st.inizio, k);
+      st.sel = null;
+    }
+    disegna(el);
+  }
+
+  var telefoni = Array.prototype.slice.call(document.querySelectorAll(".sch[data-stato]"));
+  telefoni.forEach(function(el){
+    el._st = JSON.parse(el.getAttribute("data-stato"));
+    el.addEventListener("click", function(ev){
+      var b = ev.target.closest("[data-az]"); if (b && !b.disabled) { azione(el, b.getAttribute("data-az")); return; }
+      var c = ev.target.closest(".colonna"); if (c) { var g = c.getAttribute("data-giorno"); el._st.sel = el._st.sel === g ? null : g; disegna(el); var n = el.querySelector('.colonna[data-giorno="'+g+'"]'); if (n) n.focus(); }
+    });
+    el.addEventListener("keydown", function(ev){
+      if ((ev.key === "Enter" || ev.key === " ") && ev.target.classList && ev.target.classList.contains("colonna")) { ev.preventDefault(); ev.target.dispatchEvent(new MouseEvent("click", { bubbles:true })); }
+    });
+    disegna(el);
+  });
+
+  function confronto(){
+    document.querySelectorAll("[data-confronto]").forEach(function(box){
+      box.innerHTML = barre({ modo:"settimana", inizio:"2026-11-02", sel:null }, box.getAttribute("data-confronto"), false);
+    });
+    var righe = "";
+    for (var i=0;i<7;i++){
+      var g = piuGiorni("2026-11-02", i), v = D[g];
+      if (!v) { righe += '<tr><td>'+LETTERE[i]+' '+data(g).getUTCDate()+'</td><td>—</td><td></td><td></td></tr>'; continue; }
+      var t = TARGET[v[4]].k, sc = (v[0]-t)/t*100, e = esito(v[0], t, "nuova");
+      righe += '<tr><td><span class="pallino" style="background:'+COLORE[e]+'"></span>'+LETTERE[i]+' '+data(g).getUTCDate()+'</td><td>'+v[0]+'</td><td>'+t+'</td><td>'+(sc>=0?"+":"−")+virgola(Math.abs(sc),1)+'%</td></tr>';
+    }
+    document.getElementById("tab-giorni").innerHTML = righe;
+  }
+  confronto();
+
+  document.getElementById("fascia").addEventListener("input", function(ev){
+    fascia = +ev.target.value/100;
+    document.getElementById("fascia-val").textContent = ev.target.value;
+    telefoni.forEach(disegna); confronto();
+  });
+
+  document.querySelectorAll(".temi button").forEach(function(b){
+    b.addEventListener("click", function(){
+      var t = b.getAttribute("data-tema");
+      if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+      document.querySelectorAll(".temi button").forEach(function(x){ x.setAttribute("aria-pressed", String(x === b)); });
+    });
+  });
+})();
+</script>
+</body>
+</html>
