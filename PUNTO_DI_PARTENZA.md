@@ -8899,10 +8899,33 @@ verificato da Cowork su Supabase, tabella e log, tutte le risposte
    server alle 20:12:43, dopo il ritorno della rete;
 6. in più «Aceto balsamico» aggiunto da Davide (innocuo).
 
-Fatti dopo, non ancora provati sull'anteprima: le licenze (Informazioni,
-il file ODbL fuori dal proxy), il riquadro «Nel catalogo» in Aggiungi
-con «Vedi tutto il catalogo», e la scansione che trova il catalogo
-(pannello in Aggiungi, scheda in Alimenti; ultimo commit del branch).
+**Provati su iPhone anche licenze, riquadro e scansione** (secondo giro,
+il 09/11 dalle 20:55 alle 21:01, anteprima, account di prova, Safari;
+verificato da Cowork su Supabase, tabelle e log, tutte le risposte
+200/201):
+1. licenze: le righe in Informazioni viste, il file ODbL si apre dal
+   link. **La prova senza accesso** (il file fuori dal proxy) si fa
+   sull'app vera dopo il merge (sotto, "Difetti e verifiche aperti");
+2. riquadro in Aggiungi: «papaya» senza riquadro; «anacardi» → il
+   riquadro, il «+», lo sheet a 30 g con la conferma, voce registrata
+   (copia `off:20267605` alle 20:56:06, voce alle 20:56:18); poi
+   «anacardi» lo trova fra i suoi; «Vedi tutto il catalogo» apre la
+   scheda «Catalogo» con «mozzarella»;
+3. scansione della Nutella («Scrivi il codice» 3017620422003): il
+   pannello «Nel catalogo», la copia `off:3017620422003` (20:57:36) e
+   una voce da 15 g;
+4. il caso Doriano: «Crackers integrali · Doriano», nell'account di
+   prova dal 18/10 senza codice; con 8000605830745 si apre la modifica
+   con il codice, «Salva e scegli la quantità» salva il codice
+   (20:58:47) e apre i grammi (Davide non ha registrato: nessuna voce,
+   corretto); nessuna copia dal catalogo; la seconda scansione va
+   dritta ai grammi;
+5. scansione in Impostazioni > Alimenti (5201054017616): la scheda del
+   Fage aperta, la copia `off:5201054017616` (21:00:14);
+6. offline: Scansiona grigio; «pistacchi» dal riquadro, copia e voce
+   creati offline alle 21:00:39, arrivati al server alle 21:00:46-47.
+
+Resta il merge.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -8928,6 +8951,13 @@ i numeri delle sue segnalazioni.
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Catalogo precaricato, il file ODbL senza accesso** (branch
+  `catalogo`, sezione 10.1, "Licenze"): provato con `next start` in
+  locale (200 senza sessione) e sull'anteprima dal link, con l'accesso.
+  Da provare sull'app vera dopo il merge: aprire
+  `/catalogo/catalogo-open-food-facts-odbl.json` senza essere entrati
+  (per esempio in una finestra privata).
 
 - **Esporta, la protezione dalle formule nel CSV** (branch `esporta`,
   sezione 10.4, "Il CSV"): coperta dai test, non provata dal vivo. Nella

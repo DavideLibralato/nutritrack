@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-09 — Catalogo precaricato: provati su iPhone licenze, riquadro e scansione
+
+Branch `catalogo`. Secondo giro di prove di Davide sull'anteprima, il
+09/11 dalle 20:55 alle 21:01, account di prova, Safari; Cowork su
+Supabase, tabelle e log, tutte 200/201. Licenze: righe in Informazioni,
+il file ODbL si apre dal link (la prova senza accesso resta da fare
+sull'app vera dopo il merge). Riquadro in Aggiungi: «papaya» senza
+riquadro; «anacardi» → «+», sheet a 30 g con la conferma, voce (copia
+`off:20267605` 20:56:06, voce 20:56:18), poi «anacardi» fra i suoi;
+«Vedi tutto il catalogo» con «mozzarella». Scansione della Nutella
+(3017620422003): pannello, copia (20:57:36), voce da 15 g. Caso Doriano
+(8000605830745, alimento senza codice dal 18/10): modifica con il
+codice, «Salva e scegli la quantità» salva il codice (20:58:47) e apre i
+grammi, nessuna voce (corretto), nessuna copia; la seconda scansione va
+dritta ai grammi. Scansione in Alimenti (5201054017616): scheda del Fage,
+copia (21:00:14). Offline: Scansiona grigio; «pistacchi» dal riquadro,
+creati alle 21:00:39 e arrivati alle 21:00:46-47. Esito in PUNTO §11;
+la prova senza accesso del file ODbL in "Difetti e verifiche aperti".
+
 ## 2026-11-09 — Catalogo precaricato: la scansione trova il catalogo
 
 Branch `catalogo`, commit 10, l'ultimo (si può togliere da solo).
