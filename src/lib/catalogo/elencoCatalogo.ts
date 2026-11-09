@@ -64,6 +64,28 @@ export function elencoCatalogo(
   };
 }
 
+// Il riquadro «Nel catalogo» di Aggiungi (PUNTO_DI_PARTENZA.md §10.1;
+// mockup, schermata 3): compare solo quando la ricerca fra i tuoi alimenti
+// e i pasti salvati non trova niente (lo decide la pagina). Qui: gli
+// alimenti del catalogo che quella ricerca troverebbe, con la regola di
+// Aggiungi (solo il nome, come cercaPerNome, ordinati per nome), tolti
+// quelli che hai già, al massimo `massimo`.
+export function suggerimentiCatalogo(
+  catalogo: readonly AlimentoCatalogo[],
+  catalogoUtente: Alimento[],
+  userId: string,
+  query: string,
+  massimo = 3
+): AlimentoCatalogo[] {
+  const q = testoConfronto(query);
+  if (!q) return [];
+  return catalogo
+    .filter((v) => testoConfronto(v.nome).includes(q))
+    .filter((v) => statoNelCatalogo(v, catalogoUtente, userId).stato === "da-aggiungere")
+    .sort((a, b) => a.nome.localeCompare(b.nome, "it"))
+    .slice(0, massimo);
+}
+
 // La riga sotto i filtri, a sinistra (mockup): «183 · 2 già nei tuoi»,
 // solo «183» se non ne hai nessuno; con «Nascondi» acceso «5 da
 // aggiungere» («1 da aggiungere»).

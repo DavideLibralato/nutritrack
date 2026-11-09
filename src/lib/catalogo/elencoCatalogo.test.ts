@@ -9,6 +9,7 @@ import { CATALOGO_PRECARICATO } from "./catalogoPrecaricato";
 import {
   categorieCatalogo,
   elencoCatalogo,
+  suggerimentiCatalogo,
   testoConteggioCatalogo,
   trovaNelCatalogo,
 } from "./elencoCatalogo";
@@ -97,5 +98,28 @@ describe("categorieCatalogo", () => {
     expect(categorie).toHaveLength(14);
     expect(categorie[0]).toBe("Pasta e cereali");
     expect(new Set(categorie).size).toBe(14);
+  });
+});
+
+describe("suggerimentiCatalogo (il riquadro di Aggiungi)", () => {
+  it("cerca solo nel nome, come la ricerca di Aggiungi: la marca non conta", () => {
+    expect(suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "barilla")).toEqual([]);
+    expect(suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "spaghetti").map((v) => v.id)).toContain("off:8076800195057");
+  });
+
+  it("al massimo 3, in ordine di nome", () => {
+    const nomi = suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "LATTE").map((v) => v.nome);
+    expect(nomi).toEqual(["Fiocchi di latte (cottage)", "Latte parzialmente scremato", "Latte parzialmente scremato UHT"]);
+  });
+
+  it("toglie quelli che hai già (qui una copia rinominata), e il posto lo prende il successivo", () => {
+    const fiocchi = CATALOGO_PRECARICATO.find((v) => v.nome === "Fiocchi di latte (cottage)")!;
+    const miei = [mio("c", "Il mio cottage", null, { catalogo_id: fiocchi.id })];
+    const nomi = suggerimentiCatalogo(CATALOGO_PRECARICATO, miei, USER, "latte").map((v) => v.nome);
+    expect(nomi).toEqual(["Latte parzialmente scremato", "Latte parzialmente scremato UHT", "Latte senza lattosio"]);
+  });
+
+  it("a ricerca vuota niente", () => {
+    expect(suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "   ")).toEqual([]);
   });
 });

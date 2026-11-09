@@ -49,6 +49,10 @@ interface Props {
   pastoSelezionatoId?: string;
   onCambiaPasto?: (pastoId: string) => void;
   onElimina?: () => void;
+  // Una riga di conferma in cima (Aggiungi, dopo il «+» del riquadro «Nel
+  // catalogo»: «Aggiunto ai tuoi alimenti: Mandorle»; PUNTO §10.1). Se lo
+  // sheet si chiude senza registrare, l'alimento resta comunque tuo.
+  avviso?: string;
 }
 
 export default function SheetQuantita({
@@ -66,6 +70,7 @@ export default function SheetQuantita({
   pastoSelezionatoId,
   onCambiaPasto,
   onElimina,
+  avviso,
 }: Props) {
   // Con la virgola ("12,5"), come il resto dell'app e come si riscrive.
   const [grammi, setGrammi] = useState(
@@ -159,6 +164,17 @@ export default function SheetQuantita({
           className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
+        {avviso && (
+          <p
+            role="status"
+            className="mb-3 flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--accento)_12%,transparent)] px-3 py-2.5 text-sm leading-snug"
+          >
+            <svg className="mt-px shrink-0 text-accent" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+            <span>{avviso}</span>
+          </p>
+        )}
         {!mostraSelettorePasto && (
           <p className="text-xs uppercase tracking-wide text-muted">{nomePasto}</p>
         )}

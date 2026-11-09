@@ -20,7 +20,7 @@ import { prendiInserimento } from "@/lib/inserimento/ultimoInserimento";
 import type { Alimento } from "@/lib/db/tipi";
 
 // Il ritorno a Oggi (router.replace) si guarda da qui.
-const navigazione = vi.hoisted(() => ({ replace: vi.fn() }));
+const navigazione = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 
 let utenteTest = "";
 let parametri = new URLSearchParams();
@@ -28,6 +28,7 @@ beforeEach(() => {
   utenteTest = `utente-aggiungi-${crypto.randomUUID()}`;
   parametri = new URLSearchParams();
   navigazione.replace.mockReset();
+  navigazione.push.mockReset();
   guasto.guasti = 0;
   prendiInserimento();
 });
@@ -39,7 +40,7 @@ vi.mock("@/lib/supabase/useUtente", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: () => {}, replace: navigazione.replace, refresh: () => {}, back: () => {} }),
+  useRouter: () => ({ push: navigazione.push, replace: navigazione.replace, refresh: () => {}, back: () => {} }),
   useSearchParams: () => parametri,
 }));
 
@@ -474,13 +475,15 @@ describe("Aggiungi: ricerca nei pasti salvati", () => {
     await creaPastoSalvato("Merenda salvata", [[mela, 150]]);
     render(<AggiungiPage />);
 
-    const campo = await cerca("kiwi");
-    expect(screen.getByText("Nessun risultato per «kiwi»")).toBeTruthy();
+    // Una parola che non è neanche nel catalogo precaricato: con il kiwi
+    // (che c'è) comparirebbe il riquadro «Nel catalogo».
+    const campo = await cerca("papaya");
+    expect(screen.getByText("Nessun risultato per «papaya»")).toBeTruthy();
     expect(campo.getAttribute("enterkeyhint")).toBe("go");
 
     fireEvent.keyDown(campo, { key: "Enter" });
     expect(await screen.findByRole("heading", { name: "Nuovo alimento" })).toBeTruthy();
-    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("kiwi");
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("papaya");
   });
 });
 
@@ -840,5 +843,92 @@ describe("Aggiungi: scansione del codice a barre", () => {
     expect(await screen.findByRole("dialog", { name: "Quantità di Nutella" })).toBeTruthy();
     expect(screen.queryByText("Modifica alimento")).toBeNull();
     expect((await repositoryAlimenti.ottieniPerId(mia.id))?.barcode).toBe("96385074");
+  });
+});
+
+// Il riquadro «Nel catalogo» (PUNTO_DI_PARTENZA.md §10.1; mockup
+// docs/mockups/catalogo-precaricato.html, schermata 3). Test permanenti per
+// quello che sbaglierebbe in silenzio: il riquadro anche quando fra i tuoi
+// c'è un risultato (la ricerca di Aggiungi deve restare sui tuoi); un
+// alimento che hai già proposto di nuovo (un doppione); il «+» che non
+// crea la copia, o apre i grammi con un'altra porzione; «Vedi tutto» che
+// non porta la ricerca.
+describe("Aggiungi: il riquadro «Nel catalogo»", () => {
+  async function cerca(testo: string) {
+    const campo = await screen.findByRole("searchbox", { name: "Cerca alimento o pasto" });
+    fireEvent.change(campo, { target: { value: testo } });
+    return campo;
+  }
+
+  function riquadro() {
+    return screen.queryByRole("heading", { name: "Nel catalogo" })?.closest("section") ?? null;
+  }
+
+  it("niente fra i tuoi: il riquadro, al massimo 3, in ordine di nome, e «Crea «…»» resta", async () => {
+    await preparaPranzo();
+    render(<AggiungiPage />);
+    await cerca("latte");
+
+    expect(screen.getByText("Nessun alimento tuo con «latte»")).toBeTruthy();
+    const r = riquadro()!;
+    const nomi = within(r)
+      .getAllByRole("button", { name: /ai tuoi alimenti e scegli i grammi$/ })
+      .map((b) => b.getAttribute("aria-label"));
+    expect(nomi).toEqual([
+      "Aggiungi Fiocchi di latte (cottage) · Milbona ai tuoi alimenti e scegli i grammi",
+      "Aggiungi Latte parzialmente scremato · Parmalat ai tuoi alimenti e scegli i grammi",
+      "Aggiungi Latte parzialmente scremato UHT · Granarolo ai tuoi alimenti e scegli i grammi",
+    ]);
+    expect(screen.queryByText(/Nessun risultato/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Crea «latte»" })).toBeTruthy();
+  });
+
+  it("con anche un solo risultato tuo il riquadro non c'è", async () => {
+    await preparaPranzo();
+    await creaAlimento("Latte di soia", 33);
+    render(<AggiungiPage />);
+    await cerca("latte");
+    expect(await screen.findByText("Latte di soia")).toBeTruthy();
+    expect(riquadro()).toBeNull();
+  });
+
+  it("toglie quelli che hai già, anche con un altro nome (stesso codice): qui non resta niente", async () => {
+    await preparaPranzo();
+    await repositoryAlimenti.crea({
+      user_id: utenteTest, nome: "Biscotti della nonna", marca: null, barcode: "8013355999143",
+      kcal_100g: 480, proteine_100g: 6, carboidrati_100g: 65, grassi_100g: 21,
+      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
+      porzione_default_g: 30, fonte: "barcode", verificato: false,
+    });
+    render(<AggiungiPage />);
+    await cerca("gocciole");
+    expect(screen.getByText("Nessun risultato per «gocciole»")).toBeTruthy();
+    expect(riquadro()).toBeNull();
+  });
+
+  it("il «+»: la copia nasce, lo sheet si apre con la porzione del catalogo e la conferma; Aggiungi scrive la voce", async () => {
+    await preparaPranzo();
+    render(<AggiungiPage />);
+    await cerca("mandorle");
+    fireEvent.click(within(riquadro()!).getByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti e scegli i grammi" }));
+
+    const sheet = await screen.findByRole("dialog", { name: "Quantità di Mandorle" });
+    expect((within(sheet).getByLabelText("Quantità (g)") as HTMLInputElement).value).toBe("30");
+    expect(within(sheet).getByText("Aggiunto ai tuoi alimenti: Mandorle")).toBeTruthy();
+    const copie = (await repositoryAlimenti.ottieniTutti(utenteTest)).filter((a) => a.catalogo_id === "ciqual:15000");
+    expect(copie).toHaveLength(1);
+
+    fireEvent.click(within(sheet).getByRole("button", { name: "Aggiungi" }));
+    await waitFor(() => expect(navigazione.replace).toHaveBeenCalledTimes(1));
+    const voci = await vociDiOggi();
+    expect(voci.map((v) => [v.nome_alimento, v.quantita_g, v.alimento_id])).toEqual([["Mandorle", 30, copie[0].id]]);
+  });
+
+  it("«Vedi tutto il catalogo» apre Alimenti sulla scheda «Catalogo» con la ricerca scritta", async () => {
+    await preparaPranzo();
+    render(<AggiungiPage />);
+    await cerca("  latte ");
+    fireEvent.click(within(riquadro()!).getByRole("button", { name: "Vedi tutto il catalogo" }));
+    expect(navigazione.push).toHaveBeenCalledWith("/impostazioni/alimenti?scheda=catalogo&cerca=latte");
   });
 });

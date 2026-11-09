@@ -27,7 +27,12 @@ vi.mock("@/lib/supabase/useUtente", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {} }),
+  useSearchParams: () => parametriIndirizzo.valore,
 }));
+
+// I parametri dell'indirizzo (?scheda=catalogo&cerca=…), per i test di
+// «Vedi tutto il catalogo» da Aggiungi.
+const parametriIndirizzo = vi.hoisted(() => ({ valore: new URLSearchParams() }));
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
@@ -452,5 +457,20 @@ describe("Catalogo precaricato: la scheda «Catalogo»", () => {
     fireEvent.change(await apriCatalogo(), { target: { value: "carote" } });
     fireEvent.click(screen.getByRole("button", { name: "Aggiungi Carote ai tuoi alimenti" }));
     await waitFor(async () => expect(await db.alimenti.filter((a) => a.catalogo_id === "ciqual:20009").count()).toBe(1));
+  });
+});
+
+describe("Catalogo precaricato: arrivo da «Vedi tutto il catalogo»", () => {
+  it("?scheda=catalogo&cerca=latte apre la scheda «Catalogo» con la ricerca già scritta", async () => {
+    parametriIndirizzo.valore = new URLSearchParams("scheda=catalogo&cerca=latte");
+    try {
+      render(<AlimentiPage />);
+      const campo = (await screen.findByRole("searchbox", { name: "Cerca nel catalogo" })) as HTMLInputElement;
+      expect(campo.value).toBe("latte");
+      expect(screen.getByRole("button", { name: /^Latte senza lattosio · Zymil, / })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /^Mandorle, / })).toBeNull();
+    } finally {
+      parametriIndirizzo.valore = new URLSearchParams();
+    }
   });
 });

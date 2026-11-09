@@ -46,7 +46,8 @@
 //   «Annulla» (eliminaAlimenti con la sola copia). In «I miei» le copie
 //   hanno sotto «dal catalogo».
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import {
@@ -181,8 +182,22 @@ interface Conferma {
   errore: string | null;
 }
 
+// useSearchParams() legge `?scheda=catalogo&cerca=…`, l'indirizzo di
+// «Vedi tutto il catalogo» in Aggiungi (PUNTO §10.1): la pagina si apre
+// sulla scheda «Catalogo» con la ricerca già scritta. Next vuole chi lo usa
+// dentro <Suspense>, come Aggiungi e il login. Offline la copia salvata
+// dal service worker vale anche con i parametri (si salva per percorso).
 export default function AlimentiPage() {
+  return (
+    <Suspense fallback={<main className={CLASSE_PAGINA}><IntestazioneSottopagina titolo="Alimenti" /></main>}>
+      <PaginaAlimenti />
+    </Suspense>
+  );
+}
+
+function PaginaAlimenti() {
   const userId = useUtenteId();
+  const parametri = useSearchParams();
 
   const catalogo = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -208,7 +223,8 @@ export default function AlimentiPage() {
     return repositoryPreferiti.ottieniTutti(userId);
   }, [userId]);
 
-  const [scheda, setScheda] = useState<Scheda>("miei");
+  // Di solito «I miei»; «Catalogo» se l'indirizzo lo chiede.
+  const [scheda, setScheda] = useState<Scheda>(parametri.get("scheda") === "catalogo" ? "catalogo" : "miei");
   const [query, setQuery] = useState("");
   const [ordine, setOrdine] = useState<OrdineCatalogo>("piu-usati");
   const [modulo, setModulo] = useState<Modulo | null>(null);
@@ -492,6 +508,7 @@ export default function AlimentiPage() {
       {scheda === "catalogo" ? (
         <SchedaCatalogo
           userId={userId}
+          queryIniziale={parametri.get("cerca") ?? ""}
           catalogoUtente={catalogo}
           puoAprire={(a) => eModificabile(a, userId)}
           onAggiunto={(copia) =>

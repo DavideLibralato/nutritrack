@@ -37,7 +37,12 @@ vi.mock("@/lib/supabase/useUtente", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {} }),
+  useSearchParams: () => parametriIndirizzo.valore,
 }));
+
+// I parametri dell'indirizzo (?scheda=catalogo&cerca=…), per i test di
+// «Vedi tutto il catalogo» da Aggiungi.
+const parametriIndirizzo = vi.hoisted(() => ({ valore: new URLSearchParams() }));
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({

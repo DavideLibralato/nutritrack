@@ -5,6 +5,38 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-09 — Catalogo precaricato: il riquadro «Nel catalogo» in Aggiungi
+
+Branch `catalogo`, commit 8. In Aggiungi, solo quando la ricerca non
+trova niente fra i tuoi alimenti né fra i pasti salvati: «Nessun
+alimento tuo con «…»» e il riquadro «Nel catalogo»
+(`RiquadroNelCatalogo`), al massimo 3 alimenti del catalogo trovati per
+nome (come la ricerca di Aggiungi), in ordine di nome, tolti quelli che
+hai già (`suggerimentiCatalogo` in `elencoCatalogo.ts`). Senza
+suggerimenti resta «Nessun risultato» come prima; «Crea «…»» resta
+sempre, e Invio crea come prima. Il «+» (e il tocco sul nome) crea la
+copia con `aggiungiDalCatalogo` e apre lo sheet quantità **con
+l'alimento che la scrittura restituisce**, non cercandolo nell'elenco
+della pagina (il difetto del 09/11 in Alimenti): porzione del catalogo,
+e in cima allo sheet «Aggiunto ai tuoi alimenti: …» (prop `avviso` di
+`SheetQuantita`; nel mockup era un avviso sopra lo schermo, qui sta
+dentro lo sheet). Se lo sheet si chiude senza registrare, l'alimento
+resta tuo. «Vedi tutto il catalogo» apre
+`/impostazioni/alimenti?scheda=catalogo&cerca=…`: Alimenti legge i
+parametri (`useSearchParams`, dentro `<Suspense>` come Aggiungi) e si
+apre sulla scheda «Catalogo» con la ricerca scritta. Il test di Aggiungi
+che cercava «kiwi» per avere «Nessun risultato» cerca «papaya»: il kiwi
+è nel catalogo. Test permanenti: `suggerimentiCatalogo` (4), 5 casi in
+`aggiungi/page.test.tsx` (riquadro con 3 in ordine, assente con un
+risultato tuo, senza quelli che hai già per codice, il «+» con porzione,
+conferma e voce scritta, «Vedi tutto»), `page.nelCatalogo.test.tsx`
+(lettura live rallentata di 1 s: lo sheet si apre lo stesso entro 800
+ms), l'arrivo in Alimenti da «Vedi tutto». Rotti da copie in 9 modi e
+ripristinati; la rottura «riquadro anche con risultati tuoi» al primo
+tentativo non rompeva niente ed è stata rifatta. Nella build il catalogo
+sta in un file JS condiviso (88 KB, 19 KB compressi), citato
+dall'HTML di Aggiungi e di Alimenti.
+
 ## 2026-11-09 — Catalogo precaricato: le licenze; provate su iPhone le schede di Alimenti
 
 Branch `catalogo`, commit 7. **Licenze** (PUNTO §10.1, "Licenze"): lo

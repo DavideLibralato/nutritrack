@@ -64,19 +64,22 @@ function scriviNascondi(valore: boolean) {
 
 export default function SchedaCatalogo({
   userId,
+  queryIniziale = "",
   catalogoUtente,
   puoAprire,
   onAggiunto,
   onApri,
 }: {
   userId: string;
+  // La ricerca già scritta (da «Vedi tutto il catalogo» in Aggiungi).
+  queryIniziale?: string;
   // Il catalogo locale dell'utente (catalogoLocale), letto live dalla pagina.
   catalogoUtente: Alimento[];
   puoAprire: (alimento: Alimento) => boolean;
   onAggiunto: (copia: Alimento) => void;
   onApri: (alimento: Alimento) => void;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(queryIniziale);
   const [categoria, setCategoria] = useState<string | null>(null);
   // Letto subito: questa scheda si disegna solo dopo un tocco su
   // «Catalogo», nel browser, mai sul server (dove localStorage non c'è).

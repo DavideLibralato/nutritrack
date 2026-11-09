@@ -32,10 +32,14 @@ import { usePastiIniziali } from "@/lib/usePastiIniziali";
 import { tuttiIPasti } from "@/lib/repository/pasti";
 import { pastiValidiIl } from "@/lib/pasti/validitaPasti";
 import {
+  aggiungiDalCatalogo,
   catalogoLocale,
   cercaPerNome,
   etichettaAlimento,
 } from "@/lib/repository/alimenti";
+import { CATALOGO_PRECARICATO, type AlimentoCatalogo } from "@/lib/catalogo/catalogoPrecaricato";
+import { suggerimentiCatalogo } from "@/lib/catalogo/elencoCatalogo";
+import RiquadroNelCatalogo from "@/components/RiquadroNelCatalogo";
 import { ePreferito, togglePreferito } from "@/lib/repository/preferiti";
 import { pastoPerOrario, primoPastoVuoto } from "@/lib/inserimento/propostaPasto";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
@@ -328,6 +332,13 @@ function AggiungiContenuto() {
   // Errore del "+" su Recenti/Preferiti: quello scrive subito, senza sheet,
   // quindi non ha il messaggio d'errore di SheetQuantita a disposizione.
   const [erroreRapido, setErroreRapido] = useState<string | null>(null);
+  // Il riquadro «Nel catalogo» (PUNTO §10.1): l'id del catalogo che si sta
+  // aggiungendo, l'errore se la scrittura fallisce, e la conferma in cima
+  // allo sheet quantità della copia appena nata (`idAlimento`: vale solo
+  // per lo sheet di quella copia).
+  const [catalogoInCorso, setCatalogoInCorso] = useState<string | null>(null);
+  const [erroreCatalogo, setErroreCatalogo] = useState<string | null>(null);
+  const [avvisoCopia, setAvvisoCopia] = useState<{ idAlimento: string; testo: string } | null>(null);
 
   // Il foglio dei doppioni (sezione 3, "Doppioni"): aperto quando quello che
   // si aggiunge c'è già nel pasto. Tiene la richiesta di partenza, per la
@@ -432,6 +443,11 @@ function AggiungiContenuto() {
   // quando non si trova né un alimento né un pasto.
   const risultatiPasti = cercaPastiSalvati(preferitiPastiSalvati, query);
   const nessunRisultato = risultati.length === 0 && risultatiPasti.length === 0;
+  // Il catalogo precaricato si guarda solo quando fra i tuoi non c'è niente
+  // (né alimenti né pasti salvati): al massimo 3, tolti quelli che hai già.
+  const nelCatalogo = nessunRisultato
+    ? suggerimentiCatalogo(CATALOGO_PRECARICATO, catalogo, userId, query)
+    : [];
   const nomePastoSelezionato =
     pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
 
@@ -579,6 +595,34 @@ function AggiungiContenuto() {
   function scegli(a: Alimento) {
     setAlimentoSceltoRaw(a);
     setSalvataggio("inattivo");
+    setAvvisoCopia(null);
+  }
+
+  // Il «+» del riquadro «Nel catalogo»: crea la copia (aggiungiDalCatalogo)
+  // e apre lo sheet quantità con l'alimento che la scrittura restituisce,
+  // MAI cercandolo nell'elenco della pagina: la lettura live si aggiorna un
+  // attimo dopo la scrittura e non lo troverebbe (il difetto del 09/11 in
+  // Impostazioni > Alimenti). La porzione proposta è quella del catalogo,
+  // copiata nella riga. Se era già tuo (un doppio tocco, una copia arrivata
+  // con la sync), lo sheet del tuo, senza la conferma.
+  async function aggiungiDalRiquadro(voce: AlimentoCatalogo) {
+    if (!userId || catalogoInCorso) return;
+    setCatalogoInCorso(voce.id);
+    setErroreCatalogo(null);
+    try {
+      const esito = await aggiungiDalCatalogo(userId, voce);
+      scegli(esito.alimento);
+      if (esito.esito === "aggiunto") {
+        setAvvisoCopia({
+          idAlimento: esito.alimento.id,
+          testo: `Aggiunto ai tuoi alimenti: ${etichettaAlimento(esito.alimento)}`,
+        });
+      }
+    } catch {
+      setErroreCatalogo("Non è stato possibile aggiungere l'alimento. Riprova.");
+    } finally {
+      setCatalogoInCorso(null);
+    }
   }
 
   // Stella nello sheet: scrive subito nel repository (sezione 3), non solo
@@ -983,6 +1027,26 @@ function AggiungiContenuto() {
                     </section>
                   )}
                 </div>
+              ) : nelCatalogo.length > 0 ? (
+                // Niente fra i tuoi, ma qualcosa nel catalogo precaricato
+                // (PUNTO §10.1; mockup catalogo-precaricato.html,
+                // schermata 3). Sotto resta «Crea «…»», come sempre.
+                <div className="flex flex-col gap-4 pt-1">
+                  <p className="px-4 text-center text-[15px] text-muted">
+                    Nessun alimento tuo con «{query.trim()}»
+                  </p>
+                  <RiquadroNelCatalogo
+                    voci={nelCatalogo}
+                    inCorso={catalogoInCorso}
+                    errore={erroreCatalogo}
+                    onAggiungi={(v) => void aggiungiDalRiquadro(v)}
+                    onVediTutto={() =>
+                      router.push(
+                        `/impostazioni/alimenti?scheda=catalogo&cerca=${encodeURIComponent(query.trim())}`
+                      )
+                    }
+                  />
+                </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 px-4 pt-10 text-center">
                   <IconaLente className="text-muted" size={40} />
@@ -1022,6 +1086,7 @@ function AggiungiContenuto() {
         <SheetQuantita
           alimento={daAlimento(alimentoScelto)}
           nomePasto={nomePastoSelezionato}
+          avviso={avvisoCopia?.idAlimento === alimentoScelto.id ? avvisoCopia.testo : undefined}
           inCorso={salvataggio === "in-corso"}
           errore={salvataggio === "errore" ? ERRORE_AGGIUNTA : null}
           preferito={ePreferito(preferiti, alimentoScelto.id)}
