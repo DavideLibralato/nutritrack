@@ -790,7 +790,43 @@ silenzio.
   dell'utente, poi fra quelli vivi del catalogo comune. Un alimento
   cancellato non conta (è ritirato dal futuro, "Alimenti cancellati" in
   sezione 4). **Se c'è → sheet quantità**, come un tocco su un
-  risultato. **Se no → Open Food Facts** (sotto). Prodotto trovato →
+  risultato. **Se no, il catalogo precaricato** (dal 09/11, branch
+  `catalogo`; sezione 10.1): se il codice è lì risponde lui, senza
+  chiamare Open Food Facts, anche offline (ma Scansiona resta spento
+  senza rete, come prima). In Aggiungi la schermata di scansione mostra
+  il pannello «Nel catalogo»: «Nome · Marca», «539 kcal / 100 g ·
+  porzione 15 g», «Non è ancora fra i tuoi alimenti. Lo aggiungi e
+  scegli i grammi?», il codice, **«Aggiungi ai miei e scegli i grammi»**
+  (crea la copia e apre lo sheet quantità con quella restituita, come il
+  riquadro «Nel catalogo»; se la scrittura fallisce il pannello lo dice
+  e si può riprovare) e «Scansiona un altro codice». In Impostazioni >
+  Alimenti la scansione apre invece la scheda «Catalogo» con la scheda
+  di quel prodotto aperta. **Se hai già lo stesso prodotto per nome e
+  marca** (il codice non ti ha portato a lui; decisione di Davide del
+  09/11, caso vero «Crackers integrali · Doriano» creato a mano, nel
+  catalogo con 8000605830745), in Aggiungi e nel catalogo, niente
+  pannello né scheda:
+  - **il tuo è senza codice** → la strada di «"Apri" porta il codice»
+    (sotto): la modifica del tuo con il codice letto nel campo, con la
+    × per toglierlo, e l'avviso «Questo alimento non aveva il codice:
+    salvalo per ritrovarlo la prossima volta che scansioni.». In
+    Aggiungi il pulsante è «Salva e scegli la quantità», poi i grammi;
+    nel catalogo Salva torna all'elenco. La scansione dopo lo trova fra
+    i tuoi. Nessuna copia dal catalogo. Se il tuo non si può modificare,
+    in Aggiungi i grammi subito, nel catalogo il messaggio di sempre;
+  - **il tuo ha un altro codice** → come con Open Food Facts: "Nuovo
+    alimento" precompilato con i valori del catalogo (che per i prodotti
+    di marca vengono da Open Food Facts: l'avviso resta vero), il
+    messaggio «Hai già un alimento con questo nome e questa marca: «…».»
+    con il Salva spento, e «Apri», che non porta il codice (un codice
+    salvato non si cambia): in Aggiungi i grammi del tuo, nel catalogo
+    la sua modifica.
+
+  Com'è fatto: `onPortaCodice` nell'uso "cerca" di `SchermataScansione`,
+  `prodottoDaCatalogo` in `ricercaCodice.ts`. Test in
+  `src/app/aggiungi/page.test.tsx` e nel test del catalogo alimenti.
+  **Se non è neanche lì → Open Food Facts**
+  (sotto). Prodotto trovato →
   "Nuovo alimento" precompilato. Prodotto non trovato → "Nuovo
   alimento" vuoto, con il codice già compilato.
 - **Open Food Facts.** Chiamato **dal browser**, endpoint v3
@@ -7300,7 +7336,10 @@ non va su Supabase.
   trova il catalogo, senza chiamare Open Food Facts. In Aggiungi apre il
   pannello «Nel catalogo»; in Impostazioni > Alimenti apre la sua scheda
   nella scheda «Catalogo». È l'ultimo commit del branch, così si può
-  togliere.
+  togliere. Com'è fatto: sezione 3, "Codice a barre", "Il percorso"
+  (`cercaCodice` → esito `catalogo-precaricato` con il suo stato «Nei
+  tuoi»; `SchermataScansione`, uso "cerca" con `catalogo` "pannello" o
+  "apri").
 - **I valori nascosti in modifica** (Davide, 08/11): se cambiano i
   carboidrati, zuccheri e fibre diventano null; se cambiano i grassi,
   diventano null i saturi; il sale resta. Se cambiano solo kcal o
@@ -8861,9 +8900,9 @@ verificato da Cowork su Supabase, tabella e log, tutte le risposte
 6. in più «Aceto balsamico» aggiunto da Davide (innocuo).
 
 Fatti dopo, non ancora provati sull'anteprima: le licenze (Informazioni,
-il file ODbL fuori dal proxy) e il riquadro «Nel catalogo» in Aggiungi,
-con «Vedi tutto il catalogo». Non ancora fatta: la scansione che trova
-il catalogo (ultimo commit del branch).
+il file ODbL fuori dal proxy), il riquadro «Nel catalogo» in Aggiungi
+con «Vedi tutto il catalogo», e la scansione che trova il catalogo
+(pannello in Aggiungi, scheda in Alimenti; ultimo commit del branch).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono

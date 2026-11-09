@@ -65,6 +65,7 @@ function scriviNascondi(valore: boolean) {
 export default function SchedaCatalogo({
   userId,
   queryIniziale = "",
+  apertaIniziale = null,
   catalogoUtente,
   puoAprire,
   onAggiunto,
@@ -73,6 +74,8 @@ export default function SchedaCatalogo({
   userId: string;
   // La ricerca già scritta (da «Vedi tutto il catalogo» in Aggiungi).
   queryIniziale?: string;
+  // La scheda già aperta (da una scansione con un codice del catalogo).
+  apertaIniziale?: AlimentoCatalogo | null;
   // Il catalogo locale dell'utente (catalogoLocale), letto live dalla pagina.
   catalogoUtente: Alimento[];
   puoAprire: (alimento: Alimento) => boolean;
@@ -84,7 +87,7 @@ export default function SchedaCatalogo({
   // Letto subito: questa scheda si disegna solo dopo un tocco su
   // «Catalogo», nel browser, mai sul server (dove localStorage non c'è).
   const [nascondi, setNascondi] = useState(leggiNascondi);
-  const [aperta, setAperta] = useState<AlimentoCatalogo | null>(null);
+  const [aperta, setAperta] = useState<AlimentoCatalogo | null>(apertaIniziale);
   // L'id del catalogo che si sta aggiungendo: quel pulsante si spegne.
   const [inCorso, setInCorso] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);

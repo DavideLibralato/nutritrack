@@ -35,7 +35,7 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { leggiCodice } from "@/lib/barcode/codiceEan";
 import { preparaLettore, type Lettore } from "@/lib/barcode/lettoreCodice";
-import { cercaCodice } from "@/lib/barcode/ricercaCodice";
+import { cercaCodice, prodottoDaCatalogo } from "@/lib/barcode/ricercaCodice";
 import { useFotocamera } from "@/lib/barcode/useFotocamera";
 import {
   TESTI_CODICE_SBAGLIATO,
@@ -48,7 +48,12 @@ import {
   TESTO_TORNA_NEL_MODULO,
   testoFotocamera,
   type ErroreRicerca,
+  TITOLO_NEL_CATALOGO,
+  TESTO_NON_ANCORA_TUO,
+  ETICHETTA_AGGIUNGI_DAL_CATALOGO,
+  ERRORE_AGGIUNTA_DAL_CATALOGO,
 } from "@/lib/barcode/testiScansione";
+import type { AlimentoCatalogo } from "@/lib/catalogo/catalogoPrecaricato";
 import type { DatiCodice } from "./CreaAlimentoForm";
 import IconaCroce from "./IconaCroce";
 import IconaTorcia from "./IconaTorcia";
@@ -69,7 +74,10 @@ type Fase =
   | { tipo: "errore"; codice: string; errore: ErroreRicerca }
   // Il prodotto è nel catalogo, ma chi ha aperto la schermata non può
   // usarlo (nel catalogo alimenti: non modificabile) e lo dice.
-  | { tipo: "avviso"; codice: string; testo: string };
+  | { tipo: "avviso"; codice: string; testo: string }
+  // Il codice è nel catalogo precaricato e non è ancora tuo: il pannello
+  // «Nel catalogo» (solo in Aggiungi).
+  | { tipo: "catalogo"; codice: string; voce: AlimentoCatalogo; inCorso: boolean; errore: boolean };
 
 // Cosa fare con il codice letto (vedi in cima).
 export type UsoScansione =
@@ -82,6 +90,22 @@ export type UsoScansione =
       onNelCatalogo: (alimento: Alimento) => string | void;
       // "Nuovo alimento": precompilato (trovato su OFF) o con il solo codice.
       onModulo: (daCodice: DatiCodice) => void;
+      // Il codice è nel catalogo precaricato e hai già lo stesso prodotto
+      // per nome e marca, senza codice: la pagina apre la sua modifica con
+      // il codice pronto. Se restituisce un testo (non si può
+      // modificare), la schermata resta aperta e lo mostra, come
+      // onNelCatalogo.
+      onPortaCodice: (alimento: Alimento, codice: string) => string | void;
+      // Il codice non è fra i tuoi ma è nel catalogo precaricato (PUNTO
+      // §10.1). "pannello" (Aggiungi): la schermata mostra «Nel catalogo»
+      // con «Aggiungi ai miei e scegli i grammi», che chiama `onAggiungi`
+      // (crea la copia e apre lo sheet; se la promessa fallisce, il
+      // pannello lo dice e si può riprovare); se è già tuo per nome e
+      // marca, come un codice già nel catalogo (onNelCatalogo). "apri"
+      // (Impostazioni > Alimenti): la pagina apre la sua scheda.
+      catalogo:
+        | { tipo: "pannello"; onAggiungi: (voce: AlimentoCatalogo) => Promise<void> }
+        | { tipo: "apri"; onApri: (voce: AlimentoCatalogo) => void };
     }
   | {
       tipo: "solo-codice";
@@ -110,6 +134,8 @@ export default function SchermataScansione({
   uso,
 }: Props) {
   const soloCodice = uso.tipo === "solo-codice";
+  // Il pannello «Nel catalogo» (Aggiungi), se chi apre la schermata lo vuole.
+  const pannello = uso.tipo === "cerca" && uso.catalogo.tipo === "pannello" ? uso.catalogo : null;
   const areaVisibile = useAreaVisibile();
 
   const inputFoto = useRef<HTMLInputElement>(null);
@@ -180,7 +206,7 @@ export default function SchermataScansione({
       uso.onCodice(codice);
       return;
     }
-    const { onNelCatalogo, onModulo } = uso;
+    const { onNelCatalogo, onModulo, onPortaCodice, catalogo } = uso;
     ricerca.current?.abort();
     const controller = new AbortController();
     ricerca.current = controller;
@@ -197,6 +223,33 @@ export default function SchermataScansione({
       case "nel-catalogo": {
         const testo = onNelCatalogo(esito.alimento);
         if (typeof testo === "string") setFase({ tipo: "avviso", codice, testo });
+        return;
+      }
+      case "catalogo-precaricato": {
+        // Hai già lo stesso prodotto per nome e marca (il codice non ti
+        // ha portato a lui, quindi ne ha un altro o nessuno). Come con
+        // Open Food Facts, in Aggiungi e nel catalogo:
+        // - senza codice: la modifica del tuo con il codice letto pronto,
+        //   per salvarlo (onPortaCodice, la strada «Apri porta il codice»
+        //   del 07/11); la scansione dopo lo trova fra i tuoi;
+        // - con un altro codice: "Nuovo alimento" precompilato dal
+        //   catalogo, con il messaggio del doppione e «Apri» (il codice di
+        //   un alimento non si cambia).
+        if (esito.stato.stato === "nei-tuoi") {
+          const mio = esito.stato.alimento;
+          if (!mio.barcode) {
+            const testo = onPortaCodice(mio, codice);
+            if (typeof testo === "string") setFase({ tipo: "avviso", codice, testo });
+          } else {
+            onModulo({ barcode: codice, prodotto: prodottoDaCatalogo(esito.voce) });
+          }
+          return;
+        }
+        if (catalogo.tipo === "apri") {
+          catalogo.onApri(esito.voce);
+          return;
+        }
+        setFase({ tipo: "catalogo", codice, voce: esito.voce, inCorso: false, errore: false });
         return;
       }
       case "open-food-facts":
@@ -454,6 +507,21 @@ export default function SchermataScansione({
           </div>
         )}
 
+        {fase.tipo === "catalogo" && pannello && (
+          <PannelloCatalogo
+            fase={fase}
+            onAggiungi={async () => {
+              setFase({ ...fase, inCorso: true, errore: false });
+              try {
+                await pannello.onAggiungi(fase.voce);
+              } catch {
+                setFase({ ...fase, inCorso: false, errore: true });
+              }
+            }}
+            onAltroCodice={tornaAllaFotocamera}
+          />
+        )}
+
         {fase.tipo === "avviso" && (
           <div className="flex w-full max-w-[320px] flex-col gap-3">
             <p role="status" className="text-base leading-snug">
@@ -499,6 +567,60 @@ export default function SchermataScansione({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// Il pannello «Nel catalogo» (PUNTO_DI_PARTENZA.md §10.1; mockup
+// catalogo-precaricato.html, «Scansione di un codice del catalogo»): il
+// codice non è fra i tuoi alimenti, ma il catalogo precaricato lo conosce,
+// senza chiedere a Open Food Facts. Nei colori della scansione, come gli
+// altri esiti.
+function PannelloCatalogo({
+  fase,
+  onAggiungi,
+  onAltroCodice,
+}: {
+  fase: Extract<Fase, { tipo: "catalogo" }>;
+  onAggiungi: () => void;
+  onAltroCodice: () => void;
+}) {
+  const { voce } = fase;
+  return (
+    <div className="flex w-full max-w-[320px] flex-col gap-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.8px] text-scan-muted">{TITOLO_NEL_CATALOGO}</p>
+      <div>
+        <p className="text-lg font-semibold leading-snug">
+          {voce.marca ? `${voce.nome} · ${voce.marca}` : voce.nome}
+        </p>
+        <p className="mt-1 text-sm tabular-nums text-scan-muted">
+          {Math.round(voce.kcal_100g)} kcal / 100 g · porzione {voce.porzione_default_g} g
+        </p>
+      </div>
+      <p role="status" className="text-base leading-snug">
+        {TESTO_NON_ANCORA_TUO}
+      </p>
+      {fase.errore && (
+        <p role="alert" className="text-sm leading-snug">
+          {ERRORE_AGGIUNTA_DAL_CATALOGO}
+        </p>
+      )}
+      <p className="text-sm tabular-nums text-scan-muted">{fase.codice}</p>
+      <button
+        type="button"
+        onClick={onAggiungi}
+        disabled={fase.inCorso}
+        className={`flex h-[52px] w-full items-center justify-center rounded-full bg-[var(--scansione-mirino)] px-3 text-[15px] font-semibold text-scan disabled:opacity-60 ${CLASSE_FOCUS}`}
+      >
+        {ETICHETTA_AGGIUNGI_DAL_CATALOGO}
+      </button>
+      <button
+        type="button"
+        onClick={onAltroCodice}
+        className={`w-full rounded py-2 text-center text-sm text-scan-muted underline ${CLASSE_FOCUS}`}
+      >
+        Scansiona un altro codice
+      </button>
     </div>
   );
 }

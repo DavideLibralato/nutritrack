@@ -37,3 +37,14 @@ export interface AlimentoCatalogo {
 export const VERSIONE_CATALOGO: string = file.versione;
 
 export const CATALOGO_PRECARICATO: readonly AlimentoCatalogo[] = file.alimenti as AlimentoCatalogo[];
+
+const PER_CODICE = new Map(
+  CATALOGO_PRECARICATO.filter((a) => a.barcode !== null).map((a) => [a.barcode!, a])
+);
+
+// L'alimento del catalogo con questo codice a barre (già nella forma di
+// leggiCodice: 13 o 8 cifre), se c'è. La scansione lo guarda dopo i tuoi
+// alimenti e prima di Open Food Facts (src/lib/barcode/ricercaCodice.ts).
+export function alimentoCatalogoPerCodice(codice: string): AlimentoCatalogo | null {
+  return PER_CODICE.get(codice) ?? null;
+}

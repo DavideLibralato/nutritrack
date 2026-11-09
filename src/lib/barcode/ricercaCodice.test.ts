@@ -22,7 +22,10 @@ vi.mock("../supabase/client", () => ({
 }));
 
 const IO = "utente-ricerca-codice";
-const CODICE = "3017620422003";
+// Un codice valido che NON è nel catalogo precaricato: quello della
+// Nutella (3017620422003) dal 09/11 lo è, e risponderebbe il catalogo
+// invece di Open Food Facts.
+const CODICE = "3017620425035";
 
 function alimento(
   id: string,
@@ -169,5 +172,39 @@ describe("cercaCodice", () => {
 
     expect(esito).toEqual({ esito: "annullata" });
     expect(fetchFinta).not.toHaveBeenCalled();
+  });
+});
+
+// Il catalogo precaricato nella scansione (PUNTO_DI_PARTENZA.md §10.1):
+// dopo i tuoi alimenti, prima di Open Food Facts. Se OFF venisse chiamato
+// lo stesso, un prodotto del catalogo diventerebbe un «Nuovo alimento»
+// con i valori dei volontari invece della copia del catalogo.
+describe("cercaCodice e il catalogo precaricato", () => {
+  const NUTELLA_CATALOGO = "3017620422003"; // off:3017620422003, Nutella · Ferrero
+
+  it("non fra i tuoi ma nel catalogo: risponde il catalogo, Open Food Facts non si chiama", async () => {
+    const fetchFinta = trovatoSuOff();
+    const esito = await cercaCodice(IO, NUTELLA_CATALOGO, { fetchBase: fetchFinta });
+    expect(esito).toMatchObject({
+      esito: "catalogo-precaricato",
+      voce: { id: "off:3017620422003", nome: "Nutella", marca: "Ferrero" },
+      stato: { stato: "da-aggiungere" },
+    });
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+
+  it("un tuo alimento con quel codice viene prima del catalogo", async () => {
+    await db.alimenti.put(alimento("mia-nutella", { barcode: NUTELLA_CATALOGO }));
+    const esito = await cercaCodice(IO, NUTELLA_CATALOGO, { fetchBase: trovatoSuOff() });
+    expect(esito).toEqual({ esito: "nel-catalogo", alimento: expect.objectContaining({ id: "mia-nutella" }) });
+  });
+
+  it("un tuo con lo stesso nome e marca ma senza codice: il catalogo risponde, già «Nei tuoi»", async () => {
+    await db.alimenti.put({ ...alimento("a-mano", { barcode: null }), nome: "nutella", marca: "FERRERO" });
+    const esito = await cercaCodice(IO, NUTELLA_CATALOGO, { fetchBase: trovatoSuOff() });
+    expect(esito).toMatchObject({
+      esito: "catalogo-precaricato",
+      stato: { stato: "nei-tuoi", perche: "doppione", alimento: { id: "a-mano" } },
+    });
   });
 });

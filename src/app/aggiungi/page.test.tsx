@@ -495,7 +495,10 @@ describe("Aggiungi: ricerca nei pasti salvati", () => {
 // catalogo, dove è a 13); un errore di rete senza "Crea a mano". La rete è
 // finta (fetch sostituita), la fotocamera in jsdom non c'è.
 describe("Aggiungi: scansione del codice a barre", () => {
-  const NUTELLA = "3017620422003";
+  // Un codice valido che NON è nel catalogo precaricato: quello della
+  // Nutella (3017620422003) dal 09/11 lo è, e risponderebbe il catalogo
+  // invece di Open Food Facts (test del catalogo più sotto).
+  const NUTELLA = "3017620425035";
 
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -930,5 +933,114 @@ describe("Aggiungi: il riquadro «Nel catalogo»", () => {
     await cerca("  latte ");
     fireEvent.click(within(riquadro()!).getByRole("button", { name: "Vedi tutto il catalogo" }));
     expect(navigazione.push).toHaveBeenCalledWith("/impostazioni/alimenti?scheda=catalogo&cerca=latte");
+  });
+});
+
+// La scansione di un codice del catalogo precaricato (PUNTO_DI_PARTENZA.md
+// §10.1; mockup catalogo-precaricato.html, «Scansione di un codice del
+// catalogo»). Test permanenti per quello che sbaglierebbe in silenzio:
+// Open Food Facts chiamato per un prodotto che il catalogo conosce; il
+// pannello che non crea la copia o apre i grammi con un'altra porzione;
+// un prodotto che hai già (per nome e marca) proposto come nuovo.
+describe("Aggiungi: scansione di un codice del catalogo", () => {
+  const NUTELLA_CATALOGO = "3017620422003"; // off:3017620422003, Nutella · Ferrero, porzione 15 g
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function scriviCodice(codice: string) {
+    fireEvent.click(await screen.findByRole("button", { name: "Scansiona il codice a barre" }));
+    const scansione = await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
+    fireEvent.click(within(scansione).getByRole("button", { name: /Scrivi il codice/ }));
+    fireEvent.change(within(scansione).getByLabelText("Il codice sotto le barre"), {
+      target: { value: codice },
+    });
+    fireEvent.click(within(scansione).getByRole("button", { name: "Cerca" }));
+    return scansione;
+  }
+
+  it("il pannello «Nel catalogo», senza Open Food Facts; «Aggiungi ai miei» crea la copia e apre i grammi", async () => {
+    const fetchFinta = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchFinta);
+    await preparaPranzo();
+    render(<AggiungiPage />);
+
+    const scansione = await scriviCodice(NUTELLA_CATALOGO);
+    expect(await within(scansione).findByText("Nel catalogo")).toBeTruthy();
+    expect(within(scansione).getByText("Nutella · Ferrero")).toBeTruthy();
+    expect(within(scansione).getByText("Non è ancora fra i tuoi alimenti. Lo aggiungi e scegli i grammi?")).toBeTruthy();
+    expect(fetchFinta).not.toHaveBeenCalled();
+
+    fireEvent.click(within(scansione).getByRole("button", { name: "Aggiungi ai miei e scegli i grammi" }));
+    const sheet = await screen.findByRole("dialog", { name: "Quantità di Nutella" });
+    expect((within(sheet).getByLabelText("Quantità (g)") as HTMLInputElement).value).toBe("15");
+    expect(within(sheet).getByText("Aggiunto ai tuoi alimenti: Nutella · Ferrero")).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "Scansione del codice a barre" })).toBeNull();
+    const copie = (await repositoryAlimenti.ottieniTutti(utenteTest)).filter((a) => a.catalogo_id === "off:3017620422003");
+    expect(copie).toHaveLength(1);
+    expect(copie[0]).toMatchObject({ barcode: NUTELLA_CATALOGO, fonte: "off" });
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+
+  // Il caso vero di Davide (09/11): «Crackers integrali · Doriano» creato
+  // a mano senza codice, e nel catalogo lo stesso prodotto con il codice
+  // 8000605830745. Prima la scansione dava i grammi del suo senza salvare
+  // il codice, quindi non l'avrebbe mai trovato fra i suoi. Ora la strada
+  // «Apri porta il codice»: la modifica con il codice pronto, «Salva e
+  // scegli la quantità», poi i grammi.
+  const DORIANO = "8000605830745";
+
+  function crackersDoriano(barcode: string | null) {
+    return repositoryAlimenti.crea({
+      user_id: utenteTest, nome: "Crackers integrali", marca: "Doriano", barcode,
+      kcal_100g: 446, proteine_100g: 10, carboidrati_100g: 62, grassi_100g: 16,
+      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
+      porzione_default_g: 25, fonte: "manuale", verificato: false,
+    });
+  }
+
+  it("Doriano: tuo per nome e marca senza codice → la modifica con il codice, Salva, i grammi; la volta dopo lo trova", async () => {
+    const fetchFinta = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchFinta);
+    await preparaPranzo();
+    const mio = await crackersDoriano(null);
+    render(<AggiungiPage />);
+
+    await scriviCodice(DORIANO);
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(DORIANO);
+    expect(screen.getByText("Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Salva e scegli la quantità" }));
+
+    const sheet = await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" });
+    expect((within(sheet).getByLabelText("Quantità (g)") as HTMLInputElement).value).toBe("25");
+    expect((await repositoryAlimenti.ottieniPerId(mio.id))?.barcode).toBe(DORIANO);
+    // Nessuna copia dal catalogo: il prodotto è il tuo, con il codice.
+    expect((await repositoryAlimenti.ottieniTutti(utenteTest)).filter((a) => a.catalogo_id)).toHaveLength(0);
+    fireEvent.click(within(sheet).getByRole("button", { name: "Annulla" }));
+
+    // La scansione dopo lo trova fra i tuoi: dritti ai grammi.
+    await scriviCodice(DORIANO);
+    expect(await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" })).toBeTruthy();
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+
+  it("tuo per nome e marca con un altro codice: come con Open Food Facts, modulo con il doppione e «Apri» ai grammi", async () => {
+    const fetchFinta = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchFinta);
+    await preparaPranzo();
+    const mio = await crackersDoriano("3017620425035");
+    render(<AggiungiPage />);
+
+    await scriviCodice(DORIANO);
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    // Il modulo legge il catalogo da solo (useLiveQuery): il messaggio arriva un attimo dopo.
+    expect(await screen.findByText("Hai già un alimento con questo nome e questa marca: «Crackers integrali · Doriano».")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Apri «Crackers integrali»" }));
+
+    expect(await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" })).toBeTruthy();
+    expect((await repositoryAlimenti.ottieniPerId(mio.id))?.barcode).toBe("3017620425035");
+    expect(fetchFinta).not.toHaveBeenCalled();
   });
 });

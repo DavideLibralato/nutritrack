@@ -474,3 +474,43 @@ describe("Catalogo precaricato: arrivo da «Vedi tutto il catalogo»", () => {
     }
   });
 });
+
+describe("Catalogo precaricato: Scansiona con un codice del catalogo", () => {
+  it("apre la scheda «Catalogo» con la scheda del prodotto, senza Open Food Facts", async () => {
+    await creaAlimento("Banana", null, null);
+    const fetchFinta = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchFinta);
+    render(<AlimentiPage />);
+
+    const scansione = await scansionaScrivendo("3017620422003");
+    await waitFor(() => expect(scansione.isConnected).toBe(false));
+    const scheda = await screen.findByRole("dialog", { name: "Nutella" });
+    expect(within(scheda).getByText("Ferrero · Dolci e snack")).toBeTruthy();
+    expect(within(scheda).getByRole("button", { name: "Aggiungi ai miei alimenti" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Catalogo/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+});
+
+describe("Catalogo precaricato: Scansiona un prodotto che hai già senza codice", () => {
+  // Il caso Doriano (09/11): «Crackers integrali · Doriano» tuo, senza
+  // codice; nel catalogo con 8000605830745. La scansione apre la modifica
+  // del tuo con il codice pronto; Salva torna al catalogo e il codice è
+  // salvato.
+  it("Doriano: la modifica con il codice, Salva torna qui, il codice è salvato", async () => {
+    const mio = await creaAlimento("Crackers integrali", "Doriano", null);
+    const fetchFinta = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchFinta);
+    render(<AlimentiPage />);
+
+    await scansionaScrivendo("8000605830745");
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe("8000605830745");
+    expect(screen.getByText("Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    await waitFor(async () => expect((await db.alimenti.get(mio.id))?.barcode).toBe("8000605830745"));
+    expect(await screen.findByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
+    expect(fetchFinta).not.toHaveBeenCalled();
+  });
+});

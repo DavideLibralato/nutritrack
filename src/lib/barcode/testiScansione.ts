@@ -72,3 +72,11 @@ export const TESTI_ERRORE_RICERCA: Record<ErroreRicerca, string> = {
   errore:
     "Open Food Facts ha risposto in modo inatteso. Riprova, oppure crea l'alimento a mano: il codice è già compilato.",
 };
+
+// Il codice non è fra i tuoi alimenti ma è nel catalogo precaricato
+// (PUNTO_DI_PARTENZA.md §10.1; mockup catalogo-precaricato.html, «Scansione
+// di un codice del catalogo»): in Aggiungi il pannello «Nel catalogo».
+export const TITOLO_NEL_CATALOGO = "Nel catalogo";
+export const TESTO_NON_ANCORA_TUO = "Non è ancora fra i tuoi alimenti. Lo aggiungi e scegli i grammi?";
+export const ETICHETTA_AGGIUNGI_DAL_CATALOGO = "Aggiungi ai miei e scegli i grammi";
+export const ERRORE_AGGIUNTA_DAL_CATALOGO = "Non è stato possibile aggiungere l'alimento. Riprova.";

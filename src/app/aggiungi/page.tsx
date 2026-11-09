@@ -605,19 +605,25 @@ function AggiungiContenuto() {
   // Impostazioni > Alimenti). La porzione proposta è quella del catalogo,
   // copiata nella riga. Se era già tuo (un doppio tocco, una copia arrivata
   // con la sync), lo sheet del tuo, senza la conferma.
+  // La stessa cosa dal pannello «Nel catalogo» della scansione: lì un
+  // errore lo mostra la schermata, quindi qui si lascia passare.
+  async function aggiungiCopiaEScegli(voce: AlimentoCatalogo) {
+    const esito = await aggiungiDalCatalogo(userId!, voce);
+    scegli(esito.alimento);
+    if (esito.esito === "aggiunto") {
+      setAvvisoCopia({
+        idAlimento: esito.alimento.id,
+        testo: `Aggiunto ai tuoi alimenti: ${etichettaAlimento(esito.alimento)}`,
+      });
+    }
+  }
+
   async function aggiungiDalRiquadro(voce: AlimentoCatalogo) {
     if (!userId || catalogoInCorso) return;
     setCatalogoInCorso(voce.id);
     setErroreCatalogo(null);
     try {
-      const esito = await aggiungiDalCatalogo(userId, voce);
-      scegli(esito.alimento);
-      if (esito.esito === "aggiunto") {
-        setAvvisoCopia({
-          idAlimento: esito.alimento.id,
-          testo: `Aggiunto ai tuoi alimenti: ${etichettaAlimento(esito.alimento)}`,
-        });
-      }
+      await aggiungiCopiaEScegli(voce);
     } catch {
       setErroreCatalogo("Non è stato possibile aggiungere l'alimento. Riprova.");
     } finally {
@@ -1138,6 +1144,32 @@ function AggiungiContenuto() {
             onNelCatalogo: (alimento) => {
               setScansione(undefined);
               scegli(alimento);
+            },
+            // Il codice è nel catalogo e hai lo stesso prodotto (nome e
+            // marca) senza codice: la sua modifica con il codice pronto e
+            // «Salva e scegli la quantità», poi i grammi (la strada di
+            // «Apri porta il codice», PUNTO §3). Se non si può modificare,
+            // i grammi subito, come lì.
+            onPortaCodice: (alimento, codice) => {
+              setScansione(undefined);
+              setCreando(false);
+              setDaCodice(null);
+              if (eModificabile(alimento, userId)) {
+                setCodiceDaPortare(codice);
+                setAlimentoInModifica(alimento);
+              } else {
+                scegli(alimento);
+              }
+            },
+            // Il codice è nel catalogo precaricato (PUNTO §10.1): il
+            // pannello «Nel catalogo»; «Aggiungi ai miei e scegli i grammi»
+            // crea la copia e apre lo sheet con quella restituita.
+            catalogo: {
+              tipo: "pannello",
+              onAggiungi: async (voce) => {
+                await aggiungiCopiaEScegli(voce);
+                setScansione(undefined);
+              },
             },
             onModulo: (dati) => {
               setScansione(undefined);

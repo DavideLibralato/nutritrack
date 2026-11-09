@@ -96,7 +96,7 @@ describe("SchermataScansione, il tasto Invio di \"Scrivi il codice\"", () => {
         richiestaFotocamera={inAttesa()}
         titolo="Catalogo alimenti"
         onChiudi={() => {}}
-        uso={{ tipo: "cerca", onNelCatalogo: () => {}, onModulo: () => {} }}
+        uso={{ tipo: "cerca", onNelCatalogo: () => {}, onModulo: () => {}, onPortaCodice: () => {}, catalogo: { tipo: "apri", onApri: () => {} } }}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /Scrivi il codice/ }));
@@ -115,7 +115,7 @@ describe("SchermataScansione, uso cerca", () => {
         richiestaFotocamera={inAttesa()}
         titolo="Catalogo alimenti"
         onChiudi={() => {}}
-        uso={{ tipo: "cerca", onNelCatalogo, onModulo: () => {} }}
+        uso={{ tipo: "cerca", onNelCatalogo, onModulo: () => {}, onPortaCodice: () => {}, catalogo: { tipo: "apri", onApri: () => {} } }}
       />
     );
     expect(screen.getByText("Catalogo alimenti")).toBeTruthy();

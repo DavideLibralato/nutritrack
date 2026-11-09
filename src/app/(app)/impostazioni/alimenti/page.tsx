@@ -86,7 +86,7 @@ import {
   messaggioRipristinato,
   type MessaggioBarra,
 } from "@/lib/inserimento/testiBarra";
-import { CATALOGO_PRECARICATO } from "@/lib/catalogo/catalogoPrecaricato";
+import { CATALOGO_PRECARICATO, type AlimentoCatalogo } from "@/lib/catalogo/catalogoPrecaricato";
 import SelettoreSegmenti from "@/components/SelettoreSegmenti";
 import SchedaCatalogo from "@/components/SchedaCatalogo";
 import { useOnline } from "@/lib/useOnline";
@@ -225,6 +225,9 @@ function PaginaAlimenti() {
 
   // Di solito «I miei»; «Catalogo» se l'indirizzo lo chiede.
   const [scheda, setScheda] = useState<Scheda>(parametri.get("scheda") === "catalogo" ? "catalogo" : "miei");
+  // Un codice scansionato che è nel catalogo precaricato: la scheda
+  // «Catalogo» si apre con la sua scheda aperta.
+  const [voceScansionata, setVoceScansionata] = useState<AlimentoCatalogo | null>(null);
   const [query, setQuery] = useState("");
   const [ordine, setOrdine] = useState<OrdineCatalogo>("piu-usati");
   const [modulo, setModulo] = useState<Modulo | null>(null);
@@ -439,6 +442,7 @@ function PaginaAlimenti() {
 
   function cambiaScheda(nuova: Scheda) {
     setScheda(nuova);
+    setVoceScansionata(null);
     setSelezione(null);
     setBarra(null);
   }
@@ -507,6 +511,9 @@ function PaginaAlimenti() {
 
       {scheda === "catalogo" ? (
         <SchedaCatalogo
+          // Una scansione nuova riparte da capo, con la sua scheda aperta.
+          key={voceScansionata?.id ?? "catalogo"}
+          apertaIniziale={voceScansionata}
           userId={userId}
           queryIniziale={parametri.get("cerca") ?? ""}
           catalogoUtente={catalogo}
@@ -768,6 +775,30 @@ function PaginaAlimenti() {
           uso={{
             tipo: "cerca",
             onNelCatalogo: nelCatalogo,
+            // Il codice è nel catalogo e hai lo stesso prodotto (nome e
+            // marca) senza codice: la sua modifica con il codice pronto,
+            // come «Apri porta il codice» (PUNTO §3); Salva torna qui. Se
+            // non si può modificare, la schermata lo dice.
+            onPortaCodice: (alimento, codice) => {
+              if (!eModificabile(alimento, userId)) {
+                return testoNonModificabile(etichettaAlimento(alimento), alimento.user_id === null);
+              }
+              setScansione(undefined);
+              apri({ tipo: "modifica", alimento, codiceDaPortare: codice, avviso: TESTO_CODICE_DA_PORTARE });
+            },
+            // Il codice non è fra i tuoi ma è nel catalogo precaricato
+            // (PUNTO §10.1): la scheda «Catalogo» con la sua scheda aperta,
+            // dove si vede se è già tuo (per nome e marca) o si aggiunge.
+            catalogo: {
+              tipo: "apri",
+              onApri: (voce) => {
+                setScansione(undefined);
+                setBarra(null);
+                setSelezione(null);
+                setScheda("catalogo");
+                setVoceScansionata(voce);
+              },
+            },
             onModulo: (daCodice) => {
               setScansione(undefined);
               apri({ tipo: "nuovo", daCodice });

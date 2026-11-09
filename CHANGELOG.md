@@ -5,6 +5,36 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-09 — Catalogo precaricato: la scansione trova il catalogo
+
+Branch `catalogo`, commit 10, l'ultimo (si può togliere da solo).
+`cercaCodice`: dopo i tuoi alimenti e prima di Open Food Facts guarda il
+catalogo precaricato per codice (`alimentoCatalogoPerCodice`); se c'è,
+esito `catalogo-precaricato` con l'alimento del catalogo e il suo stato
+«Nei tuoi», e OFF non si chiama. `SchermataScansione`, uso "cerca", ha
+`catalogo`: "pannello" in Aggiungi (il pannello «Nel catalogo» del
+mockup, con «Aggiungi ai miei e scegli i grammi», che crea la copia e
+apre lo sheet quantità con quella restituita, e «Scansiona un altro
+codice»), "apri" in Impostazioni > Alimenti (la scheda «Catalogo» con
+la scheda del prodotto aperta). **Già tuo per nome e marca** (Davide,
+09/11; caso vero «Crackers integrali · Doriano» creato a mano senza
+codice, nel catalogo con 8000605830745): senza codice, la strada «Apri
+porta il codice» del 07/11 (`onPortaCodice`): la modifica del tuo con
+il codice pronto, «Salva e scegli la quantità» e i grammi in Aggiungi,
+Salva torna all'elenco nel catalogo; la scansione dopo lo trova fra i
+tuoi. Con un altro codice, come con Open Food Facts: "Nuovo alimento"
+precompilato dal catalogo (`prodottoDaCatalogo`), il messaggio del
+doppione e «Apri» senza codice. Testi in `testiScansione.ts`. I test
+della scansione che usavano il codice della Nutella (3017620422003) per
+arrivare a OFF usano 3017620425035: la Nutella ora è nel catalogo.
+Test permanenti: 3 casi in `ricercaCodice.test.ts` (catalogo senza OFF,
+il tuo prima del catalogo, «Nei tuoi» per nome e marca), 3 in
+`aggiungi/page.test.tsx` (pannello, copia e grammi; Doriano senza
+codice: modifica, Salva, grammi, e la scansione dopo lo trova; con un
+altro codice: modulo e «Apri»), 2 in Alimenti (la scheda aperta;
+Doriano: modifica con il codice, Salva, codice salvato). Rotti da copie
+in 9 modi e ripristinati. PUNTO §3 "Codice a barre", "Il percorso", §10.1 e §11.
+
 ## 2026-11-09 — Catalogo precaricato: i documenti
 
 Branch `catalogo`, commit 9 (solo documenti). PUNTO §10.1: il «com'è
