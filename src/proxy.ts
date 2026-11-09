@@ -112,9 +112,13 @@ function copiaCookieSessione(
 // ha la sessione avrebbe ricevuto un redirect a /login al posto del file
 // (visto il 07/11 con `next start`), chi ce l'ha un controllo della
 // sessione su Supabase in più a ogni scansione.
+// Fuori anche catalogo/ (branch `catalogo`, PUNTO_DI_PARTENZA.md §10.1,
+// "Licenze"): il file con i prodotti di Open Food Facts del catalogo
+// precaricato, che l'ODbL chiede di offrire a chiunque, anche senza
+// accesso. Sotto il proxy chi non è entrato riceverebbe /login.
 // Test: proxyMatcher.test.ts.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|sw-strategia.js|offline.html|apple-touch-icon.png|icons/|zxing/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|sw-strategia.js|offline.html|apple-touch-icon.png|icons/|zxing/|catalogo/).*)',
   ],
 }

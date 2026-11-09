@@ -30,11 +30,16 @@ describe("matcher del proxy", () => {
     // Il WebAssembly del lettore dei codici a barre: un redirect a /login
     // al suo posto romperebbe la scansione.
     "/zxing/3.1.6/zxing_reader.wasm",
+    // Il catalogo di Open Food Facts con la sua licenza: l'ODbL chiede di
+    // offrirlo a chiunque, anche senza accesso.
+    "/catalogo/catalogo-open-food-facts-odbl.json",
   ])("%s resta fuori", (url) => {
     expect(passaDalProxy(url)).toBe(false);
   });
 
-  it.each(["/", "/login", "/reimposta-password"])("%s passa dal proxy", (url) => {
+  // Le pagine che contengono «catalogo» nel percorso restano protette:
+  // fuori c'è solo la cartella /catalogo/ in cima.
+  it.each(["/", "/login", "/reimposta-password", "/impostazioni/alimenti", "/catalogo"])("%s passa dal proxy", (url) => {
     expect(passaDalProxy(url)).toBe(true);
   });
 });

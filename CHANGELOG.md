@@ -5,6 +5,38 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-09 — Catalogo precaricato: le licenze; provate su iPhone le schede di Alimenti
+
+Branch `catalogo`, commit 7. **Licenze** (PUNTO §10.1, "Licenze"): lo
+script scrive anche `public/catalogo/catalogo-open-food-facts-odbl.json`,
+i 77 prodotti di Open Food Facts del catalogo con licenza ODbL (contenuti
+DbCL), la fonte e le modifiche, comprese le due kcal corrette. L'ODbL
+chiede di offrire con la stessa licenza il database che ne ricaviamo
+(§4.4 e §4.6). Rigenerato dalla cache delle risposte di OFF: il catalogo
+dell'app è identico (stesso md5). `catalogo/` è fuori dal proxy
+(`src/proxy.ts`, come `zxing/`): provato con `next start`, il file
+risponde 200 `application/json` senza sessione con lo stesso md5, e
+`/impostazioni/informazioni` e `/catalogo` rimandano ancora a `/login`.
+Impostazioni > Informazioni: sotto la riga di Open Food Facts, «Catalogo,
+prodotti di marca: Open Food Facts, licenza ODbL.» con il link «Il file
+con la stessa licenza», e la citazione di Ciqual 2025 (Anses, V1.0,
+doi, Licence Ouverte Etalab 2.0, «Nomi tradotti e valori arrotondati da
+Libra.»). Test permanenti: il file pubblico è esattamente la parte di
+OFF del catalogo, con la versione, la licenza e le correzioni dette;
+`/catalogo/…` fuori dal proxy, `/catalogo` e `/impostazioni/alimenti`
+dentro. Rotti da copie in 3 modi e ripristinati. **Provata su iPhone la
+parte di Impostazioni > Alimenti** (09/11, 20:10-20:13, anteprima,
+account di prova, Safari; Cowork su Supabase, tutte 200/201): schede,
+ricerca per marca, filtri, «Nascondi quelli che hai», Gocciole «Nei
+tuoi» per codice con «Apri» (nessuna scrittura); «Mandorle» aggiunta,
+«Apri» subito, rinominata «Mandorle tostate» con `catalogo_id`
+`ciqual:15000` e fonte `manuale`, sempre «Nei tuoi» (prima una copia
+aggiunta e annullata); «Fiocchi di latte · Milbona» annullata (20:11:52)
+e riaggiunta come riga nuova (20:11:54); carboidrati da 3,5 a 4 →
+zuccheri e fibre null, saturi e sale rimasti (20:12:11); offline «Noci ·
+Alesto» (`off:20005733`, fonte `off`) arrivata dopo il ritorno della
+rete (20:12:43); in più «Aceto balsamico», innocuo. Esito in PUNTO §11.
+
 ## 2026-11-08 — Catalogo precaricato: le schede di Impostazioni > Alimenti
 
 Branch `catalogo`, commit 6. Impostazioni > Alimenti ha due schede,

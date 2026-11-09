@@ -8711,6 +8711,30 @@ nelle tabelle. Restano aperte la protezione dalle formule nel CSV e il
 tipo accettato da `canShare` su iOS (sotto, "Difetti e verifiche
 aperti"; sezione 10.4).
 
+**Catalogo precaricato** (dall'08/11, branch `catalogo`, audit #5;
+sezione 10.1; mockup `docs/mockups/catalogo-precaricato.html`). In
+corso. **Provata su iPhone la parte di Impostazioni > Alimenti** (il
+09/11 dalle 20:10 alle 20:13, anteprima, account di prova, Safari;
+verificato da Cowork su Supabase, tabella e log, tutte le risposte
+200/201):
+1. schede, ricerca per marca («barilla»), filtri per categoria,
+   «Nascondi quelli che hai», il caso Gocciole («Nei tuoi» per codice a
+   barre, poi «Apri»): visti da Davide, nessuna scrittura;
+2. «Mandorle» aggiunta, «Apri» subito, rinominata «Mandorle tostate»:
+   `catalogo_id` `ciqual:15000`, fonte `manuale`, resta «Nei tuoi»
+   (prima una copia aggiunta e annullata, 20:10:46-48);
+3. «Fiocchi di latte · Milbona»: Annulla (riga cancellata alle
+   20:11:52), di nuovo «Aggiungi» → una riga nuova viva (20:11:54);
+4. valori nascosti: carboidrati da 3,5 a 4 alle 20:12:11, zuccheri e
+   fibre null, saturi e sale rimasti;
+5. offline: «Noci · Alesto» (`off:20005733`, fonte `off`) arrivata al
+   server alle 20:12:43, dopo il ritorno della rete;
+6. in più «Aceto balsamico» aggiunto da Davide (innocuo).
+
+Non ancora fatti: il riquadro «Nel catalogo» in Aggiungi e la scansione
+che trova il catalogo. Le licenze (Informazioni e il file ODbL) non sono
+ancora provate sull'anteprima.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.

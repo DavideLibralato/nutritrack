@@ -9,6 +9,7 @@ import { describe, it, expect } from "vitest";
 import catalogo from "./catalogoPrecaricato.json";
 import lista from "../../../docs/catalogo/lista-approvata-2026-11-08.json";
 import correzioni from "../../../docs/catalogo/correzioni.json";
+import fileOdbl from "../../../public/catalogo/catalogo-open-food-facts-odbl.json";
 import { leggiCodice } from "../barcode/codiceEan";
 import { validaValoriAlimento } from "../inserimento/valoriAlimento";
 import { numeroPerCampo } from "../numeriDecimali";
@@ -179,5 +180,33 @@ describe("catalogo precaricato: valori che l'app accetta", () => {
       });
     });
     expect(doppi).toEqual([]);
+  });
+});
+
+// Il file pubblico con i prodotti di Open Food Facts (public/catalogo/,
+// PUNTO_DI_PARTENZA.md §10.1, "Licenze"): l'ODbL chiede di offrire il
+// database che ne ricaviamo. Deve essere proprio quello che l'app usa:
+// un catalogo rigenerato senza rigenerare questo file offrirebbe un
+// database diverso da quello in uso.
+describe("catalogo precaricato: il file ODbL in public/catalogo/", () => {
+  it("contiene esattamente i prodotti di Open Food Facts del catalogo, con gli stessi valori", () => {
+    const attesi = alimenti
+      .filter((a) => a.origine === "off")
+      .map((a) => {
+        const prodotto: Partial<AlimentoCatalogo> = { ...a };
+        delete prodotto.id;
+        delete prodotto.origine;
+        return prodotto;
+      });
+    expect(fileOdbl.prodotti).toEqual(attesi);
+    expect(fileOdbl.versione).toBe(catalogo.versione);
+  });
+
+  it("dice la licenza, la fonte e le correzioni fatte", () => {
+    expect(fileOdbl.licenza).toContain("https://opendatacommons.org/licenses/odbl/1-0/");
+    expect(fileOdbl.fonte).toContain("Open Food Facts");
+    for (const id of Object.keys(correzioni.correzioni).filter((x) => x.startsWith("off:"))) {
+      expect(fileOdbl.modifiche.some((m) => m.startsWith(id.slice(4)))).toBe(true);
+    }
   });
 });

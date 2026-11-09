@@ -58,6 +58,7 @@ import { join, resolve } from "node:path";
 const RADICE = resolve(import.meta.dirname, "..", "..");
 const LISTA = join(RADICE, "docs", "catalogo", "lista-approvata-2026-11-08.json");
 const CORREZIONI = join(RADICE, "docs", "catalogo", "correzioni.json");
+const USCITA_ODBL = join(RADICE, "public", "catalogo", "catalogo-open-food-facts-odbl.json");
 const USCITA = join(RADICE, "src", "lib", "catalogo", "catalogoPrecaricato.json");
 
 const MD5_ATTESI = {
@@ -422,6 +423,42 @@ async function main() {
   };
   writeFileSync(USCITA, JSON.stringify(file, null, 1) + "\n");
   console.log(`\nScritto ${USCITA}: ${alimenti.length} alimenti.`);
+
+  // I prodotti di Open Food Facts anche come file a parte, pubblico, con
+  // la sua licenza (PUNTO_DI_PARTENZA.md §10.1, "Licenze"). Il catalogo è
+  // un database derivato da quello di OFF e l'app lo usa in pubblico:
+  // l'ODbL (§4.4 e §4.6) chiede di offrirlo a tutti, gratis, con la stessa
+  // licenza e in un formato che un programma sa leggere. Il link sta in
+  // Impostazioni > Informazioni. Gli sfusi di Ciqual non ci vanno: la loro
+  // licenza (Etalab 2.0) chiede solo di citare la fonte.
+  const prodottiOff = alimenti
+    .filter((a) => a.origine === "off")
+    .map((a) => {
+      // Senza id e origine: nel file pubblico il codice a barre basta.
+      const prodotto = { ...a };
+      delete prodotto.id;
+      delete prodotto.origine;
+      return prodotto;
+    });
+  const odbl = {
+    titolo: "Libra: i prodotti di marca del catalogo precaricato",
+    versione: file.versione,
+    licenza: "Open Database License (ODbL) v1.0: https://opendatacommons.org/licenses/odbl/1-0/",
+    contenuti: "I singoli contenuti: Database Contents License (DbCL) v1.0: https://opendatacommons.org/licenses/dbcl/1-0/",
+    fonte: "Contiene informazioni da Open Food Facts (https://world.openfoodfacts.org), disponibili con licenza ODbL.",
+    modifiche: [
+      `Una selezione di ${prodottiOff.length} prodotti, letti dall'API di Open Food Facts (v3) l'08/11/2026.`,
+      "Nome, marca, categoria e porzione proposta sono di Libra, non di Open Food Facts.",
+      "Valori per 100 g: kcal intere; proteine, carboidrati, grassi, zuccheri e saturi a un decimale; fibre e sale a due. Un valore «< X» vale 0.",
+      "Zuccheri o saturi più alti del loro totale diventano null.",
+      ...Object.entries(correzioniPerId)
+        .filter(([cid]) => cid.startsWith("off:"))
+        .map(([cid, c]) => `${cid.slice(4)}: ${Object.entries(c.valori).map(([k, v]) => `${k} ${v}`).join(", ")} (${c.motivo}).`),
+    ],
+    prodotti: prodottiOff,
+  };
+  writeFileSync(USCITA_ODBL, JSON.stringify(odbl, null, 1) + "\n");
+  console.log(`Scritto ${USCITA_ODBL}: ${prodottiOff.length} prodotti di Open Food Facts.`);
 }
 
 main().catch((errore) => {
