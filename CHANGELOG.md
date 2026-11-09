@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-09 — Catalogo precaricato: i documenti
+
+Branch `catalogo`, commit 9 (solo documenti). PUNTO §10.1: il «com'è
+fatto» al posto di «si scrive qui a lavoro finito» (lo script e le sue
+regole, il controllo di coerenza di Open Food Facts e le correzioni, il
+file nell'app e nella cache del service worker, «Nei tuoi», «Aggiungi»,
+la regola "dopo una scrittura la riga si prende da lì", le licenze).
+§3 "Alimenti": le due schede, la scheda dell'alimento, la barra con
+«Apri» e «Annulla», le copie che contano nella riga di Impostazioni.
+§3 "Aggiungi alimento": il riquadro «Nel catalogo». §3 "Codice a
+barre", "Licenza": le righe nuove di Informazioni. §11: cosa è fatto e
+non ancora provato (licenze, riquadro) e cosa manca (la scansione).
+
 ## 2026-11-09 — Catalogo precaricato: il riquadro «Nel catalogo» in Aggiungi
 
 Branch `catalogo`, commit 8. In Aggiungi, solo quando la ricerca non

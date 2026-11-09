@@ -1058,7 +1058,16 @@ silenzio.
 - **Licenza.** In Impostazioni > Informazioni una riga «Dati dei
   prodotti: Open Food Facts, licenza ODbL», oltre a quella nel modulo.
   Una riga di testo sotto il gruppo Versione/Build, non una riga del
-  gruppo: etichetta e valore insieme a 390 px non ci starebbero.
+  gruppo: etichetta e valore insieme a 390 px non ci starebbero. Dal
+  branch `catalogo` (09/11; sezione 10.1, "Licenze") sotto ci sono anche
+  «Catalogo, prodotti di marca: Open Food Facts, licenza ODbL.» con il
+  link «Il file con la stessa licenza»
+  (`/catalogo/catalogo-open-food-facts-odbl.json`, si apre in una scheda
+  nuova, anche senza accesso) e la citazione di Ciqual: «Catalogo,
+  alimenti sfusi: Anses, Table de composition nutritionnelle des
+  aliments Ciqual 2025, V1.0 del 19/11/2025, doi:10.57745/RDMHWY,
+  Licence Ouverte Etalab 2.0. Nomi tradotti e valori arrotondati da
+  Libra.»
 - **Peso nella build** (07/11): la libreria è un pezzo a parte di 41 KB
   (circa 14 KB compressi) che `/aggiungi` non carica all'apertura, solo
   con `import()` al tocco su Scansiona; il WebAssembly (946.860 byte) si
@@ -1334,6 +1343,29 @@ introduce e che va tenuta:
   percorso per quando la quantità cambia
 
 Lo sheet quantità resta **uno solo**, identico per ogni sorgente (sezione 5).
+
+**Il riquadro «Nel catalogo»** (dal 09/11, branch `catalogo`; sezione
+10.1; mockup `docs/mockups/catalogo-precaricato.html`, schermata 3). La
+ricerca resta solo sui tuoi alimenti. **Solo quando non trova niente**,
+né fra gli alimenti né fra i pasti salvati, al posto di «Nessun
+risultato» compare «Nessun alimento tuo con «…»» e sotto il riquadro
+`RiquadroNelCatalogo`, in un tono d'accento leggero perché si veda che
+non è uno dei tuoi: «Nel catalogo», «Con il + lo aggiungi ai tuoi
+alimenti e scegli i grammi.», al massimo 3 alimenti del catalogo
+precaricato trovati per nome (le regole di `cercaPerNome`), in ordine di
+nome, **tolti quelli che hai già** («Nei tuoi»: la copia, anche
+rinominata, o un doppione per codice o per nome e marca;
+`suggerimentiCatalogo` in `src/lib/catalogo/elencoCatalogo.ts`), e in
+fondo «Vedi tutto il catalogo», che apre Impostazioni > Alimenti sulla
+scheda «Catalogo» con la ricerca scritta. Senza suggerimenti resta
+«Nessun risultato» come prima; «Crea «…»» e Invio restano come prima.
+Il «+» tondo (e il tocco sul nome) crea la copia (`aggiungiDalCatalogo`)
+e apre lo sheet quantità **con l'alimento che la scrittura
+restituisce** (§10.1, "Dopo una scrittura, la riga si prende da lì"),
+con la porzione del catalogo e in cima «Aggiunto ai tuoi alimenti: …»
+(prop `avviso` di `SheetQuantita`; nel mockup era un avviso sopra lo
+schermo). Se lo sheet si chiude senza registrare, l'alimento resta tuo.
+Test in `src/app/aggiungi/page.test.tsx` e `page.nelCatalogo.test.tsx`.
 
 **Doppioni in Aggiungi** (dal 10/10, branch `doppioni-aggiungi`). Prima
 aggiungere un alimento già presente nel pasto creava una seconda riga senza
@@ -2200,7 +2232,42 @@ decisioni del 15/10. Non sostituisce niente: in Aggiungi ricerca, matita e
 restano come sono. Qui si guarda tutto il
 catalogo, si corregge e si fa pulizia.
 
-- **Quali alimenti**: solo quelli modificabili, cioè dell'utente
+- **Due schede** (dall'08/11, branch `catalogo`; sezione 10.1; mockup
+  `docs/mockups/catalogo-precaricato.html`). Sotto il titolo
+  «I miei 55 · Catalogo 183» (`SelettoreSegmenti`, con il conteggio). A
+  ogni visita si parte da «I miei», tutto quello che segue; con
+  `?scheda=catalogo&cerca=…` (da «Vedi tutto il catalogo» in Aggiungi)
+  si parte da «Catalogo» con la ricerca scritta. In «I miei» le copie
+  dal catalogo hanno sotto, dopo le kcal, «dal catalogo» nel colore
+  principale. **«Catalogo»** (`SchedaCatalogo`): ricerca su nome **e**
+  marca (in Aggiungi solo il nome), i filtri per categoria (le 14 della
+  lista, «Tutti» per primo, scorrono in orizzontale), a sinistra il
+  conteggio («183 · 2 già nei tuoi», solo «183» se non ne hai nessuno,
+  con l'interruttore acceso «181 da aggiungere»), a destra «Nascondi
+  quelli che hai» (in localStorage, solo su questo telefono; Esci non lo
+  toglie), l'elenco nell'ordine del file, in fondo «Valori da Open Food
+  Facts (ODbL) e Ciqual 2025 (Anses, Licence Ouverte)». Senza risultati
+  «Nessun alimento trovato nel catalogo.», con tutto nascosto «Li hai
+  già tutti.». La riga (`RigaCatalogoPrecaricato`): «Nome · Marca» (la
+  marca in grigio), sotto «600 kcal / 100 g · 30 g», a destra il
+  pulsante «Aggiungi» (alto 36, tocco 44) oppure «Nei tuoi» con la
+  spunta, e il nome in grigio. Un tocco sulla riga apre dal basso la
+  scheda dell'alimento (`SchedaAlimentoCatalogo`, su `FoglioDalBasso`):
+  titolo, «Marca · Categoria» («Senza marca» per gli sfusi), le quattro
+  cifre per 100 g, porzione proposta, codice a barre («nessuno (sfuso)»),
+  la fonte; «Aggiungi ai miei alimenti» con «Diventa un alimento tuo:
+  dopo puoi cambiare nome, marca e valori.», oppure, se è già tuo, il
+  motivo («È già nei tuoi alimenti come «…».» o il testo di sempre dei
+  doppioni), «Per 100 g, nel catalogo» e «Apri «nome»», che apre la
+  modifica del tuo (se si può modificare). Dopo «Aggiungi» la riga passa
+  subito a «Nei tuoi» e la barra dice «Aggiunto ai tuoi: Nome · Marca»
+  con «Apri» (la modifica della copia, riletta da Dexie al tocco) e
+  «Annulla» (la toglie; poi «Annullato.»). Nel catalogo niente «+»,
+  niente selezione, niente riga degli alimenti in arrivo; cambiare
+  scheda esce dalla selezione. Test in `elencoCatalogo.test.ts`,
+  `page.test.tsx` e `page.apriDopoAggiunta.test.tsx`. **Provata su
+  iPhone il 09/11** (§11).
+- **Quali alimenti** (scheda «I miei»): solo quelli modificabili, cioè dell'utente
   (`user_id` = me), vivi e non verificati: la stessa condizione della
   matita in Aggiungi (sezione 10.8). Un tocco apre sempre "Modifica", mai
   una riga che non si può toccare. Il catalogo comune (`user_id` null,
@@ -2402,7 +2469,9 @@ catalogo, si corregge e si fa pulizia.
   - Schema dati invariato: niente migration, niente versione Dexie.
 - **La riga in Impostazioni**: "Alimenti", nel gruppo Alimentazione prima
   di Preferiti, con a destra "46 alimenti", "1 alimento" o "Nessuno",
-  contati con la stessa funzione dell'elenco. Con alimenti in arrivo
+  contati con la stessa funzione dell'elenco. Le copie dal catalogo
+  precaricato contano: sono alimenti tuoi (stesso numero della scheda
+  «I miei»); il catalogo no. Con alimenti in arrivo
   (branch `condivisione-alimenti`), "2 in arrivo" ("1 in arrivo") con il
   pallino nel colore principale, al posto del numero (§3 "Amici", "Il
   pallino").
@@ -7246,7 +7315,67 @@ non va su Supabase.
   `public/catalogo/`, fuori dal proxy, con la sua licenza e il link da
   Informazioni. Nessuna immagine di Open Food Facts.
 
-Com'è fatto: si scrive qui a lavoro finito.
+**Com'è fatto** (branch `catalogo`, 08-09/11; i dettagli dei commit sono
+nel CHANGELOG):
+- **Il file.** `scripts/catalogo/generaCatalogo.mjs` (Node, senza
+  librerie) legge la lista approvata, i due XML di Ciqual 2025 (fuori dal
+  repo, `C:\Users\david\Documenti Progetti\fonti-catalogo\`, md5 e BOM
+  UTF-8 controllati) e Open Food Facts per codice (API v3, una lettura
+  ogni 5 secondi: la loro documentazione dà 15 letture di prodotto al
+  minuto per indirizzo IP; con `--cache-off` le risposte si rileggono da
+  una cartella invece di richiamare OFF). Scrive
+  `src/lib/catalogo/catalogoPrecaricato.json` (183 alimenti, versione
+  "2026-11-08") e `public/catalogo/catalogo-open-food-facts-odbl.json`.
+  Regole sui valori: «traces» e «< X» → 0; kcal, P, C o G mancanti
+  fermano lo script; i quattro nascosti mancanti → null; nel file kcal
+  intere, P, C, G, zuccheri e saturi a un decimale, fibre e sale a due
+  ("Modifica alimento" mostra due decimali, e una kcal calcolata dai kJ
+  si sarebbe vista come «386,36»); un valore nascosto più grande del suo
+  totale → null, con il log (oggi solo gli zuccheri dell'avocado,
+  carboidrati «traces»). Per Open Food Facts un **controllo di
+  coerenza**: se |kcal − (4·P + 4·C + 9·G + 2·fibre)| supera il più
+  grande fra 15 kcal e il 12% delle kcal, lo script si ferma su quel
+  prodotto, a meno che non abbia una correzione in
+  `docs/catalogo/correzioni.json` (oggi Mozzarella Galbani 238 e
+  Filetti di tonno Asdomar 99: le kcal dell'API non tornavano con i
+  macro). Ciqual no: aceto, birra e vino hanno acidi e alcol, e le loro
+  kcal sono giuste. I valori sono quelli letti dall'API l'08/11, non
+  quelli della lista: Cowork aveva letto l'indice di ricerca di OFF, che
+  è in ritardo (68 valori diversi in 27 prodotti; i 106 di Ciqual
+  identici). Test permanente `catalogoPrecaricato.test.ts`: uguale alla
+  lista, id, la validazione del modulo con i valori nascosti, i
+  decimali, la regola dell'avocado, la coerenza di OFF, le correzioni,
+  i codici, nessun doppione, il file pubblico uguale alla parte OFF.
+- **Nell'app.** `catalogoPrecaricato.ts` lo importa nel codice: nella
+  build sta in un file JS condiviso (88 KB, 19 KB compressi) citato
+  dall'HTML di Alimenti e di Aggiungi, quindi il service worker lo mette
+  in cache con le due pagine (§9.2, "riscaldamento"). `PAGINE_APP` non
+  cambia.
+- **«Nei tuoi»** (`statoNelCatalogo` in `src/lib/catalogo/neiTuoi.ts`):
+  prima la copia con quel `catalogo_id`, poi `trovaDoppione`; contano
+  solo gli alimenti vivi dell'utente.
+- **«Aggiungi»** (`aggiungiDalCatalogo` in
+  `src/lib/repository/alimenti.ts`): nella transazione con `outbox`,
+  rilegge il catalogo dell'utente e, se l'alimento è già «Nei tuoi»,
+  non scrive niente e restituisce quello da aprire. Altrimenti crea una
+  riga nuova con tutti i valori, `catalogo_id`, `fonte` 'off' o
+  'manuale', `verificato` false. L'Annulla è `eliminaAlimenti` con la
+  sola copia.
+- **Dopo una scrittura, la riga si prende da lì.** Dove una pagina
+  deve usare la copia appena nata («Apri» nella barra di Alimenti, il
+  «+» del riquadro in Aggiungi), la prende da quello che la scrittura
+  restituisce o la rilegge da Dexie per id, mai dal proprio elenco: la
+  lettura live si aggiorna un attimo dopo la scrittura, e un tocco
+  arrivato prima non la trovava (difetto trovato il 09/11 da un test
+  caduto 1 volta su 30, corretto prima del commit; test con la lettura
+  live rallentata apposta, `page.apriDopoAggiunta.test.tsx` e
+  `aggiungi/page.nelCatalogo.test.tsx`). Cercato lo stesso schema nel
+  resto dell'app il 09/11: nessun altro caso.
+- **Le schermate**: sezione 3, "Alimenti" (le due schede) e "Aggiungi
+  alimento" (il riquadro «Nel catalogo»). Le licenze: Impostazioni >
+  Informazioni (sezione 3, "Codice a barre", "Licenza") e il file in
+  `public/catalogo/`, fuori dal proxy (`catalogo/` nel `matcher` di
+  `src/proxy.ts`, come `zxing/`).
 
 ### 10.2 Se aggiungere costa un tap, annullare deve costarne uno
 
@@ -8731,9 +8860,10 @@ verificato da Cowork su Supabase, tabella e log, tutte le risposte
    server alle 20:12:43, dopo il ritorno della rete;
 6. in più «Aceto balsamico» aggiunto da Davide (innocuo).
 
-Non ancora fatti: il riquadro «Nel catalogo» in Aggiungi e la scansione
-che trova il catalogo. Le licenze (Informazioni e il file ODbL) non sono
-ancora provate sull'anteprima.
+Fatti dopo, non ancora provati sull'anteprima: le licenze (Informazioni,
+il file ODbL fuori dal proxy) e il riquadro «Nel catalogo» in Aggiungi,
+con «Vedi tutto il catalogo». Non ancora fatta: la scansione che trova
+il catalogo (ultimo commit del branch).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
