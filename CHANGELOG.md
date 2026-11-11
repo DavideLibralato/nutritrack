@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — lavoretti provato sull'anteprima
+
+Branch `lavoretti`, commit 7, solo documenti. Le prove su iPhone sono
+andate tutte bene. Davide le ha fatte l'11/11 sera, Build `c5230f0`,
+account di prova in Safari, solo guardando:
+1. la build;
+2. Oggi: frecce del giorno e freccina del pasto;
+3. Impostazioni > Alimenti: indietro, lente, ×, + e freccetta in giù;
+4. scheda Catalogo: lente e ×; in «Apri «nome»» la freccia resta intera
+   accanto al nome accorciato;
+5. pasto salvato: indietro, lente, × e +;
+6. Aggiungi: il + del riquadro «Nel catalogo» e la × di uno sheet;
+7. Statistiche: le frecce e «Apri il giorno»;
+8. i testi nuovi di Esporta;
+9. il tema scuro sulle prove 3 e 6.
+
+Le prove non hanno scritto niente sul server, quindi Cowork non deve
+controllare Supabase. PUNTO §11 ora dice cosa contiene `lavoretti` e
+come è stato provato.
+
 ## 2026-11-11 — icone condivise al posto delle copie
 
 Branch `lavoretti`, commit 6. Diciannove copie delle icone, scritte di

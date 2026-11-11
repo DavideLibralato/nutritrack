@@ -9111,6 +9111,32 @@ account vero: «funziona tutto» (Davide). La **fascia ±5%** resta
 provvisoria: la fissa Davide più avanti, guardando i dati veri nell'app
 installata (sezione 7, "La regola dei colori").
 
+**`lavoretti`** (11/11, branch corto da `9ca0f44`, un commit per punto).
+Cosa contiene:
+- Importa tolto: si è deciso di non farlo, quindi spariscono le frasi
+  che lo promettevano nei testi e nei commenti (§10.4).
+- Testi nuovi di Esporta: il JSON è la copia completa dei dati, il CSV
+  no.
+- Prettier applicato a tutto il codice, con `npm run format:check` prima
+  di ogni commit e `.git-blame-ignore-revs` per il commit di sola
+  formattazione (§8).
+- `creato_il?: string` nei tipi di sei tabelle in `tipi.ts`.
+- Icone condivise: 19 copie sostituite dai componenti `Icona*`, con lo
+  stesso markup di prima, verificato copia per copia.
+
+**Provato su iPhone l'11/11 sera** sull'anteprima, Build `c5230f0`,
+account di prova in Safari. Era una prova solo da guardare, senza
+scritture; tutte le prove sono andate bene:
+- Oggi: frecce del giorno e freccina del pasto.
+- Impostazioni > Alimenti: indietro, lente, ×, + e freccetta in giù.
+- Scheda Catalogo: lente e ×. In «Apri «Fiocchi di latte (cottage) ·
+  Milbona»» la freccia resta intera accanto al nome accorciato.
+- Pasto salvato: indietro, lente, × e +.
+- Aggiungi: il + del riquadro «Nel catalogo» e la × di uno sheet.
+- Statistiche: le frecce e «Apri il giorno».
+- I testi nuovi di Esporta.
+- Il tema scuro su Impostazioni > Alimenti e su Aggiungi.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
