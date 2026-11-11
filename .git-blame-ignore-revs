@@ -1,0 +1,10 @@
+# Commit di sola formattazione che "git blame" salta: per ogni riga mostra
+# l'ultimo commit che ne ha cambiato il contenuto, non questo.
+# GitHub legge questo file da solo. In locale va attivato una volta:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Un hash per riga, completo (40 caratteri). Vale solo finché l'hash non
+# cambia: il branch si unisce a main con fast-forward, mai con rebase o
+# squash.
+
+# 11/11/2026, branch lavoretti: Prettier su tutto il progetto, solo formattazione
+7b2de612de343a5e777416d72c115c03311e14e7

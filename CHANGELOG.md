@@ -5,6 +5,16 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — git blame salta il commit di Prettier
+
+Branch `lavoretti`, commit 4. Nuovo `.git-blame-ignore-revs` con l'hash
+completo del commit 3 (`7b2de612de343a5e777416d72c115c03311e14e7`) e un
+commento che dice cos'è: `git blame` mostra per ogni riga l'ultimo
+commit che ne ha cambiato il contenuto, non la formattazione. GitHub lo
+legge da solo; in locale lo attiva Davide con
+`git config blame.ignoreRevsFile .git-blame-ignore-revs`. L'hash resta
+valido solo con il merge in fast-forward (PUNTO §8).
+
 ## 2026-11-11 — Prettier su tutto il progetto
 
 Branch `lavoretti`, commit 3, solo formattazione. Primo `prettier --write`

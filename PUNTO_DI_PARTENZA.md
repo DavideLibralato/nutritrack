@@ -5844,6 +5844,11 @@ contenuto: il testo resta quello applicato.
   `globals.css` cambia solo negli a capo. **Prima di ogni commit:
   `npm run format:check`** (`prettier --check .`). Nessuna formattazione
   al salvataggio nell'editor (non decisa)
+- `.git-blame-ignore-revs` elenca il commit di sola formattazione
+  (`7b2de61`): `git blame` lo salta e mostra chi ha cambiato davvero la
+  riga. GitHub lo legge da solo; in locale serve una volta
+  `git config blame.ignoreRevsFile .git-blame-ignore-revs`. Vale finché
+  l'hash non cambia: `lavoretti` si unisce a main con fast-forward
 - Non è collegato a ESLint (`eslint-config-prettier`): le regole attive
   non hanno conflitti con Prettier (verificato l'11/10). Si aggiunge se
   ne compare uno
