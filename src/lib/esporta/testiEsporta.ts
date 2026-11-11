@@ -8,14 +8,15 @@ import { giorniDiCalendarioFra } from "./ultimaEsportazione";
 export const TESTI_ESPORTA = {
   titolo: "Esporta i miei dati",
   apertura:
-    "Una copia di tutti i tuoi dati in un file. Tienila in un posto sicuro: servirà per ripristinarli se un giorno li perdessi.",
+    "Una copia di tutti i tuoi dati in un file. Tienila in un posto sicuro: è la tua copia, fuori da Libra.",
   avvisoForte: "Il file contiene dati personali e di salute:",
   avviso: "cosa mangi, il peso, i tuoi obiettivi. Dove salvarlo lo scegli tu; evita le cartelle condivise.",
   pulsante: "Esporta i miei dati",
   preparo: "Preparo il file…",
   riprova: "Riprova",
   csv: "Esporta il diario per Excel",
-  csvSotto: "File CSV con le voci del diario. Non serve per ripristinare i dati.",
+  csvSotto:
+    "File CSV con le voci del diario, da aprire con Excel o Numbers. Non è la copia completa dei tuoi dati.",
   csvVuoto: "Il diario è vuoto.",
   salvato: "File salvato",
   nonScaricataTitolo: "Dati non ancora scaricati",

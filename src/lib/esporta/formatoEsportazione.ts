@@ -1,13 +1,12 @@
 // Il formato del file `libra-dati-AAAA-MM-GG.json` (PUNTO_DI_PARTENZA.md
-// §10.4, "Esporta i miei dati"). È il backup completo, l'unico file che
-// Importa ("Ripristina in un account vuoto", il lavoro dopo questo) leggerà:
-// ogni cambio di forma alza VERSIONE_FORMATO, e Importa decide da quel
-// numero come leggere il file.
+// §10.4, "Esporta i miei dati"). È il backup completo, la copia dei dati
+// fuori da Libra (Importa non si fa: deciso l'11/11, la copia vera è su
+// Supabase). VERSIONE_FORMATO dice che forma ha il file: ogni cambio di
+// forma la alza.
 //
 // Le righe stanno nel file così come sono in Dexie, con tutte le colonne
 // (id, user_id, updated_at, i collegamenti fra tabelle): sono gli stessi
-// nomi delle colonne su Supabase (tipi.ts), quindi Importa le può
-// riscrivere senza tradurre niente.
+// nomi delle colonne su Supabase (tipi.ts), senza traduzioni.
 //
 // Solo tipi e funzioni pure: chi legge Dexie è raccoltaDati.ts.
 
@@ -55,9 +54,9 @@ type _ControlloTabelle = [NomeTabella] extends [keyof RighePerTabella]
 const _tabelleAllineate: _ControlloTabelle = true;
 void _tabelleAllineate;
 
-// Le tre sezioni in più, fuori dalle tabelle normali. Servono alle foreign
-// key di Supabase: Importa riscrive le righe così come sono, e una riga che
-// punta a una riga assente dal file verrebbe rifiutata.
+// Le tre sezioni in più, fuori dalle tabelle normali. Seguono le foreign
+// key di Supabase: senza di loro una riga del file punterebbe a una riga
+// che nel file non c'è.
 // - alimenti_cancellati_citati: gli alimenti propri cancellati a cui punta
 //   una voce viva del diario (§4, "Alimenti cancellati": restano nel
 //   diario) o un pasto salvato vivo (composizioni.alimento_id, usato dalle
@@ -104,7 +103,7 @@ export interface IntestazioneEsportazione {
   esportato_il: string;
   fuso_orario: string;
   giorno_locale: string; // "YYYY-MM-DD", lo stesso del nome del file
-  // L'utente del file. Serve a Importa anche per riconoscere i 5 pasti di
+  // L'utente del file: di chi è. Con lui si riconoscono anche i 5 pasti di
   // base, il cui id è calcolato da utente e nome (idPastoPredefinito).
   user_id: string;
   // L'ultimo contatto riuscito col server (ISO 8601), null se non noto: le

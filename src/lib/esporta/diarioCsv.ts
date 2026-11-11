@@ -1,7 +1,7 @@
 // Il file `libra-diario-AAAA-MM-GG.csv` (PUNTO_DI_PARTENZA.md §10.4,
 // "Esporta i miei dati"): le voci vive del diario, da aprire in Excel o
-// Numbers. Non è un backup (Importa legge solo il JSON): è il diario da
-// guardare o rielaborare.
+// Numbers. Non è un backup (la copia completa è il JSON): è il diario da
+// guardare o rielaborare, per esempio dal nutrizionista.
 //
 // Si costruisce dalla stessa raccolta del JSON (EsportazioneDati,
 // raccoltaDati.ts), così le voci sono le stesse e non c'è una seconda

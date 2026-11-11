@@ -1,9 +1,8 @@
 // La raccolta dei dati del file JSON (raccoltaDati.ts; PUNTO_DI_PARTENZA.md
 // §10.4, "Esporta i miei dati"). Sbaglia in silenzio, e lo si scopre solo
 // il giorno in cui serve il backup: una tabella mancante, una riga di un
-// altro utente dentro il file, una riga cancellata che torna viva con
-// Importa, una voce del diario che punta a un alimento che nel file non
-// c'è. Si prova con Dexie vero (il finto IndexedDB dei test).
+// altro utente dentro il file, una riga cancellata presentata come viva,
+// una voce del diario che punta a un alimento che nel file non c'è. Si prova con Dexie vero (il finto IndexedDB dei test).
 
 import { describe, it, expect, beforeEach } from "vitest";
 import type {
@@ -452,9 +451,8 @@ describe("i target di un obiettivo cancellato", () => {
 // --- Integrità: le 7 foreign key di Supabase ---------------------------------------
 //
 // Ogni riferimento non nullo di una riga esportata deve trovare la sua riga
-// dentro il file, nelle sezioni normali o in quelle dei citati: Importa
-// riscrive le righe così come sono, e una foreign key senza la sua riga fa
-// rifiutare la scrittura. L'elenco è quello di pg_constraint su Supabase
+// dentro il file, nelle sezioni normali o in quelle dei citati: il file è
+// completo solo se ogni foreign key trova la sua riga. L'elenco è quello di pg_constraint su Supabase
 // (letto il 07/11): se si aggiunge una foreign key, si aggiunge qui.
 
 const SEZIONI_ALIMENTI = ["alimenti", "alimenti_cancellati_citati", "alimenti_comuni_citati"] as const;
@@ -498,7 +496,7 @@ describe("integrità: ogni riferimento trova la sua riga nel file", () => {
 
     // Il telefono condiviso: una mia voce sull'alimento (cancellato) di un
     // altro utente. È l'eccezione dichiarata: resta un riferimento
-    // mancante, e Importa dovrà metterlo a null o scartarlo.
+    // mancante (la voce ha la sua copia di nome e valori).
     const alimentoDellAltro = alimento(ALTRO, CANCELLATA, "Suo");
     const voceTelefonoCondiviso = voce(IO, alimentoDellAltro.id);
 

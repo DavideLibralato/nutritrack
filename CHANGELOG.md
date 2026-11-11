@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Testi di Esporta senza ripristino
+
+Branch `lavoretti`, commit 2. Senza Importa la pagina Esporta non
+promette più un ripristino: l'apertura dice «…Tienila in un posto
+sicuro: è la tua copia, fuori da Libra.», la riga del CSV «File CSV con
+le voci del diario, da aprire con Excel o Numbers. Non è la copia
+completa dei tuoi dati.» (PUNTO §10.4 aggiornato). I commenti che
+citavano Importa (`formatoEsportazione.ts`, `raccoltaDati.ts`,
+`diarioCsv.ts`, `raccoltaDati.test.ts`) dicono ora cosa c'è nel file e
+perché; `VERSIONE_FORMATO` resta e dice che forma ha il file. Nessun
+cambiamento di logica; nessun test controllava i due testi. Il mockup
+`docs/mockups/esporta.html` resta com'era stato approvato l'08/11.
+
 ## 2026-11-11 — Documenti: Statistiche unita, Importa non si fa
 
 Branch `lavoretti`, commit 1 (solo documenti). PUNTO §11: Statistiche

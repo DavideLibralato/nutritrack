@@ -7741,8 +7741,8 @@ nella nota del gruppo.
 
 La pagina `/impostazioni/esporta`, dall'alto:
 - testo d'apertura: «Una copia di tutti i tuoi dati in un file. Tienila
-  in un posto sicuro: servirà per ripristinarli se un giorno li
-  perdessi.»;
+  in un posto sicuro: è la tua copia, fuori da Libra.» (dall'11/11; prima
+  «servirà per ripristinarli», tolto con Importa);
 - gruppo **«Nel file»**: Diario («266 voci dal 21/09 al 07/11»,
   «Nessuna voce» con il diario vuoto), Alimenti, Pasti salvati, Pesate,
   Obiettivi, Foto profilo («Inclusa», «Non hai una foto», «Non
@@ -7754,8 +7754,9 @@ La pagina `/impostazioni/esporta`, dall'alto:
 - un solo pulsante pieno **«Esporta i miei dati»** (il JSON), con sotto
   nome e peso del file e il promemoria;
 - gruppo **«Solo il diario»**: la riga «Esporta il diario per Excel»
-  (il CSV), con «File CSV con le voci del diario. Non serve per
-  ripristinare i dati.», spenta con «Il diario è vuoto.». Non deve
+  (il CSV), con «File CSV con le voci del diario, da aprire con Excel o
+  Numbers. Non è la copia completa dei tuoi dati.» (dall'11/11), spenta
+  con «Il diario è vuoto.». Non deve
   sembrare l'esportazione principale.
 
 Gli stati, con i testi del mockup:

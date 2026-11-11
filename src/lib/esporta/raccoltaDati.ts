@@ -27,15 +27,13 @@
 //   - voci_diario.pasto_id: la voce resta, e il pasto va in
 //     pasti_cancellati_citati;
 //   (sezioni citate: vedi formatoEsportazione.ts).
-// - UNICA ECCEZIONE, che Importa dovrà gestire: il telefono condiviso. In
-//   Dexie possono restare le righe di un altro utente, e una propria voce
-//   può puntare a un suo alimento (non dovrebbe succedere, ma la discesa
-//   non lo impedisce). Quell'alimento è dati di un altro: non entra, e la
-//   voce resta con un alimento_id che nel file non c'è. Importa dovrà
-//   metterlo a null (la voce ha già la sua copia di nome e valori) o
-//   scartarlo, non rifiutare la voce. Lo stesso vale, in teoria, per un
-//   pasto_id verso un pasto di un altro utente: stessa cura, pasto_id a
-//   null.
+// - UNICA ECCEZIONE: il telefono condiviso. In Dexie possono restare le
+//   righe di un altro utente, e una propria voce può puntare a un suo
+//   alimento (non dovrebbe succedere, ma la discesa non lo impedisce).
+//   Quell'alimento è dati di un altro: non entra, e la voce resta con un
+//   alimento_id che nel file non c'è; ha comunque la sua copia di nome e
+//   valori. Lo stesso vale, in teoria, per un pasto_id verso un pasto di
+//   un altro utente.
 //
 // Dentro Dexie non ci sono amicizie, alimenti_condivisi, username né la
 // coda: non stanno in TABELLE_DISCESA, quindi qui non arrivano mai.
