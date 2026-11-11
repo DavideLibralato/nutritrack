@@ -7,6 +7,7 @@ import {
   etichettaPeriodo,
   etichettaBarra,
   periodoDaIndirizzo,
+  periodoCambiandoModo,
 } from "./periodiStatistiche";
 
 // Periodi della pagina Statistiche (PUNTO_DI_PARTENZA.md, sezione 3). Oggi
@@ -238,5 +239,23 @@ describe("periodoDaIndirizzo (?vista=…&dal=…)", () => {
       inizio: "2026-11-01",
     });
     expect(periodoDaIndirizzo("mese", "2026-10-01", null, OGGI)).toEqual(SETTIMANA_IN_CORSO);
+  });
+});
+
+describe("periodoCambiandoModo (Settimana ↔ Mese)", () => {
+  it("dalla settimana al mese del suo lunedì", () => {
+    expect(periodoCambiandoModo("mese", "2026-11-09", "2026-09-23", OGGI)).toBe("2026-11-01");
+    // Settimana 26/10–1/11: il lunedì è di ottobre.
+    expect(periodoCambiandoModo("mese", "2026-10-26", "2026-09-23", OGGI)).toBe("2026-10-01");
+  });
+
+  it("dal mese alla settimana del suo primo giorno", () => {
+    // 1/11/2026 è domenica: la sua settimana parte lunedì 26/10.
+    expect(periodoCambiandoModo("settimana", "2026-11-01", "2026-09-23", OGGI)).toBe("2026-10-26");
+  });
+
+  it("non prima della settimana della prima voce", () => {
+    // 1/09 è martedì, ma la prima voce è mercoledì 23/09: settimana del 21/09.
+    expect(periodoCambiandoModo("settimana", "2026-09-01", "2026-09-23", OGGI)).toBe("2026-09-21");
   });
 });

@@ -63,6 +63,9 @@ describe("scegliStrategia", () => {
       "/impostazioni/password",
       "/onboarding",
       "/aggiungi?giorno=2026-09-20",
+      // Il periodo di Statistiche nell'indirizzo (dall'11/11): resta la
+      // pagina dell'app, come ?giorno=.
+      "/statistiche?vista=mese&dal=2026-10-01",
     ]) {
       expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe("pagina");
     }
@@ -117,6 +120,8 @@ describe("pagineDaTogliere", () => {
 describe("chiavePagina", () => {
   it("toglie la query: una sola copia per pagina", () => {
     expect(chiavePagina(`${ORIGINE}/aggiungi?giorno=2026-09-20`)).toBe(`${ORIGINE}/aggiungi`);
+    // Statistiche offline con il periodo nell'indirizzo apre la stessa copia.
+    expect(chiavePagina(`${ORIGINE}/statistiche?vista=mese&dal=2026-10-01`)).toBe(`${ORIGINE}/statistiche`);
     expect(chiavePagina(`${ORIGINE}/`)).toBe(`${ORIGINE}/`);
   });
 });

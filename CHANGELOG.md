@@ -5,6 +5,31 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Statistiche: la pagina
+
+Branch `statistiche`, commit 3. La pagina al posto del segnaposto: Settimana
+/ Mese, frecce, titolo del periodo, quattro riquadri (media, «su N giorni»,
+obiettivo o obiettivo medio, pastiglia), barre delle calorie in SVG
+(`GraficoCalorie`: linea o trattini decisi dai dati, tocco e tastiera,
+dettaglio con «Apri il giorno» → `/?giorno=`; la linea dell'obiettivo
+finisce all'ultimo giorno non futuro, perché sopra i futuri l'obiettivo
+non si sa, e l'etichetta va dopo la linea sopra i giorni futuri, o sopra
+la linea alla sua fine se lì non c'è posto: sempre intera, con un test),
+peso delle 12 settimane
+(`GraficoPeso`), stati vuoti. Legge solo da Dexie, non scrive niente. Il
+periodo sta nell'indirizzo, cambiato con `history.replaceState` (niente
+richieste al server, va offline); `periodoCambiandoModo` nuova, con test.
+Token derivati nuovi in `globals.css` (`--neutro`, `--trattino`,
+`--evidenza`, sfondi e testi delle pastiglie); la pastiglia «sotto» del
+mockup in chiaro faceva 4,27:1, ora il testo è un po' più scuro, come
+`--testo-capsula`: `contrasti.test` la misura per i 4 colori e i 2 temi.
+`swStrategia.test` con `/statistiche?vista=…&dal=…`. Test permanente della
+pagina (stati vuoti, tocco, indirizzo non valido, nessuna scrittura), rotto
+per prova da copia: 9 rotture, 8 viste; la nona era un caso superfluo nella
+pagina (frecce spente a mano per l'utente nuovo, già spente da
+`limitiFrecce`), tolto; il test della linea, 5 rotture, 5 viste. 1994 test
+verdi in 163 file, `tsc`, eslint e `npm run build` puliti.
+
 ## 2026-11-11 — Statistiche: medie, target del giorno, colori e peso
 
 Branch `statistiche`, commit 2b. Funzioni pure, nessuna UI.

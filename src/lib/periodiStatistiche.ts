@@ -66,7 +66,7 @@ export function limitiFrecce(
 
 // Il titolo sopra le frecce e la riga sotto:
 //   "2 – 8 novembre"   settimana dentro un mese solo
-//   "27 ott – 2 nov"   settimana a cavallo di due mesi
+//   "26 ott – 1 nov"   settimana a cavallo di due mesi
 //   "Novembre 2026"    mese
 // Sotto: "Questa settimana", "Settimana scorsa", "Questo mese", o niente.
 export function etichettaPeriodo(
@@ -115,6 +115,22 @@ export function etichettaBarra(modo: ModoPeriodo, iso: string, oggi: string): st
   if (modo === "settimana") return LETTERE[giornoSettimanaDi(iso)];
   const giorno = Number(iso.slice(8));
   return GIORNI_CON_ETICHETTA.includes(giorno) || iso === oggi ? String(giorno) : "";
+}
+
+// Dove si arriva cambiando fra Settimana e Mese, come nel mockup: dalla
+// settimana al suo mese (quello del lunedì); dal mese alla settimana del
+// suo primo giorno, ma non prima della settimana della prima voce (il
+// primo del mese può cadere in una settimana senza dati).
+export function periodoCambiandoModo(
+  modoNuovo: ModoPeriodo,
+  inizio: string,
+  primoGiornoConVoci: string | null,
+  oggi: string
+): string {
+  if (modoNuovo === "mese") return primoDelMese(inizio);
+  const lunedi = lunediDi(inizio);
+  const primo = primoPeriodo("settimana", primoGiornoConVoci, oggi);
+  return lunedi < primo ? primo : lunedi;
 }
 
 // Il periodo da mostrare a partire dall'indirizzo (?vista=mese&dal=2026-10-01),

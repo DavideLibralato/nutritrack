@@ -127,6 +127,11 @@ function coppie(p: Paletta, tema: Tema, accento: string): [string, number][] {
     ["--pericolo su superficie", contrasto(c("--pericolo"), superficie)],
     ["--pericolo su sfondo", contrasto(c("--pericolo"), sfondo)],
     ["--su-pieno su --pericolo-pieno", contrasto(sopra(c("--su-pieno"), c("--pericolo-pieno")), c("--pericolo-pieno"))],
+    // Le pastiglie dello stato in Statistiche (dal 11/11): "in linea",
+    // "sopra", "sotto", su riquadri e dettaglio, che sono superficie.
+    ["pastiglia «in linea»", contrasto(c("--testo-accento-tenue"), c("--accento-tenue"))],
+    ["pastiglia «sopra»", contrasto(c("--testo-avviso-tenue"), c("--avviso-tenue"))],
+    ["pastiglia «sotto»", contrasto(c("--testo-neutro-tenue"), c("--neutro-tenue"))],
   ];
 }
 
