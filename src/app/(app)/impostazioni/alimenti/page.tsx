@@ -143,9 +143,11 @@ const CLASSE_PAGINA =
   "mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-6 pb-[calc(var(--ingombro-oggi)+1.5rem)]";
 
 // Il form a pagina intera. Dopo una scansione: `daCodice` per un alimento
-// nuovo, `avviso` per uno che c'era già.
+// nuovo, `avviso` per uno che c'era già. `nome`: la ricerca scritta in «I
+// miei» (già senza spazi ai lati), che diventa il nome del nuovo alimento,
+// come «Crea «…»» in Aggiungi; da un codice il nome lo dà Open Food Facts.
 type Modulo =
-  | { tipo: "nuovo"; daCodice?: DatiCodice }
+  | { tipo: "nuovo"; daCodice?: DatiCodice; nome?: string }
   // `codiceDaPortare`: aperta da "Apri" in un modulo nato da un codice
   // (PUNTO §3, "«Apri» porta il codice"); il codice parte nel campo.
   | { tipo: "modifica"; alimento: Alimento; avviso?: string; codiceDaPortare?: string };
@@ -302,6 +304,8 @@ function PaginaAlimenti() {
   // cancellato altrove (sync) non si conta e non si elimina di nuovo.
   const perId = new Map(miei.map((a) => [a.id, a]));
   const selezionati = selezione ? [...selezione].filter((id) => perId.has(id)) : [];
+  // Invio nella ricerca crea: c'è un testo e non trova niente.
+  const creaConInvio = query.trim() !== "" && elenco.length === 0 && !selezione;
 
   // Gli alimenti in arrivo, ognuno con il suo confronto con il catalogo.
   // Solo online e solo con una lettura riuscita: offline la riga non c'è e
@@ -574,7 +578,17 @@ function PaginaAlimenti() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Cerca un alimento"
                 aria-label="Cerca un alimento"
-                enterKeyHint="search"
+                // Come in Aggiungi: quando la ricerca non trova niente,
+                // Invio ("Vai" sulla tastiera) apre «Nuovo alimento» con il
+                // nome scritto. Non in selezione, dove non si crea (niente
+                // "+").
+                enterKeyHint={creaConInvio ? "go" : "search"}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && creaConInvio) {
+                    e.preventDefault();
+                    apri({ tipo: "nuovo", nome: query.trim() });
+                  }
+                }}
                 disabled={miei.length === 0}
                 className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 text-base disabled:opacity-[0.55] ${CLASSE_FOCUS}`}
               />
@@ -732,7 +746,7 @@ function PaginaAlimenti() {
           <div className="flex justify-end px-4">
             <button
               type="button"
-              onClick={() => apri({ tipo: "nuovo" })}
+              onClick={() => apri({ tipo: "nuovo", nome: query.trim() })}
               aria-label="Nuovo alimento"
               style={{ boxShadow: "var(--ombra-fluttuante)" }}
               className={`pointer-events-auto flex h-[var(--aggiungi-altezza)] w-[var(--aggiungi-altezza)] items-center justify-center rounded-full bg-accent-strong text-on-strong ${CLASSE_FOCUS}`}
@@ -933,7 +947,9 @@ function SchermataModulo({
                 : "nuovo"
           }
           userId={userId}
-          nomeIniziale=""
+          // Da un codice il nome lo dà Open Food Facts (o resta vuoto), non
+          // la ricerca scritta prima di scansionare: come in Aggiungi.
+          nomeIniziale={modulo.tipo === "nuovo" && !modulo.daCodice ? (modulo.nome ?? "") : ""}
           etichettaIndietro="Torna al catalogo"
           etichettaCrea="Salva"
           alimentoDaModificare={modulo.tipo === "modifica" ? modulo.alimento : undefined}

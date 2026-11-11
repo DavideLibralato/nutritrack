@@ -5,6 +5,47 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Il nome cercato passa a «Nuovo alimento» in Alimenti
+
+Branch `alimenti-aspetto`, commit 1. In Impostazioni > Alimenti, scheda
+«I miei», il «+» apre «Nuovo alimento» con la ricerca scritta già nel
+campo Nome, come «Crea «…»» in Aggiungi. Il testo perde solo gli spazi ai
+lati; le maiuscole restano come scritte, e gli spazi doppi interni li
+sistema il salvataggio. Se la ricerca è vuota, il nome è vuoto. Dopo una
+scansione il nome lo dà Open Food Facts, oppure resta vuoto, come in
+Aggiungi. Invio ("Vai") con una ricerca che non trova niente apre il
+modulo con quel nome; con dei risultati non apre niente, e in selezione
+non crea. Nella scheda «Catalogo» non si crea (decisione di Davide,
+11/11). Cinque test nuovi in `page.test.tsx`; i quattro che controllano
+qualcosa fanno fallire il loro test se si rompe il codice, provato da una
+copia del file.
+
+## 2026-11-11 — lavoretti unito a main
+
+Unito a main l'11/11 con fast-forward da `9ca0f44` a `4afe1f1`, senza
+commit di merge. I 7 commit:
+- `42418ae`: Statistiche unita a main, Importa non si fa;
+- `4be730c`: testi di Esporta senza ripristino;
+- `7b2de61`: Prettier su tutto il progetto;
+- `cff0e12`: git blame salta il commit di formattazione;
+- `aecfc60`: `creato_il` nei tipi;
+- `c5230f0`: icone condivise;
+- `4afe1f1`: provato sull'anteprima.
+
+Il branch è cancellato in locale e su GitHub. Non c'è nessuna migration
+e nessuna Redirect URL dell'anteprima da togliere.
+
+Su main, prima del push:
+- 2021 test verdi in 166 file;
+- `tsc`, eslint, `format:check` e `npm run build` puliti;
+- `7b2de61` antenato di main;
+- `git blame` su `src/proxy.ts` righe 6–7 mostra ancora `2516f470`.
+
+**Provato nell'app vera** l'11/11 alle 21:20, Build `4afe1f1`, account
+vero: Oggi, Impostazioni > Alimenti e Statistiche, «funziona tutto»
+(Davide). La fascia ±5% resta provvisoria. Questa voce è scritta nel
+commit 1 del branch `alimenti-aspetto`.
+
 ## 2026-11-11 — lavoretti provato sull'anteprima
 
 Branch `lavoretti`, commit 7, solo documenti. Le prove su iPhone sono

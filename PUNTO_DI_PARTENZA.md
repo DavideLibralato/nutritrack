@@ -2442,6 +2442,13 @@ catalogo, si corregge e si fa pulizia.
   creazione la barra dice "Creato: Mela": con "Più usati" un alimento
   nuovo finisce in fondo all'elenco, e senza la barra non si vedrebbe che
   è stato salvato. Dopo una modifica nessuna barra, come in Aggiungi.
+- **Il nome cercato passa a "Nuovo alimento"** (dall'11/11, branch
+  `alimenti-aspetto`), solo nella scheda «I miei», come «Crea «…»» in
+  Aggiungi. Il "+" porta la ricerca senza spazi ai lati
+  (`query.trim()`); dopo una scansione il nome non viene dalla ricerca.
+  Invio ("Vai") apre il modulo con quel nome solo se la ricerca non
+  trova niente, e mai in selezione. Coperto dai test, **da provare** su
+  iPhone.
 - **Il "+"** è tondo, a destra, alla stessa altezza di "+ Aggiungi" in
   Oggi (sopra la tab bar, con la stessa sfumatura dietro), e come la tab
   bar si nasconde mentre un campo ha il fuoco. La barra con Annulla sta
@@ -9136,6 +9143,10 @@ scritture; tutte le prove sono andate bene:
 - Statistiche: le frecce e «Apri il giorno».
 - I testi nuovi di Esporta.
 - Il tema scuro su Impostazioni > Alimenti e su Aggiungi.
+
+**Unito a main l'11/11** con fast-forward da `9ca0f44` a `4afe1f1`, 7
+commit, e **provato nell'app vera** lo stesso giorno, Build `4afe1f1`,
+account vero: «funziona tutto» (Davide).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono

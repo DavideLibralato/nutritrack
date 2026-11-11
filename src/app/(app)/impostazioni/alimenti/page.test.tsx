@@ -609,3 +609,85 @@ describe("Catalogo precaricato: Scansiona un prodotto che hai già senza codice"
     expect(fetchFinta).not.toHaveBeenCalled();
   });
 });
+
+// Il nome cercato passa a «Nuovo alimento» (PUNTO §3, "Alimenti"), come
+// «Crea «…»» in Aggiungi: senza spazi ai lati, maiuscole come scritte. Si
+// romperebbe in silenzio: il modulo si aprirebbe vuoto, o Invio aprirebbe
+// un alimento nuovo anche quando la ricerca trova già qualcosa.
+describe("Catalogo alimenti: il nome cercato passa al modulo", () => {
+  function cerca(testo: string) {
+    const campo = screen.getByRole("searchbox", { name: "Cerca un alimento" });
+    fireEvent.change(campo, { target: { value: testo } });
+    return campo;
+  }
+
+  function campoNome() {
+    return screen.getByLabelText("Nome") as HTMLInputElement;
+  }
+
+  it("il + porta la ricerca come nome, senza spazi ai lati", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    cerca("  patatine fritte  ");
+    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    expect(campoNome().value).toBe("patatine fritte");
+  });
+
+  it("a ricerca vuota il + apre il modulo con il nome vuoto", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    expect(campoNome().value).toBe("");
+  });
+
+  it("Invio senza risultati apre il modulo con il nome scritto", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    const campo = cerca("Patatine Fritte");
+    expect(campo.getAttribute("enterkeyhint")).toBe("go");
+    fireEvent.keyDown(campo, { key: "Enter" });
+
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    expect(campoNome().value).toBe("Patatine Fritte");
+  });
+
+  it("Invio con dei risultati non apre niente", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    const campo = cerca("bana");
+    expect(campo.getAttribute("enterkeyhint")).toBe("search");
+    fireEvent.keyDown(campo, { key: "Enter" });
+
+    expect(screen.queryByText("Nuovo alimento")).toBeNull();
+    expect(screen.getByText("Banana")).toBeTruthy();
+  });
+
+  it("dopo una scansione il nome resta vuoto, anche con una ricerca scritta", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => risposta({ result: { id: "product_not_found" } }, 404))
+    );
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    cerca("patatine fritte");
+    await scansionaScrivendo(PATATINE);
+
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(PATATINE);
+    expect(campoNome().value).toBe("");
+  });
+});
