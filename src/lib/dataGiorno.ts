@@ -134,6 +134,55 @@ export function prossimoLunedi(oggi: string): string {
   return oggiLocale(d);
 }
 
+// --- Aritmetica dei periodi (Statistiche, settimane e mesi) -------------
+// Tutte con la regola del mezzogiorno (daISO): nessun salto col cambio
+// d'ora del 25/10 o di fine marzo.
+
+// `n` giorni dopo (o prima, se negativo) una data.
+export function piuGiorni(iso: string, n: number): string {
+  const d = daISO(iso);
+  d.setDate(d.getDate() + n);
+  return oggiLocale(d);
+}
+
+// Il lunedì della settimana di calendario (lunedì–domenica) che contiene
+// la data. getDay() parte dalla domenica (0): la domenica torna indietro
+// di 6 giorni, non avanti di 1.
+export function lunediDi(iso: string): string {
+  const giorno = daISO(iso).getDay();
+  return piuGiorni(iso, -((giorno + 6) % 7));
+}
+
+// "2026-11-17" → "2026-11-01": solo stringhe.
+export function primoDelMese(iso: string): string {
+  return `${iso.slice(0, 8)}01`;
+}
+
+// Il primo del mese `n` mesi dopo (o prima). Si parte sempre dal primo del
+// mese: dal 31 gennaio "un mese dopo" non esiste, dal primo sì.
+export function piuMesi(iso: string, n: number): string {
+  const [anno, mese] = iso.split("-").map(Number);
+  return oggiLocale(new Date(anno, mese - 1 + n, 1, 12, 0, 0));
+}
+
+// Quanti giorni ha il mese della data (28, 29, 30 o 31). Il giorno 0 del
+// mese dopo è l'ultimo di questo.
+export function giorniNelMese(iso: string): number {
+  const [anno, mese] = iso.split("-").map(Number);
+  return new Date(anno, mese, 0, 12, 0, 0).getDate();
+}
+
+// Quanti giorni da `da` ad `a` (negativo se `a` viene prima). Fra due
+// mezzogiorni a cavallo del cambio d'ora passano 23 o 25 ore: si arrotonda.
+export function giorniFra(da: string, a: string): number {
+  return Math.round((daISO(a).getTime() - daISO(da).getTime()) / 86_400_000);
+}
+
+// "novembre": il nome del mese per esteso, minuscolo come lo dà l'italiano.
+export function formattaMeseLungo(iso: string): string {
+  return daISO(iso).toLocaleDateString("it-IT", { month: "long" });
+}
+
 // Quanti millisecondi mancano alla prossima mezzanotte locale: quando il
 // giorno del calendario cambia (useGiornoCorrente). La mezzanotte si
 // costruisce con anno, mese e giorno, non sommando 24 h: nei giorni del

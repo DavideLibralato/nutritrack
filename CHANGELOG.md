@@ -5,6 +5,24 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Statistiche: le date e i periodi
+
+Branch `statistiche`, commit 2a. Funzioni pure, nessuna UI. In
+`dataGiorno.ts`, con la regola del mezzogiorno: `piuGiorni`, `lunediDi`,
+`primoDelMese`, `piuMesi` (sempre dal primo del mese), `giorniNelMese`,
+`giorniFra` (arrotondato: fra due mezzogiorni a cavallo del cambio d'ora
+passano 23 o 25 ore), `formattaMeseLungo`. Nuovo `periodiStatistiche.ts`:
+inizio e giorni di settimana e mese, frecce e loro limiti, titolo («2 – 8
+novembre», «26 ott – 1 nov», «Novembre 2026») con «Questa settimana»,
+«Settimana scorsa», «Questo mese», etichette delle barre,
+`periodoDaIndirizzo` per `?vista=&dal=` (un valore non valido, a metà
+periodo, futuro o fuori dai limiti torna alla settimana in corso). Test
+permanenti: cambi d'ora del 25/10 e del 29/03, febbraio 2026 e 2028,
+settimane a cavallo di mesi e anni. Ogni test rotto per prova da una
+copia, 15 rotture: le prime due, una voce solo futura e il mese
+`2025-13-01`, i test non le vedevano; aggiunti i due casi, poi 15 su 15.
+1931 test verdi in 157 file, `tsc` ed eslint puliti.
+
 ## 2026-11-09 — Statistiche: decisioni e mockup
 
 Branch `statistiche`, commit 1 (solo documenti). Le decisioni prese da

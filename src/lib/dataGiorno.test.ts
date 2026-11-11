@@ -12,6 +12,13 @@ import {
   ultimoGiornoDiario,
   eGiornoVero,
   prossimoLunedi,
+  piuGiorni,
+  lunediDi,
+  primoDelMese,
+  piuMesi,
+  giorniNelMese,
+  giorniFra,
+  formattaMeseLungo,
 } from "./dataGiorno";
 
 describe("oggiLocale", () => {
@@ -148,5 +155,55 @@ describe("prossimoLunedi ed eGiornoVero (Pasti e orari, «Da una data»)", () =>
     expect(eGiornoVero("2026-02-30")).toBe(false);
     expect(eGiornoVero("12/10/2026")).toBe(false);
     expect(eGiornoVero("")).toBe(false);
+  });
+});
+
+describe("aritmetica dei periodi (Statistiche)", () => {
+  it("piuGiorni attraversa mesi, anni e i due cambi d'ora senza saltare un giorno", () => {
+    expect(piuGiorni("2026-10-30", 3)).toBe("2026-11-02");
+    expect(piuGiorni("2026-01-02", -3)).toBe("2025-12-30");
+    // 25/10/2026: si torna all'ora solare, il giorno ha 25 ore.
+    expect(piuGiorni("2026-10-24", 1)).toBe("2026-10-25");
+    expect(piuGiorni("2026-10-25", 1)).toBe("2026-10-26");
+    expect(piuGiorni("2026-10-19", 7)).toBe("2026-10-26");
+    // 29/03/2026: si passa all'ora legale, il giorno ha 23 ore.
+    expect(piuGiorni("2026-03-28", 2)).toBe("2026-03-30");
+    expect(piuGiorni("2026-03-30", -2)).toBe("2026-03-28");
+  });
+
+  it("lunediDi: la settimana va da lunedì a domenica", () => {
+    expect(lunediDi("2026-11-09")).toBe("2026-11-09"); // lunedì
+    expect(lunediDi("2026-11-15")).toBe("2026-11-09"); // domenica: indietro, non avanti
+    expect(lunediDi("2026-11-01")).toBe("2026-10-26"); // a cavallo di due mesi
+    expect(lunediDi("2026-10-25")).toBe("2026-10-19"); // la domenica del cambio d'ora
+    expect(lunediDi("2027-01-01")).toBe("2026-12-28"); // a cavallo di due anni
+  });
+
+  it("primoDelMese e piuMesi: si parte sempre dal primo, anche dal 31", () => {
+    expect(primoDelMese("2026-11-17")).toBe("2026-11-01");
+    expect(piuMesi("2026-01-31", 1)).toBe("2026-02-01");
+    expect(piuMesi("2026-11-01", -1)).toBe("2026-10-01");
+    expect(piuMesi("2026-01-01", -1)).toBe("2025-12-01");
+    expect(piuMesi("2026-12-01", 1)).toBe("2027-01-01");
+  });
+
+  it("giorniNelMese: febbraio normale e bisestile, mesi da 30 e 31", () => {
+    expect(giorniNelMese("2026-02-10")).toBe(28);
+    expect(giorniNelMese("2028-02-01")).toBe(29);
+    expect(giorniNelMese("2026-11-01")).toBe(30);
+    expect(giorniNelMese("2026-10-31")).toBe(31);
+  });
+
+  it("giorniFra: giorni interi anche a cavallo del cambio d'ora", () => {
+    expect(giorniFra("2026-10-24", "2026-11-09")).toBe(16);
+    expect(giorniFra("2026-10-24", "2026-10-26")).toBe(2);
+    expect(giorniFra("2026-03-28", "2026-03-30")).toBe(2);
+    expect(giorniFra("2026-11-09", "2026-11-09")).toBe(0);
+    expect(giorniFra("2026-11-09", "2026-11-08")).toBe(-1);
+  });
+
+  it("formattaMeseLungo: il nome del mese in italiano", () => {
+    expect(formattaMeseLungo("2026-11-09")).toBe("novembre");
+    expect(formattaMeseLungo("2026-02-01")).toBe("febbraio");
   });
 });
