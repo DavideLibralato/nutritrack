@@ -5,6 +5,25 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Tolto recharts; Statistiche provata su iPhone
+
+Branch `statistiche`, commit 5, l'ultimo. **Prove su iPhone** di Davide
+l'11/11 mattina, anteprima, Build `66e3f18`, account di prova, Safari:
+prove 1–7, 9 e 10 ok; la 8 (Oggi) vista con anello e barre macro grigi in
+Massa, senza la voce grande. Stati vuoti e cambio di settimana a
+mezzanotte coperti dai test, non provati a mano. Cowork ha controllato il
+server (i giorni differenziati spenti e riaccesi nella prova 6). La fascia
+±5% resta provvisoria: si fissa dopo il merge sui dati veri dell'app
+installata. Esito in PUNTO §11; in §10.5 la funzione n. 2 ha i suoi test
+(`medieStatistiche.test.ts`), tutte e cinque coperte.
+`npm uninstall recharts`: era in
+`package.json` ma nessun file lo importava (i grafici sono SVG dell'app).
+Dal lock escono 39 pacchetti, recharts e 38 che servivano solo a lui
+(redux, d3, immer, clsx…), nessuno importato dal codice; `@types/react` e
+`csstype` restano, ora solo per lo sviluppo. PUNTO §3 e §8: «tolto».
+2021 test verdi in 166 file, `tsc`, eslint e `npm run build` puliti,
+`npm audit --omit=dev` senza vulnerabilità.
+
 ## 2026-11-11 — Oggi con la regola unica dei colori
 
 Branch `statistiche`, commit 4, da solo perché cambia Oggi. Seconda

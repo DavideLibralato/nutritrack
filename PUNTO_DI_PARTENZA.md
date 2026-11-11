@@ -1583,7 +1583,7 @@ Senza giorni contati: "—" e "nessun giorno registrato", mai 0.
 **Come è fatta**
 - Grafici disegnati in **SVG dall'app**, come l'anello di Oggi, con i
   colori dai token (chiaro e scuro; `temaScuro.test` e `contrasti.test`).
-  **Niente Recharts**: si toglie dal progetto
+  **Niente Recharts**: tolto dal progetto l'11/11 (branch `statistiche`)
 - Legge **solo da Dexie**, come Oggi: funziona offline. **Non scrive
   niente**, né in Dexie né su Supabase. Nessuna migration, nessuna
   `version()` nuova
@@ -5623,7 +5623,10 @@ colori, non i numeri (lo fissano i test di Oggi).
   nutrizionista, conta arrivarci. Così l'eccezione è una sola
 - Il tipo di obiettivo è quello del **periodo valido quel giorno**
 - **Fascia ±5%, PROVVISORIA**, in una costante sola (`FASCIA_PERCENTO`): si
-  fissa dopo averla vista su iPhone (lezione del 24/10). I bordi sono
+  fissa dopo averla vista dal vivo (lezione del 24/10). Le prove su
+  iPhone dell'11/11 non l'hanno fissata: si decide **dopo il merge,
+  guardando i dati veri nell'app installata**, nel primo commit del lavoro
+  dopo. I bordi sono
   inclusi (2200 → in linea da 2090 a 2310) e si calcolano con soli numeri
   interi (`valore * 100` contro `obiettivo * 95`), esatti per costruzione:
   così non serve ridimostrare i decimali a ogni valore nuovo della fascia
@@ -5639,8 +5642,9 @@ colori, non i numeri (lo fissano i test di Oggi).
   (`--linea`)
 
 Con Massa l'anello di Oggi resta neutro per quasi tutta la giornata, finché
-non si entra nella fascia: si guarda su iPhone (prova del commit 4). Se non
-convince, si valuta di tenere la regola vecchia solo per il giorno in corso.
+non si entra nella fascia. Visto su iPhone l'11/11 (prova 8, Build
+`66e3f18`): anello e barre macro grigi in Massa. Se con l'uso non convince,
+si valuta di tenere la regola vecchia solo per il giorno in corso.
 
 **Ordine: Kcal → Grassi → Carboidrati → Proteine**, ovunque i quattro valori
 compaiono insieme (form crea/modifica alimento, anteprima dello sheet
@@ -5757,8 +5761,8 @@ l'anello, quindi le barre sono tre: Grassi, Carboidrati, Proteine.
 - **Tesseract.js** per l'OCR, gira nel browser: zero costi server
 - **Grafici in SVG disegnati dall'app** (deciso il 09/11, branch
   `statistiche`), come l'anello di Oggi: colori dai token, nessuna
-  libreria. Recharts era in `package.json` ma mai usato: si toglie in un
-  commit a parte
+  libreria. Recharts era in `package.json` ma mai usato: tolto l'11/11,
+  in un commit a parte, con i 38 pacchetti che servivano solo a lui
 
 Costi reali solo su API AI (V2) e dominio personalizzato (opzionale).
 
@@ -7838,8 +7842,12 @@ accorgi mesi dopo.
 Stato al 2026-10-02: hanno test permanenti la 1 (`totaliDiario.test.ts`), la
 3 (`obiettivoValidoPer` in `totaliDiario.test.ts`, il ripiego sul target
 "normale" in `obiettiviTarget.test.ts`), la 4 (`oggiLocale` in
-`dataGiorno.test.ts`) e la 5 (`pastoPerOrario` in `propostaPasto.test.ts`). La 2 aspetta le Statistiche, che non esistono
-ancora.
+`dataGiorno.test.ts`) e la 5 (`pastoPerOrario` in `propostaPasto.test.ts`).
+Dall'11/11 anche la 2 (branch `statistiche`): `medieStatistiche.test.ts`,
+con giorni vuoti in mezzo, giorni futuri esclusi, target diversi
+(obiettivo medio sugli stessi giorni), un cambio di periodo a metà
+settimana e un periodo senza giorni contati. Tutte e cinque hanno i loro
+test permanenti.
 
 **Aggiornamento (6 settembre 2026):** Vitest + Testing Library + jsdom sono
 configurati nel progetto — non solo per queste cinque funzioni, ma per ogni
@@ -9070,6 +9078,25 @@ vera** la sera del 09/11, Build `2ab33fe`: la scheda «Catalogo» vista;
 `/catalogo/catalogo-open-food-facts-odbl.json` aperto **senza accesso**,
 in una finestra privata.
 
+**Statistiche** (dal 09/11, branch `statistiche`, fase 7; sezione 3,
+"Statistiche"; mockup `docs/mockups/statistiche.html`; regola unica dei
+colori in sezione 7). La pagina con Settimana / Mese, quattro riquadri,
+barre delle calorie con il dettaglio del giorno, peso delle 12 settimane;
+Oggi con la stessa regola dei colori e lo stesso target del giorno.
+**Provata su iPhone l'11/11 mattina** sull'anteprima, Build `66e3f18`,
+account di prova, Safari:
+- prove 1–7, 9 e 10 ok;
+- la 8 (Oggi) vista con anello e barre macro grigi in Massa, senza la voce
+  grande;
+- stati vuoti (utente nuovo, periodo senza voci) e cambio di settimana a
+  mezzanotte: **coperti dai test, non provati a mano**;
+- il controllo sul server l'ha fatto Cowork: i giorni differenziati spenti
+  e riaccesi nella prova 6. La pagina Statistiche non scrive niente.
+
+Resta il merge. La **fascia ±5%** resta provvisoria: si fissa dopo il
+merge guardando i dati veri nell'app installata (sezione 7, "La regola dei
+colori").
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
@@ -9078,9 +9105,9 @@ i numeri delle sue segnalazioni.
 
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
-- **Statistiche** e storico del peso (fase 7): in corso dal 09/11, branch
-  `statistiche` (sezione 3, "Statistiche"); su main la pagina è ancora un
-  segnaposto
+- **Statistiche** e storico del peso (fase 7): fatte e provate su iPhone
+  l'11/11 sul branch `statistiche` (sopra, "Fatto"); su main la pagina è
+  ancora un segnaposto finché non si unisce il branch
 - Rimedi della sezione 10 ancora da fare: **Importa** ("Ripristina in
   un account vuoto", 10.4), un lavoro a parte. ~~**"Esporta i miei
   dati"**~~ (10.4) è fatto: unito a main e provato nell'app installata
@@ -9893,4 +9920,6 @@ branch.
     sull'anteprima e unito a main il 09/11, `2ab33fe`, provato nell'app
     vera la sera del 09/11 (sopra, "Fatto"; sezione 10.1)
 14. **Statistiche** (fase 7; dal 09/11, branch `statistiche`; sezione 3,
-    "Statistiche")
+    "Statistiche"): provata su iPhone l'11/11 mattina, Build `66e3f18`
+    (sopra, "Fatto"). Resta il merge; dopo, nel primo commit del lavoro
+    seguente, la fascia ±5% fissata sui dati veri nell'app installata
