@@ -1,7 +1,8 @@
 // La regola dei colori, una sola per tutta l'app (PUNTO_DI_PARTENZA.md,
-// sezione 7, "La regola dei colori"): Statistiche e, dal commit 4 del
-// branch `statistiche`, Oggi. Prima l'anello diceva "superato = sopra
-// l'obiettivo" e BarraMacro "raggiunto = esattamente uguale".
+// sezione 7, "La regola dei colori"): Statistiche e Oggi (anello, barre
+// macro, la riga "X kcal oltre l'obiettivo"). Fino all'11/11 l'anello
+// diceva "superato = sopra l'obiettivo" e BarraMacro "raggiunto =
+// esattamente uguale".
 //
 // Due risposte separate:
 //   - `esito`, il fatto, scritto nella pastiglia: sotto / in linea / sopra;

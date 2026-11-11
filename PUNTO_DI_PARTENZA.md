@@ -5592,9 +5592,11 @@ diventa rosso (3,57:1).
 ### Le barre macro (corretto rispetto al mockup)
 
 Nel mockup le tre barre macro erano blu, arancio e rosso. **Diventano tutte
-dello stesso neutro scuro.** Il colore non aggiungeva informazione — l'etichetta
+dello stesso neutro.** Il colore non aggiungeva informazione — l'etichetta
 dice già "Proteine" — e l'arancio significa già "sopra l'obiettivo" nelle
-Statistiche: stesso colore, due significati.
+Statistiche: stesso colore, due significati. Il neutro era il colore del
+testo; dall'11/11 è il grigio caldo `--neutro` della regola dei colori,
+lo stesso delle barre di Statistiche.
 
 Il colore entra solo quando dice qualcosa.
 
@@ -5604,8 +5606,9 @@ Una funzione pura sola per tutta l'app, `esitoRispettoObiettivo` in
 `src/lib/esitoObiettivo.ts`: Statistiche (barre, riquadri, dettaglio) e
 Oggi (anello, barre macro, la riga "X kcal oltre l'obiettivo"). Prima ognuno
 faceva a modo suo: l'anello "superato = sopra l'obiettivo", BarraMacro
-"raggiunto = esattamente uguale". In Oggi la regola nuova entra nel commit 4
-del branch, da solo: cambiano solo i colori, non i numeri.
+"raggiunto = esattamente uguale". Oggi prende anche il target del giorno da
+`targetDelGiorno`, la stessa funzione delle Statistiche: cambiano solo i
+colori, non i numeri (lo fissano i test di Oggi).
 
 - **Kcal con obiettivo Dimagrire** (un tetto): verde fino all'obiettivo,
   arancio sopra, anche di 1 kcal. Nessuna fascia sopra il tetto: è la regola
@@ -5627,6 +5630,9 @@ del branch, da solo: cambiano solo i colori, non i numeri.
 - Valore e obiettivo si confrontano **arrotondati all'intero**, come a
   schermo: il colore dice quello che il numero mostra
 - Senza obiettivo (o con obiettivo 0): nessuno stato, colore neutro
+- In Oggi la riga "X kcal oltre l'obiettivo" è arancio solo quando la
+  regola dice "sopra" (con Massa 50 kcal oltre stanno nella fascia: anello
+  verde, riga non colorata); il testo non cambia
 - **Verde = il colore principale** (`--accento`, blu se l'utente ha scelto
   il blu), arancio = `--avviso`, **neutro = un grigio caldo derivato dai
   token** (`--neutro`), diverso dal grigio del giorno senza dati

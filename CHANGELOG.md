@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Oggi con la regola unica dei colori
+
+Branch `statistiche`, commit 4, da solo perché cambia Oggi. Seconda
+occhiata di Davide dopo il 3b (`904fe85`): i ritocchi si vedono giusti.
+Oggi prende il target del giorno da `targetDelGiorno`, al posto della
+combinazione a mano, e colora anello, barre macro e la riga «X kcal oltre
+l'obiettivo» con `esitoRispettoObiettivo` e il tipo di obiettivo del
+giorno. Cambiano solo i colori: con Massa o Mantenere l'anello è neutro
+sotto la fascia; le proteine 151 su 150 sono in linea, non più arancio; il
+neutro delle barre è `--neutro`, non più il colore del testo; con Massa la
+riga «oltre» si colora solo sopra la fascia. Nessun test esistente
+cambiato (sui numeri c'era solo «Nessun obiettivo impostato»): cinque test
+nuovi fissano i numeri (target, «Rimangono», «oltre», «X di Y», pastiglia
+e ripiego su «Normale»), scritti e fatti passare sul codice di prima, poi
+lasciati identici. Test nuovi sui colori: `AnelloCalorie.test`,
+`BarraMacro.test` e quattro casi della pagina. Prova da copia, 9 rotture,
+8 viste: la nona (pastiglia senza ripiego) non cambia niente di visibile,
+perché la tendina senza la scelta mostra comunque «Normale». PUNTO §7
+aggiornato. 2021 test verdi in 166 file, `tsc`, eslint e `npm run build`
+puliti.
+
 ## 2026-11-11 — Statistiche: ritocchi dopo la prima occhiata
 
 Branch `statistiche`, commit 3b. Prima occhiata di Davide sull'anteprima

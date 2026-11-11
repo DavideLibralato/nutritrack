@@ -5,26 +5,41 @@
 // così eredita il font dell'app e si allinea con flexbox senza calcoli di
 // baseline.
 //
-// Colore (sezione 7 di PUNTO_DI_PARTENZA.md): l'anello è verde finché si
-// resta entro l'obiettivo, arancio quando lo si supera — "verde = stai
-// andando come volevi, arancio = hai superato". Va scritto così nel codice.
+// Colore: la regola unica dei colori (PUNTO_DI_PARTENZA.md §7, "La regola
+// dei colori"; esitoRispettoObiettivo), la stessa delle barre di
+// Statistiche. Con Dimagrire le kcal sono un tetto: colore principale fino
+// all'obiettivo, arancio da 1 kcal sopra (come l'anello faceva già). Con
+// Massa e Mantenere: neutro sotto la fascia, colore principale dentro,
+// arancio sopra. Fino all'11/11 l'anello era verde fino all'obiettivo con
+// qualunque obiettivo. Cambia solo il colore: i numeri restano gli stessi.
+
+import { esitoRispettoObiettivo, type Tono } from "@/lib/esitoObiettivo";
+import type { TipoObiettivo } from "@/lib/db/tipi";
 
 interface Props {
   consumate: number;
   obiettivo: number | null;
+  // Il tipo di obiettivo del giorno mostrato (targetDelGiorno).
+  tipoObiettivo: TipoObiettivo | null;
 }
 
 const DIMENSIONE = 132;
 const SPESSORE = 13;
 
-export default function AnelloCalorie({ consumate, obiettivo }: Props) {
+const STROKE_TONO: Record<Tono, string> = {
+  buono: "stroke-accent",
+  oltre: "stroke-warning",
+  neutro: "stroke-neutral",
+};
+
+export default function AnelloCalorie({ consumate, obiettivo, tipoObiettivo }: Props) {
   const raggio = (DIMENSIONE - SPESSORE) / 2;
   const circonferenza = 2 * Math.PI * raggio;
   const centro = DIMENSIONE / 2;
 
   const frazione =
     obiettivo != null && obiettivo > 0 ? Math.min(consumate / obiettivo, 1) : 0;
-  const superato = obiettivo != null && Math.round(consumate) > obiettivo;
+  const esito = esitoRispettoObiettivo(consumate, obiettivo, "kcal", tipoObiettivo);
 
   return (
     <div
@@ -54,7 +69,8 @@ export default function AnelloCalorie({ consumate, obiettivo }: Props) {
           strokeLinecap="round"
           strokeDasharray={`${frazione * circonferenza} ${circonferenza}`}
           transform={`rotate(-90 ${centro} ${centro})`}
-          className={superato ? "stroke-warning" : "stroke-accent"}
+          className={STROKE_TONO[esito?.tono ?? "neutro"]}
+          data-segno="arco-calorie"
         />
       </svg>
 

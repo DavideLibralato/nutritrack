@@ -48,8 +48,9 @@ import {
   pastiDaMostrare,
   pastiValidiIl,
 } from "@/lib/pasti/validitaPasti";
-import { targetPerTipo, targetEffettivo } from "@/lib/repository/obiettiviTarget";
-import { tipoGiornoEffettivo, scriviTipoGiornoScelto } from "@/lib/repository/giorni";
+import { scriviTipoGiornoScelto } from "@/lib/repository/giorni";
+import { targetDelGiorno } from "@/lib/targetGiorno";
+import { esitoRispettoObiettivo } from "@/lib/esitoObiettivo";
 import {
   sommaTotali,
   totaleVoce,
@@ -351,11 +352,15 @@ function OggiContenuto() {
     const obiettivoAttuale = obiettivoValidoPer(obiettivi, giorno);
     if (!obiettivoAttuale) return;
 
-    const tipoScritto = tipoGiornoEffettivo(giorniRighe, profilo, giorno);
-    const haTarget = targetPerTipo(obiettiviTarget, obiettivoAttuale.id, tipoScritto) !== null;
-    if (!haTarget) {
+    // targetDelGiorno ripiega su "normale" quando manca il target del tipo
+    // scritto: è proprio il caso da segnalare.
+    const { tipoGiorno, tipoGiornoMostrato } = targetDelGiorno(
+      { obiettivi, obiettiviTarget, giorni: giorniRighe, profilo },
+      giorno
+    );
+    if (tipoGiornoMostrato !== tipoGiorno) {
       console.error(
-        `Oggi (${giorno}): tipo_giorno "${tipoScritto}" scritto ma manca la riga corrispondente in obiettivi_target per l'obiettivo corrente (${obiettivoAttuale.id}). Mostro il target "normale" come ripiego.`
+        `Oggi (${giorno}): tipo_giorno "${tipoGiorno}" scritto ma manca la riga corrispondente in obiettivi_target per l'obiettivo corrente (${obiettivoAttuale.id}). Mostro il target "normale" come ripiego.`
       );
     }
   }, [giorno, profilo, giorniRighe, obiettivi, obiettiviTarget]);
@@ -669,25 +674,24 @@ function OggiContenuto() {
   const pastiSceglibili = pastiValidiIl(pasti, giorno);
   const eInUso = (pastoId: string) => pastiSceglibili.some((p) => p.id === pastoId);
 
-  // Il tipo REALMENTE scritto per questo giorno (o proposto dal pattern se
-  // non è mai stato scritto, sezione 3) — è la classificazione vera, non
-  // tocca mai la trappola: resta questo anche se manca il target
-  // corrispondente (vedi tipoGiornoMostrato sotto).
-  const tipoGiornoScrittoGiorno = tipoGiornoEffettivo(giorniRighe, profilo, giorno);
-  const haTargetPerTipoScritto = obiettivo
-    ? targetPerTipo(obiettiviTarget, obiettivo.id, tipoGiornoScrittoGiorno) !== null
-    : true;
-
-  // Cosa si MOSTRA (pastiglia e numeri): se manca il target per il tipo
-  // scritto, la pastiglia non deve "mentire" mostrando "Allenamento" sopra a
-  // dei numeri che sono in realtà quelli di "Normale" — mostra "Normale"
-  // anche lei, finché il target mancante non viene aggiunto in Profilo. La
-  // classificazione vera in `giorni` non viene toccata da questo: appena il
-  // target esiste, torna a mostrarsi da sola senza bisogno di ritoccare la
-  // pastiglia.
-  const tipoGiornoMostrato = haTargetPerTipoScritto
-    ? tipoGiornoScrittoGiorno
-    : TIPO_GIORNO_NORMALE;
+  // Il target del giorno mostrato (PUNTO_DI_PARTENZA.md §10.5, funzione
+  // n. 3), dalla stessa funzione che usano le Statistiche, così le due
+  // pagine danno gli stessi numeri per lo stesso giorno (dall'11/11; prima
+  // qui si combinavano a mano obiettivoValidoPer, tipoGiornoEffettivo e
+  // targetEffettivo). Dentro:
+  // - `target`: i numeri del giorno, del tipo scritto (o proposto dal
+  //   pattern, sezione 3), con il ripiego su "normale" se quel target manca;
+  // - `tipoObiettivo`: Dimagrire / Mantenere / Massa di quel giorno, per la
+  //   regola dei colori;
+  // - `tipoGiornoMostrato`: cosa mostra la pastiglia. Se manca il target del
+  //   tipo scritto, la pastiglia non deve "mentire" mostrando "Allenamento"
+  //   sopra numeri che sono di "Normale": mostra "Normale" anche lei. La
+  //   classificazione vera in `giorni` non si tocca: appena il target esiste,
+  //   torna a mostrarsi da sola.
+  const { target, tipoObiettivo, tipoGiornoMostrato } = targetDelGiorno(
+    { obiettivi, obiettiviTarget, giorni: giorniRighe, profilo },
+    giorno
+  );
 
   // Tipi selezionabili dalla pastiglia (sezione 3, punto 2): le righe di
   // obiettivi_target dell'obiettivo corrente, non un elenco fisso — "normale"
@@ -707,10 +711,6 @@ function OggiContenuto() {
       })
     : [];
   const mostraPastiglia = Boolean(profilo?.differenzia_giorni) && tipiGiornoDisponibili.length > 0;
-
-  const target = obiettivo
-    ? targetEffettivo(obiettiviTarget, obiettivo.id, tipoGiornoScrittoGiorno)
-    : null;
 
   const targetKcal = target?.kcal ?? null;
   const consumateKcal = Math.round(totali.kcal);
@@ -739,7 +739,12 @@ function OggiContenuto() {
       rigaCalorie = `Rimangono ${rimaste} kcal`;
     } else {
       rigaCalorie = `${-rimaste} kcal oltre l'obiettivo`;
-      classeRigaCalorie = "text-warning";
+      // Arancio solo quando la regola dei colori dice "oltre", come
+      // l'anello: con Massa o Mantenere 50 kcal sopra stanno nella fascia,
+      // e la riga non si colora mentre l'anello è verde. Il testo resta.
+      if (esitoRispettoObiettivo(consumateKcal, targetKcal, "kcal", tipoObiettivo)?.tono === "oltre") {
+        classeRigaCalorie = "text-warning";
+      }
     }
   } else {
     rigaCalorie = `${consumateKcal} di ${targetKcal} kcal`;
@@ -1356,24 +1361,32 @@ function OggiContenuto() {
             sono l'anello). I target
             vengono dal tipo del GIORNO MOSTRATO (tipoGiornoMostrato, sopra),
             non dall'obiettivo generico: su un giorno di allenamento passato
-            devono restare quelli di allenamento anche se oggi è "normale". */}
+            devono restare quelli di allenamento anche se oggi è "normale".
+            I colori: la regola unica (PUNTO §7), con il tipo di obiettivo
+            di quel giorno. */}
         <div className="mt-5 flex shrink-0 items-center gap-4 px-4 pb-5">
-          <AnelloCalorie consumate={totali.kcal} obiettivo={targetKcal} />
+          <AnelloCalorie consumate={totali.kcal} obiettivo={targetKcal} tipoObiettivo={tipoObiettivo} />
           <div className="flex-1 space-y-3">
             <BarraMacro
               nome="Grassi"
+              grandezza="grassi"
               valore={totali.grassi}
               obiettivo={target?.grassi_g ?? null}
+              tipoObiettivo={tipoObiettivo}
             />
             <BarraMacro
               nome="Carboidrati"
+              grandezza="carboidrati"
               valore={totali.carboidrati}
               obiettivo={target?.carboidrati_g ?? null}
+              tipoObiettivo={tipoObiettivo}
             />
             <BarraMacro
               nome="Proteine"
+              grandezza="proteine"
               valore={totali.proteine}
               obiettivo={target?.proteine_g ?? null}
+              tipoObiettivo={tipoObiettivo}
             />
           </div>
         </div>

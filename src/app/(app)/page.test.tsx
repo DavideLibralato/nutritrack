@@ -25,7 +25,13 @@ import { SCADENZA_BLOCCO_CLICK_MS } from "@/lib/decisioneSwipe";
 import { formattaDataEstesa, formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
 import type { VoceDiario } from "@/lib/db/tipi";
 import { stringToBase64URL } from "@supabase/ssr";
-import { repositoryMisurazioni, repositoryObiettivi } from "@/lib/repository";
+import {
+  repositoryGiorni,
+  repositoryMisurazioni,
+  repositoryObiettivi,
+  repositoryObiettiviTarget,
+  repositoryProfili,
+} from "@/lib/repository";
 import { chiaveSessione } from "@/lib/supabase/utenteOffline";
 import { chiaveSegnoLocale } from "@/lib/onboarding/segnoOnboarding";
 import { azzeraStatoGiri, segnaDiscesaRiuscita } from "@/lib/sync/statoSincronizzazione";
@@ -1348,5 +1354,203 @@ describe("Oggi: la scheda «Completa il tuo profilo»", () => {
       cleanup();
     }
     expect(letture).not.toHaveBeenCalled();
+  });
+});
+
+// Commit 4 del branch `statistiche` (PUNTO_DI_PARTENZA.md §7, "La regola dei
+// colori"): Oggi passa a targetDelGiorno e alla funzione unica dei colori.
+// Questi test fissano i NUMERI della fascia alta, che non devono cambiare:
+// il target del giorno, «Rimangono X kcal», «X kcal oltre l'obiettivo»,
+// «X di Y kcal» sui giorni passati, anello e barre macro, la pastiglia del
+// tipo di giorno con il suo ripiego su «Normale». Sono stati scritti e fatti
+// passare sul codice di PRIMA del cambio, poi lasciati identici.
+describe("Oggi: i numeri della fascia alta non cambiano con la regola dei colori", () => {
+  async function prepara({
+    tipo = "massa",
+    kcal = 2200,
+    kcalVoce,
+    data = oggiLocale(),
+    allenamento,
+  }: {
+    tipo?: "dimagrire" | "mantenere" | "massa";
+    kcal?: number;
+    kcalVoce: number;
+    data?: string;
+    // Differenziati accesi, il giorno scritto «allenamento» e, se `kcal` c'è,
+    // il suo target; senza `kcal` il target di allenamento manca (ripiego).
+    allenamento?: { kcal?: number };
+  }) {
+    const pasto = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const obiettivo = await repositoryObiettivi.crea({
+      user_id: utenteTest,
+      valido_dal: "2026-01-01",
+      tipo,
+      kcal,
+      proteine_g: 150,
+      carboidrati_g: 250,
+      grassi_g: 70,
+      peso_obiettivo: null,
+    });
+    await repositoryObiettiviTarget.crea({
+      user_id: utenteTest,
+      obiettivo_id: obiettivo.id,
+      tipo_giorno: "normale",
+      kcal,
+      proteine_g: 150,
+      carboidrati_g: 250,
+      grassi_g: 70,
+    });
+    if (allenamento) {
+      await repositoryProfili.crea({
+        user_id: utenteTest,
+        nome: null,
+        sesso: "non_indicato",
+        data_nascita: null,
+        altezza_cm: null,
+        livello_attivita: "moderato",
+        differenzia_giorni: true,
+        giorni_allenamento_default: [],
+      });
+      await repositoryGiorni.crea({ user_id: utenteTest, data, tipo_giorno: "allenamento" });
+      if (allenamento.kcal !== undefined) {
+        await repositoryObiettiviTarget.crea({
+          user_id: utenteTest,
+          obiettivo_id: obiettivo.id,
+          tipo_giorno: "allenamento",
+          kcal: allenamento.kcal,
+          proteine_g: 180,
+          carboidrati_g: 300,
+          grassi_g: 70,
+        });
+      }
+    }
+    // Una voce da 100 g: i valori per 100 g sono i totali del giorno.
+    await repositoryVociDiario.crea({
+      user_id: utenteTest,
+      alimento_id: "alimento-pasta",
+      pasto_id: pasto.id,
+      gruppo_id: null,
+      quantita_g: 100,
+      data,
+      creato_il: new Date().toISOString(),
+      consumato_alle: null,
+      nome_alimento: "Pasta",
+      kcal_100g: kcalVoce,
+      proteine_100g: 151,
+      carboidrati_100g: 240,
+      grassi_100g: 65,
+    });
+    if (data !== oggiLocale()) parametri = new URLSearchParams({ giorno: data });
+    render(<OggiPage />);
+    await screen.findByText("Pasta");
+  }
+
+  it("oggi sotto l'obiettivo: «Rimangono X kcal», anello e barre con i loro numeri", async () => {
+    await prepara({ kcalVoce: 2000 });
+    expect(screen.getByText("Rimangono 200 kcal")).toBeTruthy();
+    expect(screen.getByText("/ 2200")).toBeTruthy();
+    expect(screen.getByText("65 / 70 g")).toBeTruthy();
+    expect(screen.getByText("240 / 250 g")).toBeTruthy();
+    expect(screen.getByText("151 / 150 g")).toBeTruthy();
+  });
+
+  it("oggi sopra l'obiettivo: «X kcal oltre l'obiettivo», anche dentro la fascia", async () => {
+    await prepara({ kcalVoce: 2250 });
+    expect(screen.getByText("50 kcal oltre l'obiettivo")).toBeTruthy();
+  });
+
+  it("un giorno passato: «X di Y kcal»", async () => {
+    await prepara({ kcalVoce: 1900, data: giornoPrecedente(oggiLocale()) });
+    expect(screen.getByText("1900 di 2200 kcal")).toBeTruthy();
+  });
+
+  it("un giorno di allenamento: il suo target e la pastiglia «Allenamento»", async () => {
+    await prepara({ kcalVoce: 2000, allenamento: { kcal: 2600 } });
+    expect(screen.getByText("Rimangono 600 kcal")).toBeTruthy();
+    expect(screen.getByText("/ 2600")).toBeTruthy();
+    expect(screen.getByText("151 / 180 g")).toBeTruthy();
+    expect((screen.getByRole("combobox", { name: "Tipo di giornata" }) as HTMLSelectElement).value).toBe(
+      "allenamento"
+    );
+  });
+
+  it("allenamento scritto ma senza il suo target: numeri e pastiglia di «Normale»", async () => {
+    await prepara({ kcalVoce: 2000, allenamento: {} });
+    expect(screen.getByText("Rimangono 200 kcal")).toBeTruthy();
+    expect(screen.getByText("/ 2200")).toBeTruthy();
+    expect((screen.getByRole("combobox", { name: "Tipo di giornata" }) as HTMLSelectElement).value).toBe(
+      "normale"
+    );
+  });
+});
+
+// Commit 4: Oggi passa ai colori il tipo di obiettivo del giorno mostrato.
+// Gli stessi consumi colorano diverso con Massa e con Dimagrire; la riga
+// «X kcal oltre l'obiettivo» è arancio solo quando la regola dice «oltre».
+describe("Oggi: i colori seguono il tipo di obiettivo del giorno", () => {
+  async function apri(tipo: "dimagrire" | "massa", kcalVoce: number) {
+    const pasto = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const obiettivo = await repositoryObiettivi.crea({
+      user_id: utenteTest,
+      valido_dal: "2026-01-01",
+      tipo,
+      kcal: 2200,
+      proteine_g: 150,
+      carboidrati_g: 250,
+      grassi_g: 70,
+      peso_obiettivo: null,
+    });
+    await repositoryObiettiviTarget.crea({
+      user_id: utenteTest,
+      obiettivo_id: obiettivo.id,
+      tipo_giorno: "normale",
+      kcal: 2200,
+      proteine_g: 150,
+      carboidrati_g: 250,
+      grassi_g: 70,
+    });
+    await repositoryVociDiario.crea({
+      user_id: utenteTest,
+      alimento_id: "alimento-pasta",
+      pasto_id: pasto.id,
+      gruppo_id: null,
+      quantita_g: 100,
+      data: oggiLocale(),
+      creato_il: new Date().toISOString(),
+      consumato_alle: null,
+      nome_alimento: "Pasta",
+      kcal_100g: kcalVoce,
+      proteine_100g: 151,
+      carboidrati_100g: 240,
+      grassi_100g: 65,
+    });
+    const { container } = render(<OggiPage />);
+    await screen.findByText("Pasta");
+    return {
+      arco: container.querySelector('[data-segno="arco-calorie"]')!.getAttribute("class"),
+      proteine: container.querySelector('[data-segno="barra-proteine"]')!.getAttribute("class") ?? "",
+    };
+  }
+
+  it("2000 su 2200 con Massa: anello neutro; proteine 151 su 150 in linea", async () => {
+    const r = await apri("massa", 2000);
+    expect(r.arco).toBe("stroke-neutral");
+    expect(r.proteine).toContain("bg-accent");
+  });
+
+  it("2000 su 2200 con Dimagrire: anello verde", async () => {
+    expect((await apri("dimagrire", 2000)).arco).toBe("stroke-accent");
+  });
+
+  it("50 kcal oltre con Massa: anello verde, la riga non è arancio", async () => {
+    const r = await apri("massa", 2250);
+    expect(r.arco).toBe("stroke-accent");
+    expect(screen.getByText("50 kcal oltre l'obiettivo").className).not.toContain("text-warning");
+  });
+
+  it("50 kcal oltre con Dimagrire: anello e riga arancio", async () => {
+    const r = await apri("dimagrire", 2250);
+    expect(r.arco).toBe("stroke-warning");
+    expect(screen.getByText("50 kcal oltre l'obiettivo").className).toContain("text-warning");
   });
 });
