@@ -40,6 +40,18 @@ export type LivelloAttivita = "sedentario" | "leggero" | "moderato" | "attivo" |
 export type GiornoSettimana =
   "lunedi" | "martedi" | "mercoledi" | "giovedi" | "venerdi" | "sabato" | "domenica";
 
+// creato_il su profili, obiettivi, alimenti, composizioni, misurazioni e
+// preferiti: `timestamptz NOT NULL default now()` su Supabase (letto da
+// information_schema.columns l'11/11). Il valore lo decide solo il server
+// (default now()): il client non lo mette mai in una riga nuova. In un
+// aggiornamento può rimandarlo, uguale a quello ricevuto, perché aggiorna()
+// (repository.ts) parte dalla riga intera di Dexie e upsert()
+// (sincronizza.ts) manda tutte le colonne; su una riga creata sul telefono
+// e non ancora riscesa il campo manca, e upsert() non lo tocca. Facoltativo
+// (`?`): ce l'hanno solo le righe scese dal server (la discesa fa
+// select("*")). Nessun codice lo legge. Diverso da creato_il di
+// voci_diario, che scrive il client.
+
 export interface Profilo extends RigaBase {
   nome: string | null; // non ancora scritto da nessuna schermata
   sesso: Sesso;
@@ -58,6 +70,7 @@ export interface Profilo extends RigaBase {
   // allenamento"): i giorni non ancora classificati in `giorni` ereditano
   // questo pattern, ma resta sempre correggibile giorno per giorno.
   giorni_allenamento_default: GiornoSettimana[] | null;
+  creato_il?: string; // ISO 8601; lo decide solo il server (sopra)
 }
 
 export type TipoObiettivo = "dimagrire" | "mantenere" | "massa";
@@ -76,6 +89,7 @@ export interface Obiettivo extends RigaBase {
   carboidrati_g: number;
   grassi_g: number;
   peso_obiettivo: number | null;
+  creato_il?: string; // ISO 8601; lo decide solo il server (sopra Profilo)
 }
 
 // I tipi di giorno non sono cablati nel codice (sezione 3, "Giorni normali e
@@ -169,6 +183,7 @@ export interface Alimento extends RigaBase {
   // Leggerlo sempre con `?? null`. Una riga nuova lo scrive sempre, anche
   // null (salvaAlimento, aggiungiDalCatalogo); una modifica non lo tocca.
   catalogo_id?: string | null;
+  creato_il?: string; // ISO 8601; lo decide solo il server (sopra Profilo)
 }
 
 export interface VoceDiario extends RigaBase {
@@ -211,6 +226,7 @@ export interface Composizione extends RigaBase {
   // Valorizzato solo per tipo "ricetta": punta alla riga in alimenti con i
   // valori nutrizionali calcolati dagli ingredienti (sezione 4).
   alimento_id: string | null;
+  creato_il?: string; // ISO 8601; lo decide solo il server (sopra Profilo)
 }
 
 export interface ComposizioneVoce extends RigaBase {
@@ -225,10 +241,12 @@ export interface Misurazione extends RigaBase {
   valore: number; // check sul database: > 0
   unita: string; // "kg", "cm", ...
   data: string; // "YYYY-MM-DD"
+  creato_il?: string; // ISO 8601; lo decide solo il server (sopra Profilo)
 }
 
 export interface Preferito extends RigaBase {
   alimento_id: string;
+  creato_il?: string; // ISO 8601; lo decide solo il server (sopra Profilo)
 }
 
 // --- Tabelle solo online (Amici, PUNTO_DI_PARTENZA.md §4, "Le tabelle di

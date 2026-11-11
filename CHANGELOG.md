@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — creato_il nei tipi di sei tabelle
+
+Branch `lavoretti`, commit 5. Il confronto di `tipi.ts` con
+`information_schema.columns` (sola lettura, 11/11, tutte le colonne di
+tutte le tabelle) ha trovato una sola differenza: `creato_il`
+(`timestamptz NOT NULL default now()`) mancava nei tipi di `profili`,
+`obiettivi`, `alimenti`, `composizioni`, `misurazioni` e `preferiti`,
+non solo di `alimenti`. Aggiunto come `creato_il?: string`, con un
+commento: il valore lo decide solo il server, ce l'hanno solo le righe
+scese con `select("*")`; un aggiornamento dal telefono può rimandarlo
+uguale (`aggiorna()` parte dalla riga intera di Dexie, `upsert()` manda
+tutte le colonne). Verificato che nessuna riga nuova di queste tabelle
+nasce copiando una riga del server, e che nessun codice lo legge. Cambiano solo
+i tipi: nessuna migration, nessuna `version()` Dexie (regola B: né
+`.stores()` né la forma delle righe salvate cambiano), niente a runtime.
+
 ## 2026-11-11 — git blame salta il commit di Prettier
 
 Branch `lavoretti`, commit 4. Nuovo `.git-blame-ignore-revs` con l'hash
