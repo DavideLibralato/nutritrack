@@ -5609,8 +5609,9 @@ del branch, da solo: cambiano solo i colori, non i numeri.
 - Il tipo di obiettivo è quello del **periodo valido quel giorno**
 - **Fascia ±5%, PROVVISORIA**, in una costante sola (`FASCIA_PERCENTO`): si
   fissa dopo averla vista su iPhone (lezione del 24/10). I bordi sono
-  inclusi (2200 → in linea da 2090 a 2310) e si calcolano in aritmetica
-  intera: `2200 * 0.95` in JavaScript non dà esattamente 2090
+  inclusi (2200 → in linea da 2090 a 2310) e si calcolano con soli numeri
+  interi (`valore * 100` contro `obiettivo * 95`), esatti per costruzione:
+  così non serve ridimostrare i decimali a ogni valore nuovo della fascia
 - Valore e obiettivo si confrontano **arrotondati all'intero**, come a
   schermo: il colore dice quello che il numero mostra
 - Senza obiettivo (o con obiettivo 0): nessuno stato, colore neutro

@@ -11,7 +11,9 @@
 
 import type { Misurazione } from "../db/tipi";
 
-function chilogrammi(valore: number): string {
+// Esportata anche per il grafico del peso di Statistiche
+// (pesoStatistiche.ts): un formato solo per il peso in tutta l'app.
+export function chilogrammi(valore: number): string {
   return valore.toLocaleString("it-IT", { maximumFractionDigits: 1 });
 }
 

@@ -5,6 +5,28 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Statistiche: medie, target del giorno, colori e peso
+
+Branch `statistiche`, commit 2b. Funzioni pure, nessuna UI.
+`targetGiorno.ts`: `targetDelGiorno` mette insieme `obiettivoValidoPer`,
+`tipoGiornoEffettivo` e `targetEffettivo` come faceva Oggi a mano, con il
+tipo mostrato che ripiega su «normale» (Oggi la userà dal commit 4).
+`esitoObiettivo.ts`: la regola unica dei colori, esito (sotto / in linea /
+sopra) e tono (neutro / buono / oltre), fascia ±5% provvisoria, tetto per
+le kcal con Dimagrire, confronto sui numeri arrotondati.
+`medieStatistiche.ts`: giorni del periodo con totali e target, medie solo
+sui giorni con voci fino a oggi, obiettivo medio sugli stessi giorni, il
+segno dell'obiettivo deciso dai dati (V1), prima voce e utente nuovo.
+`pesoStatistiche.ts`: pesate vive per giorno, finestra di 12 settimane,
+testi di differenza e ultima pesata; `chilogrammi` di `testiPeso.ts`
+esportata per avere un formato solo. Test permanenti; prova di
+fallimento da copia, 32 rotture: 31 viste (prima due casi del peso
+rafforzati). La 32a, i bordi calcolati con `0.95`, non è un difetto:
+`2200 * 0.95` dà esattamente 2090 e l'esito è lo stesso su tutti gli
+obiettivi da 1 a 5000. Corretto il motivo dell'aritmetica intera in PUNTO
+§7, scritto sbagliato nel commit 1. 1981 test verdi in 161 file, `tsc` ed
+eslint puliti.
+
 ## 2026-11-11 — Statistiche: le date e i periodi
 
 Branch `statistiche`, commit 2a. Funzioni pure, nessuna UI. In
