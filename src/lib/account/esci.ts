@@ -124,11 +124,16 @@ export async function eseguiUscita(
       const pulito = await sostituisciDatiUtente(userId, new Map(), firme);
       togliSegnoUscita();
       if (!pulito) {
-        console.error("Uscita: in coda c'è una modifica non confermata, dati lasciati sul dispositivo.");
+        console.error(
+          "Uscita: in coda c'è una modifica non confermata, dati lasciati sul dispositivo."
+        );
       }
     } catch (errore) {
       // Il segno resta: il prossimo avvio riprova. L'uscita non si ferma.
-      console.error("Uscita: pulizia del dispositivo non riuscita, si riprova al prossimo avvio.", errore);
+      console.error(
+        "Uscita: pulizia del dispositivo non riuscita, si riprova al prossimo avvio.",
+        errore
+      );
     }
   }
 

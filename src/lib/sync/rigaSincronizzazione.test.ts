@@ -13,7 +13,9 @@ describe("rigaSincronizzazione", () => {
       tono: "avviso",
       pulsa: false,
     });
-    expect(rigaSincronizzazione({ tipo: "sessione", inAttesa: 0, dettagli: [], pallino: true })).toMatchObject({
+    expect(
+      rigaSincronizzazione({ tipo: "sessione", inAttesa: 0, dettagli: [], pallino: true })
+    ).toMatchObject({
       testo: "Accedi di nuovo",
       tono: "avviso",
     });
@@ -30,7 +32,9 @@ describe("rigaSincronizzazione", () => {
   });
 
   it("in attesa in ocra, con quante", () => {
-    expect(rigaSincronizzazione({ tipo: "in-attesa", numero: 2, dal: null, pallino: false })).toEqual({
+    expect(
+      rigaSincronizzazione({ tipo: "in-attesa", numero: 2, dal: null, pallino: false })
+    ).toEqual({
       testo: "2 in attesa",
       tono: "attesa",
       pulsa: false,
@@ -43,7 +47,9 @@ describe("rigaSincronizzazione", () => {
       tono: "neutro",
       pulsa: true,
     });
-    expect(rigaSincronizzazione({ tipo: "sincronizzato", ultimoSuccesso: null, pallino: false })).toEqual({
+    expect(
+      rigaSincronizzazione({ tipo: "sincronizzato", ultimoSuccesso: null, pallino: false })
+    ).toEqual({
       testo: "Tutto salvato",
       tono: "neutro",
       pulsa: false,

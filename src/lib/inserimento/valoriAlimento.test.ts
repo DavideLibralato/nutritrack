@@ -55,7 +55,13 @@ describe("validaValoriAlimento", () => {
   });
 
   it("campi obbligatori vuoti: mancanti, non errori; salvataggio bloccato", () => {
-    const esito = validaValoriAlimento({ kcal: "", grassi: "", carboidrati: "5", proteine: "", porzione: "100" });
+    const esito = validaValoriAlimento({
+      kcal: "",
+      grassi: "",
+      carboidrati: "5",
+      proteine: "",
+      porzione: "100",
+    });
     expect(esito.valori).toBeNull();
     expect(esito.errori).toEqual({});
     expect(esito.mancanti).toEqual(["kcal", "grassi", "proteine"]);
@@ -69,8 +75,18 @@ describe("validaValoriAlimento", () => {
 
   it("limiti fisici: ogni macro al massimo 100 g, kcal al massimo 900", () => {
     // L'olio: 100 g di grassi e niente altro.
-    expect(con({ grassi: "100", carboidrati: "0", proteine: "0", kcal: "900" }).valori).not.toBeNull();
-    for (const campo of ["grassi", "carboidrati", "proteine", "zuccheri", "fibre", "saturi", "sale"] as const) {
+    expect(
+      con({ grassi: "100", carboidrati: "0", proteine: "0", kcal: "900" }).valori
+    ).not.toBeNull();
+    for (const campo of [
+      "grassi",
+      "carboidrati",
+      "proteine",
+      "zuccheri",
+      "fibre",
+      "saturi",
+      "sale",
+    ] as const) {
       expect(con({ [campo]: "100,01" }).errori[campo]).toBe("Al massimo 100 g per 100 g");
     }
     expect(con({ kcal: "900,01" }).errori.kcal).toBe("Al massimo 900 kcal per 100 g");
@@ -129,6 +145,8 @@ describe("validaValoriAlimento", () => {
     // 30,004 arrotonda a 30: non supera i carboidrati (30).
     expect(con({ zuccheri: "30,004" }).errori.zuccheri).toBeUndefined();
     // Nessun confronto se il "tutto" è già sbagliato: un solo messaggio.
-    expect(con({ carboidrati: "abc", zuccheri: "5" }).errori).toEqual({ carboidrati: "Scrivi un numero" });
+    expect(con({ carboidrati: "abc", zuccheri: "5" }).errori).toEqual({
+      carboidrati: "Scrivi un numero",
+    });
   });
 });

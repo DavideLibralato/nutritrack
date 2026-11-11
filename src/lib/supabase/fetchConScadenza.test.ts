@@ -88,7 +88,11 @@ describe("creaFetchConScadenza", () => {
 
   it("senza AbortSignal.any (iOS prima della 17.4) unisce i segnali a mano", async () => {
     const originale = AbortSignal.any;
-    Object.defineProperty(AbortSignal, "any", { value: undefined, configurable: true, writable: true });
+    Object.defineProperty(AbortSignal, "any", {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
     try {
       // Vince la scadenza...
       const primo = fetchAppesa();
@@ -111,7 +115,11 @@ describe("creaFetchConScadenza", () => {
       proprio.abort("annullata da chi chiama");
       await esito2;
     } finally {
-      Object.defineProperty(AbortSignal, "any", { value: originale, configurable: true, writable: true });
+      Object.defineProperty(AbortSignal, "any", {
+        value: originale,
+        configurable: true,
+        writable: true,
+      });
     }
   });
 });
@@ -218,7 +226,11 @@ function rispostaJson(corpo: unknown, status = 200): Response {
 
 // Fa avanzare il tempo finto a piccoli passi finché la promessa non è
 // finita: fra un passo e l'altro girano le letture di Dexie e dei corpi.
-async function finoAllaFine<T>(promessa: Promise<T>, passoMs = 100, passiMassimi = 600): Promise<T> {
+async function finoAllaFine<T>(
+  promessa: Promise<T>,
+  passoMs = 100,
+  passiMassimi = 600
+): Promise<T> {
   let finita = false;
   const seguita = promessa.finally(() => (finita = true));
   seguita.catch(() => {});
@@ -263,7 +275,12 @@ describe("creaFetchConScadenza, 401 PGRST303", () => {
   it.each([
     ["401 con un altro codice (PGRST301)", REST, 401, "PGRST301"],
     ["403 anche con code PGRST303 (si ripete solo il 401)", REST, 403, "PGRST303"],
-    ["401 PGRST303 da Supabase Auth, non da PostgREST", "https://esempio.supabase.co/auth/v1/user", 401, "PGRST303"],
+    [
+      "401 PGRST303 da Supabase Auth, non da PostgREST",
+      "https://esempio.supabase.co/auth/v1/user",
+      401,
+      "PGRST303",
+    ],
   ])("%s: nessuna ripetizione, corpo ancora leggibile", async (_nome, url, status, codice) => {
     const finta = vi.fn<typeof fetch>(async () => rispostaJson({ code: codice }, status));
     const risposta = await finoAllaFine(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(url));
@@ -276,7 +293,9 @@ describe("creaFetchConScadenza, 401 PGRST303", () => {
 
   it("401 senza corpo (HEAD, i conteggi) o non JSON: nessuna ripetizione", async () => {
     const senzaCorpo = vi.fn<typeof fetch>(async () => risposta401("PGRST303", "HEAD"));
-    const r1 = await finoAllaFine(creaFetchConScadenza(SCADENZA_FETCH_MS, senzaCorpo)(REST, { method: "HEAD" }));
+    const r1 = await finoAllaFine(
+      creaFetchConScadenza(SCADENZA_FETCH_MS, senzaCorpo)(REST, { method: "HEAD" })
+    );
     const testo = vi.fn<typeof fetch>(async () => new Response("non autorizzato", { status: 401 }));
     const r2 = await finoAllaFine(creaFetchConScadenza(SCADENZA_FETCH_MS, testo)(REST));
     await vi.advanceTimersByTimeAsync(RITARDO_RIPETIZIONE_MS * 5);
@@ -292,7 +311,9 @@ describe("creaFetchConScadenza, 401 PGRST303", () => {
     const finta = vi.fn<typeof fetch>(async () => {
       throw new TypeError("Failed to fetch");
     });
-    await expect(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST)).rejects.toThrow("Failed to fetch");
+    await expect(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST)).rejects.toThrow(
+      "Failed to fetch"
+    );
     await vi.advanceTimersByTimeAsync(RITARDO_RIPETIZIONE_MS * 5);
     expect(finta).toHaveBeenCalledTimes(1);
   });
@@ -305,7 +326,11 @@ describe("creaFetchConScadenza, 401 PGRST303", () => {
     const corpo = JSON.stringify({ id: "p1", nome: "Pranzo" });
     const intestazioni = { Authorization: "Bearer token-di-prova" };
     const risposta = await finoAllaFine(
-      creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST, { method: "POST", body: corpo, headers: intestazioni })
+      creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST, {
+        method: "POST",
+        body: corpo,
+        headers: intestazioni,
+      })
     );
 
     expect(risposta.status).toBe(201);
@@ -323,7 +348,9 @@ describe("creaFetchConScadenza, 401 PGRST303", () => {
           setTimeout(() => r(risposta401("PGRST303")), SCADENZA_FETCH_MS - 500)
         )
     );
-    const esito = expect(creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST)).rejects.toMatchObject({
+    const esito = expect(
+      creaFetchConScadenza(SCADENZA_FETCH_MS, finta)(REST)
+    ).rejects.toMatchObject({
       name: "AbortError",
       message: MESSAGGIO_ANNULLATA,
     });
@@ -346,7 +373,7 @@ describe("il client Supabase vero con un 401 PGRST303", () => {
 
   // Il caso del 01/11: lo scarico completo dopo l'accesso, 11 tabelle in
   // parallelo, una sola rifiutata.
-  it("discesa: una tabella rifiutata una volta non rende il giro \"sessione\", il giro è ok", async () => {
+  it('discesa: una tabella rifiutata una volta non rende il giro "sessione", il giro è ok', async () => {
     let rifiutate = 0;
     const chiamate: string[] = [];
     vi.stubGlobal(
@@ -432,7 +459,13 @@ describe("il client Supabase vero con un 401 PGRST303", () => {
     expect(invii).toBe(2);
     // Il codice arriva fino allo stato (dal 02/11, "Dettagli tecnici").
     expect(leggiStatoGiri().salita.dettagli).toEqual([
-      { verso: "salita", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: "JWT issued at future" },
+      {
+        verso: "salita",
+        tabella: "pasti",
+        status: 401,
+        codice: "PGRST303",
+        messaggio: "JWT issued at future",
+      },
     ]);
   });
 
@@ -443,7 +476,9 @@ describe("il client Supabase vero con un 401 PGRST303", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) =>
-        String(input).includes("/rest/v1/composizioni?") ? risposta401("PGRST303") : rispostaJson([])
+        String(input).includes("/rest/v1/composizioni?")
+          ? risposta401("PGRST303")
+          : rispostaJson([])
       )
     );
 

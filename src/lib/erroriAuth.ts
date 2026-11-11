@@ -2,7 +2,8 @@
 // Nessun link e nessuna sessione nata da un link in questa scheda.
 export const LINK_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.";
 // Il server ha rifiutato il link.
-export const LINK_SCADUTO = "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
+export const LINK_SCADUTO =
+  "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
 export const ERRORE_CONNESSIONE = "Errore di connessione. Controlla la tua connessione e riprova.";
 export const PASSWORD_TROPPO_CORTA = "La password deve avere almeno 6 caratteri.";
 const ERRORE_GENERICO = "Si è verificato un errore. Riprova tra poco.";
@@ -18,7 +19,7 @@ export const TESTI_CAMBIO_PASSWORD = {
   "troppo-corta": PASSWORD_TROPPO_CORTA,
   debole: "Questa password è troppo facile da indovinare: scegline un'altra.",
   riautenticazione:
-    "Il server chiede una verifica via email per cambiare la password. Usa \"Reimpostala via email\" qui sotto.",
+    'Il server chiede una verifica via email per cambiare la password. Usa "Reimpostala via email" qui sotto.',
   sessione: "Il server non riconosce più la tua sessione. Esci e rientra, poi riprova.",
   rete: "Non riuscito: il server non risponde. La password non è cambiata. Riprova.",
   "risposta-persa":
@@ -28,11 +29,13 @@ export const TESTI_CAMBIO_PASSWORD = {
 
 // Sotto il pulsante: il server chiude le sessioni degli altri dispositivi
 // (LogoutAllExceptMe, cambiaPassword.ts).
-export const AVVISO_ALTRI_DISPOSITIVI = "Sugli altri dispositivi dovrai rientrare con la nuova password.";
+export const AVVISO_ALTRI_DISPOSITIVI =
+  "Sugli altri dispositivi dovrai rientrare con la nuova password.";
 // Il riquadro in cima alla pagina senza rete.
 export const SENZA_RETE_CAMBIO_PASSWORD = {
   titolo: "Serve la connessione",
-  testo: "Per cambiare la password devi essere online. Il modulo resta qui: riprova quando torna la rete.",
+  testo:
+    "Per cambiare la password devi essere online. Il modulo resta qui: riprova quando torna la rete.",
 } as const;
 
 // "Password attuale sbagliata" subito dopo una risposta persa: il tentativo
@@ -53,7 +56,7 @@ const MAPPA_ERRORI: Record<string, string> = {
   "email rate limit exceeded": "Troppi tentativi in poco tempo: riprova tra qualche minuto.",
   "signup requires a valid password": "Inserisci una password valida.",
   "for security purposes": "Per sicurezza, riprova tra qualche istante.",
-  "network": ERRORE_CONNESSIONE,
+  network: ERRORE_CONNESSIONE,
   "failed to fetch": ERRORE_CONNESSIONE,
 };
 

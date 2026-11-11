@@ -121,7 +121,12 @@ export default function SheetCondividiCon({ userId, idAlimenti, onChiudi, onInvi
     );
     setInCorso(false);
     if (esito === "ok") {
-      onInviato(messaggioInviati(alimenti.length, sceltiValidi.map((a) => a.username)));
+      onInviato(
+        messaggioInviati(
+          alimenti.length,
+          sceltiValidi.map((a) => a.username)
+        )
+      );
       return;
     }
     setErrore(testoEsitoInvio(esito));

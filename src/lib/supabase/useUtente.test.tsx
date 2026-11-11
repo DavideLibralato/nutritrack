@@ -9,11 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import {
-  AuthApiError,
-  AuthRetryableFetchError,
-  type AuthError,
-} from "@supabase/supabase-js";
+import { AuthApiError, AuthRetryableFetchError, type AuthError } from "@supabase/supabase-js";
 import { useUtenteId } from "./useUtente";
 
 const gestisci = vi.fn(async () => "uscito" as const);
@@ -64,7 +60,10 @@ describe("useUtenteId e l'account eliminato", () => {
     ["rete", () => new AuthRetryableFetchError("Failed to fetch", 0)],
     ["errore del server (500)", () => new AuthApiError("errore server", 500, undefined)],
     ["token rifiutato (401)", () => new AuthApiError("invalid JWT", 401, "bad_jwt")],
-    ["sessione revocata (403 session_not_found)", () => new AuthApiError("Session not found", 403, "session_not_found")],
+    [
+      "sessione revocata (403 session_not_found)",
+      () => new AuthApiError("Session not found", 403, "session_not_found"),
+    ],
     ["un altro 403", () => new AuthApiError("Forbidden", 403, "not_admin")],
   ])("%s: la pulizia non parte mai", async (_nome, crea) => {
     errore = crea();

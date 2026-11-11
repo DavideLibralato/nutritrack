@@ -40,7 +40,9 @@ export default function RigaAlimentoPreferito({
         type="button"
         onClick={onStella}
         aria-pressed={!tolto}
-        aria-label={tolto ? `Rimetti ${etichetta} nei preferiti` : `Togli ${etichetta} dai preferiti`}
+        aria-label={
+          tolto ? `Rimetti ${etichetta} nei preferiti` : `Togli ${etichetta} dai preferiti`
+        }
         className={`-my-2.5 -mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-lg ${
           tolto ? "text-muted" : "text-accent"
         } ${CLASSE_FOCUS}`}

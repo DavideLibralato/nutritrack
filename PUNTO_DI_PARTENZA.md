@@ -5827,17 +5827,23 @@ migration applicata. Vale anche per il caso "il connettore rifiuta": la
 versione è quella della riga di registrazione. Rinominare non cambia il
 contenuto: il testo resta quello applicato.
 
-- **Prettier è configurato ma non ancora applicato a tutto il codice.**
-  `.prettierrc` rispecchia lo stile prevalente misurato in `src` l'11/10:
-  doppi apici, punto e virgola, righe fino a 100, virgole finali "es5",
-  fine riga LF (`lf`, dal 18/10, come tutto il repository: sotto).
-  `.prettierignore` esclude i documenti `.md` (a capo a mano), `.next`,
-  `node_modules`, `.claude` e i file generati
-- Lanciarlo oggi cambierebbe 128 file su 208 in `src`, più
-  `next.config.ts` e `tsconfig.json`: **il primo lancio
-  sarà un commit separato, solo di formattazione, deciso a parte**. Fino
-  ad allora nessun `prettier --write` su file interi, e nessuna
-  formattazione al salvataggio nell'editor
+- **Prettier è applicato a tutto il codice dall'11/11** (branch
+  `lavoretti`, commit "solo Prettier"). `.prettierrc` rispecchia lo stile
+  prevalente misurato in `src` l'11/10: doppi apici, punto e virgola,
+  righe fino a 100, virgole finali "es5", fine riga LF (`lf`, dal 18/10,
+  come tutto il repository: sotto). `.prettierignore` esclude i documenti
+  `.md` (a capo a mano), `.next`, `node_modules`, `.claude`, i file
+  generati e i JSON del catalogo (`src/lib/catalogo/*.json`, scritto da
+  `generaCatalogo.mjs` con il suo rientro; `docs/catalogo/*.json`, lista
+  approvata e correzioni)
+- Il primo lancio ha cambiato 270 file (267 su 463 in `src`, più
+  `next.config.ts`, `tsconfig.json` e `generaCatalogo.mjs`), solo
+  formattazione: l'albero sintattico dei 268 file di codice è identico
+  prima e dopo (spazi del JSX, virgolette sulle chiavi e `{" "}`
+  normalizzati come li tratta React), `tsconfig.json` dà lo stesso JSON,
+  `globals.css` cambia solo negli a capo. **Prima di ogni commit:
+  `npm run format:check`** (`prettier --check .`). Nessuna formattazione
+  al salvataggio nell'editor (non decisa)
 - Non è collegato a ESLint (`eslint-config-prettier`): le regole attive
   non hanno conflitti con Prettier (verificato l'11/10). Si aggiunge se
   ne compare uno

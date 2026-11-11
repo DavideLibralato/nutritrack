@@ -31,7 +31,9 @@ afterEach(() => {
 
 function scriviCodice(codice: string, pulsante: string) {
   fireEvent.click(screen.getByRole("button", { name: /Scrivi il codice/ }));
-  fireEvent.change(screen.getByLabelText("Il codice sotto le barre"), { target: { value: codice } });
+  fireEvent.change(screen.getByLabelText("Il codice sotto le barre"), {
+    target: { value: codice },
+  });
   fireEvent.click(screen.getByRole("button", { name: pulsante }));
 }
 
@@ -75,7 +77,7 @@ describe("SchermataScansione, uso solo-codice", () => {
 
 // Il tasto Invio della tastiera dell'iPhone prende il nome da
 // enterKeyHint: «Cerca» dove non si cerca niente sarebbe falso.
-describe("SchermataScansione, il tasto Invio di \"Scrivi il codice\"", () => {
+describe('SchermataScansione, il tasto Invio di "Scrivi il codice"', () => {
   it("dice Fine in solo-codice e Cerca in cerca", () => {
     const { unmount } = render(
       <SchermataScansione
@@ -87,7 +89,9 @@ describe("SchermataScansione, il tasto Invio di \"Scrivi il codice\"", () => {
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /Scrivi il codice/ }));
-    expect(screen.getByLabelText("Il codice sotto le barre").getAttribute("enterkeyhint")).toBe("done");
+    expect(screen.getByLabelText("Il codice sotto le barre").getAttribute("enterkeyhint")).toBe(
+      "done"
+    );
     unmount();
 
     render(
@@ -96,11 +100,19 @@ describe("SchermataScansione, il tasto Invio di \"Scrivi il codice\"", () => {
         richiestaFotocamera={inAttesa()}
         titolo="Catalogo alimenti"
         onChiudi={() => {}}
-        uso={{ tipo: "cerca", onNelCatalogo: () => {}, onModulo: () => {}, onPortaCodice: () => {}, catalogo: { tipo: "apri", onApri: () => {} } }}
+        uso={{
+          tipo: "cerca",
+          onNelCatalogo: () => {},
+          onModulo: () => {},
+          onPortaCodice: () => {},
+          catalogo: { tipo: "apri", onApri: () => {} },
+        }}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: /Scrivi il codice/ }));
-    expect(screen.getByLabelText("Il codice sotto le barre").getAttribute("enterkeyhint")).toBe("search");
+    expect(screen.getByLabelText("Il codice sotto le barre").getAttribute("enterkeyhint")).toBe(
+      "search"
+    );
   });
 });
 
@@ -115,7 +127,13 @@ describe("SchermataScansione, uso cerca", () => {
         richiestaFotocamera={inAttesa()}
         titolo="Catalogo alimenti"
         onChiudi={() => {}}
-        uso={{ tipo: "cerca", onNelCatalogo, onModulo: () => {}, onPortaCodice: () => {}, catalogo: { tipo: "apri", onApri: () => {} } }}
+        uso={{
+          tipo: "cerca",
+          onNelCatalogo,
+          onModulo: () => {},
+          onPortaCodice: () => {},
+          catalogo: { tipo: "apri", onApri: () => {} },
+        }}
       />
     );
     expect(screen.getByText("Catalogo alimenti")).toBeTruthy();

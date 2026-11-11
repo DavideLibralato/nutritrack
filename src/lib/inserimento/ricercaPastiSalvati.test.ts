@@ -79,18 +79,45 @@ const CATALOGO = [RISO_BASMATI, TONNO, YOGURT, GALLETTE, CAFFE];
 
 describe("cercaPastiSalvati", () => {
   it("parola nel nome del pasto: trovato, senza «Contiene» anche se c'è in un alimento", () => {
-    const pasti = [{ id: "p1", nome: "Riso e tonno", righe: [["riso-basmati", 0], ["tonno", 1]] }] satisfies Pasto[];
+    const pasti = [
+      {
+        id: "p1",
+        nome: "Riso e tonno",
+        righe: [
+          ["riso-basmati", 0],
+          ["tonno", 1],
+        ],
+      },
+    ] satisfies Pasto[];
     expect(cerca(CATALOGO, pasti, "riso")).toEqual([["Riso e tonno", null]]);
   });
 
   it("parola solo in un alimento: trovato, con «Contiene» e il nome dell'alimento come nel catalogo", () => {
-    const pasti = [{ id: "p1", nome: "Colazione proteica", righe: [["yogurt", 0], ["gallette", 1]] }] satisfies Pasto[];
+    const pasti = [
+      {
+        id: "p1",
+        nome: "Colazione proteica",
+        righe: [
+          ["yogurt", 0],
+          ["gallette", 1],
+        ],
+      },
+    ] satisfies Pasto[];
     expect(cerca(CATALOGO, pasti, "riso")).toEqual([["Colazione proteica", "Gallette di riso"]]);
   });
 
   it("più alimenti con la parola: il primo nell'ordine del pasto, non in quello delle righe", () => {
     // Le righe arrivano con ordine 1 prima di ordine 0: conta `ordine`.
-    const pasti = [{ id: "p1", nome: "Colazione", righe: [["gallette", 1], ["riso-basmati", 0]] }] satisfies Pasto[];
+    const pasti = [
+      {
+        id: "p1",
+        nome: "Colazione",
+        righe: [
+          ["gallette", 1],
+          ["riso-basmati", 0],
+        ],
+      },
+    ] satisfies Pasto[];
     expect(cerca(CATALOGO, pasti, "riso")).toEqual([["Colazione", "Riso basmati"]]);
   });
 
@@ -106,7 +133,16 @@ describe("cercaPastiSalvati", () => {
   it("un alimento uscito dal catalogo non fa trovare il pasto", () => {
     // Il pasto ha ancora la riga del riso, ma il riso non è più nel
     // catalogo: resta visibile per lo yogurt, non si trova per "riso".
-    const pasti = [{ id: "p1", nome: "Colazione", righe: [["yogurt", 0], ["riso-basmati", 1]] }] satisfies Pasto[];
+    const pasti = [
+      {
+        id: "p1",
+        nome: "Colazione",
+        righe: [
+          ["yogurt", 0],
+          ["riso-basmati", 1],
+        ],
+      },
+    ] satisfies Pasto[];
     const senzaRiso = CATALOGO.filter((a) => a.id !== "riso-basmati");
     expect(cerca(senzaRiso, pasti, "riso")).toEqual([]);
     expect(cerca(senzaRiso, pasti, "yogurt")).toEqual([["Colazione", "Yogurt greco"]]);
@@ -122,8 +158,22 @@ describe("cercaPastiSalvati", () => {
     const pasti = [
       { id: "p1", nome: "Spuntino", righe: [["gallette", 0]] },
       { id: "p2", nome: "Cena leggera", righe: [["yogurt", 0]] },
-      { id: "p3", nome: "Riso e tonno", righe: [["riso-basmati", 0], ["tonno", 1]] },
-      { id: "p4", nome: "Colazione proteica", righe: [["yogurt", 0], ["gallette", 1]] },
+      {
+        id: "p3",
+        nome: "Riso e tonno",
+        righe: [
+          ["riso-basmati", 0],
+          ["tonno", 1],
+        ],
+      },
+      {
+        id: "p4",
+        nome: "Colazione proteica",
+        righe: [
+          ["yogurt", 0],
+          ["gallette", 1],
+        ],
+      },
     ] satisfies Pasto[];
     expect(cerca(CATALOGO, pasti, "riso")).toEqual([
       ["Colazione proteica", "Gallette di riso"],
@@ -133,7 +183,9 @@ describe("cercaPastiSalvati", () => {
   });
 
   it("ricerca vuota o di soli spazi: niente, come cercaPerNome", () => {
-    const pasti = [{ id: "p1", nome: "Riso e tonno", righe: [["riso-basmati", 0]] }] satisfies Pasto[];
+    const pasti = [
+      { id: "p1", nome: "Riso e tonno", righe: [["riso-basmati", 0]] },
+    ] satisfies Pasto[];
     expect(cerca(CATALOGO, pasti, "")).toEqual([]);
     expect(cerca(CATALOGO, pasti, "   ")).toEqual([]);
   });

@@ -17,7 +17,12 @@ import {
 
 const USER = "u1";
 
-function alimento(id: string, nome: string, marca: string | null, altro: Partial<Alimento> = {}): Alimento {
+function alimento(
+  id: string,
+  nome: string,
+  marca: string | null,
+  altro: Partial<Alimento> = {}
+): Alimento {
   return {
     id,
     user_id: USER,
@@ -189,7 +194,10 @@ describe("trovaDoppione per codice a barre", () => {
 
   it("contano solo i vivi dell'utente: non i cancellati, non il catalogo comune, non altri utenti", () => {
     const altri = [
-      alimento("cancellato", "A", null, { barcode: NUTELLA, deleted_at: "2026-11-01T00:00:00.000Z" }),
+      alimento("cancellato", "A", null, {
+        barcode: NUTELLA,
+        deleted_at: "2026-11-01T00:00:00.000Z",
+      }),
       alimento("comune", "B", null, { barcode: NUTELLA, user_id: null }),
       alimento("altrui", "C", null, { barcode: NUTELLA, user_id: "u2" }),
     ];

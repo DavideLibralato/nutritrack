@@ -157,7 +157,7 @@ export function useTrascinaInPasto({ rifLista, rifFasciaAggiungi, pastoDi, onRil
       c.y,
       pastiDopoScorrimento(c.pasti, scorso(c)),
       c.partenza,
-      c.zona,
+      c.zona
     );
     if (sotto !== c.bersaglio) {
       c.bersaglio = sotto;

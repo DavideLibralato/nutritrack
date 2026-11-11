@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  pastoPerOrario,
-  primoPastoVuoto,
-} from "./propostaPasto";
+import { pastoPerOrario, primoPastoVuoto } from "./propostaPasto";
 import type { Pasto } from "../db/tipi";
 
 function pasto(nome: string, ora_inizio: string, ordine: number): Pasto {

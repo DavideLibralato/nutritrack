@@ -50,8 +50,14 @@ describe("esitoRispettoObiettivo", () => {
   });
 
   it("kcal con Dimagrire: un tetto, verde fino all'obiettivo, arancio da 1 kcal sopra", () => {
-    expect(esitoRispettoObiettivo(1500, 2200, "kcal", "dimagrire")).toEqual({ esito: "sotto", tono: "buono" });
-    expect(esitoRispettoObiettivo(2089, 2200, "kcal", "dimagrire")).toEqual({ esito: "sotto", tono: "buono" });
+    expect(esitoRispettoObiettivo(1500, 2200, "kcal", "dimagrire")).toEqual({
+      esito: "sotto",
+      tono: "buono",
+    });
+    expect(esitoRispettoObiettivo(2089, 2200, "kcal", "dimagrire")).toEqual({
+      esito: "sotto",
+      tono: "buono",
+    });
     expect(esitoRispettoObiettivo(2090, 2200, "kcal", "dimagrire")).toEqual(IN_LINEA);
     expect(esitoRispettoObiettivo(2200, 2200, "kcal", "dimagrire")).toEqual(IN_LINEA);
     expect(esitoRispettoObiettivo(2201, 2200, "kcal", "dimagrire")).toEqual(SOPRA);

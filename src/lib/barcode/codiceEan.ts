@@ -21,7 +21,8 @@ export type ErroreCodice =
   | "lunghezza" // non sono 8, 12 o 13 cifre
   | "controllo"; // la cifra di controllo non torna
 
-export type LetturaCodice = { codice: string; errore: null } | { codice: null; errore: ErroreCodice };
+export type LetturaCodice =
+  { codice: string; errore: null } | { codice: null; errore: ErroreCodice };
 
 // La cifra di controllo che le cifre date dovrebbero avere (tutte tranne
 // l'ultima). Regola GS1, uguale per EAN-13, EAN-8 e UPC-A: partendo da

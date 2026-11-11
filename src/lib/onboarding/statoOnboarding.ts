@@ -101,8 +101,7 @@ export function passoDiPartenza(
   obiettivi: Obiettivo[]
 ): PassoOnboarding | "finito" {
   const primo = primoPassoDaFare(profilo, misurazioni, obiettivi);
-  const nienteSalvato =
-    !profiloVivo(profilo) && !haPesate(misurazioni) && !haObiettivi(obiettivi);
+  const nienteSalvato = !profiloVivo(profilo) && !haPesate(misurazioni) && !haObiettivi(obiettivi);
   return da === "ripresa" && nienteSalvato ? 1 : primo;
 }
 
@@ -217,6 +216,7 @@ export function decidiRipresa(
     if (locale === metadati || metadati === "fatto") return { manda: null, togliLocale: true };
     return { manda: locale, togliLocale: false };
   }
-  if (metadati !== "fatto" && ciSonoObiettivi === true) return { manda: "fatto", togliLocale: false };
+  if (metadati !== "fatto" && ciSonoObiettivi === true)
+    return { manda: "fatto", togliLocale: false };
   return NIENTE_DA_FARE;
 }

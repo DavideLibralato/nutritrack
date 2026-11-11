@@ -67,8 +67,7 @@ export interface Campione {
 export function velocitaRecente(campioni: Campione[]): number {
   if (campioni.length < 2) return 0;
   const ultimo = campioni[campioni.length - 1];
-  const primo =
-    campioni.find((c) => ultimo.t - c.t <= FINESTRA_VELOCITA_MS) ?? ultimo;
+  const primo = campioni.find((c) => ultimo.t - c.t <= FINESTRA_VELOCITA_MS) ?? ultimo;
   const dt = ultimo.t - primo.t;
   if (dt <= 0) return 0;
   return (ultimo.x - primo.x) / dt;

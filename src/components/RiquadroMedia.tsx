@@ -28,7 +28,12 @@ export default function RiquadroMedia({ etichetta, grandezza, media }: Props) {
 
   const valore = Math.round(media.valore);
   const obiettivo = media.obiettivo !== null ? Math.round(media.obiettivo) : null;
-  const esito = esitoRispettoObiettivo(media.valore, media.obiettivo, grandezza, media.tipoObiettivo);
+  const esito = esitoRispettoObiettivo(
+    media.valore,
+    media.obiettivo,
+    grandezza,
+    media.tipoObiettivo
+  );
   const giorni = media.giorniContati === 1 ? "su 1 giorno" : `su ${media.giorniContati} giorni`;
   const testoObiettivo =
     obiettivo === null

@@ -71,7 +71,10 @@ export function temaEffettivo(scelta: string | null, sistemaScuro: boolean): Tem
 //
 // Il colore da disegnare: la scelta salvata se è uno dei colori, altrimenti
 // (niente salvato, valore sconosciuto) il primo dell'elenco, il verde.
-export function accentoEffettivo<T extends string>(scelta: string | null, accenti: readonly T[]): T {
+export function accentoEffettivo<T extends string>(
+  scelta: string | null,
+  accenti: readonly T[]
+): T {
   for (const accento of accenti) {
     if (accento === scelta) return accento;
   }

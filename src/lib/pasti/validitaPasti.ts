@@ -61,10 +61,16 @@ export function opzioniPastoDellaVoce(
 ): { id: string; nome: string }[] {
   const validi = pastiValidiIl(pasti, voce.data);
   const attuale = pasti.find((p) => p.id === voce.pasto_id);
-  const elenco = attuale && !validi.some((p) => p.id === attuale.id) ? ordinaPerOrario([...validi, attuale]) : validi;
+  const elenco =
+    attuale && !validi.some((p) => p.id === attuale.id)
+      ? ordinaPerOrario([...validi, attuale])
+      : validi;
   return elenco.map((p) => ({
     id: p.id,
-    nome: p === attuale && !pastoValidoIl(p, voce.data) ? `${p.nome} · ${ETICHETTA_NON_IN_USO.toLowerCase()}` : p.nome,
+    nome:
+      p === attuale && !pastoValidoIl(p, voce.data)
+        ? `${p.nome} · ${ETICHETTA_NON_IN_USO.toLowerCase()}`
+        : p.nome,
   }));
 }
 
@@ -77,15 +83,9 @@ export function opzioniPastoDellaVoce(
 // Una voce il cui pasto non è proprio in `pasti` (pasto_id null, o pasto
 // non ancora arrivato sul dispositivo) qui non ha una riga: il gruppo
 // "Senza pasto" è rimandato (decisione del 2026-10-09).
-export function pastiDaMostrare(
-  pasti: Pasto[],
-  vociGiorno: VoceDiario[],
-  giorno: string
-): Pasto[] {
+export function pastiDaMostrare(pasti: Pasto[], vociGiorno: VoceDiario[], giorno: string): Pasto[] {
   const conVoci = new Set(
-    vociGiorno
-      .filter((v) => v.data === giorno && v.deleted_at === null)
-      .map((v) => v.pasto_id)
+    vociGiorno.filter((v) => v.data === giorno && v.deleted_at === null).map((v) => v.pasto_id)
   );
   return ordinaPerOrario(pasti.filter((p) => pastoValidoIl(p, giorno) || conVoci.has(p.id)));
 }

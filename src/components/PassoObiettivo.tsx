@@ -32,7 +32,11 @@ export default function PassoObiettivo({
   onAvanti: () => void;
 }) {
   return (
-    <StrutturaPasso etichetta="Avanti" attivo={obiettivoCompleto(tipo, pesoObiettivo)} onAvanti={onAvanti}>
+    <StrutturaPasso
+      etichetta="Avanti"
+      attivo={obiettivoCompleto(tipo, pesoObiettivo)}
+      onAvanti={onAvanti}
+    >
       <h1 className={`${CLASSE_DOMANDA} mb-6`}>Cosa vuoi ottenere?</h1>
 
       <div className="mb-5">

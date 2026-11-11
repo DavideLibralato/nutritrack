@@ -74,8 +74,7 @@ export default function BarraNavigazione() {
       >
         <ul className="flex h-full gap-1 p-1.5">
           {VOCI.map((voce) => {
-            const attiva =
-              voce.href === "/" ? percorso === "/" : percorso.startsWith(voce.href);
+            const attiva = voce.href === "/" ? percorso === "/" : percorso.startsWith(voce.href);
             return (
               <li key={voce.href} className="flex-1">
                 {/* Area toccabile: tutta la capsula, alta ~52 px. */}
@@ -83,7 +82,9 @@ export default function BarraNavigazione() {
                   href={voce.href}
                   aria-current={attiva ? "page" : undefined}
                   className={`flex h-full flex-col items-center justify-center gap-0.5 rounded-full text-xs ${
-                    attiva ? "bg-[var(--capsula-attiva)] font-medium text-[var(--testo-capsula)]" : "text-muted"
+                    attiva
+                      ? "bg-[var(--capsula-attiva)] font-medium text-[var(--testo-capsula)]"
+                      : "text-muted"
                   } ${CLASSE_FOCUS}`}
                 >
                   <span className="relative">

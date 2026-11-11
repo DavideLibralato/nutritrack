@@ -122,7 +122,9 @@ async function agisci(
 
   // 8. Su Accedi, solo se la sessione non c'è più.
   if (sessioneRimasta) {
-    console.error("Account eliminato altrove: la sessione è rimasta dopo il signOut, niente navigazione.");
+    console.error(
+      "Account eliminato altrove: la sessione è rimasta dopo il signOut, niente navigazione."
+    );
     return "sessione-rimasta";
   }
   naviga(indirizzoDopoEliminazioneAltrove(perse));

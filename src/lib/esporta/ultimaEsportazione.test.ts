@@ -35,8 +35,12 @@ describe("testoPromemoria", () => {
   });
 
   it("oggi, ieri, N giorni fa", () => {
-    expect(testoPromemoria(roma("2026-11-08T00:05:00+01:00").toISOString(), adesso)).toBe("Ultima esportazione: oggi");
-    expect(testoPromemoria(roma("2026-11-07T09:00:00+01:00").toISOString(), adesso)).toBe("Ultima esportazione: ieri");
+    expect(testoPromemoria(roma("2026-11-08T00:05:00+01:00").toISOString(), adesso)).toBe(
+      "Ultima esportazione: oggi"
+    );
+    expect(testoPromemoria(roma("2026-11-07T09:00:00+01:00").toISOString(), adesso)).toBe(
+      "Ultima esportazione: ieri"
+    );
     expect(testoPromemoria(roma("2026-11-06T22:00:00+01:00").toISOString(), adesso)).toBe(
       "Ultima esportazione: 2 giorni fa"
     );
@@ -47,23 +51,36 @@ describe("testoPromemoria", () => {
 
   it("si contano i giorni del calendario, non le 24 ore: 23:50 di ieri guardato alle 00:10 è ieri", () => {
     const ultima = roma("2026-11-07T23:50:00+01:00").toISOString();
-    expect(testoPromemoria(ultima, roma("2026-11-08T00:10:00+01:00"))).toBe("Ultima esportazione: ieri");
-    // E 00:10 guardato alle 23:50 dello stesso giorno è ancora oggi.
-    expect(testoPromemoria(roma("2026-11-08T00:10:00+01:00").toISOString(), roma("2026-11-08T23:50:00+01:00"))).toBe(
-      "Ultima esportazione: oggi"
+    expect(testoPromemoria(ultima, roma("2026-11-08T00:10:00+01:00"))).toBe(
+      "Ultima esportazione: ieri"
     );
+    // E 00:10 guardato alle 23:50 dello stesso giorno è ancora oggi.
+    expect(
+      testoPromemoria(
+        roma("2026-11-08T00:10:00+01:00").toISOString(),
+        roma("2026-11-08T23:50:00+01:00")
+      )
+    ).toBe("Ultima esportazione: oggi");
   });
 
   it("a cavallo dell'ora legale (25/10/2026) i giorni restano giusti", () => {
     // Il giorno del cambio dura 25 ore.
-    expect(giorniDiCalendarioFra(roma("2026-10-24T23:30:00+02:00"), roma("2026-10-26T00:30:00+01:00"))).toBe(2);
-    expect(giorniDiCalendarioFra(roma("2026-10-25T00:30:00+02:00"), roma("2026-10-25T23:30:00+01:00"))).toBe(0);
+    expect(
+      giorniDiCalendarioFra(roma("2026-10-24T23:30:00+02:00"), roma("2026-10-26T00:30:00+01:00"))
+    ).toBe(2);
+    expect(
+      giorniDiCalendarioFra(roma("2026-10-25T00:30:00+02:00"), roma("2026-10-25T23:30:00+01:00"))
+    ).toBe(0);
     // E a marzo (29/03/2026), quando dura 23 ore.
-    expect(giorniDiCalendarioFra(roma("2026-03-28T23:30:00+01:00"), roma("2026-03-30T00:30:00+02:00"))).toBe(2);
+    expect(
+      giorniDiCalendarioFra(roma("2026-03-28T23:30:00+01:00"), roma("2026-03-30T00:30:00+02:00"))
+    ).toBe(2);
   });
 
   it("una data nel futuro (orologio spostato) vale oggi", () => {
-    expect(testoPromemoria(roma("2026-11-10T10:00:00+01:00").toISOString(), adesso)).toBe("Ultima esportazione: oggi");
+    expect(testoPromemoria(roma("2026-11-10T10:00:00+01:00").toISOString(), adesso)).toBe(
+      "Ultima esportazione: oggi"
+    );
   });
 });
 
@@ -98,26 +115,46 @@ describe("quando si aggiorna", () => {
   }
 
   it("JSON salvato: il promemoria passa a oggi", async () => {
-    await salvaJson(ambiente(async () => {}), U, "libra-dati.json", "{}", adesso);
+    await salvaJson(
+      ambiente(async () => {}),
+      U,
+      "libra-dati.json",
+      "{}",
+      adesso
+    );
     expect(testoPromemoria(leggiUltimaEsportazione(U), adesso())).toBe("Ultima esportazione: oggi");
   });
 
   it("JSON, foglio annullato: il promemoria non cambia", async () => {
     segnaEsportazione(U, roma("2026-11-01T10:00:00+01:00"));
-    expect((await salvaJson(ambiente(rifiuto("AbortError")), U, "libra-dati.json", "{}", adesso)).esito).toBe("annullato");
-    expect(testoPromemoria(leggiUltimaEsportazione(U), adesso())).toBe("Ultima esportazione: 7 giorni fa");
+    expect(
+      (await salvaJson(ambiente(rifiuto("AbortError")), U, "libra-dati.json", "{}", adesso)).esito
+    ).toBe("annullato");
+    expect(testoPromemoria(leggiUltimaEsportazione(U), adesso())).toBe(
+      "Ultima esportazione: 7 giorni fa"
+    );
   });
 
   it("JSON, condivisione rifiutata o impossibile: il promemoria non cambia", async () => {
     await salvaJson(ambiente(rifiuto("NotAllowedError")), U, "libra-dati.json", "{}", adesso);
     expect(leggiUltimaEsportazione(U)).toBeNull();
     // App installata, nessun tipo condivisibile: impossibile.
-    await salvaJson(ambiente(async () => {}, false), U, "libra-dati.json", "{}", adesso);
+    await salvaJson(
+      ambiente(async () => {}, false),
+      U,
+      "libra-dati.json",
+      "{}",
+      adesso
+    );
     expect(leggiUltimaEsportazione(U)).toBeNull();
   });
 
   it("CSV salvato: il promemoria non cambia (il CSV non è un backup)", async () => {
-    const esito = await salvaCsv(ambiente(async () => {}), "libra-diario.csv", "a;b");
+    const esito = await salvaCsv(
+      ambiente(async () => {}),
+      "libra-diario.csv",
+      "a;b"
+    );
     expect(esito.esito).toBe("salvato");
     expect(leggiUltimaEsportazione(U)).toBeNull();
   });

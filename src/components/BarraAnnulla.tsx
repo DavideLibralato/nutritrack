@@ -176,7 +176,9 @@ export default function BarraAnnulla({
           {nome !== undefined && (
             <>
               {" "}
-              <span className="inline-block max-w-full truncate align-bottom font-medium">{nome}</span>
+              <span className="inline-block max-w-full truncate align-bottom font-medium">
+                {nome}
+              </span>
             </>
           )}
           {coda && <>{` ${coda}`}</>}

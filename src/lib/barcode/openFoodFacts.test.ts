@@ -33,7 +33,9 @@ afterEach(() => {
 
 describe("cercaSuOpenFoodFacts", () => {
   it("chiama l'API v3 con i soli campi che servono e l'X-User-Agent di Libra", async () => {
-    const fetchFinta = vi.fn<typeof fetch>(async () => json({ product: { product_name: "Nutella" } }));
+    const fetchFinta = vi.fn<typeof fetch>(async () =>
+      json({ product: { product_name: "Nutella" } })
+    );
 
     await cercaSuOpenFoodFacts(CODICE, { fetchBase: fetchFinta });
 

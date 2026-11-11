@@ -62,7 +62,9 @@ export interface Paletta {
 // Da offline.html conta solo il CSS dentro <style>.
 export function leggiPaletta(testo: string): Paletta {
   const stile = testo.match(/<style>([\s\S]*?)<\/style>/);
-  const css = (stile ? stile[1] : testo).replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "");
+  const css = (stile ? stile[1] : testo)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/<!--[\s\S]*?-->/g, "");
   const media = css.indexOf("@media (prefers-color-scheme: dark)");
   if (media === -1) throw new Error("manca il blocco @media (prefers-color-scheme: dark)");
   const tutte = regole(css);
@@ -84,7 +86,10 @@ export function leggiPaletta(testo: string): Paletta {
 
 // Il valore dopo la virgola in var(--se-chiaro, ...) o var(--se-scuro, ...),
 // parentesi annidate comprese. undefined se l'interruttore non c'è.
-export function meta(valore: string, interruttore: "--se-chiaro" | "--se-scuro"): string | undefined {
+export function meta(
+  valore: string,
+  interruttore: "--se-chiaro" | "--se-scuro"
+): string | undefined {
   const inizio = valore.indexOf(`var(${interruttore},`);
   if (inizio === -1) return undefined;
   let profondita = 0;

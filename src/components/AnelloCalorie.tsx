@@ -37,15 +37,11 @@ export default function AnelloCalorie({ consumate, obiettivo, tipoObiettivo }: P
   const circonferenza = 2 * Math.PI * raggio;
   const centro = DIMENSIONE / 2;
 
-  const frazione =
-    obiettivo != null && obiettivo > 0 ? Math.min(consumate / obiettivo, 1) : 0;
+  const frazione = obiettivo != null && obiettivo > 0 ? Math.min(consumate / obiettivo, 1) : 0;
   const esito = esitoRispettoObiettivo(consumate, obiettivo, "kcal", tipoObiettivo);
 
   return (
-    <div
-      className="relative shrink-0"
-      style={{ width: DIMENSIONE, height: DIMENSIONE }}
-    >
+    <div className="relative shrink-0" style={{ width: DIMENSIONE, height: DIMENSIONE }}>
       <svg
         width={DIMENSIONE}
         height={DIMENSIONE}

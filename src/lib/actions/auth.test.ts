@@ -56,7 +56,8 @@ function modulo(campi: Partial<Record<string, string>> = {}): FormData {
     codiceInvito: CODICE,
     ...campi,
   };
-  for (const [chiave, valore] of Object.entries(tutti)) if (valore !== undefined) dati.set(chiave, valore);
+  for (const [chiave, valore] of Object.entries(tutti))
+    if (valore !== undefined) dati.set(chiave, valore);
   return dati;
 }
 

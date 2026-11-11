@@ -24,7 +24,10 @@ describe("testoEsitoChiedi", () => {
       testo: "Hai già mandato una richiesta a @marco_b.",
       tono: "avviso",
     });
-    expect(testoEsitoChiedi("accettata", "marco_b")).toEqual({ testo: "Ora siete amici.", tono: "ok" });
+    expect(testoEsitoChiedi("accettata", "marco_b")).toEqual({
+      testo: "Ora siete amici.",
+      tono: "ok",
+    });
     expect(testoEsitoChiedi("non_trovato", "x").testo).toBe(
       "Nessun utente con questo username. Controlla come è scritto."
     );

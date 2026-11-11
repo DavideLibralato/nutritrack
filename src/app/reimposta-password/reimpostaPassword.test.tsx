@@ -57,7 +57,10 @@ function refreshRuotato(utente: { id: string }): string {
 }
 
 // Un utente che il server non conosce: i suoi token vengono rifiutati.
-const UTENTE_SCONOSCIUTO = { id: "33333333-3333-4333-8333-333333333333", email: "sconosciuto@esempio.it" };
+const UTENTE_SCONOSCIUTO = {
+  id: "33333333-3333-4333-8333-333333333333",
+  email: "sconosciuto@esempio.it",
+};
 
 // Il token del link implicito. setSession controlla che ogni pezzo del JWT
 // sia base64url valido, e la firma "firma" di token() non lo è (5
@@ -78,7 +81,13 @@ function base64url(testo: string): string {
 const ORA = Math.floor(Date.now() / 1000);
 
 function token(utente: { id: string }): string {
-  const dati = { sub: utente.id, aud: "authenticated", role: "authenticated", iat: ORA, exp: ORA + 3600 };
+  const dati = {
+    sub: utente.id,
+    aud: "authenticated",
+    role: "authenticated",
+    iat: ORA,
+    exp: ORA + 3600,
+  };
   return `${base64url('{"alg":"HS256","typ":"JWT"}')}.${base64url(JSON.stringify(dati))}.firma`;
 }
 
@@ -106,7 +115,10 @@ function sessione(utente: { id: string; email: string }) {
 }
 
 function json(corpo: unknown, status = 200): Response {
-  return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(corpo), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -121,10 +133,12 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
   // accetta lo scambio e la sessione si apre.
   if (metodo === "POST" && url === `${AUTH}/token?grant_type=pkce`) {
     server.scambi++;
-    if (corpo.auth_code === CODICE_DEL_LINK && corpo.code_verifier) return json(sessione(UTENTE_VERO));
+    if (corpo.auth_code === CODICE_DEL_LINK && corpo.code_verifier)
+      return json(sessione(UTENTE_VERO));
   }
 
-  if (metodo === "POST" && url === `${AUTH}/token?grant_type=password`) return json(sessione(UTENTE_PROVA));
+  if (metodo === "POST" && url === `${AUTH}/token?grant_type=password`)
+    return json(sessione(UTENTE_PROVA));
 
   // Il rinnovo della sessione nata dal frammento: refresh token nuovo,
   // stesso access token (quello che la rete finta sa riconoscere).
@@ -135,11 +149,22 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
     });
     if (server.rinnovo === "rete giù") throw new TypeError("Failed to fetch");
     if (server.rinnovo === "rifiutato") {
-      return json({ code: 400, error_code: "refresh_token_already_used", msg: "Invalid Refresh Token: Already Used" }, 400);
+      return json(
+        {
+          code: 400,
+          error_code: "refresh_token_already_used",
+          msg: "Invalid Refresh Token: Already Used",
+        },
+        400
+      );
     }
     for (const utente of [UTENTE_VERO, UTENTE_PROVA]) {
       if (corpo.refresh_token === `refresh-${utente.id}`) {
-        return json({ ...sessione(utente), access_token: tokenDelLink(utente), refresh_token: refreshRuotato(utente) });
+        return json({
+          ...sessione(utente),
+          access_token: tokenDelLink(utente),
+          refresh_token: refreshRuotato(utente),
+        });
       }
     }
   }
@@ -197,8 +222,12 @@ vi.mock("@supabase/ssr", async (importOriginal) => {
   return {
     ...originale,
     createBrowserClient: ((url: string, chiave: string, opzioni?: Record<string, unknown>) => {
-      if (opzioni && "isSingleton" in opzioni) return originale.createBrowserClient(url, chiave, opzioni);
-      singleton.client ??= originale.createBrowserClient(url, chiave, { ...opzioni, isSingleton: false });
+      if (opzioni && "isSingleton" in opzioni)
+        return originale.createBrowserClient(url, chiave, opzioni);
+      singleton.client ??= originale.createBrowserClient(url, chiave, {
+        ...opzioni,
+        isSingleton: false,
+      });
       return singleton.client;
     }) as typeof originale.createBrowserClient,
   };
@@ -238,7 +267,10 @@ async function chiediIlLinkPkce() {
 
 async function entraConAccountDiProva() {
   const supabase = clientPreparazione();
-  const { error } = await supabase.auth.signInWithPassword({ email: UTENTE_PROVA.email, password: "segreta" });
+  const { error } = await supabase.auth.signInWithPassword({
+    email: UTENTE_PROVA.email,
+    password: "segreta",
+  });
   expect(error).toBeNull();
 }
 
@@ -300,7 +332,8 @@ const MODULO = "Imposta una nuova password";
 const ERRORE = "Link non valido";
 // I testi scritti per intero, non presi da erroriAuth.ts: il test deve
 // accorgersi anche se un caso finisce sul testo dell'altro.
-const TESTO_SCADUTO = "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
+const TESTO_SCADUTO =
+  "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
 const TESTO_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.";
 
 // L'errore come lo scrive il server di Auth quando rifiuta un link già
@@ -460,7 +493,9 @@ function frammentoLink(utente: { id: string; email: string }): string {
 
 // Le verifiche dei token del link (GET /user con il suo access token).
 function verificheDelLink(utente: { id: string }) {
-  return server.verificheUtente.filter((v) => v.autorizzazione === `Bearer ${tokenDelLink(utente)}`);
+  return server.verificheUtente.filter(
+    (v) => v.autorizzazione === `Bearer ${tokenDelLink(utente)}`
+  );
 }
 
 // La sessione salvata nei cookie, letta da un client nuovo: come la
@@ -497,8 +532,12 @@ describe("/reimposta-password, link con la sessione nel frammento", () => {
     expect(await screen.findByText(MODULO)).toBeTruthy();
     expect(campoAccount().value).toBe(UTENTE_VERO.email);
 
-    fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
-    fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
+    fireEvent.change(screen.getByLabelText("Nuova password"), {
+      target: { value: "nuova-segreta" },
+    });
+    fireEvent.change(screen.getByLabelText("Conferma password"), {
+      target: { value: "nuova-segreta" },
+    });
     fireEvent.click(screen.getByText("Salva nuova password"));
     await waitFor(() => expect(routerFinto.replace).toHaveBeenCalledWith("/"));
     expect(server.passwordCambiate).toEqual([UTENTE_VERO.email]);
@@ -508,7 +547,9 @@ describe("/reimposta-password, link con la sessione nel frammento", () => {
   // Il client nato prima della pagina vede i token nell'indirizzo e
   // rinuncia con "Not a valid PKCE flow url": la pagina deve ignorarlo.
   it("client creato prima della pagina (layout radice): modulo", async () => {
-    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`, { clientPrimaDellaPagina: true });
+    apriPagina(`/reimposta-password${frammentoLink(UTENTE_VERO)}`, {
+      clientPrimaDellaPagina: true,
+    });
 
     expect(await screen.findByText(MODULO)).toBeTruthy();
     expect(campoAccount().value).toBe(UTENTE_VERO.email);
@@ -552,8 +593,12 @@ describe("/reimposta-password, link con la sessione nel frammento", () => {
     expect(await screen.findByText(MODULO)).toBeTruthy();
     expect(campoAccount().value).toBe(UTENTE_VERO.email);
 
-    fireEvent.change(screen.getByLabelText("Nuova password"), { target: { value: "nuova-segreta" } });
-    fireEvent.change(screen.getByLabelText("Conferma password"), { target: { value: "nuova-segreta" } });
+    fireEvent.change(screen.getByLabelText("Nuova password"), {
+      target: { value: "nuova-segreta" },
+    });
+    fireEvent.change(screen.getByLabelText("Conferma password"), {
+      target: { value: "nuova-segreta" },
+    });
     fireEvent.click(screen.getByText("Salva nuova password"));
     // replace e non push: la pagina del reset esce dalla cronologia.
     await waitFor(() => expect(routerFinto.replace).toHaveBeenCalledWith("/"));
@@ -591,7 +636,9 @@ describe("/reimposta-password, rinnovo dopo il link con il frammento", () => {
     // Prima la verifica dei token (setSession), poi il rinnovo, con il
     // refresh token dell'indirizzo, quando il modulo non c'era ancora.
     expect(verificheDelLink(UTENTE_VERO)).toHaveLength(1);
-    expect(server.rinnovi).toEqual([{ refreshToken: `refresh-${UTENTE_VERO.id}`, moduloVisibile: false }]);
+    expect(server.rinnovi).toEqual([
+      { refreshToken: `refresh-${UTENTE_VERO.id}`, moduloVisibile: false },
+    ]);
     const finale = await refreshTokenNeiCookie();
     expect(finale).toBe(refreshRuotato(UTENTE_VERO));
     expect(finale).not.toBe(`refresh-${UTENTE_VERO.id}`);

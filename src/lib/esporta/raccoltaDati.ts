@@ -101,7 +101,9 @@ export function costruisciEsportazione(
 
   const obiettivi = vive(tutte.obiettivi);
   const idObiettivi = new Set(obiettivi.map((o) => o.id));
-  const obiettivi_target = vive(tutte.obiettivi_target).filter((t) => idObiettivi.has(t.obiettivo_id));
+  const obiettivi_target = vive(tutte.obiettivi_target).filter((t) =>
+    idObiettivi.has(t.obiettivo_id)
+  );
 
   // Gli alimenti che restano citati anche se cancellati: dalle voci vive del
   // diario e dai pasti salvati vivi (composizioni.alimento_id).
@@ -119,7 +121,9 @@ export function costruisciEsportazione(
   // I pasti cancellati citati dalle voci vive.
   const pastiCitati = new Set(nonNulli(voci_diario.map((v) => v.pasto_id)));
   const pasti_cancellati_citati = perId(
-    tutte.pasti.filter((p) => p.user_id === userId && p.deleted_at !== null && pastiCitati.has(p.id))
+    tutte.pasti.filter(
+      (p) => p.user_id === userId && p.deleted_at !== null && pastiCitati.has(p.id)
+    )
   );
 
   // Gli alimenti del catalogo comune citati da una riga esportata (vivi o

@@ -92,10 +92,17 @@ export function prossimoScrollTop(
 // I pasti sono misurati una volta, all'inizio del trascinamento. Se poi la
 // lista scorre di `scorso` px verso il basso, sullo schermo stanno tutti
 // `scorso` px più in alto.
-export function pastiDopoScorrimento(pasti: PastoSulloSchermo[], scorso: number): PastoSulloSchermo[] {
+export function pastiDopoScorrimento(
+  pasti: PastoSulloSchermo[],
+  scorso: number
+): PastoSulloSchermo[] {
   if (scorso === 0) return pasti;
   return pasti.map((p) => ({
     id: p.id,
-    rettangolo: { ...p.rettangolo, top: p.rettangolo.top - scorso, bottom: p.rettangolo.bottom - scorso },
+    rettangolo: {
+      ...p.rettangolo,
+      top: p.rettangolo.top - scorso,
+      bottom: p.rettangolo.bottom - scorso,
+    },
   }));
 }

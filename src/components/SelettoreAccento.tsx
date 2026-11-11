@@ -25,7 +25,11 @@ export default function SelettoreAccento({
   onCambia: (scelta: Accento) => void;
 }) {
   return (
-    <div role="radiogroup" aria-label="Colore principale" className="flex justify-between px-[18px] pt-4 pb-3">
+    <div
+      role="radiogroup"
+      aria-label="Colore principale"
+      className="flex justify-between px-[18px] pt-4 pb-3"
+    >
       {accenti.map((accento) => {
         const attivo = accento === scelta;
         return (
@@ -42,7 +46,9 @@ export default function SelettoreAccento({
               aria-hidden
               data-accento={accento}
               className={`block size-[34px] rounded-full bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface ${
-                attivo ? "outline-[2.5px] outline-offset-[3px] outline-foreground outline-solid" : ""
+                attivo
+                  ? "outline-[2.5px] outline-offset-[3px] outline-foreground outline-solid"
+                  : ""
               }`}
             />
             <span className={`text-xs ${attivo ? "font-semibold text-foreground" : "text-muted"}`}>

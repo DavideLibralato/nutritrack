@@ -176,10 +176,13 @@ export default function ObiettiviPage() {
   const errorePeso = errori.obiettivo && pesoNonValido ? errori.obiettivo : null;
   const erroreTarget = errori.obiettivo && !pesoNonValido ? errori.obiettivo : null;
 
-  const targetMostrati = schedaMostrata === "normale" ? ob : {
-    prima: { ...ob.prima, target: gi.prima.targetAllenamento },
-    ora: { ...ob.ora, target: gi.ora.targetAllenamento },
-  };
+  const targetMostrati =
+    schedaMostrata === "normale"
+      ? ob
+      : {
+          prima: { ...ob.prima, target: gi.prima.targetAllenamento },
+          ora: { ...ob.ora, target: gi.ora.targetAllenamento },
+        };
 
   function cambiaTarget(chiave: keyof ValoriTarget, valore: string) {
     if (schedaMostrata === "normale") {

@@ -64,20 +64,12 @@ function alimento(id: string): Alimento {
 // Catalogo con tutti gli alimenti usati nei test qui sotto — nessuno
 // cancellato, salvo dove un test lo toglie apposta per simulare la
 // cancellazione.
-const catalogo = [
-  alimento("yogurt"),
-  alimento("avena"),
-  alimento("pane"),
-  alimento("pasta"),
-];
+const catalogo = [alimento("yogurt"), alimento("avena"), alimento("pane"), alimento("pasta")];
 
 describe("pastoGiaSalvato", () => {
   it("corrisponde quando alimenti e quantità sono gli stessi, in ordine diverso", () => {
     const composizioni = [composizione("c1", "Colazione standard")];
-    const composizioniVoci = [
-      voce("c1", "yogurt", 250, 0),
-      voce("c1", "avena", 40, 1),
-    ];
+    const composizioniVoci = [voce("c1", "yogurt", 250, 0), voce("c1", "avena", 40, 1)];
     const vociPasto = [
       { alimento_id: "avena", quantita_g: 40 },
       { alimento_id: "yogurt", quantita_g: 250 },
@@ -96,10 +88,7 @@ describe("pastoGiaSalvato", () => {
 
   it("non corrisponde se manca o avanza un alimento", () => {
     const composizioni = [composizione("c1", "Colazione standard")];
-    const composizioniVoci = [
-      voce("c1", "yogurt", 250, 0),
-      voce("c1", "avena", 40, 1),
-    ];
+    const composizioniVoci = [voce("c1", "yogurt", 250, 0), voce("c1", "avena", 40, 1)];
     const vociPasto = [{ alimento_id: "yogurt", quantita_g: 250 }];
 
     expect(pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci)).toBe(false);
@@ -108,10 +97,7 @@ describe("pastoGiaSalvato", () => {
   it("distingue le ripetizioni: stesso alimento due volte non è lo stesso di due alimenti diversi", () => {
     const composizioni = [composizione("c1", "Doppio")];
     // La composizione ha due volte "yogurt" da 250 g.
-    const composizioniVoci = [
-      voce("c1", "yogurt", 250, 0),
-      voce("c1", "yogurt", 250, 1),
-    ];
+    const composizioniVoci = [voce("c1", "yogurt", 250, 0), voce("c1", "yogurt", 250, 1)];
     // Il pasto di oggi ha invece un alimento diverso, stesso numero di righe.
     const vociPasto = [
       { alimento_id: "yogurt", quantita_g: 250 },
@@ -123,10 +109,7 @@ describe("pastoGiaSalvato", () => {
 
   it("corrisponde anche con ripetizioni identiche su entrambi i lati", () => {
     const composizioni = [composizione("c1", "Doppio yogurt")];
-    const composizioniVoci = [
-      voce("c1", "yogurt", 250, 0),
-      voce("c1", "yogurt", 250, 1),
-    ];
+    const composizioniVoci = [voce("c1", "yogurt", 250, 0), voce("c1", "yogurt", 250, 1)];
     const vociPasto = [
       { alimento_id: "yogurt", quantita_g: 250 },
       { alimento_id: "yogurt", quantita_g: 250 },
@@ -153,14 +136,8 @@ describe("pastoGiaSalvato", () => {
   });
 
   it("corrisponde se almeno una fra più composizioni coincide", () => {
-    const composizioni = [
-      composizione("c1", "Colazione A"),
-      composizione("c2", "Colazione B"),
-    ];
-    const composizioniVoci = [
-      voce("c1", "pane", 50, 0),
-      voce("c2", "yogurt", 250, 0),
-    ];
+    const composizioni = [composizione("c1", "Colazione A"), composizione("c2", "Colazione B")];
+    const composizioniVoci = [voce("c1", "pane", 50, 0), voce("c2", "yogurt", 250, 0)];
     const vociPasto = [{ alimento_id: "yogurt", quantita_g: 250 }];
 
     expect(pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci)).toBe(true);
@@ -185,9 +162,9 @@ describe("composizioniCorrispondenti", () => {
     ];
     const vociPasto = [{ alimento_id: "yogurt", quantita_g: 250 }];
 
-    expect(
-      composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci)
-    ).toEqual(expect.arrayContaining(["c1", "c2"]));
+    expect(composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci)).toEqual(
+      expect.arrayContaining(["c1", "c2"])
+    );
     expect(
       composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci)
     ).toHaveLength(2);
@@ -198,9 +175,9 @@ describe("composizioniCorrispondenti", () => {
     const composizioniVoci = [voce("c1", "yogurt", 250, 0)];
     const vociPasto = [{ alimento_id: "pasta", quantita_g: 100 }];
 
-    expect(
-      composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci)
-    ).toEqual([]);
+    expect(composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci)).toEqual(
+      []
+    );
   });
 
   // Bug del 2026-09-24 (visto su Supabase, composizione cbd1ae1a): questa
@@ -214,10 +191,7 @@ describe("composizioniCorrispondenti", () => {
     const composizioni = [composizione("c1", "Colazione")];
     // Nel database la composizione ha ancora 2 voci: una viva (yogurt), una
     // morta (avena, cancellato dal catalogo).
-    const composizioniVoci = [
-      voce("c1", "yogurt", 250, 0),
-      voce("c1", "avena", 40, 1),
-    ];
+    const composizioniVoci = [voce("c1", "yogurt", 250, 0), voce("c1", "avena", 40, 1)];
 
     // pastiSalvati(): la composizione compare con un solo alimento.
     const elenco = pastiSalvati(catalogoConUnAlimentoCancellato, composizioni, composizioniVoci);

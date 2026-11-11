@@ -73,7 +73,10 @@ export function pastiSalvati(
 // alla fine (la somma dei valori esatti, non dei singoli arrotondati).
 export function kcalPastoSalvato(voci: { alimento: Alimento; quantitaG: number }[]): number {
   return Math.round(
-    voci.reduce((somma, { alimento, quantitaG }) => somma + (alimento.kcal_100g * quantitaG) / 100, 0)
+    voci.reduce(
+      (somma, { alimento, quantitaG }) => somma + (alimento.kcal_100g * quantitaG) / 100,
+      0
+    )
   );
 }
 
@@ -213,9 +216,7 @@ export function pastoGiaSalvato(
   composizioni: Composizione[],
   composizioniVoci: ComposizioneVoce[]
 ): boolean {
-  return (
-    composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci).length > 0
-  );
+  return composizioniCorrispondenti(vociPasto, catalogo, composizioni, composizioniVoci).length > 0;
 }
 
 // Confronto per multiset: ordine irrilevante, ma due righe uguali (stesso

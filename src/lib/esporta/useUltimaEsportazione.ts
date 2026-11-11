@@ -8,7 +8,11 @@
 // compare solo nel browser, senza un «Mai esportato» falso per un istante.
 
 import { useCallback, useSyncExternalStore } from "react";
-import { iscriviUltimaEsportazione, leggiUltimaEsportazione, testoPromemoria } from "./ultimaEsportazione";
+import {
+  iscriviUltimaEsportazione,
+  leggiUltimaEsportazione,
+  testoPromemoria,
+} from "./ultimaEsportazione";
 
 export function useUltimaEsportazione(userId: string | null | undefined): string | undefined {
   // Il valore letto è la data salvata (una stringa o null): React ridisegna

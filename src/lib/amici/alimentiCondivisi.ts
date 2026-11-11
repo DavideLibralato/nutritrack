@@ -93,12 +93,11 @@ export function rispondiAlimentiCondivisi(
   ids: string[],
   risposta: RispostaAlimento
 ): Promise<EsitoRispondiAlimenti> {
-  return chiama(
-    supabase,
-    "rispondi_alimenti_condivisi",
-    { p_ids: ids, p_risposta: risposta },
-    ["ok", "non_trovata", "non_valido"]
-  );
+  return chiama(supabase, "rispondi_alimenti_condivisi", { p_ids: ids, p_risposta: risposta }, [
+    "ok",
+    "non_trovata",
+    "non_valido",
+  ]);
 }
 
 // L'Annulla di "Usa questi valori": la condivisione torna in attesa.
@@ -122,8 +121,7 @@ const COLONNE =
 // e gli username di chi li manda, in una seconda lettura come in
 // leggiAmicizie: nomi_utente fa leggere quelli degli amici.
 export type LetturaInArrivo =
-  | { esito: "ok"; righe: AlimentoCondiviso[]; nomi: Record<string, string> }
-  | { esito: "errore" };
+  { esito: "ok"; righe: AlimentoCondiviso[]; nomi: Record<string, string> } | { esito: "errore" };
 
 export async function leggiAlimentiInArrivo(
   supabase: SupabaseClient,

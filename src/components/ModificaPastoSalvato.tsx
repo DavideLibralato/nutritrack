@@ -71,7 +71,12 @@ type Conferma = "ultimo-alimento" | "elimina-pasto" | "esci";
 const CLASSE_CONTENITORE =
   "fixed inset-x-0 z-40 mx-auto flex w-full max-w-md flex-col bg-background";
 
-export default function ModificaPastoSalvato({ userId, composizioneId, catalogo, onChiudi }: Props) {
+export default function ModificaPastoSalvato({
+  userId,
+  composizioneId,
+  catalogo,
+  onChiudi,
+}: Props) {
   const [caricati, setCaricati] = useState<ModuloPasto | null>(null);
   const [attuali, setAttuali] = useState<ModuloPasto | null>(null);
   const [cercando, setCercando] = useState(false);
@@ -539,9 +544,10 @@ function RigaAlimento({
   const nome = alimento ? etichettaAlimento(alimento) : riga.nomeAlimento;
   const idCampo = `grammi-${riga.chiave}`;
   const kcal =
-    alimento && !errore ? Math.round((alimento.kcal_100g * grammiValidi(riga.grammi)!) / 100) : null;
-  const grammiCambiati =
-    prima !== null && grammiValidi(prima.grammi) !== grammiValidi(riga.grammi);
+    alimento && !errore
+      ? Math.round((alimento.kcal_100g * grammiValidi(riga.grammi)!) / 100)
+      : null;
+  const grammiCambiati = prima !== null && grammiValidi(prima.grammi) !== grammiValidi(riga.grammi);
 
   return (
     <li className="border-b border-border py-3">
@@ -581,7 +587,10 @@ function RigaAlimento({
       ) : (
         // `prima` viene da Dexie (moduloDaDati), quindi i suoi grammi sono
         // sempre validi.
-        <ValorePrecedente visibile={grammiCambiati} valore={formattaGrammi(grammiValidi(prima.grammi)!)} />
+        <ValorePrecedente
+          visibile={grammiCambiati}
+          valore={formattaGrammi(grammiValidi(prima.grammi)!)}
+        />
       )}
     </li>
   );

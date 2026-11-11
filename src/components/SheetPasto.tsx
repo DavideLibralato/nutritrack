@@ -81,7 +81,11 @@ export default function SheetPasto({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-veil" onClick={inCorso ? undefined : onAnnulla} aria-hidden />
+      <div
+        className="fixed inset-0 z-50 bg-veil"
+        onClick={inCorso ? undefined : onAnnulla}
+        aria-hidden
+      />
       <div
         style={{ top: areaVisibile.top, height: areaVisibile.height }}
         className="fixed inset-x-0 z-50 flex items-end justify-center"

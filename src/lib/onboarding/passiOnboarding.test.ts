@@ -99,8 +99,17 @@ describe("pesoDaRegistrare e peso obiettivo", () => {
 // normale appena scelto.
 describe("salvaObiettivo con i giorni differenziati già accesi", () => {
   it("la riga «allenamento» nasce uguale al target normale", async () => {
-    await Promise.all([db.profili.clear(), db.obiettivi.clear(), db.obiettivi_target.clear(), db.outbox.clear()]);
-    await db.profili.put({ ...PROFILO, differenzia_giorni: true, giorni_allenamento_default: ["lunedi"] });
+    await Promise.all([
+      db.profili.clear(),
+      db.obiettivi.clear(),
+      db.obiettivi_target.clear(),
+      db.outbox.clear(),
+    ]);
+    await db.profili.put({
+      ...PROFILO,
+      differenzia_giorni: true,
+      giorni_allenamento_default: ["lunedi"],
+    });
 
     const esito = await salvaObiettivo("u1", {
       tipo: "dimagrire",

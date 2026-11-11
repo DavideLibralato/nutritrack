@@ -75,7 +75,12 @@ function pasto(userId: string, nome: string, updatedAt: string, id = crypto.rand
   };
 }
 
-function alimento(userId: string | null, nome: string, updatedAt: string, id = crypto.randomUUID()): Alimento {
+function alimento(
+  userId: string | null,
+  nome: string,
+  updatedAt: string,
+  id = crypto.randomUUID()
+): Alimento {
   return {
     id,
     user_id: userId,

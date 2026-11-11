@@ -109,7 +109,9 @@ export const CHIAVE_ULTIMO_SUCCESSO = "nutritrack:sincronizzazione:ultimo-succes
 
 function leggiUltimoSuccesso(): string | null {
   try {
-    return typeof window === "undefined" ? null : window.localStorage.getItem(CHIAVE_ULTIMO_SUCCESSO);
+    return typeof window === "undefined"
+      ? null
+      : window.localStorage.getItem(CHIAVE_ULTIMO_SUCCESSO);
   } catch {
     return null;
   }
@@ -336,9 +338,10 @@ export function statoDaMostrare(
   const erroreSalita = giri.salita.esito === "errore";
   const erroreDiscesa = giri.discesa.esito === "errore";
   if (erroreSalita || erroreDiscesa) {
-    const dal = [erroreSalita ? giri.salita.dal : null, erroreDiscesa ? giri.discesa.dal : null]
-      .filter((d): d is string => d !== null)
-      .sort()[0] ?? null;
+    const dal =
+      [erroreSalita ? giri.salita.dal : null, erroreDiscesa ? giri.discesa.dal : null]
+        .filter((d): d is string => d !== null)
+        .sort()[0] ?? null;
     const diFila = Math.max(
       erroreSalita ? giri.salita.diFila : 0,
       erroreDiscesa ? giri.discesa.diFila : 0

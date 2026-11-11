@@ -33,10 +33,7 @@ import { useAreaVisibile } from "@/lib/areaVisibile";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import { createClient } from "@/lib/supabase/client";
 import { useTieniPremuto, type RigaPremuta } from "@/lib/tieniPremuto";
-import {
-  rispondiAlimentiCondivisi,
-  type RispostaAlimento,
-} from "@/lib/amici/alimentiCondivisi";
+import { rispondiAlimentiCondivisi, type RispostaAlimento } from "@/lib/amici/alimentiCondivisi";
 import {
   confrontaInArrivo,
   eSelezionabile,
@@ -176,7 +173,10 @@ export default function SheetAlimentiInArrivo({
   // l'utente vede cosa resta prima di ripremere.
   async function aggiungi(ids: string[]) {
     const catalogo = await catalogoLocale(userId);
-    const fresche = voci.map((v) => ({ riga: v.riga, confronto: confrontaInArrivo(catalogo, v.riga, userId) }));
+    const fresche = voci.map((v) => ({
+      riga: v.riga,
+      confronto: confrontaInArrivo(catalogo, v.riga, userId),
+    }));
     const valide = selezioneValida(new Set(ids), fresche);
     if (valide.size !== ids.length) {
       if (selezione) setSelezione(valide);
@@ -235,7 +235,10 @@ export default function SheetAlimentiInArrivo({
     }
     const testi =
       azione === "aggiungi"
-        ? testiConfermaAggiungi(scelti.length, voci.some((v) => !eSelezionabile(v)))
+        ? testiConfermaAggiungi(
+            scelti.length,
+            voci.some((v) => !eSelezionabile(v))
+          )
         : testiConfermaRifiuta(scelti.length);
     setConferma({ ...testi, azione, ids: scelti });
   }
@@ -247,7 +250,8 @@ export default function SheetAlimentiInArrivo({
     void esegui(() => (azione === "aggiungi" ? aggiungi(ids) : rifiuta(ids)));
   }
 
-  const etichettaSelezionati = scelti.length === 1 ? "1 selezionato" : `${scelti.length} selezionati`;
+  const etichettaSelezionati =
+    scelti.length === 1 ? "1 selezionato" : `${scelti.length} selezionati`;
 
   return (
     <>
@@ -323,7 +327,8 @@ export default function SheetAlimentiInArrivo({
                   selezione
                     ? {
                         spuntata: scelti.includes(voce.riga.id),
-                        onSpunta: () => setSelezione((s) => spunta(s ?? new Set(), voci, voce.riga.id)),
+                        onSpunta: () =>
+                          setSelezione((s) => spunta(s ?? new Set(), voci, voce.riga.id)),
                       }
                     : null
                 }
@@ -332,7 +337,11 @@ export default function SheetAlimentiInArrivo({
           </ul>
 
           {selezione ? (
-            <div className="mt-4 flex items-center gap-2" role="toolbar" aria-label="Alimenti selezionati">
+            <div
+              className="mt-4 flex items-center gap-2"
+              role="toolbar"
+              aria-label="Alimenti selezionati"
+            >
               <p className="flex-1 font-semibold" aria-live="polite">
                 {etichettaSelezionati}
               </p>

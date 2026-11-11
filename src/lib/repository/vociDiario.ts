@@ -133,7 +133,8 @@ export async function annullaOperazione(
     if (await repositoryVociDiario.ottieniPerId(idNuovo)) continue;
     const dati = contenuto(prima);
     delete dati.eliminata_dal_cambio;
-    if (dati.pasto_id !== null && pastiSostituiti[dati.pasto_id]) dati.pasto_id = pastiSostituiti[dati.pasto_id];
+    if (dati.pasto_id !== null && pastiSostituiti[dati.pasto_id])
+      dati.pasto_id = pastiSostituiti[dati.pasto_id];
     await repositoryVociDiario.crea(dati, idNuovo);
     scritte++;
   }
@@ -214,16 +215,12 @@ export async function applicaScritture(scritture: Scrittura[]): Promise<Fotograf
 }
 
 // Da dove parte uno spostamento: una voce sola o tutto un pasto.
-export type OrigineSpostamento =
-  | { tipo: "voce"; id: string }
-  | { tipo: "pasto"; pastoId: string };
+export type OrigineSpostamento = { tipo: "voce"; id: string } | { tipo: "pasto"; pastoId: string };
 
 // Solo per Sposta: una voce sola può arrivare con i grammi nuovi scritti
 // nello sheet di modifica di Oggi (cambio di pasto, caso 1 dei "doppioni
 // rimasti", 18/10). Duplica non li ha.
-export type OrigineSposta =
-  | OrigineSpostamento
-  | { tipo: "voce"; id: string; grammi?: number };
+export type OrigineSposta = OrigineSpostamento | { tipo: "voce"; id: string; grammi?: number };
 
 export type EsitoSpostaNelPasto =
   // Servono (di nuovo) le scelte per i doppioni: la prima volta, o perché
@@ -285,7 +282,10 @@ export async function spostaNelPasto({
   const destinazione = await vociDelPasto(userId, data, pastoDestinazioneId);
 
   const doppioni = trovaDoppioni(partenza, destinazione);
-  if (doppioni.length > 0 && (!scelte || !doppioniVisti || !stessiDoppioni(doppioni, doppioniVisti))) {
+  if (
+    doppioni.length > 0 &&
+    (!scelte || !doppioniVisti || !stessiDoppioni(doppioni, doppioniVisti))
+  ) {
     return { esito: "doppioni", doppioni };
   }
 
@@ -358,7 +358,10 @@ export async function duplicaNelPasto({
   const destinazione = await vociDelPasto(userId, dataDestinazione, pastoDestinazioneId);
 
   const doppioni = doppioniDuplica(originali, destinazione);
-  if (doppioni.length > 0 && (!scelte || !doppioniVisti || !stessiDoppioni(doppioni, doppioniVisti))) {
+  if (
+    doppioni.length > 0 &&
+    (!scelte || !doppioniVisti || !stessiDoppioni(doppioni, doppioniVisti))
+  ) {
     return { esito: "doppioni", doppioni };
   }
 
@@ -383,7 +386,10 @@ export async function duplicaNelPasto({
 // si copiano nome e valori (mai un riferimento che possa cambiare dopo,
 // sezione 4) e i grammi.
 export interface AlimentoDaAggiungere {
-  alimento: Pick<Alimento, "id" | "nome" | "kcal_100g" | "proteine_100g" | "carboidrati_100g" | "grassi_100g">;
+  alimento: Pick<
+    Alimento,
+    "id" | "nome" | "kcal_100g" | "proteine_100g" | "carboidrati_100g" | "grassi_100g"
+  >;
   grammi: number;
 }
 

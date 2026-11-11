@@ -74,7 +74,13 @@ export interface FotografiaPasti {
   // voci eliminate com'erano (copie intere), le righe toccate com'erano
   // (il pasto e i suoi cambi programmati, passo 5) e il giorno del taglio
   // (null per "anche nei giorni passati").
-  eliminazione?: { pasto: Pasto; modo: ModoElimina; voci: VoceDiario[]; toccate: Pasto[]; dal: string | null };
+  eliminazione?: {
+    pasto: Pasto;
+    modo: ModoElimina;
+    voci: VoceDiario[];
+    toccate: Pasto[];
+    dal: string | null;
+  };
 }
 
 // "tutto": anche nei giorni passati (e il pasto che comincia oggi o dopo);
@@ -118,7 +124,8 @@ function dateEsplicite(pasto: Pasto): Pick<Pasto, "valido_dal" | "valido_al"> {
 // si ricontrolla prima di scrivere, come la data di Duplica.
 function controllaDaUnaData(pasto: Pasto, righe: Pasto[], dal: string, oggi: string): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dal)) throw new Error(`Data non valida: ${dal}`);
-  if (iniziaOggiODopo(pasto, oggi)) throw new Error(`Il pasto ${pasto.id} comincia oggi o dopo: niente "da una data"`);
+  if (iniziaOggiODopo(pasto, oggi))
+    throw new Error(`Il pasto ${pasto.id} comincia oggi o dopo: niente "da una data"`);
   const limiti = limitiDaUnaData(pasto, righe, oggi);
   if (!limiti.disponibile || dal < limiti.min || (limiti.max !== null && dal > limiti.max)) {
     throw new Error(`Il ${dal} è fuori dai giorni possibili per ${pasto.id}`);
@@ -311,7 +318,9 @@ export async function aggiungiPasto({
   oggi: string;
 }): Promise<{ fotografia: FotografiaPasti; pasto: Pasto }> {
   if (dal !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(dal) || dal < oggi)) {
-    throw new Error(`Un pasto nuovo comincia da sempre, da oggi o da una data futura, non il ${dal}`);
+    throw new Error(
+      `Un pasto nuovo comincia da sempre, da oggi o da una data futura, non il ${dal}`
+    );
   }
   const righe = await tuttiIPasti(userId);
   const periodo: Periodo = { dal, al: null };
@@ -510,7 +519,8 @@ export async function eliminaPasto({
     const righe = await tuttiIPasti(pasto.user_id ?? "");
     const regole = regoleElimina(pasto, righe, oggi);
     if (regole.motivoSpento) throw new Error(`Elimina ${id}: ${regole.motivoSpento}`);
-    if (modo === "tutto" && regole.motivoPassatiSpento) throw new Error(`Elimina ${id}: ${regole.motivoPassatiSpento}`);
+    if (modo === "tutto" && regole.motivoPassatiSpento)
+      throw new Error(`Elimina ${id}: ${regole.motivoPassatiSpento}`);
     if (modo === "oggi" && regole.senzaDomanda) {
       throw new Error(`Il pasto ${id} comincia oggi: si elimina del tutto, non da oggi`);
     }
@@ -535,7 +545,10 @@ export async function eliminaPasto({
       const segno = idCambio(chiusa.id, taglio);
       const adesso = new Date().toISOString();
       for (const voce of voci) {
-        await repositoryVociDiario.aggiorna(voce.id, { deleted_at: adesso, eliminata_dal_cambio: segno });
+        await repositoryVociDiario.aggiorna(voce.id, {
+          deleted_at: adesso,
+          eliminata_dal_cambio: segno,
+        });
       }
       for (const r of toccate) {
         const inizio = r.valido_dal ?? null;
@@ -579,7 +592,12 @@ function nonAnnullato(motivo: string): { conflitto: string } {
 
 // Il motivo per cui una riga con questo nome, ora e periodo si
 // scontrerebbe con `altri` (le righe che restano), o null.
-function motivoConflitto(nome: string, ora: string, periodo: Periodo, altri: Pasto[]): string | null {
+function motivoConflitto(
+  nome: string,
+  ora: string,
+  periodo: Periodo,
+  altri: Pasto[]
+): string | null {
   if (erroreNome(nome, periodo, altri, [])) return `c'è già un pasto chiamato «${nome}».`;
   return erroreOra(ora, periodo, altri, [], oggiLocale());
 }
@@ -595,13 +613,17 @@ function motivoConflitto(nome: string, ora: string, periodo: Periodo, altri: Pas
 // Prima di scrivere si rifanno i controlli di nome e ora sui periodi che
 // le righe riavranno: un pasto nato nel frattempo con lo stesso nome o la
 // stessa ora fa rispondere "conflitto", senza scrivere niente.
-async function annullaEliminazione(el: NonNullable<FotografiaPasti["eliminazione"]>): Promise<EsitoAnnullaPasti> {
+async function annullaEliminazione(
+  el: NonNullable<FotografiaPasti["eliminazione"]>
+): Promise<EsitoAnnullaPasti> {
   const { modo, voci, toccate, dal } = el;
   const righe = await tuttiIPasti(el.pasto.user_id ?? "");
   const nostre = new Set(toccate.flatMap((r) => [r.id, idPastoRicreato(r.id)]));
   const altri = righe.filter((r) => !nostre.has(r.id));
   const cancellate = toccate.filter(
-    (r) => modo === "tutto" || (dal !== null && (r.valido_dal ?? null) !== null && (r.valido_dal as string) >= dal)
+    (r) =>
+      modo === "tutto" ||
+      (dal !== null && (r.valido_dal ?? null) !== null && (r.valido_dal as string) >= dal)
   );
   const chiuse = toccate.filter((r) => !cancellate.includes(r));
 
@@ -627,7 +649,13 @@ async function annullaEliminazione(el: NonNullable<FotografiaPasti["eliminazione
     pastiSostituiti[r.id] = idNuovo;
     if (await repositoryPasti.ottieniPerId(idNuovo)) continue;
     await repositoryPasti.crea(
-      { user_id: r.user_id, nome: r.nome, ora_inizio: r.ora_inizio, ordine: r.ordine, ...dateEsplicite(r) },
+      {
+        user_id: r.user_id,
+        nome: r.nome,
+        ora_inizio: r.ora_inizio,
+        ordine: r.ordine,
+        ...dateEsplicite(r),
+      },
       idNuovo
     );
     scritte++;
@@ -685,7 +713,12 @@ export async function vociEliminateDalCambio(cambio: CambioProgrammato): Promise
 }
 
 function stessoCambio(a: CambioProgrammato, b: CambioProgrammato): boolean {
-  return a.tipo === b.tipo && a.data === b.data && a.vecchia?.id === b.vecchia?.id && a.nuova?.id === b.nuova?.id;
+  return (
+    a.tipo === b.tipo &&
+    a.data === b.data &&
+    a.vecchia?.id === b.vecchia?.id &&
+    a.nuova?.id === b.nuova?.id
+  );
 }
 
 export async function annullaCambioProgrammato({
@@ -719,7 +752,10 @@ export async function annullaCambioProgrammato({
         await repositoryVociDiario.aggiorna(voce.id, { pasto_id: vecchia.id });
       }
       await repositoryPasti.elimina(nuova.id);
-      await repositoryPasti.aggiorna(vecchia.id, { ...dateEsplicite(vecchia), valido_al: periodo.al });
+      await repositoryPasti.aggiorna(vecchia.id, {
+        ...dateEsplicite(vecchia),
+        valido_al: periodo.al,
+      });
       return { esito: "annullato", vociRimesse: 0 };
     }
 
@@ -731,14 +767,24 @@ export async function annullaCambioProgrammato({
       .sort();
     const fine = dopo.length > 0 ? giornoPrecedente(dopo[0]) : null;
     const altri = righe.filter((r) => r.id !== vecchia.id);
-    const motivo = motivoConflitto(vecchia.nome, vecchia.ora_inizio, { dal: vecchia.valido_dal ?? null, al: fine }, altri);
+    const motivo = motivoConflitto(
+      vecchia.nome,
+      vecchia.ora_inizio,
+      { dal: vecchia.valido_dal ?? null, al: fine },
+      altri
+    );
     if (motivo) return { esito: nonAnnullato(motivo), vociRimesse: 0 };
 
     const idFilo = filo.map((r) => r.id);
     const segnate = await vociSegnate(vecchia, attuale.data, idFilo);
     await repositoryPasti.aggiorna(vecchia.id, { ...dateEsplicite(vecchia), valido_al: fine });
-    const pastiSostituiti = Object.fromEntries(idFilo.filter((id) => id !== vecchia.id).map((id) => [id, vecchia.id]));
-    const vociRimesse = await annullaOperazione({ prima: segnate, idCreate: [] }, { pastiSostituiti });
+    const pastiSostituiti = Object.fromEntries(
+      idFilo.filter((id) => id !== vecchia.id).map((id) => [id, vecchia.id])
+    );
+    const vociRimesse = await annullaOperazione(
+      { prima: segnate, idCreate: [] },
+      { pastiSostituiti }
+    );
     return { esito: "annullato", vociRimesse };
   });
 }

@@ -97,14 +97,26 @@ describe("pagina Statistiche", () => {
   it("utente nuovo: riquadri «—», invito al primo pasto, nessuna pesata, frecce spente", async () => {
     render(<StatistichePage />);
 
-    expect(await screen.findByText("Le medie e le barre compaiono dal primo pasto che registri.")).toBeTruthy();
+    expect(
+      await screen.findByText("Le medie e le barre compaiono dal primo pasto che registri.")
+    ).toBeTruthy();
     expect(screen.getAllByText("—")).toHaveLength(4);
     expect(screen.getAllByText("nessun giorno registrato")).toHaveLength(4);
-    expect(screen.getByRole("link", { name: "Registra il primo pasto" }).getAttribute("href")).toBe("/aggiungi");
-    expect(screen.getByText("Nessuna pesata. Ogni pesata diventa un punto del grafico.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Registra peso" }).getAttribute("href")).toBe("/impostazioni/peso");
-    expect((screen.getByRole("button", { name: "Periodo precedente" }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "Periodo successivo" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("link", { name: "Registra il primo pasto" }).getAttribute("href")).toBe(
+      "/aggiungi"
+    );
+    expect(
+      screen.getByText("Nessuna pesata. Ogni pesata diventa un punto del grafico.")
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Registra peso" }).getAttribute("href")).toBe(
+      "/impostazioni/peso"
+    );
+    expect(
+      (screen.getByRole("button", { name: "Periodo precedente" }) as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "Periodo successivo" }) as HTMLButtonElement).disabled
+    ).toBe(true);
     expect(screen.getByText("Questa settimana")).toBeTruthy();
   });
 
@@ -117,10 +129,16 @@ describe("pagina Statistiche", () => {
     expect(screen.getAllByText("—")).toHaveLength(4);
     // 4 riquadri + la testata del grafico.
     expect(screen.getAllByText("nessun giorno registrato")).toHaveLength(5);
-    expect(screen.queryByText("Le medie e le barre compaiono dal primo pasto che registri.")).toBeNull();
+    expect(
+      screen.queryByText("Le medie e le barre compaiono dal primo pasto che registri.")
+    ).toBeNull();
     // Si può tornare indietro fino alla settimana della voce; avanti no.
-    expect((screen.getByRole("button", { name: "Periodo precedente" }) as HTMLButtonElement).disabled).toBe(false);
-    expect((screen.getByRole("button", { name: "Periodo successivo" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "Periodo precedente" }) as HTMLButtonElement).disabled
+    ).toBe(false);
+    expect(
+      (screen.getByRole("button", { name: "Periodo successivo" }) as HTMLButtonElement).disabled
+    ).toBe(true);
   });
 
   it("media, obiettivo, stato, e il tocco su una barra apre e chiude il dettaglio", async () => {
@@ -143,9 +161,9 @@ describe("pagina Statistiche", () => {
     expect(within(dettaglio).getByText("/ 2200")).toBeTruthy();
     // 2250 su 2200 con Massa: dentro la fascia del 5%.
     expect(within(dettaglio).getByText("in linea")).toBeTruthy();
-    expect(within(dettaglio).getByRole("link", { name: "Apri il giorno" }).getAttribute("href")).toBe(
-      `/?giorno=${OGGI}`
-    );
+    expect(
+      within(dettaglio).getByRole("link", { name: "Apri il giorno" }).getAttribute("href")
+    ).toBe(`/?giorno=${OGGI}`);
     expect(barra.getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.click(barra);
@@ -161,7 +179,13 @@ describe("pagina Statistiche", () => {
   });
 
   it("il peso: differenza, ultima pesata e il link a Impostazioni > Peso", async () => {
-    const pesata = (data: string, valore: number): Misurazione => ({ ...base(), tipo: "peso", valore, unita: "kg", data });
+    const pesata = (data: string, valore: number): Misurazione => ({
+      ...base(),
+      tipo: "peso",
+      valore,
+      unita: "kg",
+      data,
+    });
     await db.voci_diario.add(voce(OGGI, 2000));
     await db.misurazioni.bulkAdd([pesata(piuGiorni(OGGI, -20), 83.3), pesata(OGGI, 84.3)]);
     render(<StatistichePage />);

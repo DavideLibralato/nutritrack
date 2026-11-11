@@ -85,7 +85,10 @@ export interface Media {
 
 export type MediePeriodo = Record<Grandezza, Media>;
 
-const CAMPI: Record<Grandezza, { totale: keyof TotaliNutrizionali; target: keyof ObiettivoTarget }> = {
+const CAMPI: Record<
+  Grandezza,
+  { totale: keyof TotaliNutrizionali; target: keyof ObiettivoTarget }
+> = {
   kcal: { totale: "kcal", target: "kcal" },
   grassi: { totale: "grassi", target: "grassi_g" },
   carboidrati: { totale: "carboidrati", target: "carboidrati_g" },
@@ -130,9 +133,7 @@ export function medieDelPeriodo(giorni: GiornoStatistiche[]): MediePeriodo | nul
 //   - "trattini": target diversi → un trattino sopra ogni barra;
 //   - "nessuno": nessun target.
 export type SegnoObiettivo =
-  | { tipo: "linea"; kcal: number }
-  | { tipo: "trattini" }
-  | { tipo: "nessuno" };
+  { tipo: "linea"; kcal: number } | { tipo: "trattini" } | { tipo: "nessuno" };
 
 export function segnoObiettivo(giorni: GiornoStatistiche[]): SegnoObiettivo {
   const kcal = giorni.filter((g) => !g.futuro && g.target).map((g) => g.target!.kcal);

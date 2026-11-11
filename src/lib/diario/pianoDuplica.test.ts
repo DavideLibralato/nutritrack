@@ -13,7 +13,12 @@ const IERI = "2026-10-05";
 const ADESSO = "2026-10-06T13:00:00.000Z";
 
 let contatore = 0;
-function voce(nome: string, pasto: string, grammi: number, extra: Partial<VoceDiario> = {}): VoceDiario {
+function voce(
+  nome: string,
+  pasto: string,
+  grammi: number,
+  extra: Partial<VoceDiario> = {}
+): VoceDiario {
   contatore++;
   return {
     id: `v${contatore}`,
@@ -44,7 +49,12 @@ function piano(
     pasto = "pranzo",
     scelte = {},
     gruppoId = null,
-  }: { data?: string; pasto?: string; scelte?: Record<string, SceltaDoppione>; gruppoId?: string | null } = {}
+  }: {
+    data?: string;
+    pasto?: string;
+    scelte?: Record<string, SceltaDoppione>;
+    gruppoId?: string | null;
+  } = {}
 ) {
   return pianoDuplica({
     originali,
@@ -84,14 +94,21 @@ describe("pianoDuplica — le righe che si duplicano non sono doppioni di se ste
     expect(doppioniDuplica([mela], [mela])).toEqual([]);
     const p = piano([mela], [mela]);
     expect(p.scritture).toHaveLength(1);
-    expect(p.scritture[0]).toMatchObject({ tipo: "crea", dati: { nome_alimento: "Mela", quantita_g: 150 } });
+    expect(p.scritture[0]).toMatchObject({
+      tipo: "crea",
+      dati: { nome_alimento: "Mela", quantita_g: 150 },
+    });
   });
 
   it("un'ALTRA riga dello stesso alimento nel pasto di destinazione sì che è un doppione", () => {
     const mela = voce("Mela", "pranzo", 150);
     const altraMela = voce("Mela", "pranzo", 80);
     expect(doppioniDuplica([mela], [mela, altraMela])).toEqual([
-      expect.objectContaining({ alimentoId: "alimento-Mela", grammiEsistenti: 80, grammiInArrivo: 150 }),
+      expect.objectContaining({
+        alimentoId: "alimento-Mela",
+        grammiEsistenti: 80,
+        grammiInArrivo: 150,
+      }),
     ]);
   });
 });
@@ -101,24 +118,34 @@ describe("pianoDuplica — le scelte toccano solo l'altra riga", () => {
     const mela = voce("Mela", "colazione", 150);
     const altraMela = voce("Mela", "pranzo", 100);
     const p = piano([mela], [altraMela], { scelte: { "alimento-Mela": { tipo: "somma" } } });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: altraMela.id, modifiche: { quantita_g: 250 } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: altraMela.id, modifiche: { quantita_g: 250 } },
+    ]);
     expect(p.duplicati).toEqual(["Mela"]);
   });
 
   it("Scrivi quantità: l'altra riga prende i grammi scritti, nessuna copia", () => {
     const mela = voce("Mela", "colazione", 150);
     const altraMela = voce("Mela", "pranzo", 100);
-    const p = piano([mela], [altraMela], { scelte: { "alimento-Mela": { tipo: "scrivi", grammi: 120 } } });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: altraMela.id, modifiche: { quantita_g: 120 } }]);
+    const p = piano([mela], [altraMela], {
+      scelte: { "alimento-Mela": { tipo: "scrivi", grammi: 120 } },
+    });
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: altraMela.id, modifiche: { quantita_g: 120 } },
+    ]);
   });
 
   it("Tieni separati: la copia accanto; Non duplicarlo: niente", () => {
     const mela = voce("Mela", "colazione", 150);
     const altraMela = voce("Mela", "pranzo", 100);
-    const separati = piano([mela], [altraMela], { scelte: { "alimento-Mela": { tipo: "separati" } } });
+    const separati = piano([mela], [altraMela], {
+      scelte: { "alimento-Mela": { tipo: "separati" } },
+    });
     expect(separati.scritture).toHaveLength(1);
     expect(separati.scritture[0].tipo).toBe("crea");
-    const escluso = piano([mela], [altraMela], { scelte: { "alimento-Mela": { tipo: "escludi" } } });
+    const escluso = piano([mela], [altraMela], {
+      scelte: { "alimento-Mela": { tipo: "escludi" } },
+    });
     expect(escluso.scritture).toEqual([]);
     expect(escluso.esclusi).toEqual(["Mela"]);
   });

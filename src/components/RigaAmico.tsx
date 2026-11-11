@@ -50,7 +50,8 @@ export default function RigaAmico({
       </span>
     </>
   );
-  const classe = "riga-impostazioni relative flex min-h-[60px] items-center gap-3 px-4 py-2 text-base";
+  const classe =
+    "riga-impostazioni relative flex min-h-[60px] items-center gap-3 px-4 py-2 text-base";
 
   if (onClick) {
     return (

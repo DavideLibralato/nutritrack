@@ -96,14 +96,14 @@ export function righeDiario(dati: DatiEsportati): RigaDiario[] {
   // Le voci sono già quelle vive del JSON (raccoltaDati.ts): nessun filtro
   // in più qui, così il CSV non può avere una regola diversa dal JSON.
   const voci = [...dati.voci_diario].sort(
-      (a, b) =>
-        a.data.localeCompare(b.data) ||
-        posizione(a) - posizione(b) ||
-        // Per istante, non per testo: dal server arriva "+00:00" con sei
-        // decimali, dal telefono "Z" con tre (millisecondiDi, istanti.ts).
-        millisecondiDi(a.creato_il) - millisecondiDi(b.creato_il) ||
-        a.id.localeCompare(b.id)
-    );
+    (a, b) =>
+      a.data.localeCompare(b.data) ||
+      posizione(a) - posizione(b) ||
+      // Per istante, non per testo: dal server arriva "+00:00" con sei
+      // decimali, dal telefono "Z" con tre (millisecondiDi, istanti.ts).
+      millisecondiDi(a.creato_il) - millisecondiDi(b.creato_il) ||
+      a.id.localeCompare(b.id)
+  );
 
   return voci.map((v) => {
     const totali = totaleVoce(v);
@@ -144,10 +144,7 @@ const BOM = "﻿";
 const A_CAPO = "\r\n";
 
 export function testoCsv(dati: DatiEsportati): string {
-  const righe = [
-    [...INTESTAZIONE_CSV],
-    ...righeDiario(dati).map((r) => r.campi),
-  ];
+  const righe = [[...INTESTAZIONE_CSV], ...righeDiario(dati).map((r) => r.campi)];
   return BOM + righe.map((campi) => campi.map(campoCsv).join(";")).join(A_CAPO) + A_CAPO;
 }
 

@@ -42,7 +42,13 @@ const ORA = Math.floor(Date.now() / 1000);
 
 // Un token con la forma di un JWT vero: auth-js ne legge la scadenza.
 function token(utente: { id: string }): string {
-  const dati = { sub: utente.id, aud: "authenticated", role: "authenticated", iat: ORA, exp: ORA + 3600 };
+  const dati = {
+    sub: utente.id,
+    aud: "authenticated",
+    role: "authenticated",
+    iat: ORA,
+    exp: ORA + 3600,
+  };
   return `${base64url('{"alg":"HS256","typ":"JWT"}')}.${base64url(JSON.stringify(dati))}.firma`;
 }
 
@@ -66,7 +72,10 @@ function sessione(utente: { id: string; email: string }) {
 }
 
 function json(corpo: unknown, status = 200): Response {
-  return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(corpo), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -80,7 +89,8 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
     return json({});
   }
 
-  if (metodo === "POST" && url === `${AUTH}/token?grant_type=password`) return json(sessione(UTENTE_PROVA));
+  if (metodo === "POST" && url === `${AUTH}/token?grant_type=password`)
+    return json(sessione(UTENTE_PROVA));
 
   server.impreviste.push(`${metodo} ${url}`);
   throw new Error(`Richiesta non prevista dal test: ${metodo} ${url}`);
@@ -100,7 +110,10 @@ function cancellaCookie() {
 // farebbe /login.
 async function entraConAccountDiProva() {
   const supabase = createBrowserClient(URL_SUPABASE, CHIAVE, { isSingleton: false });
-  const { error } = await supabase.auth.signInWithPassword({ email: UTENTE_PROVA.email, password: "segreta" });
+  const { error } = await supabase.auth.signInWithPassword({
+    email: UTENTE_PROVA.email,
+    password: "segreta",
+  });
   expect(error).toBeNull();
   expect(document.cookie).toContain("auth-token");
 }

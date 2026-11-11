@@ -93,7 +93,9 @@ describe("Impostazioni > Sincronizzazione — i sei stati", () => {
 
     expect(await screen.findByRole("heading", { name: "Tutto salvato online" })).toBeTruthy();
     expect(screen.getByText(/^Controllato alle \d{2}:\d{2}$/)).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Sincronizza ora" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(
+      (screen.getByRole("button", { name: "Sincronizza ora" }) as HTMLButtonElement).disabled
+    ).toBe(false);
     // "Ricarica i dati dal tuo account" resta in fondo.
     expect(screen.getByRole("button", { name: "Ricarica i dati dal tuo account" })).toBeTruthy();
   });
@@ -105,7 +107,9 @@ describe("Impostazioni > Sincronizzazione — i sei stati", () => {
     act(() => segnaInizioGiro("discesa"));
     // Subito no: un giro breve non deve far lampeggiare niente.
     expect(screen.queryByRole("heading", { name: "Sincronizzazione in corso…" })).toBeNull();
-    expect((screen.getByRole("button", { name: "Sincronizza ora" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "Sincronizza ora" }) as HTMLButtonElement).disabled
+    ).toBe(true);
 
     // Nessun altro cambiamento: è il timer della pagina a ridisegnarla.
     expect(
@@ -129,7 +133,9 @@ describe("Impostazioni > Sincronizzazione — i sei stati", () => {
     segnaFineGiro("salita", "errore", { parlatoColServer: false });
     render(<SincronizzazionePage />);
 
-    expect(await screen.findByRole("heading", { name: "Non riesco a salvare 2 modifiche online" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Non riesco a salvare 2 modifiche online" })
+    ).toBeTruthy();
     expect(screen.getByText("Il server le rifiuta. Riprovo da solo a ogni apertura.")).toBeTruthy();
     expect(screen.getByText(/^Dalle \d{2}:\d{2}$/)).toBeTruthy();
   });
@@ -145,13 +151,18 @@ describe("Impostazioni > Sincronizzazione — i sei stati", () => {
 
   it("accantonate: l'elenco in parole dell'utente, i dettagli tecnici chiusi", async () => {
     await db.outbox.bulkPut([
-      voce("pasti:p1", { ...ACCANTONATA, dati: { ...voce("pasti:p1").dati, nome: "Merenda" } as VoceOutbox["dati"] }),
+      voce("pasti:p1", {
+        ...ACCANTONATA,
+        dati: { ...voce("pasti:p1").dati, nome: "Merenda" } as VoceOutbox["dati"],
+      }),
       // Di un altro utente sullo stesso dispositivo: non si vede e non si conta.
       voce("pasti:p9", ACCANTONATA, "utente-altro"),
     ]);
     render(<SincronizzazionePage />);
 
-    expect(await screen.findByRole("heading", { name: "1 modifica non salvata online" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "1 modifica non salvata online" })
+    ).toBeTruthy();
     expect(screen.getByText("Pasti (1)")).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "Non salvate online" })).toBeTruthy();
     expect(await screen.findByText("Pasto")).toBeTruthy();
@@ -159,7 +170,9 @@ describe("Impostazioni > Sincronizzazione — i sei stati", () => {
 
     const dettagli = screen.getByText("Dettagli tecnici").closest("details")!;
     expect(dettagli.open).toBe(false);
-    expect(dettagli.textContent).toContain('pasti · 5 tentativi · 400 · invalid input syntax for type time: "25:00"');
+    expect(dettagli.textContent).toContain(
+      'pasti · 5 tentativi · 400 · invalid input syntax for type time: "25:00"'
+    );
   });
 });
 
@@ -192,13 +205,19 @@ describe("Impostazioni > Sincronizzazione — disposizione dal 02/11", () => {
 
     expect(await screen.findByRole("heading", { name: "Accesso scaduto" })).toBeTruthy();
     expect(screen.getByText("Prova con Sincronizza ora. Se torna, esci e rientra.")).toBeTruthy();
-    const sincronizza = screen.getByRole("button", { name: "Sincronizza ora" }) as HTMLButtonElement;
+    const sincronizza = screen.getByRole("button", {
+      name: "Sincronizza ora",
+    }) as HTMLButtonElement;
     expect(sincronizza.disabled).toBe(false);
 
     const esci = esciERientra()!;
     expect(esci).toBeTruthy();
-    expect(esci.textContent).toContain("Svuota i dati di questo telefono e li riscarica dopo l'accesso.");
-    const gruppoDati = screen.getByRole("heading", { name: "Dati su questo dispositivo" }).closest("section")!;
+    expect(esci.textContent).toContain(
+      "Svuota i dati di questo telefono e li riscarica dopo l'accesso."
+    );
+    const gruppoDati = screen
+      .getByRole("heading", { name: "Dati su questo dispositivo" })
+      .closest("section")!;
     const ricarica = screen.getByRole("button", { name: "Ricarica i dati dal tuo account" });
     expect(gruppoDati.contains(esci)).toBe(true);
     expect(gruppoDati.contains(ricarica)).toBe(true);
@@ -208,9 +227,15 @@ describe("Impostazioni > Sincronizzazione — disposizione dal 02/11", () => {
     // I Dettagli, chiusi, fra Sincronizza ora e il gruppo dei dati.
     const dettagli = screen.getByText("Dettagli tecnici").closest("details")!;
     expect(dettagli.open).toBe(false);
-    expect(dettagli.textContent).toContain("discesa · composizioni · 401 · PGRST303 · JWT issued at future");
-    expect(sincronizza.compareDocumentPosition(dettagli) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(dettagli.compareDocumentPosition(gruppoDati) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dettagli.textContent).toContain(
+      "discesa · composizioni · 401 · PGRST303 · JWT issued at future"
+    );
+    expect(
+      sincronizza.compareDocumentPosition(dettagli) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      dettagli.compareDocumentPosition(gruppoDati) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   it("sessione: Sincronizza ora fa partire un giro (non apre Esci)", async () => {
@@ -236,12 +261,20 @@ describe("Impostazioni > Sincronizzazione — disposizione dal 02/11", () => {
       parlatoColServer: true,
       tabelleNonScaricate: ["misurazioni"],
       dettagli: [
-        { verso: "discesa", tabella: "misurazioni", status: 403, codice: "42501", messaggio: "permission denied" },
+        {
+          verso: "discesa",
+          tabella: "misurazioni",
+          status: 403,
+          codice: "42501",
+          messaggio: "permission denied",
+        },
       ],
     });
     render(<SincronizzazionePage />);
 
-    expect(await screen.findByRole("heading", { name: "Non riesco a scaricare i dati dal server" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Non riesco a scaricare i dati dal server" })
+    ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sincronizza ora" })).toBeTruthy();
     expect(screen.getByText("Dettagli tecnici").closest("details")!.textContent).toContain(
       "discesa · misurazioni · 403 · 42501 · permission denied"
@@ -263,7 +296,15 @@ describe("Impostazioni > Sincronizzazione — disposizione dal 02/11", () => {
     await db.outbox.put(voce("pasti:p1"));
     segnaFineGiro("salita", "rete", {
       parlatoColServer: false,
-      dettagli: [{ verso: "salita", tabella: "pasti", status: 0, codice: null, messaggio: "Failed to fetch" }],
+      dettagli: [
+        {
+          verso: "salita",
+          tabella: "pasti",
+          status: 0,
+          codice: null,
+          messaggio: "Failed to fetch",
+        },
+      ],
     });
     render(<SincronizzazionePage />);
 
@@ -281,7 +322,10 @@ describe("Impostazioni > Sincronizzazione — le azioni", () => {
   });
 
   it("Riprova a salvarle rimette in coda le accantonate dell'utente e fa partire un giro", async () => {
-    await db.outbox.bulkPut([voce("pasti:p1", ACCANTONATA), voce("pasti:p9", ACCANTONATA, "utente-altro")]);
+    await db.outbox.bulkPut([
+      voce("pasti:p1", ACCANTONATA),
+      voce("pasti:p9", ACCANTONATA, "utente-altro"),
+    ]);
     render(<SincronizzazionePage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Riprova a salvarle" }));
@@ -289,7 +333,10 @@ describe("Impostazioni > Sincronizzazione — le azioni", () => {
     await waitFor(async () => {
       expect(await db.outbox.get("pasti:p1")).toMatchObject({ sospesa_il: null, tentativi: 0 });
     });
-    expect(await db.outbox.get("pasti:p9")).toMatchObject({ sospesa_il: ACCANTONATA.sospesa_il, tentativi: 5 });
+    expect(await db.outbox.get("pasti:p9")).toMatchObject({
+      sospesa_il: ACCANTONATA.sospesa_il,
+      tentativi: 5,
+    });
     await waitFor(() => expect(giri.salita).toHaveBeenCalled());
     // Non più accantonata: il gruppo sparisce e la voce torna in attesa.
     expect(await screen.findByRole("heading", { name: "1 modifica in attesa" })).toBeTruthy();

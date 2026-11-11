@@ -81,7 +81,10 @@ describe("testi della barra", () => {
 
 describe("ultimoInserimento", () => {
   it("si legge una volta sola, e il più recente sostituisce il precedente", () => {
-    segnaInserimento({ fotografia: { prima: [], idCreate: ["a"] }, messaggio: messaggioAggiunto("Pane", null) });
+    segnaInserimento({
+      fotografia: { prima: [], idCreate: ["a"] },
+      messaggio: messaggioAggiunto("Pane", null),
+    });
     segnaInserimento({
       fotografia: { prima: [], idCreate: ["b", "c"] },
       messaggio: messaggioAggiunto("Colazione tipo", 2),
@@ -148,21 +151,31 @@ describe("messaggioInserimento", () => {
     const m = messaggioInserimento(
       "pasto-salvato",
       "Colazione",
-      piano({ inseriti: ["Yogurt", "Pane", "Mela"], aggiornati: [{ nome: "Mela", grammi: 300, tipo: "somma" }] })
+      piano({
+        inseriti: ["Yogurt", "Pane", "Mela"],
+        aggiornati: [{ nome: "Mela", grammi: 300, tipo: "somma" }],
+      })
     );
     expect(testo(m)).toBe("Aggiunto: Colazione (3 alimenti)");
-    expect(testo(messaggioInserimento("pasto-salvato", "Caffè", piano({ inseriti: ["Caffè"] })))).toBe(
-      "Aggiunto: Caffè (1 alimento)"
-    );
+    expect(
+      testo(messaggioInserimento("pasto-salvato", "Caffè", piano({ inseriti: ["Caffè"] })))
+    ).toBe("Aggiunto: Caffè (1 alimento)");
   });
 
   it("pasto salvato con esclusi: «tranne», al singolare e al plurale", () => {
     expect(
-      messaggioInserimento("pasto-salvato", "Colazione", piano({ inseriti: ["Pane"], esclusi: ["Mela"] }))?.testo
+      messaggioInserimento(
+        "pasto-salvato",
+        "Colazione",
+        piano({ inseriti: ["Pane"], esclusi: ["Mela"] })
+      )?.testo
     ).toBe("Aggiunto: «Colazione» (tranne «Mela», che c'era già).");
     expect(
-      messaggioInserimento("pasto-salvato", "Colazione", piano({ inseriti: ["Pane"], esclusi: ["Mela", "Yogurt"] }))
-        ?.testo
+      messaggioInserimento(
+        "pasto-salvato",
+        "Colazione",
+        piano({ inseriti: ["Pane"], esclusi: ["Mela", "Yogurt"] })
+      )?.testo
     ).toBe("Aggiunto: «Colazione» (tranne «Mela» e «Yogurt», che c'erano già).");
     expect(
       messaggioInserimento(
@@ -189,7 +202,12 @@ describe("messaggioInserimento", () => {
 // la barra tronca solo il nome.
 describe("messaggioAggiornato", () => {
   it("«Aggiornato: Mela → 120 g», con il formato italiano dei grammi", () => {
-    expect(messaggioAggiornato("Mela", 120)).toEqual({ testo: "Aggiornato:", nome: "Mela", coda: "→ 120 g", icona: "spunta" });
+    expect(messaggioAggiornato("Mela", 120)).toEqual({
+      testo: "Aggiornato:",
+      nome: "Mela",
+      coda: "→ 120 g",
+      icona: "spunta",
+    });
     expect(messaggioAggiornato("Riso", 12500.5).coda).toBe("→ 12.500,5 g");
   });
 });

@@ -73,7 +73,13 @@ const composizioniVoci = [
 
 describe("conseguenzeEliminazione", () => {
   it("un pasto salvato con due alimenti della selezione conta una volta", () => {
-    const c = conseguenzeEliminazione(["avena", "latte"], catalogo, composizioni, composizioniVoci, []);
+    const c = conseguenzeEliminazione(
+      ["avena", "latte"],
+      catalogo,
+      composizioni,
+      composizioniVoci,
+      []
+    );
     expect(c.pastiSalvati).toBe(2); // colazione e cena
   });
 
@@ -89,7 +95,13 @@ describe("conseguenzeEliminazione", () => {
       preferito("p3", "latte", "2026-10-10T00:00:00.000Z"), // tolto dai preferiti
       preferito("p4", "pane"), // non selezionato
     ];
-    const c = conseguenzeEliminazione(["avena", "latte"], catalogo, composizioni, composizioniVoci, preferiti);
+    const c = conseguenzeEliminazione(
+      ["avena", "latte"],
+      catalogo,
+      composizioni,
+      composizioniVoci,
+      preferiti
+    );
     expect(c.preferiti).toBe(1);
   });
 });
@@ -112,12 +124,12 @@ describe("testiConfermaEliminazione", () => {
   });
 
   it("una parte a zero sparisce; tutte e due a zero, solo la prima frase", () => {
-    expect(testiConfermaEliminazione(["Mela", "Pane"], { pastiSalvati: 2, preferiti: 0 }).testo).toBe(
-      "Il diario non cambia. Verranno tolti anche da 2 pasti salvati."
-    );
-    expect(testiConfermaEliminazione(["Mela", "Pane"], { pastiSalvati: 0, preferiti: 1 }).testo).toBe(
-      "Il diario non cambia. Verranno tolti anche da 1 preferito."
-    );
+    expect(
+      testiConfermaEliminazione(["Mela", "Pane"], { pastiSalvati: 2, preferiti: 0 }).testo
+    ).toBe("Il diario non cambia. Verranno tolti anche da 2 pasti salvati.");
+    expect(
+      testiConfermaEliminazione(["Mela", "Pane"], { pastiSalvati: 0, preferiti: 1 }).testo
+    ).toBe("Il diario non cambia. Verranno tolti anche da 1 preferito.");
     expect(testiConfermaEliminazione(["Mela"], { pastiSalvati: 0, preferiti: 0 }).testo).toBe(
       "Il diario non cambia."
     );

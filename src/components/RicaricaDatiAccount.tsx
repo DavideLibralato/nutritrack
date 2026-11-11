@@ -112,7 +112,8 @@ export default function RicaricaDatiAccount({ userId }: { userId: string }) {
         setStato({
           fase: "esito",
           riuscito: true,
-          testo: "Fatto: i dati di questo dispositivo sono di nuovo uguali a quelli del tuo account.",
+          testo:
+            "Fatto: i dati di questo dispositivo sono di nuovo uguali a quelli del tuo account.",
         });
         break;
       case "scarico-fallito":

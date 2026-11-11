@@ -96,7 +96,11 @@ export default function SheetDaQuando<K extends string>({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-veil" onClick={inCorso ? undefined : onIndietro} aria-hidden />
+      <div
+        className="fixed inset-0 z-50 bg-veil"
+        onClick={inCorso ? undefined : onIndietro}
+        aria-hidden
+      />
       <div
         style={{ top: areaVisibile.top, height: areaVisibile.height }}
         className="fixed inset-x-0 z-50 flex items-end justify-center"
@@ -175,7 +179,11 @@ export default function SheetDaQuando<K extends string>({
               disabled={!confermabile}
               className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
             >
-              {inCorso ? "Salvo..." : typeof testoConferma === "function" ? testoConferma(scelta) : testoConferma}
+              {inCorso
+                ? "Salvo..."
+                : typeof testoConferma === "function"
+                  ? testoConferma(scelta)
+                  : testoConferma}
             </button>
           </div>
         </div>

@@ -116,7 +116,9 @@ describe("il segno si accende solo con tutte le tabelle", () => {
   it("acceso di nuovo, tiene l'ora della prima volta", () => {
     segnaDiscesaCompleta("u1", new Date("2026-11-07T10:00:00.000Z"));
     segnaDiscesaCompleta("u1", new Date("2026-11-08T10:00:00.000Z"));
-    expect(window.localStorage.getItem(chiaveDiscesaCompleta("u1"))).toBe("2026-11-07T10:00:00.000Z");
+    expect(window.localStorage.getItem(chiaveDiscesaCompleta("u1"))).toBe(
+      "2026-11-07T10:00:00.000Z"
+    );
   });
 
   it("togliSegnoDiscesaCompleta toglie solo quello dell'utente indicato", () => {

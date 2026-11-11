@@ -68,16 +68,26 @@ describe("leggiSessioneSalvata", () => {
 
 describe("classificaErroreVerifica", () => {
   it("rete: offline, server irraggiungibile, errori imprevisti", () => {
-    expect(classificaErroreVerifica(new AuthRetryableFetchError("Failed to fetch", 0))).toBe("rete");
+    expect(classificaErroreVerifica(new AuthRetryableFetchError("Failed to fetch", 0))).toBe(
+      "rete"
+    );
     expect(classificaErroreVerifica(new AuthUnknownError("boh", new Error()))).toBe("rete");
-    expect(classificaErroreVerifica(new AuthApiError("errore server", 500, undefined))).toBe("rete");
+    expect(classificaErroreVerifica(new AuthApiError("errore server", 500, undefined))).toBe(
+      "rete"
+    );
   });
 
   it("autenticazione: nessuna sessione, utente cancellato, sessione revocata", () => {
     expect(classificaErroreVerifica(new AuthSessionMissingError())).toBe("autenticazione");
-    expect(classificaErroreVerifica(new AuthApiError("User not found", 403, "user_not_found"))).toBe("autenticazione");
-    expect(classificaErroreVerifica(new AuthApiError("Session not found", 403, "session_not_found"))).toBe("autenticazione");
-    expect(classificaErroreVerifica(new AuthApiError("invalid JWT", 401, "bad_jwt"))).toBe("autenticazione");
+    expect(
+      classificaErroreVerifica(new AuthApiError("User not found", 403, "user_not_found"))
+    ).toBe("autenticazione");
+    expect(
+      classificaErroreVerifica(new AuthApiError("Session not found", 403, "session_not_found"))
+    ).toBe("autenticazione");
+    expect(classificaErroreVerifica(new AuthApiError("invalid JWT", 401, "bad_jwt"))).toBe(
+      "autenticazione"
+    );
   });
 
   it("nessun errore: null", () => {
@@ -91,12 +101,16 @@ describe("classificaErroreVerifica", () => {
 describe("utenteEliminato", () => {
   it("sì: 403 con codice user_not_found (il testo vero dei log di Auth)", () => {
     expect(
-      utenteEliminato(new AuthApiError("User from sub claim in JWT does not exist", 403, "user_not_found"))
+      utenteEliminato(
+        new AuthApiError("User from sub claim in JWT does not exist", 403, "user_not_found")
+      )
     ).toBe(true);
   });
 
   it("no: gli altri rifiuti del server, anche con lo stesso status", () => {
-    expect(utenteEliminato(new AuthApiError("Session not found", 403, "session_not_found"))).toBe(false);
+    expect(utenteEliminato(new AuthApiError("Session not found", 403, "session_not_found"))).toBe(
+      false
+    );
     expect(utenteEliminato(new AuthApiError("invalid JWT", 401, "bad_jwt"))).toBe(false);
     expect(utenteEliminato(new AuthApiError("Not found", 404, undefined))).toBe(false);
     expect(utenteEliminato(new AuthSessionMissingError())).toBe(false);
@@ -132,7 +146,12 @@ describe("prossimoStatoUtente", () => {
   });
 
   it("un errore di rete non porta mai a null", () => {
-    const entrato = applica({ tipo: "evento", evento: "INITIAL_SESSION", idSessione: ID, idSalvato: null });
+    const entrato = applica({
+      tipo: "evento",
+      evento: "INITIAL_SESSION",
+      idSessione: ID,
+      idSalvato: null,
+    });
     expect(prossimoStatoUtente(entrato, VERIFICA_RETE).userId).toBe(ID);
     // Prima di sapere qualcosa resta "non so ancora", non "nessuno"
     expect(applica(VERIFICA_RETE).userId).toBeUndefined();
@@ -140,7 +159,8 @@ describe("prossimoStatoUtente", () => {
 
   it("mai entrati (nessun cookie): null", () => {
     expect(
-      applica({ tipo: "evento", evento: "INITIAL_SESSION", idSessione: null, idSalvato: null }).userId
+      applica({ tipo: "evento", evento: "INITIAL_SESSION", idSessione: null, idSalvato: null })
+        .userId
     ).toBeNull();
   });
 
@@ -149,7 +169,14 @@ describe("prossimoStatoUtente", () => {
   });
 
   it("Esci (SIGNED_OUT): null", () => {
-    expect(applica(INIZIALE_NULL_CON_COOKIE, { tipo: "evento", evento: "SIGNED_OUT", idSessione: null, idSalvato: null }).userId).toBeNull();
+    expect(
+      applica(INIZIALE_NULL_CON_COOKIE, {
+        tipo: "evento",
+        evento: "SIGNED_OUT",
+        idSessione: null,
+        idSalvato: null,
+      }).userId
+    ).toBeNull();
   });
 
   it("utente cancellato o sessione revocata: null, e il cookie ancora presente non lo fa rientrare", () => {
@@ -158,8 +185,18 @@ describe("prossimoStatoUtente", () => {
     expect(applica(INIZIALE_NULL_CON_COOKIE, rifiuto).userId).toBeNull();
     // ...o prima: la sessione iniziale (anche valida) non lo annulla
     expect(applica(rifiuto, INIZIALE_NULL_CON_COOKIE).userId).toBeNull();
-    expect(applica(rifiuto, { tipo: "evento", evento: "INITIAL_SESSION", idSessione: ID, idSalvato: null }).userId).toBeNull();
+    expect(
+      applica(rifiuto, {
+        tipo: "evento",
+        evento: "INITIAL_SESSION",
+        idSessione: ID,
+        idSalvato: null,
+      }).userId
+    ).toBeNull();
     // Rientrare con un login nuovo sì
-    expect(applica(rifiuto, { tipo: "evento", evento: "SIGNED_IN", idSessione: ID, idSalvato: null }).userId).toBe(ID);
+    expect(
+      applica(rifiuto, { tipo: "evento", evento: "SIGNED_IN", idSessione: ID, idSalvato: null })
+        .userId
+    ).toBe(ID);
   });
 });

@@ -44,10 +44,7 @@ export interface MessaggioBarra {
 
 // `numeroAlimenti`: null per un alimento singolo (sheet o "+" rapido), il
 // numero di voci scritte per un pasto salvato.
-export function messaggioAggiunto(
-  nome: string,
-  numeroAlimenti: number | null
-): MessaggioBarra {
+export function messaggioAggiunto(nome: string, numeroAlimenti: number | null): MessaggioBarra {
   if (numeroAlimenti === null) return { testo: "Aggiunto:", nome, icona: "spunta" };
   const parola = numeroAlimenti === 1 ? "alimento" : "alimenti";
   return { testo: "Aggiunto:", nome, coda: `(${numeroAlimenti} ${parola})`, icona: "spunta" };
@@ -79,7 +76,12 @@ export function messaggioInserimento(
     const aggiornato = piano.aggiornati[0];
     if (!aggiornato) return messaggioAggiunto(nome, null);
     if (aggiornato.tipo === "scrivi") return messaggioAggiornato(nome, aggiornato.grammi);
-    return { testo: "Sommato:", nome, coda: `→ ${formattaGrammi(aggiornato.grammi)}`, icona: "spunta" };
+    return {
+      testo: "Sommato:",
+      nome,
+      coda: `→ ${formattaGrammi(aggiornato.grammi)}`,
+      icona: "spunta",
+    };
   }
 
   if (piano.esclusi.length === 0) return messaggioAggiunto(nome, piano.inseriti.length);

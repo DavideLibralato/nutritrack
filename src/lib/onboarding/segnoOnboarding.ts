@@ -55,13 +55,19 @@ export function segnoDellaSessione(userId: string): SegnoMetadati {
 export function utenteConSegno(segno: "da_fare" | "rimandato"): string | null {
   const sessione = sessioneDelCookie();
   if (!sessione) return null;
-  const effettivo = segnoEffettivo(segnoDaiMetadati(sessione.metadati), leggiSegnoLocale(sessione.id));
+  const effettivo = segnoEffettivo(
+    segnoDaiMetadati(sessione.metadati),
+    leggiSegnoLocale(sessione.id)
+  );
   return effettivo === segno ? sessione.id : null;
 }
 
 function sessioneDelCookie() {
   try {
-    return leggiSessioneSalvata(document.cookie, chiaveSessione(process.env.NEXT_PUBLIC_SUPABASE_URL!));
+    return leggiSessioneSalvata(
+      document.cookie,
+      chiaveSessione(process.env.NEXT_PUBLIC_SUPABASE_URL!)
+    );
   } catch {
     // Cookie o indirizzo illeggibili: come nessuna sessione.
     return null;
@@ -201,7 +207,10 @@ const invioFallito = new Set<string>();
 // Applica decidiRipresa: all'avvio, al ritorno della rete, agli avvisi dei
 // giri (RipresaSegnoOnboarding). Per un utente senza segno né chiave
 // finisce subito: niente Dexie, niente rete. Non lancia mai.
-export function riprendiSegnoOnboarding(userId: string, motivo: MotivoRipresa = "avvio"): Promise<void> {
+export function riprendiSegnoOnboarding(
+  userId: string,
+  motivo: MotivoRipresa = "avvio"
+): Promise<void> {
   const inCorso = ripreseInCorso.get(userId);
   if (inCorso) return inCorso;
   const ripresa = eseguiRipresa(userId, motivo)

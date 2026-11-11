@@ -15,7 +15,14 @@ afterEach(cleanup);
 const TESTO_OLTRE = "La somma supera 99999,99 g: scegli un'altra opzione.";
 
 function doppione(nome: string, grammiEsistenti: number, grammiInArrivo: number): Doppione {
-  return { alimentoId: `alimento-${nome}`, nome, grammiEsistenti, grammiInArrivo, righeEsistenti: 1, righeInArrivo: 1 };
+  return {
+    alimentoId: `alimento-${nome}`,
+    nome,
+    grammiEsistenti,
+    grammiInArrivo,
+    righeEsistenti: 1,
+    righeInArrivo: 1,
+  };
 }
 
 function apri(doppioni: Doppione[], onConferma = vi.fn()) {
@@ -47,7 +54,9 @@ describe("SheetDoppioni — Somma oltre il massimo", () => {
     const somma = mela.getByRole("radio", { name: /^Somma/ });
     expect((somma as HTMLButtonElement).disabled).toBe(true);
     expect(somma.getAttribute("aria-checked")).toBe("false");
-    expect(mela.getByRole("radio", { name: "Tieni separati" }).getAttribute("aria-checked")).toBe("true");
+    expect(mela.getByRole("radio", { name: "Tieni separati" }).getAttribute("aria-checked")).toBe(
+      "true"
+    );
     expect(mela.queryByText(TESTO_OLTRE)).not.toBeNull();
 
     // Un tocco su Somma spenta non cambia niente; la conferma manda
@@ -73,7 +82,11 @@ describe("SheetDoppioni — Somma oltre il massimo", () => {
   it("vale per blocco: un alimento oltre il massimo non spegne Somma sugli altri", () => {
     const onConferma = apri([doppione("Mela", 50000, 50000), doppione("Pane", 100, 50)]);
 
-    expect(blocco("Pane").getByRole("radio", { name: /^Somma/ }).getAttribute("aria-checked")).toBe("true");
+    expect(
+      blocco("Pane")
+        .getByRole("radio", { name: /^Somma/ })
+        .getAttribute("aria-checked")
+    ).toBe("true");
     expect(blocco("Pane").queryByText(TESTO_OLTRE)).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Sposta" }));

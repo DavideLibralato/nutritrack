@@ -69,7 +69,13 @@ vi.mock("@/lib/repository/misurazioni", async (originale) => ({
 }));
 
 function stato(campi: Partial<StatoSegno>): StatoSegno {
-  return { segno: "da_fare", mostraOnboarding: true, mostraScheda: false, attendiDiscesa: false, ...campi };
+  return {
+    segno: "da_fare",
+    mostraOnboarding: true,
+    mostraScheda: false,
+    attendiDiscesa: false,
+    ...campi,
+  };
 }
 
 async function profiloCompleto() {
@@ -247,7 +253,13 @@ describe("onboarding — passo 3", () => {
 
   it("con la pesata di oggi, il campo parte da quella", async () => {
     await profiloCompleto();
-    await repositoryMisurazioni.crea({ user_id: USER_ID, tipo: "peso", valore: 62.5, unita: "kg", data: oggiLocale() });
+    await repositoryMisurazioni.crea({
+      user_id: USER_ID,
+      tipo: "peso",
+      valore: 62.5,
+      unita: "kg",
+      data: oggiLocale(),
+    });
     finti.query = "continua=1";
     finti.stato = stato({ segno: "rimandato", mostraOnboarding: false });
     render(<OnboardingPage />);
@@ -286,7 +298,13 @@ describe("onboarding — il passo di partenza si decide una volta", () => {
     // Arrivano profilo e pesata (da un salvataggio, o dalla discesa): con
     // questi dati il passo di partenza sarebbe il 4.
     await profiloCompleto();
-    await repositoryMisurazioni.crea({ user_id: USER_ID, tipo: "peso", valore: 70, unita: "kg", data: oggiLocale() });
+    await repositoryMisurazioni.crea({
+      user_id: USER_ID,
+      tipo: "peso",
+      valore: 70,
+      unita: "kg",
+      data: oggiLocale(),
+    });
     await new Promise((fine) => setTimeout(fine, 50));
 
     expect(screen.getByRole("heading", { name: "Ciao!" })).toBeTruthy();
@@ -294,7 +312,13 @@ describe("onboarding — il passo di partenza si decide una volta", () => {
   });
 
   it("salvato il passo 2 si va al 3, non al passo calcolato di nuovo", async () => {
-    await repositoryMisurazioni.crea({ user_id: USER_ID, tipo: "peso", valore: 70, unita: "kg", data: oggiLocale() });
+    await repositoryMisurazioni.crea({
+      user_id: USER_ID,
+      tipo: "peso",
+      valore: 70,
+      unita: "kg",
+      data: oggiLocale(),
+    });
     finti.query = "continua=1";
     finti.stato = stato({ segno: "rimandato", mostraOnboarding: false });
     render(<OnboardingPage />);
@@ -319,18 +343,29 @@ async function finoAlPasso4(sesso: "femmina" | "non_indicato" = "femmina") {
     const [p] = await repositoryProfili.ottieniTutti(USER_ID);
     await repositoryProfili.aggiorna(p.id, { sesso });
   }
-  await repositoryMisurazioni.crea({ user_id: USER_ID, tipo: "peso", valore: PESO, unita: "kg", data: oggiLocale() });
+  await repositoryMisurazioni.crea({
+    user_id: USER_ID,
+    tipo: "peso",
+    valore: PESO,
+    unita: "kg",
+    data: oggiLocale(),
+  });
   finti.query = "continua=1";
   finti.stato = stato({ segno: "rimandato", mostraOnboarding: false });
   render(<OnboardingPage />);
   await screen.findByRole("heading", { name: "Cosa vuoi ottenere?" });
 }
 
-async function finoAlPasso5(obiettivo = "Mantenere", sesso: "femmina" | "non_indicato" = "femmina") {
+async function finoAlPasso5(
+  obiettivo = "Mantenere",
+  sesso: "femmina" | "non_indicato" = "femmina"
+) {
   await finoAlPasso4(sesso);
   fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${obiettivo}`) }));
   fireEvent.click(avanti());
-  await screen.findByText("Giorni di allenamento, pasti e orari e colore dell'app li trovi in Impostazioni.");
+  await screen.findByText(
+    "Giorni di allenamento, pasti e orari e colore dell'app li trovi in Impostazioni."
+  );
 }
 
 // I numeri di calcolaFabbisogno per il profilo di prova (donna, nata il
@@ -347,7 +382,8 @@ function attesa(tipoObiettivo: "dimagrire" | "mantenere" | "massa") {
 }
 
 const campo = (nome: string) => screen.getByLabelText(nome) as HTMLInputElement;
-const inizia = () => screen.getByRole("button", { name: "Inizia a usare Libra" }) as HTMLButtonElement;
+const inizia = () =>
+  screen.getByRole("button", { name: "Inizia a usare Libra" }) as HTMLButtonElement;
 
 function valoriCampi() {
   return {
@@ -407,7 +443,13 @@ describe("onboarding — passo 4", () => {
 
   it("si entra dal passo 4 anche alla ripresa", async () => {
     await profiloCompleto();
-    await repositoryMisurazioni.crea({ user_id: USER_ID, tipo: "peso", valore: PESO, unita: "kg", data: oggiLocale() });
+    await repositoryMisurazioni.crea({
+      user_id: USER_ID,
+      tipo: "peso",
+      valore: PESO,
+      unita: "kg",
+      data: oggiLocale(),
+    });
     render(<OnboardingPage />);
     expect(await screen.findByRole("heading", { name: "Cosa vuoi ottenere?" })).toBeTruthy();
   });
@@ -417,7 +459,9 @@ describe("onboarding — passo 5", () => {
   it("la proposta ha i numeri di calcolaFabbisogno", async () => {
     await finoAlPasso5("Mantenere");
     expect(screen.getByRole("heading", { name: "Ecco la tua proposta" })).toBeTruthy();
-    expect(screen.getByText("Calcolato dai tuoi dati. Tocca un numero per cambiarlo.")).toBeTruthy();
+    expect(
+      screen.getByText("Calcolato dai tuoi dati. Tocca un numero per cambiarlo.")
+    ).toBeTruthy();
     expect(valoriCampi()).toEqual(comeCampi(attesa("mantenere")));
   });
 
@@ -504,11 +548,19 @@ describe("onboarding — la fine", () => {
     expect(richiesta).toMatchObject({ periodoVistoId: null, scelta: null });
 
     expect(finti.concludi).toHaveBeenCalledWith(USER_ID, "fatto");
-    expect(spia.mock.invocationCallOrder[0]).toBeLessThan(finti.concludi.mock.invocationCallOrder[0]);
-    expect(finti.concludi.mock.invocationCallOrder[0]).toBeLessThan(finti.replace.mock.invocationCallOrder[0]);
+    expect(spia.mock.invocationCallOrder[0]).toBeLessThan(
+      finti.concludi.mock.invocationCallOrder[0]
+    );
+    expect(finti.concludi.mock.invocationCallOrder[0]).toBeLessThan(
+      finti.replace.mock.invocationCallOrder[0]
+    );
 
     const [periodo] = await repositoryObiettivi.ottieniTutti(USER_ID);
-    expect(periodo).toMatchObject({ tipo: "dimagrire", peso_obiettivo: 58.5, kcal: attesa("dimagrire").kcal });
+    expect(periodo).toMatchObject({
+      tipo: "dimagrire",
+      peso_obiettivo: 58.5,
+      kcal: attesa("dimagrire").kcal,
+    });
   });
 
   it("salvataggio fallito: il messaggio, nessuna conclusione, si resta sul passo", async () => {
@@ -539,7 +591,9 @@ describe("onboarding — la fine", () => {
 
     fireEvent.click(inizia());
 
-    expect(await screen.findByText("I tuoi obiettivi sono già stati impostati da un altro dispositivo.")).toBeTruthy();
+    expect(
+      await screen.findByText("I tuoi obiettivi sono già stati impostati da un altro dispositivo.")
+    ).toBeTruthy();
     expect(finti.concludi).toHaveBeenCalledWith(USER_ID, "fatto");
     expect(finti.replace).not.toHaveBeenCalled();
     // Non è stato scritto niente: resta l'obiettivo dell'altro dispositivo.

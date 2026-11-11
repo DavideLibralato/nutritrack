@@ -181,7 +181,9 @@ export default function CreaAlimentoForm({
   const [carboidrati, setCarboidrati] = useState(
     a ? numeroPerCampo(a.carboidrati_100g, 2) : campoDa(off?.carboidrati_100g)
   );
-  const [grassi, setGrassi] = useState(a ? numeroPerCampo(a.grassi_100g, 2) : campoDa(off?.grassi_100g));
+  const [grassi, setGrassi] = useState(
+    a ? numeroPerCampo(a.grassi_100g, 2) : campoDa(off?.grassi_100g)
+  );
   const [porzione, setPorzione] = useState(a ? grammiPerCampo(a.porzione_default_g) : "100");
   const [errore, setErrore] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
@@ -343,135 +345,82 @@ export default function CreaAlimentoForm({
 
   return (
     <>
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold">
-          {modifica ? "Modifica alimento" : "Nuovo alimento"}
-        </h2>
-        <button
-          type="button"
-          onClick={onAnnulla}
-          className={`rounded text-sm text-muted underline ${CLASSE_FOCUS}`}
-        >
-          {etichettaIndietro}
-        </button>
-      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold">
+            {modifica ? "Modifica alimento" : "Nuovo alimento"}
+          </h2>
+          <button
+            type="button"
+            onClick={onAnnulla}
+            className={`rounded text-sm text-muted underline ${CLASSE_FOCUS}`}
+          >
+            {etichettaIndietro}
+          </button>
+        </div>
 
-      {/* Con un codice portato da "Apri" l'avviso parla di quel codice
+        {/* Con un codice portato da "Apri" l'avviso parla di quel codice
           («…salvalo per ritrovarlo…»): tolto con la ×, non è più vero e
           sparisce (Davide, 07/11). */}
-      {avviso && !(codiceIniziale && codiceNuovo === null) && (
-        <div role="status" className="flex gap-2 rounded-xl bg-accent/10 p-3 text-sm">
-          <IconaInfo className="mt-0.5 shrink-0 text-accent" />
-          <span>{avviso}</span>
-        </div>
-      )}
+        {avviso && !(codiceIniziale && codiceNuovo === null) && (
+          <div role="status" className="flex gap-2 rounded-xl bg-accent/10 p-3 text-sm">
+            <IconaInfo className="mt-0.5 shrink-0 text-accent" />
+            <span>{avviso}</span>
+          </div>
+        )}
 
-      {/* L'avviso del mockup "Valori da Open Food Facts": i valori li
+        {/* L'avviso del mockup "Valori da Open Food Facts": i valori li
           inseriscono dei volontari, si controllano con l'etichetta. Se OFF
           ha solo nome e marca, lo dice: i valori vanno scritti. */}
-      {off && (
-        <div role="status" className="flex gap-2 rounded-xl bg-accent/10 p-3 text-sm">
-          <IconaInfo className="mt-0.5 shrink-0 text-accent" />
-          {haValori(off) ? (
-            <span>
-              Valori trovati su Open Food Facts. <b>Controllali con l&apos;etichetta</b> prima di
-              salvare: li inseriscono dei volontari.
-            </span>
-          ) : (
-            <span>
-              Prodotto trovato su Open Food Facts, ma senza valori: <b>scrivili dall&apos;etichetta</b>.
-            </span>
-          )}
-        </div>
-      )}
-
-      <div>
-        <label htmlFor="crea-nome" className="block text-sm font-medium mb-1">
-          Nome
-        </label>
-        <input
-          id="crea-nome"
-          type="text"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          aria-invalid={doppionePerNome}
-          aria-describedby={doppionePerNome ? "crea-doppione" : undefined}
-          className={`w-full rounded-lg border p-2 ${doppionePerNome ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
-        />
-      </div>
-
-      <div>
-        <label htmlFor="crea-marca" className="block text-sm font-medium mb-1">
-          Marca <span className="font-normal text-muted">(facoltativa)</span>
-        </label>
-        <input
-          id="crea-marca"
-          type="text"
-          value={marca}
-          onChange={(e) => setMarca(e.target.value)}
-          aria-invalid={doppionePerNome}
-          aria-describedby={doppionePerNome ? "crea-doppione" : undefined}
-          className={`w-full rounded-lg border p-2 ${doppionePerNome ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
-        />
-        {/* Il doppione è la coppia nome + marca: il messaggio sta dopo
-            tutti e due i campi, e tutti e due hanno il bordo arancio.
-            Sotto il solo nome sembrava un errore sul nome (16/10). */}
-        {doppione && doppionePerNome && (
-          <MessaggioDoppione
-            doppione={doppione}
-            barcode={barcode}
-            puoAprire={puoAprire}
-            onApri={apriEsistente}
-          />
-        )}
-        <p className="text-xs text-muted mt-1">
-          Per distinguere due prodotti con lo stesso nome ma marca diversa.
-        </p>
-      </div>
-
-      {/* Il codice a barre, in sola lettura (decisione del 07/11): se è
-          sbagliato si torna indietro e si scansiona di nuovo. readOnly e
-          non disabled: si legge e si seleziona, e il lettore di schermo
-          lo annuncia come campo. Un codice appena letto in modifica ha la
-          × dentro il campo, alto 44 px perché la × sia un tocco da 44
-          (mockup catalogo-alimenti.html): una volta salvato non si toglie
-          più. */}
-      {codiceInCampo ? (
-        <div>
-          <label htmlFor="crea-codice" className="block text-sm font-medium mb-1">
-            Codice a barre
-          </label>
-          <div className="relative">
-            <input
-              id="crea-codice"
-              type="text"
-              readOnly
-              value={codiceInCampo}
-              aria-invalid={doppionePerCodice}
-              aria-describedby={doppionePerCodice ? "crea-doppione" : undefined}
-              className={`w-full rounded-lg border bg-surface p-2 text-muted tabular-nums ${conTogli ? "h-11 pr-12" : ""} ${doppionePerCodice ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
-            />
-            {conTogli && (
-              <button
-                type="button"
-                onClick={() => setCodiceNuovo(null)}
-                aria-label="Togli il codice"
-                className={`absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`}
-              >
-                <IconaCroce />
-              </button>
+        {off && (
+          <div role="status" className="flex gap-2 rounded-xl bg-accent/10 p-3 text-sm">
+            <IconaInfo className="mt-0.5 shrink-0 text-accent" />
+            {haValori(off) ? (
+              <span>
+                Valori trovati su Open Food Facts. <b>Controllali con l&apos;etichetta</b> prima di
+                salvare: li inseriscono dei volontari.
+              </span>
+            ) : (
+              <span>
+                Prodotto trovato su Open Food Facts, ma senza valori:{" "}
+                <b>scrivili dall&apos;etichetta</b>.
+              </span>
             )}
           </div>
-          {conTogli && (
-            <p className="text-xs text-muted mt-1">Una volta salvato, il codice non si cambia più.</p>
-          )}
-          {codiceArrivato && !codiceNuovo && (
-            <p role="status" className="mt-1 text-sm text-muted">
-              Intanto questo alimento ha ricevuto il codice {codiceArrivato} da un altro dispositivo.
-            </p>
-          )}
-          {doppione && doppionePerCodice && (
+        )}
+
+        <div>
+          <label htmlFor="crea-nome" className="block text-sm font-medium mb-1">
+            Nome
+          </label>
+          <input
+            id="crea-nome"
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            aria-invalid={doppionePerNome}
+            aria-describedby={doppionePerNome ? "crea-doppione" : undefined}
+            className={`w-full rounded-lg border p-2 ${doppionePerNome ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="crea-marca" className="block text-sm font-medium mb-1">
+            Marca <span className="font-normal text-muted">(facoltativa)</span>
+          </label>
+          <input
+            id="crea-marca"
+            type="text"
+            value={marca}
+            onChange={(e) => setMarca(e.target.value)}
+            aria-invalid={doppionePerNome}
+            aria-describedby={doppionePerNome ? "crea-doppione" : undefined}
+            className={`w-full rounded-lg border p-2 ${doppionePerNome ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+          />
+          {/* Il doppione è la coppia nome + marca: il messaggio sta dopo
+            tutti e due i campi, e tutti e due hanno il bordo arancio.
+            Sotto il solo nome sembrava un errore sul nome (16/10). */}
+          {doppione && doppionePerNome && (
             <MessaggioDoppione
               doppione={doppione}
               barcode={barcode}
@@ -479,200 +428,259 @@ export default function CreaAlimentoForm({
               onApri={apriEsistente}
             />
           )}
+          <p className="text-xs text-muted mt-1">
+            Per distinguere due prodotti con lo stesso nome ma marca diversa.
+          </p>
         </div>
-      ) : (
-        modifica &&
-        aggiungiCodice && (
-          /* Dove, negli alimenti con il codice, c'è il campo (proposta 1
+
+        {/* Il codice a barre, in sola lettura (decisione del 07/11): se è
+          sbagliato si torna indietro e si scansiona di nuovo. readOnly e
+          non disabled: si legge e si seleziona, e il lettore di schermo
+          lo annuncia come campo. Un codice appena letto in modifica ha la
+          × dentro il campo, alto 44 px perché la × sia un tocco da 44
+          (mockup catalogo-alimenti.html): una volta salvato non si toglie
+          più. */}
+        {codiceInCampo ? (
+          <div>
+            <label htmlFor="crea-codice" className="block text-sm font-medium mb-1">
+              Codice a barre
+            </label>
+            <div className="relative">
+              <input
+                id="crea-codice"
+                type="text"
+                readOnly
+                value={codiceInCampo}
+                aria-invalid={doppionePerCodice}
+                aria-describedby={doppionePerCodice ? "crea-doppione" : undefined}
+                className={`w-full rounded-lg border bg-surface p-2 text-muted tabular-nums ${conTogli ? "h-11 pr-12" : ""} ${doppionePerCodice ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+              />
+              {conTogli && (
+                <button
+                  type="button"
+                  onClick={() => setCodiceNuovo(null)}
+                  aria-label="Togli il codice"
+                  className={`absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`}
+                >
+                  <IconaCroce />
+                </button>
+              )}
+            </div>
+            {conTogli && (
+              <p className="text-xs text-muted mt-1">
+                Una volta salvato, il codice non si cambia più.
+              </p>
+            )}
+            {codiceArrivato && !codiceNuovo && (
+              <p role="status" className="mt-1 text-sm text-muted">
+                Intanto questo alimento ha ricevuto il codice {codiceArrivato} da un altro
+                dispositivo.
+              </p>
+            )}
+            {doppione && doppionePerCodice && (
+              <MessaggioDoppione
+                doppione={doppione}
+                barcode={barcode}
+                puoAprire={puoAprire}
+                onApri={apriEsistente}
+              />
+            )}
+          </div>
+        ) : (
+          modifica &&
+          aggiungiCodice && (
+            /* Dove, negli alimenti con il codice, c'è il campo (proposta 1
              del mockup). Acceso anche senza rete: legge solo il codice.
              La fotocamera si chiede dentro il tocco (richiediFotocamera),
              come Scansiona in Aggiungi. */
-          <button
-            type="button"
-            onClick={() => setScansione(richiediFotocamera())}
-            className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-dashed border-accent px-3 text-[15px] font-semibold text-accent ${CLASSE_FOCUS}`}
-          >
-            <IconaCodiceBarre size={20} />
-            Aggiungi codice a barre
-          </button>
-        )
-      )}
+            <button
+              type="button"
+              onClick={() => setScansione(richiediFotocamera())}
+              className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-dashed border-accent px-3 text-[15px] font-semibold text-accent ${CLASSE_FOCUS}`}
+            >
+              <IconaCodiceBarre size={20} />
+              Aggiungi codice a barre
+            </button>
+          )
+        )}
 
-      {/* Ordine come sulle etichette dei prodotti: Kcal, Grassi, Carboidrati,
+        {/* Ordine come sulle etichette dei prodotti: Kcal, Grassi, Carboidrati,
           Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"). */}
-      <p className="text-xs uppercase tracking-wide text-muted">Valori per 100 g</p>
-      <div className="space-y-3">
-        <CampoNumero
-          id="crea-kcal"
-          etichetta="Calorie (kcal)"
-          valore={kcal}
-          errore={validazione.errori.kcal}
-          nota={kcalDaKj ? "Calcolate dai kJ di Open Food Facts: controlla l'etichetta" : undefined}
-          onChange={setKcal}
-        />
-        <CampoNumero
-          id="crea-grassi"
-          etichetta="Grassi (g)"
-          valore={grassi}
-          errore={validazione.errori.grassi}
-          onChange={setGrassi}
-        />
-        <CampoNumero
-          id="crea-carboidrati"
-          etichetta="Carboidrati (g)"
-          valore={carboidrati}
-          errore={validazione.errori.carboidrati}
-          onChange={setCarboidrati}
-        />
-        <CampoNumero
-          id="crea-proteine"
-          etichetta="Proteine (g)"
-          valore={proteine}
-          errore={validazione.errori.proteine}
-          onChange={setProteine}
-        />
-        {/* La somma dei macro non è colpa di un campo solo: il messaggio sta
+        <p className="text-xs uppercase tracking-wide text-muted">Valori per 100 g</p>
+        <div className="space-y-3">
+          <CampoNumero
+            id="crea-kcal"
+            etichetta="Calorie (kcal)"
+            valore={kcal}
+            errore={validazione.errori.kcal}
+            nota={
+              kcalDaKj ? "Calcolate dai kJ di Open Food Facts: controlla l'etichetta" : undefined
+            }
+            onChange={setKcal}
+          />
+          <CampoNumero
+            id="crea-grassi"
+            etichetta="Grassi (g)"
+            valore={grassi}
+            errore={validazione.errori.grassi}
+            onChange={setGrassi}
+          />
+          <CampoNumero
+            id="crea-carboidrati"
+            etichetta="Carboidrati (g)"
+            valore={carboidrati}
+            errore={validazione.errori.carboidrati}
+            onChange={setCarboidrati}
+          />
+          <CampoNumero
+            id="crea-proteine"
+            etichetta="Proteine (g)"
+            valore={proteine}
+            errore={validazione.errori.proteine}
+            onChange={setProteine}
+          />
+          {/* La somma dei macro non è colpa di un campo solo: il messaggio sta
             sotto tutto il gruppo. */}
-        {validazione.erroreSomma && (
-          <p role="status" className="text-sm text-warning">
-            {validazione.erroreSomma}
-          </p>
-        )}
-      </div>
+          {validazione.erroreSomma && (
+            <p role="status" className="text-sm text-warning">
+              {validazione.erroreSomma}
+            </p>
+          )}
+        </div>
 
-      <div>
-        <label htmlFor="crea-porzione" className="block text-sm font-medium mb-1">
-          Porzione predefinita (g)
-        </label>
-        <input
-          id="crea-porzione"
-          type="text"
-          inputMode="decimal"
-          value={porzione}
-          onChange={(e) => setPorzione(e.target.value)}
-          aria-invalid={!!validazione.errori.porzione}
-          aria-describedby={validazione.errori.porzione ? "crea-porzione-errore" : undefined}
-          className={`w-full rounded-lg border p-2 ${validazione.errori.porzione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
-        />
-        {validazione.errori.porzione && (
-          <p id="crea-porzione-errore" className="mt-1 text-sm text-warning">
-            {validazione.errori.porzione}
+        <div>
+          <label htmlFor="crea-porzione" className="block text-sm font-medium mb-1">
+            Porzione predefinita (g)
+          </label>
+          <input
+            id="crea-porzione"
+            type="text"
+            inputMode="decimal"
+            value={porzione}
+            onChange={(e) => setPorzione(e.target.value)}
+            aria-invalid={!!validazione.errori.porzione}
+            aria-describedby={validazione.errori.porzione ? "crea-porzione-errore" : undefined}
+            className={`w-full rounded-lg border p-2 ${validazione.errori.porzione ? "border-warning" : "border-border"} ${CLASSE_FOCUS}`}
+          />
+          {validazione.errori.porzione && (
+            <p id="crea-porzione-errore" className="mt-1 text-sm text-warning">
+              {validazione.errori.porzione}
+            </p>
+          )}
+          <p className="text-xs text-muted mt-1">
+            È il valore già pronto nello sheet quantità: scegli quello che pesi più spesso.
           </p>
-        )}
-        <p className="text-xs text-muted mt-1">
-          È il valore già pronto nello sheet quantità: scegli quello che pesi più spesso.
-        </p>
-      </div>
+        </div>
 
-      {/* Solo in modifica, sotto tutti i valori: cosa cambia salvando. Il
+        {/* Solo in modifica, sotto tutti i valori: cosa cambia salvando. Il
           diario copia i valori al momento dell'inserimento, i pasti salvati
           li leggono dal catalogo (PUNTO_DI_PARTENZA.md §3, "Alimenti"). */}
-      {modifica && (
-        <p className="text-sm text-muted">
-          Le modifiche valgono da ora e nei pasti salvati. Il diario già registrato non cambia.
-        </p>
-      )}
+        {modifica && (
+          <p className="text-sm text-muted">
+            Le modifiche valgono da ora e nei pasti salvati. Il diario già registrato non cambia.
+          </p>
+        )}
 
-      {/* La licenza dei dati (ODbL): chi li usa deve dire da dove vengono.
+        {/* La licenza dei dati (ODbL): chi li usa deve dire da dove vengono.
           Ogni volta che il prodotto è trovato, anche senza valori: nome e
           marca vengono comunque da OFF (Davide, 07/11). Solo un prodotto
           non trovato non la mostra. */}
-      {off && <p className="text-xs text-muted">Dati da Open Food Facts · licenza ODbL</p>}
+        {off && <p className="text-xs text-muted">Dati da Open Food Facts · licenza ODbL</p>}
 
-      {errore && <p className="text-sm text-warning">{errore}</p>}
+        {errore && <p className="text-sm text-warning">{errore}</p>}
 
-      {/* Perché il pulsante è spento, quando manca qualcosa: i campi vuoti
+        {/* Perché il pulsante è spento, quando manca qualcosa: i campi vuoti
           non si segnano in rosso uno per uno (un form nuovo parte vuoto, non
           sbagliato), si elencano qui. */}
-      {mancanti.length > 0 && (
-        <p className="text-sm text-muted">Per salvare mancano: {mancanti.join(", ")}.</p>
-      )}
+        {mancanti.length > 0 && (
+          <p className="text-sm text-muted">Per salvare mancano: {mancanti.join(", ")}.</p>
+        )}
 
-      {modifica && senzaElimina ? (
-        /* Solo il Salva, a tutta larghezza (in Aggiungi dopo "Apri" con il
+        {modifica && senzaElimina ? (
+          /* Solo il Salva, a tutta larghezza (in Aggiungi dopo "Apri" con il
            codice: «Salva e scegli la quantità», niente Elimina). */
-        <button
-          type="submit"
-          disabled={inCorso || !salvabile}
-          className={`w-full rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-        >
-          {inCorso ? "Salvataggio..." : etichettaSalva}
-        </button>
-      ) : modifica ? (
-        /* Riga pulsanti in modifica: [Elimina] [Salva]; il tap su Elimina
+          <button
+            type="submit"
+            disabled={inCorso || !salvabile}
+            className={`w-full rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+          >
+            {inCorso ? "Salvataggio..." : etichettaSalva}
+          </button>
+        ) : modifica ? (
+          /* Riga pulsanti in modifica: [Elimina] [Salva]; il tap su Elimina
            la trasforma in [No] [Sì, elimina] (conferma inline, stessa
            posizione). Per annullare la modifica si usa "Torna alla ricerca"
            qui sopra. */
-        <div className="flex gap-3">
-          {confermaElim ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setConfermaElim(false)}
-                disabled={inCorso}
-                className={`flex-1 rounded-lg border border-border p-2 disabled:opacity-50 ${CLASSE_FOCUS}`}
-              >
-                No
-              </button>
-              <button
-                type="button"
-                onClick={handleElimina}
-                disabled={inCorso}
-                className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-              >
-                {inCorso ? "Elimino..." : "Sì, elimina"}
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setConfermaElim(true)}
-                disabled={inCorso}
-                className={`flex-1 rounded-lg border border-warning p-2 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
-              >
-                Elimina
-              </button>
-              <button
-                type="submit"
-                disabled={inCorso || !salvabile}
-                className={`flex-1 rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-              >
-                {inCorso ? "Salvataggio..." : etichettaSalva}
-              </button>
-            </>
-          )}
-        </div>
-      ) : (
-        <button
-          type="submit"
-          disabled={inCorso || !salvabile}
-          className={`w-full rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-        >
-          {inCorso ? "Salvataggio..." : etichettaCrea}
-        </button>
-      )}
-    </form>
+          <div className="flex gap-3">
+            {confermaElim ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setConfermaElim(false)}
+                  disabled={inCorso}
+                  className={`flex-1 rounded-lg border border-border p-2 disabled:opacity-50 ${CLASSE_FOCUS}`}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={handleElimina}
+                  disabled={inCorso}
+                  className={`flex-1 rounded-lg bg-warning-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+                >
+                  {inCorso ? "Elimino..." : "Sì, elimina"}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setConfermaElim(true)}
+                  disabled={inCorso}
+                  className={`flex-1 rounded-lg border border-warning p-2 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+                >
+                  Elimina
+                </button>
+                <button
+                  type="submit"
+                  disabled={inCorso || !salvabile}
+                  className={`flex-1 rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+                >
+                  {inCorso ? "Salvataggio..." : etichettaSalva}
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          <button
+            type="submit"
+            disabled={inCorso || !salvabile}
+            className={`w-full rounded-lg bg-accent-strong p-2 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+          >
+            {inCorso ? "Salvataggio..." : etichettaCrea}
+          </button>
+        )}
+      </form>
 
-    {/* Fuori dal <form>: la schermata ha il suo <form> ("Scrivi il
+      {/* Fuori dal <form>: la schermata ha il suo <form> ("Scrivi il
         codice"), e un submit lì dentro risalirebbe fino a questo, cioè
         al Salva. */}
-    {scansione !== undefined && a && (
-      <SchermataScansione
-        userId={userId}
-        richiestaFotocamera={scansione}
-        titolo={`Codice per «${a.nome}»`}
-        onChiudi={() => setScansione(undefined)}
-        uso={{
-          tipo: "solo-codice",
-          onCodice: (codice) => {
-            setScansione(undefined);
-            setCodiceArrivato(null);
-            setCodiceNuovo(codice);
-          },
-        }}
-      />
-    )}
+      {scansione !== undefined && a && (
+        <SchermataScansione
+          userId={userId}
+          richiestaFotocamera={scansione}
+          titolo={`Codice per «${a.nome}»`}
+          onChiudi={() => setScansione(undefined)}
+          uso={{
+            tipo: "solo-codice",
+            onCodice: (codice) => {
+              setScansione(undefined);
+              setCodiceArrivato(null);
+              setCodiceNuovo(codice);
+            },
+          }}
+        />
+      )}
     </>
   );
 }

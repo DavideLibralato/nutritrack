@@ -25,7 +25,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { db } from "../db/database";
-import { attendiDiscesaInCorso, scaricaTabella, DIMENSIONE_PAGINA, millisecondiDi } from "./discesa";
+import {
+  attendiDiscesaInCorso,
+  scaricaTabella,
+  DIMENSIONE_PAGINA,
+  millisecondiDi,
+} from "./discesa";
 import type { Pasto } from "../db/tipi";
 import { MESSAGGIO_SCADUTA, TEMPO_MASSIMO_RICHIESTA_MS } from "./tempoMassimo";
 
@@ -123,7 +128,16 @@ describe("scaricaTabella — paginazione", () => {
     const userId = `utente-${crypto.randomUUID()}`;
     fromMock.mockReturnValue(
       creaBuilderFinto(
-        { data: [pasto({ id: crypto.randomUUID(), user_id: userId, updated_at: "2026-09-20T09:00:00.000Z" })], error: null },
+        {
+          data: [
+            pasto({
+              id: crypto.randomUUID(),
+              user_id: userId,
+              updated_at: "2026-09-20T09:00:00.000Z",
+            }),
+          ],
+          error: null,
+        },
         {}
       )
     );
@@ -198,13 +212,25 @@ describe("scaricaTabella — non sovrascrive una modifica locale più recente", 
     const userId = `utente-${crypto.randomUUID()}`;
     const id = crypto.randomUUID();
     await db.pasti.put(
-      pasto({ id, user_id: userId, nome: "Modificato in locale", updated_at: "2026-09-20T12:00:00.000Z" })
+      pasto({
+        id,
+        user_id: userId,
+        nome: "Modificato in locale",
+        updated_at: "2026-09-20T12:00:00.000Z",
+      })
     );
 
     fromMock.mockReturnValue(
       creaBuilderFinto(
         {
-          data: [pasto({ id, user_id: userId, nome: "Versione vecchia dal server", updated_at: "2026-09-20T11:00:00.000Z" })],
+          data: [
+            pasto({
+              id,
+              user_id: userId,
+              nome: "Versione vecchia dal server",
+              updated_at: "2026-09-20T11:00:00.000Z",
+            }),
+          ],
           error: null,
         },
         {}
@@ -221,13 +247,25 @@ describe("scaricaTabella — non sovrascrive una modifica locale più recente", 
     const userId = `utente-${crypto.randomUUID()}`;
     const id = crypto.randomUUID();
     await db.pasti.put(
-      pasto({ id, user_id: userId, nome: "Versione locale vecchia", updated_at: "2026-09-20T11:00:00.000Z" })
+      pasto({
+        id,
+        user_id: userId,
+        nome: "Versione locale vecchia",
+        updated_at: "2026-09-20T11:00:00.000Z",
+      })
     );
 
     fromMock.mockReturnValue(
       creaBuilderFinto(
         {
-          data: [pasto({ id, user_id: userId, nome: "Versione nuova dal server", updated_at: "2026-09-20T12:00:00.000Z" })],
+          data: [
+            pasto({
+              id,
+              user_id: userId,
+              nome: "Versione nuova dal server",
+              updated_at: "2026-09-20T12:00:00.000Z",
+            }),
+          ],
           error: null,
         },
         {}
@@ -239,7 +277,6 @@ describe("scaricaTabella — non sovrascrive una modifica locale più recente", 
     const locale = await db.pasti.get(id);
     expect(locale?.nome).toBe("Versione nuova dal server");
   });
-
 });
 
 describe("millisecondiDi — confronto per istante, non come stringhe", () => {
@@ -328,13 +365,23 @@ describe("scaricaTabella — cancellazioni scaricate scartano le modifiche in so
     const idOutbox = `pasti:${id}`;
 
     await db.pasti.put(
-      pasto({ id, user_id: userId, nome: "Modifica locale offline", updated_at: "2026-09-20T13:00:00.000Z" })
+      pasto({
+        id,
+        user_id: userId,
+        nome: "Modifica locale offline",
+        updated_at: "2026-09-20T13:00:00.000Z",
+      })
     );
     await db.outbox.put({
       id: idOutbox,
       tabella: "pasti",
       record_id: id,
-      dati: pasto({ id, user_id: userId, nome: "Modifica locale offline", updated_at: "2026-09-20T13:00:00.000Z" }),
+      dati: pasto({
+        id,
+        user_id: userId,
+        nome: "Modifica locale offline",
+        updated_at: "2026-09-20T13:00:00.000Z",
+      }),
       creato_il: "2026-09-20T13:00:00.000Z",
       tentativi: 0,
       ultimo_errore: null,
@@ -540,7 +587,9 @@ describe("attendiDiscesaInCorso", () => {
     await unPoDiTempo();
     expect(finita).toBe(false);
 
-    pagina.consegna([pasto({ id: crypto.randomUUID(), user_id: userId, updated_at: "2026-10-11T08:00:00.000Z" })]);
+    pagina.consegna([
+      pasto({ id: crypto.randomUUID(), user_id: userId, updated_at: "2026-10-11T08:00:00.000Z" }),
+    ]);
     await attesa;
 
     // La pulizia di Esci, subito dopo l'attesa.

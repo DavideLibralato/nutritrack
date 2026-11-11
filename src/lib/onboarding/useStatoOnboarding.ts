@@ -31,7 +31,12 @@ import { useMetadatiUtente, useUtenteId } from "../supabase/useUtente";
 import { useDiscesaRiuscita } from "../sync/useDiscesaRiuscita";
 import { repositoryMisurazioni, repositoryObiettivi, repositoryProfili } from "../repository";
 import { iscriviSegnoLocale, leggiSegnoLocale } from "./segnoOnboarding";
-import { segnoDaiMetadati, statoSegno, type SegnoMetadati, type StatoSegno } from "./statoOnboarding";
+import {
+  segnoDaiMetadati,
+  statoSegno,
+  type SegnoMetadati,
+  type StatoSegno,
+} from "./statoOnboarding";
 
 const NESSUN_SEGNO: StatoSegno = {
   segno: null,
@@ -43,7 +48,10 @@ const NESSUN_SEGNO: StatoSegno = {
 export function useStatoOnboarding(): StatoSegno | undefined {
   const userId = useUtenteId();
   const metadati = useMetadatiUtente();
-  return useStatoOnboardingPer(userId, metadati === undefined ? undefined : segnoDaiMetadati(metadati ?? undefined));
+  return useStatoOnboardingPer(
+    userId,
+    metadati === undefined ? undefined : segnoDaiMetadati(metadati ?? undefined)
+  );
 }
 
 // `segno`: il segno nei metadati, già interpretato (segnoDaiMetadati);

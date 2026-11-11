@@ -27,7 +27,11 @@ export default function SchedePerData({
     ...date.map((d) => ({ data: d, etichetta: `Dal ${formattaGiornoCorto(d)}` })),
   ];
   return (
-    <div role="group" aria-label="Pasti per data" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5">
+    <div
+      role="group"
+      aria-label="Pasti per data"
+      className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5"
+    >
       {schede.map((s) => {
         const attiva = s.data === selezionata;
         return (
@@ -37,7 +41,9 @@ export default function SchedePerData({
             aria-pressed={attiva}
             onClick={() => onCambia(s.data)}
             className={`min-h-9 flex-none rounded-full border-[1.5px] px-3.5 text-sm font-medium whitespace-nowrap ${
-              attiva ? "border-accent bg-[var(--capsula-attiva)] text-[var(--testo-capsula)]" : "border-border text-foreground"
+              attiva
+                ? "border-accent bg-[var(--capsula-attiva)] text-[var(--testo-capsula)]"
+                : "border-border text-foreground"
             } ${CLASSE_FOCUS}`}
           >
             {s.etichetta}

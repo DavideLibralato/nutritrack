@@ -33,12 +33,22 @@ describe("sollevamento", () => {
   });
 
   it("un movimento entro la tolleranza non annulla", () => {
-    const s = aggiornaMovimento(avviaTieniPremuto(100, 200, T0), 100 + TOLLERANZA_MOVIMENTO_PX, 200, T0 + 100);
+    const s = aggiornaMovimento(
+      avviaTieniPremuto(100, 200, T0),
+      100 + TOLLERANZA_MOVIMENTO_PX,
+      200,
+      T0 + 100
+    );
     expect(s.fase).toBe("attesa");
   });
 
   it("un movimento oltre la tolleranza prima della soglia annulla (scroll o swipe)", () => {
-    const s = aggiornaMovimento(avviaTieniPremuto(100, 200, T0), 100, 200 + TOLLERANZA_MOVIMENTO_PX + 1, T0 + 100);
+    const s = aggiornaMovimento(
+      avviaTieniPremuto(100, 200, T0),
+      100,
+      200 + TOLLERANZA_MOVIMENTO_PX + 1,
+      T0 + 100
+    );
     expect(s.fase).toBe("annullato");
     expect(eSollevato(s)).toBe(false);
   });
@@ -118,7 +128,9 @@ describe("prossimaScadenza", () => {
   it("in attesa: il sollevamento; sollevato: la fine della finestra; poi niente", () => {
     expect(prossimaScadenza(avviaTieniPremuto(0, 0, T0))).toBe(SOLLEVA);
     expect(prossimaScadenza(sollevato())).toBe(SOLLEVA + FINESTRA_DECISIONE_MS);
-    expect(prossimaScadenza(aggiornaTempo(sollevato(), SOLLEVA + FINESTRA_DECISIONE_MS))).toBeNull();
+    expect(
+      prossimaScadenza(aggiornaTempo(sollevato(), SOLLEVA + FINESTRA_DECISIONE_MS))
+    ).toBeNull();
   });
 });
 

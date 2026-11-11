@@ -78,7 +78,13 @@ const SCHEMA_V8 = SCHEMA_V7;
 const SCHEMA_V9: Record<string, string> = { ...SCHEMA_V8, foto_locale: "user_id" };
 
 const SCHEMI: Record<number, Record<string, string>> = {
-  3: SCHEMA_V3, 4: SCHEMA_V4, 5: SCHEMA_V5, 6: SCHEMA_V6, 7: SCHEMA_V7, 8: SCHEMA_V8, 9: SCHEMA_V9,
+  3: SCHEMA_V3,
+  4: SCHEMA_V4,
+  5: SCHEMA_V5,
+  6: SCHEMA_V6,
+  7: SCHEMA_V7,
+  8: SCHEMA_V8,
+  9: SCHEMA_V9,
 };
 const ULTIMA_VERSIONE = 10;
 
@@ -94,81 +100,176 @@ type Riga = { id: string };
 
 function righe(versione: number): Record<string, Riga[]> {
   const profilo: Profilo = {
-    id: "p-1", user_id: U, updated_at: DAL_SERVER, deleted_at: null,
-    nome: null, sesso: "maschio", data_nascita: "1990-05-01", altezza_cm: 180,
-    livello_attivita: "moderato", differenzia_giorni: true,
+    id: "p-1",
+    user_id: U,
+    updated_at: DAL_SERVER,
+    deleted_at: null,
+    nome: null,
+    sesso: "maschio",
+    data_nascita: "1990-05-01",
+    altezza_cm: 180,
+    livello_attivita: "moderato",
+    differenzia_giorni: true,
     giorni_allenamento_default: ["lunedi", "giovedi"],
   };
   const obiettivo: Obiettivo = {
-    id: "o-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    valido_dal: "2026-09-01", tipo: "dimagrire",
-    kcal: 2200, proteine_g: 150, carboidrati_g: 230, grassi_g: 70, peso_obiettivo: 78,
+    id: "o-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    valido_dal: "2026-09-01",
+    tipo: "dimagrire",
+    kcal: 2200,
+    proteine_g: 150,
+    carboidrati_g: 230,
+    grassi_g: 70,
+    peso_obiettivo: 78,
   };
   const target: ObiettivoTarget = {
-    id: "t-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    obiettivo_id: "o-1", tipo_giorno: "allenamento",
-    kcal: 2600, proteine_g: 160, carboidrati_g: 300, grassi_g: 75,
+    id: "t-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    obiettivo_id: "o-1",
+    tipo_giorno: "allenamento",
+    kcal: 2600,
+    proteine_g: 160,
+    carboidrati_g: 300,
+    grassi_g: 75,
   };
   const giorno: Giorno = {
-    id: "g-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    data: "2026-09-19", tipo_giorno: "allenamento",
+    id: "g-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    data: "2026-09-19",
+    tipo_giorno: "allenamento",
   };
   // Un pasto senza valido_dal / valido_al: com'erano tutti prima della 6.
   // Dalla 6 Pasti e orari scrive le due date sempre, anche null.
   const pranzo: Pasto = {
-    id: "pasto-pranzo", user_id: U, updated_at: DAL_SERVER, deleted_at: null,
-    nome: "Pranzo", ora_inizio: "12:30:00", ordine: 2,
+    id: "pasto-pranzo",
+    user_id: U,
+    updated_at: DAL_SERVER,
+    deleted_at: null,
+    nome: "Pranzo",
+    ora_inizio: "12:30:00",
+    ordine: 2,
     ...(versione >= 6 ? { valido_dal: null, valido_al: null } : {}),
   };
   // Dalla 6, una riga chiusa da "Elimina da oggi": il periodo deve restare.
   const cenaCancellata: Pasto = {
-    id: "pasto-cena", user_id: U, updated_at: ADESSO, deleted_at: ADESSO,
-    nome: "Cena", ora_inizio: "19:30", ordine: 4,
+    id: "pasto-cena",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: ADESSO,
+    nome: "Cena",
+    ora_inizio: "19:30",
+    ordine: 4,
     ...(versione >= 6 ? { valido_dal: "2026-09-01", valido_al: "2026-09-18" } : {}),
   };
   const alimento: Alimento = {
-    id: "a-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    nome: "Yogurt magro", marca: "Marca", barcode: null,
-    kcal_100g: 56, proteine_100g: 10, carboidrati_100g: 4, grassi_100g: 0.2,
-    zuccheri_100g: 4, fibre_100g: null, saturi_100g: null, sale_100g: 0.1,
-    porzione_default_g: 125, fonte: "manuale", verificato: false,
+    id: "a-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    nome: "Yogurt magro",
+    marca: "Marca",
+    barcode: null,
+    kcal_100g: 56,
+    proteine_100g: 10,
+    carboidrati_100g: 4,
+    grassi_100g: 0.2,
+    zuccheri_100g: 4,
+    fibre_100g: null,
+    saturi_100g: null,
+    sale_100g: 0.1,
+    porzione_default_g: 125,
+    fonte: "manuale",
+    verificato: false,
   };
-  const condiviso: Alimento = { ...alimento, id: "a-condiviso", user_id: null, nome: "Mela", verificato: true };
+  const condiviso: Alimento = {
+    ...alimento,
+    id: "a-condiviso",
+    user_id: null,
+    nome: "Mela",
+    verificato: true,
+  };
   const voce: VoceDiario = {
-    id: "v-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    alimento_id: "a-1", pasto_id: "pasto-pranzo", gruppo_id: null,
-    quantita_g: 125, data: "2026-09-19", creato_il: ADESSO, consumato_alle: null,
-    nome_alimento: "Yogurt magro", kcal_100g: 56, proteine_100g: 10,
-    carboidrati_100g: 4, grassi_100g: 0.2,
+    id: "v-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    alimento_id: "a-1",
+    pasto_id: "pasto-pranzo",
+    gruppo_id: null,
+    quantita_g: 125,
+    data: "2026-09-19",
+    creato_il: ADESSO,
+    consumato_alle: null,
+    nome_alimento: "Yogurt magro",
+    kcal_100g: 56,
+    proteine_100g: 10,
+    carboidrati_100g: 4,
+    grassi_100g: 0.2,
   };
   // Una voce su un pasto cancellato: la rete di sicurezza di Oggi la mostra.
   // Dalla 7 una voce cancellata da un cambio programmato ha il suo segno.
   const voceSuCena: VoceDiario = {
-    ...voce, id: "v-2", pasto_id: "pasto-cena", gruppo_id: "gr-1",
+    ...voce,
+    id: "v-2",
+    pasto_id: "pasto-cena",
+    gruppo_id: "gr-1",
     ...(versione >= 7 ? { eliminata_dal_cambio: null } : {}),
   };
   const composizione: Composizione = {
-    id: "c-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    nome: "Colazione standard", tipo: "pasto_salvato", alimento_id: null,
+    id: "c-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    nome: "Colazione standard",
+    tipo: "pasto_salvato",
+    alimento_id: null,
   };
   const composizioneVoce: ComposizioneVoce = {
-    id: "cv-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    composizione_id: "c-1", alimento_id: "a-1", quantita_g: 125, ordine: 0,
+    id: "cv-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    composizione_id: "c-1",
+    alimento_id: "a-1",
+    quantita_g: 125,
+    ordine: 0,
   };
   const misurazione: Misurazione = {
-    id: "m-1", user_id: U, updated_at: ADESSO, deleted_at: null,
-    tipo: "peso", valore: 82.4, unita: "kg", data: "2026-09-19",
+    id: "m-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    tipo: "peso",
+    valore: 82.4,
+    unita: "kg",
+    data: "2026-09-19",
   };
   const preferito: Preferito = {
-    id: "pr-1", user_id: U, updated_at: ADESSO, deleted_at: null, alimento_id: "a-1",
+    id: "pr-1",
+    user_id: U,
+    updated_at: ADESSO,
+    deleted_at: null,
+    alimento_id: "a-1",
   };
 
   // La coda outbox: una modifica non ancora inviata (la voce di diario) e,
   // dalla version(4), una accantonata dopo troppi tentativi. Prima della 4
   // il campo sospesa_il non esisteva proprio.
   const inAttesa = {
-    id: "voci_diario:v-1", tabella: "voci_diario", record_id: "v-1", dati: voce,
-    creato_il: ADESSO, tentativi: 2, ultimo_errore: "Failed to fetch",
+    id: "voci_diario:v-1",
+    tabella: "voci_diario",
+    record_id: "v-1",
+    dati: voce,
+    creato_il: ADESSO,
+    tentativi: 2,
+    ultimo_errore: "Failed to fetch",
   };
   const outbox: (Riga & Record<string, unknown>)[] =
     versione < 4
@@ -176,8 +277,14 @@ function righe(versione: number): Record<string, Riga[]> {
       : [
           { ...inAttesa, sospesa_il: null },
           {
-            id: "pasti:pasto-cena", tabella: "pasti", record_id: "pasto-cena", dati: cenaCancellata,
-            creato_il: ADESSO, tentativi: 5, ultimo_errore: "violazione", sospesa_il: ADESSO,
+            id: "pasti:pasto-cena",
+            tabella: "pasti",
+            record_id: "pasto-cena",
+            dati: cenaCancellata,
+            creato_il: ADESSO,
+            tentativi: 5,
+            ultimo_errore: "violazione",
+            sospesa_il: ADESSO,
           },
         ];
 
@@ -197,7 +304,10 @@ function righe(versione: number): Record<string, Riga[]> {
   };
   if (versione >= 5) {
     const cursore: CursoreSync = {
-      id: `pasti:${U}`, tabella: "pasti", user_id: U, ultimo_aggiornamento: DAL_SERVER,
+      id: `pasti:${U}`,
+      tabella: "pasti",
+      user_id: U,
+      ultimo_aggiornamento: DAL_SERVER,
     };
     tabelle.sync_cursori = [cursore];
   }
@@ -262,7 +372,12 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
       // scrive e si rilegge per chiave (user_id), byte compresi.
       expect(await nuovo.foto_locale.count()).toBe(0);
       const byte = new Uint8Array([255, 216, 255, 224]).buffer;
-      await nuovo.foto_locale.put({ user_id: U, percorso: `${U}/foto.jpg`, byte, tipo: "image/jpeg" });
+      await nuovo.foto_locale.put({
+        user_id: U,
+        percorso: `${U}/foto.jpg`,
+        byte,
+        tipo: "image/jpeg",
+      });
       const foto = await nuovo.foto_locale.get(U);
       expect(foto).toMatchObject({ user_id: U, percorso: `${U}/foto.jpg`, tipo: "image/jpeg" });
       expect(Array.from(new Uint8Array(foto!.byte))).toEqual([255, 216, 255, 224]);
@@ -289,19 +404,28 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
       expect(voce!.eliminata_dal_cambio ?? null).toBeNull();
       // Le date dei pasti scritte alla 6 restano quelle.
       if (da >= 6) {
-        expect(await nuovo.pasti.get("pasto-cena")).toMatchObject({ valido_dal: "2026-09-01", valido_al: "2026-09-18" });
+        expect(await nuovo.pasti.get("pasto-cena")).toMatchObject({
+          valido_dal: "2026-09-01",
+          valido_al: "2026-09-18",
+        });
       }
 
       // Il campo nuovo si scrive e si rilegge sulla riga vecchia.
       await nuovo.voci_diario.update("v-2", { deleted_at: ADESSO, eliminata_dal_cambio: "c-1" });
-      expect(await nuovo.voci_diario.get("v-2")).toMatchObject({ deleted_at: ADESSO, eliminata_dal_cambio: "c-1" });
+      expect(await nuovo.voci_diario.get("v-2")).toMatchObject({
+        deleted_at: ADESSO,
+        eliminata_dal_cambio: "c-1",
+      });
 
       // version(8): una voce outbox di prima non ha ultimo_status, e il
       // ripiego lo legge "non noto"; si scrive e si rilegge come gli altri.
       expect("ultimo_status" in inAttesa!).toBe(false);
       expect(inAttesa!.ultimo_status ?? null).toBeNull();
       await nuovo.outbox.update("voci_diario:v-1", { ultimo_status: 0, tentativi: 3 });
-      expect(await nuovo.outbox.get("voci_diario:v-1")).toMatchObject({ ultimo_status: 0, tentativi: 3 });
+      expect(await nuovo.outbox.get("voci_diario:v-1")).toMatchObject({
+        ultimo_status: 0,
+        tentativi: 3,
+      });
 
       // version(10): un alimento di prima non ha catalogo_id, e il ripiego
       // lo legge null (non viene dal catalogo); il campo si scrive e si
@@ -313,7 +437,10 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
       expect("catalogo_id" in yogurt).toBe(false);
       expect(yogurt.catalogo_id ?? null).toBeNull();
       await alimenti.update("a-1", { catalogo_id: "ciqual:19024" });
-      expect(await alimenti.get("a-1")).toMatchObject({ nome: "Yogurt magro", catalogo_id: "ciqual:19024" });
+      expect(await alimenti.get("a-1")).toMatchObject({
+        nome: "Yogurt magro",
+        catalogo_id: "ciqual:19024",
+      });
       expect(await nuovo.alimenti.where("user_id").equals(U).count()).toBe(1);
       expect(await nuovo.alimenti.where("barcode").equals("x").count()).toBe(0);
     });
@@ -335,18 +462,28 @@ describe("Aggiornamento dello schema Dexie (checklist B.7)", () => {
     // limite di tempo trasforma il blocco in un errore leggibile.
     await Promise.race([
       schedaNuova.open(),
-      new Promise((_, rifiuta) => setTimeout(() => rifiuta(new Error("version(10) bloccata")), 2000)),
+      new Promise((_, rifiuta) =>
+        setTimeout(() => rifiuta(new Error("version(10) bloccata")), 2000)
+      ),
     ]);
     expect(schedaNuova.verno).toBe(ULTIMA_VERSIONE);
-    expect(avvisi).toHaveBeenCalledWith(expect.stringContaining("Another connection wants to upgrade"));
+    expect(avvisi).toHaveBeenCalledWith(
+      expect.stringContaining("Another connection wants to upgrade")
+    );
 
     // La scheda vecchia legge e scrive ancora: Dexie la riapre alla
     // versione che trova (le sue tabelle hanno gli stessi indici della 9:
     // la 10 cambia solo la forma delle righe di alimenti).
     expect(await schedaVecchia.table("pasti").count()).toBe(2);
     await schedaVecchia.table("misurazioni").put({
-      id: "m-dalla-scheda-vecchia", user_id: U, updated_at: ADESSO, deleted_at: null,
-      tipo: "peso", valore: 82.1, unita: "kg", data: "2026-09-20",
+      id: "m-dalla-scheda-vecchia",
+      user_id: U,
+      updated_at: ADESSO,
+      deleted_at: null,
+      tipo: "peso",
+      valore: 82.1,
+      unita: "kg",
+      data: "2026-09-20",
     });
     expect(await schedaNuova.misurazioni.get("m-dalla-scheda-vecchia")).toBeDefined();
   });

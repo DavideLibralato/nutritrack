@@ -47,7 +47,8 @@ type Stato =
   | { fase: "uscita" }
   | { fase: "errore"; testo: string };
 
-const TESTO_SENZA_RETE = "Per uscire serve la connessione. Non sei uscito: riprova quando sei online.";
+const TESTO_SENZA_RETE =
+  "Per uscire serve la connessione. Non sei uscito: riprova quando sei online.";
 
 // I tipi di dato di tutte le modifiche rimaste, senza ripetizioni.
 function tipi(modifiche: ModificheNonInviate): string[] {
@@ -128,7 +129,13 @@ export default function EsciAccount({
         firme: modifiche.firme,
       });
     } else {
-      setStato({ fase: "conferma", decisione, testo: testoTieni(modifiche), etichetta: "Esci", firme: modifiche.firme });
+      setStato({
+        fase: "conferma",
+        decisione,
+        testo: testoTieni(modifiche),
+        etichetta: "Esci",
+        firme: modifiche.firme,
+      });
     }
   }
 
@@ -252,7 +259,15 @@ function ConfermaUscita({
 // role="status": gli screen reader leggono i messaggi quando cambiano,
 // senza spostare il fuoco. Sta sempre nella pagina (vuoto = nascosto),
 // altrimenti il primo messaggio non verrebbe letto.
-function Messaggi({ online, stato, className }: { online: boolean; stato: Stato; className: string }) {
+function Messaggi({
+  online,
+  stato,
+  className,
+}: {
+  online: boolean;
+  stato: Stato;
+  className: string;
+}) {
   return (
     <div role="status" className={className}>
       {!online && stato.fase !== "errore" && (

@@ -106,7 +106,11 @@ export function ultimoGiornoDiario(adesso: Date = new Date()): string {
 // "lun 5 ott": il giorno in breve, dentro una frase (il messaggio di
 // Duplica su un altro giorno, "Duplicato: Mela in Pranzo di lun 5 ott").
 export function formattaGiornoCorto(iso: string): string {
-  return daISO(iso).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+  return daISO(iso).toLocaleDateString("it-IT", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 }
 
 // Una data scritta o scelta dall'utente su cui si può registrare: un
@@ -188,7 +192,14 @@ export function formattaMeseLungo(iso: string): string {
 // costruisce con anno, mese e giorno, non sommando 24 h: nei giorni del
 // cambio d'ora (23 o 25 ore) resta comunque la mezzanotte vera.
 export function msAllaMezzanotte(adesso: Date = new Date()): number {
-  const mezzanotte = new Date(adesso.getFullYear(), adesso.getMonth(), adesso.getDate() + 1, 0, 0, 0);
+  const mezzanotte = new Date(
+    adesso.getFullYear(),
+    adesso.getMonth(),
+    adesso.getDate() + 1,
+    0,
+    0,
+    0
+  );
   return mezzanotte.getTime() - adesso.getTime();
 }
 

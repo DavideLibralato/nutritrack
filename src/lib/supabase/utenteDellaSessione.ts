@@ -17,7 +17,10 @@ export async function idUtenteDellaSessione(
   const { data } = await supabase.auth.getSession();
   if (data.session) return data.session.user.id;
   try {
-    return leggiSessioneSalvata(document.cookie, chiaveSessione(process.env.NEXT_PUBLIC_SUPABASE_URL!))?.id ?? null;
+    return (
+      leggiSessioneSalvata(document.cookie, chiaveSessione(process.env.NEXT_PUBLIC_SUPABASE_URL!))
+        ?.id ?? null
+    );
   } catch {
     // Cookie o indirizzo illeggibili: come nessuna sessione.
     return null;

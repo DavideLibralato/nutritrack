@@ -1,13 +1,7 @@
 // "+": aggiunge (sulle righe di Aggiungi, 22 px) e crea (nel pulsante in
 // fondo, 18 px). Tratto in currentColor, aria-hidden.
 
-export default function IconaPiu({
-  className,
-  size = 22,
-}: {
-  className?: string;
-  size?: number;
-}) {
+export default function IconaPiu({ className, size = 22 }: { className?: string; size?: number }) {
   return (
     <svg
       className={className}

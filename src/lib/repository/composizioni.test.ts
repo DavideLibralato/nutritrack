@@ -27,7 +27,12 @@ import {
   ripristinaPastiSalvati,
   eliminaAlimenti,
 } from "./composizioni";
-import { repositoryAlimenti, repositoryComposizioni, repositoryComposizioniVoci, repositoryVociDiario } from "./index";
+import {
+  repositoryAlimenti,
+  repositoryComposizioni,
+  repositoryComposizioniVoci,
+  repositoryVociDiario,
+} from "./index";
 import { catalogoLocale } from "./alimenti";
 import { db } from "../db/database";
 import {
@@ -59,7 +64,11 @@ async function creaAlimento(userId: string, nome: string): Promise<Alimento> {
   });
 }
 
-async function creaVoceDiario(userId: string, alimento: Alimento, quantitaG: number): Promise<VoceDiario> {
+async function creaVoceDiario(
+  userId: string,
+  alimento: Alimento,
+  quantitaG: number
+): Promise<VoceDiario> {
   return repositoryVociDiario.crea({
     user_id: userId,
     alimento_id: alimento.id,
@@ -119,9 +128,9 @@ describe("rimuoviAlimentoDaPastiSalvati", () => {
     // l'elenco lo aveva già nascosto).
     const composizioniVoci = await repositoryComposizioniVoci.ottieniTutti(userId);
     const catalogo = await catalogoLocale(userId);
-    expect(
-      esisteComposizioneConNome("Colazione", catalogo, composizioni, composizioniVoci)
-    ).toBe(false);
+    expect(esisteComposizioneConNome("Colazione", catalogo, composizioni, composizioniVoci)).toBe(
+      false
+    );
   });
 
   it("restavano altri alimenti: sparisce solo la riga di quell'alimento, il pasto resta", async () => {
@@ -186,9 +195,7 @@ describe("rimuoviAlimentoDaPastiSalvati", () => {
     const composizioni = await repositoryComposizioni.ottieniTutti(userId);
     const composizioniVoci = await repositoryComposizioniVoci.ottieniTutti(userId);
     expect(composizioni.find((c) => c.id === composizioneId)).not.toBeUndefined();
-    expect(
-      composizioniVoci.filter((v) => v.composizione_id === composizioneId)
-    ).toHaveLength(1);
+    expect(composizioniVoci.filter((v) => v.composizione_id === composizioneId)).toHaveLength(1);
 
     const catalogo = await catalogoLocale(userId);
     const risultato = pastiSalvati(catalogo, composizioni, composizioniVoci);
@@ -214,7 +221,12 @@ describe("salvaPastoComeComposizione", () => {
     // voce di diario resta (copia congelata), l'alimento no.
     await repositoryAlimenti.elimina(marmellata.id);
 
-    const risultato = await salvaPastoComeComposizione(userId, "Colazione", [voceP, voceM], [voceM.id]);
+    const risultato = await salvaPastoComeComposizione(
+      userId,
+      "Colazione",
+      [voceP, voceM],
+      [voceM.id]
+    );
     expect(risultato.esito).toBe("salvato");
 
     const composizioni = await repositoryComposizioni.ottieniTutti(userId);
@@ -279,7 +291,11 @@ describe("regola Alimenti cancellati", () => {
     const { valide, escluse } = separaVociPerCatalogo(vociPasto, catalogo);
     expect(escluse.map((v) => v.id)).toEqual([voceTest.id]);
     expect(
-      testoAvvisoEsclusi(valide.length, vociPasto.length, escluse.map((v) => v.nome_alimento))
+      testoAvvisoEsclusi(
+        valide.length,
+        vociPasto.length,
+        escluse.map((v) => v.nome_alimento)
+      )
     ).toBe("Verrà salvato 1 alimento su 2. «test» non è più nel catalogo.");
 
     // Senza che l'utente abbia visto l'avviso (nessuna voce annunciata come
@@ -330,7 +346,9 @@ describe("regola Alimenti cancellati", () => {
     expect(stessoNome).toEqual({ esito: "gia-salvato", nomePasto: "Cena", nomiEsclusi: ["test"] });
     // Il confronto è sul contenuto: anche con un altro nome non si crea un
     // secondo pasto salvato identico (conseguenza accettata il 2026-09-25).
-    const altroNome = await salvaPastoComeComposizione(userId, "Cena bis", vociPasto, [voceTest.id]);
+    const altroNome = await salvaPastoComeComposizione(userId, "Cena bis", vociPasto, [
+      voceTest.id,
+    ]);
     expect(altroNome.esito).toBe("gia-salvato");
     expect(await repositoryComposizioni.ottieniTutti(userId)).toHaveLength(1);
   });
@@ -357,7 +375,12 @@ describe("regola Alimenti cancellati", () => {
     const prima = await statoLocale(userId);
     expect(separaVociPerCatalogo(vociPasto, prima.catalogo).escluse).toEqual([]);
     expect(
-      pastoSalvatoCoiSoliValidi(vociPasto, prima.catalogo, prima.composizioni, prima.composizioniVoci)
+      pastoSalvatoCoiSoliValidi(
+        vociPasto,
+        prima.catalogo,
+        prima.composizioni,
+        prima.composizioniVoci
+      )
     ).toBeNull();
 
     const risultato = await salvaPastoComeComposizione(userId, "Pranzo", vociPasto, []);
@@ -506,7 +529,9 @@ describe("eliminaPastiSalvati e ripristinaPastiSalvati", () => {
       return originale(id);
     });
 
-    await expect(eliminaPastiSalvati(userId, [colazioneId, pranzoId])).rejects.toThrow("guasto a metà");
+    await expect(eliminaPastiSalvati(userId, [colazioneId, pranzoId])).rejects.toThrow(
+      "guasto a metà"
+    );
     spia.mockRestore();
 
     expect(await vivo("composizioni", colazioneId)).toBe(true);
@@ -555,9 +580,13 @@ describe("eliminaPastiSalvati e ripristinaPastiSalvati", () => {
 
     const esito = await ripristinaPastiSalvati(userId, traccia);
 
-    expect(esito).toEqual({ ripristinati: [], nonRipristinati: [{ nome: "Colazione", motivo: "nome" }] });
+    expect(esito).toEqual({
+      ripristinati: [],
+      nonRipristinati: [{ nome: "Colazione", motivo: "nome" }],
+    });
     expect(await vivo("composizioni", colazioneId)).toBe(false);
-    for (const id of traccia.idComposizioniVoci) expect(await vivo("composizioni_voci", id)).toBe(false);
+    for (const id of traccia.idComposizioniVoci)
+      expect(await vivo("composizioni_voci", id)).toBe(false);
   });
 
   it("nel frattempo un altro pasto salvato con lo stesso contenuto: non torna, motivo «contenuto»", async () => {
@@ -568,7 +597,10 @@ describe("eliminaPastiSalvati e ripristinaPastiSalvati", () => {
 
     const esito = await ripristinaPastiSalvati(userId, traccia);
 
-    expect(esito).toEqual({ ripristinati: [], nonRipristinati: [{ nome: "Colazione", motivo: "contenuto" }] });
+    expect(esito).toEqual({
+      ripristinati: [],
+      nonRipristinati: [{ nome: "Colazione", motivo: "contenuto" }],
+    });
     expect(await vivo("composizioni", colazioneId)).toBe(false);
   });
 
@@ -579,7 +611,10 @@ describe("eliminaPastiSalvati e ripristinaPastiSalvati", () => {
 
     const esito = await ripristinaPastiSalvati(userId, traccia);
 
-    expect(esito).toEqual({ ripristinati: ["Colazione"], nonRipristinati: [{ nome: "Pranzo", motivo: "nome" }] });
+    expect(esito).toEqual({
+      ripristinati: ["Colazione"],
+      nonRipristinati: [{ nome: "Pranzo", motivo: "nome" }],
+    });
     expect(await vivo("composizioni", colazioneId)).toBe(true);
     expect(await vivo("composizioni", pranzoId)).toBe(false);
   });
@@ -591,7 +626,10 @@ describe("eliminaPastiSalvati e ripristinaPastiSalvati", () => {
 
     const esito = await ripristinaPastiSalvati(userId, traccia);
 
-    expect(esito).toEqual({ ripristinati: [], nonRipristinati: [{ nome: "Pranzo", motivo: "vuoto" }] });
+    expect(esito).toEqual({
+      ripristinati: [],
+      nonRipristinati: [{ nome: "Pranzo", motivo: "vuoto" }],
+    });
     expect(await vivo("composizioni", pranzoId)).toBe(false);
   });
 

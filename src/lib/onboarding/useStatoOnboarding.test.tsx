@@ -34,7 +34,12 @@ beforeEach(async () => {
   finti.metadati = { onboarding: "da_fare" };
   window.localStorage.clear();
   azzeraStatoGiri();
-  await Promise.all([db.profili.clear(), db.misurazioni.clear(), db.obiettivi.clear(), db.outbox.clear()]);
+  await Promise.all([
+    db.profili.clear(),
+    db.misurazioni.clear(),
+    db.obiettivi.clear(),
+    db.outbox.clear(),
+  ]);
 });
 
 async function obiettivo(userId: string) {
@@ -89,7 +94,11 @@ describe("useStatoOnboarding", () => {
   it("da_fare con Dexie vuoto: aspetta la discesa; riuscita, smette di aspettare da solo", async () => {
     const { result } = renderHook(() => useStatoOnboarding());
     await waitFor(() => expect(result.current).toBeDefined());
-    expect(result.current).toMatchObject({ segno: "da_fare", mostraOnboarding: true, attendiDiscesa: true });
+    expect(result.current).toMatchObject({
+      segno: "da_fare",
+      mostraOnboarding: true,
+      attendiDiscesa: true,
+    });
 
     act(() => segnaDiscesaRiuscita("u1"));
     expect(result.current?.attendiDiscesa).toBe(false);
@@ -119,6 +128,10 @@ describe("useStatoOnboarding", () => {
     await waitFor(() => expect(result.current?.segno).toBe("da_fare"));
 
     await act(() => concludiOnboarding("u1", "rimandato"));
-    expect(result.current).toMatchObject({ segno: "rimandato", mostraOnboarding: false, mostraScheda: true });
+    expect(result.current).toMatchObject({
+      segno: "rimandato",
+      mostraOnboarding: false,
+      mostraScheda: true,
+    });
   });
 });

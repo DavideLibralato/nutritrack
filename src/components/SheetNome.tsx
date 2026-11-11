@@ -102,84 +102,84 @@ export default function SheetNome({
           className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
-        <h2 className="font-display text-xl font-bold">{titolo}</h2>
+          <h2 className="font-display text-xl font-bold">{titolo}</h2>
 
-        {/* role="status": se l'avviso cambia mentre lo sheet è aperto
+          {/* role="status": se l'avviso cambia mentre lo sheet è aperto
             (esclusi cambiati nel frattempo), lo screen reader lo rilegge. */}
-        {avviso && (
-          <p role="status" className="mt-2 text-sm">
-            {avviso}
-          </p>
-        )}
+          {avviso && (
+            <p role="status" className="mt-2 text-sm">
+              {avviso}
+            </p>
+          )}
 
-        <input
-          ref={rifInput}
-          type="text"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") conferma();
-          }}
-          className={`mt-4 w-full rounded-lg border border-border p-3 text-lg ${CLASSE_FOCUS}`}
-        />
+          <input
+            ref={rifInput}
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") conferma();
+            }}
+            className={`mt-4 w-full rounded-lg border border-border p-3 text-lg ${CLASSE_FOCUS}`}
+          />
 
-        {errore && <p className="mt-2 text-sm text-warning">{errore}</p>}
+          {errore && <p className="mt-2 text-sm text-warning">{errore}</p>}
 
-        {/* Stessa riga [sinistra] [destra] di SheetQuantita:
+          {/* Stessa riga [sinistra] [destra] di SheetQuantita:
             - creazione:            [Annulla]      [testoConferma]
             - modifica:             [Elimina]      [testoConferma]
             - modifica, conferma:   [No]           [Sì, elimina] */}
-        <div className="mt-5 flex gap-3">
-          {!modificaConElimina ? (
-            <button
-              type="button"
-              onClick={onAnnulla}
-              disabled={inCorso}
-              className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              Annulla
-            </button>
-          ) : confermaElim ? (
-            <button
-              type="button"
-              onClick={() => setConfermaElim(false)}
-              disabled={inCorso}
-              className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              No
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfermaElim(true)}
-              disabled={inCorso}
-              className={`flex-1 rounded-lg border border-warning p-3 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              Elimina
-            </button>
-          )}
+          <div className="mt-5 flex gap-3">
+            {!modificaConElimina ? (
+              <button
+                type="button"
+                onClick={onAnnulla}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                Annulla
+              </button>
+            ) : confermaElim ? (
+              <button
+                type="button"
+                onClick={() => setConfermaElim(false)}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg border border-border p-3 disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                No
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfermaElim(true)}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg border border-warning p-3 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                Elimina
+              </button>
+            )}
 
-          {modificaConElimina && confermaElim ? (
-            <button
-              type="button"
-              onClick={() => onElimina?.()}
-              disabled={inCorso}
-              className={`flex-1 rounded-lg bg-warning-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              {inCorso ? "Elimino..." : "Sì, elimina"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={conferma}
-              disabled={!valido || inCorso}
-              className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              {inCorso ? "Salvo..." : testoConferma}
-            </button>
-          )}
+            {modificaConElimina && confermaElim ? (
+              <button
+                type="button"
+                onClick={() => onElimina?.()}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg bg-warning-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                {inCorso ? "Elimino..." : "Sì, elimina"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={conferma}
+                disabled={!valido || inCorso}
+                className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                {inCorso ? "Salvo..." : testoConferma}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </>
   );

@@ -10,7 +10,9 @@ import type { TipoObiettivo } from "@/lib/db/tipi";
 afterEach(cleanup);
 
 function coloreArco(consumate: number, obiettivo: number | null, tipo: TipoObiettivo | null) {
-  const { container } = render(<AnelloCalorie consumate={consumate} obiettivo={obiettivo} tipoObiettivo={tipo} />);
+  const { container } = render(
+    <AnelloCalorie consumate={consumate} obiettivo={obiettivo} tipoObiettivo={tipo} />
+  );
   const arco = container.querySelector('[data-segno="arco-calorie"]')!;
   const classe = arco.getAttribute("class") ?? "";
   cleanup();
@@ -40,12 +42,16 @@ describe("AnelloCalorie: colori", () => {
   });
 
   it("i numeri al centro non cambiano", () => {
-    const { container } = render(<AnelloCalorie consumate={2249.6} obiettivo={2200} tipoObiettivo="massa" />);
+    const { container } = render(
+      <AnelloCalorie consumate={2249.6} obiettivo={2200} tipoObiettivo="massa" />
+    );
     expect(container.textContent).toBe("2250/ 2200");
   });
 
   it("senza obiettivo: arco vuoto e «/ —»", () => {
-    const { container } = render(<AnelloCalorie consumate={800} obiettivo={null} tipoObiettivo={null} />);
+    const { container } = render(
+      <AnelloCalorie consumate={800} obiettivo={null} tipoObiettivo={null} />
+    );
     const arco = container.querySelector('[data-segno="arco-calorie"]')!;
     expect(arco.getAttribute("stroke-dasharray")?.startsWith("0 ")).toBe(true);
     expect(container.textContent).toBe("800/ —");

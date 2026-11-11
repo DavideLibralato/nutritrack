@@ -17,9 +17,7 @@
 
 import { useEffect, useState } from "react";
 
-export type AvvisoEliminato =
-  | { tipo: "qui" }
-  | { tipo: "altrove"; perse: boolean };
+export type AvvisoEliminato = { tipo: "qui" } | { tipo: "altrove"; perse: boolean };
 
 // Funzione pura: che avviso dice l'indirizzo, e l'indirizzo senza i due
 // parametri (gli altri, come redirectTo, e il frammento restano). Un valore

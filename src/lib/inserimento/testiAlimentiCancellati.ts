@@ -32,7 +32,11 @@ function nonPiuNelCatalogo(nomi: string[]): string {
 
 // Punto 1: prima di salvare. "Verrà salvato 1 alimento su 2. «test» non è
 // più nel catalogo."
-export function testoAvvisoEsclusi(daSalvare: number, totale: number, nomiEsclusi: string[]): string {
+export function testoAvvisoEsclusi(
+  daSalvare: number,
+  totale: number,
+  nomiEsclusi: string[]
+): string {
   const salvati =
     daSalvare === 1
       ? `Verrà salvato 1 alimento su ${totale}.`
@@ -81,7 +85,9 @@ export function messaggioDopoRipristino(nomi: string[], esito: EsitoRipristino):
   const etichette = elencoNomi(alimentiNonRipristinati.map((a) => a.etichetta));
   const unNonRipristinato = new Set(alimentiNonRipristinati.map((a) => a.etichetta)).size === 1;
   if (ripristinati.length === 0) {
-    frasi.push(`${unNonRipristinato ? "Non ripristinato" : "Non ripristinati"}: hai già ${etichette}.`);
+    frasi.push(
+      `${unNonRipristinato ? "Non ripristinato" : "Non ripristinati"}: hai già ${etichette}.`
+    );
   } else {
     frasi.push(`${verbo} ${nome}.`);
     if (alimentiNonRipristinati.length > 0) {
@@ -159,7 +165,9 @@ export function messaggioDopoRipristinoPasti(esito: EsitoRipristinoPasti): Messa
   }
   const frasi: string[] = [];
   if (ripristinati.length > 0) {
-    frasi.push(`${ripristinati.length > 1 ? "Ripristinati" : "Ripristinato"}: ${elencoNomi(ripristinati)}.`);
+    frasi.push(
+      `${ripristinati.length > 1 ? "Ripristinati" : "Ripristinato"}: ${elencoNomi(ripristinati)}.`
+    );
   }
   for (const motivo of ["nome", "contenuto", "vuoto"] as const) {
     const nomi = nonRipristinati.filter((p) => p.motivo === motivo).map((p) => p.nome);

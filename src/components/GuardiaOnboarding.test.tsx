@@ -31,7 +31,13 @@ vi.mock("@/lib/onboarding/useStatoOnboarding", () => ({
 }));
 
 function stato(campi: Partial<StatoSegno>): StatoSegno {
-  return { segno: "da_fare", mostraOnboarding: false, mostraScheda: false, attendiDiscesa: false, ...campi };
+  return {
+    segno: "da_fare",
+    mostraOnboarding: false,
+    mostraScheda: false,
+    attendiDiscesa: false,
+    ...campi,
+  };
 }
 
 beforeEach(() => {

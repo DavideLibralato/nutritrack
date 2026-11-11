@@ -165,11 +165,11 @@ describe("solo i tipi di riga dichiarati partecipano al gesto", () => {
     return onMenu;
   }
 
-  it("una riga \"alimento\" in una lista che accetta voce e pasto non apre il menu", () => {
+  it('una riga "alimento" in una lista che accetta voce e pasto non apre il menu', () => {
     expect(tieniPremuto(["voce", "pasto"])).not.toHaveBeenCalled();
   });
 
-  it("la stessa riga in una lista che accetta \"alimento\" lo apre, con il suo tipo", () => {
+  it('la stessa riga in una lista che accetta "alimento" lo apre, con il suo tipo', () => {
     const onMenu = tieniPremuto(["alimento"]);
     expect(onMenu).toHaveBeenCalledTimes(1);
     expect(onMenu.mock.calls[0][0]).toMatchObject({ tipo: "alimento", id: "a-1" });

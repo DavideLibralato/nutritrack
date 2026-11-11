@@ -32,7 +32,9 @@ describe("bordi dei pasti bersaglio", () => {
   });
 
   it("il riquadro rientra dal bordo in verticale, quindi due pasti vicini non si toccano", () => {
-    const prima = regoleBersaglio().find((r) => r.selettore === ".pasto-trascinamento[data-bersaglio]::before");
+    const prima = regoleBersaglio().find(
+      (r) => r.selettore === ".pasto-trascinamento[data-bersaglio]::before"
+    );
     expect(prima).toBeDefined();
     const inset = prima!.corpo.match(/\binset:\s*(-?[\d.]+)px\s+(-?[\d.]+)px\s*;/);
     expect(inset, "inset: <verticale>px <orizzontale>px").not.toBeNull();

@@ -38,15 +38,18 @@ export function totaleVoce(voce: VoceDiario): TotaliNutrizionali {
 }
 
 export function sommaTotali(voci: VoceDiario[]): TotaliNutrizionali {
-  return voci.reduce<TotaliNutrizionali>((acc, voce) => {
-    const t = totaleVoce(voce);
-    return {
-      kcal: acc.kcal + t.kcal,
-      proteine: acc.proteine + t.proteine,
-      carboidrati: acc.carboidrati + t.carboidrati,
-      grassi: acc.grassi + t.grassi,
-    };
-  }, { ...TOTALI_ZERO });
+  return voci.reduce<TotaliNutrizionali>(
+    (acc, voce) => {
+      const t = totaleVoce(voce);
+      return {
+        kcal: acc.kcal + t.kcal,
+        proteine: acc.proteine + t.proteine,
+        carboidrati: acc.carboidrati + t.carboidrati,
+        grassi: acc.grassi + t.grassi,
+      };
+    },
+    { ...TOTALI_ZERO }
+  );
 }
 
 // Le voci di un certo giorno. `deleted_at` è ricontrollato qui anche
@@ -73,10 +76,7 @@ export function vociDelGiorno(voci: VoceDiario[], giornoISO: string): VoceDiario
 // dati. Prima di questa decisione qui si restituiva null.
 //
 // null solo se non esiste nessun obiettivo.
-export function obiettivoValidoPer(
-  obiettivi: Obiettivo[],
-  giornoISO: string
-): Obiettivo | null {
+export function obiettivoValidoPer(obiettivi: Obiettivo[], giornoISO: string): Obiettivo | null {
   const vivi = obiettivi.filter((o) => o.deleted_at === null);
 
   const validi = vivi
@@ -105,9 +105,6 @@ export function obiettivoValidoPer(
 // stesso "oggi" della pagina Oggi. Non il più recente per updated_at né per
 // valido_dal: con la data d'inizio modificabile, il periodo scritto per
 // ultimo non è per forza quello in vigore.
-export function periodoInCorso(
-  obiettivi: Obiettivo[],
-  giornoCorrente: string
-): Obiettivo | null {
+export function periodoInCorso(obiettivi: Obiettivo[], giornoCorrente: string): Obiettivo | null {
   return obiettivoValidoPer(obiettivi, giornoCorrente);
 }

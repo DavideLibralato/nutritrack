@@ -44,7 +44,11 @@ import { repositoryMisurazioni, repositoryObiettivi, repositoryProfili } from "@
 import { registraPesoSenzaDuplicati } from "@/lib/repository/misurazioni";
 import { useStatoOnboarding } from "@/lib/onboarding/useStatoOnboarding";
 import { concludiOnboarding } from "@/lib/onboarding/segnoOnboarding";
-import { passoDiPartenza, type PassoOnboarding, type StatoSegno } from "@/lib/onboarding/statoOnboarding";
+import {
+  passoDiPartenza,
+  type PassoOnboarding,
+  type StatoSegno,
+} from "@/lib/onboarding/statoOnboarding";
 import {
   mostraPassoUsername,
   passoPrecedente,
@@ -100,7 +104,11 @@ type Ingresso = "attendi" | "connessione" | "esci" | "ripresa" | "continua";
 function ingresso(stato: StatoSegno | undefined, continua: boolean, online: boolean): Ingresso {
   if (stato === undefined) return "attendi";
   const da =
-    stato.segno === "da_fare" ? "ripresa" : stato.segno === "rimandato" && continua ? "continua" : null;
+    stato.segno === "da_fare"
+      ? "ripresa"
+      : stato.segno === "rimandato" && continua
+        ? "continua"
+        : null;
   if (da === null) return "esci";
   if (stato.attendiDiscesa) return online ? "attendi" : "connessione";
   return da;
@@ -340,7 +348,13 @@ function Onboarding() {
         />
       )}
       {passo === 3 && (
-        <PassoPeso valore={peso} onCambia={setPeso} onAvanti={avantiPeso} inCorso={inCorso} errore={errore} />
+        <PassoPeso
+          valore={peso}
+          onCambia={setPeso}
+          onAvanti={avantiPeso}
+          inCorso={inCorso}
+          errore={errore}
+        />
       )}
       {passo === 4 && (
         <PassoObiettivo

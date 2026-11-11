@@ -370,7 +370,9 @@ describe("ripristinaAlimenti con il codice a barre", () => {
   it("un alimento con lo stesso codice nato nel frattempo, con un altro nome: quello cancellato non torna", async () => {
     await db.alimenti.put(alimento("mela", { nome: "Mela", barcode: "96385074" }));
     const traccia = await eliminaAlimenti(USER, ["mela"]);
-    await db.alimenti.put(alimento("mela-scansionata", { nome: "Mele Golden", barcode: "96385074" }));
+    await db.alimenti.put(
+      alimento("mela-scansionata", { nome: "Mele Golden", barcode: "96385074" })
+    );
 
     const esito = await ripristinaAlimenti(USER, traccia);
 

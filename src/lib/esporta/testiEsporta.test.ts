@@ -9,7 +9,10 @@ import { notaRiepilogo, testoDiario, testoFoto, testoPeso } from "./testiEsporta
 describe("testoDiario", () => {
   it("nessuna voce, una voce, un solo giorno, un periodo", () => {
     expect(testoDiario([])).toEqual({ numero: "Nessuna voce", periodo: null });
-    expect(testoDiario([{ data: "2026-11-07" }])).toEqual({ numero: "1 voce", periodo: "del 07/11" });
+    expect(testoDiario([{ data: "2026-11-07" }])).toEqual({
+      numero: "1 voce",
+      periodo: "del 07/11",
+    });
     expect(testoDiario([{ data: "2026-11-07" }, { data: "2026-11-07" }])).toEqual({
       numero: "2 voci",
       periodo: "del 07/11",
@@ -54,11 +57,15 @@ describe("notaRiepilogo", () => {
       "Sono i dati di questo telefono. Ultimo collegamento al server: il 05/11 alle 18:05."
     );
     expect(notaRiepilogo(verificata, null, adesso)).toBe("Sono i dati di questo telefono.");
-    expect(notaRiepilogo({ stato: "assente" }, "non una data", adesso)).toBe("Sono i dati di questo telefono.");
+    expect(notaRiepilogo({ stato: "assente" }, "non una data", adesso)).toBe(
+      "Sono i dati di questo telefono."
+    );
   });
 
   it("la foto dalla copia del telefono o non inclusa prende il posto della nota", () => {
-    expect(notaRiepilogo({ stato: "inclusa", origine: "telefono" }, "2026-11-08T06:52:00.000Z", adesso)).toBe(
+    expect(
+      notaRiepilogo({ stato: "inclusa", origine: "telefono" }, "2026-11-08T06:52:00.000Z", adesso)
+    ).toBe(
       "La foto è quella salvata su questo telefono: senza rete non ho potuto controllare che sia l'ultima."
     );
     expect(notaRiepilogo({ stato: "non-inclusa" }, null, adesso)).toBe(

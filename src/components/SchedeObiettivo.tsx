@@ -39,7 +39,9 @@ export default function SchedeObiettivo({
             } ${CLASSE_FOCUS}`}
           >
             <span className="text-[17px] font-bold">{o.etichetta}</span>
-            <span className="text-[13.5px] leading-[1.4] text-muted">{descrizioneObiettivo(o.valore)}</span>
+            <span className="text-[13.5px] leading-[1.4] text-muted">
+              {descrizioneObiettivo(o.valore)}
+            </span>
           </button>
         );
       })}

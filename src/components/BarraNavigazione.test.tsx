@@ -60,7 +60,9 @@ function voceImpostazioni() {
 }
 
 async function pallinoAcceso() {
-  await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).not.toBeNull());
+  await waitFor(() =>
+    expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).not.toBeNull()
+  );
   expect(voceImpostazioni().textContent).toContain("sincronizzazione da controllare");
 }
 
@@ -110,7 +112,9 @@ describe("pallino sulla tab Impostazioni", () => {
     await pallinoAcceso();
 
     segnaFineGiro("salita", "ok", { parlatoColServer: true });
-    await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).toBeNull());
+    await waitFor(() =>
+      expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).toBeNull()
+    );
   });
 });
 
@@ -126,7 +130,9 @@ describe("pallino delle novità di Amici sulla tab Impostazioni", () => {
   it("con 2 richieste ricevute: pallino nel colore principale e '2 novità'", async () => {
     window.localStorage.setItem(chiaveNovita(USER_ID), JSON.stringify({ richiesteRicevute: 2 }));
     disegna();
-    await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull());
+    await waitFor(() =>
+      expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull()
+    );
     expect(voceImpostazioni().textContent).toContain("2 novità");
     expect(voceImpostazioni().textContent).not.toContain("in Amici");
     expect(voceImpostazioni().querySelector("[data-pallino-sincronizzazione]")).toBeNull();
@@ -138,7 +144,9 @@ describe("pallino delle novità di Amici sulla tab Impostazioni", () => {
       JSON.stringify({ richiesteRicevute: 1, alimentiInArrivo: 2 })
     );
     disegna();
-    await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull());
+    await waitFor(() =>
+      expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull()
+    );
     expect(voceImpostazioni().textContent).toContain("3 novità");
   });
 
@@ -148,7 +156,9 @@ describe("pallino delle novità di Amici sulla tab Impostazioni", () => {
       JSON.stringify({ richiesteRicevute: 0, alimentiInArrivo: 1 })
     );
     disegna();
-    await waitFor(() => expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull());
+    await waitFor(() =>
+      expect(voceImpostazioni().querySelector("[data-pallino-amici]")).not.toBeNull()
+    );
     expect(voceImpostazioni().textContent).toContain("1 novità");
   });
 

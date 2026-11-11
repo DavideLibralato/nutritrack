@@ -87,7 +87,10 @@ export function daOpenFoodFacts(p: ProdottoGrezzo): ProdottoOpenFoodFacts {
   // prima ("Nutella, Ferrero"): si tiene la prima non vuota.
   const primaMarca =
     typeof p.brands === "string"
-      ? (p.brands.split(",").map(testoPulito).find((m) => m !== "") ?? "")
+      ? (p.brands
+          .split(",")
+          .map(testoPulito)
+          .find((m) => m !== "") ?? "")
       : "";
 
   const kcal = numero(nutrienti["energy-kcal_100g"]);

@@ -31,13 +31,19 @@ describe("messaggioDopoRipristino", () => {
       messaggioDopoRipristino(["Pane"], { ...NESSUNO, alimentiNonRipristinati: [pane] })
     ).toEqual({ testo: "Non ripristinato: hai già «Pane · Mulino»." });
     expect(
-      messaggioDopoRipristino(["Pane", "Latte"], { ...NESSUNO, alimentiNonRipristinati: [pane, latte] })
+      messaggioDopoRipristino(["Pane", "Latte"], {
+        ...NESSUNO,
+        alimentiNonRipristinati: [pane, latte],
+      })
     ).toEqual({ testo: "Non ripristinati: hai già «Pane · Mulino» e «Latte»." });
   });
 
   it("alcuni tornati e altri no: il conto è solo dei tornati", () => {
     expect(
-      messaggioDopoRipristino(["Pane", "Mela", "Pera"], { ...NESSUNO, alimentiNonRipristinati: [pane] })
+      messaggioDopoRipristino(["Pane", "Mela", "Pera"], {
+        ...NESSUNO,
+        alimentiNonRipristinati: [pane],
+      })
     ).toEqual({ testo: "Ripristinati: 2 alimenti. «Pane · Mulino» no: ne hai già uno uguale." });
     expect(
       messaggioDopoRipristino(["Pane", "Mela"], { ...NESSUNO, alimentiNonRipristinati: [pane] })
@@ -54,8 +60,11 @@ describe("messaggioDopoRipristino", () => {
       testo:
         "Ripristinato: Mela. «Pane · Mulino» no: ne hai già uno uguale. Il pasto salvato «Cena» no: ne hai già un altro con lo stesso nome.",
     });
-    expect(messaggioDopoRipristino(["Mela"], { ...NESSUNO, pastiNonRipristinati: ["Cena"] })).toEqual({
-      testo: "Ripristinato: Mela. Il pasto salvato «Cena» no: ne hai già un altro con lo stesso nome.",
+    expect(
+      messaggioDopoRipristino(["Mela"], { ...NESSUNO, pastiNonRipristinati: ["Cena"] })
+    ).toEqual({
+      testo:
+        "Ripristinato: Mela. Il pasto salvato «Cena» no: ne hai già un altro con lo stesso nome.",
     });
   });
 });
@@ -64,7 +73,10 @@ describe("messaggioDopoRipristino", () => {
 // rimasti"): le stesse parole dell'Annulla degli alimenti.
 describe("messaggioToltiDaiPreferiti", () => {
   it("uno: il testo di Impostazioni > Preferiti; più di uno: quanti", () => {
-    expect(messaggioToltiDaiPreferiti(["Colazione"])).toEqual({ testo: "Tolto dai preferiti:", nome: "Colazione" });
+    expect(messaggioToltiDaiPreferiti(["Colazione"])).toEqual({
+      testo: "Tolto dai preferiti:",
+      nome: "Colazione",
+    });
     expect(messaggioToltiDaiPreferiti(["Colazione", "Colazione bis"])).toEqual({
       testo: "Tolti dai preferiti:",
       nome: "2 pasti salvati",
@@ -74,14 +86,23 @@ describe("messaggioToltiDaiPreferiti", () => {
 
 describe("messaggioDopoRipristinoPasti", () => {
   it("tutto tornato: «Annullato.», come ogni Annulla di Oggi", () => {
-    expect(messaggioDopoRipristinoPasti({ ripristinati: ["Colazione"], nonRipristinati: [] })).toBe(MESSAGGIO_ANNULLATO);
+    expect(messaggioDopoRipristinoPasti({ ripristinati: ["Colazione"], nonRipristinati: [] })).toBe(
+      MESSAGGIO_ANNULLATO
+    );
   });
 
   it("un pasto solo non tornato: il motivo, per ciascuno dei tre", () => {
     const testo = (motivo: "nome" | "contenuto" | "vuoto") =>
-      messaggioDopoRipristinoPasti({ ripristinati: [], nonRipristinati: [{ nome: "Colazione", motivo }] }).testo;
-    expect(testo("nome")).toBe("Non ripristinato: hai già un altro pasto salvato con lo stesso nome.");
-    expect(testo("contenuto")).toBe("Non ripristinato: hai già un altro pasto salvato con gli stessi alimenti.");
+      messaggioDopoRipristinoPasti({
+        ripristinati: [],
+        nonRipristinati: [{ nome: "Colazione", motivo }],
+      }).testo;
+    expect(testo("nome")).toBe(
+      "Non ripristinato: hai già un altro pasto salvato con lo stesso nome."
+    );
+    expect(testo("contenuto")).toBe(
+      "Non ripristinato: hai già un altro pasto salvato con gli stessi alimenti."
+    );
     expect(testo("vuoto")).toBe("Non ripristinato: i suoi alimenti non sono più nel catalogo.");
   });
 

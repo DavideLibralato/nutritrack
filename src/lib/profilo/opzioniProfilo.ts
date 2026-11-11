@@ -7,15 +7,16 @@ import type { LivelloAttivita, Sesso, TipoObiettivo } from "../db/tipi";
 
 // "Non indicato" a schermo, per stare nel selettore a tre segmenti; lo
 // screen reader legge la frase intera.
-export const OPZIONI_SESSO: { valore: Sesso; etichetta: string; etichettaAccessibile?: string }[] = [
-  { valore: "maschio", etichetta: "Uomo" },
-  { valore: "femmina", etichetta: "Donna" },
-  {
-    valore: "non_indicato",
-    etichetta: "Non indicato",
-    etichettaAccessibile: "Preferisco non indicarlo",
-  },
-];
+export const OPZIONI_SESSO: { valore: Sesso; etichetta: string; etichettaAccessibile?: string }[] =
+  [
+    { valore: "maschio", etichetta: "Uomo" },
+    { valore: "femmina", etichetta: "Donna" },
+    {
+      valore: "non_indicato",
+      etichetta: "Non indicato",
+      etichettaAccessibile: "Preferisco non indicarlo",
+    },
+  ];
 
 export const OPZIONI_ATTIVITA: { valore: LivelloAttivita; etichetta: string }[] = [
   { valore: "sedentario", etichetta: "Sedentario" },

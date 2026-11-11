@@ -50,36 +50,36 @@ describe("decidiDirezione", () => {
 
 describe("esitoRilascio", () => {
   it("swipe lento oltre la soglia: dito a sinistra = giorno dopo", () => {
-    expect(
-      esitoRilascio({ dx: -DISTANZA_CAMBIO_PX, velocita: 0, puoAvanti: true })
-    ).toBe("successivo");
+    expect(esitoRilascio({ dx: -DISTANZA_CAMBIO_PX, velocita: 0, puoAvanti: true })).toBe(
+      "successivo"
+    );
   });
 
   it("swipe lento oltre la soglia: dito a destra = giorno prima", () => {
-    expect(
-      esitoRilascio({ dx: DISTANZA_CAMBIO_PX, velocita: 0, puoAvanti: true })
-    ).toBe("precedente");
+    expect(esitoRilascio({ dx: DISTANZA_CAMBIO_PX, velocita: 0, puoAvanti: true })).toBe(
+      "precedente"
+    );
   });
 
   it("sotto soglia e lento: torna al suo posto", () => {
-    expect(
-      esitoRilascio({ dx: DISTANZA_CAMBIO_PX - 1, velocita: 0.1, puoAvanti: true })
-    ).toBe("ritorno");
+    expect(esitoRilascio({ dx: DISTANZA_CAMBIO_PX - 1, velocita: 0.1, puoAvanti: true })).toBe(
+      "ritorno"
+    );
   });
 
   it("flick veloce anche sotto la distanza", () => {
-    expect(
-      esitoRilascio({ dx: 40, velocita: VELOCITA_CAMBIO, puoAvanti: true })
-    ).toBe("precedente");
-    expect(
-      esitoRilascio({ dx: -40, velocita: -VELOCITA_CAMBIO, puoAvanti: true })
-    ).toBe("successivo");
+    expect(esitoRilascio({ dx: 40, velocita: VELOCITA_CAMBIO, puoAvanti: true })).toBe(
+      "precedente"
+    );
+    expect(esitoRilascio({ dx: -40, velocita: -VELOCITA_CAMBIO, puoAvanti: true })).toBe(
+      "successivo"
+    );
   });
 
   it("flick troppo corto non cambia giorno", () => {
-    expect(
-      esitoRilascio({ dx: DISTANZA_MINIMA_FLICK_PX - 1, velocita: 2, puoAvanti: true })
-    ).toBe("ritorno");
+    expect(esitoRilascio({ dx: DISTANZA_MINIMA_FLICK_PX - 1, velocita: 2, puoAvanti: true })).toBe(
+      "ritorno"
+    );
   });
 
   it("flick in verso opposto allo spostamento non conferma", () => {

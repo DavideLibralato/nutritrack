@@ -103,7 +103,9 @@ export default function SheetDuplica({
             className={`campo-data mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
           />
           {data !== "" && !dataValida && (
-            <p className="mt-1 text-sm text-warning">Scegli un giorno fino a {formattaGiornoCorto(ultimoGiorno)}.</p>
+            <p className="mt-1 text-sm text-warning">
+              Scegli un giorno fino a {formattaGiornoCorto(ultimoGiorno)}.
+            </p>
           )}
 
           <label htmlFor="duplica-pasto" className="mt-4 block text-sm font-medium">

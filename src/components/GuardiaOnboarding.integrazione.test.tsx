@@ -41,7 +41,9 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 function cookieSessione(userId: string, metadati: Record<string, unknown>) {
-  const valore = "base64-" + stringToBase64URL(JSON.stringify({ user: { id: userId, user_metadata: metadati } }));
+  const valore =
+    "base64-" +
+    stringToBase64URL(JSON.stringify({ user: { id: userId, user_metadata: metadati } }));
   document.cookie = `${chiaveSessione(URL_SUPABASE)}=${valore}; path=/`;
 }
 
@@ -67,7 +69,12 @@ beforeEach(async () => {
   finti.rete = [];
   window.localStorage.clear();
   azzeraStatoGiri();
-  await Promise.all([db.profili.clear(), db.misurazioni.clear(), db.obiettivi.clear(), db.outbox.clear()]);
+  await Promise.all([
+    db.profili.clear(),
+    db.misurazioni.clear(),
+    db.obiettivi.clear(),
+    db.outbox.clear(),
+  ]);
 });
 
 afterEach(() => {

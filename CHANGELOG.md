@@ -5,6 +5,26 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Prettier su tutto il progetto
+
+Branch `lavoretti`, commit 3, solo formattazione. Primo `prettier --write`
+(deciso da Davide l'11/11; PUNTO §8 diceva "commit separato, deciso a
+parte"): 270 file, 267 su 463 in `src` più `next.config.ts`,
+`tsconfig.json` e `generaCatalogo.mjs`, compreso `CreaAlimentoForm.tsx`
+con il frammento del 07/11. Fuori, in `.prettierignore`, i JSON del
+catalogo: `catalogoPrecaricato.json` lo riscrive lo script con il suo
+rientro, `docs/catalogo/*.json` restano come scritti. Nuovo script
+`npm run format:check` (`prettier --check .`), da lanciare prima di ogni
+commit (CLAUDE.md, convenzioni). **Verifica che non cambi il codice:**
+per ognuno dei 268 file `.ts/.tsx/.mjs` l'albero sintattico di prima
+(`HEAD`) e di dopo è identico, togliendo solo posizioni, commenti e le
+differenze che React tratta uguali (spazi a capo nel JSX, `{" "}`
+accanto a un testo, virgolette sulle chiavi); lo stesso controllo
+rileva una modifica di prova in 33 file su 33. `tsconfig.json` dà lo
+stesso JSON; `globals.css` cambia solo negli a capo dei valori (le
+definizioni di `--se-chiaro` intatte). 2021 test verdi in 166 file,
+`tsc`, eslint, `npm run build` e `format:check` puliti.
+
 ## 2026-11-11 — Testi di Esporta senza ripristino
 
 Branch `lavoretti`, commit 2. Senza Importa la pagina Esporta non

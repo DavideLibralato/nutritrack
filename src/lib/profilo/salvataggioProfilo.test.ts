@@ -642,10 +642,14 @@ describe("Altezza e peso obiettivo: arrotondati a un decimale prima di scrivere"
     await salva(caricati, attuali, { periodoVistoId: PERIODO.id, scelta: { tipo: "correzione" } });
     expect((await db.obiettivi.get(PERIODO.id))?.peso_obiettivo).toBe(72.6);
 
-    await salva(caricati, { ...attuali, obiettivo: { ...attuali.obiettivo, pesoObiettivo: "70,04" } }, {
-      periodoVistoId: PERIODO.id,
-      scelta: { tipo: "nuovo", validoDal: OGGI },
-    });
+    await salva(
+      caricati,
+      { ...attuali, obiettivo: { ...attuali.obiettivo, pesoObiettivo: "70,04" } },
+      {
+        periodoVistoId: PERIODO.id,
+        scelta: { tipo: "nuovo", validoDal: OGGI },
+      }
+    );
     const nuovo = (await db.obiettivi.toArray()).find((o) => o.id !== PERIODO.id)!;
     expect(nuovo.peso_obiettivo).toBe(70);
   });

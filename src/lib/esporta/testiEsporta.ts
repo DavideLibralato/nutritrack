@@ -10,7 +10,8 @@ export const TESTI_ESPORTA = {
   apertura:
     "Una copia di tutti i tuoi dati in un file. Tienila in un posto sicuro: è la tua copia, fuori da Libra.",
   avvisoForte: "Il file contiene dati personali e di salute:",
-  avviso: "cosa mangi, il peso, i tuoi obiettivi. Dove salvarlo lo scegli tu; evita le cartelle condivise.",
+  avviso:
+    "cosa mangi, il peso, i tuoi obiettivi. Dove salvarlo lo scegli tu; evita le cartelle condivise.",
   pulsante: "Esporta i miei dati",
   preparo: "Preparo il file…",
   riprova: "Riprova",
@@ -106,7 +107,11 @@ export function notaRiepilogo(
   const giorni = giorniDiCalendarioFra(quando, adesso);
   const ora = `${due(quando.getHours())}:${due(quando.getMinutes())}`;
   const giorno =
-    giorni <= 0 ? "oggi" : giorni === 1 ? "ieri" : `il ${due(quando.getDate())}/${due(quando.getMonth() + 1)}`;
+    giorni <= 0
+      ? "oggi"
+      : giorni === 1
+        ? "ieri"
+        : `il ${due(quando.getDate())}/${due(quando.getMonth() + 1)}`;
   return `${base} Ultimo collegamento al server: ${giorno} alle ${ora}.`;
 }
 

@@ -35,8 +35,20 @@ export default function RiquadroNelCatalogo({
       className="rounded-[18px] border border-[color-mix(in_srgb,var(--accento)_35%,transparent)] bg-[color-mix(in_srgb,var(--accento)_10%,transparent)] px-3.5 pt-3.5"
     >
       <div className="flex items-start gap-2.5">
-        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-accent-strong text-on-strong">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <span
+          aria-hidden
+          className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-accent-strong text-on-strong"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z" />
             <path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14z" />
           </svg>
@@ -69,7 +81,9 @@ export default function RiquadroNelCatalogo({
                   {v.nome}
                   {v.marca && <span className="text-muted"> · {v.marca}</span>}
                 </span>
-                <span className="text-sm tabular-nums text-muted">{Math.round(v.kcal_100g)} kcal / 100 g</span>
+                <span className="text-sm tabular-nums text-muted">
+                  {Math.round(v.kcal_100g)} kcal / 100 g
+                </span>
               </button>
               {/* 44 px di tocco, il cerchio da 40 dentro è il disegno. */}
               <button
@@ -80,7 +94,17 @@ export default function RiquadroNelCatalogo({
                 className={`flex size-11 shrink-0 items-center justify-center rounded-full disabled:opacity-60 ${CLASSE_FOCUS}`}
               >
                 <span className="flex size-10 items-center justify-center rounded-full bg-accent-strong text-on-strong">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
                     <path d="M12 5v14M5 12h14" />
                   </svg>
                 </span>
@@ -102,7 +126,17 @@ export default function RiquadroNelCatalogo({
         className={`flex min-h-11 w-full items-center justify-center gap-1 border-t border-[color-mix(in_srgb,var(--accento)_35%,transparent)] text-[15px] font-semibold text-accent ${CLASSE_FOCUS}`}
       >
         Vedi tutto il catalogo
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
           <path d="M9 6l6 6-6 6" />
         </svg>
       </button>

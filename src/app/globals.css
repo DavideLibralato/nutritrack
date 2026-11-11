@@ -76,8 +76,7 @@
   --avviso-pieno: var(--se-chiaro, var(--avviso)) var(--se-scuro, #b5533c);
   --pericolo-pieno: var(--se-chiaro, var(--pericolo)) var(--se-scuro, #b3261e);
   --su-pieno: var(--se-chiaro, var(--background)) var(--se-scuro, #ffffff);
-  --velo:
-    var(--se-chiaro, color-mix(in srgb, var(--foreground) 40%, transparent))
+  --velo: var(--se-chiaro, color-mix(in srgb, var(--foreground) 40%, transparent))
     var(--se-scuro, color-mix(in srgb, #000000 60%, transparent));
 
   /* Colori derivati dai token qui sopra, mai scritti a mano nei componenti.
@@ -97,11 +96,9 @@
      peggiore (vetro sopra lo sfondo crema), 5,0:1 sul bianco. È una
      miscela e non un colore fisso, così segue il colore principale. Al
      buio non serve: l'accento chiaro basta già. */
-  --capsula-attiva:
-    var(--se-chiaro, color-mix(in srgb, var(--accento) 12%, transparent))
+  --capsula-attiva: var(--se-chiaro, color-mix(in srgb, var(--accento) 12%, transparent))
     var(--se-scuro, color-mix(in srgb, var(--accento) 16%, transparent));
-  --testo-capsula:
-    var(--se-chiaro, color-mix(in srgb, var(--accento) 90%, #000000))
+  --testo-capsula: var(--se-chiaro, color-mix(in srgb, var(--accento) 90%, #000000))
     var(--se-scuro, var(--accento));
   /* --segmento-attivo: la scheda scelta di un selettore a segmenti
      (SelettoreSegmenti: Normale | Allenamento, Dimagrire / Mantenere /
@@ -136,25 +133,20 @@
   --accento-tenue: color-mix(in srgb, var(--accento) 14%, var(--superficie));
   --avviso-tenue: color-mix(in srgb, var(--avviso) 14%, var(--superficie));
   --neutro-tenue: color-mix(in srgb, var(--foreground) 7%, var(--superficie));
-  --testo-accento-tenue:
-    var(--se-chiaro, color-mix(in srgb, var(--accento) 85%, #000000))
+  --testo-accento-tenue: var(--se-chiaro, color-mix(in srgb, var(--accento) 85%, #000000))
     var(--se-scuro, var(--accento));
-  --testo-avviso-tenue:
-    var(--se-chiaro, color-mix(in srgb, var(--avviso) 85%, #000000))
+  --testo-avviso-tenue: var(--se-chiaro, color-mix(in srgb, var(--avviso) 85%, #000000))
     var(--se-scuro, var(--avviso));
-  --testo-neutro-tenue:
-    var(--se-chiaro, color-mix(in srgb, var(--tenue) 85%, #000000))
+  --testo-neutro-tenue: var(--se-chiaro, color-mix(in srgb, var(--tenue) 85%, #000000))
     var(--se-scuro, var(--tenue));
   /* Il ritaglio della foto profilo (SheetRitaglioFoto, classi .ritaglio-*
      più sotto): il velo scuro intorno al cerchio e il bordo del cerchio.
      Uguali nei due temi, apposta: stanno sopra una foto, non sopra
      l'interfaccia, e devono staccare da qualunque foto. Come nel mockup
      docs/mockups/foto-profilo.html. */
-  --ritaglio-velo:
-    var(--se-chiaro, color-mix(in srgb, #000000 56%, transparent))
+  --ritaglio-velo: var(--se-chiaro, color-mix(in srgb, #000000 56%, transparent))
     var(--se-scuro, color-mix(in srgb, #000000 56%, transparent));
-  --ritaglio-bordo:
-    var(--se-chiaro, color-mix(in srgb, #ffffff 90%, transparent))
+  --ritaglio-bordo: var(--se-chiaro, color-mix(in srgb, #ffffff 90%, transparent))
     var(--se-scuro, color-mix(in srgb, #ffffff 90%, transparent));
   /* La schermata di scansione del codice a barre (SchermataScansione,
      classi bg-scan, text-on-scan... da @theme qui sotto): scura in tutti e
@@ -170,14 +162,11 @@
      scuro, che sul nero si vede (segue il colore principale scelto). */
   --scansione-fondo: var(--se-chiaro, #14120f) var(--se-scuro, #14120f);
   --scansione-testo: var(--se-chiaro, #ffffff) var(--se-scuro, #ffffff);
-  --scansione-tenue:
-    var(--se-chiaro, color-mix(in srgb, #ffffff 72%, transparent))
+  --scansione-tenue: var(--se-chiaro, color-mix(in srgb, #ffffff 72%, transparent))
     var(--se-scuro, color-mix(in srgb, #ffffff 72%, transparent));
-  --scansione-tasto:
-    var(--se-chiaro, color-mix(in srgb, #ffffff 14%, transparent))
+  --scansione-tasto: var(--se-chiaro, color-mix(in srgb, #ffffff 14%, transparent))
     var(--se-scuro, color-mix(in srgb, #ffffff 14%, transparent));
-  --scansione-bordo:
-    var(--se-chiaro, color-mix(in srgb, #ffffff 35%, transparent))
+  --scansione-bordo: var(--se-chiaro, color-mix(in srgb, #ffffff 35%, transparent))
     var(--se-scuro, color-mix(in srgb, #ffffff 35%, transparent));
   --scansione-mirino: var(--accento-scuro);
 }

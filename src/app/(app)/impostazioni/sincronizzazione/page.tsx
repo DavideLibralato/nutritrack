@@ -66,7 +66,10 @@ export default function SincronizzazionePage() {
           </button>
           {dettagli.length > 0 && (
             <DettagliTecnici
-              righe={dettagli.map((d, i) => ({ chiave: `${d.verso}:${d.tabella}:${i}`, testo: rigaDettaglio(d) }))}
+              righe={dettagli.map((d, i) => ({
+                chiave: `${d.verso}:${d.tabella}:${i}`,
+                testo: rigaDettaglio(d),
+              }))}
             />
           )}
         </div>

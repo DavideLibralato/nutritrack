@@ -110,8 +110,14 @@ function coppie(p: Paletta, tema: Tema, accento: string): [string, number][] {
   return [
     ["--accento su sfondo", contrasto(c("--accento"), sfondo)],
     ["--accento su superficie", contrasto(c("--accento"), superficie)],
-    ["--su-pieno su --accento-pieno", contrasto(sopra(c("--su-pieno"), c("--accento-pieno")), c("--accento-pieno"))],
-    ["--testo-capsula sulla capsula sopra il vetro", contrasto(sopra(c("--testo-capsula"), capsula), capsula)],
+    [
+      "--su-pieno su --accento-pieno",
+      contrasto(sopra(c("--su-pieno"), c("--accento-pieno")), c("--accento-pieno")),
+    ],
+    [
+      "--testo-capsula sulla capsula sopra il vetro",
+      contrasto(sopra(c("--testo-capsula"), capsula), capsula),
+    ],
     // "Vedi" nella BarraAnnulla (Duplica su un altro giorno): solo testo,
     // senza capsula, direttamente sul vetro della barra.
     ["--testo-capsula sul vetro (Vedi)", contrasto(sopra(c("--testo-capsula"), vetro), vetro)],
@@ -126,7 +132,10 @@ function coppie(p: Paletta, tema: Tema, accento: string): [string, number][] {
     // i pallini e il pulsante pieno della sottopagina.
     ["--pericolo su superficie", contrasto(c("--pericolo"), superficie)],
     ["--pericolo su sfondo", contrasto(c("--pericolo"), sfondo)],
-    ["--su-pieno su --pericolo-pieno", contrasto(sopra(c("--su-pieno"), c("--pericolo-pieno")), c("--pericolo-pieno"))],
+    [
+      "--su-pieno su --pericolo-pieno",
+      contrasto(sopra(c("--su-pieno"), c("--pericolo-pieno")), c("--pericolo-pieno")),
+    ],
     // Le pastiglie dello stato in Statistiche (dal 11/11): "in linea",
     // "sopra", "sotto", su riquadri e dettaglio, che sono superficie.
     ["pastiglia «in linea»", contrasto(c("--testo-accento-tenue"), c("--accento-tenue"))],
@@ -144,14 +153,19 @@ describe("contrasti del testo, almeno 4,5:1", () => {
     for (const tema of ["chiaro", "scuro"] as const) {
       it(`${accento}, ${tema}`, () => {
         for (const [dove, valore] of coppie(paletta, tema, accento)) {
-          expect(valore, `${accento} ${tema}: ${dove} = ${valore.toFixed(2)}:1`).toBeGreaterThanOrEqual(SOGLIA);
+          expect(
+            valore,
+            `${accento} ${tema}: ${dove} = ${valore.toFixed(2)}:1`
+          ).toBeGreaterThanOrEqual(SOGLIA);
         }
       });
     }
   }
 
   it("il calcolo torna con un caso noto: --tenue scuro su sfondo scuro, 6,4:1", () => {
-    const [, valore] = coppie(paletta, "scuro", "verde").find(([dove]) => dove === "--tenue su sfondo")!;
+    const [, valore] = coppie(paletta, "scuro", "verde").find(
+      ([dove]) => dove === "--tenue su sfondo"
+    )!;
     expect(valore).toBeCloseTo(6.4, 1);
   });
 });

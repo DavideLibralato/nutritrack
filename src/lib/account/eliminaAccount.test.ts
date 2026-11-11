@@ -88,7 +88,10 @@ const nonTrovato: RispostaUtente = {
   data: { user: null },
   error: new AuthApiError("User from sub claim in JWT does not exist", 403, "user_not_found"),
 };
-const senzaRete: RispostaUtente = { data: { user: null }, error: new AuthRetryableFetchError("Failed to fetch", 0) };
+const senzaRete: RispostaUtente = {
+  data: { user: null },
+  error: new AuthRetryableFetchError("Failed to fetch", 0),
+};
 const sessioneScaduta: RispostaUtente = {
   data: { user: null },
   error: new AuthApiError("Session not found", 403, "session_not_found"),
@@ -273,7 +276,10 @@ describe("eliminaAccount con la foto profilo", () => {
     await conCopiaDellaFoto();
 
     expect(await eliminaAccount(ID)).toBe("eliminato");
-    expect(rpc.mock.calls.map((c) => c[0])).toEqual(["imposta_foto_profilo", "elimina_mio_account"]);
+    expect(rpc.mock.calls.map((c) => c[0])).toEqual([
+      "imposta_foto_profilo",
+      "elimina_mio_account",
+    ]);
     expect(chiamateImposta()[0][1]).toEqual({ p_percorso: null });
     expect(cancellazione).toHaveBeenCalledWith([`${ID}/${FILE[0]}`]);
     expect(rpc.mock.invocationCallOrder[0]).toBeLessThan(cancellazione.mock.invocationCallOrder[0]);
@@ -324,7 +330,10 @@ describe("eliminaAccount con la foto profilo", () => {
       cartella = [...FILE];
       if (caso === "rifiutata") {
         utenti = [conUtente(ID)];
-        rispostaRpc = { error: { message: "la foto profilo non è ancora stata cancellata" }, status: 400 };
+        rispostaRpc = {
+          error: { message: "la foto profilo non è ancora stata cancellata" },
+          status: 400,
+        };
       } else {
         utenti = [conUtente(ID), conUtente(ID)];
         rispostaRpc = { error: { message: "TypeError: Failed to fetch" }, status: 0 };

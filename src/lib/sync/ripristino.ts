@@ -153,9 +153,7 @@ export async function ripristinaDatiLocali(
 // Tutte le tabelle, complete, in parallelo. Promise.all (non allSettled come
 // scaricaTutto): basta un fallimento per rifiutare tutto — una tabella
 // mancante qui diventerebbe una tabella svuotata in locale.
-export async function scaricaTuttoInMemoria(
-  userId: string
-): Promise<Map<NomeTabella, RigaBase[]>> {
+export async function scaricaTuttoInMemoria(userId: string): Promise<Map<NomeTabella, RigaBase[]>> {
   const tabelle = await Promise.all(
     TABELLE_DISCESA.map(async (t) => {
       const righe: RigaBase[] = [];

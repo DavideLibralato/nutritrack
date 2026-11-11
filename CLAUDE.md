@@ -75,6 +75,8 @@ introdurla finché il documento non dice il contrario.
   romperebbe la rotta. Per tutto il resto (componenti, funzioni, moduli in
   `/lib`) il nome del file deve dire cosa fa
 - Commit piccoli e frequenti, messaggi in italiano
+- Prima di ogni commit `npm run format:check` (Prettier su tutto il
+  progetto dall'11/11, `PUNTO_DI_PARTENZA.md` §8)
 - **Test permanenti solo per bug di logica sottile** (race condition, calcoli,
   regole sulle date) — quelli che non fanno rumore e si scoprono
   mesi dopo (sezione 10.5). Scrivi il test, tienilo nel progetto (Vitest +

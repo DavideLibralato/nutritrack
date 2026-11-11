@@ -214,7 +214,10 @@ describe("il server non risponde: copia del telefono, o non inclusa", () => {
 describe("nel file JSON", () => {
   it("intestazione e byte, nei tre casi, e la foto riletta è identica", async () => {
     const casi: { prepara: () => Promise<void>; atteso: StatoFoto }[] = [
-      { prepara: async () => void (s.percorso = NUOVA), atteso: { stato: "inclusa", origine: "server" } },
+      {
+        prepara: async () => void (s.percorso = NUOVA),
+        atteso: { stato: "inclusa", origine: "server" },
+      },
       { prepara: async () => void (s.percorso = null), atteso: { stato: "assente" } },
       { prepara: async () => void (s.lettura = "errore"), atteso: { stato: "non-inclusa" } },
     ];
@@ -236,7 +239,9 @@ describe("nel file JSON", () => {
       expect(riletta.intestazione.foto).toEqual(atteso);
       if (atteso.stato === "inclusa") {
         expect(riletta.foto.tipo).toBe("image/jpeg");
-        expect(Array.from(atob(riletta.foto.base64), (c) => c.charCodeAt(0))).toEqual([255, 216, 2]);
+        expect(Array.from(atob(riletta.foto.base64), (c) => c.charCodeAt(0))).toEqual([
+          255, 216, 2,
+        ]);
       } else {
         expect(riletta.foto).toBeNull();
       }

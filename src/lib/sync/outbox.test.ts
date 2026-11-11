@@ -89,7 +89,9 @@ describe("una voce senza user_id non entra in outbox", () => {
     };
     await db.alimenti.put(condiviso);
 
-    await expect(alimenti.aggiorna(condiviso.id, { nome: "Mela rossa" })).rejects.toThrow(/user_id/);
+    await expect(alimenti.aggiorna(condiviso.id, { nome: "Mela rossa" })).rejects.toThrow(
+      /user_id/
+    );
     await expect(alimenti.elimina(condiviso.id)).rejects.toThrow(/user_id/);
 
     expect(await db.alimenti.get(condiviso.id)).toEqual(condiviso);
@@ -97,7 +99,13 @@ describe("una voce senza user_id non entra in outbox", () => {
   });
 
   it("si può modificare una riga propria: la voce porta lo user_id della riga", async () => {
-    const riga = await misurazioni.crea({ user_id: "u1", tipo: "peso", valore: 70, unita: "kg", data: "2026-10-11" });
+    const riga = await misurazioni.crea({
+      user_id: "u1",
+      tipo: "peso",
+      valore: 70,
+      unita: "kg",
+      data: "2026-10-11",
+    });
     await misurazioni.elimina(riga.id);
     const voce = await db.outbox.get(`misurazioni:${riga.id}`);
     expect(voce?.dati.user_id).toBe("u1");

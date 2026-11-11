@@ -62,17 +62,35 @@ afterEach(() => {
   Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => true });
 });
 
-function creaAlimento(nome: string, marca: string | null, barcode: string | null): Promise<Alimento> {
+function creaAlimento(
+  nome: string,
+  marca: string | null,
+  barcode: string | null
+): Promise<Alimento> {
   return repositoryAlimenti.crea({
-    user_id: USER_ID, nome, marca, barcode,
-    kcal_100g: 510, proteine_100g: 6.5, carboidrati_100g: 56, grassi_100g: 29,
-    zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-    porzione_default_g: 30, fonte: barcode ? "off" : "manuale", verificato: false,
+    user_id: USER_ID,
+    nome,
+    marca,
+    barcode,
+    kcal_100g: 510,
+    proteine_100g: 6.5,
+    carboidrati_100g: 56,
+    grassi_100g: 29,
+    zuccheri_100g: null,
+    fibre_100g: null,
+    saturi_100g: null,
+    sale_100g: null,
+    porzione_default_g: 30,
+    fonte: barcode ? "off" : "manuale",
+    verificato: false,
   });
 }
 
 function risposta(corpo: unknown, status = 200) {
-  return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(corpo), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 // Apre la scansione con Scansiona e scrive il codice, come con la
@@ -99,7 +117,12 @@ describe("Catalogo alimenti: Scansiona", () => {
           product: {
             product_name_it: "Patatine classiche",
             brands: "San Carlo",
-            nutriments: { "energy-kcal_100g": 537, proteins_100g: 6, carbohydrates_100g: 52, fat_100g: 33 },
+            nutriments: {
+              "energy-kcal_100g": 537,
+              proteins_100g: 6,
+              carbohydrates_100g: 52,
+              fat_100g: 33,
+            },
           },
         })
       )
@@ -117,7 +140,9 @@ describe("Catalogo alimenti: Scansiona", () => {
     expect(screen.getByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText(/Quantità/)).toBeNull();
-    const salvato = (await repositoryAlimenti.ottieniTutti(USER_ID)).find((a) => a.barcode === PATATINE);
+    const salvato = (await repositoryAlimenti.ottieniTutti(USER_ID)).find(
+      (a) => a.barcode === PATATINE
+    );
     expect(salvato).toMatchObject({ nome: "Patatine classiche", marca: "San Carlo", fonte: "off" });
   });
 
@@ -147,9 +172,17 @@ describe("Catalogo alimenti: Scansiona", () => {
       nome: "Passata di pomodoro",
       marca: "Mutti",
       barcode: KETCHIPS,
-      kcal_100g: 36, proteine_100g: 1.6, carboidrati_100g: 5.6, grassi_100g: 0.2,
-      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-      porzione_default_g: 100, fonte: "off", verificato: true,
+      kcal_100g: 36,
+      proteine_100g: 1.6,
+      carboidrati_100g: 5.6,
+      grassi_100g: 0.2,
+      zuccheri_100g: null,
+      fibre_100g: null,
+      saturi_100g: null,
+      sale_100g: null,
+      porzione_default_g: 100,
+      fonte: "off",
+      verificato: true,
     });
     render(<AlimentiPage />);
 
@@ -160,7 +193,9 @@ describe("Catalogo alimenti: Scansiona", () => {
         "È nel catalogo comune: «Passata di pomodoro · Mutti». Non si modifica, ma lo trovi in Aggiungi."
       )
     ).toBeTruthy();
-    expect(within(scansione).getByRole("button", { name: "Scansiona un altro codice" })).toBeTruthy();
+    expect(
+      within(scansione).getByRole("button", { name: "Scansiona un altro codice" })
+    ).toBeTruthy();
     expect(screen.queryByText("Modifica alimento")).toBeNull();
   });
 
@@ -175,7 +210,9 @@ describe("Catalogo alimenti: Scansiona", () => {
 
     const scansione = await scansionaScrivendo(PATATINE);
 
-    expect(await within(scansione).findByText(/Non riesco a raggiungere Open Food Facts/)).toBeTruthy();
+    expect(
+      await within(scansione).findByText(/Non riesco a raggiungere Open Food Facts/)
+    ).toBeTruthy();
     fireEvent.click(within(scansione).getByRole("button", { name: "Crea a mano" }));
 
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
@@ -196,7 +233,9 @@ describe("Catalogo alimenti: Scansiona", () => {
     expect(screen.getByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText(/Quantità/)).toBeNull();
-    const salvato = (await repositoryAlimenti.ottieniTutti(USER_ID)).find((a) => a.barcode === PATATINE);
+    const salvato = (await repositoryAlimenti.ottieniTutti(USER_ID)).find(
+      (a) => a.barcode === PATATINE
+    );
     // Valori scritti a mano: fonte 'barcode'.
     expect(salvato).toMatchObject({ nome: "Patatine", fonte: "barcode" });
   });
@@ -225,17 +264,26 @@ describe("Catalogo alimenti: Scansiona", () => {
         clientY: 50,
       })
     );
-    const barra = await screen.findByRole("toolbar", { name: "Alimenti selezionati" }, { timeout: 3000 });
+    const barra = await screen.findByRole(
+      "toolbar",
+      { name: "Alimenti selezionati" },
+      { timeout: 3000 }
+    );
 
     expect(screen.queryByRole("button", { name: "Scansiona il codice a barre" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Scansione non disponibile senza connessione" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Scansione non disponibile senza connessione" })
+    ).toBeNull();
 
     fireEvent.click(within(barra).getByRole("button", { name: "Annulla" }));
     expect(await screen.findByRole("button", { name: "Scansiona il codice a barre" })).toBeTruthy();
   });
 
   it("non trovato su Open Food Facts: «Nuovo alimento» con il solo codice", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => risposta({ result: { id: "product_not_found" } }, 404)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => risposta({ result: { id: "product_not_found" } }, 404))
+    );
     render(<AlimentiPage />);
 
     await scansionaScrivendo(PATATINE);
@@ -265,7 +313,8 @@ describe("Catalogo alimenti: Scansiona", () => {
       (screen.getByRole("searchbox", { name: "Cerca un alimento" }) as HTMLInputElement).disabled
     ).toBe(true);
     expect(
-      (screen.getByRole("button", { name: "Scansiona il codice a barre" }) as HTMLButtonElement).disabled
+      (screen.getByRole("button", { name: "Scansiona il codice a barre" }) as HTMLButtonElement)
+        .disabled
     ).toBe(false);
     expect(
       screen.getByText(
@@ -286,7 +335,12 @@ describe("Catalogo alimenti: «Apri» porta il codice", () => {
           product: {
             product_name_it: "Patatine classiche",
             brands: "San Carlo",
-            nutriments: { "energy-kcal_100g": 537, proteins_100g: 6, carbohydrates_100g: 52, fat_100g: 33 },
+            nutriments: {
+              "energy-kcal_100g": 537,
+              proteins_100g: 6,
+              carbohydrates_100g: 52,
+              fat_100g: 33,
+            },
           },
         })
       )
@@ -349,7 +403,9 @@ describe("Catalogo alimenti: «Aggiungi codice a barre»", () => {
     });
     fireEvent.click(within(scansione).getByRole("button", { name: "Usa questo codice" }));
 
-    expect((await screen.findByLabelText("Codice a barre") as HTMLInputElement).value).toBe(PATATINE);
+    expect(((await screen.findByLabelText("Codice a barre")) as HTMLInputElement).value).toBe(
+      PATATINE
+    );
     expect((await db.alimenti.get(patatine.id))?.barcode).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
@@ -377,10 +433,22 @@ describe("Catalogo precaricato: la scheda «Catalogo»", () => {
     render(<AlimentiPage />);
     fireEvent.change(await apriCatalogo(), { target: { value: "gocciole" } });
 
-    expect(screen.queryByRole("button", { name: "Aggiungi Gocciole chocolate · Pavesi ai tuoi alimenti" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /^Gocciole chocolate · Pavesi, 488 kcal per 100 g, già nei tuoi$/ }));
+    expect(
+      screen.queryByRole("button", {
+        name: "Aggiungi Gocciole chocolate · Pavesi ai tuoi alimenti",
+      })
+    ).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /^Gocciole chocolate · Pavesi, 488 kcal per 100 g, già nei tuoi$/,
+      })
+    );
     const scheda = await screen.findByRole("dialog", { name: "Gocciole chocolate" });
-    expect(within(scheda).getByText("Hai già un alimento con questo codice a barre: «Gocciole chocolate · Pavesi».")).toBeTruthy();
+    expect(
+      within(scheda).getByText(
+        "Hai già un alimento con questo codice a barre: «Gocciole chocolate · Pavesi»."
+      )
+    ).toBeTruthy();
     expect(within(scheda).getByText("Per 100 g, nel catalogo")).toBeTruthy();
     expect(within(scheda).queryByRole("button", { name: "Aggiungi ai miei alimenti" })).toBeNull();
 
@@ -397,12 +465,23 @@ describe("Catalogo precaricato: la scheda «Catalogo»", () => {
     expect(await screen.findByText("Aggiunto ai tuoi:")).toBeTruthy();
     const copie = await db.alimenti.filter((a) => a.catalogo_id === "ciqual:15000").toArray();
     expect(copie).toHaveLength(1);
-    expect(copie[0]).toMatchObject({ user_id: USER_ID, nome: "Mandorle", fonte: "manuale", deleted_at: null });
-    expect(await screen.findByRole("button", { name: /^Mandorle, \d+ kcal per 100 g, già nei tuoi$/ })).toBeTruthy();
+    expect(copie[0]).toMatchObject({
+      user_id: USER_ID,
+      nome: "Mandorle",
+      fonte: "manuale",
+      deleted_at: null,
+    });
+    expect(
+      await screen.findByRole("button", { name: /^Mandorle, \d+ kcal per 100 g, già nei tuoi$/ })
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
-    await waitFor(async () => expect((await db.alimenti.get(copie[0].id))?.deleted_at).not.toBeNull());
-    expect(await screen.findByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti" })).toBeTruthy();
+    await waitFor(async () =>
+      expect((await db.alimenti.get(copie[0].id))?.deleted_at).not.toBeNull()
+    );
+    expect(
+      await screen.findByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti" })
+    ).toBeTruthy();
   });
 
   it("«Apri» nella barra apre la modifica della copia; in «I miei» la copia dice «dal catalogo»", async () => {
@@ -447,7 +526,9 @@ describe("Catalogo precaricato: la scheda «Catalogo»", () => {
     cleanup();
     render(<AlimentiPage />);
     await apriCatalogo();
-    expect(screen.getByRole("switch", { name: "Nascondi quelli che hai" }).getAttribute("aria-checked")).toBe("true");
+    expect(
+      screen.getByRole("switch", { name: "Nascondi quelli che hai" }).getAttribute("aria-checked")
+    ).toBe("true");
     window.localStorage.removeItem("nutritrack:catalogo:nascondi-quelli-che-hai");
   });
 
@@ -456,7 +537,9 @@ describe("Catalogo precaricato: la scheda «Catalogo»", () => {
     render(<AlimentiPage />);
     fireEvent.change(await apriCatalogo(), { target: { value: "carote" } });
     fireEvent.click(screen.getByRole("button", { name: "Aggiungi Carote ai tuoi alimenti" }));
-    await waitFor(async () => expect(await db.alimenti.filter((a) => a.catalogo_id === "ciqual:20009").count()).toBe(1));
+    await waitFor(async () =>
+      expect(await db.alimenti.filter((a) => a.catalogo_id === "ciqual:20009").count()).toBe(1)
+    );
   });
 });
 
@@ -465,7 +548,9 @@ describe("Catalogo precaricato: arrivo da «Vedi tutto il catalogo»", () => {
     parametriIndirizzo.valore = new URLSearchParams("scheda=catalogo&cerca=latte");
     try {
       render(<AlimentiPage />);
-      const campo = (await screen.findByRole("searchbox", { name: "Cerca nel catalogo" })) as HTMLInputElement;
+      const campo = (await screen.findByRole("searchbox", {
+        name: "Cerca nel catalogo",
+      })) as HTMLInputElement;
       expect(campo.value).toBe("latte");
       expect(screen.getByRole("button", { name: /^Latte senza lattosio · Zymil, / })).toBeTruthy();
       expect(screen.queryByRole("button", { name: /^Mandorle, / })).toBeNull();
@@ -487,7 +572,9 @@ describe("Catalogo precaricato: Scansiona con un codice del catalogo", () => {
     const scheda = await screen.findByRole("dialog", { name: "Nutella" });
     expect(within(scheda).getByText("Ferrero · Dolci e snack")).toBeTruthy();
     expect(within(scheda).getByRole("button", { name: "Aggiungi ai miei alimenti" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^Catalogo/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: /^Catalogo/ }).getAttribute("aria-pressed")).toBe(
+      "true"
+    );
     expect(fetchFinta).not.toHaveBeenCalled();
   });
 });
@@ -505,11 +592,19 @@ describe("Catalogo precaricato: Scansiona un prodotto che hai già senza codice"
 
     await scansionaScrivendo("8000605830745");
     expect(await screen.findByText("Modifica alimento")).toBeTruthy();
-    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe("8000605830745");
-    expect(screen.getByText("Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni.")).toBeTruthy();
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(
+      "8000605830745"
+    );
+    expect(
+      screen.getByText(
+        "Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni."
+      )
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
 
-    await waitFor(async () => expect((await db.alimenti.get(mio.id))?.barcode).toBe("8000605830745"));
+    await waitFor(async () =>
+      expect((await db.alimenti.get(mio.id))?.barcode).toBe("8000605830745")
+    );
     expect(await screen.findByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
     expect(fetchFinta).not.toHaveBeenCalled();
   });

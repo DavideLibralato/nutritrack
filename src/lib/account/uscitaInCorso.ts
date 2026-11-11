@@ -106,12 +106,17 @@ export async function riprendiUscitaInSospeso(
   try {
     pulito = await sostituisciDatiUtente(segno.idUtente, new Map(), segno.firme);
   } catch (errore) {
-    console.error("Uscita: pulizia del dispositivo non riuscita, si riprova al prossimo avvio.", errore);
+    console.error(
+      "Uscita: pulizia del dispositivo non riuscita, si riprova al prossimo avvio.",
+      errore
+    );
     return "in-attesa";
   }
   togliSegnoUscita();
   if (!pulito) {
-    console.error("Uscita: in coda c'è una modifica non confermata, dati lasciati sul dispositivo.");
+    console.error(
+      "Uscita: in coda c'è una modifica non confermata, dati lasciati sul dispositivo."
+    );
     return "modifiche-cambiate";
   }
   return "pulito";

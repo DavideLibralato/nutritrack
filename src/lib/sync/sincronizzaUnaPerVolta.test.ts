@@ -30,7 +30,9 @@ vi.mock("../supabase/client", () => ({
     }
     return {
       // La salita manda solo le voci dell'utente della sessione.
-      auth: { getSession: async () => ({ data: { session: { user: { id: "utente-una-per-volta" } } } }) },
+      auth: {
+        getSession: async () => ({ data: { session: { user: { id: "utente-una-per-volta" } } } }),
+      },
       from: (tabella: string) => ({
         upsert: async (dati: { id: string }) => {
           inCorsoAdesso++;
@@ -87,7 +89,12 @@ describe("sincronizzaOutbox — una per volta", () => {
     await db.transaction("rw", [db.pasti, db.outbox], async () => {
       for (let i = 0; i < 14; i++) {
         await repositoryPasti.crea({
-          user_id: USER, nome: `Pasto ${i}`, ora_inizio: "12:00", ordine: i, valido_dal: null, valido_al: null,
+          user_id: USER,
+          nome: `Pasto ${i}`,
+          ora_inizio: "12:00",
+          ordine: i,
+          valido_dal: null,
+          valido_al: null,
         });
       }
     });

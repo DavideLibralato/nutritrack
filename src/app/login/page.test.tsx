@@ -54,7 +54,8 @@ async function accediCon(query: string): Promise<URL> {
 // segno tolto dall'indirizzo appena letto (un ricaricamento non lo rimostra).
 describe("Accedi, riquadro Account eliminato", () => {
   const TESTO_QUI = "I tuoi dati sono stati cancellati dal server e da questo telefono.";
-  const TESTO_ALTROVE = "Questo account non esiste più. I suoi dati sono stati tolti anche da questo telefono.";
+  const TESTO_ALTROVE =
+    "Questo account non esiste più. I suoi dati sono stati tolti anche da questo telefono.";
   const RIGA_PERSE = "Le modifiche non ancora salvate sul server sono andate perse.";
 
   function apri(percorso: string) {

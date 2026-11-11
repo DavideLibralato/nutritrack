@@ -26,8 +26,14 @@ const OGGI = "2026-10-09";
 
 function pasto(id: string, nome: string, ora_inizio: string, altro: Partial<Pasto> = {}): Pasto {
   return {
-    id, nome, ora_inizio, ordine: 0, user_id: "u1",
-    updated_at: "2026-10-01T00:00:00.000Z", deleted_at: null, ...altro,
+    id,
+    nome,
+    ora_inizio,
+    ordine: 0,
+    user_id: "u1",
+    updated_at: "2026-10-01T00:00:00.000Z",
+    deleted_at: null,
+    ...altro,
   };
 }
 
@@ -53,7 +59,12 @@ describe("periodiInComune", () => {
   });
 
   it("un periodo dentro l'altro ha giorni in comune", () => {
-    expect(periodiInComune({ dal: "2026-10-01", al: "2026-10-31" }, { dal: "2026-10-10", al: "2026-10-12" })).toBe(true);
+    expect(
+      periodiInComune(
+        { dal: "2026-10-01", al: "2026-10-31" },
+        { dal: "2026-10-10", al: "2026-10-12" }
+      )
+    ).toBe(true);
   });
 });
 
@@ -119,11 +130,15 @@ describe("erroreOra", () => {
   });
 
   it("un pasto chiuso nel passato blocca, e il messaggio dice fino a quando c'era", () => {
-    expect(erroreOra("16:00", SEMPRE, righe, [], OGGI)).toBe("Alle 16:00 iniziava già Merenda (fino all'8 ott).");
+    expect(erroreOra("16:00", SEMPRE, righe, [], OGGI)).toBe(
+      "Alle 16:00 iniziava già Merenda (fino all'8 ott)."
+    );
   });
 
   it("un pasto che comincerà più avanti blocca, e il messaggio dice da quando", () => {
-    expect(erroreOra("21:00", SEMPRE, righe, [], OGGI)).toBe("Alle 21:00 inizierà Cena tardi (dal 12 ott).");
+    expect(erroreOra("21:00", SEMPRE, righe, [], OGGI)).toBe(
+      "Alle 21:00 inizierà Cena tardi (dal 12 ott)."
+    );
   });
 
   it("un pasto cancellato non blocca niente", () => {
@@ -145,12 +160,16 @@ describe("domandaPerNome", () => {
 
   it("un nome nuovo davvero: la domanda 'da quando'", () => {
     expect(domandaPerNome(pranzo, "Pranzo 1", OGGI)).toBe("chiedi");
-    expect(domandaPerNome({ ...pranzo, valido_dal: "2026-10-01" }, "Pranzo 1", OGGI)).toBe("chiedi");
+    expect(domandaPerNome({ ...pranzo, valido_dal: "2026-10-01" }, "Pranzo 1", OGGI)).toBe(
+      "chiedi"
+    );
   });
 
   it("un pasto nato oggi, o che comincia più avanti, si corregge e basta", () => {
     expect(domandaPerNome({ ...pranzo, valido_dal: OGGI }, "Pranzo 1", OGGI)).toBe("correggi");
-    expect(domandaPerNome({ ...pranzo, valido_dal: "2026-10-12" }, "Pranzo 1", OGGI)).toBe("correggi");
+    expect(domandaPerNome({ ...pranzo, valido_dal: "2026-10-12" }, "Pranzo 1", OGGI)).toBe(
+      "correggi"
+    );
   });
 });
 
@@ -194,7 +213,9 @@ describe("periodoCoperto", () => {
   });
 
   it("un pasto cancellato non copre niente", () => {
-    expect(periodoCoperto(SEMPRE, [{ ...sempre, deleted_at: "2026-10-01T00:00:00.000Z" }])).toBe(false);
+    expect(periodoCoperto(SEMPRE, [{ ...sempre, deleted_at: "2026-10-01T00:00:00.000Z" }])).toBe(
+      false
+    );
   });
 });
 
@@ -214,7 +235,9 @@ describe("regoleElimina", () => {
 
   it("con un altro pasto da sempre: tutto permesso, con la domanda", () => {
     expect(regoleElimina(pranzo, [colazione, pranzo], OGGI)).toEqual({
-      motivoSpento: null, senzaDomanda: false, motivoPassatiSpento: null,
+      motivoSpento: null,
+      senzaDomanda: false,
+      motivoPassatiSpento: null,
     });
   });
 
@@ -227,14 +250,18 @@ describe("regoleElimina", () => {
   it("oggi c'è un altro pasto, ma nei giorni passati no: solo 'Anche nei giorni passati' è spento", () => {
     const natoOggi = pasto("brunch", "Brunch", "11:00", { valido_dal: OGGI });
     expect(regoleElimina(pranzo, [natoOggi, pranzo], OGGI)).toEqual({
-      motivoSpento: null, senzaDomanda: false, motivoPassatiSpento: ERRORE_GIORNI_SENZA_PASTI,
+      motivoSpento: null,
+      senzaDomanda: false,
+      motivoPassatiSpento: ERRORE_GIORNI_SENZA_PASTI,
     });
   });
 
   it("un pasto nato oggi si elimina senza domanda", () => {
     const natoOggi = pasto("brunch", "Brunch", "11:00", { valido_dal: OGGI });
     expect(regoleElimina(natoOggi, [colazione, natoOggi], OGGI)).toEqual({
-      motivoSpento: null, senzaDomanda: true, motivoPassatiSpento: null,
+      motivoSpento: null,
+      senzaDomanda: true,
+      motivoPassatiSpento: null,
     });
   });
 });
@@ -248,7 +275,9 @@ describe("regoleElimina con un cambio programmato", () => {
 
   it("un altro pasto che finisce prima della fine del filo non basta", () => {
     const cena = pasto("cena", "Cena", "19:30", { ordine: 4, valido_al: "2026-10-13" });
-    expect(regoleElimina(pranzo, [pranzo, pranzo1, cena], OGGI).motivoSpento).toBe(ERRORE_UNICO_PASTO);
+    expect(regoleElimina(pranzo, [pranzo, pranzo1, cena], OGGI).motivoSpento).toBe(
+      ERRORE_UNICO_PASTO
+    );
   });
 
   it("un altro pasto che copre tutto il filo sì; la riga futura non conta fra quelli che restano", () => {

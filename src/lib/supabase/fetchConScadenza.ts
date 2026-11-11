@@ -79,11 +79,10 @@ export function creaFetchConScadenza(
     // Il timer non si ferma quando arrivano le intestazioni: anche la
     // lettura del corpo della risposta può bloccarsi. Annullare una
     // richiesta già finita non fa niente.
-    setTimeout(
-      () => controller.abort(new DOMException(MESSAGGIO_ANNULLATA, "AbortError")),
-      ms
-    );
-    const segnale = init?.signal ? unisciSegnali(init.signal, controller.signal) : controller.signal;
+    setTimeout(() => controller.abort(new DOMException(MESSAGGIO_ANNULLATA, "AbortError")), ms);
+    const segnale = init?.signal
+      ? unisciSegnali(init.signal, controller.signal)
+      : controller.signal;
     const opzioni = { ...init, signal: segnale };
     const chiama = () => (fetchBase ? fetchBase(input, opzioni) : fetch(input, opzioni));
 

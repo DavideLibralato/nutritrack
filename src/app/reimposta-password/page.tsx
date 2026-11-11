@@ -65,7 +65,10 @@ function raccogliSessioneDalFrammento(): Promise<EsitoFrammento> {
       // questo browser, anche senza rete, e con la rete chiede al server
       // di chiudere proprio questa sessione. Costa un link nuovo.
       await supabase.auth.signOut({ scope: "local" });
-      return { tipo: "errore", testo: rinnovo.error ? testoErrore(rinnovo.error) : LINK_NON_VALIDO };
+      return {
+        tipo: "errore",
+        testo: rinnovo.error ? testoErrore(rinnovo.error) : LINK_NON_VALIDO,
+      };
     }
 
     const utente = rinnovo.data.session.user;
@@ -81,9 +84,7 @@ function testoErrore(errore: Error): string {
 export default function ReimpostaPasswordPage() {
   const router = useRouter();
 
-  const [statoSessione, setStatoSessione] = useState<"verifica" | "pronto" | "errore">(
-    "verifica"
-  );
+  const [statoSessione, setStatoSessione] = useState<"verifica" | "pronto" | "errore">("verifica");
   const [erroreSessione, setErroreSessione] = useState<string | null>(null);
   // L'account a cui si cambia la password, mostrato nel modulo.
   const [emailAccount, setEmailAccount] = useState("");

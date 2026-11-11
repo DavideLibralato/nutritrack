@@ -18,7 +18,13 @@ function disegna(
   tipo: TipoObiettivo | null
 ) {
   const { container } = render(
-    <BarraMacro nome="Macro" grandezza={grandezza} valore={valore} obiettivo={obiettivo} tipoObiettivo={tipo} />
+    <BarraMacro
+      nome="Macro"
+      grandezza={grandezza}
+      valore={valore}
+      obiettivo={obiettivo}
+      tipoObiettivo={tipo}
+    />
   );
   const barra = container.querySelector(`[data-segno="barra-${grandezza}"]`) as HTMLElement;
   const r = {

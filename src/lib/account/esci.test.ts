@@ -25,7 +25,10 @@ import { stringToBase64URL } from "@supabase/ssr";
 // Il server finto: chi risponde getUser, e se dopo signOut la sessione
 // c'è ancora.
 const server = vi.hoisted(() => ({
-  getUser: null as unknown as () => { data: { user: { id: string } | null }; error: AuthError | null },
+  getUser: null as unknown as () => {
+    data: { user: { id: string } | null };
+    error: AuthError | null;
+  },
   sessioneDopoSignOut: false,
   signOut: vi.fn(),
   // updateUser: solo per l'esito dell'onboarding in sospeso (dal 17/10).
@@ -42,7 +45,9 @@ vi.mock("../supabase/client", () => ({
         server.signOut(...args);
         return { error: null };
       },
-      getSession: async () => ({ data: { session: server.sessioneDopoSignOut ? { user: {} } : null } }),
+      getSession: async () => ({
+        data: { session: server.sessioneDopoSignOut ? { user: {} } : null },
+      }),
       updateUser: (attributi: unknown) => server.updateUser(attributi),
     },
   }),
@@ -50,7 +55,9 @@ vi.mock("../supabase/client", () => ({
 
 // La salita: non manda niente (la coda resta com'è), si controlla solo se
 // viene chiamata.
-const salita = vi.hoisted(() => ({ sincronizzaOutbox: vi.fn(async () => ({ inviate: 0, fallite: 0, sospese: 0 })) }));
+const salita = vi.hoisted(() => ({
+  sincronizzaOutbox: vi.fn(async () => ({ inviate: 0, fallite: 0, sospese: 0 })),
+}));
 vi.mock("../sync/sincronizza", () => salita);
 
 vi.mock("../serviceWorker", () => ({ svuotaPagineSalvate: vi.fn(async () => {}) }));
@@ -90,8 +97,18 @@ async function dispositivo({ conCoda }: { conCoda: boolean }) {
   await db.pasti.bulkPut([suo, dellAltro]);
   await db.outbox.bulkPut([...(conCoda ? [voceInCoda(suo)] : []), voceInCoda(dellAltro)]);
   await db.sync_cursori.bulkPut([
-    { id: `pasti:${utente}`, tabella: "pasti", user_id: utente, ultimo_aggiornamento: suo.updated_at },
-    { id: `pasti:${altro}`, tabella: "pasti", user_id: altro, ultimo_aggiornamento: dellAltro.updated_at },
+    {
+      id: `pasti:${utente}`,
+      tabella: "pasti",
+      user_id: utente,
+      ultimo_aggiornamento: suo.updated_at,
+    },
+    {
+      id: `pasti:${altro}`,
+      tabella: "pasti",
+      user_id: altro,
+      ultimo_aggiornamento: dellAltro.updated_at,
+    },
   ]);
   return { utente, altro };
 }
@@ -107,8 +124,14 @@ async function contaDi(userId: string) {
 const VUOTO = { pasti: 0, coda: 0, cursori: 0 };
 
 const valida = (id: string) => () => ({ data: { user: { id } }, error: null });
-const scaduta = () => ({ data: { user: null }, error: new AuthApiError("Session not found", 403, "session_not_found") });
-const senzaRete = () => ({ data: { user: null }, error: new AuthRetryableFetchError("Failed to fetch", 0) });
+const scaduta = () => ({
+  data: { user: null },
+  error: new AuthApiError("Session not found", 403, "session_not_found"),
+});
+const senzaRete = () => ({
+  data: { user: null },
+  error: new AuthRetryableFetchError("Failed to fetch", 0),
+});
 
 // Ogni scrittura del segno, anche se poi viene tolto.
 let scrittureSegno: string[];
@@ -121,7 +144,11 @@ beforeEach(async () => {
   salita.sincronizzaOutbox.mockClear();
   scrittureSegno = [];
   const originale = Storage.prototype.setItem;
-  vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, chiave: string, valore: string) {
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+    this: Storage,
+    chiave: string,
+    valore: string
+  ) {
     if (chiave === CHIAVE_USCITA) scrittureSegno.push(valore);
     return originale.call(this, chiave, valore);
   });
@@ -152,7 +179,9 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
     // Con la sessione non valida non si prova nemmeno a inviare.
     expect(salita.sincronizzaOutbox).not.toHaveBeenCalled();
 
-    expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe("uscito");
+    expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe(
+      "uscito"
+    );
     expect(server.signOut).toHaveBeenCalledWith({ scope: "local" });
     expect(scrittureSegno).toEqual([]);
     expect(leggiSegnoUscita()).toBeNull();
@@ -176,7 +205,9 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
     if (preparazione.esito !== "pronta") return;
     expect(salita.sincronizzaOutbox).toHaveBeenCalled();
 
-    expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe("uscito");
+    expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe(
+      "uscito"
+    );
     expect(scrittureSegno).toHaveLength(1);
     expect(leggiSegnoUscita()).toBeNull();
     expect(await contaDi(utente)).toEqual(VUOTO);
@@ -194,7 +225,9 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
     expect(preparazione).toMatchObject({ esito: "pronta", decisione: "conferma-perdita" });
     if (preparazione.esito !== "pronta") return;
 
-    expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe("uscito");
+    expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe(
+      "uscito"
+    );
     expect(scrittureSegno).toHaveLength(1);
     expect(await contaDi(utente)).toEqual(VUOTO);
     expect(await contaDi(altro)).toEqual({ pasti: 1, coda: 1, cursori: 1 });
@@ -215,7 +248,9 @@ describe("Esci — il segno di uscita solo quando si svuota", () => {
       if (preparazione.esito !== "pronta") throw new Error("preparazione non pronta");
       expect(preparazione.decisione).toBe(conCoda ? "tieni" : "svuota");
 
-      expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe("uscito");
+      expect(await eseguiUscita(utente, preparazione.decisione, preparazione.modifiche.firme)).toBe(
+        "uscito"
+      );
       expect(segnoDiscesaCompleta(utente), `conCoda=${conCoda}`).toBe(false);
       expect(segnoDiscesaCompleta(altro), `conCoda=${conCoda}`).toBe(true);
       // Anche la data dell'ultima esportazione (dal 08/11).

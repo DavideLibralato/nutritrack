@@ -24,8 +24,7 @@ export const MASSIMO_NUMERIC_7_2 = 99999.99;
 export type ErroreDecimale = "non-numero" | "oltre-massimo" | "sotto-minimo";
 
 export type LetturaDecimale =
-  | { valore: number; errore: null }
-  | { valore: null; errore: ErroreDecimale };
+  { valore: number; errore: null } | { valore: null; errore: ErroreDecimale };
 
 // Si arrotonda ai decimali della colonna PRIMA di scrivere in Dexie: il
 // server arrotonda da sé (numeric(7,2): 12,345 → 12,35; numeric(5,1):

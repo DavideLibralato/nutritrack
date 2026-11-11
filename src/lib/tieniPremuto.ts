@@ -238,20 +238,23 @@ export function useTieniPremuto<T extends string = TipoRiga>(opzioni: OpzioniTie
       g.timer = null;
       const scadenza = prossimaScadenza(g.stato);
       if (scadenza === null) return;
-      g.timer = setTimeout(() => {
-        if (gesto !== g) return;
-        g.timer = null;
-        const nuovo = aggiornaTempo(g.stato, performance.now());
-        // Un timer può scattare una frazione di millisecondo prima della
-        // scadenza misurata con performance.now() (visto nei test: 0,2–0,3
-        // ms). Senza cambio di fase si riprova, altrimenti il gesto resta
-        // fermo lì finché il dito non si alza.
-        if (nuovo.fase === g.stato.fase) {
-          programma(g);
-          return;
-        }
-        applica(g, nuovo, g.stato.x, g.stato.y);
-      }, Math.max(0, scadenza - performance.now()));
+      g.timer = setTimeout(
+        () => {
+          if (gesto !== g) return;
+          g.timer = null;
+          const nuovo = aggiornaTempo(g.stato, performance.now());
+          // Un timer può scattare una frazione di millisecondo prima della
+          // scadenza misurata con performance.now() (visto nei test: 0,2–0,3
+          // ms). Senza cambio di fase si riprova, altrimenti il gesto resta
+          // fermo lì finché il dito non si alza.
+          if (nuovo.fase === g.stato.fase) {
+            programma(g);
+            return;
+          }
+          applica(g, nuovo, g.stato.x, g.stato.y);
+        },
+        Math.max(0, scadenza - performance.now())
+      );
     }
 
     function suPointerDown(e: PointerEvent) {
@@ -280,7 +283,12 @@ export function useTieniPremuto<T extends string = TipoRiga>(opzioni: OpzioniTie
     function suPointerMove(e: PointerEvent) {
       const g = gesto;
       if (!g || e.pointerId !== g.id) return;
-      applica(g, aggiornaMovimento(g.stato, e.clientX, e.clientY, performance.now()), e.clientX, e.clientY);
+      applica(
+        g,
+        aggiornaMovimento(g.stato, e.clientX, e.clientY, performance.now()),
+        e.clientX,
+        e.clientY
+      );
       if (gesto === g && g.stato.fase === "trascina") {
         rifOpzioni.current.onTrascinamento?.movimento(e.clientX, e.clientY);
       }

@@ -66,7 +66,10 @@ export interface EsitoSpostamento {
 // La riga d'esito di "Non spostarlo" nel foglio dei doppioni: "Resta in
 // Pranzo, non si sposta", oppure, dallo sheet di modifica con i grammi
 // cambiati, "Resta in Pranzo con 120 g" (decisione di Davide del 18/10).
-export function esitoNonSpostarlo(pastoPartenza: string, grammiNuovi: number | null = null): string {
+export function esitoNonSpostarlo(
+  pastoPartenza: string,
+  grammiNuovi: number | null = null
+): string {
   return grammiNuovi === null
     ? `Resta in ${pastoPartenza}, non si sposta`
     : `Resta in ${pastoPartenza} con ${formattaGrammi(grammiNuovi)}`;
@@ -90,7 +93,8 @@ export function messaggioSpostamento(e: EsitoSpostamento): MessaggioBarra {
         icona: "info",
       };
     }
-    const grammi = e.grammiInDestinazione != null ? `, ${formattaGrammi(e.grammiInDestinazione)}` : "";
+    const grammi =
+      e.grammiInDestinazione != null ? `, ${formattaGrammi(e.grammiInDestinazione)}` : "";
     return {
       testo: "Spostato:",
       nome: e.nomeAlimento ?? "",
@@ -135,7 +139,12 @@ export function messaggioSpostamento(e: EsitoSpostamento): MessaggioBarra {
 // - escludi:  `testoEscluso`, passato da chi chiama ("Resta in Cena, non si
 //             sposta"; per Duplica sarà un'altra frase)
 export function testoEsitoDoppione(
-  d: { grammiEsistenti: number; grammiInArrivo: number; righeEsistenti: number; righeInArrivo: number },
+  d: {
+    grammiEsistenti: number;
+    grammiInArrivo: number;
+    righeEsistenti: number;
+    righeInArrivo: number;
+  },
   tipo: "somma" | "separati" | "scrivi" | "escludi",
   grammiScritti: number | null,
   testoEscluso: string
@@ -188,7 +197,10 @@ export function messaggioDuplicazione(e: EsitoDuplicazione): MessaggioBarra {
   const plurale = new Set(e.esclusi).size > 1;
 
   if (e.duplicati === 0) {
-    const chi = e.tipo === "voce" ? alimento(e.nomeAlimento ?? e.esclusi[0] ?? "") : elencoAlimenti(e.esclusi);
+    const chi =
+      e.tipo === "voce"
+        ? alimento(e.nomeAlimento ?? e.esclusi[0] ?? "")
+        : elencoAlimenti(e.esclusi);
     return {
       testo: `Nessuna copia: ${chi} ${plurale ? "ci sono" : "c'è"} già in ${pasto(e.pastoDestinazione)}${di}.`,
       icona: "info",

@@ -236,7 +236,6 @@ export function useNovitaAmici(): NovitaAmici {
   return novita;
 }
 
-
 // --- Il pallino sulla tab Impostazioni (funzione pura, con test) ---
 
 // Un pallino solo: se la sincronizzazione chiede attenzione vince il suo

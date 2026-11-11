@@ -111,10 +111,7 @@ export function controllaUtenteDellaRiga(tabella: NomeTabella, riga: RigaBase): 
   }
 }
 
-export async function accodaMutazione(
-  tabella: NomeTabella,
-  riga: RigaBase
-): Promise<void> {
+export async function accodaMutazione(tabella: NomeTabella, riga: RigaBase): Promise<void> {
   controllaUtenteDellaRiga(tabella, riga);
   const voce: VoceOutbox = {
     id: `${tabella}:${riga.id}`,

@@ -45,10 +45,7 @@ export type SessioneSalvata = {
 // Formato scritto da @supabase/ssr (createBrowserClient): il valore può
 // essere spezzato in più cookie (`<chiave>.0`, `<chiave>.1`, ...) se è
 // lungo, e inizia con "base64-" seguito dal JSON della sessione in base64url.
-export function leggiSessioneSalvata(
-  cookieHeader: string,
-  chiave: string
-): SessioneSalvata | null {
+export function leggiSessioneSalvata(cookieHeader: string, chiave: string): SessioneSalvata | null {
   const cookie = new Map(parseCookieHeader(cookieHeader).map((c) => [c.name, c.value ?? ""]));
 
   let valore = cookie.get(chiave);

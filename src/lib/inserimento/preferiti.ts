@@ -43,8 +43,7 @@ export function alimentiPreferiti(
     // averlo messo tra i preferiti): in quel caso non compare.
     const alimento = catalogo.find((a) => a.id === p.alimento_id);
     if (!alimento) continue;
-    const quantitaG =
-      ultimaQuantitaPerAlimento.get(alimento.id) ?? alimento.porzione_default_g;
+    const quantitaG = ultimaQuantitaPerAlimento.get(alimento.id) ?? alimento.porzione_default_g;
     risultato.push({ alimento, quantitaG });
   }
 

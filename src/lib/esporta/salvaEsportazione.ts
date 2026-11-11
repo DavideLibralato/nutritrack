@@ -4,7 +4,13 @@
 // pulsante, e salvaFile arriva alla condivisione senza attese
 // (condividiFile.ts).
 
-import { salvaFile, TIPO_CSV, TIPO_JSON, type AmbienteSalvataggio, type EsitoSalvataggio } from "./condividiFile";
+import {
+  salvaFile,
+  TIPO_CSV,
+  TIPO_JSON,
+  type AmbienteSalvataggio,
+  type EsitoSalvataggio,
+} from "./condividiFile";
 import { segnaEsportazione } from "./ultimaEsportazione";
 
 export function salvaJson(

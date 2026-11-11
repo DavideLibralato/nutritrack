@@ -24,7 +24,13 @@ function occhio(): HTMLElement {
 function Controllato() {
   const [valore, setValore] = useState("");
   return (
-    <CampoPassword id="p" etichetta="Password" autoComplete="current-password" value={valore} onChange={setValore} />
+    <CampoPassword
+      id="p"
+      etichetta="Password"
+      autoComplete="current-password"
+      value={valore}
+      onChange={setValore}
+    />
   );
 }
 

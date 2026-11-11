@@ -125,7 +125,15 @@ describe("giorniStatistiche", () => {
   it("un giorno per data, con i totali solo dove ci sono voci e il futuro segnato", () => {
     const giorni = giorniStatistiche(QUESTA_SETTIMANA, [voce("2026-11-10", 2000)], DATI, OGGI);
     expect(giorni.map((g) => g.data)).toEqual(QUESTA_SETTIMANA);
-    expect(giorni.map((g) => g.totali?.kcal ?? null)).toEqual([null, 2000, null, null, null, null, null]);
+    expect(giorni.map((g) => g.totali?.kcal ?? null)).toEqual([
+      null,
+      2000,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
     expect(giorni.map((g) => g.futuro)).toEqual([false, false, false, true, true, true, true]);
   });
 
@@ -173,7 +181,10 @@ describe("medieDelPeriodo", () => {
 
   it("target diversi: obiettivo medio sugli stessi giorni contati", () => {
     // Allenamento il 3 e il 5 (scritti), normale gli altri; voci solo il 2, 3 e 5.
-    const dati = { ...DATI, giorni: [giorno("2026-11-03", "allenamento"), giorno("2026-11-05", "allenamento")] };
+    const dati = {
+      ...DATI,
+      giorni: [giorno("2026-11-03", "allenamento"), giorno("2026-11-05", "allenamento")],
+    };
     const voci = [voce("2026-11-02", 2000), voce("2026-11-03", 2600), voce("2026-11-05", 2600)];
     const r = medie(SETTIMANA_SCORSA, voci, dati)!;
     expect(r.kcal.obiettivo).toBeCloseTo((2200 + 2600 + 2600) / 3, 10);
@@ -232,7 +243,9 @@ describe("medieDelPeriodo", () => {
   });
 
   it("i quattro valori dalle voci: kcal, grassi, carboidrati, proteine", () => {
-    const r = medie(SETTIMANA_SCORSA, [voce("2026-11-03", 2000, { proteine: 120, carboidrati: 250, grassi: 60 })])!;
+    const r = medie(SETTIMANA_SCORSA, [
+      voce("2026-11-03", 2000, { proteine: 120, carboidrati: 250, grassi: 60 }),
+    ])!;
     expect(r.kcal.valore).toBe(2000);
     expect(r.grassi.valore).toBe(60);
     expect(r.carboidrati.valore).toBe(250);
@@ -250,7 +263,9 @@ describe("segnoObiettivo (variante V1)", () => {
 
   it("un giorno di allenamento scritto, anche con i differenziati spenti: i trattini", () => {
     const dati = { ...DATI, giorni: [giorno("2026-11-04", "allenamento")] };
-    expect(segnoObiettivo(giorniStatistiche(SETTIMANA_SCORSA, [], dati, OGGI))).toEqual({ tipo: "trattini" });
+    expect(segnoObiettivo(giorniStatistiche(SETTIMANA_SCORSA, [], dati, OGGI))).toEqual({
+      tipo: "trattini",
+    });
   });
 
   it("un cambio di periodo a metà settimana: i trattini", () => {
@@ -259,7 +274,9 @@ describe("segnoObiettivo (variante V1)", () => {
       obiettivi: [...DATI.obiettivi, obiettivo("o2", "2026-11-05", "dimagrire")],
       obiettiviTarget: [...DATI.obiettiviTarget, target("o2", "normale", 1800)],
     };
-    expect(segnoObiettivo(giorniStatistiche(SETTIMANA_SCORSA, [], dati, OGGI))).toEqual({ tipo: "trattini" });
+    expect(segnoObiettivo(giorniStatistiche(SETTIMANA_SCORSA, [], dati, OGGI))).toEqual({
+      tipo: "trattini",
+    });
   });
 
   it("un target diverso solo nei giorni futuri non toglie la linea", () => {
@@ -272,7 +289,9 @@ describe("segnoObiettivo (variante V1)", () => {
 
   it("senza obiettivi: nessun segno", () => {
     const dati = { ...DATI, obiettivi: [], obiettiviTarget: [] };
-    expect(segnoObiettivo(giorniStatistiche(SETTIMANA_SCORSA, [], dati, OGGI))).toEqual({ tipo: "nessuno" });
+    expect(segnoObiettivo(giorniStatistiche(SETTIMANA_SCORSA, [], dati, OGGI))).toEqual({
+      tipo: "nessuno",
+    });
   });
 });
 
@@ -294,7 +313,9 @@ describe("primoGiornoConVoci e senzaVoci", () => {
 
   it("utente nuovo: nessuna voce viva in assoluto; una voce futura basta a non esserlo", () => {
     expect(senzaVoci([])).toBe(true);
-    expect(senzaVoci([voce("2026-11-03", 100, {}, { deleted_at: "2026-11-03T10:00:00.000Z" })])).toBe(true);
+    expect(
+      senzaVoci([voce("2026-11-03", 100, {}, { deleted_at: "2026-11-03T10:00:00.000Z" })])
+    ).toBe(true);
     expect(senzaVoci([voce("2026-11-20", 100)])).toBe(false);
   });
 });

@@ -84,7 +84,9 @@ describe("pianoSpostamento — le regole", () => {
   it("1. nessun doppione: si riassegna solo il pasto", () => {
     const pane = voce("Pane", COLAZIONE, 50);
     const p = piano([pane], [voce("Pasta", PRANZO, 80)]);
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: pane.id, modifiche: { pasto_id: PRANZO } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: pane.id, modifiche: { pasto_id: PRANZO } },
+    ]);
     expect(p.spostati).toEqual(["Pane"]);
     expect(p.esclusi).toEqual([]);
   });
@@ -106,7 +108,9 @@ describe("pianoSpostamento — le regole", () => {
     const arriva = voce("Yogurt", COLAZIONE, 125);
     const c_era = voce("Yogurt", PRANZO, 100);
     const p = piano([arriva], [c_era], { "alimento-Yogurt": { tipo: "separati" } });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: arriva.id, modifiche: { pasto_id: PRANZO } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: arriva.id, modifiche: { pasto_id: PRANZO } },
+    ]);
   });
 
   it("4. Scrivi quantità: il numero scritto, senza tener conto né della partenza né della destinazione", () => {
@@ -125,7 +129,9 @@ describe("pianoSpostamento — le regole", () => {
     const p = piano([yogurt, pane], [voce("Yogurt", PRANZO, 100)], {
       "alimento-Yogurt": { tipo: "escludi" },
     });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: pane.id, modifiche: { pasto_id: PRANZO } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: pane.id, modifiche: { pasto_id: PRANZO } },
+    ]);
     expect(p.spostati).toEqual(["Pane"]);
     expect(p.esclusi).toEqual(["Yogurt"]);
   });
@@ -136,7 +142,11 @@ describe("pianoSpostamento — le regole", () => {
     const d1 = voce("Yogurt", PRANZO, 100); // la più vecchia: resta lei
     const d2 = voce("Yogurt", PRANZO, 30);
     const p = piano([a1, a2], [d2, d1], { "alimento-Yogurt": { tipo: "somma" } });
-    expect(p.scritture).toContainEqual({ tipo: "aggiorna", id: d1.id, modifiche: { quantita_g: 305 } });
+    expect(p.scritture).toContainEqual({
+      tipo: "aggiorna",
+      id: d1.id,
+      modifiche: { quantita_g: 305 },
+    });
     const eliminate = p.scritture.filter((s) => s.tipo === "elimina").map((s) => s.id);
     expect(eliminate.sort()).toEqual([a1.id, a2.id, d2.id].sort());
     // Un alimento solo, anche se le righe erano due.
@@ -148,7 +158,9 @@ describe("pianoSpostamento — le regole", () => {
     const altraSenzaId = voce("Pane", PRANZO, 40, { alimento_id: null });
     expect(trovaDoppioni([senzaId], [altraSenzaId])).toEqual([]);
     const p = piano([senzaId], [altraSenzaId]);
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: senzaId.id, modifiche: { pasto_id: PRANZO } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: senzaId.id, modifiche: { pasto_id: PRANZO } },
+    ]);
   });
 
   it("8. doppione per id, mai per nome: stesso nome con id diversi non è un doppione", () => {
@@ -217,17 +229,28 @@ describe("grammiInDestinazione", () => {
   it("spostata (nessun doppione o Tieni separati): i suoi grammi nuovi", () => {
     const a = arriva();
     expect(grammiInDestinazione(conGrammi(a, []), a.id)).toBe(120);
-    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "separati" }), a.id)).toBe(120);
+    expect(
+      grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "separati" }), a.id)
+    ).toBe(120);
   });
 
   it("Somma e Scrivi quantità: i grammi della riga che resta", () => {
     const a = arriva();
-    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "somma" }), a.id)).toBe(170);
-    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "scrivi", grammi: 200 }), a.id)).toBe(200);
+    expect(
+      grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "somma" }), a.id)
+    ).toBe(170);
+    expect(
+      grammiInDestinazione(
+        conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "scrivi", grammi: 200 }),
+        a.id
+      )
+    ).toBe(200);
   });
 
   it("Non spostarlo: null, la voce resta dov'era", () => {
     const a = arriva();
-    expect(grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "escludi" }), a.id)).toBeNull();
+    expect(
+      grammiInDestinazione(conGrammi(a, [voce("Mela", PRANZO, 50)], { tipo: "escludi" }), a.id)
+    ).toBeNull();
   });
 });

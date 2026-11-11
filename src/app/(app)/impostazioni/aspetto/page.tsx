@@ -29,8 +29,8 @@ export default function AspettoPage() {
         nota={
           <>
             <p>
-              Con “Sistema” l’app segue la modalità chiara o scura dell’iPhone, anche quando
-              cambia da sola la sera.
+              Con “Sistema” l’app segue la modalità chiara o scura dell’iPhone, anche quando cambia
+              da sola la sera.
             </p>
             <p className="mt-2">
               Nell’app aggiunta alla schermata Home, la barra in alto con l’ora segue sempre la

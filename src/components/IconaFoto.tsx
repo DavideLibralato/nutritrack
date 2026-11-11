@@ -2,13 +2,7 @@
 // Tratto in currentColor, aria-hidden: il testo o l'aria-label del
 // pulsante dice già cosa fa. Dal mockup docs/mockups/aggiungi.html.
 
-export default function IconaFoto({
-  className,
-  size = 18,
-}: {
-  className?: string;
-  size?: number;
-}) {
+export default function IconaFoto({ className, size = 18 }: { className?: string; size?: number }) {
   return (
     <svg
       className={className}

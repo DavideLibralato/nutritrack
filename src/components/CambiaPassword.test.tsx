@@ -25,7 +25,15 @@ const ORA = Math.floor(Date.now() / 1000);
 const base64url = (testo: string) => Buffer.from(testo).toString("base64url");
 const TOKEN = [
   base64url('{"alg":"HS256","typ":"JWT"}'),
-  base64url(JSON.stringify({ sub: UTENTE.id, aud: "authenticated", role: "authenticated", iat: ORA, exp: ORA + 3600 })),
+  base64url(
+    JSON.stringify({
+      sub: UTENTE.id,
+      aud: "authenticated",
+      role: "authenticated",
+      iat: ORA,
+      exp: ORA + 3600,
+    })
+  ),
   base64url("firma"),
 ].join(".");
 const UTENTE_SUPABASE = {
@@ -47,7 +55,10 @@ const SESSIONE = {
 };
 
 function json(corpo: unknown, status = 200): Response {
-  return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(corpo), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 // --- La rete finta --------------------------------------------------------
@@ -70,7 +81,14 @@ const fetchFinto = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
     const risposta = risposteCambio.length > 1 ? risposteCambio.shift()! : risposteCambio[0];
     if (risposta === "rete giù") throw new TypeError("Load failed");
     if (risposta === "ok") return json(UTENTE_SUPABASE);
-    return json({ code: 400, error_code: risposta, msg: "Current password required when setting new password." }, 400);
+    return json(
+      {
+        code: 400,
+        error_code: risposta,
+        msg: "Current password required when setting new password.",
+      },
+      400
+    );
   }
   impreviste.push(`${metodo} ${url}`);
   return json({}, 500);
@@ -81,14 +99,18 @@ let client: SupabaseClient;
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => client }));
 
 const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn(), refresh: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace, push: vi.fn(), refresh: vi.fn() }),
+}));
 
 function impostaOnline(online: boolean) {
   Object.defineProperty(navigator, "onLine", { configurable: true, get: () => online });
 }
 
 beforeEach(() => {
-  const memoria = new Map<string, string>([["sb-progetto-finto-auth-token", JSON.stringify(SESSIONE)]]);
+  const memoria = new Map<string, string>([
+    ["sb-progetto-finto-auth-token", JSON.stringify(SESSIONE)],
+  ]);
   client = creaClientSupabase(URL_SUPABASE, "chiave-pubblica-finta", {
     auth: {
       storage: {
@@ -114,7 +136,8 @@ afterEach(() => {
 });
 
 const campo = (etichetta: string) => screen.getByLabelText(etichetta) as HTMLInputElement;
-const pulsante = () => screen.getByRole("button", { name: "Salva nuova password" }) as HTMLButtonElement;
+const pulsante = () =>
+  screen.getByRole("button", { name: "Salva nuova password" }) as HTMLButtonElement;
 
 function compila(attuale: string, nuova: string) {
   fireEvent.change(campo("Password attuale"), { target: { value: attuale } });
@@ -146,7 +169,9 @@ describe("CambiaPassword", () => {
     compila("vecchia1", "nuova123");
     fireEvent.click(pulsante());
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/impostazioni/profilo?password=aggiornata"));
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/impostazioni/profilo?password=aggiornata")
+    );
     expect(cambi).toHaveLength(1);
     expect(cambi[0]).toMatchObject({ password: "nuova123", current_password: "vecchia1" });
     expect(cambi[0]).not.toHaveProperty("currentPassword");
@@ -159,7 +184,9 @@ describe("CambiaPassword", () => {
     compila("sbagliata", "nuova123");
     fireEvent.click(pulsante());
 
-    expect((await screen.findByRole("alert")).textContent).toBe("La password attuale non è corretta.");
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "La password attuale non è corretta."
+    );
     expect(replace).not.toHaveBeenCalled();
     expect(pulsante().disabled).toBe(false);
   });
@@ -170,12 +197,16 @@ describe("CambiaPassword", () => {
 
     compila("vecchia1", "nuova123");
     fireEvent.click(pulsante());
-    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/^Non so se è andata/));
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toMatch(/^Non so se è andata/)
+    );
 
     // Un controllo sul dispositivo: nessuna richiesta, il ricordo resta.
     compila("", "nuova123");
     fireEvent.click(pulsante());
-    await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Inserisci la password attuale."));
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Inserisci la password attuale.")
+    );
     expect(cambi).toHaveLength(1);
 
     compila("vecchia1", "nuova123");

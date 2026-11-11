@@ -58,7 +58,9 @@ export function elencoCatalogo(
     .map((voce) => ({ voce, stato: statoNelCatalogo(voce, catalogoUtente, userId) }));
   const giaNeiTuoi = trovate.filter((r) => r.stato.stato === "nei-tuoi").length;
   return {
-    righe: filtri.nascondiQuelliCheHai ? trovate.filter((r) => r.stato.stato === "da-aggiungere") : trovate,
+    righe: filtri.nascondiQuelliCheHai
+      ? trovate.filter((r) => r.stato.stato === "da-aggiungere")
+      : trovate,
     totale: trovate.length,
     giaNeiTuoi,
   };

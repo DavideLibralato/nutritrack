@@ -50,7 +50,10 @@ const CLASSE_MAIN =
 // Il campo dentro una riga: casella crema allineata a destra, come RigaCampo.
 const CLASSE_CAMPO_RIGA = `rounded-lg border border-border bg-background px-2 py-1.5 text-right text-base ${CLASSE_FOCUS}`;
 
-function etichettaDi<T extends string>(opzioni: { valore: T; etichetta: string }[], valore: T | "") {
+function etichettaDi<T extends string>(
+  opzioni: { valore: T; etichetta: string }[],
+  valore: T | ""
+) {
   return opzioni.find((o) => o.valore === valore)?.etichetta ?? "Non impostato";
 }
 
@@ -103,9 +106,7 @@ export default function ProfiloPage() {
         {mioUsername.stato.esito === "ok" ? (
           <RigaImpostazioni
             etichetta="Username"
-            valore={
-              mioUsername.stato.username ? `@${mioUsername.stato.username}` : "Da scegliere"
-            }
+            valore={mioUsername.stato.username ? `@${mioUsername.stato.username}` : "Da scegliere"}
             onClick={() => setFoglioUsername(true)}
           />
         ) : mioUsername.stato.esito === "errore" ? (

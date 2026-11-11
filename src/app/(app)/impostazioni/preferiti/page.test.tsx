@@ -36,10 +36,21 @@ afterEach(cleanup);
 
 function creaAlimento(nome: string): Promise<Alimento> {
   return repositoryAlimenti.crea({
-    user_id: USER_ID, nome, marca: null, barcode: null,
-    kcal_100g: 52, proteine_100g: 1, carboidrati_100g: 10, grassi_100g: 1,
-    zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-    porzione_default_g: 100, fonte: "manuale", verificato: false,
+    user_id: USER_ID,
+    nome,
+    marca: null,
+    barcode: null,
+    kcal_100g: 52,
+    proteine_100g: 1,
+    carboidrati_100g: 10,
+    grassi_100g: 1,
+    zuccheri_100g: null,
+    fibre_100g: null,
+    saturi_100g: null,
+    sale_100g: null,
+    porzione_default_g: 100,
+    fonte: "manuale",
+    verificato: false,
   });
 }
 
@@ -53,7 +64,10 @@ function righeDi(alimentoId: string) {
 describe("Preferiti e pasti salvati — togliere e rimettere un alimento", () => {
   it("stella → tolto, riga sbiadita e barra; Annulla → la stessa riga rimessa in vita", async () => {
     const mela = await creaAlimento("Mela");
-    const { id: idPreferito } = await repositoryPreferiti.crea({ user_id: USER_ID, alimento_id: mela.id });
+    const { id: idPreferito } = await repositoryPreferiti.crea({
+      user_id: USER_ID,
+      alimento_id: mela.id,
+    });
     render(<PreferitiPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Togli Mela dai preferiti" }));
@@ -74,7 +88,10 @@ describe("Preferiti e pasti salvati — togliere e rimettere un alimento", () =>
 
   it("ritoccare la stella di una riga tolta la rimette, sempre con la stessa riga", async () => {
     const pane = await creaAlimento("Pane");
-    const { id: idPreferito } = await repositoryPreferiti.crea({ user_id: USER_ID, alimento_id: pane.id });
+    const { id: idPreferito } = await repositoryPreferiti.crea({
+      user_id: USER_ID,
+      alimento_id: pane.id,
+    });
     render(<PreferitiPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Togli Pane dai preferiti" }));

@@ -45,7 +45,18 @@ export default function RigaCatalogoPrecaricato({
       </button>
       {neiTuoi ? (
         <span className="flex h-9 shrink-0 items-center gap-1.5 px-1 text-sm text-muted">
-          <svg className="text-accent" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg
+            className="text-accent"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
           Nei tuoi
@@ -60,7 +71,17 @@ export default function RigaCatalogoPrecaricato({
           className={`flex min-h-11 shrink-0 items-center rounded-full disabled:opacity-60 ${CLASSE_FOCUS}`}
         >
           <span className="flex h-9 items-center gap-1 rounded-full border border-accent pr-3 pl-2.5 text-sm font-semibold text-accent">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
             Aggiungi

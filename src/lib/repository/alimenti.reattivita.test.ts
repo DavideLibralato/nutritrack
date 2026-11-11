@@ -61,17 +61,15 @@ describe("liveQuery su catalogoLocale() dopo una modifica", () => {
     const osservabile = liveQuery(() => catalogoLocale(USER));
 
     // Prima emissione: grassi ancora 3.
-    await attendiEmissione(
-      osservabile,
-      (righe) => righe.some((r) => r.id === creato.id && r.grassi_100g === 3)
+    await attendiEmissione(osservabile, (righe) =>
+      righe.some((r) => r.id === creato.id && r.grassi_100g === 3)
     );
 
     await repositoryAlimenti.aggiorna(creato.id, { grassi_100g: 10 });
 
     // La liveQuery deve riemettere con grassi = 10.
-    const dopo = await attendiEmissione(
-      osservabile,
-      (righe) => righe.some((r) => r.id === creato.id && r.grassi_100g === 10)
+    const dopo = await attendiEmissione(osservabile, (righe) =>
+      righe.some((r) => r.id === creato.id && r.grassi_100g === 10)
     );
 
     expect(dopo.find((r) => r.id === creato.id)?.grassi_100g).toBe(10);

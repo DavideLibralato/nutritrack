@@ -23,12 +23,24 @@ function frase(m: { testo: string; nome?: string; coda?: string }) {
 
 describe("messaggioSpostamento — i 5 casi", () => {
   it("1. alimento singolo spostato", () => {
-    const m = messaggioSpostamento({ ...base, tipo: "voce", nomeAlimento: "Yogurt", spostati: 1, esclusi: [] });
+    const m = messaggioSpostamento({
+      ...base,
+      tipo: "voce",
+      nomeAlimento: "Yogurt",
+      spostati: 1,
+      esclusi: [],
+    });
     expect(m).toEqual({ testo: "Spostato:", nome: "Yogurt", coda: "→ Pranzo", icona: "spunta" });
   });
 
   it("2. alimento singolo escluso: niente parola «Spostato»", () => {
-    const m = messaggioSpostamento({ ...base, tipo: "voce", nomeAlimento: "Yogurt", spostati: 0, esclusi: ["Yogurt"] });
+    const m = messaggioSpostamento({
+      ...base,
+      tipo: "voce",
+      nomeAlimento: "Yogurt",
+      spostati: 0,
+      esclusi: ["Yogurt"],
+    });
     expect(frase(m)).toBe("«Yogurt» resta in «Colazione», non spostato.");
     expect(frase(m)).not.toMatch(/Spostato/);
     expect(m.icona).toBe("info");
@@ -41,8 +53,15 @@ describe("messaggioSpostamento — i 5 casi", () => {
 
   it("4. pasto intero con esclusioni: singolare e plurale", () => {
     const uno = messaggioSpostamento({ ...base, tipo: "pasto", spostati: 2, esclusi: ["Yogurt"] });
-    expect(frase(uno)).toBe("Spostato: «Colazione» → «Pranzo» (tranne «Yogurt», rimasto in «Colazione»).");
-    const due = messaggioSpostamento({ ...base, tipo: "pasto", spostati: 1, esclusi: ["Yogurt", "Mela"] });
+    expect(frase(uno)).toBe(
+      "Spostato: «Colazione» → «Pranzo» (tranne «Yogurt», rimasto in «Colazione»)."
+    );
+    const due = messaggioSpostamento({
+      ...base,
+      tipo: "pasto",
+      spostati: 1,
+      esclusi: ["Yogurt", "Mela"],
+    });
     expect(frase(due)).toBe(
       "Spostato: «Colazione» → «Pranzo» (tranne «Yogurt» e «Mela», rimasti in «Colazione»)."
     );
@@ -51,7 +70,12 @@ describe("messaggioSpostamento — i 5 casi", () => {
   it("5. pasto intero, tutti esclusi: «Nessuno spostamento», singolare e plurale", () => {
     const uno = messaggioSpostamento({ ...base, tipo: "pasto", spostati: 0, esclusi: ["Yogurt"] });
     expect(frase(uno)).toBe("Nessuno spostamento: «Yogurt» resta in «Colazione».");
-    const due = messaggioSpostamento({ ...base, tipo: "pasto", spostati: 0, esclusi: ["Yogurt", "Mela"] });
+    const due = messaggioSpostamento({
+      ...base,
+      tipo: "pasto",
+      spostati: 0,
+      esclusi: ["Yogurt", "Mela"],
+    });
     expect(frase(due)).toBe("Nessuno spostamento: «Yogurt» e «Mela» restano in «Colazione».");
     expect(frase(due)).not.toMatch(/Spostato/);
   });
@@ -96,7 +120,9 @@ describe("testoEsitoDoppione — la riga sotto ogni alimento del foglio", () => 
   });
 
   it("Tieni separati con più righe per parte non dice «Due righe»", () => {
-    expect(testoEsitoDoppione({ ...d, righeEsistenti: 2 }, "separati", null, "")).toBe("→ 3 righe separate");
+    expect(testoEsitoDoppione({ ...d, righeEsistenti: 2 }, "separati", null, "")).toBe(
+      "→ 3 righe separate"
+    );
   });
 
   it("Scrivi quantità col campo ancora vuoto", () => {
@@ -105,10 +131,17 @@ describe("testoEsitoDoppione — la riga sotto ogni alimento del foglio", () => 
 });
 
 describe("messaggioDuplicazione", () => {
-  const base = { pastoPartenza: "Colazione", pastoDestinazione: "Pranzo", giornoDiverso: null, esclusi: [] };
+  const base = {
+    pastoPartenza: "Colazione",
+    pastoDestinazione: "Pranzo",
+    giornoDiverso: null,
+    esclusi: [],
+  };
 
   it("alimento e pasto intero, stesso giorno: niente «di …»", () => {
-    expect(messaggioDuplicazione({ ...base, tipo: "voce", nomeAlimento: "Mela", duplicati: 1 })).toEqual({
+    expect(
+      messaggioDuplicazione({ ...base, tipo: "voce", nomeAlimento: "Mela", duplicati: 1 })
+    ).toEqual({
       testo: "Duplicato:",
       nome: "Mela",
       coda: "in Pranzo",
@@ -120,23 +153,46 @@ describe("messaggioDuplicazione", () => {
   });
 
   it("giorno diverso: «di lun 5 ott»", () => {
-    const m = messaggioDuplicazione({ ...base, tipo: "voce", nomeAlimento: "Mela", duplicati: 1, giornoDiverso: "lun 5 ott" });
+    const m = messaggioDuplicazione({
+      ...base,
+      tipo: "voce",
+      nomeAlimento: "Mela",
+      duplicati: 1,
+      giornoDiverso: "lun 5 ott",
+    });
     expect(frase(m)).toBe("Duplicato: Mela in Pranzo di lun 5 ott");
   });
 
   it("pasto intero con esclusioni: (tranne …), singolare e plurale", () => {
     const uno = messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 2, esclusi: ["Mela"] });
     expect(frase(uno)).toBe("Duplicato: «Colazione» in «Pranzo» (tranne «Mela», che c'era già).");
-    const due = messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 1, esclusi: ["Mela", "Pane"], giornoDiverso: "lun 5 ott" });
+    const due = messaggioDuplicazione({
+      ...base,
+      tipo: "pasto",
+      duplicati: 1,
+      esclusi: ["Mela", "Pane"],
+      giornoDiverso: "lun 5 ott",
+    });
     expect(frase(due)).toBe(
       "Duplicato: «Colazione» in «Pranzo» di lun 5 ott (tranne «Mela» e «Pane», che c'erano già)."
     );
   });
 
   it("tutto escluso: niente parola «Duplicato»", () => {
-    const voce = messaggioDuplicazione({ ...base, tipo: "voce", nomeAlimento: "Mela", duplicati: 0, esclusi: ["Mela"] });
+    const voce = messaggioDuplicazione({
+      ...base,
+      tipo: "voce",
+      nomeAlimento: "Mela",
+      duplicati: 0,
+      esclusi: ["Mela"],
+    });
     expect(frase(voce)).toBe("Nessuna copia: «Mela» c'è già in «Pranzo».");
-    const pasto = messaggioDuplicazione({ ...base, tipo: "pasto", duplicati: 0, esclusi: ["Mela", "Pane"] });
+    const pasto = messaggioDuplicazione({
+      ...base,
+      tipo: "pasto",
+      duplicati: 0,
+      esclusi: ["Mela", "Pane"],
+    });
     expect(frase(pasto)).toBe("Nessuna copia: «Mela» e «Pane» ci sono già in «Pranzo».");
     expect(frase(voce) + frase(pasto)).not.toMatch(/Duplicato/);
   });
@@ -154,7 +210,12 @@ describe("Non spostarlo con i grammi nuovi", () => {
 
   it("la barra: resta in Colazione con 120 g, con la spunta (qualcosa è cambiato)", () => {
     const m = messaggioSpostamento({
-      ...base, tipo: "voce", nomeAlimento: "Yogurt", spostati: 0, esclusi: ["Yogurt"], grammiNuovi: 120,
+      ...base,
+      tipo: "voce",
+      nomeAlimento: "Yogurt",
+      spostati: 0,
+      esclusi: ["Yogurt"],
+      grammiNuovi: 120,
     });
     expect(frase(m)).toBe("«Yogurt» resta in «Colazione» con 120 g.");
     expect(m.icona).toBe("spunta");
@@ -165,8 +226,18 @@ describe("Non spostarlo con i grammi nuovi", () => {
 // dice anche i grammi della riga in destinazione.
 describe("Spostato con i grammi in destinazione", () => {
   it("«Spostato: Yogurt → Pranzo, 150 g»; senza grammi il testo di Sposta", () => {
-    const voce = { ...base, tipo: "voce" as const, nomeAlimento: "Yogurt", spostati: 1, esclusi: [] };
-    expect(frase(messaggioSpostamento({ ...voce, grammiInDestinazione: 150 }))).toBe("Spostato: Yogurt → Pranzo, 150 g");
-    expect(frase(messaggioSpostamento({ ...voce, grammiInDestinazione: null }))).toBe("Spostato: Yogurt → Pranzo");
+    const voce = {
+      ...base,
+      tipo: "voce" as const,
+      nomeAlimento: "Yogurt",
+      spostati: 1,
+      esclusi: [],
+    };
+    expect(frase(messaggioSpostamento({ ...voce, grammiInDestinazione: 150 }))).toBe(
+      "Spostato: Yogurt → Pranzo, 150 g"
+    );
+    expect(frase(messaggioSpostamento({ ...voce, grammiInDestinazione: null }))).toBe(
+      "Spostato: Yogurt → Pranzo"
+    );
   });
 });

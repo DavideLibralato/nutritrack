@@ -134,7 +134,9 @@ describe("usaValoriInArrivo", () => {
     ]) {
       await db.alimenti.put(yogurt(altro));
       const chiudi = vi.fn(async () => "ok" as const);
-      expect(await usaValoriInArrivo(IO, "yogurt", IN_ARRIVO, chiudi)).toEqual({ esito: "non_trovato" });
+      expect(await usaValoriInArrivo(IO, "yogurt", IN_ARRIVO, chiudi)).toEqual({
+        esito: "non_trovato",
+      });
       expect(chiudi).not.toHaveBeenCalled();
       expect(await valoriSalvati()).toEqual(MIEI);
     }
@@ -175,7 +177,9 @@ describe("annullaValoriInArrivo", () => {
   });
 
   it("non_trovata (amicizia finita): i valori di prima tornano lo stesso", async () => {
-    expect(await annullaValoriInArrivo(IO, traccia, async () => "non_trovata")).toBe("ripristinato");
+    expect(await annullaValoriInArrivo(IO, traccia, async () => "non_trovata")).toBe(
+      "ripristinato"
+    );
     expect(await valoriSalvati()).toEqual(MIEI);
   });
 

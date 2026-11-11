@@ -24,7 +24,13 @@
 
 import { v5 as uuidv5 } from "uuid";
 import type { Pasto } from "../db/tipi";
-import { eGiornoVero, formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, prossimoLunedi } from "../dataGiorno";
+import {
+  eGiornoVero,
+  formattaGiornoCorto,
+  giornoPrecedente,
+  giornoSuccessivo,
+  prossimoLunedi,
+} from "../dataGiorno";
 import { chiaveNome, normalizzaOra } from "./controlliPasti";
 import { pastiValidiIl } from "./validitaPasti";
 
@@ -50,7 +56,9 @@ export interface CambioProgrammato {
 export function filoDi(pasto: Pasto, righe: Pasto[], { cancellate = false } = {}): Pasto[] {
   return righe.filter(
     (r) =>
-      r.user_id === pasto.user_id && r.ordine === pasto.ordine && (cancellate || r.deleted_at === null)
+      r.user_id === pasto.user_id &&
+      r.ordine === pasto.ordine &&
+      (cancellate || r.deleted_at === null)
   );
 }
 
@@ -179,7 +187,8 @@ export function limitiDaUnaData(pasto: Pasto, righe: Pasto[], oggi: string): Lim
   if (al === null) return { min, max: null, disponibile: true, cambioSuccessivo: null };
   const dopo = giornoSuccessivo(al);
   const cambioSuccessivo =
-    cambiProgrammati(righe, oggi).find((c) => c.vecchia?.id === pasto.id && c.data === dopo) ?? null;
+    cambiProgrammati(righe, oggi).find((c) => c.vecchia?.id === pasto.id && c.data === dopo) ??
+    null;
   const continua = cambioSuccessivo !== null && cambioSuccessivo.tipo !== "elimina";
   const max = continua ? dopo : al;
   return { min, max, disponibile: max >= min, cambioSuccessivo };

@@ -48,7 +48,11 @@ export interface Doppione {
 }
 
 export type Scrittura =
-  | { tipo: "aggiorna"; id: string; modifiche: Partial<Pick<VoceDiario, "pasto_id" | "quantita_g">> }
+  | {
+      tipo: "aggiorna";
+      id: string;
+      modifiche: Partial<Pick<VoceDiario, "pasto_id" | "quantita_g">>;
+    }
   | { tipo: "elimina"; id: string }
   // Una riga nuova (Duplica, src/lib/diario/pianoDuplica.ts).
   | { tipo: "crea"; dati: Omit<VoceDiario, "id" | "updated_at" | "deleted_at"> };
@@ -159,7 +163,10 @@ export function rigaCheResta(voci: VoceDiario[]): VoceDiario {
 
 // I doppioni fra le righe che si spostano e quelle della destinazione, nell'
 // ordine in cui gli alimenti compaiono fra le righe che si spostano.
-export function trovaDoppioni(partenza: RigaPerAlimento[], destinazione: RigaPerAlimento[]): Doppione[] {
+export function trovaDoppioni(
+  partenza: RigaPerAlimento[],
+  destinazione: RigaPerAlimento[]
+): Doppione[] {
   const inDestinazione = perAlimento(destinazione);
   const inArrivo = perAlimento(partenza);
   const doppioni: Doppione[] = [];
@@ -216,12 +223,17 @@ export function pianoSpostamento({
   idGrammiNuovi?: string | null;
 }): PianoSpostamento {
   const piano = pianoSenzaGrammiNuovi({ partenza, destinazione, pastoDestinazioneId, scelte });
-  const conGrammi = idGrammiNuovi === null ? undefined : partenza.find((v) => v.id === idGrammiNuovi);
+  const conGrammi =
+    idGrammiNuovi === null ? undefined : partenza.find((v) => v.id === idGrammiNuovi);
   if (!conGrammi) return piano;
 
   const sua = piano.scritture.find((s) => s.tipo !== "crea" && s.id === conGrammi.id);
   if (!sua) {
-    piano.scritture.unshift({ tipo: "aggiorna", id: conGrammi.id, modifiche: { quantita_g: conGrammi.quantita_g } });
+    piano.scritture.unshift({
+      tipo: "aggiorna",
+      id: conGrammi.id,
+      modifiche: { quantita_g: conGrammi.quantita_g },
+    });
   } else if (sua.tipo === "aggiorna") {
     sua.modifiche = { ...sua.modifiche, quantita_g: conGrammi.quantita_g };
   }
@@ -269,7 +281,11 @@ function pianoSenzaGrammiNuovi({
 
     if (!esistenti) {
       // Nessun doppione: si riassegna il pasto.
-      scritture.push({ tipo: "aggiorna", id: voce.id, modifiche: { pasto_id: pastoDestinazioneId } });
+      scritture.push({
+        tipo: "aggiorna",
+        id: voce.id,
+        modifiche: { pasto_id: pastoDestinazioneId },
+      });
       if (k === null || !giaDecisi.has(k)) spostati.push(voce.nome_alimento);
       if (k !== null) giaDecisi.add(k);
       continue;
@@ -288,7 +304,11 @@ function pianoSenzaGrammiNuovi({
         break;
       case "separati":
         for (const v of arrivano) {
-          scritture.push({ tipo: "aggiorna", id: v.id, modifiche: { pasto_id: pastoDestinazioneId } });
+          scritture.push({
+            tipo: "aggiorna",
+            id: v.id,
+            modifiche: { pasto_id: pastoDestinazioneId },
+          });
         }
         spostati.push(voce.nome_alimento);
         break;

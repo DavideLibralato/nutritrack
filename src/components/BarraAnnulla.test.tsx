@@ -163,7 +163,9 @@ describe("BarraAnnulla: testo lungo con due pulsanti", () => {
   }
 
   it("la frase è intera, con gli spazi veri fra le parti (anche per lo screen reader)", () => {
-    expect(barraLunga().textContent).toBe("Duplicato: Yogurt greco intero biologico in Pranzo di lun 5 ott");
+    expect(barraLunga().textContent).toBe(
+      "Duplicato: Yogurt greco intero biologico in Pranzo di lun 5 ott"
+    );
   });
 
   it("il testo può andare a capo e il nome non può restringersi a zero", () => {

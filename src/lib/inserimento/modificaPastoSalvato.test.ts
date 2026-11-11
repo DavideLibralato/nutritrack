@@ -150,7 +150,12 @@ describe("salvaModificaPasto", () => {
     const { userId, burro, composizioneId, caricati } = await preparaColazione();
     const prima = await righeDelPasto(composizioneId);
 
-    await salvaModificaPasto({ userId, composizioneId, caricati, attuali: senza(caricati, burro.id) });
+    await salvaModificaPasto({
+      userId,
+      composizioneId,
+      caricati,
+      attuali: senza(caricati, burro.id),
+    });
 
     const dopo = await righeDelPasto(composizioneId);
     expect(dopo).toHaveLength(3);
@@ -268,7 +273,11 @@ describe("salvaModificaPasto", () => {
     const prima = await istantanea(userId);
 
     // Modifiche solo in memoria: nessuna scrittura prima del Salva.
-    const modificato = aggiungiAlimento(conGrammi(senza(caricati, burro.id), burro.id, "5"), latte, 50);
+    const modificato = aggiungiAlimento(
+      conGrammi(senza(caricati, burro.id), burro.id, "5"),
+      latte,
+      50
+    );
     expect(moduloModificato(caricati, modificato)).toBe(true);
     expect(await istantanea(userId)).toEqual(prima);
 
@@ -429,7 +438,11 @@ describe("aggiungiAlimento", () => {
     const modulo = aggiungiAlimento(caricati, burro, 35);
 
     expect(modulo.righe).toHaveLength(3);
-    expect(modulo.righe[1]).toMatchObject({ alimentoId: burro.id, grammi: "35", voceId: caricati.righe[1].voceId });
+    expect(modulo.righe[1]).toMatchObject({
+      alimentoId: burro.id,
+      grammi: "35",
+      voceId: caricati.righe[1].voceId,
+    });
   });
 });
 
@@ -456,7 +469,9 @@ describe("grammi con la virgola nei campi del modulo", () => {
   it("un pasto con 12,5 g si apre con «12,5» e un Salva senza toccare non riscrive niente", async () => {
     const userId = `utente-${crypto.randomUUID()}`;
     const burro = await creaAlimento(userId, "Burro");
-    const composizioneId = await creaPastoSalvato(userId, "Merenda", [{ alimento: burro, grammi: 12.5 }]);
+    const composizioneId = await creaPastoSalvato(userId, "Merenda", [
+      { alimento: burro, grammi: 12.5 },
+    ]);
     const caricati = (await caricaModuloPasto(userId, composizioneId))!;
     expect(caricati.righe[0].grammi).toBe("12,5");
 

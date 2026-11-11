@@ -3,13 +3,7 @@
 // da Open Food Facts"). Tratto in currentColor, aria-hidden: il testo
 // accanto dice già tutto.
 
-export default function IconaInfo({
-  className,
-  size = 20,
-}: {
-  className?: string;
-  size?: number;
-}) {
+export default function IconaInfo({ className, size = 20 }: { className?: string; size?: number }) {
   return (
     <svg
       className={className}

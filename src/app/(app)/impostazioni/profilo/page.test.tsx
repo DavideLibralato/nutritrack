@@ -155,7 +155,15 @@ describe("Password in Profilo", () => {
       differenzia_giorni: false,
       giorni_allenamento_default: null,
     });
-    render(conGuardiano ? <GuardianoModifiche><ProfiloPage /></GuardianoModifiche> : <ProfiloPage />);
+    render(
+      conGuardiano ? (
+        <GuardianoModifiche>
+          <ProfiloPage />
+        </GuardianoModifiche>
+      ) : (
+        <ProfiloPage />
+      )
+    );
     const altezza = (await screen.findByLabelText("Altezza")) as HTMLInputElement;
     await waitFor(() => expect(altezza.value).toBe("180"));
     return altezza;

@@ -39,7 +39,9 @@ const foto = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/esporta/fotoEsportazione", () => ({
   fotoPerEsportazione: () =>
-    foto.risposta ? foto.risposta() : Promise.resolve({ statoFoto: { stato: "assente" }, foto: null }),
+    foto.risposta
+      ? foto.risposta()
+      : Promise.resolve({ statoFoto: { stato: "assente" }, foto: null }),
 }));
 
 // Il browser: condivisione che riesce, salvo diversa indicazione.
@@ -158,7 +160,8 @@ beforeEach(async () => {
 
 afterEach(cleanup);
 
-const pulsanteJson = () => screen.getByRole("button", { name: /^(Esporta i miei dati|Riprova|Preparo il file…)$/ });
+const pulsanteJson = () =>
+  screen.getByRole("button", { name: /^(Esporta i miei dati|Riprova|Preparo il file…)$/ });
 const rigaCsv = () => screen.getByRole("button", { name: /Esporta il diario per Excel/ });
 
 async function aspettaPronta() {
@@ -184,7 +187,9 @@ describe("Esporta — copia locale incompleta", () => {
     await db.pasti.put(pastoDiBase());
     render(<EsportaPage />);
     expect(await screen.findByText("Manca il tuo profilo")).toBeTruthy();
-    expect(screen.getByText("Per esportare serve il tuo profilo. Compilalo e torna qui.")).toBeTruthy();
+    expect(
+      screen.getByText("Per esportare serve il tuo profilo. Compilalo e torna qui.")
+    ).toBeTruthy();
     expect(screen.queryByText("Dati non ancora scaricati")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Vai al profilo" }));
     expect(router.push).toHaveBeenCalledWith("/impostazioni/profilo");

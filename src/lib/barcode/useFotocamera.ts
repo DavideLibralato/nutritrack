@@ -143,49 +143,52 @@ export function useFotocamera(): Fotocamera {
     if (prima === "attiva" || prima === "avvio") cambiaStato("in-pausa");
   }, [spegni, cambiaStato]);
 
-  const avvia = useCallback((richiestaGiaPartita?: Promise<MediaStream> | null) => {
-    // Prima di tutto la richiesta, se non è già partita: niente prima di
-    // getUserMedia (vedi in cima).
-    const richiesta = richiestaGiaPartita ?? richiediFotocamera();
-    spegni();
-    const mio = generazione.current;
-    setErroreTecnico(null);
-    if (!richiesta) {
-      cambiaStato("non-disponibile");
-      setErroreTecnico("navigator.mediaDevices.getUserMedia assente");
-      return;
-    }
-    cambiaStato("avvio");
-    richiesta
-      .then(async (nuovo) => {
-        if (mio !== generazione.current) {
-          // Arrivato tardi: la schermata è chiusa, o l'app è in secondo
-          // piano, o è partito un altro avvio. Si spegne subito.
-          nuovo.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        stream.current = nuovo;
-        const elemento = video.current;
-        if (elemento) {
-          elemento.srcObject = nuovo;
-          // muted + playsInline (nel JSX) servono a iOS per partire senza
-          // tocco e senza andare a tutto schermo. Un play() rifiutato non
-          // ferma niente: il video riparte al prossimo fotogramma utile.
-          await elemento.play().catch(() => {});
-        }
-        if (mio !== generazione.current) return;
-        const traccia = nuovo.getVideoTracks()[0];
-        const capacita = traccia?.getCapabilities?.() as CapacitaConTorcia | undefined;
-        setTorciaDisponibile(capacita?.torch === true);
-        cambiaStato("attiva");
-      })
-      .catch((errore: unknown) => {
-        if (mio !== generazione.current) return;
-        const { stato: nuovo, tecnico } = statoDaErrore(errore);
-        setErroreTecnico(tecnico);
-        cambiaStato(nuovo);
-      });
-  }, [spegni, cambiaStato]);
+  const avvia = useCallback(
+    (richiestaGiaPartita?: Promise<MediaStream> | null) => {
+      // Prima di tutto la richiesta, se non è già partita: niente prima di
+      // getUserMedia (vedi in cima).
+      const richiesta = richiestaGiaPartita ?? richiediFotocamera();
+      spegni();
+      const mio = generazione.current;
+      setErroreTecnico(null);
+      if (!richiesta) {
+        cambiaStato("non-disponibile");
+        setErroreTecnico("navigator.mediaDevices.getUserMedia assente");
+        return;
+      }
+      cambiaStato("avvio");
+      richiesta
+        .then(async (nuovo) => {
+          if (mio !== generazione.current) {
+            // Arrivato tardi: la schermata è chiusa, o l'app è in secondo
+            // piano, o è partito un altro avvio. Si spegne subito.
+            nuovo.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          stream.current = nuovo;
+          const elemento = video.current;
+          if (elemento) {
+            elemento.srcObject = nuovo;
+            // muted + playsInline (nel JSX) servono a iOS per partire senza
+            // tocco e senza andare a tutto schermo. Un play() rifiutato non
+            // ferma niente: il video riparte al prossimo fotogramma utile.
+            await elemento.play().catch(() => {});
+          }
+          if (mio !== generazione.current) return;
+          const traccia = nuovo.getVideoTracks()[0];
+          const capacita = traccia?.getCapabilities?.() as CapacitaConTorcia | undefined;
+          setTorciaDisponibile(capacita?.torch === true);
+          cambiaStato("attiva");
+        })
+        .catch((errore: unknown) => {
+          if (mio !== generazione.current) return;
+          const { stato: nuovo, tecnico } = statoDaErrore(errore);
+          setErroreTecnico(tecnico);
+          cambiaStato(nuovo);
+        });
+    },
+    [spegni, cambiaStato]
+  );
 
   const cambiaTorcia = useCallback(() => {
     const traccia = stream.current?.getVideoTracks()[0];
@@ -228,5 +231,15 @@ export function useFotocamera(): Fotocamera {
   // La schermata si chiude: si spegne.
   useEffect(() => spegni, [spegni]);
 
-  return { collegaVideo, fotogramma, stato, erroreTecnico, avvia, ferma, torciaDisponibile, torciaAccesa, cambiaTorcia };
+  return {
+    collegaVideo,
+    fotogramma,
+    stato,
+    erroreTecnico,
+    avvia,
+    ferma,
+    torciaDisponibile,
+    torciaAccesa,
+    cambiaTorcia,
+  };
 }

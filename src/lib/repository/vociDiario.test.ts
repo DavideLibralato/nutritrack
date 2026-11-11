@@ -309,7 +309,12 @@ describe("sposta e annulla", () => {
     const prima = await diario(userId);
 
     const origine = { tipo: "pasto" as const, pastoId: "colazione" };
-    const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+    const primo = await spostaNelPasto({
+      userId,
+      data: GIORNO,
+      origine,
+      pastoDestinazioneId: "pranzo",
+    });
     // Con un doppione e senza scelte non si scrive niente.
     expect(primo.esito).toBe("doppioni");
     expect(await diario(userId)).toEqual(prima);
@@ -340,7 +345,12 @@ describe("sposta e annulla", () => {
     await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
     await creaVoce(userId, "Yogurt", { pastoId: "pranzo", quantita: 100 });
     const origine = { tipo: "pasto" as const, pastoId: "colazione" };
-    const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+    const primo = await spostaNelPasto({
+      userId,
+      data: GIORNO,
+      origine,
+      pastoDestinazioneId: "pranzo",
+    });
     if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
 
     // Nel frattempo (un altro dispositivo) a pranzo compare anche una mela.
@@ -374,7 +384,12 @@ describe("sposta e annulla", () => {
       await creaVoce(userId, "Pane", { pastoId: "colazione", quantita: 50 });
       const melaPranzo = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
       const origine = { tipo: "pasto" as const, pastoId: "colazione" };
-      const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+      const primo = await spostaNelPasto({
+        userId,
+        data: GIORNO,
+        origine,
+        pastoDestinazioneId: "pranzo",
+      });
       if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
       expect(primo.doppioni.map((d) => d.nome)).toEqual(["Mela"]);
       await repositoryVociDiario.elimina(melaPranzo.id);
@@ -405,7 +420,12 @@ describe("sposta e annulla", () => {
       const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
       const melaPranzo = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
       const origine = { tipo: "voce" as const, id: mela.id };
-      const primo = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+      const primo = await spostaNelPasto({
+        userId,
+        data: GIORNO,
+        origine,
+        pastoDestinazioneId: "pranzo",
+      });
       if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
       await repositoryVociDiario.elimina(melaPranzo.id);
       const prima = await diario(userId);
@@ -455,15 +475,18 @@ describe("duplica e annulla", () => {
   // (duplicaNelPasto lo ricontrolla): qui colazione e pranzo, da sempre.
   function pastoFinto(id: string, date: Partial<Pasto> = {}): Pasto {
     return {
-      id, user_id: "condiviso-nei-test", nome: id, ora_inizio: "12:00", ordine: 0,
-      updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null, ...date,
+      id,
+      user_id: "condiviso-nei-test",
+      nome: id,
+      ora_inizio: "12:00",
+      ordine: 0,
+      updated_at: "2026-09-01T10:00:00.000Z",
+      deleted_at: null,
+      ...date,
     };
   }
   beforeEach(async () => {
-    await db.pasti.bulkPut([
-      pastoFinto("colazione"),
-      pastoFinto("pranzo"),
-    ]);
+    await db.pasti.bulkPut([pastoFinto("colazione"), pastoFinto("pranzo")]);
   });
 
   function profiloDifferenziato(userId: string): Profilo {
@@ -542,7 +565,15 @@ describe("duplica e annulla", () => {
     const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 150 });
     const altra = await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 100 });
     const origine = { tipo: "voce" as const, id: mela.id };
-    const base = { userId, dataPartenza: GIORNO, origine, dataDestinazione: GIORNO, pastoDestinazioneId: "pranzo", profilo: null, adesso: ADESSO };
+    const base = {
+      userId,
+      dataPartenza: GIORNO,
+      origine,
+      dataDestinazione: GIORNO,
+      pastoDestinazioneId: "pranzo",
+      profilo: null,
+      adesso: ADESSO,
+    };
 
     const primo = await duplicaNelPasto(base);
     if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
@@ -664,12 +695,23 @@ describe("duplica: il pasto di destinazione deve esistere quel giorno", () => {
   const IERI = "2026-10-01";
 
   beforeEach(async () => {
-    const base = { user_id: "condiviso-nei-test", ora_inizio: "12:00", ordine: 0, updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null };
+    const base = {
+      user_id: "condiviso-nei-test",
+      ora_inizio: "12:00",
+      ordine: 0,
+      updated_at: "2026-09-01T10:00:00.000Z",
+      deleted_at: null,
+    };
     await db.pasti.bulkPut([
       { ...base, id: "pranzo", nome: "Pranzo" },
       { ...base, id: "merenda", nome: "Merenda", valido_dal: GIORNO },
       { ...base, id: "cena-chiusa", nome: "Cena", valido_al: "2026-09-30" },
-      { ...base, id: "spuntino-cancellato", nome: "Spuntino", deleted_at: "2026-09-15T10:00:00.000Z" },
+      {
+        ...base,
+        id: "spuntino-cancellato",
+        nome: "Spuntino",
+        deleted_at: "2026-09-15T10:00:00.000Z",
+      },
     ]);
   });
 
@@ -724,7 +766,9 @@ describe("annullaOperazione con pastiSostituiti", () => {
     const caffe = await creaVoce(userId, "Caffè", { pastoId: "colazione" });
     const foto = await eliminaVoci([pasta.id, pane.id, caffe.id]);
 
-    await annullaOperazione(foto, { pastiSostituiti: { "pranzo-vecchio": "pranzo-nuovo", "pranzo-dopo": "pranzo-nuovo" } });
+    await annullaOperazione(foto, {
+      pastiSostituiti: { "pranzo-vecchio": "pranzo-nuovo", "pranzo-dopo": "pranzo-nuovo" },
+    });
 
     expect((await db.voci_diario.get(idVoceRicreata(pasta.id)))?.pasto_id).toBe("pranzo-nuovo");
     expect((await db.voci_diario.get(idVoceRicreata(pane.id)))?.pasto_id).toBe("pranzo-nuovo");
@@ -734,7 +778,10 @@ describe("annullaOperazione con pastiSostituiti", () => {
   it("la voce ricreata nasce senza il segno della cancellazione (passo 5)", async () => {
     const userId = crypto.randomUUID();
     const pasta = await creaVoce(userId, "Pasta", { pastoId: "pranzo" });
-    await repositoryVociDiario.aggiorna(pasta.id, { deleted_at: "2026-10-10T08:00:00.000Z", eliminata_dal_cambio: "cambio-1" });
+    await repositoryVociDiario.aggiorna(pasta.id, {
+      deleted_at: "2026-10-10T08:00:00.000Z",
+      eliminata_dal_cambio: "cambio-1",
+    });
     const cancellata = (await db.voci_diario.get(pasta.id))!;
 
     await annullaOperazione({ prima: [cancellata], idCreate: [] });
@@ -766,7 +813,13 @@ describe("aggiungi nel pasto", () => {
   const IERI = "2026-10-01";
 
   beforeEach(async () => {
-    const base = { user_id: "condiviso-nei-test", ora_inizio: "12:00", ordine: 0, updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null };
+    const base = {
+      user_id: "condiviso-nei-test",
+      ora_inizio: "12:00",
+      ordine: 0,
+      updated_at: "2026-09-01T10:00:00.000Z",
+      deleted_at: null,
+    };
     await db.pasti.bulkPut([
       { ...base, id: "colazione", nome: "Colazione" },
       { ...base, id: "pranzo", nome: "Pranzo" },
@@ -776,7 +829,14 @@ describe("aggiungi nel pasto", () => {
   // Lo stesso alimento_id di creaVoce (`alimento-${nome}`).
   function da(nome: string, grammi: number, kcal = 100): AlimentoDaAggiungere {
     return {
-      alimento: { id: `alimento-${nome}`, nome, kcal_100g: kcal, proteine_100g: 1, carboidrati_100g: 2, grassi_100g: 3 },
+      alimento: {
+        id: `alimento-${nome}`,
+        nome,
+        kcal_100g: kcal,
+        proteine_100g: 1,
+        carboidrati_100g: 2,
+        grassi_100g: 3,
+      },
       grammi,
     };
   }
@@ -831,7 +891,14 @@ describe("aggiungi nel pasto", () => {
     expect(secondo).toEqual({
       esito: "doppioni",
       doppioni: [
-        { alimentoId: "alimento-Mela", nome: "Mela", grammiEsistenti: 150, grammiInArrivo: 80, righeEsistenti: 1, righeInArrivo: 1 },
+        {
+          alimentoId: "alimento-Mela",
+          nome: "Mela",
+          grammiEsistenti: 150,
+          grammiInArrivo: 80,
+          righeEsistenti: 1,
+          righeInArrivo: 1,
+        },
       ],
     });
     expect(await diario(userId)).toEqual(prima);
@@ -899,7 +966,10 @@ describe("aggiungi nel pasto", () => {
       });
 
       if (esito.esito !== "fatto") throw new Error("atteso fatto");
-      expect(await diario(userId)).toEqual([`${GIORNO} pranzo: Mela 150 g`, `${GIORNO} pranzo: Pane 50 g`]);
+      expect(await diario(userId)).toEqual([
+        `${GIORNO} pranzo: Mela 150 g`,
+        `${GIORNO} pranzo: Pane 50 g`,
+      ]);
       expect(esito.piano.esclusi).toEqual([]);
     });
   });
@@ -956,14 +1026,20 @@ describe("aggiungi nel pasto", () => {
       await annullaOperazione(esito.fotografia);
 
       expect(await diario(userId)).toEqual([`${GIORNO} pranzo: Mela 100 g`]);
-      expect(await db.voci_diario.get(mela.id)).toMatchObject({ quantita_g: 100, deleted_at: null });
+      expect(await db.voci_diario.get(mela.id)).toMatchObject({
+        quantita_g: 100,
+        deleted_at: null,
+      });
     });
   }
 
   describe("il giorno si classifica solo se nasce una riga", () => {
     it("una riga nuova su un giorno senza voci: classificato", async () => {
       const userId = crypto.randomUUID();
-      const esito = await aggiungi(userId, [da("Mela", 150)], { data: IERI, profilo: profiloDifferenziato(userId) });
+      const esito = await aggiungi(userId, [da("Mela", 150)], {
+        data: IERI,
+        profilo: profiloDifferenziato(userId),
+      });
       expect(esito.esito).toBe("fatto");
       expect((await db.giorni.get(idGiorno(userId, IERI)))?.deleted_at).toBeNull();
     });
@@ -1016,11 +1092,26 @@ describe("aggiungi nel pasto", () => {
 
       const righe = perNome(await repositoryVociDiario.ottieniTutti(userId));
       expect(righe.map(contenutoVisibile)).toEqual([
-        expect.objectContaining({ nome_alimento: "Burro", alimento_id: "alimento-Burro", quantita_g: 10, kcal_100g: 717 }),
-        expect.objectContaining({ nome_alimento: "Pane", alimento_id: "alimento-Pane", quantita_g: 50, kcal_100g: 270 }),
+        expect.objectContaining({
+          nome_alimento: "Burro",
+          alimento_id: "alimento-Burro",
+          quantita_g: 10,
+          kcal_100g: 717,
+        }),
+        expect.objectContaining({
+          nome_alimento: "Pane",
+          alimento_id: "alimento-Pane",
+          quantita_g: 50,
+          kcal_100g: 270,
+        }),
       ]);
       for (const r of righe) {
-        expect(r).toMatchObject({ data: GIORNO, pasto_id: "pranzo", creato_il: ADESSO.toISOString(), consumato_alle: ADESSO.toISOString() });
+        expect(r).toMatchObject({
+          data: GIORNO,
+          pasto_id: "pranzo",
+          creato_il: ADESSO.toISOString(),
+          consumato_alle: ADESSO.toISOString(),
+        });
       }
       expect(righe[0].gruppo_id).not.toBeNull();
       expect(righe[1].gruppo_id).toBe(righe[0].gruppo_id);
@@ -1037,15 +1128,17 @@ describe("aggiungi nel pasto", () => {
   describe("giorno e pasto si ricontrollano prima di scrivere", () => {
     it("oltre oggi + 7: rifiutato, niente scritto", async () => {
       const userId = crypto.randomUUID();
-      await expect(aggiungi(userId, [da("Mela", 150)], { data: "2026-10-10" })).rejects.toThrow("Giorno non valido");
+      await expect(aggiungi(userId, [da("Mela", 150)], { data: "2026-10-10" })).rejects.toThrow(
+        "Giorno non valido"
+      );
       expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(0);
     });
 
     it("un pasto che non c'è: rifiutato, niente scritto", async () => {
       const userId = crypto.randomUUID();
-      await expect(aggiungi(userId, [da("Mela", 150)], { pastoId: "pasto-inesistente" })).rejects.toThrow(
-        "Pasto non valido"
-      );
+      await expect(
+        aggiungi(userId, [da("Mela", 150)], { pastoId: "pasto-inesistente" })
+      ).rejects.toThrow("Pasto non valido");
       expect(await repositoryVociDiario.ottieniTutti(userId)).toHaveLength(0);
     });
   });
@@ -1060,7 +1153,13 @@ describe("Somma oltre il massimo di 99999,99 g", () => {
   const ADESSO = new Date(2026, 9, 2, 13, 0, 0);
 
   beforeEach(async () => {
-    const base = { user_id: "condiviso-nei-test", ora_inizio: "12:00", ordine: 0, updated_at: "2026-09-01T10:00:00.000Z", deleted_at: null };
+    const base = {
+      user_id: "condiviso-nei-test",
+      ora_inizio: "12:00",
+      ordine: 0,
+      updated_at: "2026-09-01T10:00:00.000Z",
+      deleted_at: null,
+    };
     await db.pasti.bulkPut([
       { ...base, id: "colazione", nome: "Colazione" },
       { ...base, id: "pranzo", nome: "Pranzo" },
@@ -1073,7 +1172,10 @@ describe("Somma oltre il massimo di 99999,99 g", () => {
     const voci = await db.voci_diario.filter((v) => v.user_id === userId).toArray();
     const ids = new Set(voci.map((v) => v.id));
     const outbox = await db.outbox.filter((o) => ids.has(o.record_id)).count();
-    return { voci: perNome(voci).map((v) => `${v.pasto_id} ${v.quantita_g} ${v.deleted_at}`), outbox };
+    return {
+      voci: perNome(voci).map((v) => `${v.pasto_id} ${v.quantita_g} ${v.deleted_at}`),
+      outbox,
+    };
   }
 
   // La Mela a colazione (in arrivo) e a pranzo (destinazione).
@@ -1084,30 +1186,69 @@ describe("Somma oltre il massimo di 99999,99 g", () => {
   }
 
   const sposta = async (userId: string, melaId: string) => {
-    const base = { userId, data: GIORNO, origine: { tipo: "voce" as const, id: melaId }, pastoDestinazioneId: "pranzo" };
+    const base = {
+      userId,
+      data: GIORNO,
+      origine: { tipo: "voce" as const, id: melaId },
+      pastoDestinazioneId: "pranzo",
+    };
     const primo = await spostaNelPasto(base);
     if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
-    return spostaNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni });
+    return spostaNelPasto({
+      ...base,
+      scelte: { "alimento-Mela": { tipo: "somma" } },
+      doppioniVisti: primo.doppioni,
+    });
   };
   const duplica = async (userId: string, melaId: string) => {
     const base = {
-      userId, dataPartenza: GIORNO, origine: { tipo: "voce" as const, id: melaId },
-      dataDestinazione: GIORNO, pastoDestinazioneId: "pranzo", profilo: null, adesso: ADESSO,
+      userId,
+      dataPartenza: GIORNO,
+      origine: { tipo: "voce" as const, id: melaId },
+      dataDestinazione: GIORNO,
+      pastoDestinazioneId: "pranzo",
+      profilo: null,
+      adesso: ADESSO,
     };
     const primo = await duplicaNelPasto(base);
     if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
-    return duplicaNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni });
+    return duplicaNelPasto({
+      ...base,
+      scelte: { "alimento-Mela": { tipo: "somma" } },
+      doppioniVisti: primo.doppioni,
+    });
   };
   // Aggiungi: la quantità in arrivo è quella della Mela a colazione.
   const aggiungi = async (userId: string, melaId: string) => {
     const grammi = (await db.voci_diario.get(melaId))!.quantita_g;
     const base = {
-      userId, data: GIORNO, pastoId: "pranzo", inGruppo: false, profilo: null, adesso: ADESSO,
-      alimenti: [{ alimento: { id: "alimento-Mela", nome: "Mela", kcal_100g: 100, proteine_100g: 1, carboidrati_100g: 2, grassi_100g: 3 }, grammi }],
+      userId,
+      data: GIORNO,
+      pastoId: "pranzo",
+      inGruppo: false,
+      profilo: null,
+      adesso: ADESSO,
+      alimenti: [
+        {
+          alimento: {
+            id: "alimento-Mela",
+            nome: "Mela",
+            kcal_100g: 100,
+            proteine_100g: 1,
+            carboidrati_100g: 2,
+            grassi_100g: 3,
+          },
+          grammi,
+        },
+      ],
     };
     const primo = await aggiungiNelPasto(base);
     if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
-    return aggiungiNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni });
+    return aggiungiNelPasto({
+      ...base,
+      scelte: { "alimento-Mela": { tipo: "somma" } },
+      doppioniVisti: primo.doppioni,
+    });
   };
 
   for (const [nome, operazione] of [
@@ -1132,7 +1273,9 @@ describe("Somma oltre il massimo di 99999,99 g", () => {
       const esito = await operazione(userId, mela.id);
 
       expect(esito.esito).toBe("fatto");
-      const vive = (await repositoryVociDiario.ottieniTutti(userId)).filter((v) => v.pasto_id === "pranzo");
+      const vive = (await repositoryVociDiario.ottieniTutti(userId)).filter(
+        (v) => v.pasto_id === "pranzo"
+      );
       expect(vive.map((v) => v.quantita_g)).toEqual([99999.99]);
     });
   }
@@ -1153,17 +1296,27 @@ describe("sposta con i grammi nuovi (sheet di modifica)", () => {
   // se serve, un'altra Mela da 50 g.
   async function prepara(userId: string, { conDoppione }: { conDoppione: boolean }) {
     const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 100 });
-    const altra = conDoppione ? await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 50 }) : null;
+    const altra = conDoppione
+      ? await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 50 })
+      : null;
     return { mela, altra, origine: { tipo: "voce" as const, id: mela.id, grammi: 120 } };
   }
 
-  async function spostaConScelta(userId: string, origine: { tipo: "voce"; id: string; grammi: number }, scelta: SceltaDoppione) {
+  async function spostaConScelta(
+    userId: string,
+    origine: { tipo: "voce"; id: string; grammi: number },
+    scelta: SceltaDoppione
+  ) {
     const base = { userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" };
     const primo = await spostaNelPasto(base);
     if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
     // Il foglio mostra i grammi nuovi in arrivo, non quelli salvati.
     expect(primo.doppioni[0]).toMatchObject({ grammiEsistenti: 50, grammiInArrivo: 120 });
-    const esito = await spostaNelPasto({ ...base, scelte: { "alimento-Mela": scelta }, doppioniVisti: primo.doppioni });
+    const esito = await spostaNelPasto({
+      ...base,
+      scelte: { "alimento-Mela": scelta },
+      doppioniVisti: primo.doppioni,
+    });
     if (esito.esito !== "fatto") throw new Error("atteso fatto");
     return esito;
   }
@@ -1173,7 +1326,12 @@ describe("sposta con i grammi nuovi (sheet di modifica)", () => {
     const { mela, origine } = await prepara(userId, { conDoppione: false });
     const prima = await diario(userId);
 
-    const esito = await spostaNelPasto({ userId, data: GIORNO, origine, pastoDestinazioneId: "pranzo" });
+    const esito = await spostaNelPasto({
+      userId,
+      data: GIORNO,
+      origine,
+      pastoDestinazioneId: "pranzo",
+    });
 
     if (esito.esito !== "fatto") throw new Error("atteso fatto");
     expect(esito.piano.scritture).toEqual([
@@ -1238,7 +1396,9 @@ describe("sposta con i grammi nuovi (sheet di modifica)", () => {
 
     const esito = await spostaConScelta(userId, origine, { tipo: "escludi" });
 
-    expect(esito.piano.scritture).toEqual([{ tipo: "aggiorna", id: mela.id, modifiche: { quantita_g: 120 } }]);
+    expect(esito.piano.scritture).toEqual([
+      { tipo: "aggiorna", id: mela.id, modifiche: { quantita_g: 120 } },
+    ]);
     expect(esito.piano.esclusi).toEqual(["Mela"]);
     expect(await diario(userId)).toEqual(["colazione: Mela 120 g", "pranzo: Mela 50 g"]);
     await annullaOperazione(esito.fotografia);
@@ -1250,12 +1410,21 @@ describe("sposta con i grammi nuovi (sheet di modifica)", () => {
     const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 100 });
     await creaVoce(userId, "Mela", { pastoId: "pranzo", quantita: 50000 });
     const prima = await diario(userId);
-    const base = { userId, data: GIORNO, origine: { tipo: "voce" as const, id: mela.id, grammi: 50000 }, pastoDestinazioneId: "pranzo" };
+    const base = {
+      userId,
+      data: GIORNO,
+      origine: { tipo: "voce" as const, id: mela.id, grammi: 50000 },
+      pastoDestinazioneId: "pranzo",
+    };
     const primo = await spostaNelPasto(base);
     if (primo.esito !== "doppioni") throw new Error("attesi i doppioni");
 
     await expect(
-      spostaNelPasto({ ...base, scelte: { "alimento-Mela": { tipo: "somma" } }, doppioniVisti: primo.doppioni })
+      spostaNelPasto({
+        ...base,
+        scelte: { "alimento-Mela": { tipo: "somma" } },
+        doppioniVisti: primo.doppioni,
+      })
     ).rejects.toThrow(/oltre il massimo/);
 
     expect(await diario(userId)).toEqual(prima);
@@ -1266,10 +1435,15 @@ describe("sposta con i grammi nuovi (sheet di modifica)", () => {
     const mela = await creaVoce(userId, "Mela", { pastoId: "colazione", quantita: 100 });
 
     const esito = await spostaNelPasto({
-      userId, data: GIORNO, origine: { tipo: "voce", id: mela.id, grammi: 100 }, pastoDestinazioneId: "pranzo",
+      userId,
+      data: GIORNO,
+      origine: { tipo: "voce", id: mela.id, grammi: 100 },
+      pastoDestinazioneId: "pranzo",
     });
 
     if (esito.esito !== "fatto") throw new Error("atteso fatto");
-    expect(esito.piano.scritture).toEqual([{ tipo: "aggiorna", id: mela.id, modifiche: { pasto_id: "pranzo" } }]);
+    expect(esito.piano.scritture).toEqual([
+      { tipo: "aggiorna", id: mela.id, modifiche: { pasto_id: "pranzo" } },
+    ]);
   });
 });

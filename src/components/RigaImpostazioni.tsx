@@ -61,7 +61,9 @@ export default function RigaImpostazioni({
           <span className="mt-0.5 block text-[13px] leading-snug text-muted">{sottotitolo}</span>
         </span>
       ) : (
-        <span className={`min-w-0 flex-1 truncate ${pericolo ? "text-danger" : ""}`}>{etichetta}</span>
+        <span className={`min-w-0 flex-1 truncate ${pericolo ? "text-danger" : ""}`}>
+          {etichetta}
+        </span>
       )}
       {valore != null && <span className="shrink-0 text-[15px] text-muted">{valore}</span>}
       {(href || onClick) && <FrecciaDestra />}

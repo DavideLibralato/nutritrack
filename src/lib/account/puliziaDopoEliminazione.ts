@@ -33,7 +33,10 @@ export async function pulisciDispositivoDopoEliminazione(idUtente: string): Prom
     await cancellaDatiUtente(idUtente);
   } catch (errore) {
     dexiePulito = false;
-    console.error("Account eliminato: pulizia di Dexie non riuscita, si riprova al prossimo avvio.", errore);
+    console.error(
+      "Account eliminato: pulizia di Dexie non riuscita, si riprova al prossimo avvio.",
+      errore
+    );
   }
   await svuotaPagineSalvate().catch(() => {});
   try {

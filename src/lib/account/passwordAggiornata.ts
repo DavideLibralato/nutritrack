@@ -25,7 +25,10 @@ export const PROFILO_CON_PASSWORD_AGGIORNATA = `/impostazioni/profilo?${PARAMETR
 
 // Funzione pura: l'indirizzo c'era il segno? E l'indirizzo senza (gli
 // altri parametri e il frammento restano).
-export function leggiSegnoPasswordAggiornata(href: string): { aggiornata: boolean; senzaSegno: string } {
+export function leggiSegnoPasswordAggiornata(href: string): {
+  aggiornata: boolean;
+  senzaSegno: string;
+} {
   const url = new URL(href);
   const aggiornata = url.searchParams.get(PARAMETRO) === VALORE;
   url.searchParams.delete(PARAMETRO);

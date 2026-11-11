@@ -38,17 +38,13 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/sw.js",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
-        ],
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
       },
       // Caricato da sw.js con importScripts: stessa regola, altrimenti un
       // sw.js nuovo potrebbe girare con la sua logica vecchia.
       {
         source: "/sw-strategia.js",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
-        ],
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
       },
       // Il WebAssembly del lettore dei codici a barre (src/lib/barcode/
       // lettoreCodice.ts), circa 950 KB. La versione è nel percorso
@@ -58,9 +54,7 @@ const nextConfig: NextConfig = {
       // ricontrollerebbe a ogni scansione.
       {
         source: "/zxing/:percorso*",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
     ];
   },

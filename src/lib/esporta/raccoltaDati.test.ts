@@ -21,11 +21,7 @@ import type {
 } from "../db/tipi";
 import { TABELLE_DISCESA } from "../sync/discesa";
 import { segnaDiscesaCompleta } from "../sync/discesaCompleta";
-import {
-  costruisciEsportazione,
-  raccogliEsportazione,
-  type DatiContorno,
-} from "./raccoltaDati";
+import { costruisciEsportazione, raccogliEsportazione, type DatiContorno } from "./raccoltaDati";
 import {
   NOME_FORMATO,
   VERSIONE_FORMATO,
@@ -285,7 +281,10 @@ describe("righe dell'utente, vive, di tutte le tabelle", () => {
 
     const { dati } = await esportazionePronta();
     for (const { nome } of TABELLE_DISCESA) {
-      expect(dati[nome].every((r) => r.deleted_at === null), nome).toBe(true);
+      expect(
+        dati[nome].every((r) => r.deleted_at === null),
+        nome
+      ).toBe(true);
     }
     // L'alimento e il pasto cancellati di prova non sono citati da voci vive: fuori anche loro.
     expect(dati.alimenti_cancellati_citati).toEqual([]);
@@ -389,7 +388,11 @@ describe("gli alimenti cancellati e quelli del catalogo comune", () => {
   it("un alimento proprio cancellato citato da un pasto salvato vivo (ricetta) entra in alimenti_cancellati_citati", () => {
     const { vivi } = dispositivo();
     const calcolato = alimento(IO, CANCELLATA, "Torta di mele");
-    const ricetta: Composizione = { ...composizione(IO), tipo: "ricetta", alimento_id: calcolato.id };
+    const ricetta: Composizione = {
+      ...composizione(IO),
+      tipo: "ricetta",
+      alimento_id: calcolato.id,
+    };
     const tutte = unisci(vivi, { ...vuoto(), alimenti: [calcolato], composizioni: [ricetta] });
 
     const { dati } = costruisciEsportazione(tutte, IO, CONTORNO);
@@ -455,8 +458,16 @@ describe("i target di un obiettivo cancellato", () => {
 // completo solo se ogni foreign key trova la sua riga. L'elenco è quello di pg_constraint su Supabase
 // (letto il 07/11): se si aggiunge una foreign key, si aggiunge qui.
 
-const SEZIONI_ALIMENTI = ["alimenti", "alimenti_cancellati_citati", "alimenti_comuni_citati"] as const;
-const CHIAVI_ESTERNE: { tabella: keyof RighePerTabella; campo: string; verso: readonly string[] }[] = [
+const SEZIONI_ALIMENTI = [
+  "alimenti",
+  "alimenti_cancellati_citati",
+  "alimenti_comuni_citati",
+] as const;
+const CHIAVI_ESTERNE: {
+  tabella: keyof RighePerTabella;
+  campo: string;
+  verso: readonly string[];
+}[] = [
   { tabella: "composizioni", campo: "alimento_id", verso: SEZIONI_ALIMENTI },
   { tabella: "composizioni_voci", campo: "alimento_id", verso: SEZIONI_ALIMENTI },
   { tabella: "composizioni_voci", campo: "composizione_id", verso: ["composizioni"] },
@@ -487,7 +498,11 @@ describe("integrità: ogni riferimento trova la sua riga nel file", () => {
     const alimentoRitirato = alimento(IO, CANCELLATA, "Panino");
     const pastoChiuso = { ...pasto(IO, CANCELLATA), nome: "Merenda" };
     const alimentoDellaRicetta = alimento(IO, CANCELLATA, "Torta");
-    const ricetta: Composizione = { ...composizione(IO), tipo: "ricetta", alimento_id: alimentoDellaRicetta.id };
+    const ricetta: Composizione = {
+      ...composizione(IO),
+      tipo: "ricetta",
+      alimento_id: alimentoDellaRicetta.id,
+    };
     const pastoSalvatoCancellato = composizione(IO, CANCELLATA);
     const obiettivoVecchio = obiettivo(IO, CANCELLATA);
     // Catalogo comune: uno vivo e uno cancellato, entrambi citati.
@@ -502,7 +517,13 @@ describe("integrità: ogni riferimento trova la sua riga nel file", () => {
 
     const extra: RighePerTabella = {
       ...vuoto(),
-      alimenti: [alimentoRitirato, alimentoDellaRicetta, comuneVivo, comuneCancellato, alimentoDellAltro],
+      alimenti: [
+        alimentoRitirato,
+        alimentoDellaRicetta,
+        comuneVivo,
+        comuneCancellato,
+        alimentoDellAltro,
+      ],
       pasti: [pastoChiuso],
       obiettivi: [obiettivoVecchio],
       obiettivi_target: [target(IO, obiettivoVecchio.id)],
@@ -523,13 +544,18 @@ describe("integrità: ogni riferimento trova la sua riga nel file", () => {
     segnaDiscesaCompleta(IO);
 
     const esportazione = await esportazionePronta();
-    expect(riferimentiMancanti(esportazione)).toEqual([`voci_diario.alimento_id ${voceTelefonoCondiviso.id}`]);
+    expect(riferimentiMancanti(esportazione)).toEqual([
+      `voci_diario.alimento_id ${voceTelefonoCondiviso.id}`,
+    ]);
 
     // E le righe che servivano ci sono davvero, ognuna nella sua sezione.
     const { dati } = esportazione;
     expect(dati.alimenti_cancellati_citati.map((a) => a.nome).sort()).toEqual(["Panino", "Torta"]);
     expect(dati.pasti_cancellati_citati.map((p) => p.nome)).toEqual(["Merenda"]);
-    expect(dati.alimenti_comuni_citati.map((a) => a.nome).sort()).toEqual(["Farro comune", "Riso comune"]);
+    expect(dati.alimenti_comuni_citati.map((a) => a.nome).sort()).toEqual([
+      "Farro comune",
+      "Riso comune",
+    ]);
     expect(testoJson(esportazione)).not.toContain(ALTRO);
   });
 
@@ -583,8 +609,12 @@ describe("intestazione", () => {
   });
 
   it("l'ora con il fuso: ora solare e ora legale", () => {
-    expect(istanteConFuso(new Date("2026-11-07T19:45:12.345Z"))).toBe("2026-11-07T20:45:12.345+01:00");
-    expect(istanteConFuso(new Date("2026-07-01T06:05:04.003Z"))).toBe("2026-07-01T08:05:04.003+02:00");
+    expect(istanteConFuso(new Date("2026-11-07T19:45:12.345Z"))).toBe(
+      "2026-11-07T20:45:12.345+01:00"
+    );
+    expect(istanteConFuso(new Date("2026-07-01T06:05:04.003Z"))).toBe(
+      "2026-07-01T08:05:04.003+02:00"
+    );
   });
 
   it("giorno locale e nome del file: dopo la mezzanotte di Roma è già il giorno dopo", () => {
@@ -626,20 +656,29 @@ describe("rilettura", () => {
 describe("senza il segno discesa completa non parte", () => {
   it("niente segno: copia-incompleta, anche con i dati in Dexie", async () => {
     await scriviInDexie(dispositivo().vivi);
-    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta", manca: "non-scaricata" });
+    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({
+      esito: "copia-incompleta",
+      manca: "non-scaricata",
+    });
   });
 
   it("segno acceso ma nessun profilo vivo in Dexie: copia-incompleta", async () => {
     const { vivi } = dispositivo();
     await scriviInDexie({ ...vivi, profili: [] });
     segnaDiscesaCompleta(IO);
-    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta", manca: "senza-profilo" });
+    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({
+      esito: "copia-incompleta",
+      manca: "senza-profilo",
+    });
   });
 
   it("il segno di un altro utente non basta", async () => {
     await scriviInDexie(dispositivo().vivi);
     segnaDiscesaCompleta(ALTRO);
-    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({ esito: "copia-incompleta", manca: "non-scaricata" });
+    expect(await raccogliEsportazione(IO, CONTORNO)).toEqual({
+      esito: "copia-incompleta",
+      manca: "non-scaricata",
+    });
   });
 });
 

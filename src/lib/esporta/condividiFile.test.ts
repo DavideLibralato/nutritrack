@@ -23,8 +23,13 @@ function ambiente(opzioni: {
   conDownload?: boolean;
   share?: () => Promise<void>;
 }) {
-  const tipi = opzioni.tipiCondivisibili === undefined ? [TIPO_JSON, TIPO_CSV, "text/plain"] : opzioni.tipiCondivisibili;
-  const share = vi.fn<(dati: { files: File[] }) => Promise<void>>(opzioni.share ?? (async () => {}));
+  const tipi =
+    opzioni.tipiCondivisibili === undefined
+      ? [TIPO_JSON, TIPO_CSV, "text/plain"]
+      : opzioni.tipiCondivisibili;
+  const share = vi.fn<(dati: { files: File[] }) => Promise<void>>(
+    opzioni.share ?? (async () => {})
+  );
   const scarica = vi.fn<(file: File) => void>();
   const amb: AmbienteSalvataggio = {
     canShare: tipi === null ? undefined : ({ files }) => files.every((f) => tipi.includes(f.type)),
@@ -58,7 +63,12 @@ describe("la scelta della strada", () => {
       [NOME_JSON, TIPO_JSON],
       [NOME_CSV, TIPO_CSV],
     ] as const) {
-      const strada = sceltaStrada(ambiente({ tipiCondivisibili: ["text/plain"] }), nome, "dentro", tipo);
+      const strada = sceltaStrada(
+        ambiente({ tipiCondivisibili: ["text/plain"] }),
+        nome,
+        "dentro",
+        tipo
+      );
       expect(strada.tipo, nome).toBe("condividi");
       if (strada.tipo !== "condividi") return;
       expect(strada.file.type).toBe("text/plain");
@@ -75,7 +85,10 @@ describe("la scelta della strada", () => {
   it("nessun tipo accettato, app installata: niente download, impossibile con il motivo", () => {
     for (const tipiCondivisibili of [[], null]) {
       const amb = ambiente({ tipiCondivisibili, installata: true });
-      expect(sceltaStrada(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({ tipo: "impossibile", motivo: "app-installata" });
+      expect(sceltaStrada(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({
+        tipo: "impossibile",
+        motivo: "app-installata",
+      });
     }
   });
 
@@ -91,7 +104,10 @@ describe("la scelta della strada", () => {
 
   it("niente condivisione e niente download: non supportato", () => {
     const amb = ambiente({ tipiCondivisibili: null, conDownload: false });
-    expect(sceltaStrada(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({ tipo: "impossibile", motivo: "non-supportato" });
+    expect(sceltaStrada(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({
+      tipo: "impossibile",
+      motivo: "non-supportato",
+    });
   });
 
   it("canShare che lancia vale come un no", () => {
@@ -102,14 +118,20 @@ describe("la scelta della strada", () => {
       share: async () => {},
       installata: true,
     };
-    expect(sceltaStrada(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({ tipo: "impossibile", motivo: "app-installata" });
+    expect(sceltaStrada(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({
+      tipo: "impossibile",
+      motivo: "app-installata",
+    });
   });
 });
 
 describe("salvaFile", () => {
   it("condivisione riuscita: salvato", async () => {
     const amb = ambiente({});
-    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({ esito: "salvato", strada: "condividi" });
+    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({
+      esito: "salvato",
+      strada: "condividi",
+    });
     expect(amb.spiaShare).toHaveBeenCalledTimes(1);
     expect(amb.spiaScarica).not.toHaveBeenCalled();
   });
@@ -121,21 +143,32 @@ describe("salvaFile", () => {
 
   it("condivisione rifiutata per un altro motivo: errore con il nome", async () => {
     const amb = ambiente({ share: async () => Promise.reject(errore("NotAllowedError")) });
-    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({ esito: "errore", nome: "NotAllowedError" });
+    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({
+      esito: "errore",
+      nome: "NotAllowedError",
+    });
   });
 
   it("rifiuto con un oggetto che non è un Error (DOMException di Safari): il nome conta lo stesso", async () => {
-    const annullato = ambiente({ share: () => Promise.reject({ name: "AbortError", message: "Share canceled" }) });
+    const annullato = ambiente({
+      share: () => Promise.reject({ name: "AbortError", message: "Share canceled" }),
+    });
     expect(await salvaFile(annullato, NOME_JSON, "x", TIPO_JSON)).toEqual({ esito: "annullato" });
 
     const rifiutato = ambiente({ share: () => Promise.reject({ name: "NotAllowedError" }) });
-    expect(await salvaFile(rifiutato, NOME_JSON, "x", TIPO_JSON)).toEqual({ esito: "errore", nome: "NotAllowedError" });
+    expect(await salvaFile(rifiutato, NOME_JSON, "x", TIPO_JSON)).toEqual({
+      esito: "errore",
+      nome: "NotAllowedError",
+    });
   });
 
-  it("rifiuto senza un nome leggibile: errore \"Error\"", async () => {
+  it('rifiuto senza un nome leggibile: errore "Error"', async () => {
     for (const motivo of [undefined, null, "testo", { name: 42 }, { name: "" }]) {
       const amb = ambiente({ share: () => Promise.reject(motivo) });
-      expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON), String(motivo)).toEqual({ esito: "errore", nome: "Error" });
+      expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON), String(motivo)).toEqual({
+        esito: "errore",
+        nome: "Error",
+      });
     }
   });
 
@@ -144,7 +177,10 @@ describe("salvaFile", () => {
     amb.spiaScarica.mockImplementation(() => {
       throw { name: "SecurityError" };
     });
-    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({ esito: "errore", nome: "SecurityError" });
+    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({
+      esito: "errore",
+      nome: "SecurityError",
+    });
   });
 
   it("share parte subito, senza attese fra il tocco e la condivisione", () => {
@@ -157,7 +193,10 @@ describe("salvaFile", () => {
 
   it("download: salvato con la strada scarica, il file passato al link", async () => {
     const amb = ambiente({ tipiCondivisibili: null });
-    expect(await salvaFile(amb, NOME_CSV, "a;b", TIPO_CSV)).toEqual({ esito: "salvato", strada: "scarica" });
+    expect(await salvaFile(amb, NOME_CSV, "a;b", TIPO_CSV)).toEqual({
+      esito: "salvato",
+      strada: "scarica",
+    });
     const file = amb.spiaScarica.mock.calls[0][0] as File;
     expect(file.name).toBe(NOME_CSV);
     expect(await file.text()).toBe("a;b");
@@ -165,7 +204,10 @@ describe("salvaFile", () => {
 
   it("app installata senza condivisione: impossibile, e il download non parte", async () => {
     const amb = ambiente({ tipiCondivisibili: [], installata: true });
-    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({ esito: "impossibile", motivo: "app-installata" });
+    expect(await salvaFile(amb, NOME_JSON, "x", TIPO_JSON)).toEqual({
+      esito: "impossibile",
+      motivo: "app-installata",
+    });
     expect(amb.spiaScarica).not.toHaveBeenCalled();
   });
 });

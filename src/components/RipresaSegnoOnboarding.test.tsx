@@ -43,7 +43,8 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 function cookieSessione(metadati: Record<string, unknown>) {
-  const valore = "base64-" + stringToBase64URL(JSON.stringify({ user: { id: "u1", user_metadata: metadati } }));
+  const valore =
+    "base64-" + stringToBase64URL(JSON.stringify({ user: { id: "u1", user_metadata: metadati } }));
   document.cookie = `${chiaveSessione(URL_SUPABASE)}=${valore}; path=/`;
 }
 

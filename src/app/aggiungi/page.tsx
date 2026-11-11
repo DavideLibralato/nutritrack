@@ -52,10 +52,7 @@ import {
   type PastoSalvato,
 } from "@/lib/inserimento/pastiSalvati";
 import { cercaPastiSalvati, testoContiene } from "@/lib/inserimento/ricercaPastiSalvati";
-import {
-  ripristinaAlimentoEliminato,
-  type TracciaRimozione,
-} from "@/lib/repository/composizioni";
+import { ripristinaAlimentoEliminato, type TracciaRimozione } from "@/lib/repository/composizioni";
 import { dataScrivibile, oraCorrente, oggiLocale } from "@/lib/dataGiorno";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import SheetQuantita from "@/components/SheetQuantita";
@@ -139,7 +136,8 @@ const CLASSE_PIU = `flex size-11 shrink-0 items-center justify-center rounded-fu
 const CLASSE_MATITA = `flex size-11 shrink-0 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`;
 // Titoli di sezione come quelli di Impostazioni; il rientro li allinea al
 // testo delle righe.
-const CLASSE_TITOLO_SEZIONE = "mx-3.5 mb-2 text-xs font-medium uppercase tracking-[0.1em] text-muted";
+const CLASSE_TITOLO_SEZIONE =
+  "mx-3.5 mb-2 text-xs font-medium uppercase tracking-[0.1em] text-muted";
 const CLASSE_SOTTOSEZIONE = "mx-3.5 mb-1.5 text-xs text-muted";
 // Freccia indietro della testata, anche lei da 44 pt.
 const CLASSE_INDIETRO = `flex size-11 shrink-0 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`;
@@ -326,9 +324,7 @@ function AggiungiContenuto() {
   // quelli del momento del tap. Il fallback all'oggetto catturato copre
   // l'istante in cui un alimento appena creato non è ancora nel catalogo.
   const [alimentoSceltoRaw, setAlimentoSceltoRaw] = useState<Alimento | null>(null);
-  const [salvataggio, setSalvataggio] = useState<"inattivo" | "in-corso" | "errore">(
-    "inattivo"
-  );
+  const [salvataggio, setSalvataggio] = useState<"inattivo" | "in-corso" | "errore">("inattivo");
   // Errore del "+" su Recenti/Preferiti: quello scrive subito, senza sheet,
   // quindi non ha il messaggio d'errore di SheetQuantita a disposizione.
   const [erroreRapido, setErroreRapido] = useState<string | null>(null);
@@ -338,7 +334,9 @@ function AggiungiContenuto() {
   // per lo sheet di quella copia).
   const [catalogoInCorso, setCatalogoInCorso] = useState<string | null>(null);
   const [erroreCatalogo, setErroreCatalogo] = useState<string | null>(null);
-  const [avvisoCopia, setAvvisoCopia] = useState<{ idAlimento: string; testo: string } | null>(null);
+  const [avvisoCopia, setAvvisoCopia] = useState<{ idAlimento: string; testo: string } | null>(
+    null
+  );
 
   // Il foglio dei doppioni (sezione 3, "Doppioni"): aperto quando quello che
   // si aggiunge c'è già nel pasto. Tiene la richiesta di partenza, per la
@@ -448,13 +446,12 @@ function AggiungiContenuto() {
   const nelCatalogo = nessunRisultato
     ? suggerimentiCatalogo(CATALOGO_PRECARICATO, catalogo, userId, query)
     : [];
-  const nomePastoSelezionato =
-    pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
+  const nomePastoSelezionato = pasti.find((p) => p.id === pastoSelezionatoId)?.nome ?? "";
 
   // Versione viva dell'alimento scelto: se è nel catalogo (quasi sempre),
   // quella; altrimenti l'oggetto catturato al tap (alimento appena creato).
   const alimentoScelto = alimentoSceltoRaw
-    ? catalogo.find((x) => x.id === alimentoSceltoRaw.id) ?? alimentoSceltoRaw
+    ? (catalogo.find((x) => x.id === alimentoSceltoRaw.id) ?? alimentoSceltoRaw)
     : null;
 
   // Un'aggiunta, da qualunque dei tre percorsi: lo sheet quantità
@@ -846,7 +843,11 @@ function AggiungiContenuto() {
                 // permesso quando partiva dopo il ridisegno (07/11).
                 onClick={() => setScansione(richiediFotocamera())}
                 disabled={!online}
-                aria-label={online ? "Scansiona il codice a barre" : "Scansione non disponibile senza connessione"}
+                aria-label={
+                  online
+                    ? "Scansiona il codice a barre"
+                    : "Scansione non disponibile senza connessione"
+                }
                 className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
               >
                 <IconaCodiceBarre />
@@ -949,8 +950,8 @@ function AggiungiContenuto() {
                     <IconaPosate className="text-muted" />
                     <p className="font-medium">Cerca il tuo alimento</p>
                     <p className="text-sm leading-relaxed text-muted">
-                      Scrivi il nome per cercarlo nel catalogo, oppure creane uno
-                      nuovo se non lo trovi.
+                      Scrivi il nome per cercarlo nel catalogo, oppure creane uno nuovo se non lo
+                      trovi.
                     </p>
                   </div>
                 )
@@ -1058,8 +1059,8 @@ function AggiungiContenuto() {
                   <IconaLente className="text-muted" size={40} />
                   <p className="font-medium">Nessun risultato per «{query.trim()}»</p>
                   <p className="text-sm leading-relaxed text-muted">
-                    Non è ancora nel catalogo. Puoi crearlo tu: resterà
-                    disponibile anche le prossime volte.
+                    Non è ancora nel catalogo. Puoi crearlo tu: resterà disponibile anche le
+                    prossime volte.
                   </p>
                 </div>
               )}
@@ -1114,7 +1115,9 @@ function AggiungiContenuto() {
             pasti.find((p) => p.id === foglioDoppioni.richiesta.pastoId)?.nome ?? ""
           )}
           doppioni={foglioDoppioni.doppioni}
-          nomeDestinazione={pasti.find((p) => p.id === foglioDoppioni.richiesta.pastoId)?.nome ?? ""}
+          nomeDestinazione={
+            pasti.find((p) => p.id === foglioDoppioni.richiesta.pastoId)?.nome ?? ""
+          }
           nomePartenza="in arrivo"
           etichettaEscludi="Non aggiungerlo"
           esitoEscludi="Resta quello che c'è, non si aggiunge"
@@ -1202,9 +1205,7 @@ function AggiungiContenuto() {
           icona={barra.icona}
           durataMs={barra.durataMs}
           azione={
-            barra.annullabile
-              ? { etichetta: "Annulla", onClick: annullaEliminazione }
-              : undefined
+            barra.annullabile ? { etichetta: "Annulla", onClick: annullaEliminazione } : undefined
           }
           margineHome
           onChiudi={() => setBarra(null)}

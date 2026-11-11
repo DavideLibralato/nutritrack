@@ -80,7 +80,12 @@ describe("graficoPeso", () => {
 
   it("pesate più vecchie: solo quelle delle 12 settimane, asse dall'inizio della finestra", () => {
     const r = graficoPeso(
-      [pesata("2026-07-01", 86), pesata("2026-08-18", 85.5), pesata("2026-09-02", 85), pesata("2026-10-24", 84)],
+      [
+        pesata("2026-07-01", 86),
+        pesata("2026-08-18", 85.5),
+        pesata("2026-09-02", 85),
+        pesata("2026-10-24", 84),
+      ],
       OGGI
     );
     // L'asse parte dal 19/08, non dalla prima pesata mostrata (2/09).
@@ -133,11 +138,17 @@ describe("testi del peso", () => {
   });
 
   it("l'ultima pesata: giorni fa, oggi, ieri, e l'anno solo se è un altro", () => {
-    expect(testoUltimaPesataStatistiche("2026-10-26", OGGI)).toBe("Ultima pesata 26 ott, 16 giorni fa");
+    expect(testoUltimaPesataStatistiche("2026-10-26", OGGI)).toBe(
+      "Ultima pesata 26 ott, 16 giorni fa"
+    );
     expect(testoUltimaPesataStatistiche(OGGI, OGGI)).toBe("Ultima pesata oggi");
     expect(testoUltimaPesataStatistiche("2026-11-10", OGGI)).toBe("Ultima pesata ieri");
-    expect(testoUltimaPesataStatistiche("2026-11-09", OGGI)).toBe("Ultima pesata 9 nov, 2 giorni fa");
-    expect(testoUltimaPesataStatistiche("2025-12-30", "2026-01-02")).toBe("Ultima pesata 30 dic 2025, 3 giorni fa");
+    expect(testoUltimaPesataStatistiche("2026-11-09", OGGI)).toBe(
+      "Ultima pesata 9 nov, 2 giorni fa"
+    );
+    expect(testoUltimaPesataStatistiche("2025-12-30", "2026-01-02")).toBe(
+      "Ultima pesata 30 dic 2025, 3 giorni fa"
+    );
   });
 
   it("il valore accanto al punto: decimale solo se c'è, con la virgola", () => {

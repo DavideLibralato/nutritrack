@@ -34,7 +34,11 @@ import GruppoImpostazioni from "@/components/GruppoImpostazioni";
 import RigaImpostazioni from "@/components/RigaImpostazioni";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
-import { iscriviStatoGiri, leggiStatoGiri, leggiStatoGiriLatoServer } from "@/lib/sync/statoSincronizzazione";
+import {
+  iscriviStatoGiri,
+  leggiStatoGiri,
+  leggiStatoGiriLatoServer,
+} from "@/lib/sync/statoSincronizzazione";
 import { preparaEsportazione, type EsitoPreparazione } from "@/lib/esporta/preparaEsportazione";
 import { ambienteBrowser, type EsitoSalvataggio } from "@/lib/esporta/condividiFile";
 import { salvaCsv, salvaJson } from "@/lib/esporta/salvaEsportazione";
@@ -47,10 +51,7 @@ import {
   testoPeso,
 } from "@/lib/esporta/testiEsporta";
 
-type Preparazione =
-  | { fase: "attesa" }
-  | EsitoPreparazione
-  | { esito: "lettura-fallita" };
+type Preparazione = { fase: "attesa" } | EsitoPreparazione | { esito: "lettura-fallita" };
 
 // Il messaggio sopra il pulsante dopo un tentativo.
 type Messaggio = "errore" | "app-installata" | "non-supportato" | null;
@@ -89,22 +90,19 @@ export default function EsportaPage() {
     };
   }, [userId, chiaveRiprova]);
 
-  const dopoIlTentativo = useCallback(
-    (esito: EsitoSalvataggio) => {
-      if (esito.esito === "salvato") {
-        setMessaggio(null);
-        setSalvatoId(Date.now());
-      } else if (esito.esito === "annullato") {
-        // Niente: il foglio chiuso non cambia niente.
-      } else if (esito.esito === "errore") {
-        console.error(`Esporta: salvataggio non riuscito (${esito.nome}).`);
-        setMessaggio("errore");
-      } else {
-        setMessaggio(esito.motivo);
-      }
-    },
-    []
-  );
+  const dopoIlTentativo = useCallback((esito: EsitoSalvataggio) => {
+    if (esito.esito === "salvato") {
+      setMessaggio(null);
+      setSalvatoId(Date.now());
+    } else if (esito.esito === "annullato") {
+      // Niente: il foglio chiuso non cambia niente.
+    } else if (esito.esito === "errore") {
+      console.error(`Esporta: salvataggio non riuscito (${esito.nome}).`);
+      setMessaggio("errore");
+    } else {
+      setMessaggio(esito.motivo);
+    }
+  }, []);
 
   const pronti = "esito" in prep && prep.esito === "pronti" ? prep.file : null;
 
@@ -112,7 +110,9 @@ export default function EsportaPage() {
   // di salvaJson / salvaCsv.
   function esportaJson() {
     if (!pronti || !userId) return;
-    void salvaJson(ambienteBrowser(), userId, pronti.json.nome, pronti.json.testo).then(dopoIlTentativo);
+    void salvaJson(ambienteBrowser(), userId, pronti.json.nome, pronti.json.testo).then(
+      dopoIlTentativo
+    );
   }
   function esportaCsv() {
     if (!pronti) return;
@@ -127,7 +127,10 @@ export default function EsportaPage() {
     corpo = (
       <>
         <section className="flex flex-col items-center gap-2 rounded-[20px] border border-border bg-surface px-[18px] py-[22px] text-center">
-          <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-[var(--capsula-attiva)] text-accent">
+          <span
+            aria-hidden
+            className="flex size-12 items-center justify-center rounded-full bg-[var(--capsula-attiva)] text-accent"
+          >
             {nonScaricata ? <IconaNuvola /> : <IconaPersona />}
           </span>
           <h2 className="mt-1 font-display text-lg font-bold">
@@ -138,7 +141,9 @@ export default function EsportaPage() {
           </p>
           <button
             type="button"
-            onClick={() => router.push(nonScaricata ? "/impostazioni/sincronizzazione" : "/impostazioni/profilo")}
+            onClick={() =>
+              router.push(nonScaricata ? "/impostazioni/sincronizzazione" : "/impostazioni/profilo")
+            }
             className={`mt-2 min-h-[46px] w-full rounded-2xl border border-border bg-surface font-bold text-accent ${CLASSE_FOCUS}`}
           >
             {nonScaricata ? T.nonScaricataAzione : T.senzaProfiloAzione}
@@ -157,7 +162,12 @@ export default function EsportaPage() {
   } else {
     const conteggi = pronti ? conteggiRiepilogo(pronti.esportazione.dati) : null;
     const statoFoto = pronti ? pronti.esportazione.intestazione.foto : null;
-    const carica = <span aria-label="Caricamento" className="carica-esporta inline-block h-[0.9em] w-[3.2em] rounded-md" />;
+    const carica = (
+      <span
+        aria-label="Caricamento"
+        className="carica-esporta inline-block h-[0.9em] w-[3.2em] rounded-md"
+      />
+    );
     const valore = (v: ReactNode) => (conteggi ? v : carica);
     const diarioVuoto = conteggi !== null && pronti!.esportazione.dati.voci_diario.length === 0;
 
@@ -180,15 +190,33 @@ export default function EsportaPage() {
               conteggi && (
                 <span className="block text-right">
                   {conteggi.diario.numero}
-                  {conteggi.diario.periodo && <small className="block text-[13px]">{conteggi.diario.periodo}</small>}
+                  {conteggi.diario.periodo && (
+                    <small className="block text-[13px]">{conteggi.diario.periodo}</small>
+                  )}
                 </span>
               )
             )}
           />
-          <RigaImpostazioni etichetta="Alimenti" icona={<IconaAlimenti />} valore={valore(conteggi?.alimenti)} />
-          <RigaImpostazioni etichetta="Pasti salvati" icona={<IconaPasti />} valore={valore(conteggi?.pastiSalvati)} />
-          <RigaImpostazioni etichetta="Pesate" icona={<IconaPeso />} valore={valore(conteggi?.pesate)} />
-          <RigaImpostazioni etichetta="Obiettivi" icona={<IconaObiettivi />} valore={valore(conteggi?.obiettivi)} />
+          <RigaImpostazioni
+            etichetta="Alimenti"
+            icona={<IconaAlimenti />}
+            valore={valore(conteggi?.alimenti)}
+          />
+          <RigaImpostazioni
+            etichetta="Pasti salvati"
+            icona={<IconaPasti />}
+            valore={valore(conteggi?.pastiSalvati)}
+          />
+          <RigaImpostazioni
+            etichetta="Pesate"
+            icona={<IconaPeso />}
+            valore={valore(conteggi?.pesate)}
+          />
+          <RigaImpostazioni
+            etichetta="Obiettivi"
+            icona={<IconaObiettivi />}
+            valore={valore(conteggi?.obiettivi)}
+          />
           <RigaImpostazioni
             etichetta="Foto profilo"
             icona={<IconaFoto />}
@@ -219,12 +247,15 @@ export default function EsportaPage() {
               forte={T.installataForte}
               testo={
                 <>
-                  {T.installataPrima} <b className="select-all font-bold">{T.indirizzo}</b> {T.installataDopo}
+                  {T.installataPrima} <b className="select-all font-bold">{T.indirizzo}</b>{" "}
+                  {T.installataDopo}
                 </>
               }
             />
           )}
-          {messaggio === "non-supportato" && <Avviso forte={T.nonSupportatoForte} testo={T.nonSupportato} />}
+          {messaggio === "non-supportato" && (
+            <Avviso forte={T.nonSupportatoForte} testo={T.nonSupportato} />
+          )}
           <button
             type="button"
             onClick={esportaJson}
@@ -233,7 +264,10 @@ export default function EsportaPage() {
           >
             {!pronti ? (
               <>
-                <span aria-hidden className="giro-esporta size-[18px] rounded-full border-[2.5px]" />
+                <span
+                  aria-hidden
+                  className="giro-esporta size-[18px] rounded-full border-[2.5px]"
+                />
                 {T.preparo}
               </>
             ) : messaggio === "errore" ? (
@@ -270,7 +304,12 @@ export default function EsportaPage() {
       {/* Sopra la tab bar, come le barre delle altre pagine. */}
       {salvatoId !== null && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[var(--ingombro-tab-bar)] z-40 mx-auto max-w-md">
-          <BarraAnnulla key={salvatoId} testo={T.salvato} icona="spunta" onChiudi={() => setSalvatoId(null)} />
+          <BarraAnnulla
+            key={salvatoId}
+            testo={T.salvato}
+            icona="spunta"
+            onChiudi={() => setSalvatoId(null)}
+          />
         </div>
       )}
     </main>

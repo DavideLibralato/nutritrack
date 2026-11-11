@@ -61,8 +61,18 @@ async function dispositivo() {
   await db.pasti.bulkPut([suo, dellAltro]);
   await db.outbox.bulkPut([voceSua, voceInCoda(dellAltro, "2026-10-11T09:00:00.000Z")]);
   await db.sync_cursori.bulkPut([
-    { id: `pasti:${utente}`, tabella: "pasti", user_id: utente, ultimo_aggiornamento: suo.updated_at },
-    { id: `pasti:${altro}`, tabella: "pasti", user_id: altro, ultimo_aggiornamento: dellAltro.updated_at },
+    {
+      id: `pasti:${utente}`,
+      tabella: "pasti",
+      user_id: utente,
+      ultimo_aggiornamento: suo.updated_at,
+    },
+    {
+      id: `pasti:${altro}`,
+      tabella: "pasti",
+      user_id: altro,
+      ultimo_aggiornamento: dellAltro.updated_at,
+    },
   ]);
   return { utente, altro, voceSua };
 }
@@ -165,7 +175,12 @@ describe("riprendiUscitaInSospeso", () => {
 
   it("un segno illeggibile non cancella niente", async () => {
     const { utente } = await dispositivo();
-    for (const valore of ["non json", '{"idUtente":""}', `{"idUtente":"${utente}"}`, `{"idUtente":"${utente}","firme":[1]}`]) {
+    for (const valore of [
+      "non json",
+      '{"idUtente":""}',
+      `{"idUtente":"${utente}"}`,
+      `{"idUtente":"${utente}","firme":[1]}`,
+    ]) {
       localStorage.setItem(CHIAVE_USCITA, valore);
       expect(await riprendiUscitaInSospeso(async () => null)).toBe("niente");
     }

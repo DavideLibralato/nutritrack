@@ -15,17 +15,35 @@ import type { Pasto, VoceDiario } from "../db/tipi";
 
 function pasto(id: string, ora_inizio: string, altro: Partial<Pasto> = {}): Pasto {
   return {
-    id, nome: id, ora_inizio, ordine: 0, user_id: "u1",
-    updated_at: "2026-10-01T00:00:00.000Z", deleted_at: null, ...altro,
+    id,
+    nome: id,
+    ora_inizio,
+    ordine: 0,
+    user_id: "u1",
+    updated_at: "2026-10-01T00:00:00.000Z",
+    deleted_at: null,
+    ...altro,
   };
 }
 
 function voce(pasto_id: string | null, data: string, altro: Partial<VoceDiario> = {}): VoceDiario {
   return {
-    id: crypto.randomUUID(), user_id: "u1", updated_at: "2026-10-01T00:00:00.000Z", deleted_at: null,
-    alimento_id: "a1", pasto_id, gruppo_id: null, quantita_g: 100, data,
-    creato_il: "2026-10-01T00:00:00.000Z", consumato_alle: null,
-    nome_alimento: "Mela", kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.2,
+    id: crypto.randomUUID(),
+    user_id: "u1",
+    updated_at: "2026-10-01T00:00:00.000Z",
+    deleted_at: null,
+    alimento_id: "a1",
+    pasto_id,
+    gruppo_id: null,
+    quantita_g: 100,
+    data,
+    creato_il: "2026-10-01T00:00:00.000Z",
+    consumato_alle: null,
+    nome_alimento: "Mela",
+    kcal_100g: 52,
+    proteine_100g: 0.3,
+    carboidrati_100g: 14,
+    grassi_100g: 0.2,
     ...altro,
   };
 }
@@ -46,9 +64,21 @@ describe("pastoValidoIl", () => {
   });
 
   it("null vuol dire nessun limite da quella parte", () => {
-    expect(pastoValidoIl(pasto("p", "12:00", { valido_dal: null, valido_al: null }), "1990-01-01")).toBe(true);
-    expect(pastoValidoIl(pasto("p", "12:00", { valido_dal: "2026-10-05", valido_al: null }), "2099-12-31")).toBe(true);
-    expect(pastoValidoIl(pasto("p", "12:00", { valido_dal: null, valido_al: "2026-10-05" }), "1990-01-01")).toBe(true);
+    expect(
+      pastoValidoIl(pasto("p", "12:00", { valido_dal: null, valido_al: null }), "1990-01-01")
+    ).toBe(true);
+    expect(
+      pastoValidoIl(
+        pasto("p", "12:00", { valido_dal: "2026-10-05", valido_al: null }),
+        "2099-12-31"
+      )
+    ).toBe(true);
+    expect(
+      pastoValidoIl(
+        pasto("p", "12:00", { valido_dal: null, valido_al: "2026-10-05" }),
+        "1990-01-01"
+      )
+    ).toBe(true);
   });
 
   it("una riga salvata prima di Dexie version(6), senza le due chiavi, vale sempre", () => {
@@ -58,7 +88,9 @@ describe("pastoValidoIl", () => {
   });
 
   it("una riga cancellata non vale mai, nemmeno dentro il suo periodo", () => {
-    expect(pastoValidoIl(pasto("p", "12:00", { deleted_at: "2026-10-01T00:00:00.000Z" }), "2026-10-09")).toBe(false);
+    expect(
+      pastoValidoIl(pasto("p", "12:00", { deleted_at: "2026-10-01T00:00:00.000Z" }), "2026-10-09")
+    ).toBe(false);
   });
 });
 
@@ -70,7 +102,12 @@ describe("pastiValidiIl e ordinaPerOrario", () => {
       pasto("Pranzo", "12:30:00", { ordine: 1 }),
       pasto("Spuntino", "10:00", { ordine: 2 }),
     ];
-    expect(nomi(pastiValidiIl(pasti, "2026-10-09"))).toEqual(["Colazione", "Spuntino", "Pranzo", "Cena"]);
+    expect(nomi(pastiValidiIl(pasti, "2026-10-09"))).toEqual([
+      "Colazione",
+      "Spuntino",
+      "Pranzo",
+      "Cena",
+    ]);
   });
 
   it("stessa ora scritta in due formati: è la stessa ora, decide `ordine`, poi `id`", () => {
@@ -133,7 +170,9 @@ describe("pastiDaMostrare (rete di sicurezza)", () => {
   });
 
   it("un pasto valido compare una volta sola, anche con le voci", () => {
-    expect(nomi(pastiDaMostrare(pasti, [voce("Colazione", GIORNO)], GIORNO))).toEqual(["Colazione"]);
+    expect(nomi(pastiDaMostrare(pasti, [voce("Colazione", GIORNO)], GIORNO))).toEqual([
+      "Colazione",
+    ]);
   });
 });
 

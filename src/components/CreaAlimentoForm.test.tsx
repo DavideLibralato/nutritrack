@@ -142,10 +142,7 @@ describe("CreaAlimentoForm da un codice a barre", () => {
     kcalDaKj: false,
   };
 
-  function apri(daCodice: {
-    barcode: string;
-    prodotto: ProdottoOpenFoodFacts | null;
-  }) {
+  function apri(daCodice: { barcode: string; prodotto: ProdottoOpenFoodFacts | null }) {
     const onCreato = vi.fn();
     render(
       <CreaAlimentoForm
@@ -275,7 +272,8 @@ describe("CreaAlimentoForm da un codice a barre", () => {
     expect(screen.getByLabelText("Codice a barre").getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByLabelText("Nome").getAttribute("aria-invalid")).toBe("false");
     expect(
-      (screen.getByRole("button", { name: "Crea e scegli la quantità" }) as HTMLButtonElement).disabled
+      (screen.getByRole("button", { name: "Crea e scegli la quantità" }) as HTMLButtonElement)
+        .disabled
     ).toBe(true);
   });
 
@@ -382,7 +380,9 @@ describe("CreaAlimentoForm, il codice in modifica", () => {
     leggiCodice("036000291452");
 
     expect(screen.queryByRole("dialog", { name: "Scansione del codice a barre" })).toBeNull();
-    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe("0036000291452");
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(
+      "0036000291452"
+    );
     expect(screen.getByRole("button", { name: "Togli il codice" })).toBeTruthy();
     expect(screen.getByText("Una volta salvato, il codice non si cambia più.")).toBeTruthy();
     expect(salvaAlimento).not.toHaveBeenCalled();
@@ -408,7 +408,13 @@ describe("CreaAlimentoForm, il codice in modifica", () => {
   });
 
   it("codice già di un altro alimento: messaggio sotto il codice con «Apri «Ketchips»», e Salva spento", () => {
-    const ketchips = { ...MELA, id: "ketchips", nome: "Ketchips", marca: "Amica Chips", barcode: KETCHIPS };
+    const ketchips = {
+      ...MELA,
+      id: "ketchips",
+      nome: "Ketchips",
+      marca: "Amica Chips",
+      barcode: KETCHIPS,
+    };
     finto.catalogo = [ketchips, SAN_CARLO];
     const { onApriEsistente } = apriModifica(SAN_CARLO, true);
 

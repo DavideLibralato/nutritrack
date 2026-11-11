@@ -99,9 +99,7 @@ const seedInCorso = new Map<string, Promise<EsitoPastiPredefiniti>>();
 //
 // L'id resta deterministico (idPastoPredefinito): due dispositivi nuovi che
 // trovano il server vuoto nello stesso momento producono le stesse righe.
-export function garantisciPastiPredefiniti(
-  userId: string
-): Promise<EsitoPastiPredefiniti> {
+export function garantisciPastiPredefiniti(userId: string): Promise<EsitoPastiPredefiniti> {
   const inCorso = seedInCorso.get(userId);
   if (inCorso) return inCorso;
 

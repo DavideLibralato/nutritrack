@@ -27,11 +27,7 @@
 // Ordine delle scritture: profili → obiettivi → obiettivi_target (un target
 // ha bisogno del suo periodo, non il contrario).
 
-import {
-  repositoryProfili,
-  repositoryObiettivi,
-  repositoryObiettiviTarget,
-} from "../repository";
+import { repositoryProfili, repositoryObiettivi, repositoryObiettiviTarget } from "../repository";
 import { salvaTarget, targetPerTipo } from "../repository/obiettiviTarget";
 import { giornoSuccessivo } from "../dataGiorno";
 import { periodoInCorso } from "../totaliDiario";
@@ -124,19 +120,26 @@ export function valoriDaDati(
   // Il target "normale" si legge dalla sua riga in obiettivi_target (è
   // quella che usa Oggi); le colonne sulla riga di obiettivi restano il
   // ripiego per un periodo a cui la riga mancasse.
-  const targetNormale = normale ? targetDaRiga(normale) : periodo ? targetDaRiga(periodo) : TARGET_VUOTO;
+  const targetNormale = normale
+    ? targetDaRiga(normale)
+    : periodo
+      ? targetDaRiga(periodo)
+      : TARGET_VUOTO;
 
   return {
     datiPersonali: {
       sesso: profilo?.sesso ?? "non_indicato",
       dataNascita: profilo?.data_nascita ?? "",
-      altezzaCm: profilo?.altezza_cm != null ? numeroPerCampo(profilo.altezza_cm, DECIMALI_CM_KG) : "",
+      altezzaCm:
+        profilo?.altezza_cm != null ? numeroPerCampo(profilo.altezza_cm, DECIMALI_CM_KG) : "",
       livelloAttivita: profilo?.livello_attivita ?? "",
     },
     obiettivo: {
       tipo: periodo?.tipo ?? "mantenere",
       pesoObiettivo:
-        periodo?.peso_obiettivo != null ? numeroPerCampo(periodo.peso_obiettivo, DECIMALI_CM_KG) : "",
+        periodo?.peso_obiettivo != null
+          ? numeroPerCampo(periodo.peso_obiettivo, DECIMALI_CM_KG)
+          : "",
       target: targetNormale,
     },
     giorni: {
@@ -281,9 +284,7 @@ export function limitiDataInizio(
   return min <= giornoCorrente ? { min, max: giornoCorrente } : null;
 }
 
-export type SceltaPeriodo =
-  | { tipo: "nuovo"; validoDal: string }
-  | { tipo: "correzione" };
+export type SceltaPeriodo = { tipo: "nuovo"; validoDal: string } | { tipo: "correzione" };
 
 // --- Validazione ----------------------------------------------------------
 

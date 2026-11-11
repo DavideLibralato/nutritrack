@@ -106,7 +106,11 @@ describe("tipoGiornoEffettivo — la riga scritta vince sempre", () => {
 
   it("una riga cancellata logicamente non conta come scritta", () => {
     const righe = [
-      giorno({ data: "2026-09-09", tipo_giorno: TIPO_GIORNO_ALLENAMENTO, deleted_at: "2026-09-09T10:00:00.000Z" }),
+      giorno({
+        data: "2026-09-09",
+        tipo_giorno: TIPO_GIORNO_ALLENAMENTO,
+        deleted_at: "2026-09-09T10:00:00.000Z",
+      }),
     ];
     expect(tipoGiornoEffettivo(righe, profilo(), "2026-09-09")).toBe(TIPO_GIORNO_NORMALE);
   });
@@ -114,7 +118,10 @@ describe("tipoGiornoEffettivo — la riga scritta vince sempre", () => {
 
 describe("giornoScritto", () => {
   it("trova la riga viva per la data richiesta, ignorando le altre date", () => {
-    const righe = [giorno({ data: "2026-09-08" }), giorno({ data: "2026-09-09", tipo_giorno: TIPO_GIORNO_ALLENAMENTO })];
+    const righe = [
+      giorno({ data: "2026-09-08" }),
+      giorno({ data: "2026-09-09", tipo_giorno: TIPO_GIORNO_ALLENAMENTO }),
+    ];
     expect(giornoScritto(righe, "2026-09-09")?.tipo_giorno).toBe(TIPO_GIORNO_ALLENAMENTO);
     expect(giornoScritto(righe, "2026-09-10")).toBeNull();
   });
@@ -134,7 +141,11 @@ vi.mock("../supabase/client", () => ({
 describe("garantisciGiornoPerPrimaVoce", () => {
   it("non scrive nulla se la differenziazione non è attiva", async () => {
     const userId = `utente-${crypto.randomUUID()}`;
-    await garantisciGiornoPerPrimaVoce(userId, "2026-09-09", profilo({ differenzia_giorni: false }));
+    await garantisciGiornoPerPrimaVoce(
+      userId,
+      "2026-09-09",
+      profilo({ differenzia_giorni: false })
+    );
     expect(await repositoryGiorni.ottieniTutti(userId)).toHaveLength(0);
   });
 

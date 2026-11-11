@@ -116,18 +116,8 @@ describe("ordinaCatalogo", () => {
   });
 
   it("A → Z e Z → A ignorano gli usi", () => {
-    expect(nomi(ordinaCatalogo(catalogo, usi, "a-z"))).toEqual([
-      "Avena",
-      "Banana",
-      "Pane",
-      "Uova",
-    ]);
-    expect(nomi(ordinaCatalogo(catalogo, usi, "z-a"))).toEqual([
-      "Uova",
-      "Pane",
-      "Banana",
-      "Avena",
-    ]);
+    expect(nomi(ordinaCatalogo(catalogo, usi, "a-z"))).toEqual(["Avena", "Banana", "Pane", "Uova"]);
+    expect(nomi(ordinaCatalogo(catalogo, usi, "z-a"))).toEqual(["Uova", "Pane", "Banana", "Avena"]);
   });
 
   it("ordine alfabetico italiano: maiuscole e accenti non finiscono in fondo", () => {

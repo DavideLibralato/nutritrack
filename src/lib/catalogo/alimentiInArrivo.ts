@@ -123,10 +123,7 @@ export function righeConfronto(mio: ValoriAlimento, inArrivo: ValoriAlimento): R
     inArrivo: inArrivo[campo],
     diverso: !valoreUguale(mio[campo], inArrivo[campo]),
   });
-  return [
-    ...CAMPI_SEMPRE.map(riga),
-    ...CAMPI_SE_DIVERSI.map(riga).filter((r) => r.diverso),
-  ];
+  return [...CAMPI_SEMPRE.map(riga), ...CAMPI_SE_DIVERSI.map(riga).filter((r) => r.diverso)];
 }
 
 export type ConfrontoInArrivo =

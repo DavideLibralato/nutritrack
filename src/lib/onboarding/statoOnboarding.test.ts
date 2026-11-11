@@ -127,7 +127,9 @@ describe("primoPassoDaFare e cosaManca", () => {
   });
 
   it("un obiettivo cancellato non conta", () => {
-    expect(primoPassoDaFare(profilo(), [misurazione()], [obiettivo({ deleted_at: CANCELLATO })])).toBe(4);
+    expect(
+      primoPassoDaFare(profilo(), [misurazione()], [obiettivo({ deleted_at: CANCELLATO })])
+    ).toBe(4);
   });
 });
 
@@ -299,13 +301,22 @@ describe("decidiRipresa", () => {
 
   it("chiave locale diversa dai metadati: si manda la chiave", () => {
     expect(decidiRipresa("da_fare", "fatto", null)).toEqual({ manda: "fatto", togliLocale: false });
-    expect(decidiRipresa("da_fare", "rimandato", null)).toEqual({ manda: "rimandato", togliLocale: false });
-    expect(decidiRipresa("rimandato", "fatto", false)).toEqual({ manda: "fatto", togliLocale: false });
+    expect(decidiRipresa("da_fare", "rimandato", null)).toEqual({
+      manda: "rimandato",
+      togliLocale: false,
+    });
+    expect(decidiRipresa("rimandato", "fatto", false)).toEqual({
+      manda: "fatto",
+      togliLocale: false,
+    });
   });
 
   it("chiave locale uguale ai metadati: si toglie, niente da mandare", () => {
     expect(decidiRipresa("fatto", "fatto", null)).toEqual({ manda: null, togliLocale: true });
-    expect(decidiRipresa("rimandato", "rimandato", false)).toEqual({ manda: null, togliLocale: true });
+    expect(decidiRipresa("rimandato", "rimandato", false)).toEqual({
+      manda: null,
+      togliLocale: true,
+    });
   });
 
   it("«rimandato» in locale con «fatto» sul server: si toglie senza mandarlo", () => {

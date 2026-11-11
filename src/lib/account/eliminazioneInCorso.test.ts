@@ -10,7 +10,11 @@
 // - un segno illeggibile non cancella niente.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AuthApiError, AuthRetryableFetchError, AuthSessionMissingError } from "@supabase/supabase-js";
+import {
+  AuthApiError,
+  AuthRetryableFetchError,
+  AuthSessionMissingError,
+} from "@supabase/supabase-js";
 import { db } from "../db/database";
 import type { Pasto } from "../db/tipi";
 import { cancellaDatiUtente } from "../sync/ripristino";
@@ -123,7 +127,9 @@ describe("riprendiEliminazioneInSospeso, con la sessione ancora salvata (dal 26/
     scriviSegnoEliminazione(utente, "confermata");
     const azioni = azioniFinte(utente, true);
 
-    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioni)).toBe("sessione-rimasta");
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioni)).toBe(
+      "sessione-rimasta"
+    );
     expect(await pastiDi(utente)).toHaveLength(0);
     expect(azioni.naviga).not.toHaveBeenCalled();
     expect(leggiSegnoEliminazione()).toEqual({ idUtente: utente, fase: "confermata" });
@@ -147,7 +153,9 @@ describe("riprendiEliminazioneInSospeso, con la sessione ancora salvata (dal 26/
       await db.pasti.put(pasto(utente, "Riga scritta tardi dalla discesa"));
     };
 
-    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioniFinte(null))).toBe("pulito");
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioniFinte(null))).toBe(
+      "pulito"
+    );
     expect(await pastiDi(utente)).toHaveLength(0);
   });
 });
@@ -204,7 +212,9 @@ describe("riprendiEliminazioneInSospeso", () => {
     const { utente } = await dispositivo();
     scriviSegnoEliminazione(utente, "richiesta");
 
-    expect(await riprendiEliminazioneInSospeso(async () => "esiste", azioniFinte(null))).toBe("annullato");
+    expect(await riprendiEliminazioneInSospeso(async () => "esiste", azioniFinte(null))).toBe(
+      "annullato"
+    );
     expect(await pastiDi(utente)).toHaveLength(1);
     expect(leggiSegnoEliminazione()).toBeNull();
   });
@@ -213,7 +223,9 @@ describe("riprendiEliminazioneInSospeso", () => {
     const { utente } = await dispositivo();
     scriviSegnoEliminazione(utente, "richiesta");
 
-    expect(await riprendiEliminazioneInSospeso(async () => "sconosciuto", azioniFinte(null))).toBe("in-attesa");
+    expect(await riprendiEliminazioneInSospeso(async () => "sconosciuto", azioniFinte(null))).toBe(
+      "in-attesa"
+    );
     expect(await pastiDi(utente)).toHaveLength(1);
     expect(leggiSegnoEliminazione()).toEqual({ idUtente: utente, fase: "richiesta" });
   });
@@ -234,7 +246,9 @@ describe("riprendiEliminazioneInSospeso", () => {
     const { utente } = await dispositivo();
     localStorage.setItem(CHIAVE_ELIMINAZIONE, JSON.stringify({ idUtente: utente, fase: "boh" }));
 
-    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioniFinte(null))).toBe("niente");
+    expect(await riprendiEliminazioneInSospeso(async () => "non-esiste", azioniFinte(null))).toBe(
+      "niente"
+    );
     expect(await pastiDi(utente)).toHaveLength(1);
   });
 });
@@ -243,7 +257,11 @@ describe("classificaVerificaUtente", () => {
   const id = "utente-1";
 
   it("utente non trovato dal server → non-esiste", () => {
-    const errore = new AuthApiError("User from sub claim in JWT does not exist", 403, "user_not_found");
+    const errore = new AuthApiError(
+      "User from sub claim in JWT does not exist",
+      403,
+      "user_not_found"
+    );
     expect(classificaVerificaUtente(id, null, errore)).toBe("non-esiste");
   });
 
@@ -256,15 +274,19 @@ describe("classificaVerificaUtente", () => {
   });
 
   it("rete, sessione mancante, sessione rifiutata per altri motivi → sconosciuto", () => {
-    expect(classificaVerificaUtente(id, null, new AuthRetryableFetchError("Failed to fetch", 0))).toBe(
-      "sconosciuto"
-    );
-    expect(classificaVerificaUtente(id, null, new AuthSessionMissingError())).toBe("sconosciuto");
-    expect(classificaVerificaUtente(id, null, new AuthApiError("JWT expired", 401, "bad_jwt"))).toBe(
-      "sconosciuto"
-    );
     expect(
-      classificaVerificaUtente(id, null, new AuthApiError("Session not found", 403, "session_not_found"))
+      classificaVerificaUtente(id, null, new AuthRetryableFetchError("Failed to fetch", 0))
+    ).toBe("sconosciuto");
+    expect(classificaVerificaUtente(id, null, new AuthSessionMissingError())).toBe("sconosciuto");
+    expect(
+      classificaVerificaUtente(id, null, new AuthApiError("JWT expired", 401, "bad_jwt"))
+    ).toBe("sconosciuto");
+    expect(
+      classificaVerificaUtente(
+        id,
+        null,
+        new AuthApiError("Session not found", 403, "session_not_found")
+      )
     ).toBe("sconosciuto");
   });
 });

@@ -142,7 +142,11 @@ export default function SchedaCatalogo({
       </div>
 
       {/* I filtri scorrono in orizzontale, fino al bordo dello schermo. */}
-      <div role="group" aria-label="Categoria" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+      <div
+        role="group"
+        aria-label="Categoria"
+        className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
+      >
         {[null, ...CATEGORIE].map((c) => {
           const attivo = c === categoria;
           return (
@@ -155,7 +159,9 @@ export default function SchedaCatalogo({
             >
               <span
                 className={`flex h-[34px] items-center whitespace-nowrap rounded-full border px-3.5 text-sm ${
-                  attivo ? "border-foreground bg-foreground text-background" : "border-border text-foreground"
+                  attivo
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-foreground"
                 }`}
               >
                 {c ?? "Tutti"}
@@ -253,7 +259,18 @@ export default function SchedaCatalogo({
 
 function Lente({ className }: { className?: string }) {
   return (
-    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
     </svg>
@@ -262,7 +279,17 @@ function Lente({ className }: { className?: string }) {
 
 function Croce() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="M18 6 6 18M6 6l12 12" />
     </svg>
   );

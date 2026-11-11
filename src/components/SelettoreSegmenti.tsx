@@ -58,9 +58,7 @@ export default function SelettoreSegmenti<T extends string>({
             {s.conteggio !== undefined && (
               <span className="text-[13px] font-normal tabular-nums text-muted">{s.conteggio}</span>
             )}
-            {s.pallino && (
-              <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
-            )}
+            {s.pallino && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />}
             {s.pallino && <span className="sr-only">(modificato)</span>}
           </button>
         );

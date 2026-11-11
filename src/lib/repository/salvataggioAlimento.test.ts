@@ -255,11 +255,21 @@ describe("salvaAlimento in Modifica con un codice da aggiungere", () => {
 
   it("il codice è già di un altro alimento vivo: doppione, niente scritto", async () => {
     await db.alimenti.bulkPut([
-      { ...arrivatoDallaSync("ketchips", "Ketchips", "Amica Chips"), barcode: KETCHIPS, fonte: "off" },
+      {
+        ...arrivatoDallaSync("ketchips", "Ketchips", "Amica Chips"),
+        barcode: KETCHIPS,
+        fonte: "off",
+      },
       arrivatoDallaSync("patatine", "Patatine", null),
     ]);
 
-    const esito = await salvaAlimento(USER, campi("Patatine fritte"), "patatine", undefined, KETCHIPS);
+    const esito = await salvaAlimento(
+      USER,
+      campi("Patatine fritte"),
+      "patatine",
+      undefined,
+      KETCHIPS
+    );
 
     expect(esito).toMatchObject({ esito: "doppione", doppione: { id: "ketchips" } });
     expect(await db.alimenti.get("patatine")).toMatchObject({ nome: "Patatine", barcode: null });
@@ -269,28 +279,61 @@ describe("salvaAlimento in Modifica con un codice da aggiungere", () => {
   it("intanto la riga ha ricevuto un altro codice (sync): non si sovrascrive, niente scritto", async () => {
     // Il form aveva letto la riga senza codice; poi arriva dalla sync la
     // stessa riga con un codice messo da un altro telefono.
-    await db.alimenti.put({ ...arrivatoDallaSync("patatine", "Patatine", null), barcode: KETCHIPS });
+    await db.alimenti.put({
+      ...arrivatoDallaSync("patatine", "Patatine", null),
+      barcode: KETCHIPS,
+    });
 
-    const esito = await salvaAlimento(USER, campi("Patatine fritte"), "patatine", undefined, PATATINE);
+    const esito = await salvaAlimento(
+      USER,
+      campi("Patatine fritte"),
+      "patatine",
+      undefined,
+      PATATINE
+    );
 
     expect(esito).toEqual({ esito: "ha-gia-codice", barcode: KETCHIPS });
-    expect(await db.alimenti.get("patatine")).toMatchObject({ nome: "Patatine", barcode: KETCHIPS });
+    expect(await db.alimenti.get("patatine")).toMatchObject({
+      nome: "Patatine",
+      barcode: KETCHIPS,
+    });
     expect(await db.outbox.count()).toBe(0);
   });
 
   it("intanto la riga ha ricevuto lo stesso codice: si salva normalmente", async () => {
-    await db.alimenti.put({ ...arrivatoDallaSync("patatine", "Patatine", null), barcode: PATATINE });
+    await db.alimenti.put({
+      ...arrivatoDallaSync("patatine", "Patatine", null),
+      barcode: PATATINE,
+    });
 
-    const esito = await salvaAlimento(USER, campi("Patatine fritte"), "patatine", undefined, PATATINE);
+    const esito = await salvaAlimento(
+      USER,
+      campi("Patatine fritte"),
+      "patatine",
+      undefined,
+      PATATINE
+    );
 
     expect(esito.esito).toBe("salvato");
-    expect(await db.alimenti.get("patatine")).toMatchObject({ nome: "Patatine fritte", barcode: PATATINE });
+    expect(await db.alimenti.get("patatine")).toMatchObject({
+      nome: "Patatine fritte",
+      barcode: PATATINE,
+    });
   });
 
   it("un alimento cancellato o del catalogo comune con lo stesso codice non blocca", async () => {
     await db.alimenti.bulkPut([
-      { ...arrivatoDallaSync("cancellato", "Ketchips", null), barcode: KETCHIPS, deleted_at: "2026-11-01T00:00:00.000Z" },
-      { ...arrivatoDallaSync("comune", "Ketchips", null), barcode: PATATINE, user_id: null, verificato: true },
+      {
+        ...arrivatoDallaSync("cancellato", "Ketchips", null),
+        barcode: KETCHIPS,
+        deleted_at: "2026-11-01T00:00:00.000Z",
+      },
+      {
+        ...arrivatoDallaSync("comune", "Ketchips", null),
+        barcode: PATATINE,
+        user_id: null,
+        verificato: true,
+      },
       arrivatoDallaSync("a", "A", null),
       arrivatoDallaSync("b", "B", null),
     ]);

@@ -56,13 +56,17 @@ describe("daOpenFoodFacts", () => {
     expect(daOpenFoodFacts({ product_name: "Cookies", product_name_it: "Biscotti" }).nome).toBe(
       "Biscotti"
     );
-    expect(daOpenFoodFacts({ product_name: "Cookies", product_name_it: "  " }).nome).toBe("Cookies");
+    expect(daOpenFoodFacts({ product_name: "Cookies", product_name_it: "  " }).nome).toBe(
+      "Cookies"
+    );
     expect(daOpenFoodFacts({ product_name: "Cookies" }).nome).toBe("Cookies");
     expect(daOpenFoodFacts({}).nome).toBe("");
   });
 
   it("la marca è la prima non vuota dell'elenco, null se non c'è", () => {
-    expect(daOpenFoodFacts({ brands: " ,  Mulino   Bianco , Barilla" }).marca).toBe("Mulino Bianco");
+    expect(daOpenFoodFacts({ brands: " ,  Mulino   Bianco , Barilla" }).marca).toBe(
+      "Mulino Bianco"
+    );
     expect(daOpenFoodFacts({ brands: "" }).marca).toBeNull();
     expect(daOpenFoodFacts({}).marca).toBeNull();
   });

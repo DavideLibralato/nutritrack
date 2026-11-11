@@ -40,7 +40,12 @@ vi.mock("@/lib/supabase/useUtente", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: navigazione.push, replace: navigazione.replace, refresh: () => {}, back: () => {} }),
+  useRouter: () => ({
+    push: navigazione.push,
+    replace: navigazione.replace,
+    refresh: () => {},
+    back: () => {},
+  }),
   useSearchParams: () => parametri,
 }));
 
@@ -87,11 +92,39 @@ afterEach(cleanup);
 async function preparaPasti() {
   const oggi = oggiLocale();
   const ieri = giornoPrecedente(oggi);
-  await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
-  await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 1 });
-  await repositoryPasti.crea({ user_id: utenteTest, nome: "Cena vecchia", ora_inizio: "19:00", ordine: 2, valido_al: ieri });
-  await repositoryPasti.crea({ user_id: utenteTest, nome: "Cena", ora_inizio: "20:00", ordine: 3, valido_dal: oggi });
-  await repositoryPasti.crea({ user_id: utenteTest, nome: "Merenda di domani", ora_inizio: "16:00", ordine: 4, valido_dal: giornoSuccessivo(oggi) });
+  await repositoryPasti.crea({
+    user_id: utenteTest,
+    nome: "Pranzo",
+    ora_inizio: "12:30",
+    ordine: 0,
+  });
+  await repositoryPasti.crea({
+    user_id: utenteTest,
+    nome: "Colazione",
+    ora_inizio: "07:00",
+    ordine: 1,
+  });
+  await repositoryPasti.crea({
+    user_id: utenteTest,
+    nome: "Cena vecchia",
+    ora_inizio: "19:00",
+    ordine: 2,
+    valido_al: ieri,
+  });
+  await repositoryPasti.crea({
+    user_id: utenteTest,
+    nome: "Cena",
+    ora_inizio: "20:00",
+    ordine: 3,
+    valido_dal: oggi,
+  });
+  await repositoryPasti.crea({
+    user_id: utenteTest,
+    nome: "Merenda di domani",
+    ora_inizio: "16:00",
+    ordine: 4,
+    valido_dal: giornoSuccessivo(oggi),
+  });
   return { oggi, ieri };
 }
 
@@ -121,7 +154,13 @@ describe("Aggiungi: i pasti del giorno in cui si registra", () => {
 
   it("un giorno prima di tutti i pasti: «Nessun pasto in questo giorno.», non «Preparo…»", async () => {
     const oggi = oggiLocale();
-    await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0, valido_dal: oggi });
+    await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      ora_inizio: "07:00",
+      ordine: 0,
+      valido_dal: oggi,
+    });
     parametri = new URLSearchParams({ giorno: giornoPrecedente(oggi) });
     render(<AggiungiPage />);
     expect(await screen.findByText("Nessun pasto in questo giorno.")).toBeTruthy();
@@ -151,18 +190,41 @@ describe("Aggiungi: un giorno futuro, fino a oggi + 7", () => {
   it("dopodomani: i pasti di quel giorno, il primo vuoto proposto, la voce senza ora del consumo", async () => {
     alleTredici();
     const { ieri } = await preparaPasti();
-    const colazione = (await repositoryPasti.ottieniTutti(utenteTest)).find((p) => p.nome === "Colazione")!;
+    const colazione = (await repositoryPasti.ottieniTutti(utenteTest)).find(
+      (p) => p.nome === "Colazione"
+    )!;
     const mela = await repositoryAlimenti.crea({
-      user_id: utenteTest, nome: "Mela", marca: null, barcode: null,
-      kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.2,
-      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-      porzione_default_g: 150, fonte: "manuale", verificato: false,
+      user_id: utenteTest,
+      nome: "Mela",
+      marca: null,
+      barcode: null,
+      kcal_100g: 52,
+      proteine_100g: 0.3,
+      carboidrati_100g: 14,
+      grassi_100g: 0.2,
+      zuccheri_100g: null,
+      fibre_100g: null,
+      saturi_100g: null,
+      sale_100g: null,
+      porzione_default_g: 150,
+      fonte: "manuale",
+      verificato: false,
     });
     // Una voce di ieri: così la Mela è fra i Recenti, con il suo "+".
     await repositoryVociDiario.crea({
-      user_id: utenteTest, alimento_id: mela.id, pasto_id: colazione.id, gruppo_id: null,
-      quantita_g: 150, data: ieri, creato_il: new Date().toISOString(), consumato_alle: null,
-      nome_alimento: "Mela", kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.2,
+      user_id: utenteTest,
+      alimento_id: mela.id,
+      pasto_id: colazione.id,
+      gruppo_id: null,
+      quantita_g: 150,
+      data: ieri,
+      creato_il: new Date().toISOString(),
+      consumato_alle: null,
+      nome_alimento: "Mela",
+      kcal_100g: 52,
+      proteine_100g: 0.3,
+      carboidrati_100g: 14,
+      grassi_100g: 0.2,
     });
 
     const dopodomani = traGiorni(2);
@@ -174,7 +236,9 @@ describe("Aggiungi: un giorno futuro, fino a oggi + 7", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Aggiungi Mela, 150 g" }));
     await waitFor(async () => {
-      const voci = (await repositoryVociDiario.ottieniTutti(utenteTest)).filter((v) => v.data === dopodomani);
+      const voci = (await repositoryVociDiario.ottieniTutti(utenteTest)).filter(
+        (v) => v.data === dopodomani
+      );
       expect(voci).toHaveLength(1);
       expect(voci[0].pasto_id).toBe(colazione.id);
       expect(voci[0].consumato_alle).toBeNull();
@@ -196,24 +260,49 @@ describe("Aggiungi: un giorno futuro, fino a oggi + 7", () => {
 
 // Un solo pasto, valido sempre: è quello proposto a qualunque ora.
 async function preparaPranzo() {
-  return repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+  return repositoryPasti.crea({
+    user_id: utenteTest,
+    nome: "Pranzo",
+    ora_inizio: "12:30",
+    ordine: 0,
+  });
 }
 
 function creaAlimento(nome: string, kcal: number): Promise<Alimento> {
   return repositoryAlimenti.crea({
-    user_id: utenteTest, nome, marca: null, barcode: null,
-    kcal_100g: kcal, proteine_100g: 1, carboidrati_100g: 10, grassi_100g: 1,
-    zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-    porzione_default_g: 100, fonte: "manuale", verificato: false,
+    user_id: utenteTest,
+    nome,
+    marca: null,
+    barcode: null,
+    kcal_100g: kcal,
+    proteine_100g: 1,
+    carboidrati_100g: 10,
+    grassi_100g: 1,
+    zuccheri_100g: null,
+    fibre_100g: null,
+    saturi_100g: null,
+    sale_100g: null,
+    porzione_default_g: 100,
+    fonte: "manuale",
+    verificato: false,
   });
 }
 
 function creaVoce(alimento: Alimento, pastoId: string, data: string, grammi: number) {
   return repositoryVociDiario.crea({
-    user_id: utenteTest, alimento_id: alimento.id, pasto_id: pastoId, gruppo_id: null,
-    quantita_g: grammi, data, creato_il: new Date().toISOString(), consumato_alle: null,
-    nome_alimento: alimento.nome, kcal_100g: alimento.kcal_100g, proteine_100g: 1,
-    carboidrati_100g: 10, grassi_100g: 1,
+    user_id: utenteTest,
+    alimento_id: alimento.id,
+    pasto_id: pastoId,
+    gruppo_id: null,
+    quantita_g: grammi,
+    data,
+    creato_il: new Date().toISOString(),
+    consumato_alle: null,
+    nome_alimento: alimento.nome,
+    kcal_100g: alimento.kcal_100g,
+    proteine_100g: 1,
+    carboidrati_100g: 10,
+    grassi_100g: 1,
   });
 }
 
@@ -279,11 +368,17 @@ describe("Aggiungi: doppioni e aggiunta in corso", () => {
     expect(await vociDiOggi()).toHaveLength(1);
 
     fireEvent.click(within(foglio).getByRole("button", { name: "Aggiungi" }));
-    await waitFor(() => expect(navigazione.replace).toHaveBeenCalledWith(`/?giorno=${oggiLocale()}`));
+    await waitFor(() =>
+      expect(navigazione.replace).toHaveBeenCalledWith(`/?giorno=${oggiLocale()}`)
+    );
     const voci = await vociDiOggi();
     expect(voci).toHaveLength(1);
     expect(voci[0].quantita_g).toBe(200);
-    expect(prendiInserimento()?.messaggio).toMatchObject({ testo: "Sommato:", nome: "Mela", coda: "→ 200 g" });
+    expect(prendiInserimento()?.messaggio).toMatchObject({
+      testo: "Sommato:",
+      nome: "Mela",
+      coda: "→ 200 g",
+    });
   });
 
   // Caso 5 dei "doppioni rimasti" (18/10) sul percorso della prova 14 su
@@ -304,14 +399,22 @@ describe("Aggiungi: doppioni e aggiunta in corso", () => {
     fireEvent.click(within(sheet).getByRole("button", { name: "Aggiungi" }));
 
     const foglio = await screen.findByRole("dialog", { name: "«Pane» c'è già in «Pranzo»" });
-    const somma = within(foglio).getByRole("radio", { name: "Somma (100.000 g)" }) as HTMLButtonElement;
+    const somma = within(foglio).getByRole("radio", {
+      name: "Somma (100.000 g)",
+    }) as HTMLButtonElement;
     expect(somma.disabled).toBe(true);
-    expect(within(foglio).getByRole("radio", { name: "Tieni separati" }).getAttribute("aria-checked")).toBe("true");
-    expect(within(foglio).getByText("La somma supera 99999,99 g: scegli un'altra opzione.")).toBeTruthy();
+    expect(
+      within(foglio).getByRole("radio", { name: "Tieni separati" }).getAttribute("aria-checked")
+    ).toBe("true");
+    expect(
+      within(foglio).getByText("La somma supera 99999,99 g: scegli un'altra opzione.")
+    ).toBeTruthy();
     expect(await vociDiOggi()).toHaveLength(1);
 
     fireEvent.click(within(foglio).getByRole("button", { name: "Aggiungi" }));
-    await waitFor(() => expect(navigazione.replace).toHaveBeenCalledWith(`/?giorno=${oggiLocale()}`));
+    await waitFor(() =>
+      expect(navigazione.replace).toHaveBeenCalledWith(`/?giorno=${oggiLocale()}`)
+    );
     expect((await vociDiOggi()).map((v) => v.quantita_g)).toEqual([50000, 50000]);
   });
 
@@ -364,13 +467,22 @@ describe("Aggiungi: doppioni e aggiunta in corso", () => {
     const pane = await creaAlimento("Pane", 260);
     await creaVoce(mela, pranzo.id, oggiLocale(), 100);
     const composizione = await repositoryComposizioni.crea({
-      user_id: utenteTest, nome: "Merenda salvata", tipo: "pasto_salvato", alimento_id: null,
+      user_id: utenteTest,
+      nome: "Merenda salvata",
+      tipo: "pasto_salvato",
+      alimento_id: null,
     });
-    const righe: [Alimento, number][] = [[mela, 50], [pane, 80]];
+    const righe: [Alimento, number][] = [
+      [mela, 50],
+      [pane, 80],
+    ];
     for (const [ordine, [alimento, grammi]] of righe.entries()) {
       await repositoryComposizioniVoci.crea({
-        user_id: utenteTest, composizione_id: composizione.id, alimento_id: alimento.id,
-        quantita_g: grammi, ordine,
+        user_id: utenteTest,
+        composizione_id: composizione.id,
+        alimento_id: alimento.id,
+        quantita_g: grammi,
+        ordine,
       });
     }
     render(<AggiungiPage />);
@@ -407,12 +519,18 @@ describe("Aggiungi: doppioni e aggiunta in corso", () => {
 describe("Aggiungi: ricerca nei pasti salvati", () => {
   async function creaPastoSalvato(nome: string, righe: [Alimento, number][]) {
     const composizione = await repositoryComposizioni.crea({
-      user_id: utenteTest, nome, tipo: "pasto_salvato", alimento_id: null,
+      user_id: utenteTest,
+      nome,
+      tipo: "pasto_salvato",
+      alimento_id: null,
     });
     for (const [ordine, [alimento, grammi]] of righe.entries()) {
       await repositoryComposizioniVoci.crea({
-        user_id: utenteTest, composizione_id: composizione.id, alimento_id: alimento.id,
-        quantita_g: grammi, ordine,
+        user_id: utenteTest,
+        composizione_id: composizione.id,
+        alimento_id: alimento.id,
+        quantita_g: grammi,
+        ordine,
       });
     }
   }
@@ -455,7 +573,10 @@ describe("Aggiungi: ricerca nei pasti salvati", () => {
     await preparaPranzo();
     const yogurt = await creaAlimento("Yogurt greco", 60);
     const gallette = await creaAlimento("Gallette di riso", 380);
-    await creaPastoSalvato("Colazione proteica", [[yogurt, 170], [gallette, 20]]);
+    await creaPastoSalvato("Colazione proteica", [
+      [yogurt, 170],
+      [gallette, 20],
+    ]);
     render(<AggiungiPage />);
 
     await cerca("GALLETTE");
@@ -503,12 +624,18 @@ describe("Aggiungi: scansione del codice a barre", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => true });
-    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: undefined });
+    Object.defineProperty(window.navigator, "mediaDevices", {
+      configurable: true,
+      value: undefined,
+    });
     ordineScansione.eventi = [];
   });
 
   function risposta(corpo: unknown, status = 200) {
-    return new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify(corpo), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   // Apre la scansione e scrive il codice a mano, come si farebbe con la
@@ -542,7 +669,10 @@ describe("Aggiungi: scansione del codice a barre", () => {
       ordineScansione.eventi.push(nelTocco ? "fotocamera nel tocco" : "fotocamera fuori dal tocco");
       return new Promise<MediaStream>(() => {});
     });
-    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+    Object.defineProperty(window.navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia },
+    });
     const inizio = () => {
       nelTocco = true;
     };
@@ -576,9 +706,15 @@ describe("Aggiungi: scansione del codice a barre", () => {
           rispondi = ok;
         })
     );
-    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+    Object.defineProperty(window.navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia },
+    });
     const traccia = { stop: vi.fn(), getCapabilities: () => ({}) };
-    const stream = { getTracks: () => [traccia], getVideoTracks: () => [traccia] } as unknown as MediaStream;
+    const stream = {
+      getTracks: () => [traccia],
+      getVideoTracks: () => [traccia],
+    } as unknown as MediaStream;
     return { traccia, rispondi: () => rispondi(stream) };
   }
 
@@ -612,15 +748,22 @@ describe("Aggiungi: scansione del codice a barre", () => {
   it("permesso rifiutato: il messaggio, e sotto il nome tecnico dell'errore", async () => {
     await preparaPranzo();
     const getUserMedia = vi.fn(() =>
-      Promise.reject(new DOMException("The request is not allowed by the user agent", "NotAllowedError"))
+      Promise.reject(
+        new DOMException("The request is not allowed by the user agent", "NotAllowedError")
+      )
     );
-    Object.defineProperty(window.navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+    Object.defineProperty(window.navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia },
+    });
     render(<AggiungiPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Scansiona il codice a barre" }));
 
     const scansione = await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
-    expect(await within(scansione).findByText(/Non hai dato il permesso per la fotocamera/)).toBeTruthy();
+    expect(
+      await within(scansione).findByText(/Non hai dato il permesso per la fotocamera/)
+    ).toBeTruthy();
     expect(
       within(scansione).getByText("NotAllowedError: The request is not allowed by the user agent")
     ).toBeTruthy();
@@ -629,7 +772,9 @@ describe("Aggiungi: scansione del codice a barre", () => {
   it("con la rete il pulsante è acceso, senza è spento e la riga dice perché", async () => {
     await preparaPranzo();
     const { unmount } = render(<AggiungiPage />);
-    const acceso = (await screen.findByRole("button", { name: "Scansiona il codice a barre" })) as HTMLButtonElement;
+    const acceso = (await screen.findByRole("button", {
+      name: "Scansiona il codice a barre",
+    })) as HTMLButtonElement;
     expect(acceso.disabled).toBe(false);
     expect(screen.queryByText("Senza connessione la scansione non è disponibile")).toBeNull();
     unmount();
@@ -660,14 +805,18 @@ describe("Aggiungi: scansione del codice a barre", () => {
 
   it("un UPC-A a 12 cifre si cerca e si compila a 13; non trovato su OFF: modulo vuoto con il codice", async () => {
     await preparaPranzo();
-    const fetchFinta = vi.fn<typeof fetch>(async () => risposta({ result: { id: "product_not_found" } }, 404));
+    const fetchFinta = vi.fn<typeof fetch>(async () =>
+      risposta({ result: { id: "product_not_found" } }, 404)
+    );
     vi.stubGlobal("fetch", fetchFinta);
     render(<AggiungiPage />);
 
     await scriviCodice("036000291452");
 
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
-    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe("0036000291452");
+    expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(
+      "0036000291452"
+    );
     expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("");
     expect(String(fetchFinta.mock.calls[0][0])).toContain("/product/0036000291452?");
   });
@@ -681,7 +830,12 @@ describe("Aggiungi: scansione del codice a barre", () => {
           product: {
             product_name_it: "Nutella",
             brands: "Nutella, Ferrero",
-            nutriments: { "energy-kcal_100g": 539, proteins_100g: 6.3, carbohydrates_100g: 57.5, fat_100g: 30.9 },
+            nutriments: {
+              "energy-kcal_100g": 539,
+              proteins_100g: 6.3,
+              carbohydrates_100g: 57.5,
+              fat_100g: 30.9,
+            },
           },
         })
       )
@@ -709,7 +863,9 @@ describe("Aggiungi: scansione del codice a barre", () => {
 
     const scansione = await scriviCodice(NUTELLA);
 
-    expect(await within(scansione).findByText(/Non riesco a raggiungere Open Food Facts/)).toBeTruthy();
+    expect(
+      await within(scansione).findByText(/Non riesco a raggiungere Open Food Facts/)
+    ).toBeTruthy();
     fireEvent.click(within(scansione).getByRole("button", { name: "Crea a mano" }));
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
     expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(NUTELLA);
@@ -752,7 +908,12 @@ describe("Aggiungi: scansione del codice a barre", () => {
         risposta({
           product: {
             product_name_it: "Nutella",
-            nutriments: { "energy-kcal_100g": 539, proteins_100g: 6.3, carbohydrates_100g: 57.5, fat_100g: 30.9 },
+            nutriments: {
+              "energy-kcal_100g": 539,
+              proteins_100g: 6.3,
+              carbohydrates_100g: 57.5,
+              fat_100g: 30.9,
+            },
           },
         })
       )
@@ -898,10 +1059,21 @@ describe("Aggiungi: il riquadro «Nel catalogo»", () => {
   it("toglie quelli che hai già, anche con un altro nome (stesso codice): qui non resta niente", async () => {
     await preparaPranzo();
     await repositoryAlimenti.crea({
-      user_id: utenteTest, nome: "Biscotti della nonna", marca: null, barcode: "8013355999143",
-      kcal_100g: 480, proteine_100g: 6, carboidrati_100g: 65, grassi_100g: 21,
-      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-      porzione_default_g: 30, fonte: "barcode", verificato: false,
+      user_id: utenteTest,
+      nome: "Biscotti della nonna",
+      marca: null,
+      barcode: "8013355999143",
+      kcal_100g: 480,
+      proteine_100g: 6,
+      carboidrati_100g: 65,
+      grassi_100g: 21,
+      zuccheri_100g: null,
+      fibre_100g: null,
+      saturi_100g: null,
+      sale_100g: null,
+      porzione_default_g: 30,
+      fonte: "barcode",
+      verificato: false,
     });
     render(<AggiungiPage />);
     await cerca("gocciole");
@@ -913,18 +1085,26 @@ describe("Aggiungi: il riquadro «Nel catalogo»", () => {
     await preparaPranzo();
     render(<AggiungiPage />);
     await cerca("mandorle");
-    fireEvent.click(within(riquadro()!).getByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti e scegli i grammi" }));
+    fireEvent.click(
+      within(riquadro()!).getByRole("button", {
+        name: "Aggiungi Mandorle ai tuoi alimenti e scegli i grammi",
+      })
+    );
 
     const sheet = await screen.findByRole("dialog", { name: "Quantità di Mandorle" });
     expect((within(sheet).getByLabelText("Quantità (g)") as HTMLInputElement).value).toBe("30");
     expect(within(sheet).getByText("Aggiunto ai tuoi alimenti: Mandorle")).toBeTruthy();
-    const copie = (await repositoryAlimenti.ottieniTutti(utenteTest)).filter((a) => a.catalogo_id === "ciqual:15000");
+    const copie = (await repositoryAlimenti.ottieniTutti(utenteTest)).filter(
+      (a) => a.catalogo_id === "ciqual:15000"
+    );
     expect(copie).toHaveLength(1);
 
     fireEvent.click(within(sheet).getByRole("button", { name: "Aggiungi" }));
     await waitFor(() => expect(navigazione.replace).toHaveBeenCalledTimes(1));
     const voci = await vociDiOggi();
-    expect(voci.map((v) => [v.nome_alimento, v.quantita_g, v.alimento_id])).toEqual([["Mandorle", 30, copie[0].id]]);
+    expect(voci.map((v) => [v.nome_alimento, v.quantita_g, v.alimento_id])).toEqual([
+      ["Mandorle", 30, copie[0].id],
+    ]);
   });
 
   it("«Vedi tutto il catalogo» apre Alimenti sulla scheda «Catalogo» con la ricerca scritta", async () => {
@@ -932,7 +1112,9 @@ describe("Aggiungi: il riquadro «Nel catalogo»", () => {
     render(<AggiungiPage />);
     await cerca("  latte ");
     fireEvent.click(within(riquadro()!).getByRole("button", { name: "Vedi tutto il catalogo" }));
-    expect(navigazione.push).toHaveBeenCalledWith("/impostazioni/alimenti?scheda=catalogo&cerca=latte");
+    expect(navigazione.push).toHaveBeenCalledWith(
+      "/impostazioni/alimenti?scheda=catalogo&cerca=latte"
+    );
   });
 });
 
@@ -969,15 +1151,23 @@ describe("Aggiungi: scansione di un codice del catalogo", () => {
     const scansione = await scriviCodice(NUTELLA_CATALOGO);
     expect(await within(scansione).findByText("Nel catalogo")).toBeTruthy();
     expect(within(scansione).getByText("Nutella · Ferrero")).toBeTruthy();
-    expect(within(scansione).getByText("Non è ancora fra i tuoi alimenti. Lo aggiungi e scegli i grammi?")).toBeTruthy();
+    expect(
+      within(scansione).getByText(
+        "Non è ancora fra i tuoi alimenti. Lo aggiungi e scegli i grammi?"
+      )
+    ).toBeTruthy();
     expect(fetchFinta).not.toHaveBeenCalled();
 
-    fireEvent.click(within(scansione).getByRole("button", { name: "Aggiungi ai miei e scegli i grammi" }));
+    fireEvent.click(
+      within(scansione).getByRole("button", { name: "Aggiungi ai miei e scegli i grammi" })
+    );
     const sheet = await screen.findByRole("dialog", { name: "Quantità di Nutella" });
     expect((within(sheet).getByLabelText("Quantità (g)") as HTMLInputElement).value).toBe("15");
     expect(within(sheet).getByText("Aggiunto ai tuoi alimenti: Nutella · Ferrero")).toBeTruthy();
     expect(screen.queryByRole("dialog", { name: "Scansione del codice a barre" })).toBeNull();
-    const copie = (await repositoryAlimenti.ottieniTutti(utenteTest)).filter((a) => a.catalogo_id === "off:3017620422003");
+    const copie = (await repositoryAlimenti.ottieniTutti(utenteTest)).filter(
+      (a) => a.catalogo_id === "off:3017620422003"
+    );
     expect(copie).toHaveLength(1);
     expect(copie[0]).toMatchObject({ barcode: NUTELLA_CATALOGO, fonte: "off" });
     expect(fetchFinta).not.toHaveBeenCalled();
@@ -993,10 +1183,21 @@ describe("Aggiungi: scansione di un codice del catalogo", () => {
 
   function crackersDoriano(barcode: string | null) {
     return repositoryAlimenti.crea({
-      user_id: utenteTest, nome: "Crackers integrali", marca: "Doriano", barcode,
-      kcal_100g: 446, proteine_100g: 10, carboidrati_100g: 62, grassi_100g: 16,
-      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-      porzione_default_g: 25, fonte: "manuale", verificato: false,
+      user_id: utenteTest,
+      nome: "Crackers integrali",
+      marca: "Doriano",
+      barcode,
+      kcal_100g: 446,
+      proteine_100g: 10,
+      carboidrati_100g: 62,
+      grassi_100g: 16,
+      zuccheri_100g: null,
+      fibre_100g: null,
+      saturi_100g: null,
+      sale_100g: null,
+      porzione_default_g: 25,
+      fonte: "manuale",
+      verificato: false,
     });
   }
 
@@ -1010,19 +1211,27 @@ describe("Aggiungi: scansione di un codice del catalogo", () => {
     await scriviCodice(DORIANO);
     expect(await screen.findByText("Modifica alimento")).toBeTruthy();
     expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(DORIANO);
-    expect(screen.getByText("Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni.")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Questo alimento non aveva il codice: salvalo per ritrovarlo la prossima volta che scansioni."
+      )
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Salva e scegli la quantità" }));
 
     const sheet = await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" });
     expect((within(sheet).getByLabelText("Quantità (g)") as HTMLInputElement).value).toBe("25");
     expect((await repositoryAlimenti.ottieniPerId(mio.id))?.barcode).toBe(DORIANO);
     // Nessuna copia dal catalogo: il prodotto è il tuo, con il codice.
-    expect((await repositoryAlimenti.ottieniTutti(utenteTest)).filter((a) => a.catalogo_id)).toHaveLength(0);
+    expect(
+      (await repositoryAlimenti.ottieniTutti(utenteTest)).filter((a) => a.catalogo_id)
+    ).toHaveLength(0);
     fireEvent.click(within(sheet).getByRole("button", { name: "Annulla" }));
 
     // La scansione dopo lo trova fra i tuoi: dritti ai grammi.
     await scriviCodice(DORIANO);
-    expect(await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" })).toBeTruthy();
+    expect(
+      await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" })
+    ).toBeTruthy();
     expect(fetchFinta).not.toHaveBeenCalled();
   });
 
@@ -1036,10 +1245,16 @@ describe("Aggiungi: scansione di un codice del catalogo", () => {
     await scriviCodice(DORIANO);
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
     // Il modulo legge il catalogo da solo (useLiveQuery): il messaggio arriva un attimo dopo.
-    expect(await screen.findByText("Hai già un alimento con questo nome e questa marca: «Crackers integrali · Doriano».")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "Hai già un alimento con questo nome e questa marca: «Crackers integrali · Doriano»."
+      )
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Apri «Crackers integrali»" }));
 
-    expect(await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" })).toBeTruthy();
+    expect(
+      await screen.findByRole("dialog", { name: "Quantità di Crackers integrali" })
+    ).toBeTruthy();
     expect((await repositoryAlimenti.ottieniPerId(mio.id))?.barcode).toBe("3017620425035");
     expect(fetchFinta).not.toHaveBeenCalled();
   });

@@ -51,12 +51,7 @@ import {
 import { scriviTipoGiornoScelto } from "@/lib/repository/giorni";
 import { targetDelGiorno } from "@/lib/targetGiorno";
 import { esitoRispettoObiettivo } from "@/lib/esitoObiettivo";
-import {
-  sommaTotali,
-  totaleVoce,
-  vociDelGiorno,
-  obiettivoValidoPer,
-} from "@/lib/totaliDiario";
+import { sommaTotali, totaleVoce, vociDelGiorno, obiettivoValidoPer } from "@/lib/totaliDiario";
 import {
   giornoPrecedente,
   giornoSuccessivo,
@@ -370,9 +365,9 @@ function OggiContenuto() {
   // un'azione di eliminazione (sezione 5).
   const [voceInModifica, setVoceInModifica] = useState<VoceDiario | null>(null);
   const [pastoModificaId, setPastoModificaId] = useState<string>("");
-  const [salvataggioVoce, setSalvataggioVoce] = useState<
-    "inattivo" | "in-corso" | "errore"
-  >("inattivo");
+  const [salvataggioVoce, setSalvataggioVoce] = useState<"inattivo" | "in-corso" | "errore">(
+    "inattivo"
+  );
 
   // "Salva come preferito" (sezione 3): il pasto in attesa del nome nello
   // SheetNome, e lo stato del salvataggio della composizione.
@@ -508,7 +503,9 @@ function OggiContenuto() {
     rifLista,
     rifFasciaAggiungi,
     pastoDi: (riga) =>
-      riga.tipo === "pasto" ? riga.id : (vociTutte?.find((v) => v.id === riga.id)?.pasto_id ?? null),
+      riga.tipo === "pasto"
+        ? riga.id
+        : (vociTutte?.find((v) => v.id === riga.id)?.pasto_id ?? null),
     onRilascio: (riga, pastoDestinazioneId) => {
       const s = nuovoSpostamento(riga.tipo, riga.id, false);
       if (s) void eseguiSpostamento(s, pastoDestinazioneId);
@@ -570,8 +567,7 @@ function OggiContenuto() {
         tipo: riga.tipo,
         id: riga.id,
         ancora: riga.elemento.getBoundingClientRect(),
-        limiteBasso:
-          rifFasciaAggiungi.current?.getBoundingClientRect().top ?? window.innerHeight,
+        limiteBasso: rifFasciaAggiungi.current?.getBoundingClientRect().top ?? window.innerHeight,
         elemento: riga.elemento,
       }),
     onTrascinamento: ascoltatoriTrascinamento,
@@ -608,9 +604,7 @@ function OggiContenuto() {
 
   // Voce 3: i pasti (fasce) di cui l'utente ha nascosto la lista di alimenti.
   // In memoria, non su disco: al riavvio dell'app tornano tutti aperti.
-  const [pastiCollassati, setPastiCollassati] = useState<Set<string>>(
-    () => new Set()
-  );
+  const [pastiCollassati, setPastiCollassati] = useState<Set<string>>(() => new Set());
 
   function toggleCollasso(pastoId: string) {
     setPastiCollassati((prec) => {
@@ -742,7 +736,9 @@ function OggiContenuto() {
       // Arancio solo quando la regola dei colori dice "oltre", come
       // l'anello: con Massa o Mantenere 50 kcal sopra stanno nella fascia,
       // e la riga non si colora mentre l'anello è verde. Il testo resta.
-      if (esitoRispettoObiettivo(consumateKcal, targetKcal, "kcal", tipoObiettivo)?.tono === "oltre") {
+      if (
+        esitoRispettoObiettivo(consumateKcal, targetKcal, "kcal", tipoObiettivo)?.tono === "oltre"
+      ) {
         classeRigaCalorie = "text-warning";
       }
     }
@@ -753,18 +749,38 @@ function OggiContenuto() {
   // Lo stato iniziale di uno spostamento di una riga (alimento o pasto);
   // null se la riga non c'è più. `sceltaPasto`: dal menu si sceglie il pasto
   // nel foglio; trascinando il pasto è già deciso dal rilascio.
-  function nuovoSpostamento(tipo: TipoRiga, id: string, sceltaPasto: boolean): StatoSpostamento | null {
+  function nuovoSpostamento(
+    tipo: TipoRiga,
+    id: string,
+    sceltaPasto: boolean
+  ): StatoSpostamento | null {
     const vuoto = {
-      sceltaPasto, grammiNuovi: null, pastoDestinazioneId: null, doppioni: null, avviso: null, inCorso: false, errore: null,
+      sceltaPasto,
+      grammiNuovi: null,
+      pastoDestinazioneId: null,
+      doppioni: null,
+      avviso: null,
+      inCorso: false,
+      errore: null,
     };
     if (tipo === "voce") {
       const voce = vociGiorno.find((v) => v.id === id);
       if (!voce) return null;
-      return { ...vuoto, origine: { tipo: "voce", id }, nome: voce.nome_alimento, pastoPartenzaId: voce.pasto_id };
+      return {
+        ...vuoto,
+        origine: { tipo: "voce", id },
+        nome: voce.nome_alimento,
+        pastoPartenzaId: voce.pasto_id,
+      };
     }
     const pasto = pasti?.find((p) => p.id === id);
     if (!pasto) return null;
-    return { ...vuoto, origine: { tipo: "pasto", pastoId: id }, nome: pasto.nome, pastoPartenzaId: id };
+    return {
+      ...vuoto,
+      origine: { tipo: "pasto", pastoId: id },
+      nome: pasto.nome,
+      pastoPartenzaId: id,
+    };
   }
 
   // Cosa scrive la copia che segue il dito: per un alimento nome e
@@ -834,7 +850,9 @@ function OggiContenuto() {
           dataDestinazione,
           pastoDestinazioneId,
           doppioni: esito.doppioni,
-          avviso: d.doppioni ? "Nel frattempo l'elenco è cambiato: controlla e conferma di nuovo." : null,
+          avviso: d.doppioni
+            ? "Nel frattempo l'elenco è cambiato: controlla e conferma di nuovo."
+            : null,
           inCorso: false,
           errore: null,
         });
@@ -843,7 +861,8 @@ function OggiContenuto() {
       setDuplicazione(null);
       const { piano, fotografia } = esito;
       if (piano.duplicati.length === 0 && piano.esclusi.length === 0) return;
-      const nomePasto = (pastoId: string | null) => pasti?.find((p) => p.id === pastoId)?.nome ?? "";
+      const nomePasto = (pastoId: string | null) =>
+        pasti?.find((p) => p.id === pastoId)?.nome ?? "";
       const altroGiorno = dataDestinazione !== giorno;
       const scritto = fotografia.prima.length > 0 || fotografia.idCreate.length > 0;
       setBarra({
@@ -874,7 +893,10 @@ function OggiContenuto() {
   // Il titolo del foglio dei doppioni per Duplica: come per Sposta, più il
   // giorno se è diverso da quello che si sta guardando.
   function titoloDoppioniDuplica(d: StatoDuplicazione): string {
-    const dest = accorcia(pasti?.find((p) => p.id === d.pastoDestinazioneId)?.nome ?? "", MASSIMO_PASTO);
+    const dest = accorcia(
+      pasti?.find((p) => p.id === d.pastoDestinazioneId)?.nome ?? "",
+      MASSIMO_PASTO
+    );
     const di =
       d.dataDestinazione && d.dataDestinazione !== giorno
         ? ` di ${formattaGiornoCorto(d.dataDestinazione)}`
@@ -916,7 +938,9 @@ function OggiContenuto() {
           ...s,
           pastoDestinazioneId,
           doppioni: esito.doppioni,
-          avviso: s.doppioni ? "Nel frattempo l'elenco è cambiato: controlla e conferma di nuovo." : null,
+          avviso: s.doppioni
+            ? "Nel frattempo l'elenco è cambiato: controlla e conferma di nuovo."
+            : null,
           inCorso: false,
           errore: null,
         });
@@ -926,7 +950,8 @@ function OggiContenuto() {
       const { piano, fotografia } = esito;
       // Niente da spostare (la voce è sparita nel frattempo): niente barra.
       if (piano.spostati.length === 0 && piano.esclusi.length === 0) return;
-      const nomePasto = (pastoId: string | null) => pasti?.find((p) => p.id === pastoId)?.nome ?? "";
+      const nomePasto = (pastoId: string | null) =>
+        pasti?.find((p) => p.id === pastoId)?.nome ?? "";
       const scritto = fotografia.prima.length > 0 || fotografia.idCreate.length > 0;
       setBarra({
         id: crypto.randomUUID(),
@@ -956,7 +981,12 @@ function OggiContenuto() {
       // ricarica: difetto trovato il 18/10. Lì lo spostamento si azzera e
       // l'errore va nella barra, senza Annulla, come per Elimina dal menu.
       if (s.sceltaPasto || s.doppioni !== null) {
-        setSpostamento({ ...s, pastoDestinazioneId, inCorso: false, errore: "Operazione non riuscita. Riprova." });
+        setSpostamento({
+          ...s,
+          pastoDestinazioneId,
+          inCorso: false,
+          errore: "Operazione non riuscita. Riprova.",
+        });
       } else {
         setSpostamento(null);
         setBarra({ id: crypto.randomUUID(), testo: "Operazione non riuscita. Riprova." });
@@ -1065,7 +1095,11 @@ function OggiContenuto() {
         { tipo: "aggiorna", id: voce.id, modifiche: { quantita_g: grammi } },
       ]);
       chiudiModifica();
-      setBarra({ id: crypto.randomUUID(), ...messaggioAggiornato(voce.nome_alimento, grammi), annulla: { tipo: "voci", fotografia } });
+      setBarra({
+        id: crypto.randomUUID(),
+        ...messaggioAggiornato(voce.nome_alimento, grammi),
+        annulla: { tipo: "voci", fotografia },
+      });
     } catch {
       setSalvataggioVoce("errore");
     }
@@ -1110,7 +1144,9 @@ function OggiContenuto() {
         // nessuno. La traccia dice quali sono stati tolti davvero.
         const traccia = await eliminaPastiSalvati(userId, idsCorrispondenti);
         if (traccia.idComposizioni.length === 0) return;
-        const nomi = traccia.idComposizioni.map((id) => composizioni.find((c) => c.id === id)?.nome ?? "");
+        const nomi = traccia.idComposizioni.map(
+          (id) => composizioni.find((c) => c.id === id)?.nome ?? ""
+        );
         setBarra({
           id: crypto.randomUUID(),
           ...messaggioToltiDaiPreferiti(nomi),
@@ -1365,7 +1401,11 @@ function OggiContenuto() {
             I colori: la regola unica (PUNTO §7), con il tipo di obiettivo
             di quel giorno. */}
         <div className="mt-5 flex shrink-0 items-center gap-4 px-4 pb-5">
-          <AnelloCalorie consumate={totali.kcal} obiettivo={targetKcal} tipoObiettivo={tipoObiettivo} />
+          <AnelloCalorie
+            consumate={totali.kcal}
+            obiettivo={targetKcal}
+            tipoObiettivo={tipoObiettivo}
+          />
           <div className="flex-1 space-y-3">
             <BarraMacro
               nome="Grassi"
@@ -1433,7 +1473,12 @@ function OggiContenuto() {
               const inUso = eInUso(pasto.id);
               // Stella del segnalibro (sezione 3, punto 3): piena finché gli
               // alimenti+quantità di oggi coincidono con un pasto già salvato.
-              const giaSalvato = pastoGiaSalvato(vociPasto, catalogo, composizioni, composizioniVoci);
+              const giaSalvato = pastoGiaSalvato(
+                vociPasto,
+                catalogo,
+                composizioni,
+                composizioniVoci
+              );
               return (
                 <li
                   key={pasto.id}
@@ -1445,7 +1490,9 @@ function OggiContenuto() {
                   // intero (globals.css, .pasto-trascinamento).
                   data-pasto-id={inUso ? pasto.id : undefined}
                   data-bersaglio={
-                    inUso && trascinamento && trascinamento.pastoPartenzaId !== pasto.id ? "" : undefined
+                    inUso && trascinamento && trascinamento.pastoPartenzaId !== pasto.id
+                      ? ""
+                      : undefined
                   }
                   data-bersaglio-attivo={bersaglio === pasto.id ? "" : undefined}
                   data-trascinato={
@@ -1502,7 +1549,9 @@ function OggiContenuto() {
                             618 kcal. min-w e non w: con 5 cifre lo spazio si
                             allarga invece di far uscire il testo. */}
                         <span className="text-lg">
-                          <span className="inline-block min-w-[4ch] text-right tabular-nums">{kcalPasto}</span>{" "}
+                          <span className="inline-block min-w-[4ch] text-right tabular-nums">
+                            {kcalPasto}
+                          </span>{" "}
                           kcal
                         </span>
                       </div>
@@ -1588,9 +1637,7 @@ function OggiContenuto() {
             icona={barra.icona}
             durataMs={barra.durataMs}
             azione={
-              barra.annulla
-                ? { etichetta: "Annulla", onClick: annullaUltimaOperazione }
-                : undefined
+              barra.annulla ? { etichetta: "Annulla", onClick: annullaUltimaOperazione } : undefined
             }
             // "Vedi" porta al giorno della Duplica. La barra resta (stessa
             // key, il tempo continua da dove era) con "Annulla" ancora
@@ -1677,7 +1724,9 @@ function OggiContenuto() {
           <SheetDoppioni
             titolo={titoloDoppioniDuplica(duplicazione)}
             doppioni={duplicazione.doppioni}
-            nomeDestinazione={pasti.find((p) => p.id === duplicazione.pastoDestinazioneId)?.nome ?? ""}
+            nomeDestinazione={
+              pasti.find((p) => p.id === duplicazione.pastoDestinazioneId)?.nome ?? ""
+            }
             nomePartenza={pasti.find((p) => p.id === duplicazione.pastoPartenzaId)?.nome ?? ""}
             etichettaEscludi="Non duplicarlo"
             esitoEscludi="Non si duplica"
@@ -1734,7 +1783,9 @@ function OggiContenuto() {
           inCorso={spostamento.inCorso}
           errore={spostamento.errore}
           onAnnulla={() => setSpostamento(null)}
-          onConferma={(scelte) => void eseguiSpostamento(spostamento, spostamento.pastoDestinazioneId!, scelte)}
+          onConferma={(scelte) =>
+            void eseguiSpostamento(spostamento, spostamento.pastoDestinazioneId!, scelte)
+          }
         />
       )}
 
@@ -1748,11 +1799,7 @@ function OggiContenuto() {
           pastoSelezionatoId={pastoModificaId}
           onCambiaPasto={setPastoModificaId}
           inCorso={salvataggioVoce === "in-corso"}
-          errore={
-            salvataggioVoce === "errore"
-              ? "Operazione non riuscita. Riprova."
-              : null
-          }
+          errore={salvataggioVoce === "errore" ? "Operazione non riuscita. Riprova." : null}
           onAnnulla={chiudiModifica}
           onConferma={confermaModifica}
           onElimina={eliminaVoce}

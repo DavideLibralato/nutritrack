@@ -24,11 +24,25 @@ const USER = "utente-valori-nascosti";
 
 // Una copia dal catalogo com'è in Dexie, con i quattro valori pieni.
 const GOCCIOLE: Alimento = {
-  id: "copia-gocciole", user_id: USER, updated_at: "2026-11-08T10:00:00.000Z", deleted_at: null,
-  nome: "Gocciole chocolate", marca: "Pavesi", barcode: "8013355999143",
-  kcal_100g: 488, proteine_100g: 6.5, carboidrati_100g: 64, grassi_100g: 22,
-  zuccheri_100g: 25, fibre_100g: 4, saturi_100g: 6, sale_100g: 0.5,
-  porzione_default_g: 30, fonte: "off", verificato: false, catalogo_id: "off:8013355999143",
+  id: "copia-gocciole",
+  user_id: USER,
+  updated_at: "2026-11-08T10:00:00.000Z",
+  deleted_at: null,
+  nome: "Gocciole chocolate",
+  marca: "Pavesi",
+  barcode: "8013355999143",
+  kcal_100g: 488,
+  proteine_100g: 6.5,
+  carboidrati_100g: 64,
+  grassi_100g: 22,
+  zuccheri_100g: 25,
+  fibre_100g: 4,
+  saturi_100g: 6,
+  sale_100g: 0.5,
+  porzione_default_g: 30,
+  fonte: "off",
+  verificato: false,
+  catalogo_id: "off:8013355999143",
 };
 
 // I campi del modulo come li manda CreaAlimentoForm, uguali alla riga.
@@ -70,14 +84,22 @@ describe("valoriNascostiDaTogliere", () => {
   });
 
   it("grassi cambiati: i saturi", () => {
-    expect(valoriNascostiDaTogliere(GOCCIOLE, modulo({ grassi_100g: 20 }))).toEqual({ saturi_100g: null });
+    expect(valoriNascostiDaTogliere(GOCCIOLE, modulo({ grassi_100g: 20 }))).toEqual({
+      saturi_100g: null,
+    });
   });
 
   it("kcal, proteine, nome, marca e porzione cambiati: niente da togliere", () => {
     expect(
       valoriNascostiDaTogliere(
         GOCCIOLE,
-        modulo({ kcal_100g: 500, proteine_100g: 7, nome: "Gocciole", marca: "Mia", porzione_default_g: 40 })
+        modulo({
+          kcal_100g: 500,
+          proteine_100g: 7,
+          nome: "Gocciole",
+          marca: "Mia",
+          porzione_default_g: 40,
+        })
       )
     ).toEqual({});
   });
@@ -91,22 +113,41 @@ describe("salvaAlimento in modifica: i valori nascosti", () => {
   });
 
   it("carboidrati cambiati: zuccheri e fibre null, saturi e sale restano", async () => {
-    expect(await nascostiDopo({ carboidrati_100g: 60 })).toEqual({ zuccheri: null, fibre: null, saturi: 6, sale: 0.5 });
+    expect(await nascostiDopo({ carboidrati_100g: 60 })).toEqual({
+      zuccheri: null,
+      fibre: null,
+      saturi: 6,
+      sale: 0.5,
+    });
   });
 
   it("grassi cambiati: saturi null, zuccheri, fibre e sale restano", async () => {
-    expect(await nascostiDopo({ grassi_100g: 20 })).toEqual({ zuccheri: 25, fibre: 4, saturi: null, sale: 0.5 });
+    expect(await nascostiDopo({ grassi_100g: 20 })).toEqual({
+      zuccheri: 25,
+      fibre: 4,
+      saturi: null,
+      sale: 0.5,
+    });
   });
 
   it("carboidrati e grassi cambiati: resta solo il sale", async () => {
     expect(await nascostiDopo({ carboidrati_100g: 60, grassi_100g: 20 })).toEqual({
-      zuccheri: null, fibre: null, saturi: null, sale: 0.5,
+      zuccheri: null,
+      fibre: null,
+      saturi: null,
+      sale: 0.5,
     });
   });
 
   it("solo kcal, proteine, nome, marca e porzione: i quattro restano", async () => {
     expect(
-      await nascostiDopo({ kcal_100g: 500, proteine_100g: 7, nome: "Gocciole", marca: "Mia", porzione_default_g: 40 })
+      await nascostiDopo({
+        kcal_100g: 500,
+        proteine_100g: 7,
+        nome: "Gocciole",
+        marca: "Mia",
+        porzione_default_g: 40,
+      })
     ).toEqual({ zuccheri: 25, fibre: 4, saturi: 6, sale: 0.5 });
   });
 
@@ -115,19 +156,40 @@ describe("salvaAlimento in modifica: i valori nascosti", () => {
   });
 
   it("vale anche per un alimento non dal catalogo (arrivato da un amico, con i quattro valori)", async () => {
-    const dallAmico: Alimento = { ...GOCCIOLE, id: "dall-amico", nome: "Yogurt", marca: "Fage", barcode: null, catalogo_id: null };
+    const dallAmico: Alimento = {
+      ...GOCCIOLE,
+      id: "dall-amico",
+      nome: "Yogurt",
+      marca: "Fage",
+      barcode: null,
+      catalogo_id: null,
+    };
     await db.alimenti.put(dallAmico);
-    const esito = await salvaAlimento(USER, { ...modulo(), nome: "Yogurt", marca: "Fage", carboidrati_100g: 5 }, dallAmico.id);
+    const esito = await salvaAlimento(
+      USER,
+      { ...modulo(), nome: "Yogurt", marca: "Fage", carboidrati_100g: 5 },
+      dallAmico.id
+    );
     expect(esito.esito).toBe("salvato");
-    expect(await db.alimenti.get(dallAmico.id)).toMatchObject({ zuccheri_100g: null, fibre_100g: null, saturi_100g: 6, sale_100g: 0.5 });
+    expect(await db.alimenti.get(dallAmico.id)).toMatchObject({
+      zuccheri_100g: null,
+      fibre_100g: null,
+      saturi_100g: 6,
+      sale_100g: 0.5,
+    });
   });
 
   it("i null vanno in coda per il server, e la copia resta dal catalogo", async () => {
     await nascostiDopo({ carboidrati_100g: 60 });
     const voce = await db.outbox.get(`alimenti:${GOCCIOLE.id}`);
     expect(voce?.dati).toMatchObject({
-      carboidrati_100g: 60, zuccheri_100g: null, fibre_100g: null, saturi_100g: 6, sale_100g: 0.5,
-      catalogo_id: "off:8013355999143", fonte: "off",
+      carboidrati_100g: 60,
+      zuccheri_100g: null,
+      fibre_100g: null,
+      saturi_100g: 6,
+      sale_100g: 0.5,
+      catalogo_id: "off:8013355999143",
+      fonte: "off",
     });
   });
 });

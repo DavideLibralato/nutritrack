@@ -179,7 +179,9 @@ function stessoContenuto(a: ModuloPasto, b: ModuloPasto): boolean {
   if (a.nome !== b.nome || a.righe.length !== b.righe.length) return false;
   return a.righe.every((r, i) => {
     const s = b.righe[i];
-    return r.voceId === s.voceId && r.alimentoId === s.alimentoId && stessiGrammi(r.grammi, s.grammi);
+    return (
+      r.voceId === s.voceId && r.alimentoId === s.alimentoId && stessiGrammi(r.grammi, s.grammi)
+    );
   });
 }
 

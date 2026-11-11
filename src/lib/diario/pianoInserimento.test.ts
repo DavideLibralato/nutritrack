@@ -56,7 +56,11 @@ function nuova(nome: string, grammi: number, extra: Partial<DatiVoce> = {}): Dat
   };
 }
 
-function piano(nuove: DatiVoce[], destinazione: VoceDiario[], scelte: Record<string, SceltaDoppione> = {}) {
+function piano(
+  nuove: DatiVoce[],
+  destinazione: VoceDiario[],
+  scelte: Record<string, SceltaDoppione> = {}
+) {
   return pianoInserimento({ nuove, destinazione, scelte });
 }
 
@@ -97,7 +101,9 @@ describe("pianoInserimento — le scelte sul doppione", () => {
     const vecchia = esistente("Mela", 100, { kcal_100g: 52 });
     const arriva = nuova("Mela", 50, { kcal_100g: 60 });
     const p = piano([arriva], [vecchia], { "alimento-Mela": { tipo: "somma" } });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 150 } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 150 } },
+    ]);
     expect(p.inseriti).toEqual(["Mela"]);
     expect(p.aggiornati).toEqual([{ nome: "Mela", grammi: 150, tipo: "somma" }]);
   });
@@ -105,7 +111,9 @@ describe("pianoInserimento — le scelte sul doppione", () => {
   it("Somma con i decimali: due decimali, niente 30,299999…", () => {
     const vecchia = esistente("Riso", 10.1);
     const p = piano([nuova("Riso", 20.2)], [vecchia], { "alimento-Riso": { tipo: "somma" } });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 30.3 } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 30.3 } },
+    ]);
   });
 
   it("Scrivi quantità: la riga di destinazione prende i grammi scritti, a due decimali", () => {
@@ -113,7 +121,9 @@ describe("pianoInserimento — le scelte sul doppione", () => {
     const p = piano([nuova("Mela", 50)], [vecchia], {
       "alimento-Mela": { tipo: "scrivi", grammi: 120.456 },
     });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 120.46 } }]);
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 120.46 } },
+    ]);
     expect(p.aggiornati).toEqual([{ nome: "Mela", grammi: 120.46, tipo: "scrivi" }]);
   });
 
@@ -126,7 +136,9 @@ describe("pianoInserimento — le scelte sul doppione", () => {
   });
 
   it("Non aggiungerlo: nessuna scrittura, e l'alimento è fra gli esclusi", () => {
-    const p = piano([nuova("Mela", 50)], [esistente("Mela", 100)], { "alimento-Mela": { tipo: "escludi" } });
+    const p = piano([nuova("Mela", 50)], [esistente("Mela", 100)], {
+      "alimento-Mela": { tipo: "escludi" },
+    });
     expect(p.scritture).toEqual([]);
     expect(p.inseriti).toEqual([]);
     expect(p.esclusi).toEqual(["Mela"]);
@@ -139,7 +151,9 @@ describe("pianoInserimento — le scelte sul doppione", () => {
 
 describe("pianoInserimento — più righe dello stesso alimento", () => {
   it("due righe nuove uguali e una a destinazione: un solo doppione, con le somme", () => {
-    expect(doppioniInserimento([nuova("Mela", 50), nuova("Mela", 30)], [esistente("Mela", 100)])).toEqual([
+    expect(
+      doppioniInserimento([nuova("Mela", 50), nuova("Mela", 30)], [esistente("Mela", 100)])
+    ).toEqual([
       {
         alimentoId: "alimento-Mela",
         nome: "Mela",
@@ -153,14 +167,20 @@ describe("pianoInserimento — più righe dello stesso alimento", () => {
 
   it("Somma con due righe nuove uguali: una riga sola col totale di tutte", () => {
     const vecchia = esistente("Mela", 100);
-    const p = piano([nuova("Mela", 50), nuova("Mela", 30)], [vecchia], { "alimento-Mela": { tipo: "somma" } });
-    expect(p.scritture).toEqual([{ tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 180 } }]);
+    const p = piano([nuova("Mela", 50), nuova("Mela", 30)], [vecchia], {
+      "alimento-Mela": { tipo: "somma" },
+    });
+    expect(p.scritture).toEqual([
+      { tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 180 } },
+    ]);
   });
 
   it("Tieni separati con due righe nuove uguali: tutte e due, una volta sola", () => {
     const mela1 = nuova("Mela", 50);
     const mela2 = nuova("Mela", 30);
-    const p = piano([mela1, mela2], [esistente("Mela", 100)], { "alimento-Mela": { tipo: "separati" } });
+    const p = piano([mela1, mela2], [esistente("Mela", 100)], {
+      "alimento-Mela": { tipo: "separati" },
+    });
     expect(p.scritture).toEqual([
       { tipo: "crea", dati: mela1 },
       { tipo: "crea", dati: mela2 },
@@ -173,7 +193,9 @@ describe("pianoInserimento — più righe dello stesso alimento", () => {
     // Dexie restituisce le righe.
     const recente = esistente("Mela", 30, { creato_il: "2026-10-10T12:00:00.000Z" });
     const vecchia = esistente("Mela", 100, { creato_il: "2026-10-10T07:00:00.000Z" });
-    const p = piano([nuova("Mela", 50)], [recente, vecchia], { "alimento-Mela": { tipo: "somma" } });
+    const p = piano([nuova("Mela", 50)], [recente, vecchia], {
+      "alimento-Mela": { tipo: "somma" },
+    });
     expect(p.scritture).toEqual([
       { tipo: "aggiorna", id: vecchia.id, modifiche: { quantita_g: 180 } },
       { tipo: "elimina", id: recente.id },

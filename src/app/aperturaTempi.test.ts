@@ -57,7 +57,9 @@ describe("animazione di apertura: tempi", () => {
   it("riduci movimento ferma tutto ciò che si muove nella bilancia", () => {
     // Il blocco "riduci movimento" dell'apertura: quello con .apertura-giogo.
     const elenco = [
-      ...css.matchAll(/@media \(prefers-reduced-motion: reduce\)\s*\{([^{]*)\{\s*animation:\s*none;/g),
+      ...css.matchAll(
+        /@media \(prefers-reduced-motion: reduce\)\s*\{([^{]*)\{\s*animation:\s*none;/g
+      ),
     ]
       .map((m) => m[1])
       .find((selettori) => selettori.includes(".apertura-giogo"));

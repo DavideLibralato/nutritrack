@@ -2,7 +2,11 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { useState, useEffect } from "react";
 import { render, screen, waitFor, fireEvent, cleanup, within } from "@testing-library/react";
 import ObiettiviPage from "./page";
-import { repositoryObiettivi, repositoryObiettiviTarget, repositoryProfili } from "@/lib/repository";
+import {
+  repositoryObiettivi,
+  repositoryObiettiviTarget,
+  repositoryProfili,
+} from "@/lib/repository";
 import { db } from "@/lib/db/database";
 import { TIPO_GIORNO_NORMALE, TIPO_GIORNO_ALLENAMENTO } from "@/lib/db/tipi";
 import { giornoPrecedente, oggiLocale } from "@/lib/dataGiorno";
@@ -210,16 +214,30 @@ describe("Pagina Obiettivi", () => {
     expect(nuovo.valido_dal).toBe(ieri);
     expect(nuovo.kcal).toBe(2300);
 
-    const righeNuovo = await db.obiettivi_target.filter((t) => t.obiettivo_id === nuovo.id).toArray();
+    const righeNuovo = await db.obiettivi_target
+      .filter((t) => t.obiettivo_id === nuovo.id)
+      .toArray();
     expect(righeNuovo).toHaveLength(2);
     const normaleNuovo = righeNuovo.find((t) => t.tipo_giorno === TIPO_GIORNO_NORMALE);
     const allenamentoNuovo = righeNuovo.find((t) => t.tipo_giorno === TIPO_GIORNO_ALLENAMENTO);
-    expect(normaleNuovo).toMatchObject({ kcal: 2300, proteine_g: 150, carboidrati_g: 340, grassi_g: 60 });
-    expect(allenamentoNuovo).toMatchObject({ kcal: 2950, proteine_g: 160, carboidrati_g: 450, grassi_g: 65 });
+    expect(normaleNuovo).toMatchObject({
+      kcal: 2300,
+      proteine_g: 150,
+      carboidrati_g: 340,
+      grassi_g: 60,
+    });
+    expect(allenamentoNuovo).toMatchObject({
+      kcal: 2950,
+      proteine_g: 160,
+      carboidrati_g: 450,
+      grassi_g: 65,
+    });
 
     // Il periodo vecchio non cambia: i giorni prima di ieri restano con i
     // target di prima.
-    const righeVecchio = await db.obiettivi_target.filter((t) => t.obiettivo_id === vecchio.id).toArray();
+    const righeVecchio = await db.obiettivi_target
+      .filter((t) => t.obiettivo_id === vecchio.id)
+      .toArray();
     expect(righeVecchio.find((t) => t.tipo_giorno === TIPO_GIORNO_NORMALE)?.kcal).toBe(2500);
     expect(righeVecchio.find((t) => t.tipo_giorno === TIPO_GIORNO_ALLENAMENTO)?.kcal).toBe(2950);
     expect((await db.obiettivi.get(vecchio.id))?.kcal).toBe(2500);

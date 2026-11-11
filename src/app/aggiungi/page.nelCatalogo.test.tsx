@@ -59,13 +59,25 @@ afterEach(cleanup);
 describe("Aggiungi: il «+» del riquadro «Nel catalogo»", () => {
   it("apre lo sheet della copia appena nata anche se l'elenco della pagina non l'ha ancora", async () => {
     render(<AggiungiPage />);
-    const campo = await screen.findByRole("searchbox", { name: "Cerca alimento o pasto" }, { timeout: 5000 });
+    const campo = await screen.findByRole(
+      "searchbox",
+      { name: "Cerca alimento o pasto" },
+      { timeout: 5000 }
+    );
     fireEvent.change(campo, { target: { value: "mandorle" } });
     const riquadro = screen.getByRole("heading", { name: "Nel catalogo" }).closest("section")!;
-    fireEvent.click(within(riquadro).getByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti e scegli i grammi" }));
+    fireEvent.click(
+      within(riquadro).getByRole("button", {
+        name: "Aggiungi Mandorle ai tuoi alimenti e scegli i grammi",
+      })
+    );
 
     // Entro 800 ms: prima che la lettura live (1 s di ritardo) porti la copia.
-    const sheet = await screen.findByRole("dialog", { name: "Quantità di Mandorle" }, { timeout: 800 });
+    const sheet = await screen.findByRole(
+      "dialog",
+      { name: "Quantità di Mandorle" },
+      { timeout: 800 }
+    );
     expect((within(sheet).getByLabelText("Quantità (g)") as HTMLInputElement).value).toBe("30");
     expect(within(sheet).getByText("Aggiunto ai tuoi alimenti: Mandorle")).toBeTruthy();
   });

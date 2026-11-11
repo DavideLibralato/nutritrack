@@ -48,7 +48,11 @@ export function useUtenteId(): string | null | undefined {
     supabase.auth
       .getUser()
       .then(({ data, error }) => {
-        invia({ tipo: "verifica", idUtente: data.user?.id ?? null, esito: classificaErroreVerifica(error) });
+        invia({
+          tipo: "verifica",
+          idUtente: data.user?.id ?? null,
+          esito: classificaErroreVerifica(error),
+        });
         // L'account non esiste più (eliminato da un altro dispositivo, dal
         // 26/10/2026): si pulisce questo dispositivo, si chiude la sessione
         // e si va su Accedi (accountEliminatoAltrove.ts). Solo con questa

@@ -28,7 +28,9 @@ vi.mock("../supabase/client", () => ({
   createClient: () => ({
     // La salita manda solo le voci dell'utente della sessione.
     auth: {
-      getSession: async () => ({ data: { session: sessione.id ? { user: { id: sessione.id } } : null } }),
+      getSession: async () => ({
+        data: { session: sessione.id ? { user: { id: sessione.id } } : null },
+      }),
     },
     from: (tabella: string) => ({
       upsert: (dati: unknown) => upsertMock(tabella, dati),
@@ -36,7 +38,9 @@ vi.mock("../supabase/client", () => ({
   }),
 }));
 
-function voce(parziale: Partial<VoceOutbox> & Pick<VoceOutbox, "id" | "tabella" | "creato_il">): VoceOutbox {
+function voce(
+  parziale: Partial<VoceOutbox> & Pick<VoceOutbox, "id" | "tabella" | "creato_il">
+): VoceOutbox {
   return {
     record_id: parziale.id.split(":")[1] ?? parziale.id,
     dati: { id: "x", user_id: "u1", updated_at: "2026-09-20T00:00:00.000Z", deleted_at: null },
@@ -173,16 +177,20 @@ describe("sincronizzaOutbox — i genitori partono prima dei figli", () => {
     upsertMock.mockReset();
     pastiSulServer.clear();
     await db.outbox.clear();
-    upsertMock.mockImplementation(async (tabella: string, dati: { id: string; pasto_id?: string }) => {
-      if (tabella === "pasti") {
-        pastiSulServer.add(dati.id);
+    upsertMock.mockImplementation(
+      async (tabella: string, dati: { id: string; pasto_id?: string }) => {
+        if (tabella === "pasti") {
+          pastiSulServer.add(dati.id);
+          return { error: null };
+        }
+        if (tabella === "voci_diario" && dati.pasto_id && !pastiSulServer.has(dati.pasto_id)) {
+          return {
+            error: { message: 'violates foreign key constraint "voci_diario_pasto_id_fkey"' },
+          };
+        }
         return { error: null };
       }
-      if (tabella === "voci_diario" && dati.pasto_id && !pastiSulServer.has(dati.pasto_id)) {
-        return { error: { message: 'violates foreign key constraint "voci_diario_pasto_id_fkey"' } };
-      }
-      return { error: null };
-    });
+    );
   });
 
   afterEach(() => {
@@ -218,9 +226,17 @@ describe("sincronizzaOutbox — i genitori partono prima dei figli", () => {
 describe("ordinaOutbox", () => {
   it("prima per livello della tabella, poi creato_il, poi id", () => {
     const voci = [
-      voce({ id: "composizioni_voci:c1", tabella: "composizioni_voci", creato_il: "2026-10-09T08:00:00.000Z" }),
+      voce({
+        id: "composizioni_voci:c1",
+        tabella: "composizioni_voci",
+        creato_il: "2026-10-09T08:00:00.000Z",
+      }),
       voce({ id: "voci_diario:b", tabella: "voci_diario", creato_il: "2026-10-09T09:00:00.000Z" }),
-      voce({ id: "composizioni:k1", tabella: "composizioni", creato_il: "2026-10-09T12:00:00.000Z" }),
+      voce({
+        id: "composizioni:k1",
+        tabella: "composizioni",
+        creato_il: "2026-10-09T12:00:00.000Z",
+      }),
       voce({ id: "voci_diario:a", tabella: "voci_diario", creato_il: "2026-10-09T09:00:00.000Z" }),
       voce({ id: "alimenti:x", tabella: "alimenti", creato_il: "2026-10-09T11:00:00.000Z" }),
       voce({ id: "misurazioni:m", tabella: "misurazioni", creato_il: "2026-10-09T10:00:00.000Z" }),
@@ -445,7 +461,10 @@ describe("sincronizzaOutbox — solo le voci dell'utente della sessione", () => 
     const risultato = await sincronizzaOutbox();
 
     expect(upsertMock).toHaveBeenCalledTimes(1);
-    expect(upsertMock).toHaveBeenCalledWith("misurazioni", expect.objectContaining({ user_id: "u1" }));
+    expect(upsertMock).toHaveBeenCalledWith(
+      "misurazioni",
+      expect.objectContaining({ user_id: "u1" })
+    );
     expect(risultato).toEqual({ inviate: 1, fallite: 0, sospese: 0 });
     expect(leggiStatoGiri().salita.esito).toBe("ok");
 
@@ -464,7 +483,10 @@ describe("sincronizzaOutbox — solo le voci dell'utente della sessione", () => 
     expect(upsertMock).not.toHaveBeenCalled();
     expect(risultato).toEqual({ inviate: 0, fallite: 0, sospese: 0 });
     expect(leggiStatoGiri().salita.esito).toBe("sessione");
-    expect(await db.outbox.get("misurazioni:m1")).toMatchObject({ tentativi: 0, ultimo_errore: null });
+    expect(await db.outbox.get("misurazioni:m1")).toMatchObject({
+      tentativi: 0,
+      ultimo_errore: null,
+    });
   });
 
   it("offline con il token scaduto (getSession null) l'utente si prende dal cookie, e la coda si tenta come prima", async () => {
@@ -482,7 +504,10 @@ describe("sincronizzaOutbox — solo le voci dell'utente della sessione", () => 
     const risultato = await sincronizzaOutbox();
 
     expect(upsertMock).toHaveBeenCalledTimes(1);
-    expect(upsertMock).toHaveBeenCalledWith("misurazioni", expect.objectContaining({ user_id: "u1" }));
+    expect(upsertMock).toHaveBeenCalledWith(
+      "misurazioni",
+      expect.objectContaining({ user_id: "u1" })
+    );
     expect(risultato).toEqual({ inviate: 0, fallite: 1, sospese: 0 });
     expect(leggiStatoGiri().salita.esito).toBe("rete");
   });

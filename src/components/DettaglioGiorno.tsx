@@ -66,7 +66,9 @@ export default function DettaglioGiorno({ giorno, differenziaGiorni }: Props) {
         </span>
         <span className="flex flex-col gap-px">
           Carboidrati
-          <span className="text-[15px] font-medium text-foreground">{Math.round(t.carboidrati)} g</span>
+          <span className="text-[15px] font-medium text-foreground">
+            {Math.round(t.carboidrati)} g
+          </span>
         </span>
         <span className="flex flex-col gap-px">
           Proteine

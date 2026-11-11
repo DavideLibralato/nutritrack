@@ -53,8 +53,8 @@ export default function PasswordDimenticataPage() {
         <div className="w-full max-w-sm space-y-4">
           <h1 className={CLASSE_TITOLO_ACCESSO}>Controlla la tua email</h1>
           <p className="text-sm text-muted">
-            Se esiste un account con questa email, ti abbiamo inviato un link per
-            reimpostare la password.
+            Se esiste un account con questa email, ti abbiamo inviato un link per reimpostare la
+            password.
           </p>
           <a href="/login" className={`underline rounded text-foreground ${CLASSE_FOCUS}`}>
             Torna al login

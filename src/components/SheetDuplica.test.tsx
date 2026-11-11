@@ -16,8 +16,14 @@ afterEach(() => {
 
 function pasto(id: string, nome: string, ora_inizio: string, date: Partial<Pasto> = {}): Pasto {
   return {
-    id, nome, ora_inizio, ordine: 0, user_id: "u1",
-    updated_at: "2026-10-01T00:00:00.000Z", deleted_at: null, ...date,
+    id,
+    nome,
+    ora_inizio,
+    ordine: 0,
+    user_id: "u1",
+    updated_at: "2026-10-01T00:00:00.000Z",
+    deleted_at: null,
+    ...date,
   };
 }
 

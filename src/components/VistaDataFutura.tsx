@@ -108,7 +108,9 @@ function RigaPastoFuturo({ riga }: { riga: RigaScheda }) {
         </span>
         {riga.prima && <span className="block text-sm text-muted">prima: {riga.prima}</span>}
       </span>
-      <span className="shrink-0 text-[15px] text-muted">{normalizzaOra(riga.pasto.ora_inizio)}</span>
+      <span className="shrink-0 text-[15px] text-muted">
+        {normalizzaOra(riga.pasto.ora_inizio)}
+      </span>
     </div>
   );
 }

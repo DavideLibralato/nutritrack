@@ -34,7 +34,12 @@ const VALORI = {
   porzione_default_g: 150,
 };
 
-function mio(id: string, nome: string, marca: string | null, altro: Partial<Alimento> = {}): Alimento {
+function mio(
+  id: string,
+  nome: string,
+  marca: string | null,
+  altro: Partial<Alimento> = {}
+): Alimento {
   return {
     id,
     user_id: IO,
@@ -91,27 +96,47 @@ describe("valoriIdentici e campiDiversi", () => {
     expect(valoriIdentici(mio("m", "Yogurt", null), inArrivo("a", "Yogurt", null))).toBe(true);
     // 3.9 contro 3.90 scritto in un altro modo: stesso valore.
     expect(
-      valoriIdentici(mio("m", "Y", null, { carboidrati_100g: 3.9 }), inArrivo("a", "Y", null, { carboidrati_100g: 3.900000001 }))
+      valoriIdentici(
+        mio("m", "Y", null, { carboidrati_100g: 3.9 }),
+        inArrivo("a", "Y", null, { carboidrati_100g: 3.900000001 })
+      )
     ).toBe(true);
   });
 
   it("una differenza al secondo decimale conta", () => {
-    expect(campiDiversi(mio("m", "Y", null, { grassi_100g: 3.3 }), inArrivo("a", "Y", null, { grassi_100g: 3.31 }))).toEqual([
-      "grassi_100g",
-    ]);
+    expect(
+      campiDiversi(
+        mio("m", "Y", null, { grassi_100g: 3.3 }),
+        inArrivo("a", "Y", null, { grassi_100g: 3.31 })
+      )
+    ).toEqual(["grassi_100g"]);
   });
 
   it("contano anche zuccheri, fibre, saturi, sale e la porzione, non solo i quattro valori", () => {
-    expect(campiDiversi(mio("m", "Y", null), inArrivo("a", "Y", null, { zuccheri_100g: 4 }))).toEqual(["zuccheri_100g"]);
-    expect(campiDiversi(mio("m", "Y", null), inArrivo("a", "Y", null, { sale_100g: 0.1 }))).toEqual(["sale_100g"]);
-    expect(campiDiversi(mio("m", "Y", null), inArrivo("a", "Y", null, { porzione_default_g: 170 }))).toEqual([
-      "porzione_default_g",
-    ]);
+    expect(
+      campiDiversi(mio("m", "Y", null), inArrivo("a", "Y", null, { zuccheri_100g: 4 }))
+    ).toEqual(["zuccheri_100g"]);
+    expect(campiDiversi(mio("m", "Y", null), inArrivo("a", "Y", null, { sale_100g: 0.1 }))).toEqual(
+      ["sale_100g"]
+    );
+    expect(
+      campiDiversi(mio("m", "Y", null), inArrivo("a", "Y", null, { porzione_default_g: 170 }))
+    ).toEqual(["porzione_default_g"]);
   });
 
   it("un valore assente non è uguale a 0", () => {
-    expect(valoriIdentici(mio("m", "Y", null, { fibre_100g: null }), inArrivo("a", "Y", null, { fibre_100g: 0 }))).toBe(false);
-    expect(valoriIdentici(mio("m", "Y", null, { fibre_100g: 0 }), inArrivo("a", "Y", null, { fibre_100g: 0 }))).toBe(true);
+    expect(
+      valoriIdentici(
+        mio("m", "Y", null, { fibre_100g: null }),
+        inArrivo("a", "Y", null, { fibre_100g: 0 })
+      )
+    ).toBe(false);
+    expect(
+      valoriIdentici(
+        mio("m", "Y", null, { fibre_100g: 0 }),
+        inArrivo("a", "Y", null, { fibre_100g: 0 })
+      )
+    ).toBe(true);
   });
 
   it("nome, marca, barcode e fonte non contano", () => {
@@ -128,7 +153,12 @@ describe("righeConfronto", () => {
   it("le cinque righe fisse, nell'ordine, con i diversi segnati", () => {
     const righe = righeConfronto(
       mio("m", "Y", null),
-      inArrivo("a", "Y", null, { kcal_100g: 59, grassi_100g: 0.2, carboidrati_100g: 3.6, porzione_default_g: 170 })
+      inArrivo("a", "Y", null, {
+        kcal_100g: 59,
+        grassi_100g: 0.2,
+        carboidrati_100g: 3.6,
+        porzione_default_g: 170,
+      })
     );
     expect(righe.map((r) => [r.campo, r.mio, r.inArrivo, r.diverso])).toEqual([
       ["kcal_100g", 57, 59, true],
@@ -142,7 +172,12 @@ describe("righeConfronto", () => {
   it("zuccheri, fibre, saturi e sale compaiono sotto solo quando sono diversi", () => {
     const righe = righeConfronto(
       mio("m", "Y", null, { zuccheri_100g: 3, sale_100g: 0.1, fibre_100g: 1 }),
-      inArrivo("a", "Y", null, { zuccheri_100g: 3, sale_100g: 0.2, fibre_100g: null, saturi_100g: null })
+      inArrivo("a", "Y", null, {
+        zuccheri_100g: 3,
+        sale_100g: 0.2,
+        fibre_100g: null,
+        saturi_100g: null,
+      })
     );
     expect(righe.map((r) => r.campo)).toEqual([
       "kcal_100g",
@@ -167,8 +202,12 @@ describe("confrontaInArrivo", () => {
   ];
 
   it("nuovo quando nel catalogo non c'è lo stesso nome con la stessa marca", () => {
-    expect(confrontaInArrivo(catalogo, inArrivo("a", "Yogurt greco 0%", "Müller"), IO)).toEqual({ tipo: "nuovo" });
-    expect(confrontaInArrivo(catalogo, inArrivo("a", "Hummus", null), IO)).toEqual({ tipo: "nuovo" });
+    expect(confrontaInArrivo(catalogo, inArrivo("a", "Yogurt greco 0%", "Müller"), IO)).toEqual({
+      tipo: "nuovo",
+    });
+    expect(confrontaInArrivo(catalogo, inArrivo("a", "Hummus", null), IO)).toEqual({
+      tipo: "nuovo",
+    });
   });
 
   it("i cancellati, gli alimenti di altri e il catalogo comune non sono doppioni", () => {
@@ -190,7 +229,11 @@ describe("confrontaInArrivo", () => {
   });
 
   it("diverso: il proprio alimento, le righe del confronto e se si può aggiornare", () => {
-    const c = confrontaInArrivo(catalogo, inArrivo("a", "Yogurt greco 0%", "Fage", { kcal_100g: 59 }), IO);
+    const c = confrontaInArrivo(
+      catalogo,
+      inArrivo("a", "Yogurt greco 0%", "Fage", { kcal_100g: 59 }),
+      IO
+    );
     expect(c.tipo).toBe("diverso");
     if (c.tipo !== "diverso") return;
     expect(c.mio.id).toBe("yogurt");
@@ -213,7 +256,11 @@ describe("usernameMittenti", () => {
       inArrivo("c", "Hummus", null, { user_id: "sara" }),
       inArrivo("d", "Riso", null, { user_id: "senza_nome" }),
     ];
-    expect(usernameMittenti(righe, { sara: "sara_c", paolo: "paolo_a" })).toEqual(["sara_c", "paolo_a", null]);
+    expect(usernameMittenti(righe, { sara: "sara_c", paolo: "paolo_a" })).toEqual([
+      "sara_c",
+      "paolo_a",
+      null,
+    ]);
   });
 });
 
@@ -254,8 +301,13 @@ describe("selezione multipla nel foglio", () => {
   });
 
   it("dopo una rilettura restano solo gli id ancora selezionabili", () => {
-    const dopo = [voce(inArrivo("hummus", "Hummus", null)), voce(inArrivo("pane-paolo", "Pane", "Mulino"), "uguale")];
-    expect([...selezioneValida(new Set(["hummus", "pane-paolo", "sparito"]), dopo)]).toEqual(["hummus"]);
+    const dopo = [
+      voce(inArrivo("hummus", "Hummus", null)),
+      voce(inArrivo("pane-paolo", "Pane", "Mulino"), "uguale"),
+    ];
+    expect([...selezioneValida(new Set(["hummus", "pane-paolo", "sparito"]), dopo)]).toEqual([
+      "hummus",
+    ]);
   });
 });
 
@@ -268,7 +320,11 @@ describe("alimenti in arrivo con il codice a barre", () => {
 
   it("stesso codice di un mio alimento, nome diverso: è un doppione, non un nuovo", () => {
     const catalogo = [mio("nutella", "Nutella", "Ferrero", { barcode: NUTELLA })];
-    const uguale = confrontaInArrivo(catalogo, inArrivo("a", "Crema alle nocciole", null, { barcode: NUTELLA }), IO);
+    const uguale = confrontaInArrivo(
+      catalogo,
+      inArrivo("a", "Crema alle nocciole", null, { barcode: NUTELLA }),
+      IO
+    );
     expect(uguale.tipo).toBe("uguale");
     const diverso = confrontaInArrivo(
       catalogo,
@@ -282,9 +338,9 @@ describe("alimenti in arrivo con il codice a barre", () => {
   it("senza codice, o con un codice diverso, conta solo nome e marca", () => {
     const catalogo = [mio("nutella", "Nutella", "Ferrero", { barcode: NUTELLA })];
     expect(confrontaInArrivo(catalogo, inArrivo("a", "Crema", null), IO).tipo).toBe("nuovo");
-    expect(confrontaInArrivo(catalogo, inArrivo("a", "Crema", null, { barcode: "96385074" }), IO).tipo).toBe(
-      "nuovo"
-    );
+    expect(
+      confrontaInArrivo(catalogo, inArrivo("a", "Crema", null, { barcode: "96385074" }), IO).tipo
+    ).toBe("nuovo");
   });
 
   function nuovo(riga: AlimentoCondiviso): VoceInArrivo {

@@ -26,10 +26,12 @@ describe("posizioneMenu", () => {
   it("il limite è esatto: se il menu tocca il margine sopra la fascia, sta ancora sotto", () => {
     const fondo = BASE.limiteBasso - DISTANZA_DALLA_RIGA_PX;
     const bottom = fondo - BASE.altezzaMenu - DISTANZA_DALLA_RIGA_PX;
-    expect(posizioneMenu({ ...BASE, riga: { top: bottom - 30, bottom, left: 16 } }).verso).toBe("sotto");
-    expect(posizioneMenu({ ...BASE, riga: { top: bottom - 29, bottom: bottom + 1, left: 16 } }).verso).toBe(
-      "sopra"
+    expect(posizioneMenu({ ...BASE, riga: { top: bottom - 30, bottom, left: 16 } }).verso).toBe(
+      "sotto"
     );
+    expect(
+      posizioneMenu({ ...BASE, riga: { top: bottom - 29, bottom: bottom + 1, left: 16 } }).verso
+    ).toBe("sopra");
   });
 
   it("non esce a destra né a sinistra dello schermo", () => {
@@ -40,7 +42,11 @@ describe("posizioneMenu", () => {
   });
 
   it("menu più alto di ogni spazio libero: resta comunque dentro lo schermo e sopra la fascia", () => {
-    const p = posizioneMenu({ ...BASE, altezzaMenu: 400, riga: { top: 300, bottom: 330, left: 16 } });
+    const p = posizioneMenu({
+      ...BASE,
+      altezzaMenu: 400,
+      riga: { top: 300, bottom: 330, left: 16 },
+    });
     expect(p.top).toBeGreaterThanOrEqual(MARGINE_ALTO_PX);
     expect(p.top + 400).toBeLessThanOrEqual(BASE.limiteBasso - DISTANZA_DALLA_RIGA_PX);
   });

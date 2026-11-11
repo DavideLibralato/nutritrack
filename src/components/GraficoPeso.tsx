@@ -37,7 +37,10 @@ const STACCO = 6;
 // subito dopo i numeri della scala, perché "oggi" sta in fondo a destra.
 // Se "oggi" cade lì (una pesata sola, fatta oggi: il punto sta in mezzo,
 // ma a sinistra resta comunque libero) si passa a destra.
-export function posizioneEtichettaObiettivoPeso(xOggi: number): { x: number; ancora: "start" | "end" } {
+export function posizioneEtichettaObiettivoPeso(xOggi: number): {
+  x: number;
+  ancora: "start" | "end";
+} {
   const sinistra = SINISTRA + STACCO;
   if (xOggi < sinistra - STACCO || xOggi > sinistra + LARGHEZZA_ETICHETTA + STACCO) {
     return { x: sinistra, ancora: "start" };
@@ -72,7 +75,8 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
 
   const passo = passoScala(massimo - minimo);
   const righe: number[] = [];
-  for (let kg = Math.ceil((minimo + 0.01) / passo) * passo; kg < massimo; kg += passo) righe.push(kg);
+  for (let kg = Math.ceil((minimo + 0.01) / passo) * passo; kg < massimo; kg += passo)
+    righe.push(kg);
 
   // Una tacca al primo di ogni mese dentro l'asse.
   const mesi: string[] = [];
@@ -92,7 +96,14 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
     >
       {righe.map((kg) => (
         <g key={kg}>
-          <line x1={SINISTRA} x2={LARGHEZZA} y1={y(kg)} y2={y(kg)} className="stroke-border" strokeWidth={1} />
+          <line
+            x1={SINISTRA}
+            x2={LARGHEZZA}
+            y1={y(kg)}
+            y2={y(kg)}
+            className="stroke-border"
+            strokeWidth={1}
+          />
           <text x={0} y={y(kg)} dy={4} fontSize={11.5} className="fill-muted">
             {kg}
           </text>
@@ -106,7 +117,13 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
           <g key={m}>
             <line x1={xm} x2={xm} y1={BASSO} y2={BASSO + 5} className="stroke-border" />
             {!vicina && (
-              <text x={xm} y={BASSO + 22} textAnchor="middle" fontSize={11.5} className="fill-muted">
+              <text
+                x={xm}
+                y={BASSO + 22}
+                textAnchor="middle"
+                fontSize={11.5}
+                className="fill-muted"
+              >
                 {formattaGiornoMese(m)}
               </text>
             )}
@@ -183,7 +200,9 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
             cy={y(p.valore)}
             r={eUltima ? 5 : 3.2}
             strokeWidth={2}
-            className={eUltima ? "fill-foreground stroke-foreground" : "fill-background stroke-foreground"}
+            className={
+              eUltima ? "fill-foreground stroke-foreground" : "fill-background stroke-foreground"
+            }
           />
         );
       })}

@@ -52,21 +52,32 @@ const SOLO_DATI_PERSONALI = {
 // sui valori (altezza fra 1 e 280, livello di attività) sono quelli di
 // validaModulo, chiamata come la chiama il Salva di Profilo.
 export function suDiTeCompleto(valori: ValoriSuDiTe): boolean {
-  if (!valori.sesso || !valori.dataNascita || valori.altezzaCm.trim() === "" || !valori.livelloAttivita) {
+  if (
+    !valori.sesso ||
+    !valori.dataNascita ||
+    valori.altezzaCm.trim() === "" ||
+    !valori.livelloAttivita
+  ) {
     return false;
   }
   const attuali: ValoriModulo = {
     ...valoriDaDati(null, null, []),
     datiPersonali: { ...valori, sesso: valori.sesso },
   };
-  return Object.keys(validaModulo(attuali, SOLO_DATI_PERSONALI, { profilo: null, periodo: null })).length === 0;
+  return (
+    Object.keys(validaModulo(attuali, SOLO_DATI_PERSONALI, { profilo: null, periodo: null }))
+      .length === 0
+  );
 }
 
 // Avanti del passo 2: salvaProfilo con la sola sezione "Dati personali", con
 // i valori caricati riletti adesso da Dexie (come fa useModuloImpostazioni
 // all'apertura di Profilo). salvaProfilo rilegge Dexie da sola per decidere
 // se creare o aggiornare il profilo. Lancia se la scrittura fallisce.
-export async function salvaSuDiTe(userId: string, valori: ValoriSuDiTe): Promise<EsitoSalvataggioProfilo> {
+export async function salvaSuDiTe(
+  userId: string,
+  valori: ValoriSuDiTe
+): Promise<EsitoSalvataggioProfilo> {
   if (!valori.sesso) throw new Error("Passo 2: il sesso non è scelto.");
   const giornoCorrente = oggiLocale();
   const [profili, obiettivi, righeTarget] = await Promise.all([
@@ -110,7 +121,9 @@ export function pesoDaRegistrare(valore: string): number | null {
 // Il campo del passo 3 all'apertura: la pesata di oggi, se c'è, con la
 // virgola ("78,4"); altrimenti vuoto.
 export function pesoIniziale(misurazioni: Misurazione[], giorno: string = oggiLocale()): string {
-  const diOggi = misurazioni.find((m) => m.tipo === "peso" && m.data === giorno && m.deleted_at === null);
+  const diOggi = misurazioni.find(
+    (m) => m.tipo === "peso" && m.data === giorno && m.deleted_at === null
+  );
   return diOggi ? numeroPerCampo(diOggi.valore, 1) : "";
 }
 
@@ -147,8 +160,14 @@ const SOLO_OBIETTIVO = {
 // conta: l'ha già controllato il passo 4.
 export function targetCompleti(target: ValoriTarget): boolean {
   const base = valoriDaDati(null, null, []);
-  const attuali: ValoriModulo = { ...base, obiettivo: { ...base.obiettivo, pesoObiettivo: "", target } };
-  return Object.keys(validaModulo(attuali, SOLO_OBIETTIVO, { profilo: null, periodo: null })).length === 0;
+  const attuali: ValoriModulo = {
+    ...base,
+    obiettivo: { ...base.obiettivo, pesoObiettivo: "", target },
+  };
+  return (
+    Object.keys(validaModulo(attuali, SOLO_OBIETTIVO, { profilo: null, periodo: null })).length ===
+    0
+  );
 }
 
 // La proposta del passo 5 (propostaObiettivi, la stessa di "Calcola
@@ -164,8 +183,14 @@ export function propostaPasso5(
   misurazioni: Misurazione[],
   tipo: TipoObiettivo
 ): PropostaPasso5 {
-  const pesata = ultimaMisurazione(misurazioni.filter((m) => m.tipo === "peso" && m.deleted_at === null));
-  const esito = propostaObiettivi(valoriDaDati(profilo, null, []).datiPersonali, pesata?.valore ?? null, tipo);
+  const pesata = ultimaMisurazione(
+    misurazioni.filter((m) => m.tipo === "peso" && m.deleted_at === null)
+  );
+  const esito = propostaObiettivi(
+    valoriDaDati(profilo, null, []).datiPersonali,
+    pesata?.valore ?? null,
+    tipo
+  );
   if (esito.esito === "proposta") {
     const p = esito.proposta;
     return {
@@ -184,7 +209,10 @@ export function propostaPasso5(
 // I numeri del passo 5: quelli scritti dall'utente se li ha toccati
 // (`manuali` non null), altrimenti la proposta, altrimenti vuoti. Una regola
 // sola per quello che si vede e quello che si salva.
-export function targetDelPasso5(proposta: PropostaPasso5, manuali: ValoriTarget | null): ValoriTarget {
+export function targetDelPasso5(
+  proposta: PropostaPasso5,
+  manuali: ValoriTarget | null
+): ValoriTarget {
   return manuali ?? (proposta.esito === "proposta" ? proposta.target : TARGET_VUOTO);
 }
 
@@ -204,7 +232,11 @@ export async function salvaObiettivo(
     repositoryObiettivi.ottieniTutti(userId),
     repositoryObiettiviTarget.ottieniTutti(userId),
   ]);
-  const caricati = valoriDaDati(profili[0] ?? null, periodoInCorso(obiettivi, giornoCorrente), righeTarget);
+  const caricati = valoriDaDati(
+    profili[0] ?? null,
+    periodoInCorso(obiettivi, giornoCorrente),
+    righeTarget
+  );
   return salvaProfilo({
     userId,
     caricati,

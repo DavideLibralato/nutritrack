@@ -22,37 +22,19 @@ import type {
 } from "../db/tipi";
 
 export const repositoryProfili = creaRepository<Profilo>(db.profili, "profili");
-export const repositoryObiettivi = creaRepository<Obiettivo>(
-  db.obiettivi,
-  "obiettivi"
-);
+export const repositoryObiettivi = creaRepository<Obiettivo>(db.obiettivi, "obiettivi");
 export const repositoryObiettiviTarget = creaRepository<ObiettivoTarget>(
   db.obiettivi_target,
   "obiettivi_target"
 );
 export const repositoryGiorni = creaRepository<Giorno>(db.giorni, "giorni");
 export const repositoryPasti = creaRepository<Pasto>(db.pasti, "pasti");
-export const repositoryAlimenti = creaRepository<Alimento>(
-  db.alimenti,
-  "alimenti"
-);
-export const repositoryVociDiario = creaRepository<VoceDiario>(
-  db.voci_diario,
-  "voci_diario"
-);
-export const repositoryComposizioni = creaRepository<Composizione>(
-  db.composizioni,
-  "composizioni"
-);
+export const repositoryAlimenti = creaRepository<Alimento>(db.alimenti, "alimenti");
+export const repositoryVociDiario = creaRepository<VoceDiario>(db.voci_diario, "voci_diario");
+export const repositoryComposizioni = creaRepository<Composizione>(db.composizioni, "composizioni");
 export const repositoryComposizioniVoci = creaRepository<ComposizioneVoce>(
   db.composizioni_voci,
   "composizioni_voci"
 );
-export const repositoryMisurazioni = creaRepository<Misurazione>(
-  db.misurazioni,
-  "misurazioni"
-);
-export const repositoryPreferiti = creaRepository<Preferito>(
-  db.preferiti,
-  "preferiti"
-);
+export const repositoryMisurazioni = creaRepository<Misurazione>(db.misurazioni, "misurazioni");
+export const repositoryPreferiti = creaRepository<Preferito>(db.preferiti, "preferiti");

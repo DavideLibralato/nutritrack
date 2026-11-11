@@ -305,7 +305,11 @@ export default function ImpostazioniPage() {
           freccia; la conferma sta nella sottopagina. */}
       {userId && (
         <GruppoImpostazioni>
-          <RigaImpostazioni etichetta="Elimina il mio account" href="/impostazioni/elimina-account" pericolo />
+          <RigaImpostazioni
+            etichetta="Elimina il mio account"
+            href="/impostazioni/elimina-account"
+            pericolo
+          />
         </GruppoImpostazioni>
       )}
     </main>

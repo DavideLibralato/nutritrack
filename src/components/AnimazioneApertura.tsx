@@ -70,8 +70,7 @@ export default function AnimazioneApertura({ attende }: { attende: "oggi" | "nie
 
     function decidi() {
       if (!attivo) return;
-      const mostrata =
-        document.documentElement.getAttribute(ATTRIBUTO_APERTURA) === "mostra";
+      const mostrata = document.documentElement.getAttribute(ATTRIBUTO_APERTURA) === "mostra";
       const esito = uscitaApertura(mostrata, minimoFinito, oggiPronta);
       if (esito === "togli") setPresente(false);
       else if (esito === "sfuma") setEsce(true);

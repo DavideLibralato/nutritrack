@@ -98,13 +98,22 @@ function StatisticheContenuto() {
 
   // Come in Oggi: `undefined` = "non so ancora", finché non si conosce
   // l'utente o Dexie non ha risposto.
-  const voci = useLiveQuery(async () => (userId ? repositoryVociDiario.ottieniTutti(userId) : undefined), [userId]);
-  const obiettivi = useLiveQuery(async () => (userId ? repositoryObiettivi.ottieniTutti(userId) : undefined), [userId]);
+  const voci = useLiveQuery(
+    async () => (userId ? repositoryVociDiario.ottieniTutti(userId) : undefined),
+    [userId]
+  );
+  const obiettivi = useLiveQuery(
+    async () => (userId ? repositoryObiettivi.ottieniTutti(userId) : undefined),
+    [userId]
+  );
   const obiettiviTarget = useLiveQuery(
     async () => (userId ? repositoryObiettiviTarget.ottieniTutti(userId) : undefined),
     [userId]
   );
-  const giorniRighe = useLiveQuery(async () => (userId ? repositoryGiorni.ottieniTutti(userId) : undefined), [userId]);
+  const giorniRighe = useLiveQuery(
+    async () => (userId ? repositoryGiorni.ottieniTutti(userId) : undefined),
+    [userId]
+  );
   const profilo = useLiveQuery(async () => {
     if (!userId) return undefined;
     const righe = await repositoryProfili.ottieniTutti(userId);
@@ -129,7 +138,12 @@ function StatisticheContenuto() {
   const dati = { obiettivi, obiettiviTarget, giorni: giorniRighe, profilo };
   const nuovo = senzaVoci(voci);
   const primo = primoGiornoConVoci(voci, oggi);
-  const { modo, inizio } = periodoDaIndirizzo(searchParams.get("vista"), searchParams.get("dal"), primo, oggi);
+  const { modo, inizio } = periodoDaIndirizzo(
+    searchParams.get("vista"),
+    searchParams.get("dal"),
+    primo,
+    oggi
+  );
   const chiavePeriodo = `${modo}:${inizio}`;
 
   const giorni = giorniStatistiche(giorniDelPeriodo(modo, inizio), voci, dati, oggi);
@@ -191,8 +205,16 @@ function StatisticheContenuto() {
       <div className="grid grid-cols-2 gap-3">
         <RiquadroMedia etichetta="Media kcal" grandezza="kcal" media={medie?.kcal ?? null} />
         <RiquadroMedia etichetta="Media grassi" grandezza="grassi" media={medie?.grassi ?? null} />
-        <RiquadroMedia etichetta="Media carboidrati" grandezza="carboidrati" media={medie?.carboidrati ?? null} />
-        <RiquadroMedia etichetta="Media proteine" grandezza="proteine" media={medie?.proteine ?? null} />
+        <RiquadroMedia
+          etichetta="Media carboidrati"
+          grandezza="carboidrati"
+          media={medie?.carboidrati ?? null}
+        />
+        <RiquadroMedia
+          etichetta="Media proteine"
+          grandezza="proteine"
+          media={medie?.proteine ?? null}
+        />
       </div>
 
       <section className="flex flex-col gap-2" aria-labelledby="titolo-calorie">
@@ -221,7 +243,10 @@ function StatisticheContenuto() {
               selezionato={dataScelta}
               onTocca={tocca}
             />
-            <DettaglioGiorno giorno={giornoScelto} differenziaGiorni={profilo?.differenzia_giorni ?? false} />
+            <DettaglioGiorno
+              giorno={giornoScelto}
+              differenziaGiorni={profilo?.differenzia_giorni ?? false}
+            />
           </>
         )}
       </section>
@@ -284,7 +309,15 @@ function FrecciaPeriodo({
   );
 }
 
-function TestataSezione({ id, titolo, destra }: { id: string; titolo: string; destra: string | null }) {
+function TestataSezione({
+  id,
+  titolo,
+  destra,
+}: {
+  id: string;
+  titolo: string;
+  destra: string | null;
+}) {
   return (
     <div className="flex items-baseline justify-between gap-2 px-1">
       <h2 id={id} className="text-xs font-medium uppercase tracking-[1.2px] text-muted">

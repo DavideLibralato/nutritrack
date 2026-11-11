@@ -172,7 +172,9 @@ export async function riprendiEliminazioneInSospeso(
   }
 
   if (!(await azioni.chiudiSessione().catch(() => false))) {
-    console.error("Eliminazione account: la sessione è rimasta dopo il signOut, niente navigazione.");
+    console.error(
+      "Eliminazione account: la sessione è rimasta dopo il signOut, niente navigazione."
+    );
     return "sessione-rimasta";
   }
   azioni.naviga("/login?eliminato=1");

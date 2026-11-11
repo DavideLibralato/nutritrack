@@ -27,7 +27,10 @@ import type { VoceOutbox } from "./outbox";
 // Salita: risponde come `rispostaUpsert`. Discesa: ogni tabella risponde
 // vuota, salvo quelle in `rispostePerTabella`.
 const server = vi.hoisted(() => ({
-  rispostaUpsert: { error: null, status: 201 } as { error: { message: string } | null; status: number },
+  rispostaUpsert: { error: null, status: 201 } as {
+    error: { message: string } | null;
+    status: number;
+  },
   rispostePerTabella: {} as Record<string, { error: { message: string }; status: number }>,
 }));
 
@@ -62,15 +65,22 @@ function verso(parziale: Partial<StatoVerso> = {}): StatoVerso {
   return { inCorso: false, esito: "ok", dal: null, diFila: 0, dettagli: [], ...parziale };
 }
 
-function giri(parziale: {
-  salita?: Partial<StatoVerso>;
-  discesa?: Partial<StatoVerso> & { tabelleNonScaricate?: StatoGiri["discesa"]["tabelleNonScaricate"] };
-  inCorsoDal?: string | null;
-  ultimoSuccesso?: string | null;
-} = {}): StatoGiri {
+function giri(
+  parziale: {
+    salita?: Partial<StatoVerso>;
+    discesa?: Partial<StatoVerso> & {
+      tabelleNonScaricate?: StatoGiri["discesa"]["tabelleNonScaricate"];
+    };
+    inCorsoDal?: string | null;
+    ultimoSuccesso?: string | null;
+  } = {}
+): StatoGiri {
   return {
     salita: verso(parziale.salita),
-    discesa: { ...verso(parziale.discesa), tabelleNonScaricate: parziale.discesa?.tabelleNonScaricate ?? [] },
+    discesa: {
+      ...verso(parziale.discesa),
+      tabelleNonScaricate: parziale.discesa?.tabelleNonScaricate ?? [],
+    },
     inCorsoDal: parziale.inCorsoDal ?? null,
     ultimoSuccesso: parziale.ultimoSuccesso ?? "2026-10-10T14:00:00.000Z",
   };
@@ -99,7 +109,11 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
   it("le accantonate vincono su tutto, con il pallino", () => {
     const stato = statoDaMostrare(
       { inAttesa: 2, inAttesaDal: "2026-10-10T14:02:00.000Z", accantonate: 3 },
-      giri({ salita: { esito: "sessione" }, discesa: { esito: "errore" }, inCorsoDal: inCorsoDa(5000) }),
+      giri({
+        salita: { esito: "sessione" },
+        discesa: { esito: "errore" },
+        inCorsoDal: inCorsoDa(5000),
+      }),
       ADESSO
     );
     expect(stato).toEqual({ tipo: "accantonate", numero: 3, pallino: true });
@@ -108,7 +122,10 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
   it("la sessione scaduta, anche solo in discesa, vince su un rifiuto del server", () => {
     const stato = statoDaMostrare(
       { ...CODA_VUOTA, inAttesa: 2 },
-      giri({ salita: { esito: "errore", dal: "2026-10-10T14:00:00.000Z", diFila: 3 }, discesa: { esito: "sessione" } }),
+      giri({
+        salita: { esito: "errore", dal: "2026-10-10T14:00:00.000Z", diFila: 3 },
+        discesa: { esito: "sessione" },
+      }),
       ADESSO
     );
     expect(stato).toEqual({ tipo: "sessione", inAttesa: 2, dettagli: [], pallino: true });
@@ -120,7 +137,12 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
       giri({ salita: { esito: "errore", dal: "2026-10-10T14:02:00.000Z", diFila: 1 } }),
       ADESSO
     );
-    expect(primo).toMatchObject({ tipo: "errore", inAttesa: 1, dal: "2026-10-10T14:02:00.000Z", pallino: false });
+    expect(primo).toMatchObject({
+      tipo: "errore",
+      inAttesa: 1,
+      dal: "2026-10-10T14:02:00.000Z",
+      pallino: false,
+    });
 
     const secondo = statoDaMostrare(
       { ...CODA_VUOTA, inAttesa: 1 },
@@ -135,7 +157,12 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
       CODA_VUOTA,
       giri({
         salita: { esito: "errore", dal: "2026-10-10T14:10:00.000Z", diFila: 1 },
-        discesa: { esito: "errore", dal: "2026-10-10T13:50:00.000Z", diFila: 2, tabelleNonScaricate: ["pasti"] },
+        discesa: {
+          esito: "errore",
+          dal: "2026-10-10T13:50:00.000Z",
+          diFila: 2,
+          tabelleNonScaricate: ["pasti"],
+        },
       }),
       ADESSO
     );
@@ -152,12 +179,27 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
   // Dal 02/11/2026: "Dettagli tecnici" per sessione ed errore. Prima la
   // discesa, poi la salita; un verso andato bene non porta righe.
   it("sessione ed errore portano i dettagli dei due versi, prima la discesa", () => {
-    const giu = { verso: "discesa" as const, tabella: "composizioni" as const, status: 401, codice: "PGRST303", messaggio: "JWT issued at future" };
-    const su = { verso: "salita" as const, tabella: "pasti" as const, status: 400, codice: "23514", messaggio: "violates check constraint" };
+    const giu = {
+      verso: "discesa" as const,
+      tabella: "composizioni" as const,
+      status: 401,
+      codice: "PGRST303",
+      messaggio: "JWT issued at future",
+    };
+    const su = {
+      verso: "salita" as const,
+      tabella: "pasti" as const,
+      status: 400,
+      codice: "23514",
+      messaggio: "violates check constraint",
+    };
 
     const sessione = statoDaMostrare(
       CODA_VUOTA,
-      giri({ discesa: { esito: "sessione", dettagli: [giu] }, salita: { esito: "errore", diFila: 1, dettagli: [su] } }),
+      giri({
+        discesa: { esito: "sessione", dettagli: [giu] },
+        salita: { esito: "errore", diFila: 1, dettagli: [su] },
+      }),
       ADESSO
     );
     expect(sessione).toMatchObject({ tipo: "sessione", dettagli: [giu, su] });
@@ -174,12 +216,16 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
     azzeraStatoGiri();
     segnaFineGiro("discesa", "sessione", {
       parlatoColServer: true,
-      dettagli: [{ verso: "discesa", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: null }],
+      dettagli: [
+        { verso: "discesa", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: null },
+      ],
     });
     expect(leggiStatoGiri().discesa.dettagli).toHaveLength(1);
     segnaFineGiro("discesa", "ok", {
       parlatoColServer: true,
-      dettagli: [{ verso: "discesa", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: null }],
+      dettagli: [
+        { verso: "discesa", tabella: "pasti", status: 401, codice: "PGRST303", messaggio: null },
+      ],
     });
     expect(leggiStatoGiri().discesa.dettagli).toEqual([]);
   });
@@ -187,7 +233,10 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
   it("un errore resta a schermo mentre il giro dopo è in corso (niente sfarfallio)", () => {
     const stato = statoDaMostrare(
       { ...CODA_VUOTA, inAttesa: 1 },
-      giri({ salita: { esito: "errore", dal: "2026-10-10T14:02:00.000Z", diFila: 1 }, inCorsoDal: inCorsoDa(5000) }),
+      giri({
+        salita: { esito: "errore", dal: "2026-10-10T14:02:00.000Z", diFila: 1 },
+        inCorsoDal: inCorsoDa(5000),
+      }),
       ADESSO
     );
     expect(stato.tipo).toBe("errore");
@@ -195,7 +244,8 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
 
   it("in corso si mostra solo dopo un secondo", () => {
     expect(
-      statoDaMostrare(CODA_VUOTA, giri({ inCorsoDal: inCorsoDa(RITARDO_IN_CORSO_MS - 1) }), ADESSO).tipo
+      statoDaMostrare(CODA_VUOTA, giri({ inCorsoDal: inCorsoDa(RITARDO_IN_CORSO_MS - 1) }), ADESSO)
+        .tipo
     ).toBe("sincronizzato");
     expect(
       statoDaMostrare(CODA_VUOTA, giri({ inCorsoDal: inCorsoDa(RITARDO_IN_CORSO_MS) }), ADESSO)
@@ -208,23 +258,40 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
       giri({ salita: { esito: "rete", dal: "2026-10-08T14:02:00.000Z", diFila: 40 } }),
       ADESSO
     );
-    expect(stato).toEqual({ tipo: "in-attesa", numero: 2, dal: "2026-10-08T14:02:00.000Z", pallino: false });
+    expect(stato).toEqual({
+      tipo: "in-attesa",
+      numero: 2,
+      dal: "2026-10-08T14:02:00.000Z",
+      pallino: false,
+    });
   });
 
   it("la voce di una scrittura appena fatta, con l'ultimo giro andato bene, non fa comparire 'in attesa'", () => {
     const coda = { inAttesa: 1, inAttesaDal: "2026-10-10T14:29:59.900Z", accantonate: 0 };
     const giroAppenaPartito = inCorsoDa(100);
-    expect(statoDaMostrare(coda, giri({ salita: { esito: "ok" }, inCorsoDal: giroAppenaPartito }), ADESSO).tipo).toBe(
-      "sincronizzato"
-    );
+    expect(
+      statoDaMostrare(
+        coda,
+        giri({ salita: { esito: "ok" }, inCorsoDal: giroAppenaPartito }),
+        ADESSO
+      ).tipo
+    ).toBe("sincronizzato");
     // Se l'ultimo giro era fallito per la rete, o non c'è ancora stato,
     // le voci aspettano davvero.
     expect(
-      statoDaMostrare(coda, giri({ salita: { esito: "rete", diFila: 1 }, inCorsoDal: giroAppenaPartito }), ADESSO).tipo
+      statoDaMostrare(
+        coda,
+        giri({ salita: { esito: "rete", diFila: 1 }, inCorsoDal: giroAppenaPartito }),
+        ADESSO
+      ).tipo
     ).toBe("in-attesa");
-    expect(statoDaMostrare(coda, giri({ salita: { esito: null }, inCorsoDal: giroAppenaPartito }), ADESSO).tipo).toBe(
-      "in-attesa"
-    );
+    expect(
+      statoDaMostrare(
+        coda,
+        giri({ salita: { esito: null }, inCorsoDal: giroAppenaPartito }),
+        ADESSO
+      ).tipo
+    ).toBe("in-attesa");
   });
 
   it("un giro che lavora davvero sulla coda da più di un secondo si mostra in corso", () => {
@@ -242,7 +309,11 @@ describe("statoDaMostrare — un solo stato, per priorità", () => {
       giri({ discesa: { esito: "rete", diFila: 3 }, ultimoSuccesso: "2026-10-10T08:15:00.000Z" }),
       ADESSO
     );
-    expect(stato).toEqual({ tipo: "sincronizzato", ultimoSuccesso: "2026-10-10T08:15:00.000Z", pallino: false });
+    expect(stato).toEqual({
+      tipo: "sincronizzato",
+      ultimoSuccesso: "2026-10-10T08:15:00.000Z",
+      pallino: false,
+    });
   });
 });
 
@@ -324,8 +395,20 @@ describe("lo stato dei giri, aggiornato da salita e discesa", () => {
 
     expect(nonScaricate).toEqual(
       expect.arrayContaining([
-        { tabella: "pasti", esito: "sessione", status: 401, codice: null, messaggio: "JWT expired" },
-        { tabella: "alimenti", esito: "rete", status: 0, codice: null, messaggio: "FetchError: Load failed" },
+        {
+          tabella: "pasti",
+          esito: "sessione",
+          status: 401,
+          codice: null,
+          messaggio: "JWT expired",
+        },
+        {
+          tabella: "alimenti",
+          esito: "rete",
+          status: 0,
+          codice: null,
+          messaggio: "FetchError: Load failed",
+        },
       ])
     );
     expect(nonScaricate).toHaveLength(2);
@@ -337,9 +420,14 @@ describe("lo stato dei giri, aggiornato da salita e discesa", () => {
   });
 
   it("discesa: un rifiuto del server su una tabella dà esito errore", async () => {
-    server.rispostePerTabella = { misurazioni: { error: { message: "permission denied" }, status: 403 } };
+    server.rispostePerTabella = {
+      misurazioni: { error: { message: "permission denied" }, status: 403 },
+    };
     await scaricaTutto("u1");
-    expect(leggiStatoGiri().discesa).toMatchObject({ esito: "errore", tabelleNonScaricate: ["misurazioni"] });
+    expect(leggiStatoGiri().discesa).toMatchObject({
+      esito: "errore",
+      tabelleNonScaricate: ["misurazioni"],
+    });
   });
 
   it("discesa tutta riuscita: esito ok e ora dell'ultimo contatto", async () => {

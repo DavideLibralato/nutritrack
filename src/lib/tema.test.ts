@@ -79,7 +79,12 @@ function apri(
     sistemaScuro,
     accento = null,
     storageRotto = false,
-  }: { scelta: string | null; sistemaScuro: boolean; accento?: string | null; storageRotto?: boolean }
+  }: {
+    scelta: string | null;
+    sistemaScuro: boolean;
+    accento?: string | null;
+    storageRotto?: boolean;
+  }
 ) {
   const ascoltatori: (() => void)[] = [];
   const sistema = {
@@ -153,7 +158,9 @@ describe.each(Object.entries(PAGINE))("script del tema: %s", (_nome, html) => {
   });
 
   it("senza localStorage (Safari privato) fa come sistema e verde, senza errori", () => {
-    expect(apri(html, { scelta: null, sistemaScuro: false, storageRotto: true }).tema()).toBe("chiaro");
+    expect(apri(html, { scelta: null, sistemaScuro: false, storageRotto: true }).tema()).toBe(
+      "chiaro"
+    );
     const pagina = apri(html, { scelta: null, sistemaScuro: true, storageRotto: true });
     expect(pagina.tema()).toBe("scuro");
     expect(pagina.accento()).toBe("verde");

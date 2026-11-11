@@ -66,7 +66,10 @@ describe("SheetQuantita, grammi precompilati", () => {
   });
 
   it("da 10.000 g in su niente punto delle migliaia: si risalva lo stesso numero", () => {
-    const { campo, conferma, onConferma } = apri(12500.25, { grammiIniziali: 12500.25, modifica: true });
+    const { campo, conferma, onConferma } = apri(12500.25, {
+      grammiIniziali: 12500.25,
+      modifica: true,
+    });
     expect(campo.value).toBe("12500,25");
     fireEvent.click(conferma);
     expect(onConferma).toHaveBeenCalledWith(12500.25);

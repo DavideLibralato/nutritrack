@@ -72,7 +72,9 @@ export default function PassoTargetGiornalieri({
       errore={errore}
       onAvanti={onInizia}
     >
-      <h1 className={CLASSE_DOMANDA}>{propostaIntatta ? "Ecco la tua proposta" : "I tuoi obiettivi"}</h1>
+      <h1 className={CLASSE_DOMANDA}>
+        {propostaIntatta ? "Ecco la tua proposta" : "I tuoi obiettivi"}
+      </h1>
       <p className={`${CLASSE_SOTTO} mb-2`}>
         {propostaIntatta ? (
           "Calcolato dai tuoi dati. Tocca un numero per cambiarlo."
@@ -133,7 +135,9 @@ export default function PassoTargetGiornalieri({
           </button>
         </p>
       )}
-      <p className={CLASSE_NOTA}>Giorni di allenamento, pasti e orari e colore dell&apos;app li trovi in Impostazioni.</p>
+      <p className={CLASSE_NOTA}>
+        Giorni di allenamento, pasti e orari e colore dell&apos;app li trovi in Impostazioni.
+      </p>
     </StrutturaPasso>
   );
 }

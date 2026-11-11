@@ -81,17 +81,23 @@ describe("classificaErroreCambio", () => {
   it.each(["current_password_invalid", "current_password_mismatch"])(
     "stesso testo, codici diversi: %s è «sbagliata», non «mancante»",
     (codice) => {
-      expect(classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, codice))).toBe("attuale-sbagliata");
-      expect(classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, "current_password_required"))).toBe(
-        "attuale-mancante"
+      expect(classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, codice))).toBe(
+        "attuale-sbagliata"
       );
+      expect(
+        classificaErroreCambio(new AuthApiError(TESTO_ATTUALE, 400, "current_password_required"))
+      ).toBe("attuale-mancante");
     }
   );
 
   it.each<[string, AuthError, EsitoCambio]>([
     [
       "nuova uguale",
-      new AuthApiError("New password should be different from the old password.", 422, "same_password"),
+      new AuthApiError(
+        "New password should be different from the old password.",
+        422,
+        "same_password"
+      ),
       "uguale",
     ],
     [
@@ -109,10 +115,18 @@ describe("classificaErroreCambio", () => {
       new AuthApiError("Password update requires reauthentication", 400, "reauthentication_needed"),
       "riautenticazione",
     ],
-    ["sessione chiusa", new AuthApiError("Session not found", 403, "session_not_found"), "sessione"],
+    [
+      "sessione chiusa",
+      new AuthApiError("Session not found", 403, "session_not_found"),
+      "sessione",
+    ],
     ["nessuna sessione", new AuthSessionMissingError(), "sessione"],
     ["rete", senzaRete(), "risposta-persa"],
-    ["errore del server", new AuthApiError("Internal Server Error", 500, "unexpected_failure"), "errore"],
+    [
+      "errore del server",
+      new AuthApiError("Internal Server Error", 500, "unexpected_failure"),
+      "errore",
+    ],
   ])("%s", (_, errore, atteso) => {
     expect(classificaErroreCambio(errore)).toBe(atteso);
   });
@@ -137,7 +151,10 @@ describe("cambiaPassword", () => {
   });
 
   it("sessione non più valida prima della chiamata: sessione, nessuna chiamata", async () => {
-    rispostaUtente = { data: { user: null }, error: new AuthApiError("Session not found", 403, "session_not_found") };
+    rispostaUtente = {
+      data: { user: null },
+      error: new AuthApiError("Session not found", 403, "session_not_found"),
+    };
     expect(await cambiaPassword("vecchia1", "nuova123")).toBe("sessione");
     expect(updateUser).not.toHaveBeenCalled();
   });

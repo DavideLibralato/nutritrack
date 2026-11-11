@@ -167,15 +167,29 @@ function disegnaPeriodo(
 
 describe("valore sopra la barra toccata", () => {
   it("nella settimana c'è", () => {
-    const c = disegnaPeriodo("settimana", "2026-11-09", "2026-11-20", [voce("2026-11-10", 577)], "2026-11-10");
+    const c = disegnaPeriodo(
+      "settimana",
+      "2026-11-09",
+      "2026-11-20",
+      [voce("2026-11-10", 577)],
+      "2026-11-10"
+    );
     expect(c.querySelector('[data-segno="valore-toccato"]')?.textContent).toBe("577");
   });
 
   it("nel mese no: la colonna è più stretta del numero", () => {
-    const c = disegnaPeriodo("mese", "2026-11-01", "2026-11-20", [voce("2026-11-10", 577)], "2026-11-10");
+    const c = disegnaPeriodo(
+      "mese",
+      "2026-11-01",
+      "2026-11-20",
+      [voce("2026-11-10", 577)],
+      "2026-11-10"
+    );
     expect(c.querySelector('[data-segno="valore-toccato"]')).toBeNull();
     // La colonna resta evidenziata come toccata.
-    expect(c.querySelector('[data-giorno="2026-11-10"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(c.querySelector('[data-giorno="2026-11-10"]')?.getAttribute("aria-pressed")).toBe(
+      "true"
+    );
   });
 });
 

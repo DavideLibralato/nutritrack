@@ -69,12 +69,22 @@ describe("le chiamate", () => {
   });
 
   it("un esito che non conosce, o un errore, vale errore", async () => {
-    expect(await mandaAlimenti(clienteFinto({ data: "boh", error: null }).client, "i", ["s"], [PANE])).toBe("errore");
     expect(
-      await rispondiAlimentiCondivisi(clienteFinto({ data: null, error: { message: "x" } }).client, ["a"], "rifiuta")
+      await mandaAlimenti(clienteFinto({ data: "boh", error: null }).client, "i", ["s"], [PANE])
     ).toBe("errore");
-    expect(await rispondiAlimentiCondivisi(clienteFinto({ data: "non_trovata", error: null }).client, ["a"], "rifiuta")).toBe(
-      "non_trovata"
-    );
+    expect(
+      await rispondiAlimentiCondivisi(
+        clienteFinto({ data: null, error: { message: "x" } }).client,
+        ["a"],
+        "rifiuta"
+      )
+    ).toBe("errore");
+    expect(
+      await rispondiAlimentiCondivisi(
+        clienteFinto({ data: "non_trovata", error: null }).client,
+        ["a"],
+        "rifiuta"
+      )
+    ).toBe("non_trovata");
   });
 });

@@ -66,14 +66,14 @@ export default function RigaAlimentoInArrivo({
   const testi = (
     <>
       <p className="font-semibold leading-snug">{etichettaAlimento(riga)}</p>
-          {confronto.tipo === "diverso" && (
-            <p className="mt-0.5 text-sm text-warning">{testoDoppioneDiverso(confronto.mio)}</p>
-          )}
-          {confronto.tipo === "uguale" && (
-            <p className="mt-0.5 text-sm text-muted">{TESTO_VALORI_IDENTICI}</p>
-          )}
-          <p className="mt-0.5 text-sm text-muted">{username ? `Da @${username}` : "Da un amico"}</p>
-          <p className="mt-0.5 text-sm tabular-nums text-muted">{testoValoriBrevi(riga)}</p>
+      {confronto.tipo === "diverso" && (
+        <p className="mt-0.5 text-sm text-warning">{testoDoppioneDiverso(confronto.mio)}</p>
+      )}
+      {confronto.tipo === "uguale" && (
+        <p className="mt-0.5 text-sm text-muted">{TESTO_VALORI_IDENTICI}</p>
+      )}
+      <p className="mt-0.5 text-sm text-muted">{username ? `Da @${username}` : "Da un amico"}</p>
+      <p className="mt-0.5 text-sm tabular-nums text-muted">{testoValoriBrevi(riga)}</p>
     </>
   );
 
@@ -116,35 +116,35 @@ export default function RigaAlimentoInArrivo({
         </div>
 
         {pulsanti && (
-        <div className="flex w-[8.5rem] shrink-0 flex-col gap-2">
-          {confronto.tipo === "nuovo" && (
-            <>
-              <button type="button" onClick={onAggiungi} disabled={bloccata} className={PIENO}>
-                Aggiungi
-              </button>
-              <button type="button" onClick={onRifiuta} disabled={bloccata} className={VUOTO}>
-                Rifiuta
-              </button>
-            </>
-          )}
-          {confronto.tipo === "uguale" && (
-            <button type="button" onClick={onOk} disabled={bloccata} className={VUOTO}>
-              Ok
-            </button>
-          )}
-          {confronto.tipo === "diverso" && (
-            <>
-              {confronto.modificabile && (
-                <button type="button" onClick={onUsaValori} disabled={bloccata} className={PIENO}>
-                  Usa questi valori
+          <div className="flex w-[8.5rem] shrink-0 flex-col gap-2">
+            {confronto.tipo === "nuovo" && (
+              <>
+                <button type="button" onClick={onAggiungi} disabled={bloccata} className={PIENO}>
+                  Aggiungi
                 </button>
-              )}
-              <button type="button" onClick={onRifiuta} disabled={bloccata} className={VUOTO}>
-                Tieni i miei
+                <button type="button" onClick={onRifiuta} disabled={bloccata} className={VUOTO}>
+                  Rifiuta
+                </button>
+              </>
+            )}
+            {confronto.tipo === "uguale" && (
+              <button type="button" onClick={onOk} disabled={bloccata} className={VUOTO}>
+                Ok
               </button>
-            </>
-          )}
-        </div>
+            )}
+            {confronto.tipo === "diverso" && (
+              <>
+                {confronto.modificabile && (
+                  <button type="button" onClick={onUsaValori} disabled={bloccata} className={PIENO}>
+                    Usa questi valori
+                  </button>
+                )}
+                <button type="button" onClick={onRifiuta} disabled={bloccata} className={VUOTO}>
+                  Tieni i miei
+                </button>
+              </>
+            )}
+          </div>
         )}
       </div>
 

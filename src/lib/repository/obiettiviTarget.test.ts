@@ -43,9 +43,7 @@ describe("targetEffettivo", () => {
   });
 
   it("non ripiega su un target 'normale' di un ALTRO obiettivo", () => {
-    const righe = [
-      target({ obiettivo_id: "ob1", tipo_giorno: TIPO_GIORNO_NORMALE, kcal: 2200 }),
-    ];
+    const righe = [target({ obiettivo_id: "ob1", tipo_giorno: TIPO_GIORNO_NORMALE, kcal: 2200 })];
     expect(targetEffettivo(righe, "ob2", TIPO_GIORNO_ALLENAMENTO)).toBeNull();
   });
 

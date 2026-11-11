@@ -62,7 +62,12 @@ export async function chiediAmicizia(
   valore: string
 ): Promise<EsitoChiediAmicizia> {
   if (!usernameValido(valore)) return "non_trovato";
-  return chiama(supabase, "chiedi_amicizia", { p_username: normalizzaUsername(valore) }, ESITI_CHIEDI);
+  return chiama(
+    supabase,
+    "chiedi_amicizia",
+    { p_username: normalizzaUsername(valore) },
+    ESITI_CHIEDI
+  );
 }
 
 export function rispondiAmicizia(
@@ -94,8 +99,7 @@ export function chiudiRifiuto(supabase: SupabaseClient, id: string): Promise<Esi
 // riceve, i rifiuti nascosti) e gli username degli altri, in una seconda
 // lettura: nomi_utente fa leggere solo quelli di chi ha una riga con me.
 export type LetturaAmicizie =
-  | { esito: "ok"; righe: Amicizia[]; nomi: Record<string, string> }
-  | { esito: "errore" };
+  { esito: "ok"; righe: Amicizia[]; nomi: Record<string, string> } | { esito: "errore" };
 
 export async function leggiAmicizie(
   supabase: SupabaseClient,
@@ -111,9 +115,7 @@ export async function leggiAmicizie(
     if (error || !Array.isArray(righe)) return { esito: "errore" };
 
     const altri = [
-      ...new Set(
-        (righe as Amicizia[]).map((r) => (r.user_id === io ? r.amico_id : r.user_id))
-      ),
+      ...new Set((righe as Amicizia[]).map((r) => (r.user_id === io ? r.amico_id : r.user_id))),
     ];
     const nomi: Record<string, string> = {};
     if (altri.length > 0) {

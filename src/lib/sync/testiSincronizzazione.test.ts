@@ -36,15 +36,39 @@ describe("da quando e controllato alle", () => {
 
 describe("testiStato", () => {
   it("in attesa: singolare, plurale e da quando", () => {
-    const una = testiStato({ tipo: "in-attesa", numero: 1, dal: OGGI_1402, pallino: false }, CODA, "", ADESSO);
-    expect(una).toMatchObject({ titolo: "1 modifica in attesa", quando: "In attesa dalle 14:02", tono: "attesa" });
-    const due = testiStato({ tipo: "in-attesa", numero: 2, dal: IERI_2341, pallino: false }, CODA, "", ADESSO);
-    expect(due).toMatchObject({ titolo: "2 modifiche in attesa", quando: "In attesa da ieri alle 23:41" });
+    const una = testiStato(
+      { tipo: "in-attesa", numero: 1, dal: OGGI_1402, pallino: false },
+      CODA,
+      "",
+      ADESSO
+    );
+    expect(una).toMatchObject({
+      titolo: "1 modifica in attesa",
+      quando: "In attesa dalle 14:02",
+      tono: "attesa",
+    });
+    const due = testiStato(
+      { tipo: "in-attesa", numero: 2, dal: IERI_2341, pallino: false },
+      CODA,
+      "",
+      ADESSO
+    );
+    expect(due).toMatchObject({
+      titolo: "2 modifiche in attesa",
+      quando: "In attesa da ieri alle 23:41",
+    });
   });
 
   it("errore in salita (modifiche in coda) e in discesa (nessuna)", () => {
     const salita = testiStato(
-      { tipo: "errore", inAttesa: 1, dal: OGGI_1402, tabelleNonScaricate: [], dettagli: [], pallino: false },
+      {
+        tipo: "errore",
+        inAttesa: 1,
+        dal: OGGI_1402,
+        tabelleNonScaricate: [],
+        dettagli: [],
+        pallino: false,
+      },
       CODA,
       "",
       ADESSO
@@ -56,12 +80,22 @@ describe("testiStato", () => {
       tono: "avviso",
     });
     const discesa = testiStato(
-      { tipo: "errore", inAttesa: 0, dal: IERI_2341, tabelleNonScaricate: ["pasti"], dettagli: [], pallino: true },
+      {
+        tipo: "errore",
+        inAttesa: 0,
+        dal: IERI_2341,
+        tabelleNonScaricate: ["pasti"],
+        dettagli: [],
+        pallino: true,
+      },
       CODA,
       "",
       ADESSO
     );
-    expect(discesa).toMatchObject({ titolo: "Non riesco a scaricare i dati dal server", quando: "Da ieri alle 23:41" });
+    expect(discesa).toMatchObject({
+      titolo: "Non riesco a scaricare i dati dal server",
+      quando: "Da ieri alle 23:41",
+    });
   });
 
   it("sessione scaduta: con modifiche in attesa dice quante e da quando", () => {
@@ -71,13 +105,22 @@ describe("testiStato", () => {
       "",
       ADESSO
     );
-    expect(testi).toMatchObject({ titolo: "Accesso scaduto", quando: "2 modifiche in attesa dalle 14:02", icona: "chiave" });
+    expect(testi).toMatchObject({
+      titolo: "Accesso scaduto",
+      quando: "2 modifiche in attesa dalle 14:02",
+      icona: "chiave",
+    });
   });
 
   // Dal 02/11/2026 (mockup docs/mockups/sincronizzazione-sessione.html,
   // proposta C): prima si riprova con "Sincronizza ora", poi si esce.
   it("sessione scaduta: il testo manda prima a Sincronizza ora, con e senza modifiche in coda", () => {
-    const senza = testiStato({ tipo: "sessione", inAttesa: 0, dettagli: [], pallino: true }, CODA, "", ADESSO);
+    const senza = testiStato(
+      { tipo: "sessione", inAttesa: 0, dettagli: [], pallino: true },
+      CODA,
+      "",
+      ADESSO
+    );
     expect(senza.testo).toBe("Prova con Sincronizza ora. Se torna, esci e rientra.");
     expect(senza.quando).toBeNull();
 
@@ -99,19 +142,29 @@ describe("testiStato", () => {
       { tabella: "pasti" },
     ] as VoceOutbox[];
     expect(riepilogoPerTipo(voci)).toBe("Diario (2), Pasti (1)");
-    const testi = testiStato({ tipo: "accantonate", numero: 3, pallino: true }, CODA, riepilogoPerTipo(voci), ADESSO);
+    const testi = testiStato(
+      { tipo: "accantonate", numero: 3, pallino: true },
+      CODA,
+      riepilogoPerTipo(voci),
+      ADESSO
+    );
     expect(testi).toMatchObject({
       titolo: "3 modifiche non salvate online",
       testo: "L'app ha smesso di riprovare dopo 5 rifiuti del server.",
       quando: "Diario (2), Pasti (1)",
     });
-    expect(testiStato({ tipo: "accantonate", numero: 1, pallino: true }, CODA, "", ADESSO).titolo).toBe(
-      "1 modifica non salvata online"
-    );
+    expect(
+      testiStato({ tipo: "accantonate", numero: 1, pallino: true }, CODA, "", ADESSO).titolo
+    ).toBe("1 modifica non salvata online");
   });
 
   it("sincronizzato senza un'ora salvata: niente riga 'controllato'", () => {
-    const testi = testiStato({ tipo: "sincronizzato", ultimoSuccesso: null, pallino: false }, CODA, "", ADESSO);
+    const testi = testiStato(
+      { tipo: "sincronizzato", ultimoSuccesso: null, pallino: false },
+      CODA,
+      "",
+      ADESSO
+    );
     expect(testi).toMatchObject({ titolo: "Tutto salvato online", quando: null, tono: "accento" });
   });
 });
@@ -131,10 +184,22 @@ describe("rigaDettaglio", () => {
 
   it("le parti che mancano si saltano; lo status 0 resta", () => {
     expect(
-      rigaDettaglio({ verso: "salita", tabella: "pasti", status: 0, codice: null, messaggio: "Failed to fetch" })
+      rigaDettaglio({
+        verso: "salita",
+        tabella: "pasti",
+        status: 0,
+        codice: null,
+        messaggio: "Failed to fetch",
+      })
     ).toBe("salita · pasti · 0 · Failed to fetch");
     expect(
-      rigaDettaglio({ verso: "salita", tabella: "pasti", status: null, codice: null, messaggio: null })
+      rigaDettaglio({
+        verso: "salita",
+        tabella: "pasti",
+        status: null,
+        codice: null,
+        messaggio: null,
+      })
     ).toBe("salita · pasti");
   });
 });

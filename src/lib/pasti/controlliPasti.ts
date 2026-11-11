@@ -52,7 +52,8 @@ export function normalizzaOra(ora: string): string {
 // il periodo dato.
 function concorrenti(righe: Pasto[], periodo: Periodo, escludi: string[]): Pasto[] {
   return righe.filter(
-    (r) => r.deleted_at === null && !escludi.includes(r.id) && periodiInComune(periodoDi(r), periodo)
+    (r) =>
+      r.deleted_at === null && !escludi.includes(r.id) && periodiInComune(periodoDi(r), periodo)
   );
 }
 
@@ -94,7 +95,9 @@ export function erroreOra(
 ): string | null {
   const hhmm = normalizzaOra(ora);
   if (hhmm === "") return ERRORE_ORA_VUOTA;
-  const occupato = concorrenti(righe, periodo, escludi).find((r) => normalizzaOra(r.ora_inizio) === hhmm);
+  const occupato = concorrenti(righe, periodo, escludi).find(
+    (r) => normalizzaOra(r.ora_inizio) === hhmm
+  );
   if (!occupato) return null;
   const { dal, al } = periodoDi(occupato);
   if (al !== null && al < oggi) {
@@ -148,13 +151,17 @@ export function periodoCoperto(periodo: Periodo, altri: Pasto[]): boolean {
   for (;;) {
     const coprono = vivi.filter(
       (p) =>
-        (p.dal === null || (da !== null && p.dal <= da)) && (p.al === null || da === null || p.al >= da)
+        (p.dal === null || (da !== null && p.dal <= da)) &&
+        (p.al === null || da === null || p.al >= da)
     );
     if (coprono.length === 0) return false;
     // Fra quelli che coprono `da`, quello che arriva più lontano.
     const fine = coprono.some((p) => p.al === null)
       ? null
-      : coprono.reduce((max, p) => ((p.al as string) > max ? (p.al as string) : max), coprono[0].al as string);
+      : coprono.reduce(
+          (max, p) => ((p.al as string) > max ? (p.al as string) : max),
+          coprono[0].al as string
+        );
     if (fine === null) return true;
     if (periodo.al !== null && fine >= periodo.al) return true;
     da = giornoSuccessivo(fine);
@@ -187,13 +194,18 @@ export function regoleElimina(pasto: Pasto, righe: Pasto[], oggi: string): Regol
   const altri = righe.filter((r) => !ids.has(r.id));
   const fine = toccate.some((r) => (r.valido_al ?? null) === null)
     ? null
-    : toccate.reduce((max, r) => ((r.valido_al as string) > max ? (r.valido_al as string) : max), "");
+    : toccate.reduce(
+        (max, r) => ((r.valido_al as string) > max ? (r.valido_al as string) : max),
+        ""
+      );
   const dal = pasto.valido_dal ?? null;
   const daOggi: Periodo = { dal: dal !== null && dal > oggi ? dal : oggi, al: fine };
   return {
     motivoSpento: periodoCoperto(daOggi, altri) ? null : ERRORE_UNICO_PASTO,
     senzaDomanda: iniziaOggiODopo(pasto, oggi),
-    motivoPassatiSpento: periodoCoperto({ dal, al: fine }, altri) ? null : ERRORE_GIORNI_SENZA_PASTI,
+    motivoPassatiSpento: periodoCoperto({ dal, al: fine }, altri)
+      ? null
+      : ERRORE_GIORNI_SENZA_PASTI,
   };
 }
 

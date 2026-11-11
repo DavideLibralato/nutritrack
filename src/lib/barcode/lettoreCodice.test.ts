@@ -32,9 +32,13 @@ describe("il WebAssembly servito da /public", () => {
 
 describe("primoCodiceValido", () => {
   it("legge EAN-13, EAN-8 e UPC-A; l'UPC-A diventa 13 cifre", () => {
-    expect(primoCodiceValido([{ format: "ean_13", rawValue: "3017620422003" }])).toBe("3017620422003");
+    expect(primoCodiceValido([{ format: "ean_13", rawValue: "3017620422003" }])).toBe(
+      "3017620422003"
+    );
     expect(primoCodiceValido([{ format: "ean_8", rawValue: "96385074" }])).toBe("96385074");
-    expect(primoCodiceValido([{ format: "upc_a", rawValue: "036000291452" }])).toBe("0036000291452");
+    expect(primoCodiceValido([{ format: "upc_a", rawValue: "036000291452" }])).toBe(
+      "0036000291452"
+    );
     expect(FORMATI).toEqual(["ean_13", "ean_8", "upc_a"]);
   });
 

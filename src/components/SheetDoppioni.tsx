@@ -106,8 +106,10 @@ export default function SheetDoppioni({
 
   // Somma è spenta se il totale supera il massimo (numeric(7,2)): il
   // blocco parte allora da "Tieni separati", e Somma non si può scegliere.
-  const sommaSpenta = (d: Doppione) => oltreIlMassimo(totaleSomma(d.grammiEsistenti, d.grammiInArrivo));
-  const tipoDi = (d: Doppione): TipoScelta => tipi[d.alimentoId] ?? (sommaSpenta(d) ? "separati" : "somma");
+  const sommaSpenta = (d: Doppione) =>
+    oltreIlMassimo(totaleSomma(d.grammiEsistenti, d.grammiInArrivo));
+  const tipoDi = (d: Doppione): TipoScelta =>
+    tipi[d.alimentoId] ?? (sommaSpenta(d) ? "separati" : "somma");
   const letture = Object.fromEntries(
     doppioni.map((d) => [d.alimentoId, leggiGrammi(valori[d.alimentoId] ?? "")])
   );
@@ -254,7 +256,9 @@ export default function SheetDoppioni({
                     </div>
                   )}
 
-                  <p className={`mt-2 text-sm ${tipo === "escludi" ? "text-warning" : "text-muted"}`}>
+                  <p
+                    className={`mt-2 text-sm ${tipo === "escludi" ? "text-warning" : "text-muted"}`}
+                  >
                     {testoEsitoDoppione(d, tipo, lettura.grammi, esitoEscludi)}
                   </p>
                 </li>
@@ -283,7 +287,9 @@ export default function SheetDoppioni({
             </button>
           </div>
           {mancanti.length > 0 && (
-            <p className="mt-2 shrink-0 text-sm text-muted">Per salvare mancano: {mancanti.join(", ")}.</p>
+            <p className="mt-2 shrink-0 text-sm text-muted">
+              Per salvare mancano: {mancanti.join(", ")}.
+            </p>
           )}
         </div>
       </div>

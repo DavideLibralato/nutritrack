@@ -1,6 +1,6 @@
-# Prettier è configurato ma non ancora applicato a tutto src: il primo
-# lancio sarà un commit separato, solo di formattazione
-# (PUNTO_DI_PARTENZA.md, sezione 8).
+# Prettier è applicato a tutto il progetto dall'11/11 (commit "solo
+# Prettier" del branch lavoretti; PUNTO_DI_PARTENZA.md, sezione 8). Prima
+# di ogni commit: npm run format:check.
 #
 # Stesse regole di .gitignore: un nome senza "/" iniziale vale in ogni
 # cartella ("supabase" escluderebbe anche src/lib/supabase), con "/"
@@ -15,6 +15,13 @@ next-env.d.ts
 /.impeccable
 /public
 /supabase
+
+# Il catalogo: catalogoPrecaricato.json lo scrive generaCatalogo.mjs con
+# il suo rientro (si rigenera, Prettier lo riformatterebbe ogni volta);
+# docs/catalogo/*.json sono la lista approvata e le correzioni, da
+# lasciare come sono state scritte.
+/src/lib/catalogo/*.json
+/docs/catalogo/*.json
 
 # Appunti personali e bozze a mano
 /Claude outputs

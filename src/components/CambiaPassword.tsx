@@ -68,7 +68,9 @@ export default function CambiaPassword() {
       {!online && (
         <div role="status" className="rounded-xl border border-border bg-surface px-4 py-3">
           <p className="text-[15px] font-semibold">{SENZA_RETE_CAMBIO_PASSWORD.titolo}</p>
-          <p className="mt-0.5 text-sm leading-snug text-muted">{SENZA_RETE_CAMBIO_PASSWORD.testo}</p>
+          <p className="mt-0.5 text-sm leading-snug text-muted">
+            {SENZA_RETE_CAMBIO_PASSWORD.testo}
+          </p>
         </div>
       )}
 
@@ -133,7 +135,10 @@ export default function CambiaPassword() {
         {online && (
           <p className="mx-1 text-sm text-muted">
             Non la ricordi?{" "}
-            <Link href="/password-dimenticata" className={`rounded text-foreground underline ${CLASSE_FOCUS}`}>
+            <Link
+              href="/password-dimenticata"
+              className={`rounded text-foreground underline ${CLASSE_FOCUS}`}
+            >
               Reimpostala via email
             </Link>
           </p>

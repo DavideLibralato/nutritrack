@@ -42,9 +42,7 @@ export function creaRepository<T extends RigaBase>(
   nomeTabella: NomeTabella
 ) {
   async function ottieniTutti(userId: string | null): Promise<T[]> {
-    return tabella
-      .filter((riga) => riga.user_id === userId && riga.deleted_at === null)
-      .toArray();
+    return tabella.filter((riga) => riga.user_id === userId && riga.deleted_at === null).toArray();
   }
 
   async function ottieniPerId(id: string): Promise<T | undefined> {

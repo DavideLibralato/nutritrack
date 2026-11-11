@@ -18,11 +18,7 @@ import {
 // sparisce per sempre.
 
 // Un sessionStorage finto, che si può rompere in lettura o in scrittura.
-function memoriaFinta({
-  segno = false,
-  rottaInLettura = false,
-  rottaInScrittura = false,
-} = {}) {
+function memoriaFinta({ segno = false, rottaInLettura = false, rottaInScrittura = false } = {}) {
   const dati = new Map<string, string>();
   if (segno) dati.set(CHIAVE_APERTURA, "1");
   return {
@@ -99,12 +95,7 @@ describe("decidiApertura", () => {
 // questi casi fallirebbero. `tipo` finge il tipo di navigazione che il
 // browser dichiara: lo script non lo deve guardare (una ricarica non
 // mostra l'animazione).
-function apri({
-  percorso = "/",
-  tipo = "navigate",
-  segno = false,
-  storageRotto = false,
-} = {}) {
+function apri({ percorso = "/", tipo = "navigate", segno = false, storageRotto = false } = {}) {
   const dom = new JSDOM(
     `<!doctype html><html><head><script>${SCRIPT_APERTURA}</script></head><body></body></html>`,
     {
@@ -121,7 +112,9 @@ function apri({
           });
         }
         window.performance.getEntriesByType = ((nome: string) =>
-          nome === "navigation" ? [{ type: tipo }] : []) as unknown as typeof window.performance.getEntriesByType;
+          nome === "navigation"
+            ? [{ type: tipo }]
+            : []) as unknown as typeof window.performance.getEntriesByType;
       },
     }
   );
@@ -132,7 +125,7 @@ function apri({
 }
 
 describe("SCRIPT_APERTURA in <head>", () => {
-  it("prima apertura: data-apertura=\"mostra\" e segno scritto", () => {
+  it('prima apertura: data-apertura="mostra" e segno scritto', () => {
     const pagina = apri();
     expect(pagina.attributo()).toBe("mostra");
     expect(pagina.segno()).toBe("1");
@@ -176,7 +169,7 @@ describe("secondo livello: cambio scheda senza ricaricare", () => {
   });
 });
 
-describe("segnale \"Oggi è pronta\"", () => {
+describe('segnale "Oggi è pronta"', () => {
   it("chi ascolta prima viene avvisato una volta, quando arriva", async () => {
     vi.resetModules();
     const { quandoOggiPronta, segnalaOggiPronta } = await import("./animazioneApertura");

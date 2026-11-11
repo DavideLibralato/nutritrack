@@ -37,9 +37,7 @@ export async function togglePreferito(
   }
 
   const cancellati = await db.preferiti
-    .filter(
-      (p) => p.user_id === userId && p.alimento_id === alimentoId && p.deleted_at !== null
-    )
+    .filter((p) => p.user_id === userId && p.alimento_id === alimentoId && p.deleted_at !== null)
     .toArray();
 
   if (cancellati.length > 0) {

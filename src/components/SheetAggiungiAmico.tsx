@@ -85,8 +85,8 @@ export default function SheetAggiungiAmico({ onChiudi, onCambiato }: Props) {
             Aggiungi un amico
           </h2>
           <p className="mt-2 text-sm text-muted">
-            Scrivi il suo nome esatto, quello che ha scelto in Libra. Gli arriverà una
-            richiesta da accettare.
+            Scrivi il suo nome esatto, quello che ha scelto in Libra. Gli arriverà una richiesta da
+            accettare.
           </p>
 
           <div className="relative mt-4">

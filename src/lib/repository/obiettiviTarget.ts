@@ -14,9 +14,8 @@ export function targetPerTipo(
   tipoGiorno: string
 ): ObiettivoTarget | null {
   return (
-    righe.find(
-      (riga) => riga.obiettivo_id === obiettivoId && riga.tipo_giorno === tipoGiorno
-    ) ?? null
+    righe.find((riga) => riga.obiettivo_id === obiettivoId && riga.tipo_giorno === tipoGiorno) ??
+    null
   );
 }
 

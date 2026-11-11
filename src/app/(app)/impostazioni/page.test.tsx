@@ -106,7 +106,8 @@ describe("Impostazioni — il gruppo I tuoi dati", () => {
   });
 
   it("dopo un'esportazione: «Ultima esportazione: oggi», e si aggiorna senza ricaricare", async () => {
-    const { segnaEsportazione, togliUltimaEsportazione } = await import("@/lib/esporta/ultimaEsportazione");
+    const { segnaEsportazione, togliUltimaEsportazione } =
+      await import("@/lib/esporta/ultimaEsportazione");
     render(<ImpostazioniPage />);
     expect(await screen.findByText("Mai esportato")).toBeTruthy();
     act(() => segnaEsportazione(USER_ID));

@@ -171,18 +171,12 @@ describe("idPastoPredefinito — determinismo", () => {
     // della libreria uuid altera l'algoritmo — resterebbe comunque coerente
     // con sé stesso. Solo un valore letterale, fissato una volta e mai
     // ricalcolato dal codice sotto test, intercetta quel giorno.
-    const id = idPastoPredefinito(
-      "11111111-1111-1111-1111-111111111111",
-      "Colazione"
-    );
+    const id = idPastoPredefinito("11111111-1111-1111-1111-111111111111", "Colazione");
     expect(id).toBe("e706dea9-94e8-5663-a1f7-d48cde562824");
   });
 
   it("un nome diverso produce un id diverso, anche letterale", () => {
-    const id = idPastoPredefinito(
-      "11111111-1111-1111-1111-111111111111",
-      "Cena"
-    );
+    const id = idPastoPredefinito("11111111-1111-1111-1111-111111111111", "Cena");
     expect(id).toBe("57b89487-8ac7-58de-a343-28a856405c56");
   });
 
@@ -307,9 +301,7 @@ describe("garantisciPastiPredefiniti — crea solo con il server vuoto", () => {
     // server arrivano tutte, con la rinomina.
     const pasti = await pastiInDexie(userId);
     expect(pasti).toHaveLength(PASTI_PREDEFINITI.length);
-    expect(pasti.find((p) => p.id === idPastoPredefinito(userId, "Pranzo"))?.nome).toBe(
-      "Pranzo 1"
-    );
+    expect(pasti.find((p) => p.id === idPastoPredefinito(userId, "Pranzo"))?.nome).toBe("Pranzo 1");
   });
 
   it("due chiamate sovrapposte: una sola lettura, un solo set, stesso esito", async () => {
@@ -340,10 +332,29 @@ describe("garantisciPastiPredefiniti — crea solo con il server vuoto", () => {
 // giorno non esiste, nemmeno se la pagina lo aveva ancora fra le scelte.
 describe("pastoValidoAdesso", () => {
   it("vero solo per un pasto vivo e valido quel giorno, riletto da Dexie", async () => {
-    const base = { user_id: "u-guardia", updated_at: "2026-10-01T00:00:00.000Z", ordine: 0, ora_inizio: "12:30" };
+    const base = {
+      user_id: "u-guardia",
+      updated_at: "2026-10-01T00:00:00.000Z",
+      ordine: 0,
+      ora_inizio: "12:30",
+    };
     await db.pasti.bulkPut([
-      { ...base, id: "g-vivo", nome: "Pranzo", deleted_at: null, valido_dal: null, valido_al: null },
-      { ...base, id: "g-chiuso", nome: "Merenda", deleted_at: null, valido_dal: null, valido_al: "2026-10-08" },
+      {
+        ...base,
+        id: "g-vivo",
+        nome: "Pranzo",
+        deleted_at: null,
+        valido_dal: null,
+        valido_al: null,
+      },
+      {
+        ...base,
+        id: "g-chiuso",
+        nome: "Merenda",
+        deleted_at: null,
+        valido_dal: null,
+        valido_al: "2026-10-08",
+      },
       { ...base, id: "g-cancellato", nome: "Cena", deleted_at: "2026-10-01T00:00:00.000Z" },
     ]);
     expect(await pastoValidoAdesso("g-vivo", "2026-10-09")).toBe(true);

@@ -37,7 +37,9 @@ export default function SceltaUsername({ onScelto }: { onScelto: (username: stri
         onInvio={() => void scelta.salva()}
         esito={
           scelta.errore ??
-          (scelta.online ? testoStatoUsername(scelta.stato, "quando continui") : TESTO_NOME_SENZA_RETE)
+          (scelta.online
+            ? testoStatoUsername(scelta.stato, "quando continui")
+            : TESTO_NOME_SENZA_RETE)
         }
         tono={
           scelta.errore || scelta.daCorreggere

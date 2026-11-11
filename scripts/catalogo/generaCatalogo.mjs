@@ -91,7 +91,12 @@ const CAMPI_OFF = {
 
 const OBBLIGATORI = ["kcal_100g", "proteine_100g", "carboidrati_100g", "grassi_100g"];
 const FACOLTATIVI = ["zuccheri_100g", "fibre_100g", "saturi_100g", "sale_100g"];
-const NOMI_LISTA = { kcal_100g: "kcal", proteine_100g: "proteine", carboidrati_100g: "carboidrati", grassi_100g: "grassi" };
+const NOMI_LISTA = {
+  kcal_100g: "kcal",
+  proteine_100g: "proteine",
+  carboidrati_100g: "carboidrati",
+  grassi_100g: "grassi",
+};
 
 // 15 letture di prodotto al minuto per indirizzo IP (documentazione
 // dell'API di Open Food Facts): una ogni 5 secondi sta sotto.
@@ -104,7 +109,12 @@ function argomenti() {
     const i = a.indexOf(`--${nome}`);
     return i >= 0 ? a[i + 1] : undefined;
   };
-  return { alim: valore("alim"), compo: valore("compo"), cacheOff: valore("cache-off"), correzioni: valore("correzioni") };
+  return {
+    alim: valore("alim"),
+    compo: valore("compo"),
+    cacheOff: valore("cache-off"),
+    correzioni: valore("correzioni"),
+  };
 }
 
 function md5(buffer) {
@@ -120,12 +130,18 @@ function leggiXml(percorso, atteso) {
     throw new Error(`${percorso}: manca il BOM UTF-8`);
   }
   const testo = new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(3));
-  if (!/encoding="utf-8"/i.test(testo.slice(0, 100))) throw new Error(`${percorso}: dichiarazione non utf-8`);
+  if (!/encoding="utf-8"/i.test(testo.slice(0, 100)))
+    throw new Error(`${percorso}: dichiarazione non utf-8`);
   return testo;
 }
 
 function decodificaEntita(s) {
-  return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  return s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&");
 }
 
 function arrotonda(n, decimali = 2) {
@@ -236,7 +252,11 @@ function valoreOff(nutrienti, chiave) {
 }
 
 function formattaValore(v) {
-  return v === null || v === undefined ? "—" : typeof v === "number" ? String(v).replace(".", ",") : String(v);
+  return v === null || v === undefined
+    ? "—"
+    : typeof v === "number"
+      ? String(v).replace(".", ",")
+      : String(v);
 }
 
 async function main() {
@@ -250,11 +270,13 @@ async function main() {
   const lista = JSON.parse(readFileSync(LISTA, "utf8"));
   const fileCorrezioni = correzioni ?? CORREZIONI;
   const correzioniPerId = existsSync(fileCorrezioni)
-    ? JSON.parse(readFileSync(fileCorrezioni, "utf8")).correzioni ?? {}
+    ? (JSON.parse(readFileSync(fileCorrezioni, "utf8")).correzioni ?? {})
     : {};
   const correzioniApplicate = [];
 
-  const codiciCiqual = new Set(lista.alimenti.filter((a) => a.fonte === "ciqual").map((a) => a.codice_ciqual));
+  const codiciCiqual = new Set(
+    lista.alimenti.filter((a) => a.fonte === "ciqual").map((a) => a.codice_ciqual)
+  );
   const ciqual = leggiCiqual(alim, compo, codiciCiqual);
 
   const differenze = [];
@@ -280,13 +302,16 @@ async function main() {
         continue;
       }
       if (nomeFr !== voce.nome_ciqual_fr) {
-        avvisi.push(`${id} ${etichetta}: nome Ciqual «${nomeFr}», nella lista «${voce.nome_ciqual_fr}»`);
+        avvisi.push(
+          `${id} ${etichetta}: nome Ciqual «${nomeFr}», nella lista «${voce.nome_ciqual_fr}»`
+        );
       }
       const componenti = ciqual.valori.get(voce.codice_ciqual) ?? new Map();
       for (const [campo, codice] of Object.entries(CODICI_CIQUAL)) {
         const { valore, regola } = valoreCiqual(componenti.get(codice));
         valori[campo] = valore;
-        if (regola && valore !== null) regoleApplicate.push(`${id} ${etichetta}: ${campo} ${regola}`);
+        if (regola && valore !== null)
+          regoleApplicate.push(`${id} ${etichetta}: ${campo} ${regola}`);
       }
     } else {
       letti += 1;
@@ -298,11 +323,13 @@ async function main() {
         errori.push(`${id} ${etichetta}: prodotto non trovato su Open Food Facts`);
         continue;
       }
-      const nutrienti = typeof prodotto.nutriments === "object" && prodotto.nutriments ? prodotto.nutriments : {};
+      const nutrienti =
+        typeof prodotto.nutriments === "object" && prodotto.nutriments ? prodotto.nutriments : {};
       for (const [campo, chiave] of Object.entries(CAMPI_OFF)) {
         const { valore, regola } = valoreOff(nutrienti, chiave);
         valori[campo] = valore;
-        if (regola && valore !== null) regoleApplicate.push(`${id} ${etichetta}: ${campo} ${regola}`);
+        if (regola && valore !== null)
+          regoleApplicate.push(`${id} ${etichetta}: ${campo} ${regola}`);
       }
       if (valori.kcal_100g === null) {
         const kj = numeroOff(nutrienti["energy-kj_100g"]);
@@ -335,7 +362,13 @@ async function main() {
       const nellaLista = voce.valori_letti_08_11[NOMI_LISTA[campo]];
       const atteso = typeof nellaLista === "number" ? arrotonda(nellaLista) : 0;
       if (atteso !== valori[campo]) {
-        differenze.push({ id, etichetta, campo: NOMI_LISTA[campo], lista: nellaLista, letto: valori[campo] });
+        differenze.push({
+          id,
+          etichetta,
+          campo: NOMI_LISTA[campo],
+          lista: nellaLista,
+          letto: valori[campo],
+        });
       }
     }
 
@@ -392,15 +425,21 @@ async function main() {
   console.log(`\n# Differenze con valori_letti_08_11 (${differenze.length})\n`);
   console.log("| Alimento | id | Valore | Nella lista | Letto ora |\n|---|---|---|---|---|");
   for (const d of differenze) {
-    console.log(`| ${d.etichetta} | ${d.id} | ${d.campo} | ${formattaValore(d.lista)} | ${formattaValore(d.letto)} |`);
+    console.log(
+      `| ${d.etichetta} | ${d.id} | ${d.campo} | ${formattaValore(d.lista)} | ${formattaValore(d.letto)} |`
+    );
   }
   console.log(`\n# Correzioni applicate (${correzioniApplicate.length}, da ${fileCorrezioni})\n`);
   for (const c of correzioniApplicate) console.log(`- ${c}`);
   console.log(`\n# Avvisi (${avvisi.length})\n`);
   for (const a of avvisi) console.log(`- ${a}`);
-  console.log(`\n# Valori nascosti più grandi del loro totale, diventati null (${valoriNascostiTolti.length})\n`);
+  console.log(
+    `\n# Valori nascosti più grandi del loro totale, diventati null (${valoriNascostiTolti.length})\n`
+  );
   for (const t of valoriNascostiTolti) console.log(`- ${t}`);
-  console.log(`\n# Valori arrotondati per il file (kcal intere; P, C, G, zuccheri e saturi a un decimale): ${arrotondamenti}`);
+  console.log(
+    `\n# Valori arrotondati per il file (kcal intere; P, C, G, zuccheri e saturi a un decimale): ${arrotondamenti}`
+  );
   console.log(`\n# Regole applicate (${regoleApplicate.length})\n`);
   for (const r of regoleApplicate) console.log(`- ${r}`);
   console.log(`\n# Errori (${errori.length})\n`);
@@ -444,8 +483,10 @@ async function main() {
     titolo: "Libra: i prodotti di marca del catalogo precaricato",
     versione: file.versione,
     licenza: "Open Database License (ODbL) v1.0: https://opendatacommons.org/licenses/odbl/1-0/",
-    contenuti: "I singoli contenuti: Database Contents License (DbCL) v1.0: https://opendatacommons.org/licenses/dbcl/1-0/",
-    fonte: "Contiene informazioni da Open Food Facts (https://world.openfoodfacts.org), disponibili con licenza ODbL.",
+    contenuti:
+      "I singoli contenuti: Database Contents License (DbCL) v1.0: https://opendatacommons.org/licenses/dbcl/1-0/",
+    fonte:
+      "Contiene informazioni da Open Food Facts (https://world.openfoodfacts.org), disponibili con licenza ODbL.",
     modifiche: [
       `Una selezione di ${prodottiOff.length} prodotti, letti dall'API di Open Food Facts (v3) l'08/11/2026.`,
       "Nome, marca, categoria e porzione proposta sono di Libra, non di Open Food Facts.",
@@ -453,7 +494,12 @@ async function main() {
       "Zuccheri o saturi più alti del loro totale diventano null.",
       ...Object.entries(correzioniPerId)
         .filter(([cid]) => cid.startsWith("off:"))
-        .map(([cid, c]) => `${cid.slice(4)}: ${Object.entries(c.valori).map(([k, v]) => `${k} ${v}`).join(", ")} (${c.motivo}).`),
+        .map(
+          ([cid, c]) =>
+            `${cid.slice(4)}: ${Object.entries(c.valori)
+              .map(([k, v]) => `${k} ${v}`)
+              .join(", ")} (${c.motivo}).`
+        ),
     ],
     prodotti: prodottiOff,
   };

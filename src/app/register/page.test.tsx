@@ -29,7 +29,9 @@ vi.mock("@/lib/actions/auth", () => ({
     return finti.risposta;
   },
 }));
-vi.mock("@/lib/caricamentoCompleto", () => ({ caricaPaginaDaCapo: (p: string) => finti.carica(p) }));
+vi.mock("@/lib/caricamentoCompleto", () => ({
+  caricaPaginaDaCapo: (p: string) => finti.carica(p),
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: finti.push, replace: finti.replace, refresh: () => {} }),
 }));
@@ -61,7 +63,9 @@ describe("Registrati", () => {
     expect(finti.push).not.toHaveBeenCalled();
     expect(finti.replace).not.toHaveBeenCalled();
     // Mentre la pagina si ricarica non si può inviare di nuovo.
-    expect((screen.getByRole("button", { name: "Attendere..." }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "Attendere..." }) as HTMLButtonElement).disabled
+    ).toBe(true);
   });
 
   it("senza sessione: il messaggio, e nessun caricamento", async () => {
@@ -75,7 +79,9 @@ describe("Registrati", () => {
     creaAccount();
 
     expect(
-      await screen.findByText("Account creato: controlla la tua email per confermarlo prima di accedere.")
+      await screen.findByText(
+        "Account creato: controlla la tua email per confermarlo prima di accedere."
+      )
     ).toBeTruthy();
     expect(finti.carica).not.toHaveBeenCalled();
   });

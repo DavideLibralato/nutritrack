@@ -17,13 +17,31 @@ import {
 const USER = "u1";
 const TUTTI = { query: "", categoria: null, nascondiQuelliCheHai: false };
 
-function mio(id: string, nome: string, marca: string | null, altro: Partial<Alimento> = {}): Alimento {
+function mio(
+  id: string,
+  nome: string,
+  marca: string | null,
+  altro: Partial<Alimento> = {}
+): Alimento {
   return {
-    id, user_id: USER, updated_at: "2026-11-08T10:00:00.000Z", deleted_at: null,
-    nome, marca, barcode: null,
-    kcal_100g: 100, proteine_100g: 1, carboidrati_100g: 1, grassi_100g: 1,
-    zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-    porzione_default_g: 100, fonte: "manuale", verificato: false,
+    id,
+    user_id: USER,
+    updated_at: "2026-11-08T10:00:00.000Z",
+    deleted_at: null,
+    nome,
+    marca,
+    barcode: null,
+    kcal_100g: 100,
+    proteine_100g: 1,
+    carboidrati_100g: 1,
+    grassi_100g: 1,
+    zuccheri_100g: null,
+    fibre_100g: null,
+    saturi_100g: null,
+    sale_100g: null,
+    porzione_default_g: 100,
+    fonte: "manuale",
+    verificato: false,
     ...altro,
   };
 }
@@ -56,7 +74,11 @@ describe("elencoCatalogo", () => {
   });
 
   it("ricerca per marca dentro una categoria", () => {
-    const e = elencoCatalogo(CATALOGO_PRECARICATO, [], USER, { ...TUTTI, query: "pavesi", categoria: "Dolci e snack" });
+    const e = elencoCatalogo(CATALOGO_PRECARICATO, [], USER, {
+      ...TUTTI,
+      query: "pavesi",
+      categoria: "Dolci e snack",
+    });
     expect(e.righe.map((r) => r.voce.id)).toContain("off:8013355999143");
     expect(e.righe.every((r) => r.voce.categoria === "Dolci e snack")).toBe(true);
   });
@@ -67,10 +89,19 @@ describe("elencoCatalogo", () => {
       mio("c", "Mandorle tostate", null, { catalogo_id: "ciqual:15000" }), // una copia rinominata
     ];
     const tutti = elencoCatalogo(CATALOGO_PRECARICATO, miei, USER, TUTTI);
-    expect({ totale: tutti.totale, giaNeiTuoi: tutti.giaNeiTuoi, righe: tutti.righe.length }).toEqual({
-      totale: 183, giaNeiTuoi: 2, righe: 183,
+    expect({
+      totale: tutti.totale,
+      giaNeiTuoi: tutti.giaNeiTuoi,
+      righe: tutti.righe.length,
+    }).toEqual({
+      totale: 183,
+      giaNeiTuoi: 2,
+      righe: 183,
     });
-    const nascosti = elencoCatalogo(CATALOGO_PRECARICATO, miei, USER, { ...TUTTI, nascondiQuelliCheHai: true });
+    const nascosti = elencoCatalogo(CATALOGO_PRECARICATO, miei, USER, {
+      ...TUTTI,
+      nascondiQuelliCheHai: true,
+    });
     expect(nascosti.righe).toHaveLength(181);
     expect(nascosti.righe.map((r) => r.voce.id)).not.toContain("off:8013355999143");
     expect(nascosti.righe.map((r) => r.voce.id)).not.toContain("ciqual:15000");
@@ -87,7 +118,11 @@ describe("testoConteggioCatalogo", () => {
     expect(testoConteggioCatalogo({ ...base, giaNeiTuoi: 2 }, false)).toBe("183 · 2 già nei tuoi");
   });
   it("con «Nascondi» acceso: quanti restano da aggiungere", () => {
-    const e = elencoCatalogo(CATALOGO_PRECARICATO, [], USER, { ...TUTTI, categoria: "Legumi", nascondiQuelliCheHai: true });
+    const e = elencoCatalogo(CATALOGO_PRECARICATO, [], USER, {
+      ...TUTTI,
+      categoria: "Legumi",
+      nascondiQuelliCheHai: true,
+    });
     expect(testoConteggioCatalogo(e, true)).toBe(`${e.righe.length} da aggiungere`);
   });
 });
@@ -104,19 +139,29 @@ describe("categorieCatalogo", () => {
 describe("suggerimentiCatalogo (il riquadro di Aggiungi)", () => {
   it("cerca solo nel nome, come la ricerca di Aggiungi: la marca non conta", () => {
     expect(suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "barilla")).toEqual([]);
-    expect(suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "spaghetti").map((v) => v.id)).toContain("off:8076800195057");
+    expect(
+      suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "spaghetti").map((v) => v.id)
+    ).toContain("off:8076800195057");
   });
 
   it("al massimo 3, in ordine di nome", () => {
     const nomi = suggerimentiCatalogo(CATALOGO_PRECARICATO, [], USER, "LATTE").map((v) => v.nome);
-    expect(nomi).toEqual(["Fiocchi di latte (cottage)", "Latte parzialmente scremato", "Latte parzialmente scremato UHT"]);
+    expect(nomi).toEqual([
+      "Fiocchi di latte (cottage)",
+      "Latte parzialmente scremato",
+      "Latte parzialmente scremato UHT",
+    ]);
   });
 
   it("toglie quelli che hai già (qui una copia rinominata), e il posto lo prende il successivo", () => {
     const fiocchi = CATALOGO_PRECARICATO.find((v) => v.nome === "Fiocchi di latte (cottage)")!;
     const miei = [mio("c", "Il mio cottage", null, { catalogo_id: fiocchi.id })];
     const nomi = suggerimentiCatalogo(CATALOGO_PRECARICATO, miei, USER, "latte").map((v) => v.nome);
-    expect(nomi).toEqual(["Latte parzialmente scremato", "Latte parzialmente scremato UHT", "Latte senza lattosio"]);
+    expect(nomi).toEqual([
+      "Latte parzialmente scremato",
+      "Latte parzialmente scremato UHT",
+      "Latte senza lattosio",
+    ]);
   });
 
   it("a ricerca vuota niente", () => {

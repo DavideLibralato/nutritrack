@@ -25,7 +25,13 @@ interface Props {
   rifElemento: (el: HTMLElement | null) => void;
 }
 
-export default function CopiaTrascinata({ rettangolo, titolo, dettaglio, compatta, rifElemento }: Props) {
+export default function CopiaTrascinata({
+  rettangolo,
+  titolo,
+  dettaglio,
+  compatta,
+  rifElemento,
+}: Props) {
   return createPortal(
     <div
       ref={rifElemento}

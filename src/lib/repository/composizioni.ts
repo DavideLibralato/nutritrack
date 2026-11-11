@@ -315,9 +315,7 @@ async function rimuoviAlimentiDaPastiSalvati(
       c.tipo === "pasto_salvato" &&
       idComposizioniToccate.has(c.id) &&
       // Nessuna voce le resta, a parte quelle appena cancellate qui sopra.
-      !composizioniVoci.some(
-        (v) => v.composizione_id === c.id && !idVociEliminate.has(v.id)
-      )
+      !composizioniVoci.some((v) => v.composizione_id === c.id && !idVociEliminate.has(v.id))
   );
 
   await Promise.all(composizioniDaEliminare.map((c) => repositoryComposizioni.elimina(c.id)));
@@ -490,7 +488,9 @@ async function ripristinaNellaTransazione(
   const nonRipristinati = (
     await ripristinaPastiNellaTransazione(userId, traccia, { controllaContenuto: false })
   ).nonRipristinati;
-  const pastiNonRipristinati = nonRipristinati.filter((p) => p.motivo === "nome").map((p) => p.nome);
+  const pastiNonRipristinati = nonRipristinati
+    .filter((p) => p.motivo === "nome")
+    .map((p) => p.nome);
 
   return { alimentiNonRipristinati, pastiNonRipristinati };
 }
@@ -528,7 +528,9 @@ async function ripristinaPastiNellaTransazione(
 
   // Le righe della traccia ancora cancellate, lette una volta.
   const righeTraccia = (
-    await Promise.all(traccia.idComposizioniVoci.map((id) => repositoryComposizioniVoci.ottieniPerId(id)))
+    await Promise.all(
+      traccia.idComposizioniVoci.map((id) => repositoryComposizioniVoci.ottieniPerId(id))
+    )
   ).filter((v): v is ComposizioneVoce => v !== undefined && v.deleted_at !== null);
   const righeDaRipristinare = righeTraccia.filter((v) => idAlimentiVivi.has(v.alimento_id));
 

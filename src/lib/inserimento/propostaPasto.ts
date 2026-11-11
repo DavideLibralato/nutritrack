@@ -21,9 +21,7 @@ import type { Pasto } from "../db/tipi";
 export function pastoPerOrario(pasti: Pasto[], oraHHmm: string): Pasto | null {
   if (pasti.length === 0) return null;
 
-  const ordinati = [...pasti].sort((a, b) =>
-    a.ora_inizio.localeCompare(b.ora_inizio)
-  );
+  const ordinati = [...pasti].sort((a, b) => a.ora_inizio.localeCompare(b.ora_inizio));
 
   // Default: il primo pasto della giornata — copre ogni orario prima del suo
   // inizio, fra mezzanotte e la Colazione.
@@ -37,14 +35,10 @@ export function pastoPerOrario(pasti: Pasto[], oraHHmm: string): Pasto | null {
 // Sui giorni passati l'ora non aiuta ("sarebbe sempre sbagliato"): si
 // propone il primo pasto ancora senza voci, perché stai completando la
 // giornata; se sono tutti pieni, l'ultimo della lista.
-export function primoPastoVuoto(
-  pastiOrdinati: Pasto[],
-  pastiConVoci: Set<string>
-): Pasto | null {
+export function primoPastoVuoto(pastiOrdinati: Pasto[], pastiConVoci: Set<string>): Pasto | null {
   if (pastiOrdinati.length === 0) return null;
 
   return (
-    pastiOrdinati.find((p) => !pastiConVoci.has(p.id)) ??
-    pastiOrdinati[pastiOrdinati.length - 1]
+    pastiOrdinati.find((p) => !pastiConVoci.has(p.id)) ?? pastiOrdinati[pastiOrdinati.length - 1]
   );
 }

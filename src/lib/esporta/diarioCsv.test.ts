@@ -28,7 +28,12 @@ function pasto(nome: string, ora: string, deletedAt: string | null = null, userI
   };
 }
 
-function alimento(nome: string, marca: string | null, deletedAt: string | null = null, userId: string | null = IO): Alimento {
+function alimento(
+  nome: string,
+  marca: string | null,
+  deletedAt: string | null = null,
+  userId: string | null = IO
+): Alimento {
   return {
     id: crypto.randomUUID(),
     user_id: userId,
@@ -51,11 +56,7 @@ function alimento(nome: string, marca: string | null, deletedAt: string | null =
   };
 }
 
-function voce(
-  a: Alimento,
-  p: Pasto | null,
-  campi: Partial<VoceDiario> = {}
-): VoceDiario {
+function voce(a: Alimento, p: Pasto | null, campi: Partial<VoceDiario> = {}): VoceDiario {
   return {
     id: crypto.randomUUID(),
     user_id: IO,
@@ -161,8 +162,16 @@ describe("le stesse voci del JSON", () => {
     };
     const d = dati(tutte);
 
-    expect(righeDiario(d).map((r) => r.voceId).sort()).toEqual(d.voci_diario.map((v) => v.id).sort());
-    expect(righeDiario(d).map((r) => r.voceId).sort()).toEqual(vive.map((v) => v.id).sort());
+    expect(
+      righeDiario(d)
+        .map((r) => r.voceId)
+        .sort()
+    ).toEqual(d.voci_diario.map((v) => v.id).sort());
+    expect(
+      righeDiario(d)
+        .map((r) => r.voceId)
+        .sort()
+    ).toEqual(vive.map((v) => v.id).sort());
     // Intestazione più una riga per voce.
     expect(leggiCsv(senzaBom(testoCsv(d)))).toHaveLength(1 + vive.length);
   });
@@ -175,7 +184,13 @@ describe("le stesse voci del JSON", () => {
 
 describe("i calcoli, come in Oggi", () => {
   it("kcal come la riga di Oggi (Math.round di totaleVoce), macro a un decimale, grammi come salvati", () => {
-    const a = { ...alimento("Riso", null), kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.25 };
+    const a = {
+      ...alimento("Riso", null),
+      kcal_100g: 52,
+      proteine_100g: 0.3,
+      carboidrati_100g: 14,
+      grassi_100g: 0.25,
+    };
     const v = voce(a, null, { quantita_g: 134.5 });
     const [riga] = righeDiario(dati({ ...vuoto(), alimenti: [a], voci_diario: [v] }));
     const [, , , , , grammi, kcal, proteine, carboidrati, grassi] = riga.campi;
@@ -200,7 +215,13 @@ describe("i calcoli, come in Oggi", () => {
 
   it("niente punto delle migliaia: 12.500 g resta 12500", () => {
     const a = alimento("Acqua", null);
-    const v = voce(a, null, { quantita_g: 12500, kcal_100g: 0, proteine_100g: 0, carboidrati_100g: 0, grassi_100g: 0 });
+    const v = voce(a, null, {
+      quantita_g: 12500,
+      kcal_100g: 0,
+      proteine_100g: 0,
+      carboidrati_100g: 0,
+      grassi_100g: 0,
+    });
     const [riga] = righeDiario(dati({ ...vuoto(), alimenti: [a], voci_diario: [v] }));
     expect(riga.campi[5]).toBe("12500");
     expect(riga.campi.slice(6)).toEqual(["0", "0", "0", "0"]);
@@ -233,7 +254,10 @@ describe("data, pasto, ora, marca e ordine", () => {
       ...vuoto(),
       pasti: [chiuso],
       alimenti: [ritirato, comune],
-      voci_diario: [voce(ritirato, chiuso), voce(comune, null, { creato_il: "2026-11-07T18:00:00.000Z" })],
+      voci_diario: [
+        voce(ritirato, chiuso),
+        voce(comune, null, { creato_il: "2026-11-07T18:00:00.000Z" }),
+      ],
     };
     const righe = righeDiario(dati(tutte));
     expect(righe.map((r) => [r.campi[1], r.campi[3], r.campi[4]])).toEqual([
@@ -269,7 +293,13 @@ describe("data, pasto, ora, marca e ordine", () => {
         voce(a, colazione, { nome_alimento: "A" }),
       ],
     };
-    expect(righeDiario(dati(tutte)).map((r) => r.campi[3])).toEqual(["A", "C1", "C2", "Senza pasto", "K"]);
+    expect(righeDiario(dati(tutte)).map((r) => r.campi[3])).toEqual([
+      "A",
+      "C1",
+      "C2",
+      "Senza pasto",
+      "K",
+    ]);
   });
 });
 
@@ -288,7 +318,7 @@ describe("caratteri speciali e formule", () => {
   it("formule: apostrofo davanti a pasto, alimento e marca che cominciano con = + - @", () => {
     const p = pasto("=SOMMA(A1)", "12:30");
     const a = alimento("+39 cracker", "@marca");
-    const b = alimento("-light", "=HYPERLINK(\"x\")");
+    const b = alimento("-light", '=HYPERLINK("x")');
     const tutte = {
       ...vuoto(),
       pasti: [p],
@@ -297,7 +327,11 @@ describe("caratteri speciali e formule", () => {
     };
     const [, prima, seconda] = leggiCsv(senzaBom(testoCsv(dati(tutte))));
     expect([prima[1], prima[3], prima[4]]).toEqual(["'=SOMMA(A1)", "'+39 cracker", "'@marca"]);
-    expect([seconda[1], seconda[3], seconda[4]]).toEqual(["'=SOMMA(A1)", "'-light", "'=HYPERLINK(\"x\")"]);
+    expect([seconda[1], seconda[3], seconda[4]]).toEqual([
+      "'=SOMMA(A1)",
+      "'-light",
+      '\'=HYPERLINK("x")',
+    ]);
   });
 
   it("testoSicuro lascia stare il resto, anche un = in mezzo", () => {
@@ -309,14 +343,22 @@ describe("caratteri speciali e formule", () => {
 
   it("BOM UTF-8 in testa, righe chiuse da CRLF, intestazione in italiano", () => {
     const testo = testoCsv(dati(vuoto()));
-    expect(testo.startsWith("﻿Data;Pasto;Ora;Alimento;Marca;Grammi;Kcal;Proteine (g);Carboidrati (g);Grassi (g)\r\n")).toBe(true);
+    expect(
+      testo.startsWith(
+        "﻿Data;Pasto;Ora;Alimento;Marca;Grammi;Kcal;Proteine (g);Carboidrati (g);Grassi (g)\r\n"
+      )
+    ).toBe(true);
     expect(testo.endsWith("\r\n")).toBe(true);
   });
 });
 
 describe("nome del file", () => {
   it("dal giorno locale: dopo la mezzanotte di Roma è già il giorno dopo", () => {
-    expect(nomeFileDiario(new Date("2026-11-07T19:45:00.000Z"))).toBe("libra-diario-2026-11-07.csv");
-    expect(nomeFileDiario(new Date("2026-11-07T23:30:00.000Z"))).toBe("libra-diario-2026-11-08.csv");
+    expect(nomeFileDiario(new Date("2026-11-07T19:45:00.000Z"))).toBe(
+      "libra-diario-2026-11-07.csv"
+    );
+    expect(nomeFileDiario(new Date("2026-11-07T23:30:00.000Z"))).toBe(
+      "libra-diario-2026-11-08.csv"
+    );
   });
 });

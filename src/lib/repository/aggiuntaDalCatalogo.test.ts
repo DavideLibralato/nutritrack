@@ -91,7 +91,12 @@ describe("aggiungiDalCatalogo", () => {
       catalogo_id: "off:8013355999143",
     });
     // I quattro valori nascosti sono pieni davvero, non null.
-    expect([copia.zuccheri_100g, copia.fibre_100g, copia.saturi_100g, copia.sale_100g]).not.toContain(null);
+    expect([
+      copia.zuccheri_100g,
+      copia.fibre_100g,
+      copia.saturi_100g,
+      copia.sale_100g,
+    ]).not.toContain(null);
   });
 
   it("la copia sale al server con catalogo_id e i valori nascosti", async () => {
@@ -115,7 +120,12 @@ describe("aggiungiDalCatalogo", () => {
   it("uno sfuso di Ciqual: fonte 'manuale', senza codice", async () => {
     await aggiungiDalCatalogo(USER, MANDORLE);
     const [copia] = await miei();
-    expect(copia).toMatchObject({ nome: "Mandorle", barcode: null, fonte: "manuale", catalogo_id: "ciqual:15000" });
+    expect(copia).toMatchObject({
+      nome: "Mandorle",
+      barcode: null,
+      fonte: "manuale",
+      catalogo_id: "ciqual:15000",
+    });
   });
 
   it("il doppio tocco su «Aggiungi»: una riga sola, il secondo trova la prima", async () => {
@@ -129,10 +139,20 @@ describe("aggiungiDalCatalogo", () => {
   });
 
   it("lo stesso codice già fra i miei (creato a mano): niente scritto, «Apri» apre quello", async () => {
-    const amano = await salvaAlimento(USER, {
-      nome: "Biscotti", marca: null, kcal_100g: 480, proteine_100g: 6,
-      carboidrati_100g: 65, grassi_100g: 21, porzione_default_g: 30,
-    }, undefined, { barcode: "8013355999143", fonte: "barcode" });
+    const amano = await salvaAlimento(
+      USER,
+      {
+        nome: "Biscotti",
+        marca: null,
+        kcal_100g: 480,
+        proteine_100g: 6,
+        carboidrati_100g: 65,
+        grassi_100g: 21,
+        porzione_default_g: 30,
+      },
+      undefined,
+      { barcode: "8013355999143", fonte: "barcode" }
+    );
     expect(amano.esito).toBe("salvato");
     await attendi(async () => (await db.outbox.count()) === 0);
     upsertMock.mockClear();
@@ -147,8 +167,13 @@ describe("aggiungiDalCatalogo", () => {
 
   it("stesso nome e marca già fra i miei: niente scritto", async () => {
     await salvaAlimento(USER, {
-      nome: "gocciole chocolate", marca: "PAVESI", kcal_100g: 480, proteine_100g: 6,
-      carboidrati_100g: 65, grassi_100g: 21, porzione_default_g: 30,
+      nome: "gocciole chocolate",
+      marca: "PAVESI",
+      kcal_100g: 480,
+      proteine_100g: 6,
+      carboidrati_100g: 65,
+      grassi_100g: 21,
+      porzione_default_g: 30,
     });
     const esito = await aggiungiDalCatalogo(USER, GOCCIOLE);
     expect(esito.esito).toBe("nei-tuoi");
@@ -157,12 +182,24 @@ describe("aggiungiDalCatalogo", () => {
 
   it("una copia rinominata con Modifica resta «Nei tuoi»: la modifica non toglie catalogo_id", async () => {
     const { alimento } = await aggiungiDalCatalogo(USER, MANDORLE);
-    const rinomina = await salvaAlimento(USER, {
-      nome: "Mandorle tostate", marca: "Mia", kcal_100g: 620, proteine_100g: 19,
-      carboidrati_100g: 9, grassi_100g: 52, porzione_default_g: 25,
-    }, alimento.id);
+    const rinomina = await salvaAlimento(
+      USER,
+      {
+        nome: "Mandorle tostate",
+        marca: "Mia",
+        kcal_100g: 620,
+        proteine_100g: 19,
+        carboidrati_100g: 9,
+        grassi_100g: 52,
+        porzione_default_g: 25,
+      },
+      alimento.id
+    );
     expect(rinomina.esito).toBe("salvato");
-    expect(await db.alimenti.get(alimento.id)).toMatchObject({ nome: "Mandorle tostate", catalogo_id: "ciqual:15000" });
+    expect(await db.alimenti.get(alimento.id)).toMatchObject({
+      nome: "Mandorle tostate",
+      catalogo_id: "ciqual:15000",
+    });
 
     const esito = await aggiungiDalCatalogo(USER, MANDORLE);
     expect(esito).toMatchObject({ esito: "nei-tuoi", alimento: { id: alimento.id } });
@@ -184,8 +221,13 @@ describe("aggiungiDalCatalogo", () => {
 
   it("un alimento creato a mano nasce con catalogo_id null, scritto", async () => {
     const esito = await salvaAlimento(USER, {
-      nome: "Pane", marca: null, kcal_100g: 260, proteine_100g: 8,
-      carboidrati_100g: 50, grassi_100g: 2, porzione_default_g: 50,
+      nome: "Pane",
+      marca: null,
+      kcal_100g: 260,
+      proteine_100g: 8,
+      carboidrati_100g: 50,
+      grassi_100g: 2,
+      porzione_default_g: 50,
     });
     expect(esito.esito).toBe("salvato");
     const riga = await db.alimenti.get((esito as { alimento: Alimento }).alimento.id);

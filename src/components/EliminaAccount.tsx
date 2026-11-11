@@ -44,7 +44,8 @@ const TESTI_ESITO: Record<Exclude<EsitoEliminazione, "eliminato">, string> = {
   rete: "Non riuscito: il server non risponde. Il tuo account non è stato toccato. Riprova.",
   "risposta-persa":
     "Non so se è andata: la connessione si è interrotta prima della risposta. Riprova: se l'account è già eliminato, l'app lo vede e finisce il lavoro.",
-  rifiutato: "Non riuscito: il server ha rifiutato la richiesta. Il tuo account non è stato toccato.",
+  rifiutato:
+    "Non riuscito: il server ha rifiutato la richiesta. Il tuo account non è stato toccato.",
   sessione: "Il server non riconosce più la tua sessione. Esci e rientra, poi riprova.",
   // Dal branch foto-profilo: la foto è stata tolta in questo tentativo,
   // l'account no (testo di Davide, 25/10).
@@ -90,9 +91,14 @@ export default function EliminaAccount() {
               style={{ "--rientro-linea": "40px" } as React.CSSProperties}
               className="riga-impostazioni relative py-[11px] pr-4 pl-10 text-[15px] leading-snug"
             >
-              <span aria-hidden className="absolute top-[18px] left-[18px] size-2 rounded-full bg-danger" />
+              <span
+                aria-hidden
+                className="absolute top-[18px] left-[18px] size-2 rounded-full bg-danger"
+              />
               {testo}
-              {dettaglio && <span className="mt-0.5 block text-[13px] text-muted">{dettaglio}</span>}
+              {dettaglio && (
+                <span className="mt-0.5 block text-[13px] text-muted">{dettaglio}</span>
+              )}
             </li>
           ))}
         </ul>
@@ -135,7 +141,9 @@ export default function EliminaAccount() {
           {errore ? (
             <p className="text-warning">{errore}</p>
           ) : (
-            !online && <p className="text-muted">Per eliminare l&apos;account serve la connessione.</p>
+            !online && (
+              <p className="text-muted">Per eliminare l&apos;account serve la connessione.</p>
+            )
           )}
         </div>
       </section>

@@ -95,7 +95,11 @@ describe("conferme e barre", () => {
   });
 
   it("dopo Aggiungi", () => {
-    expect(messaggioAlimentiAggiunti(["Pane"])).toEqual({ testo: "Aggiunto:", nome: "Pane", icona: "spunta" });
+    expect(messaggioAlimentiAggiunti(["Pane"])).toEqual({
+      testo: "Aggiunto:",
+      nome: "Pane",
+      icona: "spunta",
+    });
     expect(messaggioAlimentiAggiunti(["Pane", "Hummus", "Skyr"])).toEqual({
       testo: "Aggiunti:",
       nome: "3 alimenti",
@@ -110,13 +114,17 @@ describe("conferme e barre", () => {
       coda: undefined,
       icona: "spunta",
     });
-    expect(messaggioValoriAggiornati("Yogurt · Fage", false).coda).toBe("(resta fra quelli in arrivo)");
+    expect(messaggioValoriAggiornati("Yogurt · Fage", false).coda).toBe(
+      "(resta fra quelli in arrivo)"
+    );
   });
 
   it("dopo l'invio", () => {
     expect(messaggioInviati(2, ["sara_c"]).testo).toBe("Mandati 2 alimenti a @sara_c.");
     expect(messaggioInviati(1, ["sara_c"]).testo).toBe("Mandato 1 alimento a @sara_c.");
-    expect(messaggioInviati(2, ["sara_c", "paolo_a"]).testo).toBe("Mandati 2 alimenti a @sara_c e @paolo_a.");
+    expect(messaggioInviati(2, ["sara_c", "paolo_a"]).testo).toBe(
+      "Mandati 2 alimenti a @sara_c e @paolo_a."
+    );
     expect(messaggioInviati(1, ["a", "b", "c"]).testo).toBe("Mandato 1 alimento a 3 amici.");
     expect(messaggioInviati(1, [null]).testo).toBe("Mandato 1 alimento a un amico.");
     expect(messaggioInviati(3, ["sara_c", null]).testo).toBe("Mandati 3 alimenti a 2 amici.");
@@ -140,6 +148,8 @@ describe("conferme e barre", () => {
 
   it("una risposta su alimenti che non sono più in arrivo", () => {
     expect(testoNonPiuInArrivo(1)).toBe("Questo alimento non è più in arrivo.");
-    expect(testoNonPiuInArrivo(3)).toBe("Alcuni di questi alimenti non sono più in arrivo: non è cambiato niente.");
+    expect(testoNonPiuInArrivo(3)).toBe(
+      "Alcuni di questi alimenti non sono più in arrivo: non è cambiato niente."
+    );
   });
 });

@@ -34,7 +34,12 @@
 // le copie e si tolgono gli originali dalla destinazione, poi decide lui.
 
 import type { VoceDiario } from "../db/tipi";
-import { trovaDoppioni, type Doppione, type SceltaDoppione, type Scrittura } from "./pianoSpostamento";
+import {
+  trovaDoppioni,
+  type Doppione,
+  type SceltaDoppione,
+  type Scrittura,
+} from "./pianoSpostamento";
 import { pianoInserimento, type DatiVoce } from "./pianoInserimento";
 
 export interface PianoDuplica {
@@ -48,7 +53,10 @@ export interface PianoDuplica {
 
 // Le righe di destinazione tolte quelle che si stanno duplicando: duplicare
 // nello stesso pasto e giorno non deve trovare l'originale come doppione.
-function destinazioneSenzaOriginali(originali: VoceDiario[], destinazione: VoceDiario[]): VoceDiario[] {
+function destinazioneSenzaOriginali(
+  originali: VoceDiario[],
+  destinazione: VoceDiario[]
+): VoceDiario[] {
   const ids = new Set(originali.map((v) => v.id));
   return destinazione.filter((v) => !ids.has(v.id));
 }

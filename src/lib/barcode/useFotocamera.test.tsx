@@ -44,7 +44,11 @@ function permessoInSospeso() {
       })
   );
   Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
-  return { getUserMedia, rispondi: (s: MediaStream) => rispondi(s), rifiuta: (e: unknown) => rifiuta(e) };
+  return {
+    getUserMedia,
+    rispondi: (s: MediaStream) => rispondi(s),
+    rifiuta: (e: unknown) => rifiuta(e),
+  };
 }
 
 function impostaVisibilita(stato: "visible" | "hidden") {
@@ -244,7 +248,9 @@ describe("richiesta già partita al tocco", () => {
 
     act(() => hook.result.current.avvia(richiesta));
     await act(async () =>
-      permesso.rifiuta(new DOMException("The request is not allowed by the user agent", "NotAllowedError"))
+      permesso.rifiuta(
+        new DOMException("The request is not allowed by the user agent", "NotAllowedError")
+      )
     );
 
     expect(hook.result.current.stato).toBe("negata");

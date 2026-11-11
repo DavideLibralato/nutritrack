@@ -61,7 +61,9 @@ export default function SheetScegliPasto({
           <h2 className="shrink-0 font-display text-xl font-bold">{titolo}</h2>
 
           {pasti.length === 0 && (
-            <p className="mt-3 shrink-0 text-sm text-muted">Non ci sono altri pasti in questa giornata.</p>
+            <p className="mt-3 shrink-0 text-sm text-muted">
+              Non ci sono altri pasti in questa giornata.
+            </p>
           )}
           <ul className="mt-3 min-h-0 overflow-y-auto">
             {pasti.map((p) => (

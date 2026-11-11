@@ -34,7 +34,10 @@ beforeEach(() => {
   verificaUtenteSulServer.mockClear();
   chiudiSessioneQui.mockClear();
   replace.mockClear();
-  Object.defineProperty(window, "location", { configurable: true, value: { ...locationVera, replace } });
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: { ...locationVera, replace },
+  });
 });
 
 afterEach(() => {

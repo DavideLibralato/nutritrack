@@ -67,11 +67,17 @@ vi.mock("@/lib/supabase/client", () => ({
           const righe = server.righe.filter((r) => r.user_id === utenteTest);
           if (scrittura) risolvi({ data: null, error: errore });
           else if (soloConteggio)
-            risolvi(server.conteggio ? { count: righe.length, error: null } : { count: null, error: errore });
-          else risolvi(server.scarico ? { data: righe, error: null } : { data: null, error: errore });
+            risolvi(
+              server.conteggio
+                ? { count: righe.length, error: null }
+                : { count: null, error: errore }
+            );
+          else
+            risolvi(server.scarico ? { data: righe, error: null } : { data: null, error: errore });
         },
       };
-      for (const metodo of ["eq", "gte", "order", "range", "or", "is"]) builder[metodo] = () => builder;
+      for (const metodo of ["eq", "gte", "order", "range", "or", "is"])
+        builder[metodo] = () => builder;
       return builder;
     },
   }),

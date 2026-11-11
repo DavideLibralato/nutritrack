@@ -52,7 +52,13 @@ function obiettivo(modifiche: Partial<Obiettivo> = {}): Obiettivo {
 describe("totaleVoce", () => {
   it("scala i valori per 100 g in base alla quantità", () => {
     const t = totaleVoce(
-      voce({ quantita_g: 150, kcal_100g: 200, proteine_100g: 30, carboidrati_100g: 10, grassi_100g: 4 })
+      voce({
+        quantita_g: 150,
+        kcal_100g: 200,
+        proteine_100g: 30,
+        carboidrati_100g: 10,
+        grassi_100g: 4,
+      })
     );
     expect(t).toEqual({ kcal: 300, proteine: 45, carboidrati: 15, grassi: 6 });
   });
@@ -65,8 +71,20 @@ describe("totaleVoce", () => {
 describe("sommaTotali", () => {
   it("somma i contributi di più voci", () => {
     const t = sommaTotali([
-      voce({ quantita_g: 100, kcal_100g: 100, proteine_100g: 10, carboidrati_100g: 20, grassi_100g: 5 }),
-      voce({ quantita_g: 200, kcal_100g: 50, proteine_100g: 4, carboidrati_100g: 6, grassi_100g: 2 }),
+      voce({
+        quantita_g: 100,
+        kcal_100g: 100,
+        proteine_100g: 10,
+        carboidrati_100g: 20,
+        grassi_100g: 5,
+      }),
+      voce({
+        quantita_g: 200,
+        kcal_100g: 50,
+        proteine_100g: 4,
+        carboidrati_100g: 6,
+        grassi_100g: 2,
+      }),
     ]);
     // 100 + (50 * 2) = 200 kcal; 10 + (4 * 2) = 18 proteine; ecc.
     expect(t).toEqual({ kcal: 200, proteine: 18, carboidrati: 32, grassi: 9 });

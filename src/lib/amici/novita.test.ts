@@ -91,7 +91,10 @@ describe("la chiave in localStorage", () => {
   });
 
   it("all'avvio (niente in memoria) valgono gli ultimi numeri salvati", () => {
-    window.localStorage.setItem(chiaveNovita(ID), JSON.stringify({ richiesteRicevute: 4, alimentiInArrivo: 3 }));
+    window.localStorage.setItem(
+      chiaveNovita(ID),
+      JSON.stringify({ richiesteRicevute: 4, alimentiInArrivo: 3 })
+    );
     expect(novitaDi(ID)).toEqual({ richiesteRicevute: 4, alimentiInArrivo: 3 });
   });
 
@@ -105,11 +108,11 @@ describe("la chiave in localStorage", () => {
     for (const rovinato of [
       "3",
       "{}",
-      "{\"richiesteRicevute\":-1}",
-      "{\"richiesteRicevute\":1.5}",
-      "{\"richiesteRicevute\":1,\"alimentiInArrivo\":-2}",
-      "{\"richiesteRicevute\":1,\"alimentiInArrivo\":\"2\"}",
-      "{\"alimentiInArrivo\":2}",
+      '{"richiesteRicevute":-1}',
+      '{"richiesteRicevute":1.5}',
+      '{"richiesteRicevute":1,"alimentiInArrivo":-2}',
+      '{"richiesteRicevute":1,"alimentiInArrivo":"2"}',
+      '{"alimentiInArrivo":2}',
       "non json",
     ]) {
       cancellaNovita(ID);

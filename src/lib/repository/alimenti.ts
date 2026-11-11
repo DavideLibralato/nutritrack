@@ -22,9 +22,7 @@ import { repositoryAlimenti } from "./index";
 // (src/lib/barcode/ricercaCodice.ts); il livello 2 oggi non serve (§9.4).
 export async function catalogoLocale(userId: string): Promise<Alimento[]> {
   return db.alimenti
-    .filter(
-      (a) => a.deleted_at === null && (a.user_id === userId || a.user_id === null)
-    )
+    .filter((a) => a.deleted_at === null && (a.user_id === userId || a.user_id === null))
     .toArray();
 }
 
@@ -114,7 +112,9 @@ export function valoriNascostiDaTogliere(
   dopo: Pick<CampiForm, "carboidrati_100g" | "grassi_100g">
 ): Partial<Pick<Alimento, "zuccheri_100g" | "fibre_100g" | "saturi_100g">> {
   return {
-    ...(dopo.carboidrati_100g !== prima.carboidrati_100g ? { zuccheri_100g: null, fibre_100g: null } : {}),
+    ...(dopo.carboidrati_100g !== prima.carboidrati_100g
+      ? { zuccheri_100g: null, fibre_100g: null }
+      : {}),
     ...(dopo.grassi_100g !== prima.grassi_100g ? { saturi_100g: null } : {}),
   };
 }
@@ -313,10 +313,7 @@ export function filtraPerNome(alimenti: Alimento[], query: string): Alimento[] {
 // distinguere due prodotti omonimi di marche diverse con valori nutrizionali
 // differenti (PUNTO_DI_PARTENZA.md §4, `alimenti`). Nel diario non si usa:
 // `voci_diario` copia solo il nome, non la marca.
-export function etichettaAlimento(a: {
-  nome: string;
-  marca: string | null;
-}): string {
+export function etichettaAlimento(a: { nome: string; marca: string | null }): string {
   const marca = a.marca?.trim();
   return marca ? `${a.nome} · ${marca}` : a.nome;
 }

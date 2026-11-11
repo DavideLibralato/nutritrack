@@ -6,7 +6,12 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "../db/database";
-import { riassuntoCoda, riprovaAccantonate, vociAccantonate, vociInCodaDellUtente } from "./codaDellUtente";
+import {
+  riassuntoCoda,
+  riprovaAccantonate,
+  vociAccantonate,
+  vociInCodaDellUtente,
+} from "./codaDellUtente";
 import type { VoceOutbox } from "./outbox";
 
 const IO = "utente-io";
@@ -29,11 +34,22 @@ function voce(
     ultimo_errore: null,
     sospesa_il: null,
     ...campi,
-    dati: { id: recordId, user_id: userId, updated_at: "2026-10-10T09:00:00.000Z", deleted_at: null, ...dati },
+    dati: {
+      id: recordId,
+      user_id: userId,
+      updated_at: "2026-10-10T09:00:00.000Z",
+      deleted_at: null,
+      ...dati,
+    },
   };
 }
 
-const SOSPESA = { tentativi: 5, ultimo_errore: "violazione", ultimo_status: 409, sospesa_il: "2026-10-10T10:00:00.000Z" };
+const SOSPESA = {
+  tentativi: 5,
+  ultimo_errore: "violazione",
+  ultimo_status: 409,
+  sospesa_il: "2026-10-10T10:00:00.000Z",
+};
 
 beforeEach(async () => {
   await Promise.all([db.outbox.clear(), db.pasti.clear()]);
@@ -51,7 +67,10 @@ describe("riprovaAccantonate", () => {
 
     expect(await db.outbox.get("pasti:mia")).toMatchObject({ sospesa_il: null, tentativi: 0 });
     // Quella dell'altro utente resta com'era.
-    expect(await db.outbox.get("pasti:sua")).toMatchObject({ sospesa_il: SOSPESA.sospesa_il, tentativi: 5 });
+    expect(await db.outbox.get("pasti:sua")).toMatchObject({
+      sospesa_il: SOSPESA.sospesa_il,
+      tentativi: 5,
+    });
     // Una voce solo in attesa non si tocca: i suoi tentativi contano ancora.
     expect(await db.outbox.get("misurazioni:in-attesa")).toMatchObject({ tentativi: 2 });
   });
@@ -77,8 +96,13 @@ describe("riassuntoCoda", () => {
 describe("vociAccantonate", () => {
   it("in parole dell'utente: tipo, nome o alimento e pasto, in ordine di modifica", async () => {
     await db.pasti.put({
-      id: "pasto-pranzo", user_id: IO, updated_at: "2026-10-01T00:00:00.000Z", deleted_at: null,
-      nome: "Pranzo", ora_inizio: "12:30", ordine: 2,
+      id: "pasto-pranzo",
+      user_id: IO,
+      updated_at: "2026-10-01T00:00:00.000Z",
+      deleted_at: null,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 2,
     });
     const voci = [
       voce("voci_diario:v1", IO, {
@@ -86,8 +110,16 @@ describe("vociAccantonate", () => {
         creato_il: "2026-10-08T11:10:00.000Z",
         dati: { pasto_id: "pasto-pranzo", nome_alimento: "Yogurt magro" },
       }),
-      voce("pasti:p1", IO, { ...SOSPESA, creato_il: "2026-10-07T15:00:00.000Z", dati: { nome: "Merenda" } }),
-      voce("misurazioni:m1", IO, { ...SOSPESA, creato_il: "2026-10-09T07:00:00.000Z", ultimo_status: undefined }),
+      voce("pasti:p1", IO, {
+        ...SOSPESA,
+        creato_il: "2026-10-07T15:00:00.000Z",
+        dati: { nome: "Merenda" },
+      }),
+      voce("misurazioni:m1", IO, {
+        ...SOSPESA,
+        creato_il: "2026-10-09T07:00:00.000Z",
+        ultimo_status: undefined,
+      }),
       voce("pasti:in-attesa", IO, { dati: { nome: "Cena" } }),
     ];
 
@@ -98,7 +130,12 @@ describe("vociAccantonate", () => {
       ["Voce del diario", "Yogurt magro, Pranzo"],
       ["Misurazione", null],
     ]);
-    expect(elenco[1]).toMatchObject({ tabella: "voci_diario", tentativi: 5, status: 409, errore: "violazione" });
+    expect(elenco[1]).toMatchObject({
+      tabella: "voci_diario",
+      tentativi: 5,
+      status: 409,
+      errore: "violazione",
+    });
     // Una voce di prima della version(8), senza status: "non noto".
     expect(elenco[2].status).toBeNull();
   });

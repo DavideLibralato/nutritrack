@@ -22,14 +22,20 @@ import { CLASSE_FOCUS } from "@/lib/classeFocus";
 export default function RegistraPeso({ userId }: { userId: string }) {
   const [valore, setValore] = useState("");
   const [stato, setStato] = useState<
-    { fase: "inattivo" } | { fase: "in-corso" } | { fase: "esito"; riuscito: boolean; testo: string }
+    | { fase: "inattivo" }
+    | { fase: "in-corso" }
+    | { fase: "esito"; riuscito: boolean; testo: string }
   >({ fase: "inattivo" });
 
   async function registra(e: React.FormEvent) {
     e.preventDefault();
     const kg = leggiPesoKg(valore);
     if (kg === null) {
-      setStato({ fase: "esito", riuscito: false, testo: "Scrivi il peso in kg, per esempio 78,4." });
+      setStato({
+        fase: "esito",
+        riuscito: false,
+        testo: "Scrivi il peso in kg, per esempio 78,4.",
+      });
       return;
     }
 
@@ -49,11 +55,7 @@ export default function RegistraPeso({ userId }: { userId: string }) {
   }
 
   return (
-    <form
-      onSubmit={registra}
-      aria-label="Registra peso"
-      className="space-y-2 p-4"
-    >
+    <form onSubmit={registra} aria-label="Registra peso" className="space-y-2 p-4">
       <label htmlFor="profilo-registra-peso" className="block text-base">
         Registra peso
       </label>

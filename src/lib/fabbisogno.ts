@@ -67,7 +67,10 @@ export function calcolaFabbisogno(dati: DatiCalcoloFabbisogno): PropostaFabbisog
   // Un input assurdo (età/peso/altezza fuori scala) non deve produrre kcal
   // negative: non è un giudizio nutrizionale, è solo evitare un numero senza
   // senso a schermo.
-  const kcal = Math.max(0, Math.round(mantenimento + AGGIUSTAMENTO_KCAL_OBIETTIVO[dati.tipoObiettivo]));
+  const kcal = Math.max(
+    0,
+    Math.round(mantenimento + AGGIUSTAMENTO_KCAL_OBIETTIVO[dati.tipoObiettivo])
+  );
 
   return {
     kcal,

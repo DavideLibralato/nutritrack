@@ -164,7 +164,6 @@ export default function SchermataScansione({
   // far partire due ricerche.
   const trovato = useRef(false);
 
-
   // All'apertura la fotocamera prende in mano la richiesta partita al
   // tocco su Scansiona; il lettore si carica in parallelo (effetto sotto),
   // mai prima. La richiesta si usa una volta sola: in sviluppo React monta
@@ -357,7 +356,12 @@ export default function SchermataScansione({
       />
 
       <header className="relative flex shrink-0 items-center justify-between gap-2 px-3 pt-3">
-        <button type="button" onClick={onChiudi} aria-label="Chiudi la scansione" className={CLASSE_TONDO}>
+        <button
+          type="button"
+          onClick={onChiudi}
+          aria-label="Chiudi la scansione"
+          className={CLASSE_TONDO}
+        >
           <IconaCroce />
         </button>
         <span className="min-w-0 truncate text-[15px] font-semibold">{titolo}</span>
@@ -393,7 +397,11 @@ export default function SchermataScansione({
                 <p role="alert" className="max-w-[300px] text-base leading-snug">
                   {TESTO_LETTORE_NON_CARICATO}
                 </p>
-                <button type="button" onClick={riprovaLettore} className={`${CLASSE_AZIONE} max-w-[240px] flex-none px-6`}>
+                <button
+                  type="button"
+                  onClick={riprovaLettore}
+                  className={`${CLASSE_AZIONE} max-w-[240px] flex-none px-6`}
+                >
                   Riprova
                 </button>
               </>
@@ -413,7 +421,11 @@ export default function SchermataScansione({
                 )}
               </div>
             ) : inPausa ? (
-              <button type="button" onClick={tornaAllaFotocamera} className={`${CLASSE_AZIONE} max-w-[260px] flex-none px-6`}>
+              <button
+                type="button"
+                onClick={tornaAllaFotocamera}
+                className={`${CLASSE_AZIONE} max-w-[260px] flex-none px-6`}
+              >
                 Riattiva la fotocamera
               </button>
             ) : (
@@ -487,12 +499,18 @@ export default function SchermataScansione({
               {TESTI_ERRORE_RICERCA[fase.errore]}
             </p>
             <p className="text-sm tabular-nums text-scan-muted">{fase.codice}</p>
-            <button type="button" onClick={() => void cerca(fase.codice)} className={`${CLASSE_AZIONE} flex-none`}>
+            <button
+              type="button"
+              onClick={() => void cerca(fase.codice)}
+              className={`${CLASSE_AZIONE} flex-none`}
+            >
               Riprova
             </button>
             <button
               type="button"
-              onClick={() => uso.tipo === "cerca" && uso.onModulo({ barcode: fase.codice, prodotto: null })}
+              onClick={() =>
+                uso.tipo === "cerca" && uso.onModulo({ barcode: fase.codice, prodotto: null })
+              }
               className={`${CLASSE_AZIONE} flex-none`}
             >
               Crea a mano
@@ -528,7 +546,11 @@ export default function SchermataScansione({
               {fase.testo}
             </p>
             <p className="text-sm tabular-nums text-scan-muted">{fase.codice}</p>
-            <button type="button" onClick={tornaAllaFotocamera} className={`${CLASSE_AZIONE} flex-none`}>
+            <button
+              type="button"
+              onClick={tornaAllaFotocamera}
+              className={`${CLASSE_AZIONE} flex-none`}
+            >
               Scansiona un altro codice
             </button>
           </div>
@@ -588,7 +610,9 @@ function PannelloCatalogo({
   const { voce } = fase;
   return (
     <div className="flex w-full max-w-[320px] flex-col gap-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.8px] text-scan-muted">{TITOLO_NEL_CATALOGO}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.8px] text-scan-muted">
+        {TITOLO_NEL_CATALOGO}
+      </p>
       <div>
         <p className="text-lg font-semibold leading-snug">
           {voce.marca ? `${voce.nome} · ${voce.marca}` : voce.nome}

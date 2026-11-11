@@ -286,7 +286,11 @@ async function unGiro(): Promise<{
       esito = "errore";
       dettaglio = questoErrore;
       await seAncoraQuella(voce, () =>
-        db.outbox.update(voce.id, { tentativi, ultimo_errore: messaggioErrore, ultimo_status: status })
+        db.outbox.update(voce.id, {
+          tentativi,
+          ultimo_errore: messaggioErrore,
+          ultimo_status: status,
+        })
       );
       break;
     }

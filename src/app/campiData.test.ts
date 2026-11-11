@@ -11,7 +11,10 @@ import { describe, expect, it } from "vitest";
 const radice = path.resolve(import.meta.dirname, "../..");
 // Senza i commenti: altrimenti il commento sopra una regola finirebbe nel
 // suo selettore.
-const css = readFileSync(path.join(radice, "src/app/globals.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+const css = readFileSync(path.join(radice, "src/app/globals.css"), "utf8").replace(
+  /\/\*[\s\S]*?\*\//g,
+  ""
+);
 const leggi = (file: string) => readFileSync(path.join(radice, file), "utf8");
 
 function regola(selettore: string): string {
@@ -65,7 +68,9 @@ describe("campi ora", () => {
   });
 
   it("il campo 'Inizia alle' di SheetPasto usa .campo-data", () => {
-    const campo = leggi("src/components/SheetPasto.tsx").match(/type="time"[\s\S]*?className=\{?[`"]([^`"]*)/);
+    const campo = leggi("src/components/SheetPasto.tsx").match(
+      /type="time"[\s\S]*?className=\{?[`"]([^`"]*)/
+    );
     expect(campo?.[1]).toMatch(/\bcampo-data\b/);
   });
 });

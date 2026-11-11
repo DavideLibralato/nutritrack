@@ -80,7 +80,12 @@ describe("catalogo precaricato: valori che l'app accetta", () => {
         saturi: campo(a.saturi_100g),
         sale: campo(a.sale_100g),
       });
-      expect({ id: a.id, errori: esito.errori, mancanti: esito.mancanti, somma: esito.erroreSomma }).toEqual({
+      expect({
+        id: a.id,
+        errori: esito.errori,
+        mancanti: esito.mancanti,
+        somma: esito.erroreSomma,
+      }).toEqual({
         id: a.id,
         errori: {},
         mancanti: [],
@@ -143,7 +148,10 @@ describe("catalogo precaricato: valori che l'app accetta", () => {
       .filter((a) => a.origine === "off")
       .filter((a) => {
         const daiMacro =
-          4 * a.proteine_100g + 4 * a.carboidrati_100g + 9 * a.grassi_100g + 2 * (a.fibre_100g ?? 0);
+          4 * a.proteine_100g +
+          4 * a.carboidrati_100g +
+          9 * a.grassi_100g +
+          2 * (a.fibre_100g ?? 0);
         return Math.abs(a.kcal_100g - daiMacro) > Math.max(15, 0.12 * a.kcal_100g);
       })
       .map((a) => `${a.id} ${a.kcal_100g}`);

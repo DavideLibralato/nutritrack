@@ -21,25 +21,38 @@ const {
 
 const ORIGINE = "https://nutritrack.vercel.app";
 
-function richiesta(url: string, altro: Partial<{ method: string; mode: string; rsc: boolean }> = {}) {
+function richiesta(
+  url: string,
+  altro: Partial<{ method: string; mode: string; rsc: boolean }> = {}
+) {
   return { url, method: "GET", mode: "cors", rsc: false, ...altro };
 }
 
 describe("scegliStrategia", () => {
   it("file con nome versionato: statico (prima la cache)", () => {
-    expect(scegliStrategia(richiesta(`${ORIGINE}/_next/static/chunks/310vm2bl3xxpt.js`), ORIGINE)).toBe("statico");
-    expect(scegliStrategia(richiesta(`${ORIGINE}/_next/static/media/033400d4-s.woff2`), ORIGINE)).toBe("statico");
+    expect(
+      scegliStrategia(richiesta(`${ORIGINE}/_next/static/chunks/310vm2bl3xxpt.js`), ORIGINE)
+    ).toBe("statico");
+    expect(
+      scegliStrategia(richiesta(`${ORIGINE}/_next/static/media/033400d4-s.woff2`), ORIGINE)
+    ).toBe("statico");
     expect(scegliStrategia(richiesta(`${ORIGINE}/icons/icon-192.png`), ORIGINE)).toBe("statico");
     expect(scegliStrategia(richiesta(`${ORIGINE}/apple-touch-icon.png`), ORIGINE)).toBe("statico");
   });
 
   it("richieste RSC (cambio scheda): sempre rete, mai cache — era il bug della v1", () => {
     // Con l'header RSC: 1
-    expect(scegliStrategia(richiesta(`${ORIGINE}/impostazioni`, { rsc: true }), ORIGINE)).toBe("rete");
+    expect(scegliStrategia(richiesta(`${ORIGINE}/impostazioni`, { rsc: true }), ORIGINE)).toBe(
+      "rete"
+    );
     // Con il solo parametro _rsc
-    expect(scegliStrategia(richiesta(`${ORIGINE}/impostazioni/profilo?_rsc=1a2b3`), ORIGINE)).toBe("rete");
+    expect(scegliStrategia(richiesta(`${ORIGINE}/impostazioni/profilo?_rsc=1a2b3`), ORIGINE)).toBe(
+      "rete"
+    );
     // Anche se per assurdo fosse una navigazione
-    expect(scegliStrategia(richiesta(`${ORIGINE}/?_rsc=x`, { mode: "navigate" }), ORIGINE)).toBe("rete");
+    expect(scegliStrategia(richiesta(`${ORIGINE}/?_rsc=x`, { mode: "navigate" }), ORIGINE)).toBe(
+      "rete"
+    );
   });
 
   it("navigazioni alle schermate e alle sotto-pagine di Impostazioni: pagina con copia, anche con query", () => {
@@ -67,31 +80,61 @@ describe("scegliStrategia", () => {
       // pagina dell'app, come ?giorno=.
       "/statistiche?vista=mese&dal=2026-10-01",
     ]) {
-      expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe("pagina");
+      expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe(
+        "pagina"
+      );
     }
   });
 
   it("navigazioni a login e simili: nessuna copia salvata", () => {
     // /profilo compresa: è diventata /impostazioni, il server la rimanda lì.
-    for (const p of ["/login", "/register", "/password-dimenticata", "/reimposta-password", "/profilo", "/pagina-che-non-esiste"]) {
-      expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe("pagina-senza-copia");
+    for (const p of [
+      "/login",
+      "/register",
+      "/password-dimenticata",
+      "/reimposta-password",
+      "/profilo",
+      "/pagina-che-non-esiste",
+    ]) {
+      expect(scegliStrategia(richiesta(`${ORIGINE}${p}`, { mode: "navigate" }), ORIGINE)).toBe(
+        "pagina-senza-copia"
+      );
     }
   });
 
   it("Supabase e altri domini: il service worker non interviene", () => {
-    expect(scegliStrategia(richiesta("https://ftpsepmneemrwgdbhlgo.supabase.co/rest/v1/alimenti"), ORIGINE)).toBe("rete");
-    expect(scegliStrategia(richiesta("https://ftpsepmneemrwgdbhlgo.supabase.co/auth/v1/user"), ORIGINE)).toBe("rete");
+    expect(
+      scegliStrategia(
+        richiesta("https://ftpsepmneemrwgdbhlgo.supabase.co/rest/v1/alimenti"),
+        ORIGINE
+      )
+    ).toBe("rete");
+    expect(
+      scegliStrategia(richiesta("https://ftpsepmneemrwgdbhlgo.supabase.co/auth/v1/user"), ORIGINE)
+    ).toBe("rete");
     // Anche un percorso che sul nostro dominio sarebbe statico
-    expect(scegliStrategia(richiesta("https://cdn.example.com/_next/static/x.js"), ORIGINE)).toBe("rete");
+    expect(scegliStrategia(richiesta("https://cdn.example.com/_next/static/x.js"), ORIGINE)).toBe(
+      "rete"
+    );
   });
 
   it("POST (server action del login, ecc.): rete", () => {
-    expect(scegliStrategia(richiesta(`${ORIGINE}/login`, { method: "POST", mode: "navigate" }), ORIGINE)).toBe("rete");
-    expect(scegliStrategia(richiesta(`${ORIGINE}/_next/static/x.js`, { method: "POST" }), ORIGINE)).toBe("rete");
+    expect(
+      scegliStrategia(richiesta(`${ORIGINE}/login`, { method: "POST", mode: "navigate" }), ORIGINE)
+    ).toBe("rete");
+    expect(
+      scegliStrategia(richiesta(`${ORIGINE}/_next/static/x.js`, { method: "POST" }), ORIGINE)
+    ).toBe("rete");
   });
 
   it("file non versionati dello stesso dominio: rete", () => {
-    for (const p of ["/manifest.json", "/favicon.ico", "/sw.js", "/offline.html", "/_next/image?url=x"]) {
+    for (const p of [
+      "/manifest.json",
+      "/favicon.ico",
+      "/sw.js",
+      "/offline.html",
+      "/_next/image?url=x",
+    ]) {
       expect(scegliStrategia(richiesta(`${ORIGINE}${p}`), ORIGINE)).toBe("rete");
     }
   });
@@ -121,7 +164,9 @@ describe("chiavePagina", () => {
   it("toglie la query: una sola copia per pagina", () => {
     expect(chiavePagina(`${ORIGINE}/aggiungi?giorno=2026-09-20`)).toBe(`${ORIGINE}/aggiungi`);
     // Statistiche offline con il periodo nell'indirizzo apre la stessa copia.
-    expect(chiavePagina(`${ORIGINE}/statistiche?vista=mese&dal=2026-10-01`)).toBe(`${ORIGINE}/statistiche`);
+    expect(chiavePagina(`${ORIGINE}/statistiche?vista=mese&dal=2026-10-01`)).toBe(
+      `${ORIGINE}/statistiche`
+    );
     expect(chiavePagina(`${ORIGINE}/`)).toBe(`${ORIGINE}/`);
   });
 });
@@ -147,7 +192,9 @@ describe("estraiRisorseStatiche", () => {
     const css = `@font-face{src:url(../media/033400d4-s.197tv.woff2) format("woff2")}
                  @font-face{src:url("../media/26daee03-s.2e11.woff2")}
                  .x{background:url(data:image/png;base64,AAAA)}`;
-    expect(estraiRisorseStatiche(css, `${ORIGINE}/_next/static/chunks/3odhs2ym4vuoj.css`).sort()).toEqual([
+    expect(
+      estraiRisorseStatiche(css, `${ORIGINE}/_next/static/chunks/3odhs2ym4vuoj.css`).sort()
+    ).toEqual([
       `${ORIGINE}/_next/static/media/033400d4-s.197tv.woff2`,
       `${ORIGINE}/_next/static/media/26daee03-s.2e11.woff2`,
     ]);
@@ -155,7 +202,12 @@ describe("estraiRisorseStatiche", () => {
 });
 
 describe("rispostaPaginaSalvabile", () => {
-  const buona = { ok: true, redirected: false, type: "basic", contentType: "text/html; charset=utf-8" };
+  const buona = {
+    ok: true,
+    redirected: false,
+    type: "basic",
+    contentType: "text/html; charset=utf-8",
+  };
 
   it("salva solo la pagina vera", () => {
     expect(rispostaPaginaSalvabile(buona)).toBe(true);
@@ -165,7 +217,14 @@ describe("rispostaPaginaSalvabile", () => {
     // Seguito (fetch del riscaldamento)
     expect(rispostaPaginaSalvabile({ ...buona, redirected: true })).toBe(false);
     // Non seguito (navigazione: redirect "manual")
-    expect(rispostaPaginaSalvabile({ ok: false, redirected: false, type: "opaqueredirect", contentType: null })).toBe(false);
+    expect(
+      rispostaPaginaSalvabile({
+        ok: false,
+        redirected: false,
+        type: "opaqueredirect",
+        contentType: null,
+      })
+    ).toBe(false);
   });
 
   it("non salva errori né risposte che non sono HTML", () => {
@@ -214,7 +273,12 @@ describe("navigazioneConTempoMassimo", () => {
         stato.salvati.push({ testo: await r.text(), epocaInizio });
       },
     });
-    return { rete, stato, risposta: risposta as Promise<Response>, salvataggio: salvataggio as Promise<void> };
+    return {
+      rete,
+      stato,
+      risposta: risposta as Promise<Response>,
+      salvataggio: salvataggio as Promise<void>,
+    };
   }
 
   beforeEach(() => {
@@ -263,7 +327,7 @@ describe("navigazioneConTempoMassimo", () => {
     expect(await (await s.risposta).text()).toBe("pagina nuova");
   });
 
-  it("la rete fallisce prima del tempo massimo: la copia, o senza copia \"Sei offline\"", async () => {
+  it('la rete fallisce prima del tempo massimo: la copia, o senza copia "Sei offline"', async () => {
     const conCopia = scena();
     conCopia.rete.rifiuta(new TypeError("Failed to fetch"));
     expect(await (await conCopia.risposta).text()).toBe("copia salvata");
@@ -283,12 +347,14 @@ describe("navigazioneConTempoMassimo", () => {
     await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_PAGINA_MS);
     expect(await (await s.risposta).text()).toBe("copia salvata");
 
-    s.rete.risolvi(new Response(null, { status: 307, headers: { Location: "/login?redirectTo=%2F" } }));
+    s.rete.risolvi(
+      new Response(null, { status: 307, headers: { Location: "/login?redirectTo=%2F" } })
+    );
     await s.salvataggio;
     expect(s.stato.salvati).toEqual([]);
   });
 
-  it("un \"Esci\" mentre si aspetta la rete: la risposta arrivata dopo non si salva", async () => {
+  it('un "Esci" mentre si aspetta la rete: la risposta arrivata dopo non si salva', async () => {
     const s = scena();
     await vi.advanceTimersByTimeAsync(TEMPO_MASSIMO_PAGINA_MS);
     expect(await (await s.risposta).text()).toBe("copia salvata");

@@ -36,7 +36,8 @@ export interface AlimentoCatalogo {
 
 export const VERSIONE_CATALOGO: string = file.versione;
 
-export const CATALOGO_PRECARICATO: readonly AlimentoCatalogo[] = file.alimenti as AlimentoCatalogo[];
+export const CATALOGO_PRECARICATO: readonly AlimentoCatalogo[] =
+  file.alimenti as AlimentoCatalogo[];
 
 const PER_CODICE = new Map(
   CATALOGO_PRECARICATO.filter((a) => a.barcode !== null).map((a) => [a.barcode!, a])

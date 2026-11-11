@@ -65,11 +65,7 @@ import {
   type TracciaRimozione,
 } from "@/lib/repository/composizioni";
 import { alimentiModificabili, eModificabile } from "@/lib/catalogo/alimentiModificabili";
-import {
-  contaUsi,
-  ordinaCatalogo,
-  type OrdineCatalogo,
-} from "@/lib/catalogo/ordinamentoCatalogo";
+import { contaUsi, ordinaCatalogo, type OrdineCatalogo } from "@/lib/catalogo/ordinamentoCatalogo";
 import {
   conseguenzeEliminazione,
   testiConfermaEliminazione,
@@ -189,7 +185,13 @@ interface Conferma {
 // dal service worker vale anche con i parametri (si salva per percorso).
 export default function AlimentiPage() {
   return (
-    <Suspense fallback={<main className={CLASSE_PAGINA}><IntestazioneSottopagina titolo="Alimenti" /></main>}>
+    <Suspense
+      fallback={
+        <main className={CLASSE_PAGINA}>
+          <IntestazioneSottopagina titolo="Alimenti" />
+        </main>
+      }
+    >
       <PaginaAlimenti />
     </Suspense>
   );
@@ -224,7 +226,9 @@ function PaginaAlimenti() {
   }, [userId]);
 
   // Di solito «I miei»; «Catalogo» se l'indirizzo lo chiede.
-  const [scheda, setScheda] = useState<Scheda>(parametri.get("scheda") === "catalogo" ? "catalogo" : "miei");
+  const [scheda, setScheda] = useState<Scheda>(
+    parametri.get("scheda") === "catalogo" ? "catalogo" : "miei"
+  );
   // Un codice scansionato che è nel catalogo precaricato: la scheda
   // «Catalogo» si apre con la sua scheda aperta.
   const [voceScansionata, setVoceScansionata] = useState<AlimentoCatalogo | null>(null);
@@ -421,7 +425,11 @@ function PaginaAlimenti() {
       mostra(MESSAGGIO_ANNULLATO);
     } catch {
       // Non è cambiato niente: la barra offre di nuovo «Annulla».
-      setBarra({ id: crypto.randomUUID(), testo: "Non sono riuscito ad annullare. Riprova.", aggiuntoDalCatalogo: copia });
+      setBarra({
+        id: crypto.randomUUID(),
+        testo: "Non sono riuscito ad annullare. Riprova.",
+        aggiuntoDalCatalogo: copia,
+      });
     }
   }
 
@@ -475,7 +483,12 @@ function PaginaAlimenti() {
         onApri={(a, codice) =>
           setModulo(
             codice
-              ? { tipo: "modifica", alimento: a, codiceDaPortare: codice, avviso: TESTO_CODICE_DA_PORTARE }
+              ? {
+                  tipo: "modifica",
+                  alimento: a,
+                  codiceDaPortare: codice,
+                  avviso: TESTO_CODICE_DA_PORTARE,
+                }
               : { tipo: "modifica", alimento: a }
           )
         }
@@ -582,7 +595,11 @@ function PaginaAlimenti() {
                   setScansione(richiediFotocamera());
                 }}
                 disabled={!online}
-                aria-label={online ? "Scansiona il codice a barre" : "Scansione non disponibile senza connessione"}
+                aria-label={
+                  online
+                    ? "Scansiona il codice a barre"
+                    : "Scansione non disponibile senza connessione"
+                }
                 className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
               >
                 <IconaCodiceBarre />
@@ -694,7 +711,9 @@ function PaginaAlimenti() {
                     : undefined
             }
             azioneSecondaria={
-              barra.aggiuntoDalCatalogo ? { etichetta: "Apri", onClick: () => void apriAggiunta() } : undefined
+              barra.aggiuntoDalCatalogo
+                ? { etichetta: "Apri", onClick: () => void apriAggiunta() }
+                : undefined
             }
             sopra
             onChiudi={() => setBarra(null)}
@@ -784,7 +803,12 @@ function PaginaAlimenti() {
                 return testoNonModificabile(etichettaAlimento(alimento), alimento.user_id === null);
               }
               setScansione(undefined);
-              apri({ tipo: "modifica", alimento, codiceDaPortare: codice, avviso: TESTO_CODICE_DA_PORTARE });
+              apri({
+                tipo: "modifica",
+                alimento,
+                codiceDaPortare: codice,
+                avviso: TESTO_CODICE_DA_PORTARE,
+              });
             },
             // Il codice non è fra i tuoi ma è nel catalogo precaricato
             // (PUNTO §10.1): la scheda «Catalogo» con la sua scheda aperta,

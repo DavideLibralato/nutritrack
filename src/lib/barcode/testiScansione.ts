@@ -77,6 +77,7 @@ export const TESTI_ERRORE_RICERCA: Record<ErroreRicerca, string> = {
 // (PUNTO_DI_PARTENZA.md §10.1; mockup catalogo-precaricato.html, «Scansione
 // di un codice del catalogo»): in Aggiungi il pannello «Nel catalogo».
 export const TITOLO_NEL_CATALOGO = "Nel catalogo";
-export const TESTO_NON_ANCORA_TUO = "Non è ancora fra i tuoi alimenti. Lo aggiungi e scegli i grammi?";
+export const TESTO_NON_ANCORA_TUO =
+  "Non è ancora fra i tuoi alimenti. Lo aggiungi e scegli i grammi?";
 export const ETICHETTA_AGGIUNGI_DAL_CATALOGO = "Aggiungi ai miei e scegli i grammi";
 export const ERRORE_AGGIUNTA_DAL_CATALOGO = "Non è stato possibile aggiungere l'alimento. Riprova.";

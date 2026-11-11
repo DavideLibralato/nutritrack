@@ -88,7 +88,8 @@ function testiCambio(
     return {
       titolo: (
         <>
-          <b className="font-semibold">{vecchia.nome}</b> → <b className="font-semibold">{nuova.nome}</b>
+          <b className="font-semibold">{vecchia.nome}</b> →{" "}
+          <b className="font-semibold">{nuova.nome}</b>
         </>
       ),
       dettaglio: oraCambiata ? `nome nuovo, alle ${ora}` : "nome nuovo",

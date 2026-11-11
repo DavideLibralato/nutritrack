@@ -164,133 +164,138 @@ export default function SheetQuantita({
           className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
-        {avviso && (
-          <p
-            role="status"
-            className="mb-3 flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--accento)_12%,transparent)] px-3 py-2.5 text-sm leading-snug"
-          >
-            <svg className="mt-px shrink-0 text-accent" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            </svg>
-            <span>{avviso}</span>
-          </p>
-        )}
-        {!mostraSelettorePasto && (
-          <p className="text-xs uppercase tracking-wide text-muted">{nomePasto}</p>
-        )}
-        <div className="mt-1 flex items-start justify-between gap-2">
-          <h2 className="font-display text-xl font-bold">{alimento.nome}</h2>
-          {onTogglePreferito && (
-            <button
-              type="button"
-              onClick={onTogglePreferito}
-              aria-pressed={preferito}
-              aria-label={
-                preferito
-                  ? `Togli ${alimento.nome} dai preferiti`
-                  : `Aggiungi ${alimento.nome} ai preferiti`
-              }
-              className={`shrink-0 rounded p-1 ${preferito ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
+          {avviso && (
+            <p
+              role="status"
+              className="mb-3 flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--accento)_12%,transparent)] px-3 py-2.5 text-sm leading-snug"
             >
-              <Stella piena={preferito} />
-            </button>
+              <svg
+                className="mt-px shrink-0 text-accent"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+              <span>{avviso}</span>
+            </p>
           )}
-        </div>
+          {!mostraSelettorePasto && (
+            <p className="text-xs uppercase tracking-wide text-muted">{nomePasto}</p>
+          )}
+          <div className="mt-1 flex items-start justify-between gap-2">
+            <h2 className="font-display text-xl font-bold">{alimento.nome}</h2>
+            {onTogglePreferito && (
+              <button
+                type="button"
+                onClick={onTogglePreferito}
+                aria-pressed={preferito}
+                aria-label={
+                  preferito
+                    ? `Togli ${alimento.nome} dai preferiti`
+                    : `Aggiungi ${alimento.nome} ai preferiti`
+                }
+                className={`shrink-0 rounded p-1 ${preferito ? "text-accent" : "text-muted"} ${CLASSE_FOCUS}`}
+              >
+                <Stella piena={preferito} />
+              </button>
+            )}
+          </div>
 
-        {mostraSelettorePasto && (
-          <>
-            <label htmlFor="sheet-pasto" className="mt-4 block text-sm font-medium">
-              Pasto
-            </label>
-            <select
-              id="sheet-pasto"
-              value={pastoSelezionatoId}
-              onChange={(e) => onCambiaPasto!(e.target.value)}
-              className={`mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
-            >
-              {pasti!.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
+          {mostraSelettorePasto && (
+            <>
+              <label htmlFor="sheet-pasto" className="mt-4 block text-sm font-medium">
+                Pasto
+              </label>
+              <select
+                id="sheet-pasto"
+                value={pastoSelezionatoId}
+                onChange={(e) => onCambiaPasto!(e.target.value)}
+                className={`mt-1 w-full rounded-lg border border-border bg-background p-3 ${CLASSE_FOCUS}`}
+              >
+                {pasti!.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
-        <label htmlFor="sheet-grammi" className="mt-4 block text-sm font-medium">
-          Quantità (g)
-        </label>
-        <input
-          id="sheet-grammi"
-          ref={rifInput}
-          type="text"
-          inputMode="decimal"
-          value={grammi}
-          onChange={(e) => setGrammi(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") conferma();
-          }}
-          className={`mt-1 w-full rounded-lg border border-border p-3 text-lg ${CLASSE_FOCUS}`}
-        />
+          <label htmlFor="sheet-grammi" className="mt-4 block text-sm font-medium">
+            Quantità (g)
+          </label>
+          <input
+            id="sheet-grammi"
+            ref={rifInput}
+            type="text"
+            inputMode="decimal"
+            value={grammi}
+            onChange={(e) => setGrammi(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") conferma();
+            }}
+            className={`mt-1 w-full rounded-lg border border-border p-3 text-lg ${CLASSE_FOCUS}`}
+          />
 
-        {/* Ordine come sulle etichette dei prodotti: kcal, Grassi, Carboidrati,
+          {/* Ordine come sulle etichette dei prodotti: kcal, Grassi, Carboidrati,
             Proteine (PUNTO_DI_PARTENZA.md §7, "Le barre macro"). */}
-        {/* Campo vuoto: l'invito neutro di sempre. Campo scritto ma non
+          {/* Campo vuoto: l'invito neutro di sempre. Campo scritto ma non
             valido (zero, troppo grande...): il motivo, col colore d'avviso. */}
-        <p
-          className={`mt-3 text-sm ${!valido && grammi.trim() !== "" ? "text-warning" : "text-muted"}`}
-        >
-          {valido
-            ? `${kcal} kcal · G ${grassi} g · C ${carboidrati} g · P ${proteine} g`
-            : grammi.trim() === ""
-              ? "Inserisci una quantità in grammi"
-              : lettura.errore}
-        </p>
+          <p
+            className={`mt-3 text-sm ${!valido && grammi.trim() !== "" ? "text-warning" : "text-muted"}`}
+          >
+            {valido
+              ? `${kcal} kcal · G ${grassi} g · C ${carboidrati} g · P ${proteine} g`
+              : grammi.trim() === ""
+                ? "Inserisci una quantità in grammi"
+                : lettura.errore}
+          </p>
 
-        {errore && <p className="mt-2 text-sm text-warning">{errore}</p>}
+          {errore && <p className="mt-2 text-sm text-warning">{errore}</p>}
 
-        {/* Una sola riga di pulsanti, [sinistra] [destra], sempre stessa
+          {/* Una sola riga di pulsanti, [sinistra] [destra], sempre stessa
             forma e posizione:
             - creazione:            [Annulla]      [Aggiungi]
             - modifica:             [Elimina]      [Salva]
             In modifica "Annulla" è ridondante — per annullare si tocca fuori
             dallo sheet. */}
-        <div className="mt-5 flex gap-3">
-          {!modificaConElimina ? (
-            <button
-              type="button"
-              onClick={onAnnulla}
-              className={`flex-1 rounded-lg border border-border p-3 ${CLASSE_FOCUS}`}
-            >
-              Annulla
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onElimina?.()}
-              disabled={inCorso}
-              className={`flex-1 rounded-lg border border-warning p-3 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
-            >
-              Elimina
-            </button>
-          )}
+          <div className="mt-5 flex gap-3">
+            {!modificaConElimina ? (
+              <button
+                type="button"
+                onClick={onAnnulla}
+                className={`flex-1 rounded-lg border border-border p-3 ${CLASSE_FOCUS}`}
+              >
+                Annulla
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onElimina?.()}
+                disabled={inCorso}
+                className={`flex-1 rounded-lg border border-warning p-3 text-warning disabled:opacity-50 ${CLASSE_FOCUS}`}
+              >
+                Elimina
+              </button>
+            )}
 
-          <button
-            type="button"
-            onClick={conferma}
-            disabled={!valido || inCorso}
-            className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
-          >
-            {modifica
-              ? inCorso
-                ? "Salvo..."
-                : "Salva"
-              : inCorso
-                ? "Aggiungo..."
-                : "Aggiungi"}
-          </button>
+            <button
+              type="button"
+              onClick={conferma}
+              disabled={!valido || inCorso}
+              className={`flex-1 rounded-lg bg-accent-strong p-3 font-medium text-on-strong disabled:opacity-50 ${CLASSE_FOCUS}`}
+            >
+              {modifica ? (inCorso ? "Salvo..." : "Salva") : inCorso ? "Aggiungo..." : "Aggiungi"}
+            </button>
+          </div>
         </div>
-      </div>
       </div>
     </>
   );

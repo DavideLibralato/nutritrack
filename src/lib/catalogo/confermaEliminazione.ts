@@ -33,7 +33,9 @@ export function conseguenzeEliminazione(
     p.voci.some((v) => ids.has(v.alimento.id))
   );
   const preferitiToccati = new Set(
-    preferiti.filter((p) => p.deleted_at === null && ids.has(p.alimento_id)).map((p) => p.alimento_id)
+    preferiti
+      .filter((p) => p.deleted_at === null && ids.has(p.alimento_id))
+      .map((p) => p.alimento_id)
   );
   return { pastiSalvati: pasti.length, preferiti: preferitiToccati.size };
 }
@@ -49,7 +51,8 @@ export function testiConfermaEliminazione(
   nomi: string[],
   conseguenze: ConseguenzeEliminazione
 ): { titolo: string; testo: string } {
-  const titolo = nomi.length === 1 ? `Eliminare «${nomi[0]}»?` : `Eliminare ${nomi.length} alimenti?`;
+  const titolo =
+    nomi.length === 1 ? `Eliminare «${nomi[0]}»?` : `Eliminare ${nomi.length} alimenti?`;
 
   const parti: string[] = [];
   const { pastiSalvati: x, preferiti: y } = conseguenze;

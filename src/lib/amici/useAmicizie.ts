@@ -18,9 +18,7 @@ import { dividiAmicizie, leggiAmicizie, type AmicizieDivise } from "./amicizie";
 import { impostaNovita } from "./novita";
 
 export type StatoAmicizie =
-  | { esito: "caricamento" }
-  | { esito: "errore" }
-  | { esito: "ok"; divise: AmicizieDivise };
+  { esito: "caricamento" } | { esito: "errore" } | { esito: "ok"; divise: AmicizieDivise };
 
 export function useAmicizie() {
   const userId = useUtenteId();

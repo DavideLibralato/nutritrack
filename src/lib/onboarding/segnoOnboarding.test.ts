@@ -49,7 +49,9 @@ vi.mock("../supabase/client", () => ({
 
 // La sessione salvata nel cookie, come la scrive @supabase/ssr.
 function cookieSessione(userId: string, metadati: Record<string, unknown>) {
-  const valore = "base64-" + stringToBase64URL(JSON.stringify({ user: { id: userId, user_metadata: metadati } }));
+  const valore =
+    "base64-" +
+    stringToBase64URL(JSON.stringify({ user: { id: userId, user_metadata: metadati } }));
   document.cookie = `${chiaveSessione(URL_SUPABASE)}=${valore}; path=/`;
 }
 
@@ -74,7 +76,10 @@ function obiettivo(userId: string): Obiettivo {
 }
 
 const RIUSCITO = async () => ({ data: { user: {} }, error: null });
-const SENZA_RETE = async () => ({ data: { user: null }, error: { message: "Failed to fetch", status: 0 } });
+const SENZA_RETE = async () => ({
+  data: { user: null },
+  error: { message: "Failed to fetch", status: 0 },
+});
 
 beforeEach(async () => {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", URL_SUPABASE);

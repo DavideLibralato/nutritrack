@@ -35,21 +35,10 @@ export type NomeTabella =
 
 export type Sesso = "maschio" | "femmina" | "non_indicato";
 
-export type LivelloAttivita =
-  | "sedentario"
-  | "leggero"
-  | "moderato"
-  | "attivo"
-  | "molto_attivo";
+export type LivelloAttivita = "sedentario" | "leggero" | "moderato" | "attivo" | "molto_attivo";
 
 export type GiornoSettimana =
-  | "lunedi"
-  | "martedi"
-  | "mercoledi"
-  | "giovedi"
-  | "venerdi"
-  | "sabato"
-  | "domenica";
+  "lunedi" | "martedi" | "mercoledi" | "giovedi" | "venerdi" | "sabato" | "domenica";
 
 export interface Profilo extends RigaBase {
   nome: string | null; // non ancora scritto da nessuna schermata
@@ -150,13 +139,7 @@ export interface Pasto extends RigaBase {
   valido_al?: string | null;
 }
 
-export type FonteAlimento =
-  | "manuale"
-  | "etichetta"
-  | "barcode"
-  | "off"
-  | "ai"
-  | "ricetta";
+export type FonteAlimento = "manuale" | "etichetta" | "barcode" | "off" | "ai" | "ricetta";
 
 export interface Alimento extends RigaBase {
   nome: string;
@@ -306,13 +289,7 @@ export interface Amicizia extends RigaBase {
 }
 
 export type StatoAlimentoCondiviso =
-  | "in_attesa"
-  | "aggiunto"
-  | "rifiutato"
-  | "uguale"
-  | "valori_usati"
-  | "sostituito"
-  | "annullato";
+  "in_attesa" | "aggiunto" | "rifiutato" | "uguale" | "valori_usati" | "sostituito" | "annullato";
 
 // Un alimento mandato a un amico (migration `alimenti_condivisi`, versione
 // 20261016180308). Una riga per alimento × destinatario; user_id = chi

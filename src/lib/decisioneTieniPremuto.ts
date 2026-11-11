@@ -31,12 +31,7 @@ export const TOLLERANZA_MOVIMENTO_PX = 8;
 export const FINESTRA_DECISIONE_MS = 160;
 
 export type FaseTieniPremuto =
-  | "attesa"
-  | "sollevato"
-  | "trascina"
-  | "menu"
-  | "lasciato"
-  | "annullato";
+  "attesa" | "sollevato" | "trascina" | "menu" | "lasciato" | "annullato";
 
 export interface StatoTieniPremuto {
   fase: FaseTieniPremuto;
@@ -78,7 +73,11 @@ export function aggiornaTempo(s: StatoTieniPremuto, t: number): StatoTieniPremut
   if (s.fase === "attesa" && t - s.t0 >= DURATA_PRESSIONE_MS) {
     return { ...s, fase: "sollevato", tSollevato: t, xSollevato: s.x, ySollevato: s.y };
   }
-  if (s.fase === "sollevato" && s.tSollevato !== null && t - s.tSollevato >= FINESTRA_DECISIONE_MS) {
+  if (
+    s.fase === "sollevato" &&
+    s.tSollevato !== null &&
+    t - s.tSollevato >= FINESTRA_DECISIONE_MS
+  ) {
     return { ...s, fase: "menu" };
   }
   return s;

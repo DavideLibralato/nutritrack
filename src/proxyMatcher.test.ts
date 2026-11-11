@@ -39,7 +39,10 @@ describe("matcher del proxy", () => {
 
   // Le pagine che contengono «catalogo» nel percorso restano protette:
   // fuori c'è solo la cartella /catalogo/ in cima.
-  it.each(["/", "/login", "/reimposta-password", "/impostazioni/alimenti", "/catalogo"])("%s passa dal proxy", (url) => {
-    expect(passaDalProxy(url)).toBe(true);
-  });
+  it.each(["/", "/login", "/reimposta-password", "/impostazioni/alimenti", "/catalogo"])(
+    "%s passa dal proxy",
+    (url) => {
+      expect(passaDalProxy(url)).toBe(true);
+    }
+  );
 });

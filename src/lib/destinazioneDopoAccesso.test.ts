@@ -22,15 +22,12 @@ describe("destinazioneDopoAccesso", () => {
   // Dal 01/11/2026: dopo il blocco del doppio invio (login/page.tsx), il
   // pulsante si riattiva solo con un errore. Una navigazione verso Accedi
   // stessa lascerebbe la pagina dov'è, con "Attendere..." per sempre.
-  it.each([
-    "/login",
-    "/login?redirectTo=/login",
-    "/login/",
-    "/login#x",
-    `${ORIGINE}/login`,
-  ])("%s (Accedi stessa) → home", (redirectTo) => {
-    expect(destinazioneDopoAccesso(redirectTo, ORIGINE)).toBe("/");
-  });
+  it.each(["/login", "/login?redirectTo=/login", "/login/", "/login#x", `${ORIGINE}/login`])(
+    "%s (Accedi stessa) → home",
+    (redirectTo) => {
+      expect(destinazioneDopoAccesso(redirectTo, ORIGINE)).toBe("/");
+    }
+  );
 
   it.each([
     "//esempio.com",

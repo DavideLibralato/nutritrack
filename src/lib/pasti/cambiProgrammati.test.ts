@@ -19,11 +19,24 @@ import {
 
 const OGGI = "2026-10-10"; // sabato
 
-function pasto(id: string, nome: string, ora_inizio: string, ordine: number, altro: Partial<Pasto> = {}): Pasto {
+function pasto(
+  id: string,
+  nome: string,
+  ora_inizio: string,
+  ordine: number,
+  altro: Partial<Pasto> = {}
+): Pasto {
   return {
-    id, nome, ora_inizio, ordine, user_id: "u1",
-    updated_at: "2026-10-01T00:00:00.000Z", deleted_at: null,
-    valido_dal: null, valido_al: null, ...altro,
+    id,
+    nome,
+    ora_inizio,
+    ordine,
+    user_id: "u1",
+    updated_at: "2026-10-01T00:00:00.000Z",
+    deleted_at: null,
+    valido_dal: null,
+    valido_al: null,
+    ...altro,
   };
 }
 
@@ -40,7 +53,9 @@ function riassunto(righe: Pasto[], oggi = OGGI) {
 describe("filoDi", () => {
   const pranzo = pasto("pranzo", "Pranzo", "12:30", 2, { valido_al: "2026-10-11" });
   const pranzo1 = pasto("pranzo-1", "Pranzo 1", "12:30", 2, { valido_dal: "2026-10-12" });
-  const cancellata = pasto("pranzo-x", "Pranzo X", "12:30", 2, { deleted_at: "2026-10-05T00:00:00.000Z" });
+  const cancellata = pasto("pranzo-x", "Pranzo X", "12:30", 2, {
+    deleted_at: "2026-10-05T00:00:00.000Z",
+  });
   const altroUtente = { ...pasto("altro", "Pranzo", "12:30", 2), user_id: "u2" };
   const righe = [COLAZIONE, pranzo, pranzo1, cancellata, altroUtente, CENA];
 
@@ -49,7 +64,11 @@ describe("filoDi", () => {
   });
 
   it("con `cancellate`, anche quelle cancellate", () => {
-    expect(filoDi(pranzo, righe, { cancellate: true }).map((r) => r.id)).toEqual(["pranzo", "pranzo-1", "pranzo-x"]);
+    expect(filoDi(pranzo, righe, { cancellate: true }).map((r) => r.id)).toEqual([
+      "pranzo",
+      "pranzo-1",
+      "pranzo-x",
+    ]);
   });
 });
 
@@ -110,15 +129,18 @@ describe("cambiProgrammati", () => {
   });
 
   it("nuovo: una riga che comincia dopo oggi senza niente prima nel suo filo", () => {
-    expect(riassunto([COLAZIONE, pasto("merenda", "Merenda", "16:00", 7, { valido_dal: "2026-10-15" })])).toEqual([
-      "2026-10-15 nuovo: — → Merenda",
-    ]);
+    expect(
+      riassunto([COLAZIONE, pasto("merenda", "Merenda", "16:00", 7, { valido_dal: "2026-10-15" })])
+    ).toEqual(["2026-10-15 nuovo: — → Merenda"]);
   });
 
   it("le righe cancellate non contano: senza la riga che continua, è un'eliminazione", () => {
     const righe = [
       pasto("pranzo", "Pranzo", "12:30", 2, { valido_al: "2026-10-11" }),
-      pasto("pranzo-1", "Pranzo 1", "12:30", 2, { valido_dal: "2026-10-12", deleted_at: "2026-10-10T08:00:00.000Z" }),
+      pasto("pranzo-1", "Pranzo 1", "12:30", 2, {
+        valido_dal: "2026-10-12",
+        deleted_at: "2026-10-10T08:00:00.000Z",
+      }),
     ];
     expect(riassunto(righe)).toEqual(["2026-10-12 elimina: Pranzo → —"]);
   });
@@ -126,7 +148,10 @@ describe("cambiProgrammati", () => {
   it("due cambi sullo stesso filo in date diverse, e l'ordine: per data, poi per orario", () => {
     const righe = [
       pasto("pranzo", "Pranzo", "12:30", 2, { valido_al: "2026-10-11" }),
-      pasto("pranzo-1", "Pranzo 1", "12:30", 2, { valido_dal: "2026-10-12", valido_al: "2026-10-14" }),
+      pasto("pranzo-1", "Pranzo 1", "12:30", 2, {
+        valido_dal: "2026-10-12",
+        valido_al: "2026-10-14",
+      }),
       pasto("colazione", "Colazione", "07:00", 0, { valido_al: "2026-10-11" }),
       pasto("brunch", "Brunch", "10:30", 9, { valido_dal: "2026-10-12" }),
     ];
@@ -142,7 +167,10 @@ describe("cambiProgrammati", () => {
   it("quando la data arriva il cambio non è più programmato: la sua scheda sparisce", () => {
     const righe = [
       pasto("pranzo", "Pranzo", "12:30", 2, { valido_al: "2026-10-11" }),
-      pasto("pranzo-1", "Pranzo 1", "12:30", 2, { valido_dal: "2026-10-12", valido_al: "2026-10-14" }),
+      pasto("pranzo-1", "Pranzo 1", "12:30", 2, {
+        valido_dal: "2026-10-12",
+        valido_al: "2026-10-14",
+      }),
     ];
     expect(dateProgrammate(righe, "2026-10-11")).toEqual(["2026-10-12", "2026-10-15"]);
     expect(dateProgrammate(righe, "2026-10-12")).toEqual(["2026-10-15"]);
@@ -165,7 +193,9 @@ describe("schedaDi", () => {
 
   it("i pasti come saranno quel giorno, in ordine con le ore di quel giorno, con le etichette", () => {
     const scheda = schedaDi(righe, "2026-10-12", OGGI);
-    expect(scheda.righe.map((r) => [r.pasto.nome, r.pasto.ora_inizio, r.etichetta, r.prima])).toEqual([
+    expect(
+      scheda.righe.map((r) => [r.pasto.nome, r.pasto.ora_inizio, r.etichetta, r.prima])
+    ).toEqual([
       ["Colazione", "07:00", null, null],
       ["Brunch", "11:00", "nuovo", null],
       ["Pranzo 1", "12:30", "nome nuovo", "Pranzo"],
@@ -177,7 +207,10 @@ describe("schedaDi", () => {
   });
 
   it("una scheda più avanti mostra lo stato di quel giorno, ma solo i cambi di quella data", () => {
-    const conDopo = [...righe, pasto("cena-x", "Cena tardi", "21:30", 10, { valido_dal: "2026-10-15" })];
+    const conDopo = [
+      ...righe,
+      pasto("cena-x", "Cena tardi", "21:30", 10, { valido_dal: "2026-10-15" }),
+    ];
     const scheda = schedaDi(conDopo, "2026-10-15", OGGI);
     expect(scheda.righe.find((r) => r.pasto.nome === "Pranzo 1")?.etichetta).toBeNull();
     expect(scheda.righe.find((r) => r.pasto.nome === "Cena tardi")?.etichetta).toBe("nuovo");
@@ -190,7 +223,10 @@ describe("limitiDaUnaData", () => {
   it("senza cambi programmati: da domani, senza massimo", () => {
     const pranzo = pasto("pranzo", "Pranzo", "12:30", 2);
     expect(limitiDaUnaData(pranzo, [pranzo], OGGI)).toEqual({
-      min: "2026-10-11", max: null, disponibile: true, cambioSuccessivo: null,
+      min: "2026-10-11",
+      max: null,
+      disponibile: true,
+      cambioSuccessivo: null,
     });
   });
 
@@ -211,14 +247,19 @@ describe("limitiDaUnaData", () => {
 
   it("un pasto che finisce oggi: nessun giorno da scegliere", () => {
     const pranzo = pasto("pranzo", "Pranzo", "12:30", 2, { valido_al: OGGI });
-    expect(limitiDaUnaData(pranzo, [pranzo], OGGI)).toMatchObject({ max: OGGI, disponibile: false });
+    expect(limitiDaUnaData(pranzo, [pranzo], OGGI)).toMatchObject({
+      max: OGGI,
+      disponibile: false,
+    });
   });
 
   it("un pasto che finisce oggi ma continua domani con un altro nome: domani è la stessa data", () => {
     const pranzo = pasto("pranzo", "Pranzo", "12:30", 2, { valido_al: OGGI });
     const pranzo1 = pasto("pranzo-1", "Pranzo 1", "12:30", 2, { valido_dal: "2026-10-11" });
     expect(limitiDaUnaData(pranzo, [pranzo, pranzo1], OGGI)).toMatchObject({
-      min: "2026-10-11", max: "2026-10-11", disponibile: true,
+      min: "2026-10-11",
+      max: "2026-10-11",
+      disponibile: true,
     });
   });
 });
@@ -235,9 +276,15 @@ describe("dataProposta ed erroreDataDaUnaData", () => {
   it("dentro i limiti nessun errore; fuori, o un giorno che non esiste, il messaggio dice i limiti", () => {
     expect(erroreDataDaUnaData("2026-10-11", finoAl13)).toBeNull();
     expect(erroreDataDaUnaData("2026-10-13", finoAl13)).toBeNull();
-    expect(erroreDataDaUnaData("2026-10-14", finoAl13)).toBe("Scegli un giorno fra dom 11 ott e mar 13 ott.");
-    expect(erroreDataDaUnaData("2026-10-10", liberi)).toBe("Scegli un giorno da dom 11 ott in poi.");
-    expect(erroreDataDaUnaData("2026-02-30", liberi)).toBe("Scegli un giorno da dom 11 ott in poi.");
+    expect(erroreDataDaUnaData("2026-10-14", finoAl13)).toBe(
+      "Scegli un giorno fra dom 11 ott e mar 13 ott."
+    );
+    expect(erroreDataDaUnaData("2026-10-10", liberi)).toBe(
+      "Scegli un giorno da dom 11 ott in poi."
+    );
+    expect(erroreDataDaUnaData("2026-02-30", liberi)).toBe(
+      "Scegli un giorno da dom 11 ott in poi."
+    );
     expect(erroreDataDaUnaData("", liberi)).not.toBeNull();
   });
 });

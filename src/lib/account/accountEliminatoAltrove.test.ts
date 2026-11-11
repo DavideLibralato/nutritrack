@@ -154,7 +154,9 @@ describe("gestisciAccountEliminatoAltrove", () => {
   });
 
   it("sei chiamate insieme: un solo signOut e una sola navigazione", async () => {
-    const esiti = await Promise.all(Array.from({ length: 6 }, () => gestisciAccountEliminatoAltrove(naviga)));
+    const esiti = await Promise.all(
+      Array.from({ length: 6 }, () => gestisciAccountEliminatoAltrove(naviga))
+    );
     expect(esiti).toEqual(Array(6).fill("uscito"));
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(naviga).toHaveBeenCalledTimes(1);

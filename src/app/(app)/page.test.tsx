@@ -22,7 +22,13 @@ import { segnaInserimento } from "@/lib/inserimento/ultimoInserimento";
 import { messaggioAggiunto, messaggioInserimento } from "@/lib/inserimento/testiBarra";
 import type { SceltaDoppione } from "@/lib/diario/pianoSpostamento";
 import { SCADENZA_BLOCCO_CLICK_MS } from "@/lib/decisioneSwipe";
-import { formattaDataEstesa, formattaGiornoCorto, giornoPrecedente, giornoSuccessivo, oggiLocale } from "@/lib/dataGiorno";
+import {
+  formattaDataEstesa,
+  formattaGiornoCorto,
+  giornoPrecedente,
+  giornoSuccessivo,
+  oggiLocale,
+} from "@/lib/dataGiorno";
 import type { VoceDiario } from "@/lib/db/tipi";
 import { stringToBase64URL } from "@supabase/ssr";
 import {
@@ -258,8 +264,18 @@ describe("Oggi: menu del tieni-premuto chiuso con un tocco fuori", () => {
 // che applicasse la stessa scelta a tutti farebbe fallire il test.
 describe("Oggi: Sposta dal menu con due doppioni", () => {
   async function prepara() {
-    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    const colazione = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      ora_inizio: "07:00",
+      ordine: 0,
+    });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 1,
+    });
     const voce = (nome: string, pastoId: string, quantita_g: number) =>
       repositoryVociDiario.crea({
         user_id: utenteTest,
@@ -282,15 +298,22 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
     await voce("Mela", pranzo.id, 80);
     const diario = async () =>
       (await repositoryVociDiario.ottieniTutti(utenteTest))
-        .map((v) => `${v.pasto_id === pranzo.id ? "Pranzo" : "Colazione"} ${v.nome_alimento} ${v.quantita_g}`)
+        .map(
+          (v) =>
+            `${v.pasto_id === pranzo.id ? "Pranzo" : "Colazione"} ${v.nome_alimento} ${v.quantita_g}`
+        )
         .sort();
 
     render(<OggiPage />);
     // Il menu da tasto destro / tastiera, sul nome del pasto: niente timer.
-    const titolo = (await screen.findAllByText("Colazione")).find((el) => el.closest("[data-tieni-premuto]"))!;
+    const titolo = (await screen.findAllByText("Colazione")).find((el) =>
+      el.closest("[data-tieni-premuto]")
+    )!;
     fireEvent.contextMenu(titolo.closest("button")!);
     fireEvent.click(await screen.findByRole("menuitem", { name: "Sposta" }));
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Pranzo" }));
+    fireEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Pranzo" })
+    );
     await screen.findByText("2 alimenti ci sono già in «Pranzo»");
     return { diario };
   }
@@ -301,7 +324,9 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
 
     const yogurt = screen.getByRole("group", { name: "Yogurt" });
     const mela = screen.getByRole("group", { name: "Mela" });
-    expect(within(yogurt).getByRole("radio", { name: "Somma (225 g)" }).getAttribute("aria-checked")).toBe("true");
+    expect(
+      within(yogurt).getByRole("radio", { name: "Somma (225 g)" }).getAttribute("aria-checked")
+    ).toBe("true");
     fireEvent.click(within(mela).getByRole("radio", { name: "Non spostarlo" }));
     within(mela).getByText("→ Resta in Colazione, non si sposta");
     within(yogurt).getByText("→ Una riga da 225 g");
@@ -309,7 +334,9 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Sposta" }));
 
-    await screen.findByText("Spostato: «Colazione» → «Pranzo» (tranne «Mela», rimasto in «Colazione»).");
+    await screen.findByText(
+      "Spostato: «Colazione» → «Pranzo» (tranne «Mela», rimasto in «Colazione»)."
+    );
     await waitFor(async () =>
       expect(await diario()).toEqual(["Colazione Mela 150", "Pranzo Mela 80", "Pranzo Yogurt 225"])
     );
@@ -321,23 +348,37 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
 
   it("Scrivi quantità vuoto: bottone spento e «Per salvare mancano» col nome", async () => {
     await prepara();
-    fireEvent.click(within(screen.getByRole("group", { name: "Mela" })).getByRole("radio", { name: "Scrivi quantità" }));
-    expect((screen.getByRole("button", { name: "Sposta" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Mela" })).getByRole("radio", {
+        name: "Scrivi quantità",
+      })
+    );
+    expect((screen.getByRole("button", { name: "Sposta" }) as HTMLButtonElement).disabled).toBe(
+      true
+    );
     screen.getByText("Per salvare mancano: Mela.");
     fireEvent.change(screen.getByLabelText("Quantità"), { target: { value: "120" } });
-    expect((screen.getByRole("button", { name: "Sposta" }) as HTMLButtonElement).disabled).toBe(false);
-    within(screen.getByRole("group", { name: "Mela" })).getByText("→ Una riga da 120 g (scritta a mano)");
+    expect((screen.getByRole("button", { name: "Sposta" }) as HTMLButtonElement).disabled).toBe(
+      false
+    );
+    within(screen.getByRole("group", { name: "Mela" })).getByText(
+      "→ Una riga da 120 g (scritta a mano)"
+    );
   });
 
   it("chiudere il foglio dei doppioni non scrive niente", async () => {
     await prepara();
-    const prima = (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
+    const prima = (await repositoryVociDiario.ottieniTutti(utenteTest))
+      .map((v) => v.updated_at)
+      .sort();
 
     // Tocco fuori: lo sfondo scurito.
     fireEvent.click(screen.getByRole("dialog").parentElement!);
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
-    const dopo = (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
+    const dopo = (await repositoryVociDiario.ottieniTutti(utenteTest))
+      .map((v) => v.updated_at)
+      .sort();
     expect(dopo).toEqual(prima);
     expect(screen.queryByText(/Spostato/)).toBeNull();
   });
@@ -350,8 +391,18 @@ describe("Oggi: Sposta dal menu con due doppioni", () => {
 // con i grammi nuovi in arrivo.
 describe("Oggi: modifica di una voce dallo sheet", () => {
   async function prepara({ yogurtAPranzo }: { yogurtAPranzo: boolean }) {
-    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    const colazione = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      ora_inizio: "07:00",
+      ordine: 0,
+    });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 1,
+    });
     const voce = (pastoId: string, quantita_g: number) =>
       repositoryVociDiario.crea({
         user_id: utenteTest,
@@ -379,7 +430,9 @@ describe("Oggi: modifica di una voce dallo sheet", () => {
 
     render(<OggiPage />);
     const righe = await screen.findAllByText("Yogurt");
-    const riga = righe.map((el) => el.closest("button")!).find((b) => b.closest(`[data-pasto-id="${colazione.id}"]`))!;
+    const riga = righe
+      .map((el) => el.closest("button")!)
+      .find((b) => b.closest(`[data-pasto-id="${colazione.id}"]`))!;
     // Tocco sulla voce di colazione: lo sheet in modifica.
     fireEvent.click(riga);
     await screen.findByLabelText("Pasto");
@@ -388,7 +441,8 @@ describe("Oggi: modifica di una voce dallo sheet", () => {
 
   function compila({ grammi, pastoId }: { grammi?: string; pastoId?: string }) {
     if (pastoId) fireEvent.change(screen.getByLabelText("Pasto"), { target: { value: pastoId } });
-    if (grammi) fireEvent.change(screen.getByLabelText("Quantità (g)"), { target: { value: grammi } });
+    if (grammi)
+      fireEvent.change(screen.getByLabelText("Quantità (g)"), { target: { value: grammi } });
     fireEvent.click(screen.getByRole("button", { name: "Salva" }));
   }
 
@@ -491,21 +545,56 @@ describe("Oggi: modifica di una voce dallo sheet", () => {
 // basta, senza nessun modo di tornare indietro.
 describe("Oggi: segnalibro pieno, Tolto dai preferiti e Annulla", () => {
   async function prepara() {
-    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
+    const colazione = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      ora_inizio: "07:00",
+      ordine: 0,
+    });
     const yogurt = await repositoryAlimenti.crea({
-      user_id: utenteTest, nome: "Yogurt", marca: null, barcode: null,
-      kcal_100g: 60, proteine_100g: 4, carboidrati_100g: 5, grassi_100g: 2,
-      zuccheri_100g: null, fibre_100g: null, saturi_100g: null, sale_100g: null,
-      porzione_default_g: 125, fonte: "manuale", verificato: false,
+      user_id: utenteTest,
+      nome: "Yogurt",
+      marca: null,
+      barcode: null,
+      kcal_100g: 60,
+      proteine_100g: 4,
+      carboidrati_100g: 5,
+      grassi_100g: 2,
+      zuccheri_100g: null,
+      fibre_100g: null,
+      saturi_100g: null,
+      sale_100g: null,
+      porzione_default_g: 125,
+      fonte: "manuale",
+      verificato: false,
     });
     await repositoryVociDiario.crea({
-      user_id: utenteTest, alimento_id: yogurt.id, pasto_id: colazione.id, gruppo_id: null,
-      quantita_g: 125, data: oggiLocale(), creato_il: "2026-10-06T08:00:00.000Z", consumato_alle: null,
-      nome_alimento: "Yogurt", kcal_100g: 60, proteine_100g: 4, carboidrati_100g: 5, grassi_100g: 2,
+      user_id: utenteTest,
+      alimento_id: yogurt.id,
+      pasto_id: colazione.id,
+      gruppo_id: null,
+      quantita_g: 125,
+      data: oggiLocale(),
+      creato_il: "2026-10-06T08:00:00.000Z",
+      consumato_alle: null,
+      nome_alimento: "Yogurt",
+      kcal_100g: 60,
+      proteine_100g: 4,
+      carboidrati_100g: 5,
+      grassi_100g: 2,
     });
-    const salvato = await repositoryComposizioni.crea({ user_id: utenteTest, nome: "Colazione", tipo: "pasto_salvato", alimento_id: null });
+    const salvato = await repositoryComposizioni.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      tipo: "pasto_salvato",
+      alimento_id: null,
+    });
     await repositoryComposizioniVoci.crea({
-      user_id: utenteTest, composizione_id: salvato.id, alimento_id: yogurt.id, quantita_g: 125, ordine: 0,
+      user_id: utenteTest,
+      composizione_id: salvato.id,
+      alimento_id: yogurt.id,
+      quantita_g: 125,
+      ordine: 0,
     });
     const pastiSalvatiVivi = async () =>
       (await repositoryComposizioni.ottieniTutti(utenteTest)).map((c) => c.nome).sort();
@@ -541,7 +630,9 @@ describe("Oggi: segnalibro pieno, Tolto dai preferiti e Annulla", () => {
     // Segnalibro di nuovo, con un altro nome: stesso contenuto.
     fireEvent.click(await screen.findByRole("button", { name: "Salva Colazione come preferito" }));
     const sheet = await screen.findByRole("dialog");
-    fireEvent.change(within(sheet).getByRole("textbox"), { target: { value: "Colazione di oggi" } });
+    fireEvent.change(within(sheet).getByRole("textbox"), {
+      target: { value: "Colazione di oggi" },
+    });
     fireEvent.click(within(sheet).getByRole("button", { name: "Salva" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(await pastiSalvatiVivi()).toEqual(["Colazione di oggi"]);
@@ -554,13 +645,17 @@ describe("Oggi: segnalibro pieno, Tolto dai preferiti e Annulla", () => {
 
   it("errore: «Operazione non riuscita», niente cambiato, segnalibro ancora pieno", async () => {
     const { pastiSalvatiVivi } = await prepara();
-    const guasto = vi.spyOn(repositoryComposizioni, "elimina").mockRejectedValue(new Error("Guasto finto"));
+    const guasto = vi
+      .spyOn(repositoryComposizioni, "elimina")
+      .mockRejectedValue(new Error("Guasto finto"));
 
     fireEvent.click(screen.getByRole("button", { name: "Togli Colazione dai preferiti" }));
 
     await testoBarra("Operazione non riuscita. Riprova.");
     guasto.mockRestore();
-    expect(within(screen.getByRole("status")).queryByRole("button", { name: "Annulla" })).toBeNull();
+    expect(
+      within(screen.getByRole("status")).queryByRole("button", { name: "Annulla" })
+    ).toBeNull();
     expect(await pastiSalvatiVivi()).toEqual(["Colazione"]);
     screen.getByRole("button", { name: "Togli Colazione dai preferiti" });
   });
@@ -582,11 +677,26 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
   });
 
   async function prepara() {
-    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    const colazione = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      ora_inizio: "07:00",
+      ordine: 0,
+    });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 1,
+    });
     // Cena è più in basso, in parte sotto la fine della lista visibile:
     // ci si arriva solo con lo scorrimento automatico.
-    const cena = await repositoryPasti.crea({ user_id: utenteTest, nome: "Cena", ora_inizio: "19:30", ordine: 2 });
+    const cena = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Cena",
+      ora_inizio: "19:30",
+      ordine: 2,
+    });
     rettangoli[colazione.id] = { top: 100, bottom: 200 };
     rettangoli[pranzo.id] = { top: 200, bottom: 300 };
     rettangoli[cena.id] = { top: 640, bottom: 900 };
@@ -606,9 +716,20 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
     await repositoryVociDiario.crea({ ...comune, pasto_id: colazione.id, quantita_g: 125 });
     await repositoryVociDiario.crea({ ...comune, pasto_id: pranzo.id, quantita_g: 100 });
 
-    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: Element
+    ) {
       const r = (top: number, bottom: number) =>
-        ({ top, bottom, left: 16, right: 374, width: 358, height: bottom - top, x: 16, y: top }) as DOMRect;
+        ({
+          top,
+          bottom,
+          left: 16,
+          right: 374,
+          width: 358,
+          height: bottom - top,
+          x: 16,
+          y: top,
+        }) as DOMRect;
       const el = this as HTMLElement;
       if (el.dataset.pastoId && rettangoli[el.dataset.pastoId]) {
         const { top, bottom } = rettangoli[el.dataset.pastoId];
@@ -621,9 +742,9 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
 
     render(<OggiPage />);
     const righe = await screen.findAllByText("Yogurt");
-    const riga = righe.map((el) => el.closest("button")!).find((b) =>
-      b.closest(`[data-pasto-id="${colazione.id}"]`)
-    )!;
+    const riga = righe
+      .map((el) => el.closest("button")!)
+      .find((b) => b.closest(`[data-pasto-id="${colazione.id}"]`))!;
     const lista = riga.closest("ul")!.parentElement!.closest("ul")!;
     const firme = async () =>
       (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => v.updated_at).sort();
@@ -665,9 +786,11 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
     puntatore("pointermove", lista, 100, 250);
     // Il pasto sotto il dito è evidenziato.
     await waitFor(() =>
-      expect(document.querySelector(`[data-pasto-id="${pranzo.id}"]`)!.hasAttribute("data-bersaglio-attivo")).toBe(
-        true
-      )
+      expect(
+        document
+          .querySelector(`[data-pasto-id="${pranzo.id}"]`)!
+          .hasAttribute("data-bersaglio-attivo")
+      ).toBe(true)
     );
     puntatore("pointerup", lista, 100, 250);
 
@@ -711,25 +834,34 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
   it("rilascio senza doppioni che fallisce: errore nella barra, niente scritto, i gesti tornano attivi", async () => {
     const { riga, lista, firme } = await prepara();
     // A pranzo niente più yogurt: il rilascio sposta subito, senza foglio.
-    const yogurtPranzo = (await repositoryVociDiario.ottieniTutti(utenteTest)).find((v) => v.quantita_g === 100)!;
+    const yogurtPranzo = (await repositoryVociDiario.ottieniTutti(utenteTest)).find(
+      (v) => v.quantita_g === 100
+    )!;
     await repositoryVociDiario.elimina(yogurtPranzo.id);
     await waitFor(() => expect(screen.getAllByText("Yogurt")).toHaveLength(1));
     const prima = await firme();
-    const guasto = vi.spyOn(repositoryVociDiario, "aggiorna").mockRejectedValue(new Error("Guasto finto"));
+    const guasto = vi
+      .spyOn(repositoryVociDiario, "aggiorna")
+      .mockRejectedValue(new Error("Guasto finto"));
 
     await iniziaTrascinamento(riga, lista);
     puntatore("pointermove", lista, 100, 250);
     puntatore("pointerup", lista, 100, 250);
 
     await testoBarra("Operazione non riuscita. Riprova.");
-    expect(within(screen.getByRole("status")).queryByRole("button", { name: "Annulla" })).toBeNull();
+    expect(
+      within(screen.getByRole("status")).queryByRole("button", { name: "Annulla" })
+    ).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     guasto.mockRestore();
     expect(await firme()).toEqual(prima);
 
     // I gesti sono di nuovo attivi: tenendo premuto, la riga si solleva.
     puntatore("pointerdown", riga, 100, 150);
-    await waitFor(() => expect(riga.hasAttribute("data-sollevato")).toBe(true), { interval: 5, timeout: 3000 });
+    await waitFor(() => expect(riga.hasAttribute("data-sollevato")).toBe(true), {
+      interval: 5,
+      timeout: 3000,
+    });
     puntatore("pointercancel", lista, 100, 150);
   });
 
@@ -764,7 +896,12 @@ describe("Oggi: trascinare un alimento su un altro pasto", () => {
 // la copia.
 describe("Oggi: Duplica su un altro giorno", () => {
   it("«di …» nel messaggio, Vedi porta là, Annulla toglie solo la copia", async () => {
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 0,
+    });
     const oggi = oggiLocale();
     const ieri = giornoPrecedente(oggi);
     await repositoryVociDiario.crea({
@@ -783,7 +920,9 @@ describe("Oggi: Duplica su un altro giorno", () => {
       grassi_100g: 0.2,
     });
     const diario = async () =>
-      (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => `${v.data} ${v.nome_alimento}`).sort();
+      (await repositoryVociDiario.ottieniTutti(utenteTest))
+        .map((v) => `${v.data} ${v.nome_alimento}`)
+        .sort();
 
     render(<OggiPage />);
     fireEvent.contextMenu((await screen.findByText("Mela")).closest("button")!);
@@ -813,8 +952,18 @@ describe("Oggi: Duplica su un altro giorno", () => {
 // tutti i nomi (bug del 6/10: il nome spariva e la coda veniva tagliata).
 describe("Oggi: messaggi di Sposta e Duplica per un pasto intero", () => {
   async function prepara() {
-    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    const colazione = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      ora_inizio: "07:00",
+      ordine: 0,
+    });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 1,
+    });
     await repositoryVociDiario.crea({
       user_id: utenteTest,
       alimento_id: "alimento-pane",
@@ -831,7 +980,9 @@ describe("Oggi: messaggi di Sposta e Duplica per un pasto intero", () => {
       grassi_100g: 1,
     });
     render(<OggiPage />);
-    const titolo = (await screen.findAllByText("Colazione")).find((el) => el.closest("[data-tieni-premuto]"))!;
+    const titolo = (await screen.findAllByText("Colazione")).find((el) =>
+      el.closest("[data-tieni-premuto]")
+    )!;
     fireEvent.contextMenu(titolo.closest("button")!);
     return { pranzo };
   }
@@ -839,7 +990,9 @@ describe("Oggi: messaggi di Sposta e Duplica per un pasto intero", () => {
   it("Sposta: «Spostato: Colazione → Pranzo»", async () => {
     await prepara();
     fireEvent.click(await screen.findByRole("menuitem", { name: "Sposta" }));
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Pranzo" }));
+    fireEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Pranzo" })
+    );
     await testoBarra("Spostato: Colazione → Pranzo");
   });
 
@@ -863,15 +1016,33 @@ describe("Oggi: messaggi di Sposta e Duplica per un pasto intero", () => {
 describe("Oggi: pasti non più in uso con voci in quel giorno", () => {
   async function prepara() {
     const ieri = giornoPrecedente(oggiLocale());
-    const colazione = await repositoryPasti.crea({ user_id: utenteTest, nome: "Colazione", ora_inizio: "07:00", ordine: 0 });
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 1 });
+    const colazione = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Colazione",
+      ora_inizio: "07:00",
+      ordine: 0,
+    });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 1,
+    });
     // Chiusa ieri: oggi non vale più.
     const merenda = await repositoryPasti.crea({
-      user_id: utenteTest, nome: "Merenda", ora_inizio: "16:00", ordine: 2, valido_al: ieri,
+      user_id: utenteTest,
+      nome: "Merenda",
+      ora_inizio: "16:00",
+      ordine: 2,
+      valido_al: ieri,
     });
     // Chiusa ieri, e senza voci oggi: non deve comparire.
     await repositoryPasti.crea({
-      user_id: utenteTest, nome: "Spuntino sera", ora_inizio: "21:30", ordine: 3, valido_al: ieri,
+      user_id: utenteTest,
+      nome: "Spuntino sera",
+      ora_inizio: "21:30",
+      ordine: 3,
+      valido_al: ieri,
     });
     const voce = (nome: string, pastoId: string) =>
       repositoryVociDiario.crea({
@@ -954,7 +1125,12 @@ describe("Oggi: navigazione fino a oggi + 7", () => {
   async function apri(giorno?: string) {
     if (giorno) parametri = new URLSearchParams({ giorno });
     if ((await repositoryPasti.ottieniTutti(utenteTest)).length === 0) {
-      await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+      await repositoryPasti.crea({
+        user_id: utenteTest,
+        nome: "Pranzo",
+        ora_inizio: "12:30",
+        ordine: 0,
+      });
     }
     render(<OggiPage />);
     await screen.findByText("Pranzo");
@@ -1020,11 +1196,26 @@ describe("Oggi: il giorno cambia mentre la pagina è aperta", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 10, 22, 0, 0));
     parametri = new URLSearchParams({ giorno });
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 0,
+    });
     await repositoryVociDiario.crea({
-      user_id: utenteTest, alimento_id: "alimento-mela", pasto_id: pranzo.id, gruppo_id: null,
-      quantita_g: 150, data: giorno, creato_il: "2026-10-10T08:00:00.000Z", consumato_alle: null,
-      nome_alimento: "Mela", kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.2,
+      user_id: utenteTest,
+      alimento_id: "alimento-mela",
+      pasto_id: pranzo.id,
+      gruppo_id: null,
+      quantita_g: 150,
+      data: giorno,
+      creato_il: "2026-10-10T08:00:00.000Z",
+      consumato_alle: null,
+      nome_alimento: "Mela",
+      kcal_100g: 52,
+      proteine_100g: 0.3,
+      carboidrati_100g: 14,
+      grassi_100g: 0.2,
     });
     render(<OggiPage />);
     await screen.findByText("Mela");
@@ -1111,7 +1302,14 @@ describe("Oggi: la barra dopo un inserimento da /aggiungi", () => {
       pastoId,
       alimenti: [
         {
-          alimento: { id: `alimento-${nome}`, nome, kcal_100g: 52, proteine_100g: 0.3, carboidrati_100g: 14, grassi_100g: 0.2 },
+          alimento: {
+            id: `alimento-${nome}`,
+            nome,
+            kcal_100g: 52,
+            proteine_100g: 0.3,
+            carboidrati_100g: 14,
+            grassi_100g: 0.2,
+          },
           grammi,
         },
       ],
@@ -1119,14 +1317,20 @@ describe("Oggi: la barra dopo un inserimento da /aggiungi", () => {
       profilo: null,
     };
     let esito = await aggiungiNelPasto(base);
-    if (esito.esito === "doppioni") esito = await aggiungiNelPasto({ ...base, scelte, doppioniVisti: esito.doppioni });
+    if (esito.esito === "doppioni")
+      esito = await aggiungiNelPasto({ ...base, scelte, doppioniVisti: esito.doppioni });
     if (esito.esito !== "fatto") throw new Error("atteso fatto");
     const messaggio = messaggioInserimento("alimento", nome, esito.piano);
     if (messaggio) segnaInserimento({ fotografia: esito.fotografia, messaggio });
   }
 
   async function prepara() {
-    const pranzo = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const pranzo = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 0,
+    });
     const voce = (nome: string, quantita_g: number) =>
       repositoryVociDiario.crea({
         user_id: utenteTest,
@@ -1144,7 +1348,9 @@ describe("Oggi: la barra dopo un inserimento da /aggiungi", () => {
         grassi_100g: 0.2,
       });
     const diario = async () =>
-      (await repositoryVociDiario.ottieniTutti(utenteTest)).map((v) => `${v.nome_alimento} ${v.quantita_g}`).sort();
+      (await repositoryVociDiario.ottieniTutti(utenteTest))
+        .map((v) => `${v.nome_alimento} ${v.quantita_g}`)
+        .sort();
     return { pranzo, voce, diario };
   }
 
@@ -1160,13 +1366,18 @@ describe("Oggi: la barra dopo un inserimento da /aggiungi", () => {
 
     await screen.findByText("Annullato.");
     expect(await diario()).toEqual(["Mela 100"]);
-    expect(await repositoryVociDiario.ottieniPerId(mela.id)).toMatchObject({ quantita_g: 100, deleted_at: null });
+    expect(await repositoryVociDiario.ottieniPerId(mela.id)).toMatchObject({
+      quantita_g: 100,
+      deleted_at: null,
+    });
   });
 
   it("Scrivi quantità, poi Annulla: la Mela torna a 100 g", async () => {
     const { pranzo, voce, diario } = await prepara();
     await voce("Mela", 100);
-    await aggiungiComeAggiungi(pranzo.id, "Mela", 50, { "alimento-Mela": { tipo: "scrivi", grammi: 120 } });
+    await aggiungiComeAggiungi(pranzo.id, "Mela", 50, {
+      "alimento-Mela": { tipo: "scrivi", grammi: 120 },
+    });
 
     render(<OggiPage />);
     await testoBarra("Aggiornato: Mela → 120 g");
@@ -1194,7 +1405,10 @@ describe("Oggi: la barra dopo un inserimento da /aggiungi", () => {
   it("un inserimento senza scritture non mostra nessuna barra", async () => {
     const { voce } = await prepara();
     await voce("Pane", 80);
-    segnaInserimento({ fotografia: { prima: [], idCreate: [] }, messaggio: messaggioAggiunto("Mela", null) });
+    segnaInserimento({
+      fotografia: { prima: [], idCreate: [] },
+      messaggio: messaggioAggiunto("Mela", null),
+    });
 
     render(<OggiPage />);
     await screen.findByText("Pane");
@@ -1217,7 +1431,8 @@ describe("Oggi: la scheda «Completa il tuo profilo»", () => {
 
   function cookieSessione(metadati: Record<string, unknown>) {
     const valore =
-      "base64-" + stringToBase64URL(JSON.stringify({ user: { id: utenteTest, user_metadata: metadati } }));
+      "base64-" +
+      stringToBase64URL(JSON.stringify({ user: { id: utenteTest, user_metadata: metadati } }));
     document.cookie = `${chiaveSessione(URL_SUPABASE)}=${valore}; path=/`;
   }
 
@@ -1236,7 +1451,12 @@ describe("Oggi: la scheda «Completa il tuo profilo»", () => {
 
   // I pasti ci sono già (niente seed), così la pagina si apre subito.
   async function preparaOggi() {
-    await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 0,
+    });
   }
 
   // Lascia rispondere Dexie e girare gli effetti.
@@ -1263,11 +1483,18 @@ describe("Oggi: la scheda «Completa il tuo profilo»", () => {
     render(<OggiPage />);
 
     const scheda = await screen.findByRole("region", { name: "Completa il tuo profilo" });
-    expect(within(scheda).getByText("Senza obiettivi non posso dirti quante calorie ti restano oggi.")).toBeTruthy();
+    expect(
+      within(scheda).getByText("Senza obiettivi non posso dirti quante calorie ti restano oggi.")
+    ).toBeTruthy();
     const etichette = within(within(scheda).getByRole("list", { name: "Cosa manca" }))
       .getAllByRole("listitem")
       .map((li) => li.textContent);
-    expect(etichette).toEqual(["Su di te", "Il tuo peso", "Il tuo obiettivo", "Obiettivi giornalieri"]);
+    expect(etichette).toEqual([
+      "Su di te",
+      "Il tuo peso",
+      "Il tuo obiettivo",
+      "Obiettivi giornalieri",
+    ]);
     // La riga della testata resta.
     expect(screen.getByText("Nessun obiettivo impostato")).toBeTruthy();
   });
@@ -1310,7 +1537,10 @@ describe("Oggi: la scheda «Completa il tuo profilo»", () => {
       render(<OggiPage />);
       await screen.findByText("Pranzo");
       await unAttimo();
-      expect(screen.queryByRole("region", { name: "Completa il tuo profilo" }), caso.nome).toBeNull();
+      expect(
+        screen.queryByRole("region", { name: "Completa il tuo profilo" }),
+        caso.nome
+      ).toBeNull();
       cleanup();
     }
   });
@@ -1344,7 +1574,11 @@ describe("Oggi: la scheda «Completa il tuo profilo»", () => {
     // Oggi da sola non legge mai le misurazioni: ogni lettura qui sarebbe
     // della scheda.
     const letture = vi.spyOn(repositoryMisurazioni, "ottieniTutti");
-    for (const metadati of [{ nome: "Giulia" }, { onboarding: "fatto" }, { onboarding: "da_fare" }]) {
+    for (const metadati of [
+      { nome: "Giulia" },
+      { onboarding: "fatto" },
+      { onboarding: "da_fare" },
+    ]) {
       utenteTest = `utente-oggi-${crypto.randomUUID()}`;
       await preparaOggi();
       cookieSessione(metadati);
@@ -1380,7 +1614,12 @@ describe("Oggi: i numeri della fascia alta non cambiano con la regola dei colori
     // il suo target; senza `kcal` il target di allenamento manca (ripiego).
     allenamento?: { kcal?: number };
   }) {
-    const pasto = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const pasto = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 0,
+    });
     const obiettivo = await repositoryObiettivi.crea({
       user_id: utenteTest,
       valido_dal: "2026-01-01",
@@ -1469,18 +1708,18 @@ describe("Oggi: i numeri della fascia alta non cambiano con la regola dei colori
     expect(screen.getByText("Rimangono 600 kcal")).toBeTruthy();
     expect(screen.getByText("/ 2600")).toBeTruthy();
     expect(screen.getByText("151 / 180 g")).toBeTruthy();
-    expect((screen.getByRole("combobox", { name: "Tipo di giornata" }) as HTMLSelectElement).value).toBe(
-      "allenamento"
-    );
+    expect(
+      (screen.getByRole("combobox", { name: "Tipo di giornata" }) as HTMLSelectElement).value
+    ).toBe("allenamento");
   });
 
   it("allenamento scritto ma senza il suo target: numeri e pastiglia di «Normale»", async () => {
     await prepara({ kcalVoce: 2000, allenamento: {} });
     expect(screen.getByText("Rimangono 200 kcal")).toBeTruthy();
     expect(screen.getByText("/ 2200")).toBeTruthy();
-    expect((screen.getByRole("combobox", { name: "Tipo di giornata" }) as HTMLSelectElement).value).toBe(
-      "normale"
-    );
+    expect(
+      (screen.getByRole("combobox", { name: "Tipo di giornata" }) as HTMLSelectElement).value
+    ).toBe("normale");
   });
 });
 
@@ -1489,7 +1728,12 @@ describe("Oggi: i numeri della fascia alta non cambiano con la regola dei colori
 // «X kcal oltre l'obiettivo» è arancio solo quando la regola dice «oltre».
 describe("Oggi: i colori seguono il tipo di obiettivo del giorno", () => {
   async function apri(tipo: "dimagrire" | "massa", kcalVoce: number) {
-    const pasto = await repositoryPasti.crea({ user_id: utenteTest, nome: "Pranzo", ora_inizio: "12:30", ordine: 0 });
+    const pasto = await repositoryPasti.crea({
+      user_id: utenteTest,
+      nome: "Pranzo",
+      ora_inizio: "12:30",
+      ordine: 0,
+    });
     const obiettivo = await repositoryObiettivi.crea({
       user_id: utenteTest,
       valido_dal: "2026-01-01",
@@ -1528,7 +1772,8 @@ describe("Oggi: i colori seguono il tipo di obiettivo del giorno", () => {
     await screen.findByText("Pasta");
     return {
       arco: container.querySelector('[data-segno="arco-calorie"]')!.getAttribute("class"),
-      proteine: container.querySelector('[data-segno="barra-proteine"]')!.getAttribute("class") ?? "",
+      proteine:
+        container.querySelector('[data-segno="barra-proteine"]')!.getAttribute("class") ?? "",
     };
   }
 

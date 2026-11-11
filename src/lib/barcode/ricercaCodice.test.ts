@@ -72,7 +72,10 @@ describe("cercaCodice", () => {
 
     const esito = await cercaCodice(IO, CODICE, { fetchBase: fetchFinta });
 
-    expect(esito).toEqual({ esito: "nel-catalogo", alimento: expect.objectContaining({ id: "mio" }) });
+    expect(esito).toEqual({
+      esito: "nel-catalogo",
+      alimento: expect.objectContaining({ id: "mio" }),
+    });
     expect(fetchFinta).not.toHaveBeenCalled();
   });
 
@@ -82,7 +85,10 @@ describe("cercaCodice", () => {
 
     const esito = await cercaCodice(IO, CODICE, { fetchBase: fetchFinta });
 
-    expect(esito).toEqual({ esito: "nel-catalogo", alimento: expect.objectContaining({ id: "comune" }) });
+    expect(esito).toEqual({
+      esito: "nel-catalogo",
+      alimento: expect.objectContaining({ id: "comune" }),
+    });
     expect(fetchFinta).not.toHaveBeenCalled();
   });
 
@@ -94,7 +100,10 @@ describe("cercaCodice", () => {
 
     const esito = await cercaCodice(IO, CODICE, { fetchBase: trovatoSuOff() });
 
-    expect(esito).toEqual({ esito: "nel-catalogo", alimento: expect.objectContaining({ id: "mio" }) });
+    expect(esito).toEqual({
+      esito: "nel-catalogo",
+      alimento: expect.objectContaining({ id: "mio" }),
+    });
   });
 
   it("due miei con lo stesso codice (due telefoni offline): il più recente", async () => {
@@ -105,7 +114,10 @@ describe("cercaCodice", () => {
 
     const esito = await cercaCodice(IO, CODICE, { fetchBase: trovatoSuOff() });
 
-    expect(esito).toEqual({ esito: "nel-catalogo", alimento: expect.objectContaining({ id: "nuovo" }) });
+    expect(esito).toEqual({
+      esito: "nel-catalogo",
+      alimento: expect.objectContaining({ id: "nuovo" }),
+    });
   });
 
   it("un alimento cancellato non conta: si cerca su Open Food Facts", async () => {
@@ -168,7 +180,10 @@ describe("cercaCodice", () => {
     controller.abort();
     const fetchFinta = trovatoSuOff();
 
-    const esito = await cercaCodice(IO, CODICE, { fetchBase: fetchFinta, segnale: controller.signal });
+    const esito = await cercaCodice(IO, CODICE, {
+      fetchBase: fetchFinta,
+      segnale: controller.signal,
+    });
 
     expect(esito).toEqual({ esito: "annullata" });
     expect(fetchFinta).not.toHaveBeenCalled();
@@ -196,11 +211,18 @@ describe("cercaCodice e il catalogo precaricato", () => {
   it("un tuo alimento con quel codice viene prima del catalogo", async () => {
     await db.alimenti.put(alimento("mia-nutella", { barcode: NUTELLA_CATALOGO }));
     const esito = await cercaCodice(IO, NUTELLA_CATALOGO, { fetchBase: trovatoSuOff() });
-    expect(esito).toEqual({ esito: "nel-catalogo", alimento: expect.objectContaining({ id: "mia-nutella" }) });
+    expect(esito).toEqual({
+      esito: "nel-catalogo",
+      alimento: expect.objectContaining({ id: "mia-nutella" }),
+    });
   });
 
   it("un tuo con lo stesso nome e marca ma senza codice: il catalogo risponde, già «Nei tuoi»", async () => {
-    await db.alimenti.put({ ...alimento("a-mano", { barcode: null }), nome: "nutella", marca: "FERRERO" });
+    await db.alimenti.put({
+      ...alimento("a-mano", { barcode: null }),
+      nome: "nutella",
+      marca: "FERRERO",
+    });
     const esito = await cercaCodice(IO, NUTELLA_CATALOGO, { fetchBase: trovatoSuOff() });
     expect(esito).toMatchObject({
       esito: "catalogo-precaricato",
