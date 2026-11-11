@@ -1531,12 +1531,20 @@ Senza giorni contati: "—" e "nessun giorno registrato", mai 0.
   senza etichetta. Motivo: anche a interruttore spento l'obiettivo cambia
   quando a metà settimana inizia un periodo nuovo, o per un giorno scritto
   "allenamento" quando l'interruttore era acceso (vince la riga scritta,
-  come in Oggi); una linea unica lì direbbe il falso
-- Un giorno passato senza voci: un trattino grigio basso. Un giorno futuro:
-  solo l'etichetta sbiadita, senza barra
+  come in Oggi); una linea unica lì direbbe il falso. La linea **finisce
+  all'ultimo giorno non futuro** (sopra i giorni futuri l'obiettivo non
+  si sa); l'etichetta va dopo la linea, sopra i giorni futuri, o sopra la
+  linea alla sua fine se lì non c'è posto: sempre intera
+- Un giorno passato senza voci: una **lineetta** grigia alta 2–3 punti, non
+  un rettangolo (dall'11/11: nel mese, in scuro, un rettangolo basso e una
+  barra di poche kcal sembravano uguali). **Oggi senza voci: nessun segno**,
+  il giorno non è finito; solo la sua etichetta, in grassetto con il
+  pallino. Un giorno futuro: solo l'etichetta sbiadita, senza barra
 - Etichette: L M M G V S D nella settimana; nel mese solo 1, 8, 15, 22, 29
   e oggi
-- **Tocco su una barra**: evidenzia la colonna e mostra il valore sopra.
+- **Tocco su una barra**: evidenzia la colonna; nella Settimana mostra anche
+  il valore sopra la barra, nel Mese no (la colonna è più stretta del
+  numero, che finiva sul trattino del giorno dopo: dall'11/11).
   Sotto il grafico un riquadro con il giorno, il tipo (Normale /
   Allenamento), kcal / obiettivo con lo stato, Grassi · Carboidrati ·
   Proteine (proteine / obiettivo) e "Apri il giorno", che porta a Oggi su
@@ -1549,13 +1557,17 @@ Senza giorni contati: "—" e "nessun giorno registrato", mai 0.
 **Peso**: non segue il selettore
 - Le pesate (`misurazioni` di tipo peso, vive, non future, una per giorno)
   delle **ultime 12 settimane**, o tutte se sono meno, su un asse di date
-  vere che arriva fino a oggi. Un punto su ogni pesata; il primo e l'ultimo
-  valore scritti
+  vere che arriva fino a oggi. Un punto su ogni pesata; scritto **solo il
+  valore dell'ultimo** (dall'11/11: il primo si leggeva due volte con il
+  numero della scala, e la differenza in alto lo dice già)
 - Sopra a destra "+1,0 kg dal 20 set"; sotto "Ultima pesata 24 ott, 16
   giorni fa" ("oggi" e "ieri" al posto di 0 e 1 giorni) e "Registra peso ›"
   (Impostazioni > Peso)
 - La linea del **peso obiettivo** solo se il periodo in corso ne ha uno; entra
-  nella scala del grafico anche se è lontana (da guardare su iPhone)
+  nella scala del grafico anche se è lontana (da guardare su iPhone). La sua
+  etichetta sta a sinistra, dopo i numeri della scala, così la linea
+  tratteggiata di "oggi" (in fondo a destra) non la attraversa
+  (dall'11/11)
 - Una sola pesata: un punto, senza la differenza. Pesate solo più vecchie di
   12 settimane: "Nessuna pesata nelle ultime 12 settimane" e la riga
   "Ultima pesata…"

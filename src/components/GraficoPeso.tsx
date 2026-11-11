@@ -1,6 +1,8 @@
 // Il grafico del peso di Statistiche (PUNTO_DI_PARTENZA.md §3, "Peso"):
 // le pesate delle ultime 12 settimane su un asse di date vere che arriva
-// fino a oggi, un punto per pesata, il primo e l'ultimo valore scritti, la
+// fino a oggi, un punto per pesata, scritto solo il valore dell'ultimo (il
+// primo si leggeva due volte con il numero della scala, e la differenza in
+// alto lo dice già; decisione dell'11/11), la
 // linea del peso obiettivo se il periodo in corso ne ha uno. SVG dall'app,
 // colori dai token. Quali pesate e da dove parte l'asse lo decide
 // graficoPeso (pesoStatistiche.ts): qui si disegna e basta.
@@ -23,6 +25,24 @@ interface Props {
   inizioAsse: string;
   fineAsse: string; // oggi
   pesoObiettivo: number | null;
+}
+
+// Quanto spazio occupa "obiettivo 80,5" a 11,5 punti, con un po' di
+// margine.
+const LARGHEZZA_ETICHETTA = 96;
+const STACCO = 6;
+
+// Dove va l'etichetta "obiettivo N" della linea del peso obiettivo: mai
+// attraversata dalla linea tratteggiata di "oggi". Di solito a sinistra,
+// subito dopo i numeri della scala, perché "oggi" sta in fondo a destra.
+// Se "oggi" cade lì (una pesata sola, fatta oggi: il punto sta in mezzo,
+// ma a sinistra resta comunque libero) si passa a destra.
+export function posizioneEtichettaObiettivoPeso(xOggi: number): { x: number; ancora: "start" | "end" } {
+  const sinistra = SINISTRA + STACCO;
+  if (xOggi < sinistra - STACCO || xOggi > sinistra + LARGHEZZA_ETICHETTA + STACCO) {
+    return { x: sinistra, ancora: "start" };
+  }
+  return { x: LARGHEZZA, ancora: "end" };
 }
 
 // Il passo della scala in kg: tre o quattro righe al massimo.
@@ -61,6 +81,7 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
   const prima = pesate[0];
   const ultima = pesate[pesate.length - 1];
   const xOggi = x(fineAsse);
+  const etichettaObiettivo = posizioneEtichettaObiettivoPeso(xOggi);
 
   return (
     <svg
@@ -98,7 +119,15 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
           {formattaGiornoMese(inizioAsse)}
         </text>
       )}
-      <line x1={xOggi} x2={xOggi} y1={ALTO} y2={BASSO} className="stroke-neutral" strokeDasharray="3 4" />
+      <line
+        x1={xOggi}
+        x2={xOggi}
+        y1={ALTO}
+        y2={BASSO}
+        className="stroke-neutral"
+        strokeDasharray="3 4"
+        data-segno="linea-oggi"
+      />
       <text
         x={xOggi}
         y={BASSO + 22}
@@ -121,7 +150,15 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
             strokeWidth={1.5}
             strokeDasharray="4 4"
           />
-          <text x={LARGHEZZA} y={y(pesoObiettivo)} dy={-6} textAnchor="end" fontSize={11.5} className="fill-muted">
+          <text
+            x={etichettaObiettivo.x}
+            y={y(pesoObiettivo)}
+            dy={-6}
+            textAnchor={etichettaObiettivo.ancora}
+            fontSize={11.5}
+            className="fill-muted"
+            data-segno="etichetta-obiettivo-peso"
+          >
             obiettivo {testoValorePeso(pesoObiettivo)}
           </text>
         </g>
@@ -162,18 +199,6 @@ export default function GraficoPeso({ pesate, inizioAsse, fineAsse, pesoObiettiv
       >
         {testoValorePeso(ultima.valore)}
       </text>
-      {pesate.length > 1 && (
-        <text
-          x={x(prima.data)}
-          y={y(prima.valore)}
-          dy={20}
-          textAnchor="middle"
-          fontSize={12.5}
-          className="fill-muted"
-        >
-          {testoValorePeso(prima.valore)}
-        </text>
-      )}
     </svg>
   );
 }

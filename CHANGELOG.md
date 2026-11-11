@@ -5,6 +5,22 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Statistiche: ritocchi dopo la prima occhiata
+
+Branch `statistiche`, commit 3b. Prima occhiata di Davide sull'anteprima
+(Build `142a36c`, account di prova, tema scuro): i numeri tornano con il
+server, controllati da Cowork. Ritocchi: nel Mese niente valore sopra la
+barra toccata (finiva sul trattino del giorno dopo; resta nella
+Settimana); il giorno passato senza voci è una lineetta di 2,5 punti, non
+un rettangolo di 7, che in scuro sembrava una barra di poche kcal; oggi
+senza voci nessun segno, solo l'etichetta in grassetto con il pallino. Nel
+peso via il valore del primo punto (si leggeva due volte con la scala) e
+l'etichetta «obiettivo N» a sinistra, dopo la scala, così la linea di
+«oggi» non la attraversa più. PUNTO §3 aggiornato, anche con la fine della
+linea dell'obiettivo del commit 3. Test nuovi su `GraficoCalorie` e il
+nuovo `GraficoPeso.test`, rotti per prova da copia: 9 rotture, 9 viste.
+2002 test verdi in 164 file, `tsc`, eslint e `npm run build` puliti.
+
 ## 2026-11-11 — Statistiche: la pagina
 
 Branch `statistiche`, commit 3. La pagina al posto del segnaposto: Settimana

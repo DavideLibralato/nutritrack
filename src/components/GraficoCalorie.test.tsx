@@ -10,6 +10,7 @@ import GraficoCalorie, { posizioneLineaObiettivo } from "./GraficoCalorie";
 import { giorniStatistiche, segnoObiettivo } from "@/lib/medieStatistiche";
 import { giorniDelPeriodo } from "@/lib/periodiStatistiche";
 import type { DatiObiettivi } from "@/lib/targetGiorno";
+import type { VoceDiario } from "@/lib/db/tipi";
 
 afterEach(cleanup);
 
@@ -119,5 +120,84 @@ describe("linea dell'obiettivo", () => {
         expect(etichetta.ancora === "start" ? da > fine : a <= fine, `${n}/${totali}`).toBe(true);
       }
     }
+  });
+});
+
+// Una voce da 100 g con le kcal date, per i casi con una barra.
+function voce(data: string, kcal: number): VoceDiario {
+  return {
+    id: crypto.randomUUID(),
+    user_id: "u1",
+    updated_at: "2026-11-01T10:00:00.000Z",
+    deleted_at: null,
+    alimento_id: null,
+    pasto_id: null,
+    gruppo_id: null,
+    quantita_g: 100,
+    data,
+    creato_il: "2026-11-01T10:00:00.000Z",
+    consumato_alle: null,
+    nome_alimento: "Pasta",
+    kcal_100g: kcal,
+    proteine_100g: 10,
+    carboidrati_100g: 20,
+    grassi_100g: 5,
+  };
+}
+
+function disegnaPeriodo(
+  modo: "settimana" | "mese",
+  inizio: string,
+  oggi: string,
+  voci: VoceDiario[],
+  selezionato: string | null = null
+) {
+  const giorni = giorniStatistiche(giorniDelPeriodo(modo, inizio), voci, DATI, oggi);
+  return render(
+    <GraficoCalorie
+      giorni={giorni}
+      modo={modo}
+      oggi={oggi}
+      segno={segnoObiettivo(giorni)}
+      selezionato={selezionato}
+      onTocca={() => {}}
+    />
+  ).container;
+}
+
+describe("valore sopra la barra toccata", () => {
+  it("nella settimana c'è", () => {
+    const c = disegnaPeriodo("settimana", "2026-11-09", "2026-11-20", [voce("2026-11-10", 577)], "2026-11-10");
+    expect(c.querySelector('[data-segno="valore-toccato"]')?.textContent).toBe("577");
+  });
+
+  it("nel mese no: la colonna è più stretta del numero", () => {
+    const c = disegnaPeriodo("mese", "2026-11-01", "2026-11-20", [voce("2026-11-10", 577)], "2026-11-10");
+    expect(c.querySelector('[data-segno="valore-toccato"]')).toBeNull();
+    // La colonna resta evidenziata come toccata.
+    expect(c.querySelector('[data-giorno="2026-11-10"]')?.getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+describe("giorni senza voci", () => {
+  it("un giorno passato senza voci ha una lineetta di 2–3 punti, non un rettangolo", () => {
+    const c = disegnaPeriodo("settimana", "2026-11-09", "2026-11-11", []);
+    const segno = c.querySelector('[data-giorno="2026-11-10"] [data-segno="senza-dati"]');
+    expect(segno).not.toBeNull();
+    const altezza = Number(segno!.getAttribute("height"));
+    expect(altezza).toBeGreaterThanOrEqual(2);
+    expect(altezza).toBeLessThanOrEqual(3);
+  });
+
+  it("oggi senza voci: nessun segno sopra la base, solo l'etichetta in grassetto, non sbiadita", () => {
+    const c = disegnaPeriodo("settimana", "2026-11-09", "2026-11-11", []);
+    const oggi = c.querySelector('[data-giorno="2026-11-11"]')!;
+    // Nessun rettangolo (né barra, né lineetta, né evidenza) e nessuna linea.
+    expect(oggi.querySelectorAll("rect, line")).toHaveLength(0);
+    const etichetta = oggi.querySelector("text")!;
+    expect(etichetta.textContent).toBe("M");
+    expect(etichetta.getAttribute("font-weight")).toBe("600");
+    expect(etichetta.getAttribute("opacity")).toBe("1");
+    expect(oggi.querySelector("circle")).not.toBeNull(); // il pallino di oggi
   });
 });

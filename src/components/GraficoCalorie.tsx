@@ -33,6 +33,8 @@ const MASSIMO_MINIMO = 3200; // la scala non scende sotto, così le barre basse 
 // margine (anche per un obiettivo a 5 cifre).
 const LARGHEZZA_ETICHETTA = 96;
 const STACCO_ETICHETTA = 6;
+// La lineetta del giorno passato senza voci.
+const ALTEZZA_SENZA_DATI = 2.5;
 
 // Dove finisce la linea dell'obiettivo e dove va la sua etichetta.
 // La linea finisce al bordo destro dell'ultima colonna non futura: sopra i
@@ -182,17 +184,25 @@ export default function GraficoCalorie({ giorni, modo, oggi, segno, selezionato,
                 strokeLinecap="round"
               />
             )}
-            {!g.futuro && g.totali === null && (
+            {/* Giorno passato senza voci: una lineetta sottile, non un
+                rettangolo, così non si confonde con una barra di poche kcal
+                (succedeva nel mese, in scuro). Oggi senza voci niente: il
+                giorno non è finito. */}
+            {!g.futuro && g.totali === null && !eOggi && (
               <rect
                 x={cx - larghezzaBarra / 2}
-                y={BASE - 7}
+                y={BASE - ALTEZZA_SENZA_DATI}
                 width={larghezzaBarra}
-                height={7}
-                rx={Math.min(raggio, 3)}
+                height={ALTEZZA_SENZA_DATI}
+                rx={ALTEZZA_SENZA_DATI / 2}
                 className="fill-border"
+                data-segno="senza-dati"
               />
             )}
-            {conBarra && scelto && (
+            {/* Il valore sopra la barra toccata solo nella settimana: nel
+                mese la colonna è più stretta del numero, che finiva sul
+                trattino del giorno dopo. Il dettaglio sotto lo dice già. */}
+            {conBarra && scelto && settimana && (
               <text
                 x={cx}
                 y={Math.min(y(kcal), obiettivo !== null ? y(obiettivo) : y(kcal))}
@@ -201,6 +211,7 @@ export default function GraficoCalorie({ giorni, modo, oggi, segno, selezionato,
                 fontSize={12}
                 fontWeight={600}
                 className="fill-foreground"
+                data-segno="valore-toccato"
               >
                 {kcal}
               </text>
@@ -222,7 +233,13 @@ export default function GraficoCalorie({ giorni, modo, oggi, segno, selezionato,
           </>
         );
 
-        if (!conBarra) return <g key={g.data} aria-hidden>{disegno}</g>;
+        if (!conBarra) {
+          return (
+            <g key={g.data} aria-hidden data-giorno={g.data}>
+              {disegno}
+            </g>
+          );
+        }
 
         // Solo i giorni con una barra si toccano. Il bersaglio è tutta la
         // colonna, non solo la barra: una barra bassa o sottile (nel mese)
@@ -230,6 +247,7 @@ export default function GraficoCalorie({ giorni, modo, oggi, segno, selezionato,
         return (
           <g
             key={g.data}
+            data-giorno={g.data}
             role="button"
             tabIndex={0}
             aria-pressed={scelto}
