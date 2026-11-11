@@ -84,7 +84,7 @@ export default function DettaglioGiorno({ giorno, differenziaGiorni }: Props) {
         className={`inline-flex min-h-11 items-center gap-0.5 self-start rounded-lg text-sm font-semibold text-accent ${CLASSE_FOCUS}`}
       >
         Apri il giorno
-        <IconaAvanti dimensione={18} />
+        <IconaAvanti size={18} />
       </Link>
     </div>
   );

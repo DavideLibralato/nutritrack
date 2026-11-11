@@ -75,6 +75,9 @@ import SchedaCompletaProfilo from "@/components/SchedaCompletaProfilo";
 import SheetDoppioni from "@/components/SheetDoppioni";
 import SheetDuplica from "@/components/SheetDuplica";
 import AnimazioneApertura from "@/components/AnimazioneApertura";
+import IconaIndietro from "@/components/IconaIndietro";
+import IconaAvanti from "@/components/IconaAvanti";
+import IconaGiu from "@/components/IconaGiu";
 import { segnalaOggiPronta } from "@/lib/animazioneApertura";
 import {
   arrotondaGrammi,
@@ -1291,7 +1294,7 @@ function OggiContenuto() {
               aria-label="Giorno precedente"
               className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
             >
-              <Chevron verso="sinistra" />
+              <IconaIndietro />
             </button>
 
             {/* Il titolo-data è un pulsante: aprirlo mostra il calendario
@@ -1339,7 +1342,7 @@ function OggiContenuto() {
               aria-label="Giorno successivo"
               className={`rounded p-1 text-muted disabled:opacity-30 ${CLASSE_FOCUS}`}
             >
-              <Chevron verso="destra" />
+              <IconaAvanti />
             </button>
           </div>
 
@@ -1375,7 +1378,10 @@ function OggiContenuto() {
                       </option>
                     ))}
                   </select>
-                  <ChevronGiu className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-muted" />
+                  <IconaGiu
+                    size={12}
+                    className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-muted"
+                  />
                 </div>
               )}
             </div>
@@ -1848,46 +1854,6 @@ function Segnalibro({ piena }: { piena: boolean }) {
       aria-hidden
     >
       <path d="M6 3h12v18l-6-4-6 4Z" />
-    </svg>
-  );
-}
-
-function Chevron({ verso }: { verso: "sinistra" | "destra" }) {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d={verso === "sinistra" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} />
-    </svg>
-  );
-}
-
-// Freccetta della pastiglia Normale/Allenamento: stesso disegno di
-// ChevronGiu in /aggiungi (il <select> del pasto), qui più piccola perché la
-// pastiglia è un testo minuscolo, non un titolo.
-function ChevronGiu({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
     </svg>
   );
 }

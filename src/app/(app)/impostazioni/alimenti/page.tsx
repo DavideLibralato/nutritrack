@@ -115,6 +115,11 @@ import CreaAlimentoForm, { type DatiCodice } from "@/components/CreaAlimentoForm
 import SchermataScansione from "@/components/SchermataScansione";
 import IconaCodiceBarre from "@/components/IconaCodiceBarre";
 import IconaSenzaRete from "@/components/IconaSenzaRete";
+import IconaIndietro from "@/components/IconaIndietro";
+import IconaGiu from "@/components/IconaGiu";
+import IconaLente from "@/components/IconaLente";
+import IconaPiu from "@/components/IconaPiu";
+import IconaCroce from "@/components/IconaCroce";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import SheetConferma from "@/components/SheetConferma";
 import SheetCondividiCon from "@/components/SheetCondividiCon";
@@ -562,7 +567,7 @@ function PaginaAlimenti() {
               cercare. In selezione Scansiona non c'è, come il "+". */}
           <div className="flex gap-2">
             <div className="relative min-w-0 flex-1">
-              <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+              <IconaLente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 type="search"
                 value={query}
@@ -580,7 +585,7 @@ function PaginaAlimenti() {
                   aria-label="Svuota la ricerca"
                   className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
                 >
-                  <Croce />
+                  <IconaCroce />
                 </button>
               )}
             </div>
@@ -645,7 +650,10 @@ function PaginaAlimenti() {
                       </option>
                     ))}
                   </select>
-                  <ChevronGiu className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-muted" />
+                  <IconaGiu
+                    size={16}
+                    className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-muted"
+                  />
                 </div>
               </div>
 
@@ -729,7 +737,7 @@ function PaginaAlimenti() {
               style={{ boxShadow: "var(--ombra-fluttuante)" }}
               className={`pointer-events-auto flex h-[var(--aggiungi-altezza)] w-[var(--aggiungi-altezza)] items-center justify-center rounded-full bg-accent-strong text-on-strong ${CLASSE_FOCUS}`}
             >
-              <Piu />
+              <IconaPiu size={24} />
             </button>
           </div>
         )}
@@ -907,7 +915,7 @@ function SchermataModulo({
           aria-label="Torna al catalogo"
           className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
         >
-          <ChevronSinistra />
+          <IconaIndietro />
         </button>
         <h1 className="font-display text-2xl font-bold">Alimenti</h1>
       </header>
@@ -946,100 +954,6 @@ function SchermataModulo({
         />
       </div>
     </div>
-  );
-}
-
-// Icone della stessa famiglia di quelle di Aggiungi (stroke currentColor).
-function ChevronSinistra() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M15 6l-6 6 6 6" />
-    </svg>
-  );
-}
-
-function ChevronGiu({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-
-function Lente({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
-    </svg>
-  );
-}
-
-function Piu() {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function Croce() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
   );
 }
 

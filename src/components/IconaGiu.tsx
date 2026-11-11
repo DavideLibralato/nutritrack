@@ -1,12 +1,14 @@
-// Freccia in giù accanto al titolo di Aggiungi: dice che il nome del pasto
-// si tocca per sceglierne un altro. Tratto in currentColor, aria-hidden.
+// Freccia in giù: accanto al titolo di Aggiungi (18 px) dice che il nome
+// del pasto si tocca per sceglierne un altro; più piccola nei menu a
+// tendina di Impostazioni > Alimenti (16 px) e nella pastiglia
+// Normale/Allenamento di Oggi (12 px). Tratto in currentColor, aria-hidden.
 
-export default function IconaGiu({ className }: { className?: string }) {
+export default function IconaGiu({ className, size = 18 }: { className?: string; size?: number }) {
   return (
     <svg
       className={className}
-      width="18"
-      height="18"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

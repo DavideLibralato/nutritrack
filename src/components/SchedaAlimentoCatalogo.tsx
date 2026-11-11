@@ -26,6 +26,8 @@ import { etichettaAlimento } from "@/lib/repository/alimenti";
 import { numeroPerCampo } from "@/lib/numeriDecimali";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import FoglioDalBasso from "@/components/FoglioDalBasso";
+import IconaAvanti from "@/components/IconaAvanti";
+import IconaPiu from "@/components/IconaPiu";
 
 export const TESTO_FONTE: Record<AlimentoCatalogo["origine"], string> = {
   ciqual: "Fonte: Ciqual 2025 (Anses)",
@@ -115,7 +117,7 @@ export default function SchedaAlimentoCatalogo({
             className={`flex min-h-[50px] items-center justify-center gap-2 rounded-xl border border-accent px-4 font-semibold text-accent ${CLASSE_FOCUS}`}
           >
             <span className="truncate">Apri «{neiTuoi.alimento.nome}»</span>
-            <ChevronDestra />
+            <IconaAvanti size={18} className="shrink-0" />
           </button>
         )
       ) : (
@@ -125,7 +127,7 @@ export default function SchedaAlimentoCatalogo({
           disabled={inCorso}
           className={`flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-accent-strong px-4 font-semibold text-on-strong disabled:opacity-60 ${CLASSE_FOCUS}`}
         >
-          <Piu />
+          <IconaPiu size={20} />
           Aggiungi ai miei alimenti
         </button>
       )}
@@ -158,43 +160,6 @@ function Spunta() {
       aria-hidden
     >
       <path d="M5 12.5l4.5 4.5L19 7.5" />
-    </svg>
-  );
-}
-
-function Piu() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function ChevronDestra() {
-  return (
-    <svg
-      className="shrink-0"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M9 6l6 6-6 6" />
     </svg>
   );
 }

@@ -261,7 +261,7 @@ function StatisticheContenuto() {
           <Vuoto testo="Nessuna pesata. Ogni pesata diventa un punto del grafico.">
             <Link href="/impostazioni/peso" className={CLASSE_LINK}>
               Registra peso
-              <IconaAvanti dimensione={18} />
+              <IconaAvanti size={18} />
             </Link>
           </Vuoto>
         )}
@@ -343,7 +343,7 @@ function PiedePeso({ ultima, oggi }: { ultima: string; oggi: string }) {
       <span>{testoUltimaPesataStatistiche(ultima, oggi)}</span>
       <Link href="/impostazioni/peso" className={CLASSE_LINK}>
         Registra peso
-        <IconaAvanti dimensione={18} />
+        <IconaAvanti size={18} />
       </Link>
     </div>
   );

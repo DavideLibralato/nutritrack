@@ -14,6 +14,7 @@
 
 import type { AlimentoCatalogo } from "@/lib/catalogo/catalogoPrecaricato";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import IconaPiu from "@/components/IconaPiu";
 
 export default function RiquadroNelCatalogo({
   voci,
@@ -94,19 +95,7 @@ export default function RiquadroNelCatalogo({
                 className={`flex size-11 shrink-0 items-center justify-center rounded-full disabled:opacity-60 ${CLASSE_FOCUS}`}
               >
                 <span className="flex size-10 items-center justify-center rounded-full bg-accent-strong text-on-strong">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
+                  <IconaPiu size={20} />
                 </span>
               </button>
             </li>

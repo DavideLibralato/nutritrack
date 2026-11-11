@@ -32,6 +32,8 @@ import { aggiungiDalCatalogo } from "@/lib/repository/alimenti";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import RigaCatalogoPrecaricato from "@/components/RigaCatalogoPrecaricato";
 import SchedaAlimentoCatalogo from "@/components/SchedaAlimentoCatalogo";
+import IconaLente from "@/components/IconaLente";
+import IconaCroce from "@/components/IconaCroce";
 
 // «Nascondi quelli che hai», per telefono (mockup: «si ricorda la scelta
 // solo in questo telefono»). Una preferenza come il tema: Esci non la
@@ -119,7 +121,7 @@ export default function SchedaCatalogo({
   return (
     <>
       <div className="relative">
-        <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+        <IconaLente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
         <input
           type="search"
           value={query}
@@ -136,7 +138,7 @@ export default function SchedaCatalogo({
             aria-label="Svuota la ricerca"
             className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
           >
-            <Croce />
+            <IconaCroce />
           </button>
         )}
       </div>
@@ -254,43 +256,5 @@ export default function SchedaCatalogo({
         />
       )}
     </>
-  );
-}
-
-function Lente({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
-    </svg>
-  );
-}
-
-function Croce() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
   );
 }

@@ -5,6 +5,23 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — icone condivise al posto delle copie
+
+Branch `lavoretti`, commit 6. Diciannove copie delle icone, scritte di
+nuovo dentro le pagine e i componenti, sostituite con i componenti
+`Icona*` che c'erano già. Le copie stavano in Impostazioni > Alimenti,
+`ModificaPastoSalvato`, Oggi, `SchedaCatalogo`, `SchedaAlimentoCatalogo`,
+`RigaCatalogoPrecaricato`, `RiquadroNelCatalogo` e `FoglioDalBasso`.
+`IconaGiu` ha una misura, `size`, con default 18. `IconaAvanti` passa da
+`dimensione` a `size`, con tutti i suoi usi, e accetta una `className`.
+La freccia di «Apri «nome»» la usa con `shrink-0`, che la copia aveva
+scritto dentro: è l'unica copia trovata diversa prima di sostituirla.
+`CaretPasto` resta in Oggi e `Spunta` in `SchedaAlimentoCatalogo`.
+Verifica: per ogni copia ho confrontato il markup SVG reso dalla versione
+di prima e dal componente nuovo, con le props del punto d'uso. Risultato:
+19 su 19 uguali. Anche `IconaGiu` e `IconaAvanti`, chiamate come prima,
+danno lo stesso markup di prima.
+
 ## 2026-11-11 — creato_il nei tipi di sei tabelle
 
 Branch `lavoretti`, commit 5. Il confronto di `tipi.ts` con

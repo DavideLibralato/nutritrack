@@ -27,6 +27,10 @@ import { useEffect, useState } from "react";
 import SheetQuantita from "@/components/SheetQuantita";
 import SheetConferma from "@/components/SheetConferma";
 import ValorePrecedente from "@/components/ValorePrecedente";
+import IconaIndietro from "@/components/IconaIndietro";
+import IconaLente from "@/components/IconaLente";
+import IconaPiu from "@/components/IconaPiu";
+import IconaCroce from "@/components/IconaCroce";
 import { cercaPerNome, etichettaAlimento } from "@/lib/repository/alimenti";
 import { eliminaComposizione } from "@/lib/repository/composizioni";
 import { daAlimento } from "@/lib/inserimento/alimentoPerSheet";
@@ -296,7 +300,7 @@ export default function ModificaPastoSalvato({
           aria-label={cercando ? "Torna al pasto" : "Indietro"}
           className={`rounded p-1 text-muted ${CLASSE_FOCUS}`}
         >
-          <ChevronSinistra />
+          <IconaIndietro />
         </button>
         <h1 className="min-w-0 truncate font-display text-2xl font-bold">
           {cercando ? "Aggiungi alimento" : "Modifica pasto salvato"}
@@ -306,7 +310,7 @@ export default function ModificaPastoSalvato({
       {cercando ? (
         <div className="flex min-h-0 flex-1 flex-col px-4 pt-4 pb-5">
           <div className="relative shrink-0">
-            <Lente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+            <IconaLente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="search"
               value={query}
@@ -405,7 +409,7 @@ export default function ModificaPastoSalvato({
               onClick={() => setCercando(true)}
               className={`mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-accent py-3 font-medium text-accent ${CLASSE_FOCUS}`}
             >
-              <Piu size={18} />
+              <IconaPiu size={18} />
               Aggiungi alimento
             </button>
 
@@ -573,7 +577,7 @@ function RigaAlimento({
           aria-label={`Togli ${nome} dal pasto`}
           className={`shrink-0 rounded p-1.5 text-muted ${CLASSE_FOCUS}`}
         >
-          <Croce />
+          <IconaCroce />
         </button>
       </div>
       {!alimento ? (
@@ -593,79 +597,5 @@ function RigaAlimento({
         />
       )}
     </li>
-  );
-}
-
-function ChevronSinistra() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M15 6l-6 6 6 6" />
-    </svg>
-  );
-}
-
-function Lente({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.3-4.3" />
-    </svg>
-  );
-}
-
-function Piu({ size = 22 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function Croce() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
   );
 }
