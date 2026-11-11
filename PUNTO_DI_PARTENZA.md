@@ -5624,9 +5624,9 @@ colori, non i numeri (lo fissano i test di Oggi).
 - Il tipo di obiettivo è quello del **periodo valido quel giorno**
 - **Fascia ±5%, PROVVISORIA**, in una costante sola (`FASCIA_PERCENTO`): si
   fissa dopo averla vista dal vivo (lezione del 24/10). Le prove su
-  iPhone dell'11/11 non l'hanno fissata: si decide **dopo il merge,
-  guardando i dati veri nell'app installata**, nel primo commit del lavoro
-  dopo. I bordi sono
+  iPhone dell'11/11 non l'hanno fissata, e resta provvisoria anche dopo
+  il merge (Davide, 11/11: «intanto lasciamo 5»): la fissa Davide **più
+  avanti, guardando i dati veri nell'app installata**. I bordi sono
   inclusi (2200 → in linea da 2090 a 2310) e si calcolano con soli numeri
   interi (`valore * 100` contro `obiettivo * 95`), esatti per costruzione:
   così non serve ridimostrare i decimali a ogni valore nuovo della fascia
@@ -7587,20 +7587,20 @@ motivi) e un pulsante **"Esporta i miei dati"** in JSON o CSV. Vale anche come
 promessa di riservatezza: i dati sono tuoi e te li puoi portare via.
 
 La copia in IndexedDB da sola non è un backup: Esci la svuota (§9.6) e
-Safari può cancellarla. Fino a Esporta l'unica copia fuori da Supabase è
-quella manuale del 01/11 (§11, "Non ancora costruito").
+Safari può cancellarla. Dall'08/11 la copia fuori da Supabase è il file
+JSON di Esporta.
 
 #### "Esporta i miei dati" (decisioni del 07/11, branch `esporta`)
 
-Subito dopo viene **Importa** ("Ripristina in un account vuoto"), un
-lavoro a parte: il formato del JSON è progettato fin da ora per essere
-riletto.
+**Importa non si fa** (Davide, 11/11): la copia vera dei dati è su
+Supabase. Il JSON è il backup completo, da tenere; il CSV serve per
+esempio al nutrizionista. Il formato del JSON resta quello deciso qui
+sotto.
 
 **Due file da due azioni distinte, niente ZIP:**
-- `libra-dati-AAAA-MM-GG.json`: il backup completo, l'unico che Importa
-  leggerà;
+- `libra-dati-AAAA-MM-GG.json`: il backup completo;
 - `libra-diario-AAAA-MM-GG.csv`: solo le voci vive del diario, da aprire
-  in Excel o Numbers.
+  in Excel o Numbers (per esempio per il nutrizionista).
 
 La data nel nome è il giorno locale.
 
@@ -7617,7 +7617,7 @@ Supabase.
 **Alimenti cancellati citati.** Una voce viva può puntare a un alimento
 cancellato (§4, "Alimenti cancellati": resta nel diario), e su Supabase
 `voci_diario.alimento_id` ha la foreign key verso `alimenti`. Senza
-quell'alimento Importa non potrebbe riscrivere la voce così com'è. Per
+quell'alimento la voce, nel file, punterebbe a una riga che non c'è. Per
 questo il JSON ha una sezione a parte, `alimenti_cancellati_citati`: i
 soli alimenti cancellati citati da voci vive, con il loro `deleted_at`.
 I preferiti e le righe dei pasti salvati che puntano a un alimento
@@ -7650,18 +7650,17 @@ decidono cosa succede quando una riga viva punta a una riga cancellata:
   Obiettivi leggono i target solo dell'obiettivo vivo in vigore.
 
 Un test permanente prova che ogni riferimento di una riga esportata
-trova la sua riga nel file. **Unica eccezione, che Importa dovrà
-gestire:** il telefono condiviso. Una propria voce può puntare a un
-alimento (o, in teoria, a un pasto) di un altro utente rimasto in
-Dexie: è un dato di un altro, non entra, e la voce resta con un
-riferimento che nel file non c'è. Importa lo metterà a null (la voce ha
-già la sua copia di nome e valori), senza rifiutare la voce.
+trova la sua riga nel file. **Unica eccezione:** il telefono condiviso.
+Una propria voce può puntare a un alimento (o, in teoria, a un pasto)
+di un altro utente rimasto in Dexie: è un dato di un altro, non entra,
+e la voce resta con un riferimento che nel file non c'è; ha comunque la
+sua copia di nome e valori.
 
 **Intestazione del JSON:** versione del formato, versione dell'app e
 Build (le stesse di Impostazioni > Informazioni), data e ora con il
-fuso, `user_id` originale (serve a Importa per riconoscere i 5 pasti di
-base, il cui id è calcolato da utente e nome), ora dell'ultimo contatto
-col server, stato della foto e conteggi per tabella.
+fuso, `user_id` originale (di chi è il file; con lui si riconoscono i 5
+pasti di base, il cui id è calcolato da utente e nome), ora dell'ultimo
+contatto col server, stato della foto e conteggi per tabella.
 
 **Il segno "discesa completa".** Esporta non parte se non sa che la
 copia locale è completa, e spiega perché. Il segno "discesa riuscita"
@@ -7799,7 +7798,8 @@ Gli stati, con i testi del mockup:
 - **annullato**: non cambia niente e non compare nessun messaggio.
 
 La pagina non mostra l'intestazione del file (versione del formato,
-Build, `user_id`, conteggi): serve a Importa.
+Build, `user_id`, conteggi): sta nel file per dire quando è stato fatto,
+da quale versione dell'app e di chi è.
 
 **Come è costruita** (dall'08/11, commit 8 del branch): la pagina chiama
 solo `preparaEsportazione` (`src/lib/esporta/preparaEsportazione.ts`,
@@ -9093,9 +9093,11 @@ account di prova, Safari:
 - il controllo sul server l'ha fatto Cowork: i giorni differenziati spenti
   e riaccesi nella prova 6. La pagina Statistiche non scrive niente.
 
-Resta il merge. La **fascia ±5%** resta provvisoria: si fissa dopo il
-merge guardando i dati veri nell'app installata (sezione 7, "La regola dei
-colori").
+**Unita a main l'11/11** con fast-forward da `2ab33fe` a `9ca0f44`, 7
+commit, e **provata nell'app vera** lo stesso giorno, Build `9ca0f44`,
+account vero: «funziona tutto» (Davide). La **fascia ±5%** resta
+provvisoria: la fissa Davide più avanti, guardando i dati veri nell'app
+installata (sezione 7, "La regola dei colori").
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -9105,11 +9107,10 @@ i numeri delle sue segnalazioni.
 
 - **Ricerca Open Food Facts per nome** (fase 5) e **OCR / "Leggi
   dall'etichetta"** (fase 6)
-- **Statistiche** e storico del peso (fase 7): fatte e provate su iPhone
-  l'11/11 sul branch `statistiche` (sopra, "Fatto"); su main la pagina è
-  ancora un segnaposto finché non si unisce il branch
-- Rimedi della sezione 10 ancora da fare: **Importa** ("Ripristina in
-  un account vuoto", 10.4), un lavoro a parte. ~~**"Esporta i miei
+- ~~**Statistiche** e storico del peso~~ (fase 7): fatte, unite a main e
+  provate nell'app vera l'11/11 (sopra, "Fatto")
+- Rimedi della sezione 10: ~~**Importa**~~ ("Ripristina in un account
+  vuoto") non si fa (11/11, §10.4). ~~**"Esporta i miei
   dati"**~~ (10.4) è fatto: unito a main e provato nell'app installata
   l'08/11 (sopra, "Fatto"). ~~**Catalogo precaricato**~~ (10.1, audit #5)
   è fatto: unito a main e provato nell'app vera il 09/11 (sopra, "Fatto")
@@ -9914,12 +9915,13 @@ branch.
     installata alle 19:24 (sopra, "Fatto"; sezione 3, "Codice a barre")
 12. ~~**"Esporta i miei dati"**~~ fatto (audit #4): provato
     sull'anteprima e unito a main l'08/11, `323fb4c`, provato nell'app
-    installata alle 09:10 (sopra, "Fatto"; sezione 10.4). Poi
-    **Importa**, in un lavoro a parte
+    installata alle 09:10 (sopra, "Fatto"; sezione 10.4). **Importa**
+    non si fa (deciso l'11/11, sezione 10.4)
 13. ~~**Catalogo precaricato**~~ fatto (audit #5): provato
     sull'anteprima e unito a main il 09/11, `2ab33fe`, provato nell'app
     vera la sera del 09/11 (sopra, "Fatto"; sezione 10.1)
-14. **Statistiche** (fase 7; dal 09/11, branch `statistiche`; sezione 3,
-    "Statistiche"): provata su iPhone l'11/11 mattina, Build `66e3f18`
-    (sopra, "Fatto"). Resta il merge; dopo, nel primo commit del lavoro
-    seguente, la fascia ±5% fissata sui dati veri nell'app installata
+14. ~~**Statistiche**~~ fatto (fase 7; sezione 3, "Statistiche"):
+    provata su iPhone l'11/11 mattina, Build `66e3f18`, unita a main
+    l'11/11, `9ca0f44`, provata nell'app vera lo stesso giorno (sopra,
+    "Fatto"). La fascia ±5% resta provvisoria: la fissa Davide più
+    avanti

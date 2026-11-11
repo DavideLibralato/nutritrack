@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Documenti: Statistiche unita, Importa non si fa
+
+Branch `lavoretti`, commit 1 (solo documenti). PUNTO §11: Statistiche
+unita e provata nell'app vera (voce sotto); §7: la fascia ±5% resta
+provvisoria anche dopo il merge (Davide: «intanto lasciamo 5»),
+`FASCIA_PERCENTO` invariato. **Importa non si fa** (Davide, 11/11): la
+copia vera dei dati è su Supabase, il JSON di Esporta è il backup da
+tenere, il CSV serve per esempio al nutrizionista. In §10.4 e §11 le
+frasi che promettevano Importa dicono ora cosa c'è nel file e perché; il
+formato del JSON non cambia. I testi e i commenti del codice che citano
+il ripristino o Importa vanno nel commit 2.
+
+## 2026-11-11 — Statistiche unita a main
+
+Unito a main l'11/11 con fast-forward da `2ab33fe` a `9ca0f44`, senza
+commit di merge, 7 commit: `b80f2d5` (decisioni e mockup; merge di
+catalogo), `d6779c3` (date e periodi), `70ac61e` (medie, target del
+giorno, colori, peso), `142a36c` (la pagina), `904fe85` (ritocchi dopo
+la prima occhiata), `66e3f18` (Oggi con la regola unica dei colori),
+`9ca0f44` (tolto recharts; prove su iPhone). Branch cancellato in locale
+e su GitHub; nessuna migration; nessuna Redirect URL dell'anteprima da
+togliere. Su main prima del push: 2021 test verdi in 166 file, `tsc`,
+eslint e `npm run build` puliti. **Provata nell'app vera** l'11/11,
+Build `9ca0f44`, account vero: «funziona tutto» (Davide). La fascia ±5%
+resta provvisoria. Questa voce è scritta nel commit 1 del branch
+`lavoretti`.
+
 ## 2026-11-11 — Tolto recharts; Statistiche provata su iPhone
 
 Branch `statistiche`, commit 5, l'ultimo. **Prove su iPhone** di Davide
