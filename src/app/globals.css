@@ -916,6 +916,33 @@ button:not(:disabled) {
   [data-modifica-pasto-salvato]:has(input:focus) [data-sparisci-mentre-scrivi] {
     display: none;
   }
+
+  /* Il pulsante largo di Impostazioni > Alimenti («Crea alimento a mano»)
+     NON si nasconde: resta sopra la tastiera, come in Aggiungi (dal 12/11,
+     branch `alimenti-aspetto`). Il suo contenitore è agganciato alla parte
+     visibile della finestra (useAreaVisibile) e di solito lascia sotto lo
+     spazio della tab bar; mentre si scrive la tab bar è nascosta (regola
+     sopra), quindi lascia solo lo stacco fra le barre e il pulsante sta
+     subito sopra la tastiera. Stessi campi della regola sopra. */
+  body:has(
+      input:not(
+          [type="checkbox"],
+          [type="radio"],
+          [type="button"],
+          [type="submit"],
+          [type="reset"],
+          [type="range"],
+          [type="color"],
+          [type="file"],
+          [type="image"],
+          [type="hidden"]
+        ):focus,
+      textarea:focus,
+      select:focus
+    )
+    [data-sopra-tastiera] {
+    padding-bottom: var(--spazio-fra-barre);
+  }
 }
 
 /* Esporta i miei dati (dal 08/11, mockup docs/mockups/esporta.html).

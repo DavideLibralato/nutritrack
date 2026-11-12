@@ -20,12 +20,17 @@ export default function CampoRicerca({
   etichetta,
   enterKeyHint = "search",
   onKeyDown,
+  disabled,
 }: {
   valore: string;
   onCambia: (valore: string) => void;
   etichetta: string;
   enterKeyHint?: "search" | "go";
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  // Spento e attenuato: Impostazioni > Alimenti a catalogo vuoto, dove non
+  // c'è niente da cercare. La classe si aggiunge solo qui, così il campo
+  // di Aggiungi (mai spento) resta con le classi di sempre.
+  disabled?: boolean;
 }) {
   return (
     <div className="relative min-w-0 flex-1">
@@ -41,7 +46,8 @@ export default function CampoRicerca({
         aria-label={etichetta}
         enterKeyHint={enterKeyHint}
         onKeyDown={onKeyDown}
-        className={`h-12 w-full rounded-full border border-border bg-surface pl-12 pr-12 text-base ${CLASSE_FOCUS}`}
+        disabled={disabled}
+        className={`h-12 w-full rounded-full border border-border bg-surface pl-12 pr-12 text-base ${CLASSE_FOCUS}${disabled ? " opacity-[0.55]" : ""}`}
       />
       {valore !== "" && (
         <button

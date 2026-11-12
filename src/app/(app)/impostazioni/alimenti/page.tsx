@@ -1,13 +1,17 @@
 "use client";
 
 // Impostazioni > Alimenti: il catalogo personale (PUNTO_DI_PARTENZA.md,
-// sezione 3, "Alimenti"; mockup approvato docs/mockups/catalogo-alimenti.html).
+// sezione 3, "Alimenti"; mockup approvato docs/mockups/catalogo-alimenti.html,
+// e dal 12/11 l'aspetto di Aggiungi, docs/mockups/alimenti-aspetto.html,
+// versione B: ricerca, riquadro e righe come là, la matita a destra, il
+// pulsante largo «Crea alimento a mano» al posto del "+" tondo).
 //
 // - L'elenco: solo gli alimenti che l'utente può modificare
 //   (alimentiModificabili: i suoi, non verificati), con ricerca per nome e
 //   ordinamento Più usati / A → Z / Z → A / Meno usati (ordinaCatalogo). Gli
 //   usi si contano dalle voci di diario (contaUsi) e non si mostrano.
-// - Un tocco su una riga apre "Modifica alimento", il "+" "Nuovo alimento":
+// - Un tocco su una riga (o sulla sua matita) apre "Modifica alimento", il
+//   pulsante largo "Nuovo alimento", con la ricerca scritta come nome:
 //   lo stesso CreaAlimentoForm di Aggiungi, a pagina intera. Il form è uno
 //   stato della pagina, non una rotta con l'id: una rotta
 //   /impostazioni/alimenti/[id] non può stare fra le pagine salvate dal
@@ -40,7 +44,7 @@
 // - Due schede sotto il titolo (PUNTO_DI_PARTENZA.md §10.1; mockup
 //   docs/mockups/catalogo-precaricato.html): «I miei», tutto quello qui
 //   sopra, e «Catalogo», il catalogo precaricato (SchedaCatalogo). A ogni
-//   visita si parte da «I miei». Nel catalogo niente «+», niente
+//   visita si parte da «I miei». Nel catalogo niente pulsante per creare, niente
 //   selezione, niente riga degli alimenti in arrivo; dopo «Aggiungi» la
 //   barra «Aggiunto ai tuoi: …» con «Apri» (la modifica della copia) e
 //   «Annulla» (eliminaAlimenti con la sola copia). In «I miei» le copie
@@ -115,13 +119,13 @@ import IntestazioneSottopagina from "@/components/IntestazioneSottopagina";
 import RigaAlimentoCatalogo from "@/components/RigaAlimentoCatalogo";
 import CreaAlimentoForm, { type DatiCodice } from "@/components/CreaAlimentoForm";
 import SchermataScansione from "@/components/SchermataScansione";
-import IconaCodiceBarre from "@/components/IconaCodiceBarre";
+import CampoRicerca from "@/components/CampoRicerca";
+import PulsanteScansiona from "@/components/PulsanteScansiona";
+import RicercaSenzaRisultati from "@/components/RicercaSenzaRisultati";
+import { CLASSE_RIQUADRO } from "@/lib/classiElenchi";
 import IconaSenzaRete from "@/components/IconaSenzaRete";
 import IconaIndietro from "@/components/IconaIndietro";
 import IconaGiu from "@/components/IconaGiu";
-import IconaLente from "@/components/IconaLente";
-import IconaPiu from "@/components/IconaPiu";
-import IconaCroce from "@/components/IconaCroce";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import SheetConferma from "@/components/SheetConferma";
 import SheetCondividiCon from "@/components/SheetCondividiCon";
@@ -138,11 +142,16 @@ const ORDINI: { valore: OrdineCatalogo; etichetta: string }[] = [
 // L'unico tipo di riga che si può tenere premuto qui (useTieniPremuto).
 const TIPI_RIGA: readonly "alimento"[] = ["alimento"];
 
-// Spazio in fondo all'elenco: l'ultima riga deve poter salire sopra il "+"
-// e la tab bar (lo stesso ingombro di Oggi, che ha "+ Aggiungi" alla stessa
-// altezza).
+// Spazio in fondo all'elenco: l'ultima riga deve poter salire sopra il
+// pulsante largo e la tab bar. Il pulsante è alto 50 px, come «Crea
+// alimento a mano» in Aggiungi (h-[50px] qui sotto): la tab bar, lo stacco
+// fra le barre, il pulsante e un po' d'aria.
 const CLASSE_PAGINA =
-  "mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-6 pb-[calc(var(--ingombro-oggi)+1.5rem)]";
+  "mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-6 pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre)+50px+1.5rem)]";
+
+// Il primo giorno, senza alimenti (mockup, versione B).
+const TESTO_CATALOGO_VUOTO =
+  "Crea il primo con il pulsante qui sotto, oppure scansiona una confezione con il pulsante accanto alla ricerca.";
 
 // Il form a pagina intera. Dopo una scansione: `daCodice` per un alimento
 // nuovo, `avviso` per uno che c'era già. `nome`: la ricerca scritta in «I
@@ -153,13 +162,6 @@ type Modulo =
   // `codiceDaPortare`: aperta da "Apri" in un modulo nato da un codice
   // (PUNTO §3, "«Apri» porta il codice"); il codice parte nel campo.
   | { tipo: "modifica"; alimento: Alimento; avviso?: string; codiceDaPortare?: string };
-
-// Il pulsante Scansiona: tondo da 44 px, alto come la ricerca del catalogo
-// (in Aggiungi 48 px, come il suo campo; mockup catalogo-alimenti.html).
-// Senza rete grigio con il bordo tratteggiato, come in Aggiungi.
-const CLASSE_SCANSIONA = `flex size-11 shrink-0 items-center justify-center rounded-full ${CLASSE_FOCUS}`;
-const CLASSE_SCANSIONA_ATTIVO = "bg-accent-strong text-on-strong";
-const CLASSE_SCANSIONA_SPENTO = "border border-dashed border-border bg-surface text-muted";
 
 type Barra = MessaggioBarra & {
   // Cambia a ogni messaggio: è la `key` della barra, così il timer riparte.
@@ -209,6 +211,9 @@ export default function AlimentiPage() {
 function PaginaAlimenti() {
   const userId = useUtenteId();
   const parametri = useSearchParams();
+  // La parte visibile della finestra, per tenere il pulsante largo sopra
+  // la tastiera (il contenitore in basso).
+  const areaVisibile = useAreaVisibile();
 
   const catalogo = useLiveQuery(async () => {
     if (!userId) return undefined;
@@ -573,64 +578,39 @@ function PaginaAlimenti() {
             />
           )}
 
-          {/* La ricerca con Scansiona accanto. Anche a catalogo vuoto
-              (proposta 2 del mockup): il pulsante sta dove starà sempre, e il
-              campo resta, attenuato e spento, perché non c'è niente da
-              cercare. In selezione Scansiona non c'è, come il "+". */}
+          {/* La ricerca con Scansiona accanto, come in Aggiungi (campo e
+              pulsante da 48 px, CampoRicerca e PulsanteScansiona). Anche a
+              catalogo vuoto: il pulsante sta dove starà sempre, e il campo
+              resta, attenuato e spento, perché non c'è niente da cercare. In
+              selezione Scansiona non c'è, come il pulsante largo.
+              Come in Aggiungi: quando la ricerca non trova niente, Invio
+              ("Vai" sulla tastiera) apre «Nuovo alimento» con il nome
+              scritto. Non in selezione, dove non si crea. */}
           <div className="flex gap-2">
-            <div className="relative min-w-0 flex-1">
-              <IconaLente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Cerca un alimento"
-                aria-label="Cerca un alimento"
-                // Come in Aggiungi: quando la ricerca non trova niente,
-                // Invio ("Vai" sulla tastiera) apre «Nuovo alimento» con il
-                // nome scritto. Non in selezione, dove non si crea (niente
-                // "+").
-                enterKeyHint={creaConInvio ? "go" : "search"}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && creaConInvio) {
-                    e.preventDefault();
-                    apri({ tipo: "nuovo", nome: query.trim() });
-                  }
-                }}
-                disabled={miei.length === 0}
-                className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 text-base disabled:opacity-[0.55] ${CLASSE_FOCUS}`}
-              />
-              {query !== "" && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  aria-label="Svuota la ricerca"
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
-                >
-                  <IconaCroce />
-                </button>
-              )}
-            </div>
+            <CampoRicerca
+              valore={query}
+              onCambia={setQuery}
+              etichetta="Cerca un alimento"
+              enterKeyHint={creaConInvio ? "go" : "search"}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && creaConInvio) {
+                  e.preventDefault();
+                  apri({ tipo: "nuovo", nome: query.trim() });
+                }
+              }}
+              disabled={miei.length === 0}
+            />
             {!selezione && (
-              <button
-                type="button"
-                // getUserMedia come PRIMA cosa del tocco, come in Aggiungi:
-                // nell'app installata iOS non chiedeva il permesso quando
-                // partiva dopo il ridisegno (07/11).
+              // getUserMedia come PRIMA cosa del tocco, come in Aggiungi:
+              // nell'app installata iOS non chiedeva il permesso quando
+              // partiva dopo il ridisegno (07/11).
+              <PulsanteScansiona
+                online={online}
                 onClick={() => {
                   setBarra(null);
                   setScansione(richiediFotocamera());
                 }}
-                disabled={!online}
-                aria-label={
-                  online
-                    ? "Scansiona il codice a barre"
-                    : "Scansione non disponibile senza connessione"
-                }
-                className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
-              >
-                <IconaCodiceBarre />
-              </button>
+              />
             )}
           </div>
           {!online && !selezione && (
@@ -646,10 +626,7 @@ function PaginaAlimenti() {
           {miei.length === 0 ? (
             <div className="rounded-[20px] border border-border bg-surface px-[18px] py-[22px]">
               <h2 className="font-semibold">Ancora nessun alimento</h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                Crea il primo con il + qui sotto, oppure scansiona una confezione con il pulsante
-                accanto alla ricerca.
-              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">{TESTO_CATALOGO_VUOTO}</p>
             </div>
           ) : (
             <>
@@ -687,8 +664,10 @@ function PaginaAlimenti() {
                 </p>
               )}
 
+              {/* Le righe in un riquadro, come in Aggiungi (CLASSE_RIQUADRO
+                  disegna anche le linee fra le righe). */}
               {elenco.length > 0 ? (
-                <ul ref={rifLista} className="-mt-2">
+                <ul ref={rifLista} className={CLASSE_RIQUADRO}>
                   {elenco.map((a) => (
                     <RigaAlimentoCatalogo
                       key={a.id}
@@ -699,70 +678,86 @@ function PaginaAlimenti() {
                   ))}
                 </ul>
               ) : (
-                <p className="px-6 pt-10 text-center text-sm leading-relaxed text-muted">
-                  Nessun alimento trovato.
-                  <br />
-                  Prova un altro termine di ricerca.
-                </p>
+                <RicercaSenzaRisultati
+                  titolo={`Nessun risultato per «${query.trim()}»`}
+                  testo="Puoi crearlo con il pulsante qui sotto."
+                />
               )}
             </>
           )}
         </>
       )}
 
-      {/* Sopra la tab bar, alla stessa altezza di "+ Aggiungi" in Oggi: la
-          barra sta appena sopra il "+" (`sopra`), senza coprirlo.
-          `data-pulsante-aggiungi` alza la sfumatura dietro le barre fino a
-          coprire anche il "+" (regola in globals.css); come la tab bar, si
-          nasconde mentre un campo ha il fuoco. In selezione il "+" non c'è:
-          creare un alimento a metà di una selezione la confonderebbe. */}
+      {/* In basso, il pulsante largo «Crea alimento a mano» / «Crea «…»»
+          (mockup alimenti-aspetto.html, versione B) e sopra di lui la
+          barra con «Annulla» (`sopra`, senza coprirlo).
+          - Il contenitore è agganciato alla parte visibile della finestra
+            (useAreaVisibile, come i fogli dal basso) e tiene il contenuto
+            in fondo: a tastiera chiusa lascia sotto lo spazio della tab
+            bar, alla stessa altezza di "+ Aggiungi" in Oggi; mentre si
+            scrive la tab bar sparisce e il pulsante resta subito sopra la
+            tastiera, come in Aggiungi (`data-sopra-tastiera`, regola in
+            globals.css). Se sull'iPhone non tenesse, il ripiego è
+            `data-nascondi-mentre-scrivi` (nascosto mentre si scrive) e
+            Invio, che c'è già.
+          - `data-pulsante-aggiungi` alza la sfumatura dietro le barre fino
+            a coprire anche il pulsante (regola in globals.css).
+          - Il pulsante solo in «I miei»: nel catalogo non si crea. Non in
+            selezione (creare a metà di una selezione la confonderebbe) e
+            non con il foglio degli alimenti in arrivo aperto. */}
       <div
         data-pulsante-aggiungi
-        data-nascondi-mentre-scrivi
-        className={`pointer-events-none fixed inset-x-0 bottom-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] mx-auto max-w-md ${
+        data-sopra-tastiera
+        style={{ top: areaVisibile.top, height: areaVisibile.height }}
+        className={`pointer-events-none fixed inset-x-0 mx-auto flex max-w-md flex-col justify-end pb-[calc(var(--ingombro-tab-bar)+var(--spazio-fra-barre))] ${
           foglioVisibile ? "z-[60]" : "z-30"
         }`}
       >
-        {barra && (
-          <BarraAnnulla
-            key={barra.id}
-            testo={barra.testo}
-            nome={barra.nome}
-            coda={barra.coda}
-            icona={barra.icona}
-            durataMs={barra.durataMs}
-            azione={
-              barra.annullabile
-                ? { etichetta: "Annulla", onClick: () => void annullaEliminazione() }
-                : barra.annullaValori
-                  ? { etichetta: "Annulla", onClick: () => void annullaValori() }
-                  : barra.aggiuntoDalCatalogo
-                    ? { etichetta: "Annulla", onClick: () => void annullaAggiunta() }
-                    : undefined
-            }
-            azioneSecondaria={
-              barra.aggiuntoDalCatalogo
-                ? { etichetta: "Apri", onClick: () => void apriAggiunta() }
-                : undefined
-            }
-            sopra
-            onChiudi={() => setBarra(null)}
-          />
-        )}
-        {/* Nel catalogo niente «+»: lì non si crea (mockup). */}
-        {scheda === "miei" && !selezione && !foglioVisibile && (
-          <div className="flex justify-end px-4">
-            <button
-              type="button"
-              onClick={() => apri({ tipo: "nuovo", nome: query.trim() })}
-              aria-label="Nuovo alimento"
-              style={{ boxShadow: "var(--ombra-fluttuante)" }}
-              className={`pointer-events-auto flex h-[var(--aggiungi-altezza)] w-[var(--aggiungi-altezza)] items-center justify-center rounded-full bg-accent-strong text-on-strong ${CLASSE_FOCUS}`}
-            >
-              <IconaPiu size={24} />
-            </button>
-          </div>
-        )}
+        {/* `relative`: la barra si appoggia sopra la riga del pulsante (o,
+            senza pulsante, sopra lo spazio della tab bar), non sopra tutto
+            il contenitore. */}
+        <div className="relative">
+          {barra && (
+            <BarraAnnulla
+              key={barra.id}
+              testo={barra.testo}
+              nome={barra.nome}
+              coda={barra.coda}
+              icona={barra.icona}
+              durataMs={barra.durataMs}
+              azione={
+                barra.annullabile
+                  ? { etichetta: "Annulla", onClick: () => void annullaEliminazione() }
+                  : barra.annullaValori
+                    ? { etichetta: "Annulla", onClick: () => void annullaValori() }
+                    : barra.aggiuntoDalCatalogo
+                      ? { etichetta: "Annulla", onClick: () => void annullaAggiunta() }
+                      : undefined
+              }
+              azioneSecondaria={
+                barra.aggiuntoDalCatalogo
+                  ? { etichetta: "Apri", onClick: () => void apriAggiunta() }
+                  : undefined
+              }
+              sopra
+              onChiudi={() => setBarra(null)}
+            />
+          )}
+          {scheda === "miei" && !selezione && !foglioVisibile && (
+            <div className="px-4">
+              <button
+                type="button"
+                onClick={() => apri({ tipo: "nuovo", nome: query.trim() })}
+                style={{ boxShadow: "var(--ombra-fluttuante)" }}
+                className={`pointer-events-auto flex h-[50px] w-full items-center justify-center rounded-full border border-accent bg-background px-4 text-base font-semibold text-accent ${CLASSE_FOCUS}`}
+              >
+                <span className="truncate">
+                  {query.trim() === "" ? "Crea alimento a mano" : `Crea «${query.trim()}»`}
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* La barra di selezione prende il posto della tab bar: stessa forma

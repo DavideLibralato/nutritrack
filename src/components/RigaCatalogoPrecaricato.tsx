@@ -8,10 +8,13 @@
 // Due bersagli separati, come le righe di Aggiungi: il testo apre la
 // scheda dell'alimento, «Aggiungi» è un pulsante vero, alto 36 px con
 // l'area di tocco allargata a 44. «Nei tuoi» non è un pulsante: la riga
-// apre la scheda, e da lì «Apri».
+// apre la scheda, e da lì «Apri». Dal 12/11 (mockup
+// docs/mockups/alimenti-aspetto.html) la riga ha le misure di Aggiungi e
+// sta in un riquadro, come «I miei».
 
 import type { AlimentoCatalogo } from "@/lib/catalogo/catalogoPrecaricato";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { CLASSE_NOME_RIGA, CLASSE_RIGA, CLASSE_SOTTOTITOLO_RIGA } from "@/lib/classiElenchi";
 import IconaPiu from "@/components/IconaPiu";
 
 export default function RigaCatalogoPrecaricato({
@@ -29,18 +32,20 @@ export default function RigaCatalogoPrecaricato({
 }) {
   const etichetta = voce.marca ? `${voce.nome} · ${voce.marca}` : voce.nome;
   return (
-    <li className="flex min-h-16 items-center gap-3 border-b border-border">
+    // Le misure delle righe di Aggiungi (classiElenchi.ts); le linee fra le
+    // righe le disegna il riquadro della scheda (CLASSE_RIQUADRO).
+    <li className={CLASSE_RIGA}>
       <button
         type="button"
         onClick={onApriScheda}
         aria-label={`${etichetta}, ${Math.round(voce.kcal_100g)} kcal per 100 g${neiTuoi ? ", già nei tuoi" : ""}`}
-        className={`flex min-w-0 flex-1 flex-col rounded-lg py-3 text-left ${CLASSE_FOCUS}`}
+        className={CLASSE_NOME_RIGA}
       >
         <span className={`truncate ${neiTuoi ? "text-muted" : ""}`}>
           {voce.nome}
           {voce.marca && <span className="text-muted"> · {voce.marca}</span>}
         </span>
-        <span className="mt-0.5 text-sm tabular-nums text-muted">
+        <span className={CLASSE_SOTTOTITOLO_RIGA}>
           {Math.round(voce.kcal_100g)} kcal / 100 g · {voce.porzione_default_g} g
         </span>
       </button>

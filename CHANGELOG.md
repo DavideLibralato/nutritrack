@@ -5,6 +5,64 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-12 — Alimenti con l'aspetto di Aggiungi
+
+Branch `alimenti-aspetto`, commit 5. Mockup
+`docs/mockups/alimenti-aspetto.html`, versione B. **Da provare** su
+iPhone: le prove sono in PUNTO §11.
+
+**Scheda «I miei».**
+- La ricerca è `CampoRicerca`, alta 48 px su `bg-surface`, con accanto
+  `PulsanteScansiona`. `CampoRicerca` riceve `disabled` per il catalogo
+  vuoto; la classe si aggiunge solo quando è spento, così Aggiungi resta
+  uguale.
+- Le righe stanno in `CLASSE_RIQUADRO`. `RigaAlimentoCatalogo` ha le
+  classi di Aggiungi, la matita a destra e il cerchio a sinistra in
+  selezione. Gli attributi del tieni premuto passano dal pulsante al
+  `<li>`, così il gesto parte anche dalla matita.
+- Il pulsante largo «Crea alimento a mano» / «Crea «…»» prende il posto
+  del "+" tondo. Il contenitore in basso è agganciato alla parte
+  visibile della finestra (`useAreaVisibile`) e ha `data-sopra-tastiera`,
+  una regola nuova in `globals.css`: mentre si scrive il pulsante resta
+  sopra la tastiera invece di sparire. Il ripiego, se sull'iPhone non
+  tiene, è `data-nascondi-mentre-scrivi`. Lo spazio in fondo alla pagina
+  tiene conto dei 50 px del pulsante.
+
+**Scheda «Catalogo».** `CampoRicerca`, righe di
+`RigaCatalogoPrecaricato` con le classi di Aggiungi dentro il riquadro.
+Il difetto dei filtri persi dopo «Apri» resta aperto.
+
+**Testi cambiati:**
+- catalogo vuoto: «Crea il primo con il pulsante qui sotto, oppure
+  scansiona una confezione con il pulsante accanto alla ricerca.»
+  (prima «con il + qui sotto»);
+- «I miei» senza risultati: lente, «Nessun risultato per «…»», «Puoi
+  crearlo con il pulsante qui sotto.» (prima «Nessun alimento trovato.
+  Prova un altro termine di ricerca.»);
+- «Catalogo» senza risultati: lente, «Nessun alimento trovato nel
+  catalogo.», «Puoi crearlo nella scheda «I miei».» (prima «… Prova un
+  altro termine di ricerca.»);
+- il pulsante: «Crea alimento a mano» / «Crea «…»», al posto
+  dell'etichetta «Nuovo alimento» del "+";
+- matita: «Modifica …».
+
+Il nuovo componente `RicercaSenzaRisultati` disegna i due stati vuoti
+con la lente.
+
+**Test aggiornati** in `page.test.tsx` di Alimenti:
+- 7 test cliccavano «Nuovo alimento» o controllavano i testi vecchi;
+- la riga «dal catalogo» si cerca come `/^Mandorle\s?\d+ kcal/`, perché
+  ora nella riga c'è anche la matita.
+
+**Test nuovi:**
+- 5 sul tieni premuto: (a) parte dalla matita; (b) il click dopo il
+  gesto non apre niente, dal nome e dalla matita; (c) in selezione il
+  tocco mette e toglie la spunta; (d) la matita non c'è in selezione;
+- 4 sul pulsante largo e sugli stati vuoti.
+
+Rompendo il codice da una copia, 8 rotture su 8 fanno fallire i test.
+`contrasti`, `bordiBersagli` e `temaScuro` sono verdi.
+
 ## 2026-11-12 — Ricerca e righe condivise, Aggiungi identico
 
 Branch `alimenti-aspetto`, commit 4. Solo spostamenti: a schermo non

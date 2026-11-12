@@ -959,8 +959,9 @@ silenzio.
   - **catalogo vuoto** (proposta 2 del mockup): la riga della ricerca
     resta, con il campo attenuato e il pulsante tondo, dove starà
     sempre; sotto, la scheda «Ancora nessun alimento» con «Crea il
-    primo con il + qui sotto, oppure scansiona una confezione con il
-    pulsante accanto alla ricerca.»;
+    primo con il pulsante qui sotto, oppure scansiona una confezione con
+    il pulsante accanto alla ricerca.» (fino al 12/11 «con il + qui
+    sotto», sezione 3, "Alimenti", "Aspetto");
   - **codice già nel catalogo** → "Modifica alimento" di quello, con in
     cima l'avviso «Questo codice è già nel tuo catalogo.». Se
     l'alimento trovato non è modificabile (catalogo comune o
@@ -2422,8 +2423,8 @@ catalogo, si corregge e si fa pulizia.
   modifica del tuo (se si può modificare). Dopo «Aggiungi» la riga passa
   subito a «Nei tuoi» e la barra dice «Aggiunto ai tuoi: Nome · Marca»
   con «Apri» (la modifica della copia, riletta da Dexie al tocco) e
-  «Annulla» (la toglie; poi «Annullato.»). Nel catalogo niente «+»,
-  niente selezione, niente riga degli alimenti in arrivo; cambiare
+  «Annulla» (la toglie; poi «Annullato.»). Nel catalogo niente pulsante
+  per creare, niente selezione, niente riga degli alimenti in arrivo; cambiare
   scheda esce dalla selezione. Test in `elencoCatalogo.test.ts`,
   `page.test.tsx` e `page.apriDopoAggiunta.test.tsx`. **Provata su
   iPhone il 09/11** (§11).
@@ -2440,16 +2441,18 @@ catalogo, si corregge e si fa pulizia.
   numero di alimenti mostrati ("14 alimenti"), a destra l'ordine scelto.
   L'ordine è un `<select>` nativo, non il menu disegnato del mockup: sul
   telefono apre il selettore di sistema, come il titolo del pasto in
-  Aggiungi. Senza risultati: "Nessun alimento trovato. Prova un altro
-  termine di ricerca."
+  Aggiungi. Senza risultati (dal 12/11): la lente grande, «Nessun
+  risultato per «…»» e «Puoi crearlo con il pulsante qui sotto.»
+  (`RicercaSenzaRisultati`).
 - **La riga**: il nome, con la marca se c'è ("Pane · Mulino",
-  `etichettaAlimento`), e sotto "165 kcal / 100 g".
-- **Catalogo vuoto**: niente ricerca né ordine, un riquadro "Ancora nessun
-  alimento" — "Crea il primo con il + qui sotto, oppure da Aggiungi quando
-  la ricerca non trova quello che cerchi." Dal branch
-  `alimenti-codice-a-barre` (07/11) la riga della ricerca resta anche
-  qui, con Scansiona, e il testo cambia (sezione 3, "Codice a barre",
-  "Nel catalogo").
+  `etichettaAlimento`), e sotto "165 kcal / 100 g"; dal 12/11 la matita a
+  destra (sotto, "Aspetto").
+- **Catalogo vuoto**: niente ordine, un riquadro "Ancora nessun
+  alimento". Dal branch `alimenti-codice-a-barre` (07/11) la riga della
+  ricerca resta anche qui, spenta, con Scansiona (sezione 3, "Codice a
+  barre", "Nel catalogo"). Il testo dal 12/11: «Crea il primo con il
+  pulsante qui sotto, oppure scansiona una confezione con il pulsante
+  accanto alla ricerca.»
 - **Codice a barre** (dal 07/11, branch `alimenti-codice-a-barre`):
   Scansiona accanto alla ricerca e il codice in "Modifica alimento",
   regole in "Codice a barre", "Nel catalogo" e "Il codice in modifica".
@@ -2462,7 +2465,8 @@ catalogo, si corregge e si fa pulizia.
   ordinare. Calcolato in locale da Dexie in un passaggio solo, nessun
   indice nuovo. Funzioni pure con test permanenti (sezione 10.5).
 - **Tocco su un alimento → "Modifica alimento"** a pagina intera, lo stesso
-  `CreaAlimentoForm` di Aggiungi. **Il "+"** (sopra la tab bar) apre lo
+  `CreaAlimentoForm` di Aggiungi; anche la matita della riga. **Il
+  pulsante largo** «Crea alimento a mano» (sopra la tab bar) apre lo
   stesso form come "Nuovo alimento", senza Elimina. Il form è uno stato
   della pagina, **non una rotta con l'id**: una rotta
   `/impostazioni/alimenti/[id]` non può stare in `PAGINE_APP`, quindi
@@ -2476,8 +2480,9 @@ catalogo, si corregge e si fa pulizia.
   è stato salvato. Dopo una modifica nessuna barra, come in Aggiungi.
 - **Il nome cercato passa a "Nuovo alimento"** (dall'11/11, branch
   `alimenti-aspetto`), solo nella scheda «I miei», come «Crea «…»» in
-  Aggiungi. Il "+" porta la ricerca senza spazi ai lati
-  (`query.trim()`); dopo una scansione il nome non viene dalla ricerca.
+  Aggiungi. Il pulsante (prima il "+") porta la ricerca senza spazi ai
+  lati (`query.trim()`), e dal 12/11 la mostra: «Crea «…»». Dopo una
+  scansione il nome non viene dalla ricerca.
   Invio ("Vai") apre il modulo con quel nome solo se la ricerca non
   trova niente, e mai in selezione. Coperto dai test, **provato**
   sull'anteprima aggiunta alla Home il 12/11 (§11).
@@ -2519,32 +2524,47 @@ catalogo, si corregge e si fa pulizia.
   da capo (difetto aperto in §11). Coperto dai test. In Alimenti
   **provato nell'app installata** il 12/11 sera (Build `a97aa76`, freccia
   e swipe); in Preferiti **da provare**.
-- **Il "+"** è tondo, a destra, alla stessa altezza di "+ Aggiungi" in
-  Oggi (sopra la tab bar, con la stessa sfumatura dietro), e come la tab
-  bar si nasconde mentre un campo ha il fuoco. La barra con Annulla sta
-  appena sopra il "+", senza coprirlo, come in Oggi. *Così fino al commit
-  5 di `alimenti-aspetto`: poi il pulsante largo, qui sotto.*
-- **Aspetto nuovo, uguale ad Aggiungi** (deciso da Davide l'11/11 sera;
+- **Aspetto, uguale ad Aggiungi** (deciso da Davide l'11/11 sera;
   mockup `docs/mockups/alimenti-aspetto.html`, artifact
   https://claude.ai/artifact/7AqaM9suPzMiEDpjv6PCWT, **versione B**).
-  **Da fare**, commit 5 del branch `alimenti-aspetto`. Le scelte:
-  - **pulsante largo** «Crea alimento a mano», che diventa «Crea «…»» con
-    una ricerca scritta, al posto del "+" tondo, sopra la barra delle
-    schede, **solo nella scheda «I miei»**;
-  - la **matita** resta a destra delle righe: il tocco sulla riga e quello
-    sulla matita aprono tutti e due la modifica;
+  **Fatto il 12/11** (commit 5 del branch `alimenti-aspetto`), **da
+  provare** su iPhone. Il mockup ha dati inventati: misure e testi
+  vengono da lì, i dati no.
+  - **ricerca** come in Aggiungi: `CampoRicerca`, alta 48 px su
+    `bg-surface`, con `PulsanteScansiona` da 48 px accanto; a catalogo
+    vuoto spenta e attenuata;
+  - **righe** in un riquadro (`CLASSE_RIQUADRO`: angoli da 20, linee fra
+    le righe), riga alta almeno 60 px, sottotitolo da 13 px con «· dal
+    catalogo» (le classi di `classiElenchi.ts`);
+  - la **matita** a destra delle righe: il tocco sul nome e quello sulla
+    matita aprono tutti e due la modifica. Il tieni premuto parte da
+    tutta la riga, matita compresa (gli attributi del gesto stanno sul
+    `<li>`), e il click che segue il gesto non apre niente. In selezione
+    la matita sparisce e a sinistra c'è il cerchio, che spunta anche lui;
+  - il **pulsante largo** «Crea alimento a mano», «Crea «…»» con una
+    ricerca scritta, al posto del "+" tondo: alto 50 px, a tutta
+    larghezza, bordo e testo nel colore principale, fondo `bg-background`
+    e l'ombra delle barre fluttuanti. **Solo nella scheda «I miei»**,
+    non in selezione, non con il foglio degli alimenti in arrivo aperto.
+    Sta sopra la tab bar, dove stava il "+", con la barra con Annulla
+    appena sopra di lui;
+  - **con la tastiera aperta il pulsante resta sopra la tastiera**, come
+    in Aggiungi: il suo contenitore è agganciato alla parte visibile
+    della finestra (`useAreaVisibile`, come i fogli dal basso) e mentre
+    si scrive lascia sotto solo lo stacco fra le barre
+    (`data-sopra-tastiera`, regola in `globals.css`). Se sull'iPhone non
+    tiene, il ripiego deciso è nasconderlo mentre si scrive
+    (`data-nascondi-mentre-scrivi`), con Invio che apre il modulo;
   - la riga **«N alimenti / Più usati»** e il suggerimento «Tieni
-    premuto…» restano come oggi: testo piccolo, non titolo di sezione;
-  - nella scheda **«Catalogo» non si crea**: nessun pulsante;
-  - ricerca, riquadro delle righe, riga e matita con le misure di
-    Aggiungi; selezione, barra di selezione, SelettoreSegmenti, riga
-    degli alimenti in arrivo, testata e modulo invariati;
-  - con la tastiera aperta il pulsante va sopra la tastiera come in
-    Aggiungi, se non serve ristrutturare la pagina; altrimenti resta
-    nascosto mentre si scrive e vale Invio. Si decide prima di scrivere
-    il commit 5.
-
-  Il mockup ha dati inventati: misure e testi vengono da lì, i dati no.
+    premuto…» restano come prima: testo piccolo, non titolo di sezione;
+  - scheda **«Catalogo»**: la stessa ricerca (senza Scansiona), le righe
+    nel riquadro con le misure di Aggiungi, «Aggiungi» / «Nei tuoi»,
+    filtri, interruttore e fonti come prima. **Non si crea**: nessun
+    pulsante. Senza risultati: la lente, «Nessun alimento trovato nel
+    catalogo.» e «Puoi crearlo nella scheda «I miei».»; con «Nascondi
+    quelli che hai» e tutti già tuoi resta «Li hai già tutti.»;
+  - invariati: SelettoreSegmenti, la riga degli alimenti in arrivo, la
+    testata, la barra di selezione, il modulo.
 - **Una regola sola per "modificabile"**: `eModificabile` in
   `src/lib/catalogo/alimentiModificabili.ts`, usata anche dalla matita di
   Aggiungi (prima scritta due volte lì). Le frasi della barra dopo
@@ -2586,7 +2606,8 @@ catalogo, si corregge e si fa pulizia.
     pillola sotto); come la pillola si nasconde mentre un campo ha il
     fuoco. Elimina è un pulsante tondo arancio (`warning`), non rosso:
     `--pericolo` è solo per ciò che non si può annullare (sezione 7);
-  - in selezione il "+" e il suggerimento spariscono. Il suggerimento
+  - in selezione il pulsante per creare (prima il "+") e il suggerimento
+    spariscono. Il suggerimento
     "Tieni premuto su un alimento per selezionarne più di uno insieme."
     sta sopra l'elenco fuori dalla selezione, con almeno due alimenti,
     in grigio (`text-muted`): non c'è un token per il fondo tenue del
@@ -9249,8 +9270,10 @@ account vero: «funziona tutto» (Davide).
 - lo swipe e il ritorno al punto della zona anche in Aggiungi, con la
   freccia della testata che esce a Oggi anche con il modulo aperto
   (commit 2b, provato sull'anteprima, sotto);
-- il mockup dell'aspetto nuovo, versione B scelta (commit 3; l'aspetto
-  è da fare, commit 5; sezione 3, "Alimenti").
+- il mockup dell'aspetto nuovo, versione B scelta (commit 3);
+- l'aspetto di Aggiungi in Alimenti, «I miei» e «Catalogo», con il
+  pulsante largo sopra la tastiera (commit 5; sezione 3, "Alimenti",
+  "Aspetto"): **da provare**, prove qui sotto.
 
 **Prove del 12/11 sera** sull'anteprima aggiunta alla Home, account di
 prova, Build `365f88b`, tutte ok:
@@ -9281,6 +9304,25 @@ prova, Build `a502dd6`, tutte ok:
 
 Scansione in Aggiungi e scorrimento in Preferiti: non indicate, restano
 da provare.
+
+**Prove da fare del commit 5** (l'aspetto di Alimenti), sull'anteprima
+aggiunta alla Home, account di prova, anche al buio:
+1. «I miei»: ricerca alta come in Aggiungi, righe nel riquadro con la
+   matita, «· dal catalogo» sulle copie; tocco sul nome e sulla matita →
+   «Modifica alimento»;
+2. il pulsante largo «Crea alimento a mano» sopra la tab bar; scritto
+   qualcosa diventa «Crea «…»»; **con la tastiera aperta resta subito
+   sopra la tastiera** (se no: il ripiego deciso, nascosto mentre si
+   scrive);
+3. tieni premuto sul nome e sulla matita → selezione, nessuna modifica
+   aperta; in selezione il cerchio a sinistra, niente matita né pulsante
+   largo; la riga sollevata si vede bene dentro il riquadro;
+4. ricerca senza risultati: lente, «Nessun risultato per «…»»;
+5. scheda «Catalogo»: la stessa ricerca, righe nel riquadro, «Aggiungi» /
+   «Nei tuoi», nessun pulsante per creare; senza risultati la lente e
+   «Puoi crearlo nella scheda «I miei».»;
+6. la barra con «Annulla» (dopo Elimina) appena sopra il pulsante largo;
+   l'ultima riga dell'elenco non resta sotto il pulsante.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono

@@ -32,8 +32,9 @@ import { aggiungiDalCatalogo } from "@/lib/repository/alimenti";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import RigaCatalogoPrecaricato from "@/components/RigaCatalogoPrecaricato";
 import SchedaAlimentoCatalogo from "@/components/SchedaAlimentoCatalogo";
-import IconaLente from "@/components/IconaLente";
-import IconaCroce from "@/components/IconaCroce";
+import CampoRicerca from "@/components/CampoRicerca";
+import RicercaSenzaRisultati from "@/components/RicercaSenzaRisultati";
+import { CLASSE_RIQUADRO } from "@/lib/classiElenchi";
 
 // «Nascondi quelli che hai», per telefono (mockup: «si ricorda la scelta
 // solo in questo telefono»). Una preferenza come il tema: Esci non la
@@ -120,27 +121,10 @@ export default function SchedaCatalogo({
 
   return (
     <>
-      <div className="relative">
-        <IconaLente className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca nel catalogo"
-          aria-label="Cerca nel catalogo"
-          enterKeyHint="search"
-          className={`h-11 w-full rounded-full border border-border bg-background pl-11 pr-11 text-base ${CLASSE_FOCUS}`}
-        />
-        {query !== "" && (
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            aria-label="Svuota la ricerca"
-            className={`absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted ${CLASSE_FOCUS}`}
-          >
-            <IconaCroce />
-          </button>
-        )}
+      {/* La stessa ricerca di «I miei» e di Aggiungi (CampoRicerca), senza
+          Scansiona. Il <div> in riga fa allargare il campo in orizzontale. */}
+      <div className="flex">
+        <CampoRicerca valore={query} onCambia={setQuery} etichetta="Cerca nel catalogo" />
       </div>
 
       {/* I filtri scorrono in orizzontale, fino al bordo dello schermo. */}
@@ -210,8 +194,9 @@ export default function SchedaCatalogo({
         </p>
       )}
 
+      {/* Le righe in un riquadro, come in «I miei» e in Aggiungi. */}
       {elenco.righe.length > 0 ? (
-        <ul className="-mt-2">
+        <ul className={CLASSE_RIQUADRO}>
           {elenco.righe.map(({ voce, stato }) => (
             <RigaCatalogoPrecaricato
               key={voce.id}
@@ -223,18 +208,18 @@ export default function SchedaCatalogo({
             />
           ))}
         </ul>
-      ) : (
+      ) : elenco.totale > 0 ? (
+        // «Nascondi quelli che hai» acceso e tutti già tuoi: il testo di prima.
         <p className="px-6 pt-10 text-center text-sm leading-relaxed text-muted">
-          {elenco.totale > 0 ? (
-            "Li hai già tutti."
-          ) : (
-            <>
-              Nessun alimento trovato nel catalogo.
-              <br />
-              Prova un altro termine di ricerca.
-            </>
-          )}
+          Li hai già tutti.
         </p>
+      ) : (
+        // Mockup: lo stesso stato vuoto di «I miei». Qui non si crea, quindi
+        // dice dove farlo.
+        <RicercaSenzaRisultati
+          titolo="Nessun alimento trovato nel catalogo."
+          testo="Puoi crearlo nella scheda «I miei»."
+        />
       )}
 
       <p className="text-center text-xs leading-normal text-muted">{TESTO_FONTI_CATALOGO}</p>

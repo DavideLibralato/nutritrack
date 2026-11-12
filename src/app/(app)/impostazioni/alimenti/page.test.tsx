@@ -318,7 +318,7 @@ describe("Catalogo alimenti: Scansiona", () => {
     ).toBe(false);
     expect(
       screen.getByText(
-        "Crea il primo con il + qui sotto, oppure scansiona una confezione con il pulsante accanto alla ricerca."
+        "Crea il primo con il pulsante qui sotto, oppure scansiona una confezione con il pulsante accanto alla ricerca."
       )
     ).toBeTruthy();
   });
@@ -494,7 +494,8 @@ describe("Catalogo precaricato: la scheda «Catalogo»", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: "Torna al catalogo" })[0]);
     fireEvent.click(await screen.findByRole("button", { name: /^I miei/ }));
-    const riga = await screen.findByRole("button", { name: /Mandorle/ });
+    // Il pulsante del nome (la matita si chiama «Modifica Mandorle»).
+    const riga = await screen.findByRole("button", { name: /^Mandorle\s?\d+ kcal/ });
     expect(within(riga).getByText("dal catalogo")).toBeTruthy();
   });
 
@@ -625,24 +626,24 @@ describe("Catalogo alimenti: il nome cercato passa al modulo", () => {
     return screen.getByLabelText("Nome") as HTMLInputElement;
   }
 
-  it("il + porta la ricerca come nome, senza spazi ai lati", async () => {
+  it("«Crea «…»» porta la ricerca come nome, senza spazi ai lati", async () => {
     await creaAlimento("Banana", null, null);
     render(<AlimentiPage />);
     await screen.findByText("Banana");
 
     cerca("  patatine fritte  ");
-    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crea «patatine fritte»" }));
 
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
     expect(campoNome().value).toBe("patatine fritte");
   });
 
-  it("a ricerca vuota il + apre il modulo con il nome vuoto", async () => {
+  it("a ricerca vuota «Crea alimento a mano» apre il modulo con il nome vuoto", async () => {
     await creaAlimento("Banana", null, null);
     render(<AlimentiPage />);
     await screen.findByText("Banana");
 
-    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crea alimento a mano" }));
 
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
     expect(campoNome().value).toBe("");
@@ -759,7 +760,7 @@ describe("Catalogo alimenti: torna al punto dell'elenco dopo il modulo", () => {
 
   it("dopo Salva di un alimento nuovo, con la barra «Creato»", async () => {
     await elencoScorso();
-    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crea alimento a mano" }));
     for (const [etichetta, valore] of [
       ["Nome", "Kiwi"],
       ["Calorie (kcal)", "61"],
@@ -828,7 +829,7 @@ describe("Catalogo alimenti: lo swipe indietro", () => {
     render(<AlimentiPage />);
     await screen.findByText("Banana");
 
-    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crea alimento a mano" }));
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
 
     await swipe();
@@ -856,7 +857,7 @@ describe("Catalogo alimenti: lo swipe indietro", () => {
     render(<AlimentiPage />);
     await screen.findByText("Banana");
 
-    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crea alimento a mano" }));
     expect(segno()).toHaveLength(1);
     for (const [etichetta, valore] of [
       ["Nome", "Mela"],
@@ -877,5 +878,184 @@ describe("Catalogo alimenti: lo swipe indietro", () => {
     expect(segno()).toBeUndefined();
     expect(screen.getByText("Creato:")).toBeTruthy();
     expect(screen.getByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
+  });
+});
+
+// Il tieni premuto con la riga nuova (dal 12/11: due pulsanti dentro il
+// <li>, il nome e la matita; useTieniPremuto riconosce il <li>). Test
+// permanenti: sbagliato, il gesto partito dalla matita non entrerebbe in
+// selezione, o il click che il browser manda dopo il gesto aprirebbe la
+// modifica (o toglierebbe subito la spunta appena messa), in silenzio.
+describe("Catalogo alimenti: tieni premuto con il nome e la matita", () => {
+  // Dito fermo sull'elemento: dopo il tempo del gesto si entra in
+  // selezione. Si aspetta la barra invece di un tempo fisso (con tutti i
+  // file in esecuzione i timer di jsdom possono scattare in ritardo).
+  async function tieniPremuto(el: Element) {
+    const dito = {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      isPrimary: true,
+      pointerType: "touch",
+      button: 0,
+      clientX: 50,
+      clientY: 50,
+    };
+    fireEvent(el, new PointerEvent("pointerdown", dito));
+    const barra = await screen.findByRole(
+      "toolbar",
+      { name: "Alimenti selezionati" },
+      { timeout: 3000 }
+    );
+    fireEvent(el, new PointerEvent("pointerup", dito));
+    return barra;
+  }
+
+  function nome(testo: string) {
+    return screen.getByText(testo).closest("button")!;
+  }
+
+  async function dueAlimenti() {
+    await creaAlimento("Banana", null, null);
+    await creaAlimento("Mela", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+  }
+
+  it("(a) il gesto parte anche dalla matita", async () => {
+    await dueAlimenti();
+
+    const barra = await tieniPremuto(screen.getByRole("button", { name: "Modifica Banana" }));
+
+    expect(within(barra).getByText("1 selezionato")).toBeTruthy();
+    expect(nome("Banana").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("(b) dal nome: il click dopo il gesto non apre la modifica e non toglie la spunta", async () => {
+    await dueAlimenti();
+
+    const barra = await tieniPremuto(nome("Banana"));
+    fireEvent.click(nome("Banana"));
+
+    expect(screen.queryByText("Modifica alimento")).toBeNull();
+    expect(within(barra).getByText("1 selezionato")).toBeTruthy();
+    expect(nome("Banana").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  // Dalla matita: in selezione la matita sparisce, quindi il click che
+  // segue il gesto arriva sulla riga, cioè sul nome.
+  it("(b) dalla matita: il click dopo il gesto non apre la modifica e non toglie la spunta", async () => {
+    await dueAlimenti();
+
+    const barra = await tieniPremuto(screen.getByRole("button", { name: "Modifica Banana" }));
+    fireEvent.click(nome("Banana"));
+
+    expect(screen.queryByText("Modifica alimento")).toBeNull();
+    expect(within(barra).getByText("1 selezionato")).toBeTruthy();
+  });
+
+  it("(c) in selezione il tocco sul nome mette e toglie la spunta", async () => {
+    await dueAlimenti();
+    const barra = await tieniPremuto(nome("Banana"));
+    fireEvent.click(nome("Banana")); // il click del gesto, fermato
+
+    fireEvent.click(nome("Mela"));
+    expect(within(barra).getByText("2 selezionati")).toBeTruthy();
+    expect(nome("Mela").getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(nome("Mela"));
+    expect(within(barra).getByText("1 selezionato")).toBeTruthy();
+    expect(nome("Mela").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByText("Modifica alimento")).toBeNull();
+  });
+
+  it("(d) in selezione la matita non c'è; fuori dalla selezione apre la modifica", async () => {
+    await dueAlimenti();
+    expect(screen.getByRole("button", { name: "Modifica Mela" })).toBeTruthy();
+
+    const barra = await tieniPremuto(nome("Banana"));
+    fireEvent.click(nome("Banana")); // il click del gesto, fermato
+    expect(screen.queryByRole("button", { name: "Modifica Mela" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Modifica Banana" })).toBeNull();
+
+    fireEvent.click(within(barra).getByRole("button", { name: "Annulla" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Modifica Mela" }));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("Mela");
+  });
+});
+
+// L'aspetto di Aggiungi (dal 12/11, mockup alimenti-aspetto.html, versione
+// B): il pulsante largo con la ricerca scritta, solo in «I miei» e fuori
+// dalla selezione, che resta sopra la tastiera; gli stati vuoti nuovi.
+describe("Catalogo alimenti: il pulsante largo e gli stati vuoti", () => {
+  it("il pulsante dice «Crea «…»» con la ricerca scritta, e non si nasconde mentre si scrive", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    const pulsante = screen.getByRole("button", { name: "Crea alimento a mano" });
+    // Resta sopra la tastiera (regola data-sopra-tastiera in globals.css),
+    // non sparisce mentre si scrive come la tab bar.
+    expect(pulsante.closest("[data-sopra-tastiera]")).not.toBeNull();
+    expect(pulsante.closest("[data-nascondi-mentre-scrivi]")).toBeNull();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cerca un alimento" }), {
+      target: { value: "  pesca  " },
+    });
+    expect(screen.getByRole("button", { name: "Crea «pesca»" })).toBeTruthy();
+  });
+
+  it("ricerca senza risultati: la lente e «Nessun risultato per «…»»", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cerca un alimento" }), {
+      target: { value: "zzz" },
+    });
+
+    expect(screen.getByText("Nessun risultato per «zzz»")).toBeTruthy();
+    expect(screen.getByText("Puoi crearlo con il pulsante qui sotto.")).toBeTruthy();
+    expect(screen.getByText("0 alimenti")).toBeTruthy();
+  });
+
+  it("nella scheda «Catalogo» e in selezione il pulsante non c'è", async () => {
+    await creaAlimento("Banana", null, null);
+    await creaAlimento("Mela", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    fireEvent.click(screen.getByRole("button", { name: /^Catalogo/ }));
+    await screen.findByRole("searchbox", { name: "Cerca nel catalogo" });
+    expect(screen.queryByRole("button", { name: "Crea alimento a mano" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^I miei/ }));
+    fireEvent(
+      await screen.findByText("Banana"),
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        isPrimary: true,
+        pointerType: "touch",
+        button: 0,
+        clientX: 50,
+        clientY: 50,
+      })
+    );
+    await screen.findByRole("toolbar", { name: "Alimenti selezionati" }, { timeout: 3000 });
+    expect(screen.queryByRole("button", { name: "Crea alimento a mano" })).toBeNull();
+  });
+
+  it("scheda «Catalogo» senza risultati: la lente e dove crearlo", async () => {
+    render(<AlimentiPage />);
+    fireEvent.click(await screen.findByRole("button", { name: /^Catalogo/ }));
+    fireEvent.change(await screen.findByRole("searchbox", { name: "Cerca nel catalogo" }), {
+      target: { value: "zzzz" },
+    });
+
+    expect(screen.getByText("Nessun alimento trovato nel catalogo.")).toBeTruthy();
+    expect(screen.getByText("Puoi crearlo nella scheda «I miei».")).toBeTruthy();
   });
 });
