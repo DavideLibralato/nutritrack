@@ -90,6 +90,8 @@ import { aggiungiNelPasto, type AlimentoDaAggiungere } from "@/lib/repository/vo
 import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
 import { accorcia, MASSIMO_ALIMENTO, MASSIMO_PASTO } from "@/lib/diario/testiSpostamento";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { esciDallaPagina, useChiudiConIndietro } from "@/lib/useChiudiConIndietro";
+import { useRitornoScorrimento } from "@/lib/useRitornoScorrimento";
 
 // Quanti alimenti mostrare in "Recenti": abbastanza da coprire la rotazione
 // tipica di pasti abituali (sono già deduplicati), ma non tanti da spingere
@@ -375,6 +377,37 @@ function AggiungiContenuto() {
     | null
   >(null);
 
+  // Lo swipe indietro chiude la schermata aperta e resta qui
+  // (useChiudiConIndietro; PUNTO §3, "Aggiungi"). Due chiamate:
+  // - il modulo (Crea a mano, matita) e la scansione si danno il cambio
+  //   (scansione → modulo con il codice, «Apri» un esistente): un passo solo
+  //   finché una delle due è aperta, e lo swipe le chiude come «Torna alla
+  //   ricerca»;
+  // - il pasto salvato ha il suo passo; la ricerca dentro il pasto ha il
+  //   suo, in ModificaPastoSalvato.
+  useChiudiConIndietro(creando || alimentoInModifica !== null || scansione !== undefined, () => {
+    setCreando(false);
+    setDaCodice(null);
+    setAlimentoInModifica(null);
+    setCodiceDaPortare(null);
+    setScansione(undefined);
+  });
+  useChiudiConIndietro(pastoInModificaId !== null, () => setPastoInModificaId(null));
+
+  // Con il modulo aperto la zona che scorre (Recenti, Preferiti, risultati)
+  // lascia il posto al modulo e alla chiusura rinasce da capo: si torna al
+  // punto di prima (useRitornoScorrimento con la zona). La scansione e il
+  // pasto salvato stanno SOPRA la zona, che resta: lì non serve.
+  const zonaElenco = useRef<HTMLDivElement | null>(null);
+  useRitornoScorrimento(creando || alimentoInModifica !== null, zonaElenco);
+
+  // La freccia della testata esce a Oggi, anche con il modulo aperto: se in
+  // cima c'è il passo del modulo si torna indietro di quello più la pagina
+  // (esciDallaPagina), altrimenti router.back() come sempre.
+  function indietro() {
+    if (!esciDallaPagina()) router.back();
+  }
+
   // `!userId` copre sia "non so ancora" (undefined) sia "nessuna sessione"
   // (null): su questa rotta il middleware garantisce comunque un utente
   // loggato, quindi il secondo caso è solo teorico. Si aspetta anche
@@ -411,7 +444,7 @@ function AggiungiContenuto() {
         <header className="flex shrink-0 items-center gap-0.5 px-2.5 pt-2 pb-2">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={indietro}
             aria-label="Indietro"
             className={CLASSE_INDIETRO}
           >
@@ -693,12 +726,7 @@ function AggiungiContenuto() {
       {/* Senza linea sotto, come nel mockup: la separazione la fa il campo
           di ricerca, subito sotto. */}
       <header className="flex shrink-0 items-center gap-0.5 px-2.5 pt-2 pb-2">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          aria-label="Indietro"
-          className={CLASSE_INDIETRO}
-        >
+        <button type="button" onClick={indietro} aria-label="Indietro" className={CLASSE_INDIETRO}>
           <IconaIndietro />
         </button>
 
@@ -867,7 +895,7 @@ function AggiungiContenuto() {
                 centrata sullo schermo: così lo stato corrente (vuoto /
                 risultati / nessun risultato) resta visibile sopra la tastiera
                 in ogni caso (voce 2 punto 1). */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            <div ref={zonaElenco} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
               {query.trim() === "" ? (
                 recenti.length > 0 ||
                 preferitiAlimenti.length > 0 ||

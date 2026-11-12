@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { useRef } from "react";
 import { render, act, cleanup, fireEvent } from "@testing-library/react";
 import { RIDISEGNI_DI_CONTROLLO, useRitornoScorrimento } from "./useRitornoScorrimento";
 
@@ -142,5 +143,112 @@ describe("useRitornoScorrimento", () => {
     ridisegna(3);
 
     expect(chiamate).toHaveLength(0);
+  });
+});
+
+// Con `zona`: scorre un elemento, non il documento, e alla chiusura è un
+// elemento NUOVO (Aggiungi: la zona sotto la ricerca rinasce dopo il
+// modulo). jsdom non tiene scrollTop: qui è finto, uno per elemento, e
+// ogni scrittura si annota con l'elemento che l'ha ricevuta.
+describe("useRitornoScorrimento con una zona che scorre", () => {
+  const scorrimenti = new WeakMap<Element, number>();
+  let scritture: { y: number; elemento: Element }[] = [];
+
+  beforeEach(() => {
+    scritture = [];
+    Object.defineProperty(HTMLElement.prototype, "scrollTop", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return scorrimenti.get(this) ?? 0;
+      },
+      set(this: HTMLElement, y: number) {
+        scorrimenti.set(this, y);
+        scritture.push({ y, elemento: this });
+      },
+    });
+  });
+
+  afterEach(() => {
+    delete (HTMLElement.prototype as { scrollTop?: number }).scrollTop;
+  });
+
+  function PaginaConZona({ aperto }: { aperto: boolean }) {
+    const zona = useRef<HTMLDivElement | null>(null);
+    useRitornoScorrimento(aperto, zona);
+    // Le `key` diverse: la zona rinasce come elemento nuovo, come in
+    // Aggiungi (senza, React riuserebbe lo stesso <div>).
+    return aperto ? <div key="modulo">modulo</div> : <div key="zona" ref={zona} data-zona />;
+  }
+
+  function zona() {
+    return document.querySelector("[data-zona]") as HTMLElement;
+  }
+
+  function scorriZona(y: number) {
+    zona().scrollTop = y;
+    fireEvent.scroll(zona());
+    scritture = [];
+  }
+
+  it("rimette il punto sulla zona nuova, non sul documento", () => {
+    const { rerender } = render(<PaginaConZona aperto={false} />);
+    const vecchia = zona();
+    scorriZona(600);
+
+    rerender(<PaginaConZona aperto />);
+    rerender(<PaginaConZona aperto={false} />);
+
+    expect(zona()).not.toBe(vecchia);
+    expect(scritture[0]).toEqual({ y: 600, elemento: zona() });
+    expect(zona().scrollTop).toBe(600);
+    expect(chiamate).toHaveLength(0);
+  });
+
+  // Come Aggiungi, che si apre con «Caricamento...»: la zona arriva al
+  // secondo ridisegno, e l'ascolto deve agganciarsi lì (trovato scrivendo
+  // il test di Aggiungi, 12/11: prima si cercava la zona solo quando
+  // cambiava `aperto`).
+  it("la zona arrivata dopo il primo ridisegno si annota lo stesso", () => {
+    function PaginaCheCarica({ pronta, aperto }: { pronta: boolean; aperto: boolean }) {
+      const zona = useRef<HTMLDivElement | null>(null);
+      useRitornoScorrimento(aperto, zona);
+      if (!pronta) return <p>Caricamento...</p>;
+      return aperto ? <div key="modulo">modulo</div> : <div key="zona" ref={zona} data-zona />;
+    }
+    const { rerender } = render(<PaginaCheCarica pronta={false} aperto={false} />);
+    rerender(<PaginaCheCarica pronta aperto={false} />);
+    scorriZona(600);
+
+    rerender(<PaginaCheCarica pronta aperto />);
+    rerender(<PaginaCheCarica pronta aperto={false} />);
+
+    expect(zona().scrollTop).toBe(600);
+  });
+
+  it("lo scroll della finestra non conta: si annota quello della zona", () => {
+    const { rerender } = render(<PaginaConZona aperto={false} />);
+    scorriZona(600);
+    scorri(2000);
+
+    rerender(<PaginaConZona aperto />);
+    rerender(<PaginaConZona aperto={false} />);
+
+    expect(zona().scrollTop).toBe(600);
+  });
+
+  it("il ricontrollo rimette la zona, e si ferma al tocco", () => {
+    const { rerender } = render(<PaginaConZona aperto={false} />);
+    scorriZona(600);
+    rerender(<PaginaConZona aperto />);
+    rerender(<PaginaConZona aperto={false} />);
+
+    scorrimenti.set(zona(), 0);
+    ridisegna();
+    expect(zona().scrollTop).toBe(600);
+
+    fireEvent.touchStart(window);
+    scorrimenti.set(zona(), 150);
+    ridisegna(3);
+    expect(zona().scrollTop).toBe(150);
   });
 });

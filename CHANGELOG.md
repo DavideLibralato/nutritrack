@@ -5,6 +5,51 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-12 — Lo swipe indietro chiude la schermata, in Aggiungi
+
+Branch `alimenti-aspetto`, commit 2b.
+
+**Prova della correzione `a97aa76`**, il 12/11 sera, anteprima aggiunta
+alla Home, account di prova, Build `a97aa76`. In Alimenti, con l'elenco
+scorso, si apre un alimento e si torna con la freccia ‹ e con lo swipe:
+torna al punto giusto. Preferiti: non indicata, resta da provare.
+
+**Swipe in Aggiungi.** Lo swipe indietro chiude la schermata aperta e
+resta su Aggiungi. Due chiamate di `useChiudiConIndietro`:
+- modulo («Crea alimento a mano», matita) e scansione si danno il
+  cambio, quindi un passo solo;
+- il pasto salvato ha il suo passo, e la ricerca dentro il pasto il
+  secondo livello che c'era già.
+
+**Freccia della testata.** Esce a Oggi come prima, anche con il modulo
+aperto. La funzione nuova `esciDallaPagina()` torna indietro del passo
+più la pagina, solo se in cima c'è il nostro segno; altrimenti
+`router.back()`.
+
+**Scorrimento della zona.** Con il modulo aperto, la zona che scorre
+sotto la ricerca rinasce da capo. `useRitornoScorrimento` ha ora una
+`zona` facoltativa e la rimette al punto di prima.
+
+**Difetto trovato scrivendo i test.** Con la `zona`, l'hook cercava
+l'elemento solo quando cambiava `aperto`. Aggiungi si apre con
+«Caricamento...», la zona arriva dopo, e così non veniva mai ascoltata.
+Ora l'ascolto segue l'elemento a ogni ridisegno. C'è un test apposito.
+
+**Altro.** Corretto il commento di `ModificaPastoSalvato`, che diceva
+che lo swipe esce da /aggiungi.
+
+**Test.** Nuovi:
+- 4 per `esciDallaPagina`;
+- 4 dell'hook con la zona;
+- 9 in Aggiungi: swipe da crea a mano, matita, scansione → modulo,
+  pasto con la ricerca; freccia con e senza modulo; la strada «Crea e
+  scegli la quantità» → Aggiungi → Oggi, con un solo `go(-1)` prima di
+  `replace` e nessuno dopo; ritorno della zona con «Torna alla ricerca»
+  e con lo swipe.
+
+Rompendo il codice da una copia, 10 rotture su 10 fanno fallire il loro
+test.
+
 ## 2026-11-12 — Alimenti e Preferiti tornano al punto dell'elenco
 
 Branch `alimenti-aspetto`, commit a parte prima del 2b. È un difetto già

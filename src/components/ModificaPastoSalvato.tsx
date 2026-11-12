@@ -137,8 +137,10 @@ export default function ModificaPastoSalvato({
 
   // Chiusura o ricarica della scheda con modifiche non salvate: il browser
   // chiede conferma (stesso meccanismo del Profilo; il testo lo decide il
-  // browser). Il gesto "indietro" del telefono non passa di qui: esce da
-  // /aggiungi senza avviso, come il cambio di scheda in Profilo.
+  // browser). Lo swipe "indietro" non passa di qui: chiude la schermata
+  // (il passo della pagina, useChiudiConIndietro, in Aggiungi e in
+  // Preferiti) e resta sulla pagina, senza avviso; con la ricerca aperta
+  // chiude solo la ricerca. Il «Esci senza salvare?» resta sulla freccia.
   useEffect(() => {
     if (!modificato) return;
     function avvisa(e: BeforeUnloadEvent) {

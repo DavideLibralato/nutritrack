@@ -175,6 +175,27 @@ function controllaVoceRimasta() {
   tornaIndietro(segnoCorrente().length);
 }
 
+// La freccia che ESCE dalla pagina anche con una schermata aperta (la
+// testata di Aggiungi, che resta visibile sopra «Crea alimento a mano").
+// Se in cima ci sono passi nostri (il segno della voce corrente, tutto
+// fatto di schermate aperte in questo documento), si torna indietro di
+// quei passi più uno, fino alla pagina di prima, e restituisce vero; le
+// schermate non si chiudono una per una (la pagina se ne va), e il
+// popstate di questo ritorno non è uno swipe. Altrimenti (nessun passo, o
+// segno riscritto da Next) restituisce falso: chi chiama fa router.back().
+export function esciDallaPagina(): boolean {
+  const segno = segnoCorrente();
+  if (segno.length === 0 || !segno.every((id) => pila.some((v) => v.id === id))) return false;
+  chiusureInAttesa.forEach((timer) => clearTimeout(timer));
+  chiusureInAttesa.clear();
+  apertureInAttesa = [];
+  pila = [];
+  ritorniInAttesa++;
+  aggiornaAscolto();
+  window.history.go(-(segno.length + 1));
+  return true;
+}
+
 let contatoreId = 0;
 
 // `aperto`: vero finché la schermata (o una delle schermate che si danno

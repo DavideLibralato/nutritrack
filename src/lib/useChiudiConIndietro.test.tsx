@@ -306,3 +306,63 @@ describe("useChiudiConIndietro", () => {
     expect(chiudi).toHaveBeenCalledTimes(1);
   });
 });
+
+// La freccia della testata di Aggiungi esce a Oggi anche con il modulo
+// aperto (esciDallaPagina). Sbagliata, tornerebbe solo al passo del modulo
+// (la freccia chiuderebbe il modulo invece di uscire), o andrebbe indietro
+// di due anche senza il passo, oltre la pagina di prima.
+describe("esciDallaPagina", () => {
+  it("con il passo in cima: indietro di due, senza chiudere la schermata, e il ritorno non è uno swipe", async () => {
+    // La pagina di prima, sotto quella con la schermata.
+    window.history.pushState({}, "");
+    const chiudi = vi.fn();
+    render(<Schermata aperto chiudi={chiudi} />);
+    expect(segno()).toHaveLength(1);
+
+    const arrivo = popstate();
+    let uscita = false;
+    await act(async () => {
+      uscita = modulo.esciDallaPagina();
+      await arrivo;
+    });
+
+    expect(uscita).toBe(true);
+    expect(window.history.go).toHaveBeenCalledTimes(1);
+    expect(window.history.go).toHaveBeenCalledWith(-2);
+    expect(chiudi).not.toHaveBeenCalled();
+    expect(segno()).toEqual([]);
+  });
+
+  it("con due livelli aperti: indietro di tre", async () => {
+    window.history.pushState({}, "");
+    const props = { chiudiPasto: vi.fn(), chiudiRicerca: vi.fn() };
+    const { rerender } = render(<DueLivelli pasto ricerca={false} {...props} />);
+    rerender(<DueLivelli pasto ricerca {...props} />);
+
+    const arrivo = popstate();
+    await act(async () => {
+      modulo.esciDallaPagina();
+      await arrivo;
+    });
+
+    expect(window.history.go).toHaveBeenCalledWith(-3);
+    expect(props.chiudiPasto).not.toHaveBeenCalled();
+    expect(props.chiudiRicerca).not.toHaveBeenCalled();
+  });
+
+  it("senza schermate aperte: falso, nessun ritorno (chi chiama fa router.back())", async () => {
+    render(<Schermata aperto={false} chiudi={() => {}} />);
+
+    expect(modulo.esciDallaPagina()).toBe(false);
+    await unGiro();
+    expect(window.history.go).not.toHaveBeenCalled();
+  });
+
+  it("con il segno riscritto da Next (la pagina sta già navigando): falso, nessun ritorno", async () => {
+    render(<Schermata aperto chiudi={() => {}} />);
+    window.history.replaceState({ __NA: true }, "");
+
+    expect(modulo.esciDallaPagina()).toBe(false);
+    expect(window.history.go).not.toHaveBeenCalled();
+  });
+});

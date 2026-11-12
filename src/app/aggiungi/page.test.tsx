@@ -20,7 +20,7 @@ import { prendiInserimento } from "@/lib/inserimento/ultimoInserimento";
 import type { Alimento } from "@/lib/db/tipi";
 
 // Il ritorno a Oggi (router.replace) si guarda da qui.
-const navigazione = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
+const navigazione = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn() }));
 
 let utenteTest = "";
 let parametri = new URLSearchParams();
@@ -29,6 +29,7 @@ beforeEach(() => {
   parametri = new URLSearchParams();
   navigazione.replace.mockReset();
   navigazione.push.mockReset();
+  navigazione.back.mockReset();
   guasto.guasti = 0;
   prendiInserimento();
 });
@@ -44,7 +45,7 @@ vi.mock("next/navigation", () => ({
     push: navigazione.push,
     replace: navigazione.replace,
     refresh: () => {},
-    back: () => {},
+    back: navigazione.back,
   }),
   useSearchParams: () => parametri,
 }));
@@ -1257,5 +1258,285 @@ describe("Aggiungi: scansione di un codice del catalogo", () => {
     ).toBeTruthy();
     expect((await repositoryAlimenti.ottieniPerId(mio.id))?.barcode).toBe("3017620425035");
     expect(fetchFinta).not.toHaveBeenCalled();
+  });
+});
+
+// Lo swipe indietro e la freccia della testata (useChiudiConIndietro,
+// esciDallaPagina; PUNTO_DI_PARTENZA.md §3, "Aggiungi"). Test permanenti:
+// sbagliata, la cronologia non fa rumore. Lo swipe uscirebbe da Aggiungi
+// perdendo il modulo; un passo in più lascerebbe un "indietro" a vuoto;
+// un ritorno dopo la navigazione riporterebbe su Aggiungi da Oggi.
+describe("Aggiungi: lo swipe indietro e la freccia della testata", () => {
+  function segno(): string[] {
+    return window.history.state?.nutritrackSchermate ?? [];
+  }
+
+  function popstate() {
+    return new Promise<void>((risolvi) =>
+      window.addEventListener("popstate", () => risolvi(), { once: true })
+    );
+  }
+
+  async function swipe() {
+    await act(async () => {
+      const arrivo = popstate();
+      window.history.back();
+      await arrivo;
+    });
+  }
+
+  beforeEach(async () => {
+    // Partenza pulita: finiti i ritorni lasciati dai test di prima, e
+    // saltate le voci col segno rimaste (schermate lasciate aperte).
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    while (segno().length > 0) {
+      const arrivo = popstate();
+      window.history.back();
+      await arrivo;
+    }
+    // La pagina di prima (Oggi), sotto Aggiungi.
+    window.history.pushState({}, "");
+    vi.spyOn(window.history, "go");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  async function creaPastoSalvato(nome: string, alimento: Alimento) {
+    const composizione = await repositoryComposizioni.crea({
+      user_id: utenteTest,
+      nome,
+      tipo: "pasto_salvato",
+      alimento_id: null,
+    });
+    await repositoryComposizioniVoci.crea({
+      user_id: utenteTest,
+      composizione_id: composizione.id,
+      alimento_id: alimento.id,
+      quantita_g: 125,
+      ordine: 0,
+    });
+  }
+
+  function ricerca() {
+    return screen.queryByRole("searchbox", { name: "Cerca alimento o pasto" });
+  }
+
+  it("«Crea alimento a mano»: lo swipe lo chiude e resta su Aggiungi", async () => {
+    await preparaPranzo();
+    render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Crea alimento a mano" }));
+    expect(await screen.findByRole("heading", { name: "Nuovo alimento" })).toBeTruthy();
+    await waitFor(() => expect(segno()).toHaveLength(1));
+
+    await swipe();
+
+    expect(screen.queryByRole("heading", { name: "Nuovo alimento" })).toBeNull();
+    expect(ricerca()).toBeTruthy();
+    expect(navigazione.back).not.toHaveBeenCalled();
+  });
+
+  it("la matita: lo swipe chiude «Modifica alimento»", async () => {
+    const pranzo = await preparaPranzo();
+    const mela = await creaAlimento("Mela", 52);
+    await creaVoce(mela, pranzo.id, giornoPrecedente(oggiLocale()), 150);
+    render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Modifica Mela" }));
+    expect(await screen.findByRole("heading", { name: "Modifica alimento" })).toBeTruthy();
+
+    await swipe();
+
+    expect(screen.queryByRole("heading", { name: "Modifica alimento" })).toBeNull();
+    expect(ricerca()).toBeTruthy();
+  });
+
+  it("scansione → «Crea a mano» → modulo: un passo solo, e uno swipe torna all'elenco", async () => {
+    await preparaPranzo();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Load failed");
+      })
+    );
+    render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Scansiona il codice a barre" }));
+    const scansione = await screen.findByRole("dialog", { name: "Scansione del codice a barre" });
+    fireEvent.click(within(scansione).getByRole("button", { name: /Scrivi il codice/ }));
+    fireEvent.change(within(scansione).getByLabelText("Il codice sotto le barre"), {
+      target: { value: "3017620425035" },
+    });
+    fireEvent.click(within(scansione).getByRole("button", { name: "Cerca" }));
+    fireEvent.click(await within(scansione).findByRole("button", { name: "Crea a mano" }));
+    expect(await screen.findByRole("heading", { name: "Nuovo alimento" })).toBeTruthy();
+    expect(segno()).toHaveLength(1);
+
+    await swipe();
+
+    expect(screen.queryByRole("heading", { name: "Nuovo alimento" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Scansione del codice a barre" })).toBeNull();
+    expect(ricerca()).toBeTruthy();
+    expect(segno()).toEqual([]);
+  });
+
+  it("pasto salvato: con la ricerca aperta il primo swipe chiude la ricerca, il secondo il pasto", async () => {
+    await preparaPranzo();
+    await creaPastoSalvato("Merenda salvata", await creaAlimento("Yogurt", 60));
+    render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Modifica Merenda salvata" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Aggiungi alimento" }));
+    expect(await screen.findByRole("button", { name: "Torna al pasto" })).toBeTruthy();
+    await waitFor(() => expect(segno()).toHaveLength(2));
+
+    await swipe();
+    expect(screen.queryByRole("button", { name: "Torna al pasto" })).toBeNull();
+    expect(screen.getByText("Modifica pasto salvato")).toBeTruthy();
+
+    await swipe();
+    expect(screen.queryByText("Modifica pasto salvato")).toBeNull();
+    expect(ricerca()).toBeTruthy();
+    expect(navigazione.back).not.toHaveBeenCalled();
+  });
+
+  it("freccia della testata con il modulo aperto: esce di due passi, non router.back()", async () => {
+    await preparaPranzo();
+    render(<AggiungiPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Crea alimento a mano" }));
+    await waitFor(() => expect(segno()).toHaveLength(1));
+
+    await act(async () => {
+      const arrivo = popstate();
+      fireEvent.click(screen.getByRole("button", { name: "Indietro" }));
+      await arrivo;
+    });
+
+    expect(window.history.go).toHaveBeenCalledTimes(1);
+    expect(window.history.go).toHaveBeenCalledWith(-2);
+    expect(navigazione.back).not.toHaveBeenCalled();
+  });
+
+  it("freccia della testata senza schermate aperte: router.back() come sempre", async () => {
+    await preparaPranzo();
+    render(<AggiungiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Indietro" }));
+
+    expect(navigazione.back).toHaveBeenCalledTimes(1);
+    expect(window.history.go).not.toHaveBeenCalled();
+  });
+
+  it("«Crea e scegli la quantità» → Aggiungi → Oggi: il passo si toglie prima, e dopo la navigazione nessun ritorno", async () => {
+    await preparaPranzo();
+    const ordine: string[] = [];
+    vi.mocked(window.history.go).mockImplementation(function (this: History, passi?: number) {
+      ordine.push(`go(${passi})`);
+      return History.prototype.go.call(this, passi);
+    });
+    // Come Next: router.replace riscrive la voce corrente, senza il segno.
+    navigazione.replace.mockImplementation((indirizzo: string) => {
+      ordine.push("replace");
+      window.history.replaceState({ __NA: true }, "", indirizzo);
+    });
+    render(<AggiungiPage />);
+
+    const campo = await screen.findByRole("searchbox", { name: "Cerca alimento o pasto" });
+    fireEvent.change(campo, { target: { value: "papaya" } });
+    fireEvent.click(screen.getByRole("button", { name: "Crea «papaya»" }));
+    for (const [etichetta, valore] of [
+      ["Calorie (kcal)", "43"],
+      ["Grassi (g)", "0"],
+      ["Carboidrati (g)", "11"],
+      ["Proteine (g)", "0"],
+    ]) {
+      fireEvent.change(await screen.findByLabelText(etichetta), { target: { value: valore } });
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Crea e scegli la quantità" }));
+    const sheet = await screen.findByRole("dialog");
+    // Il modulo si è chiuso: il suo passo esce dalla cronologia.
+    await waitFor(() => expect(segno()).toEqual([]));
+
+    fireEvent.click(within(sheet).getByRole("button", { name: "Aggiungi" }));
+    await waitFor(() => expect(navigazione.replace).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+
+    expect(ordine).toEqual(["go(-1)", "replace"]);
+  });
+
+  // Il ritorno al punto della zona che scorre (useRitornoScorrimento con la
+  // zona): con il modulo aperto la zona sotto la ricerca rinasce, e senza
+  // il recupero ripartirebbe da 0. jsdom non tiene scrollTop: qui è finto,
+  // uno per elemento.
+  describe("il ritorno al punto della zona dopo il modulo", () => {
+    const scorrimenti = new WeakMap<Element, number>();
+    let scritture: { y: number; conRecenti: boolean }[] = [];
+
+    beforeEach(() => {
+      scritture = [];
+      Object.defineProperty(HTMLElement.prototype, "scrollTop", {
+        configurable: true,
+        get(this: HTMLElement) {
+          return scorrimenti.get(this) ?? 0;
+        },
+        set(this: HTMLElement, y: number) {
+          scorrimenti.set(this, y);
+          scritture.push({ y, conRecenti: this.textContent?.includes("Recenti") ?? false });
+        },
+      });
+      vi.stubGlobal("requestAnimationFrame", () => 0);
+      vi.stubGlobal("cancelAnimationFrame", () => {});
+    });
+
+    afterEach(() => {
+      delete (HTMLElement.prototype as { scrollTop?: number }).scrollTop;
+    });
+
+    function zona() {
+      return screen.getByRole("heading", { name: "Recenti" }).closest(".overflow-y-auto")!;
+    }
+
+    async function zonaScorsa() {
+      const pranzo = await preparaPranzo();
+      const mela = await creaAlimento("Mela", 52);
+      await creaVoce(mela, pranzo.id, giornoPrecedente(oggiLocale()), 150);
+      render(<AggiungiPage />);
+      await screen.findByRole("heading", { name: "Recenti" });
+      const vecchia = zona();
+      vecchia.scrollTop = 600;
+      fireEvent.scroll(vecchia);
+      scritture = [];
+      fireEvent.click(screen.getByRole("button", { name: "Crea alimento a mano" }));
+      expect(await screen.findByRole("heading", { name: "Nuovo alimento" })).toBeTruthy();
+      return vecchia;
+    }
+
+    it("con «Torna alla ricerca»", async () => {
+      const vecchia = await zonaScorsa();
+
+      fireEvent.click(screen.getByRole("button", { name: "Torna alla ricerca" }));
+
+      await screen.findByRole("heading", { name: "Recenti" });
+      expect(zona()).not.toBe(vecchia);
+      expect(zona().scrollTop).toBe(600);
+      expect(scritture[0]).toEqual({ y: 600, conRecenti: true });
+    });
+
+    it("con lo swipe", async () => {
+      await zonaScorsa();
+      await waitFor(() => expect(segno()).toHaveLength(1));
+
+      await swipe();
+
+      expect(zona().scrollTop).toBe(600);
+      expect(scritture[0]).toEqual({ y: 600, conRecenti: true });
+    });
   });
 });
