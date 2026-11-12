@@ -1,8 +1,13 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { render, screen, cleanup, fireEvent, waitFor, act } from "@testing-library/react";
 import PreferitiPage from "./page";
 import { db } from "@/lib/db/database";
-import { repositoryAlimenti, repositoryPreferiti } from "@/lib/repository";
+import {
+  repositoryAlimenti,
+  repositoryComposizioni,
+  repositoryComposizioniVoci,
+  repositoryPreferiti,
+} from "@/lib/repository";
 import type { Alimento } from "@/lib/db/tipi";
 
 // Impostazioni > Preferiti e pasti salvati: la stella sulla riga di un
@@ -102,5 +107,73 @@ describe("Preferiti e pasti salvati — togliere e rimettere un alimento", () =>
     const righe = await righeDi(pane.id);
     expect(righe).toHaveLength(1);
     expect(righe[0].id).toBe(idPreferito);
+  });
+});
+
+// Lo swipe indietro (useChiudiConIndietro; PUNTO §3, "Alimenti"): con un
+// pasto salvato aperto lo chiude e resta su Preferiti; con la ricerca
+// «Aggiungi alimento» aperta dentro il pasto chiude solo la ricerca, come
+// «Torna al pasto». Sbagliato, uscirebbe dalla pagina o butterebbe via il
+// pasto in modifica.
+describe("Preferiti e pasti salvati — lo swipe indietro", () => {
+  beforeEach(async () => {
+    await Promise.all(db.tables.map((t) => t.clear()));
+  });
+
+  async function creaPasto(nome: string) {
+    const alimento = await creaAlimento("Yogurt");
+    const pasto = await repositoryComposizioni.crea({
+      user_id: USER_ID,
+      nome,
+      tipo: "pasto_salvato",
+      alimento_id: null,
+    });
+    await repositoryComposizioniVoci.crea({
+      user_id: USER_ID,
+      composizione_id: pasto.id,
+      alimento_id: alimento.id,
+      quantita_g: 125,
+      ordine: 0,
+    });
+  }
+
+  async function swipe() {
+    await act(async () => {
+      const arrivo = new Promise((r) => window.addEventListener("popstate", r, { once: true }));
+      window.history.back();
+      await arrivo;
+    });
+  }
+
+  it("con un pasto aperto: lo swipe lo chiude e resta su Preferiti", async () => {
+    await creaPasto("Merenda");
+    render(<PreferitiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /^Modifica Merenda/ }));
+    expect(await screen.findByText("Modifica pasto salvato")).toBeTruthy();
+
+    await swipe();
+
+    expect(screen.queryByText("Modifica pasto salvato")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Preferiti e pasti salvati" })).toBeTruthy();
+  });
+
+  it("con la ricerca aperta nel pasto: il primo swipe chiude la ricerca, il secondo il pasto", async () => {
+    await creaPasto("Spuntino");
+    render(<PreferitiPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /^Modifica Spuntino/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Aggiungi alimento" }));
+    expect(await screen.findByRole("button", { name: "Torna al pasto" })).toBeTruthy();
+
+    await swipe();
+
+    expect(screen.queryByRole("button", { name: "Torna al pasto" })).toBeNull();
+    expect(screen.getByText("Modifica pasto salvato")).toBeTruthy();
+
+    await swipe();
+
+    expect(screen.queryByText("Modifica pasto salvato")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Preferiti e pasti salvati" })).toBeTruthy();
   });
 });

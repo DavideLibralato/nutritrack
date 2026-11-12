@@ -5,6 +5,29 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-11 — Lo swipe indietro chiude la schermata, in Impostazioni
+
+Branch `alimenti-aspetto`, commit 2a. Nell'app installata su iPhone e in
+Safari lo swipe indietro dal modulo di Alimenti, dalla scansione o da un
+pasto salvato in Preferiti usciva dalla pagina. Adesso chiude la
+schermata e resta sulla pagina; dalla ricerca dentro il pasto torna al
+pasto.
+
+Come funziona: un hook nuovo, `useChiudiConIndietro`, aggiunge in
+cronologia un passo con lo stesso indirizzo quando la schermata si apre e
+la chiude al `popstate`. Le chiusure fatte dall'app tolgono il passo un
+giro dopo, solo se in cima c'è ancora il segno. Al montaggio salta un
+passo rimasto da un ricaricamento.
+
+Corretto il commento di `GuardianoModifiche`: diceva che nell'app
+installata lo swipe non c'è.
+
+Test: 15 permanenti dell'hook, 3 in Alimenti, 2 in Preferiti. Rompendo il
+codice da una copia, dieci rotture su tredici fanno fallire il loro test.
+Le altre tre sono controlli doppi, che un altro pezzo del codice copre
+già. Aggiungi arriva nel commit 2b. La prova del ricaricamento nel
+browser non l'ho potuta fare qui: è fra le prove su iPhone.
+
 ## 2026-11-11 — Il nome cercato passa a «Nuovo alimento» in Alimenti
 
 Branch `alimenti-aspetto`, commit 1. In Impostazioni > Alimenti, scheda

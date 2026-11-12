@@ -48,6 +48,7 @@ import RigaAlimentoPreferito from "@/components/RigaAlimentoPreferito";
 import RigaPastoSalvatoImpostazioni from "@/components/RigaPastoSalvatoImpostazioni";
 import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import BarraAnnulla from "@/components/BarraAnnulla";
+import { useChiudiConIndietro } from "@/lib/useChiudiConIndietro";
 
 type Barra = MessaggioBarra & {
   // Cambia a ogni messaggio: è la `key` della barra, così il timer riparte.
@@ -100,6 +101,12 @@ export default function PreferitiPage() {
     window.scrollTo(0, scorrimentoElenco.current);
     scorrimentoElenco.current = null;
   }, [pastoInModificaId]);
+
+  // Lo swipe indietro con un pasto aperto chiude il pasto e resta qui
+  // (useChiudiConIndietro), senza «Esci senza salvare?»: lo chiede solo la
+  // freccia. La ricerca dentro il pasto ha il suo passo, in
+  // ModificaPastoSalvato.
+  useChiudiConIndietro(pastoInModificaId !== null, () => setPastoInModificaId(null));
 
   if (
     !userId ||

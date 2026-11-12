@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, within, act } from "@testing-library/react";
 import AlimentiPage from "./page";
 import { db } from "@/lib/db/database";
 import { repositoryAlimenti } from "@/lib/repository";
@@ -689,5 +689,79 @@ describe("Catalogo alimenti: il nome cercato passa al modulo", () => {
     expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
     expect((screen.getByLabelText("Codice a barre") as HTMLInputElement).value).toBe(PATATINE);
     expect(campoNome().value).toBe("");
+  });
+});
+
+// Lo swipe indietro (useChiudiConIndietro; PUNTO §3, "Alimenti"): con il
+// modulo aperto lo chiude e resta su Alimenti, invece di tornare a
+// Impostazioni. E Salva non lascia un passo in più nella cronologia (un
+// "indietro" che poi non farebbe niente).
+describe("Catalogo alimenti: lo swipe indietro", () => {
+  async function swipe() {
+    await act(async () => {
+      const arrivo = new Promise((r) => window.addEventListener("popstate", r, { once: true }));
+      window.history.back();
+      await arrivo;
+    });
+  }
+
+  function segno(): unknown {
+    return window.history.state?.nutritrackSchermate;
+  }
+
+  it("dal «Nuovo alimento»: lo chiude e resta sull'elenco", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+
+    await swipe();
+
+    expect(screen.queryByText("Nuovo alimento")).toBeNull();
+    expect(screen.getByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
+    expect(screen.getByText("Banana")).toBeTruthy();
+  });
+
+  it("dalla modifica di un alimento: la chiude e resta sull'elenco", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+
+    fireEvent.click(await screen.findByText("Banana"));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+
+    await swipe();
+
+    expect(screen.queryByText("Modifica alimento")).toBeNull();
+    expect(screen.getByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
+  });
+
+  it("Salva chiude il modulo, la barra resta e nessun passo rimane in cima", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    expect(segno()).toHaveLength(1);
+    for (const [etichetta, valore] of [
+      ["Nome", "Mela"],
+      ["Calorie (kcal)", "52"],
+      ["Grassi (g)", "0"],
+      ["Carboidrati (g)", "14"],
+      ["Proteine (g)", "0"],
+    ]) {
+      fireEvent.change(screen.getByLabelText(etichetta), { target: { value: valore } });
+    }
+    const ritorno = new Promise((r) => window.addEventListener("popstate", r, { once: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    expect(await screen.findByText("Creato:")).toBeTruthy();
+    await act(async () => {
+      await ritorno;
+    });
+    expect(segno()).toBeUndefined();
+    expect(screen.getByText("Creato:")).toBeTruthy();
+    expect(screen.getByRole("searchbox", { name: "Cerca un alimento" })).toBeTruthy();
   });
 });

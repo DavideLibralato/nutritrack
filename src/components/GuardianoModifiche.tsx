@@ -18,8 +18,13 @@
 // Impostazioni, e la tab bar non lo vedrebbe.
 //
 // La ricarica e la chiusura della pagina non passano da qui: le copre il
-// `beforeunload` della pagina col modulo. Il gesto "indietro" di Safari dal
-// bordo dello schermo non si può intercettare (nell'app installata non c'è).
+// `beforeunload` della pagina col modulo. Nemmeno lo swipe "indietro" dal
+// bordo dello schermo, che c'è in Safari e anche nell'app installata su
+// iPhone (visto da Davide l'11/11): non si può fermare per chiedere. Dove
+// una schermata a tutto schermo è aperta sopra la pagina (il modulo di
+// Alimenti, un pasto salvato...), lo swipe chiude quella e resta sulla
+// pagina, senza avviso (useChiudiConIndietro); altrove esce dalla pagina,
+// sempre senza avviso.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";

@@ -2449,6 +2449,28 @@ catalogo, si corregge e si fa pulizia.
   Invio ("Vai") apre il modulo con quel nome solo se la ricerca non
   trova niente, e mai in selezione. Coperto dai test, **da provare** su
   iPhone.
+- **Lo swipe indietro chiude la schermata a tutto schermo** (dall'11/11,
+  branch `alimenti-aspetto`; `useChiudiConIndietro`). Lo swipe c'è in
+  Safari e anche nell'app installata su iPhone. Prima, da una schermata
+  che è uno stato della pagina (il modulo, la scansione, un pasto
+  salvato), lo swipe usciva dalla pagina e la schermata si perdeva.
+  Adesso:
+  - all'apertura si aggiunge in cronologia un passo con lo stesso
+    indirizzo e un segno; lo swipe toglie il passo e chiude la schermata,
+    senza avviso, anche con modifiche non salvate (scelta di Davide); il
+    «Esci?» resta solo sulla freccia;
+  - le schermate che si danno il cambio (scansione → modulo, «Apri»)
+    hanno un passo solo; una dentro l'altra (la ricerca «Aggiungi
+    alimento» dentro un pasto salvato) ne ha uno suo, e lo swipe fa
+    quello che fa «Torna al pasto»;
+  - chiusa dall'app (freccia, Salva, Crea, Elimina), il passo si toglie
+    da solo, un giro dopo e solo se in cima c'è ancora il nostro segno:
+    se la pagina sta navigando via, non si tocca niente;
+  - dopo un ricaricamento il passo rimasto si salta al montaggio.
+
+  Oggi in Impostazioni > Alimenti (modulo e scansione) e Preferiti (pasto
+  salvato e la sua ricerca); Aggiungi nel commit successivo. Coperto dai
+  test, **da provare** su iPhone, anche il ricaricamento.
 - **Il "+"** è tondo, a destra, alla stessa altezza di "+ Aggiungi" in
   Oggi (sopra la tab bar, con la stessa sfumatura dietro), e come la tab
   bar si nasconde mentre un campo ha il fuoco. La barra con Annulla sta

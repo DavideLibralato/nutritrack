@@ -38,6 +38,7 @@ import { formattaGrammi } from "@/lib/inserimento/grammi";
 import { elencoNomi } from "@/lib/inserimento/testiAlimentiCancellati";
 import { kcalPastoSalvato, sottotitoloPastoSalvato } from "@/lib/inserimento/pastiSalvati";
 import { useAreaVisibile } from "@/lib/areaVisibile";
+import { useChiudiConIndietro } from "@/lib/useChiudiConIndietro";
 import { useSegnalaModifiche } from "@/components/GuardianoModifiche";
 import {
   aggiungiAlimento,
@@ -125,6 +126,14 @@ export default function ModificaPastoSalvato({
   // dal gruppo (app), il guardiano non c'è e questa chiamata non fa niente.
   useSegnalaModifiche(modificato);
   const areaVisibile = useAreaVisibile();
+
+  // La ricerca «Aggiungi alimento» sta dentro il pasto: ha un passo suo
+  // nella cronologia (useChiudiConIndietro, secondo livello), e lo swipe
+  // indietro fa quello che fa «Torna al pasto». Il pasto resta aperto.
+  useChiudiConIndietro(cercando, () => {
+    setCercando(false);
+    setQuery("");
+  });
 
   // Chiusura o ricarica della scheda con modifiche non salvate: il browser
   // chiede conferma (stesso meccanismo del Profilo; il testo lo decide il

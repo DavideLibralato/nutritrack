@@ -98,6 +98,7 @@ import { TESTO_ANNULLA_NON_RIUSCITO } from "@/lib/catalogo/testiAlimentiInArrivo
 import { annullaValoriInArrivo } from "@/lib/repository/alimenti";
 import { useTieniPremuto, type RigaPremuta } from "@/lib/tieniPremuto";
 import { useAreaVisibile } from "@/lib/areaVisibile";
+import { useChiudiConIndietro } from "@/lib/useChiudiConIndietro";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import type { Alimento } from "@/lib/db/tipi";
 import { etichettaAlimento } from "@/lib/repository/alimenti";
@@ -282,6 +283,14 @@ function PaginaAlimenti() {
     window.scrollTo(0, scorrimentoElenco.current);
     scorrimentoElenco.current = null;
   }, [modulo]);
+
+  // Lo swipe indietro con il modulo o la scansione aperti li chiude e resta
+  // qui (useChiudiConIndietro). Le due schermate si danno il cambio
+  // (scansione → modulo): un passo solo finché una delle due è aperta.
+  useChiudiConIndietro(modulo !== null || scansione !== undefined, () => {
+    setModulo(null);
+    setScansione(undefined);
+  });
 
   if (
     !userId ||
