@@ -61,7 +61,8 @@ import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import ServeConnessione from "@/components/ServeConnessione";
 import CreaAlimentoForm, { type DatiCodice } from "@/components/CreaAlimentoForm";
 import SchermataScansione from "@/components/SchermataScansione";
-import IconaCodiceBarre from "@/components/IconaCodiceBarre";
+import CampoRicerca from "@/components/CampoRicerca";
+import PulsanteScansiona from "@/components/PulsanteScansiona";
 import IconaSenzaRete from "@/components/IconaSenzaRete";
 import { useOnline } from "@/lib/useOnline";
 import { TESTO_CODICE_DA_PORTARE, TESTO_SENZA_RETE } from "@/lib/barcode/testiScansione";
@@ -71,7 +72,6 @@ import IconaIndietro from "@/components/IconaIndietro";
 import IconaGiu from "@/components/IconaGiu";
 import IconaLente from "@/components/IconaLente";
 import IconaPiu from "@/components/IconaPiu";
-import IconaCroce from "@/components/IconaCroce";
 import IconaMatita from "@/components/IconaMatita";
 import IconaPosate from "@/components/IconaPosate";
 import {
@@ -90,6 +90,13 @@ import { aggiungiNelPasto, type AlimentoDaAggiungere } from "@/lib/repository/vo
 import type { Doppione, SceltaDoppione } from "@/lib/diario/pianoSpostamento";
 import { accorcia, MASSIMO_ALIMENTO, MASSIMO_PASTO } from "@/lib/diario/testiSpostamento";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import {
+  CLASSE_MATITA,
+  CLASSE_NOME_RIGA,
+  CLASSE_RIGA,
+  CLASSE_RIQUADRO,
+  CLASSE_SOTTOTITOLO_RIGA,
+} from "@/lib/classiElenchi";
 import { esciDallaPagina, useChiudiConIndietro } from "@/lib/useChiudiConIndietro";
 import { useRitornoScorrimento } from "@/lib/useRitornoScorrimento";
 
@@ -112,30 +119,13 @@ const ERRORE_AGGIUNTA = "Non è stato possibile aggiungere. Riprova.";
 // "se serve diventa Cerca alimento o pasto").
 const TESTO_RICERCA = "Cerca alimento o pasto";
 
-// Il pulsante Scansiona (mockup A): tondo da 48 px come il campo, pieno
-// d'accento. Senza rete grigio con il bordo tratteggiato, come nel mockup
-// "Senza rete".
-const CLASSE_SCANSIONA = `flex size-12 shrink-0 items-center justify-center rounded-full ${CLASSE_FOCUS}`;
-const CLASSE_SCANSIONA_ATTIVO = "bg-accent-strong text-on-strong";
-const CLASSE_SCANSIONA_SPENTO = "border border-dashed border-border bg-surface text-muted";
-
 // L'aspetto delle liste (mockup docs/mockups/aggiungi.html, proposta A):
-// le righe stanno in riquadri come i gruppi di Impostazioni
-// (GruppoImpostazioni: bg-surface, bordo, angoli da 20 px), separate da
-// una linea. Una sola definizione per Recenti, Preferiti e risultati della
-// ricerca, così le tre liste non possono divergere.
-const CLASSE_RIQUADRO =
-  "overflow-hidden rounded-[20px] border border-border bg-surface divide-y divide-border";
-// Riga alta almeno 60 px; a destra 6 px di margine per i pulsanti tondi.
-const CLASSE_RIGA = "flex min-h-[60px] items-center gap-1.5 py-1.5 pr-1.5 pl-3.5";
-// Il nome occupa tutta l'altezza della riga: il tocco arriva anche sopra e
-// sotto il testo.
-const CLASSE_NOME_RIGA = `flex min-w-0 flex-1 flex-col justify-center self-stretch rounded-lg text-left ${CLASSE_FOCUS}`;
-const CLASSE_SOTTOTITOLO_RIGA = "mt-0.5 text-[13px] text-muted tabular-nums";
-// "+" e matita da 44 pt (size-11), il minimo di Apple per un tocco sicuro.
-// Il "+" ha il fondo d'accento leggero del mockup.
+// riquadro, riga, nome, sottotitolo e matita stanno in
+// src/lib/classiElenchi.ts, condivisi con Impostazioni > Alimenti; qui
+// restano quelli solo di Aggiungi.
+// Il "+" da 44 pt (size-11), come la matita, con il fondo d'accento
+// leggero del mockup.
 const CLASSE_PIU = `flex size-11 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent ${CLASSE_FOCUS}`;
-const CLASSE_MATITA = `flex size-11 shrink-0 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`;
 // Titoli di sezione come quelli di Impostazioni; il rientro li allinea al
 // testo delle righe.
 const CLASSE_TITOLO_SEZIONE =
@@ -828,58 +818,30 @@ function AggiungiContenuto() {
                 Invio / "Vai" della tastiera fa la stessa cosa del pulsante
                 "Crea alimento a mano" — un tap in meno, senza chiudere la
                 tastiera. `enterKeyHint` cambia l'etichetta di quel tasto.
-                Campo alto 48 px, e accanto il pulsante Scansiona da 48 px
-                (mockup A). */}
+                Campo alto 48 px (CampoRicerca), e accanto il pulsante
+                Scansiona da 48 px (PulsanteScansiona; mockup A). */}
             <div className="flex shrink-0 gap-2 px-4 pt-1 pb-3.5">
-              <div className="relative min-w-0 flex-1">
-                <IconaLente
-                  size={20}
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                />
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={TESTO_RICERCA}
-                  aria-label={TESTO_RICERCA}
-                  enterKeyHint={query.trim() !== "" && nessunRisultato ? "go" : "search"}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && query.trim() !== "" && nessunRisultato) {
-                      e.preventDefault();
-                      setCreando(true);
-                    }
-                  }}
-                  className={`h-12 w-full rounded-full border border-border bg-surface pl-12 pr-12 text-base ${CLASSE_FOCUS}`}
-                />
-                {query !== "" && (
-                  <button
-                    type="button"
-                    onClick={() => setQuery("")}
-                    aria-label="Svuota la ricerca"
-                    className={`absolute right-1.5 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted ${CLASSE_FOCUS}`}
-                  >
-                    <IconaCroce />
-                  </button>
-                )}
-              </div>
+              <CampoRicerca
+                valore={query}
+                onCambia={setQuery}
+                etichetta={TESTO_RICERCA}
+                enterKeyHint={query.trim() !== "" && nessunRisultato ? "go" : "search"}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && query.trim() !== "" && nessunRisultato) {
+                    e.preventDefault();
+                    setCreando(true);
+                  }
+                }}
+              />
               {/* Senza rete: spento, grigio, con la sua etichetta (mockup
-                  "Senza rete"); la riga qui sotto dice perché. */}
-              <button
-                type="button"
-                // getUserMedia come PRIMA cosa del tocco, prima di aprire
-                // la schermata: nell'app installata iOS non chiedeva il
-                // permesso quando partiva dopo il ridisegno (07/11).
+                  "Senza rete"); la riga qui sotto dice perché.
+                  getUserMedia come PRIMA cosa del tocco, prima di aprire la
+                  schermata: nell'app installata iOS non chiedeva il permesso
+                  quando partiva dopo il ridisegno (07/11). */}
+              <PulsanteScansiona
+                online={online}
                 onClick={() => setScansione(richiediFotocamera())}
-                disabled={!online}
-                aria-label={
-                  online
-                    ? "Scansiona il codice a barre"
-                    : "Scansione non disponibile senza connessione"
-                }
-                className={`${CLASSE_SCANSIONA} ${online ? CLASSE_SCANSIONA_ATTIVO : CLASSE_SCANSIONA_SPENTO}`}
-              >
-                <IconaCodiceBarre />
-              </button>
+              />
             </div>
             {!online && (
               <p

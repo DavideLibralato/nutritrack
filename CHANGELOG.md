@@ -5,6 +5,39 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-12 — Ricerca e righe condivise, Aggiungi identico
+
+Branch `alimenti-aspetto`, commit 4. Solo spostamenti: a schermo non
+cambia niente. Da `src/app/aggiungi/page.tsx` escono tre pezzi, che per
+ora usa solo Aggiungi; dal commit 5 li userà anche Impostazioni >
+Alimenti:
+- `src/lib/classiElenchi.ts`: `CLASSE_RIQUADRO`, `CLASSE_RIGA`,
+  `CLASSE_NOME_RIGA`, `CLASSE_SOTTOTITOLO_RIGA`, `CLASSE_MATITA`;
+- `CampoRicerca`: il campo con la lente e la croce;
+- `PulsanteScansiona`: il pulsante tondo, con la rete e senza.
+
+`CLASSE_PIU`, i titoli di sezione e la freccia restano in Aggiungi.
+Alimenti, `SchedaCatalogo` e `ModificaPastoSalvato` non sono toccati.
+
+**Verifica che Aggiungi resti identico:**
+- uno script temporaneo ha confrontato con `HEAD` 19 classi: le 8
+  costanti spostate, le 4 rimaste e 7 pezzi del campo di ricerca. Tutte
+  uguali, carattere per carattere;
+- un test temporaneo ha salvato l'HTML di Aggiungi in 9 stati, prima e
+  dopo, con gli attributi in ordine e gli id casuali tolti. Gli stati:
+  vuota con Recenti e Preferiti, risultati con matita e «Contiene»,
+  alimento verificato senza matita, nessun risultato, «Nel catalogo»,
+  senza rete, solo un pasto trovato, catalogo vuoto, modulo aperto. Due
+  giri "prima" identici fra loro; differenza fra prima e dopo vuota in
+  tutti e 9;
+- prova che il confronto vede le differenze: `pl-12` cambiato in
+  `pl-11` in `CampoRicerca`, da una copia, compare in 8 stati su 9 (il
+  nono non ha la ricerca);
+- lo script e il test temporanei sono cancellati.
+
+Nessun file di test nel commit: i 47 test di Aggiungi passano senza
+modifiche.
+
 ## 2026-11-12 — Mockup dell'aspetto di Alimenti
 
 Branch `alimenti-aspetto`, commit 3. Solo documenti.

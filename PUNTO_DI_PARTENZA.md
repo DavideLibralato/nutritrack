@@ -664,9 +664,14 @@ pulsanti tondi da 44 pt, il "+" con un fondo d'accento leggero. Campo di
 ricerca alto 48 px, su tutta la larghezza. "Crea alimento a mano" sta in
 una barra in fondo con una linea sopra, come in ModificaPastoSalvato,
 con sotto lo spazio della barretta home. Testata senza linea sotto. Solo
-classi del tema, quindi anche al buio. Le classi stanno in costanti in
-cima a `src/app/aggiungi/page.tsx` (`CLASSE_RIQUADRO`, `CLASSE_RIGA`,
-`CLASSE_PIU`…), una sola definizione per le tre liste. Il pulsante
+classi del tema, quindi anche al buio. Le classi stanno in costanti, una
+sola definizione per le tre liste. Dal 12/11 (branch `alimenti-aspetto`,
+commit 4) quelle condivise con Impostazioni > Alimenti sono in
+`src/lib/classiElenchi.ts` (`CLASSE_RIQUADRO`, `CLASSE_RIGA`,
+`CLASSE_NOME_RIGA`, `CLASSE_SOTTOTITOLO_RIGA`, `CLASSE_MATITA`). In cima a
+`src/app/aggiungi/page.tsx` restano quelle solo di Aggiungi (`CLASSE_PIU`,
+i titoli di sezione, la freccia). Il campo di ricerca è `CampoRicerca` e
+Scansiona è `PulsanteScansiona`, tutti e due con le classi di prima. Il pulsante
 della scansione del mockup non c'è ancora: arriva, già funzionante, con
 il lavoro codice-a-barre (sotto, "Codice a barre").
 
