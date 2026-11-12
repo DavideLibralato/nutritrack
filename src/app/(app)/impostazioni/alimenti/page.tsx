@@ -715,8 +715,18 @@ function PaginaAlimenti() {
       >
         {/* `relative`: la barra si appoggia sopra la riga del pulsante (o,
             senza pulsante, sopra lo spazio della tab bar), non sopra tutto
-            il contenitore. */}
-        <div className="relative">
+            il contenitore.
+            `onMouseDown` con preventDefault: un tocco qui NON toglie il
+            fuoco al campo di ricerca. Senza, con la tastiera aperta il
+            tocco su «Crea «…»» (o su «Annulla») toglieva il fuoco, la
+            regola data-sopra-tastiera smetteva subito di valere, il
+            pulsante saliva sopra lo spazio della tab bar e il click
+            arrivava sotto di lui: il modulo non si apriva (trovato da
+            Davide il 12/11, Build 296c855; in Aggiungi niente dipende dal
+            fuoco e lo stesso tocco funziona). Il click arriva comunque, e
+            il modulo che si apre toglie il campo e chiude la tastiera. Al
+            PC non cambia niente; Tab e Invio non mandano mousedown. */}
+        <div className="relative" onMouseDown={(e) => e.preventDefault()}>
           {barra && (
             <BarraAnnulla
               key={barra.id}

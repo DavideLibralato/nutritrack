@@ -2554,7 +2554,13 @@ catalogo, si corregge e si fa pulizia.
     si scrive lascia sotto solo lo stacco fra le barre
     (`data-sopra-tastiera`, regola in `globals.css`). Se sull'iPhone non
     tiene, il ripiego deciso è nasconderlo mentre si scrive
-    (`data-nascondi-mentre-scrivi`), con Invio che apre il modulo;
+    (`data-nascondi-mentre-scrivi`), con Invio che apre il modulo. **Un
+    tocco sul pulsante (o su «Annulla») non toglie il fuoco al campo**
+    (`onMouseDown` con `preventDefault` sul suo contenitore): senza, il
+    tocco a tastiera aperta toglieva il fuoco, la regola smetteva subito
+    di valere, il pulsante saliva e il click arrivava sotto di lui (il
+    modulo non si apriva; trovato da Davide il 12/11, Build `296c855`).
+    Coperto dai test, **da provare** a tastiera aperta;
   - la riga **«N alimenti / Più usati»** e il suggerimento «Tieni
     premuto…» restano come prima: testo piccolo, non titolo di sezione;
   - scheda **«Catalogo»**: la stessa ricerca (senza Scansiona), le righe
@@ -9273,7 +9279,8 @@ account vero: «funziona tutto» (Davide).
 - il mockup dell'aspetto nuovo, versione B scelta (commit 3);
 - l'aspetto di Aggiungi in Alimenti, «I miei» e «Catalogo», con il
   pulsante largo sopra la tastiera (commit 5; sezione 3, "Alimenti",
-  "Aspetto"): **da provare**, prove qui sotto.
+  "Aspetto"): provato il 12/11, tutto ok tranne «Crea «…»» a tastiera
+  aperta, corretto nel commit dopo (**da provare**), prove qui sotto.
 
 **Prove del 12/11 sera** sull'anteprima aggiunta alla Home, account di
 prova, Build `365f88b`, tutte ok:
@@ -9323,6 +9330,15 @@ aggiunta alla Home, account di prova, anche al buio:
    «Puoi crearlo nella scheda «I miei».»;
 6. la barra con «Annulla» (dopo Elimina) appena sopra il pulsante largo;
    l'ultima riga dell'elenco non resta sotto il pulsante.
+
+**Prove del commit 5**, 12/11, anteprima aggiunta alla Home, account di
+prova, Build `296c855`, chiaro e scuro: **tutte ok tranne una**. In «I
+miei», scritto «zzz prova», con la tastiera aperta il tocco su «Crea «zzz
+prova»» chiudeva la tastiera ma non apriva il modulo (al secondo tocco
+sì). In Aggiungi lo stesso gesto apre il modulo al primo tocco. Corretto
+nel commit dopo (sezione 3, "Alimenti", "Aspetto"): **da provare** a
+tastiera aperta, in Safari e nell'app installata, anche «Annulla» della
+barra a tastiera aperta.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono

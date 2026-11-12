@@ -5,6 +5,37 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-12 — «Crea «…»» con la tastiera aperta in Alimenti
+
+Branch `alimenti-aspetto`, commit a parte dopo il 5.
+
+**Prove del commit 5**, 12/11, anteprima aggiunta alla Home, account di
+prova, Build `296c855`, tema chiaro e scuro. Tutte ok tranne una:
+- in «I miei», scritto «zzz prova», con la tastiera aperta il tocco su
+  «Crea «zzz prova»» chiudeva la tastiera ma non apriva il modulo;
+- un secondo tocco, a tastiera chiusa, lo apriva;
+- in Aggiungi lo stesso gesto apre il modulo al primo tocco.
+
+**Causa**, dedotta dal codice, non misurata:
+1. il tocco toglie il fuoco al campo di ricerca;
+2. la regola `data-sopra-tastiera` smette subito di valere;
+3. il pulsante sale sopra lo spazio della tab bar;
+4. il click arriva sotto il pulsante.
+
+In Aggiungi nessuna regola dipende dal fuoco: la pagina si sposta solo
+quando la tastiera ha finito di chiudersi, cioè dopo il click.
+
+**Correzione.** `onMouseDown` con `preventDefault` sul contenitore del
+pulsante largo e della barra con «Annulla», che aveva lo stesso rischio.
+Il tocco non toglie più il fuoco al campo, il pulsante resta fermo e il
+modulo si apre. Aggiungi non si tocca.
+
+**Test.** 2 nuovi: il `mousedown` sul pulsante e su «Annulla» è
+annullato, il campo tiene il fuoco e il modulo si apre con il nome.
+Togliendo `onMouseDown` da una copia del file, tutti e due cadono.
+Coperto dai test, **da provare sull'iPhone a tastiera aperta**, in
+Safari e nell'app installata.
+
 ## 2026-11-12 — Alimenti con l'aspetto di Aggiungi
 
 Branch `alimenti-aspetto`, commit 5. Mockup

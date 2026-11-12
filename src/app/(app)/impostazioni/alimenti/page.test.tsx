@@ -1006,6 +1006,52 @@ describe("Catalogo alimenti: il pulsante largo e gli stati vuoti", () => {
     expect(screen.getByRole("button", { name: "Crea «pesca»" })).toBeTruthy();
   });
 
+  // Difetto del 12/11 (Build 296c855): con la tastiera aperta il tocco su
+  // «Crea «…»» toglieva il fuoco al campo, il pulsante saliva (la regola
+  // data-sopra-tastiera smetteva di valere) e il click arrivava sotto di
+  // lui: il modulo non si apriva. jsdom non ha tastiera né posizioni e non
+  // sposta il fuoco su mousedown: qui il tocco fa quello che fa il browser
+  // (un mousedown non annullato toglie il fuoco al campo) e si controlla la
+  // regola che evita il difetto. Che il click arrivi davvero lo dice solo
+  // l'iPhone.
+  function tocco(el: Element) {
+    const nonAnnullato = fireEvent.mouseDown(el);
+    if (nonAnnullato) (document.activeElement as HTMLElement | null)?.blur();
+    fireEvent.mouseUp(el);
+    fireEvent.click(el);
+    return nonAnnullato;
+  }
+
+  it("con la tastiera aperta, «Crea «…»» non toglie il fuoco alla ricerca e apre il modulo al primo tocco", async () => {
+    await creaAlimento("Banana", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+    const campo = screen.getByRole("searchbox", { name: "Cerca un alimento" });
+    campo.focus();
+    fireEvent.change(campo, { target: { value: "zzz prova" } });
+
+    const nonAnnullato = tocco(screen.getByRole("button", { name: "Crea «zzz prova»" }));
+
+    expect(nonAnnullato).toBe(false);
+    expect(await screen.findByText("Nuovo alimento")).toBeTruthy();
+    expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("zzz prova");
+  });
+
+  it("con la tastiera aperta, «Annulla» della barra non toglie il fuoco alla ricerca", async () => {
+    await creaAlimento("Banana", null, null);
+    await creaAlimento("Mela", null, null);
+    render(<AlimentiPage />);
+    fireEvent.click(await screen.findByText("Banana"));
+    fireEvent.click(await screen.findByRole("button", { name: "Elimina" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sì, elimina" }));
+    const annulla = await screen.findByRole("button", { name: "Annulla" });
+    const campo = screen.getByRole("searchbox", { name: "Cerca un alimento" });
+    campo.focus();
+
+    expect(fireEvent.mouseDown(annulla)).toBe(false);
+    expect(document.activeElement).toBe(campo);
+  });
+
   it("ricerca senza risultati: la lente e «Nessun risultato per «…»»", async () => {
     await creaAlimento("Banana", null, null);
     render(<AlimentiPage />);
