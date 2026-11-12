@@ -5,6 +5,34 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-12 — Mockup dell'aspetto di Alimenti
+
+Branch `alimenti-aspetto`, commit 3. Solo documenti.
+
+Entra in git `docs/mockups/alimenti-aspetto.html` (30692 byte, md5
+`949007a82244eb608ebf3d15c05b7faf`, controllati prima del `git add`).
+Artifact: https://claude.ai/artifact/7AqaM9suPzMiEDpjv6PCWT.
+
+Le scelte di Davide (11/11), scritte in PUNTO §3 "Alimenti" come
+decisione; l'aspetto resta da fare, nel commit 5:
+- versione B, cioè il pulsante largo «Crea alimento a mano» / «Crea
+  «…»» sopra la barra delle schede, solo in «I miei»;
+- la matita a destra delle righe;
+- la riga «N alimenti / Più usati» come oggi;
+- nella scheda «Catalogo» non si crea.
+
+**Prove del 2b**, il 12/11 sera, anteprima aggiunta alla Home, account di
+prova, Build `a502dd6`. Tutte ok:
+- «Crea «zzz prova»» → swipe → Aggiungi con la ricerca; secondo swipe →
+  Oggi al primo colpo;
+- matita → «Torna alla ricerca» e → swipe: elenco nello stesso punto;
+- freccia della testata con il modulo aperto → Oggi direttamente;
+- pasto salvato «Prova annulla» → «Aggiungi alimento» → tre swipe:
+  pasto, Aggiungi, Oggi.
+
+Scansione in Aggiungi e scorrimento in Preferiti: non indicate, restano
+da provare. PUNTO §3 (Aggiungi) e §11 aggiornati.
+
 ## 2026-11-12 — Lo swipe indietro chiude la schermata, in Aggiungi
 
 Branch `alimenti-aspetto`, commit 2b.

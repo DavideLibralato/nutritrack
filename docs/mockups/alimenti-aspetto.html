@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alimenti come Aggiungi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Mockup di Impostazioni > Alimenti con l'aspetto di Aggiungi (11/11/2026,
+   lavoro alimenti-aspetto). Colori dai token di globals.css (accento verde
+   predefinito), caratteri e cornice del mockup delle Statistiche; misure
+   prese dal codice di main 4afe1f1 (aggiungi/page.tsx: CLASSE_RIQUADRO,
+   CLASSE_RIGA, CLASSE_MATITA, ricerca h-12; impostazioni/alimenti/page.tsx;
+   RigaCatalogoPrecaricato, SelettoreSegmenti, RigaAlimentiInArrivo).
+   Layout: in alto le scelte, poi i telefoni a gruppi (A e B affiancate).
+   I dati sono INVENTATI, solo come esempio. */
+:root{
+  --pagina:#e4dfd5;--pagina-testo:#1f1b16;--pagina-tenue:#5d574b;--pagina-riquadro:#f3efe7;--pagina-linea:#cfc7b8;--pagina-acc:#3f7d4c;
+  --bg:#faf7f2;--fg:#1f1b16;--linea:#e7e0d2;--tenue:#78705f;--acc:#3f7d4c;--acc-pieno:#3f7d4c;--avviso:#b5533c;--sup:#ffffff;--su-pieno:#faf7f2;
+  --seg-attivo:#ffffff;--tastiera:#d1d3d9;--tasto:#ffffff;
+  --ombra:rgba(0,0,0,.22);--ombra-flu:color-mix(in srgb,#1f1b16 12%,transparent);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;
+  --bg:#1b1815;--fg:#f2ede4;--linea:#3a342d;--tenue:#a39a8b;--acc:#7bb887;--acc-pieno:#3f7d4c;--avviso:#e8916f;--sup:#26221e;--su-pieno:#ffffff;
+  --seg-attivo:#4a433a;--tastiera:#2b2b2d;--tasto:#4a4a4c;
+  --ombra:rgba(0,0,0,.5);--ombra-flu:color-mix(in srgb,#000000 45%,transparent);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --pagina:#13110f;--pagina-testo:#f2ede4;--pagina-tenue:#a39a8b;--pagina-riquadro:#1f1c19;--pagina-linea:#3a342d;--pagina-acc:#7bb887;
+  --bg:#1b1815;--fg:#f2ede4;--linea:#3a342d;--tenue:#a39a8b;--acc:#7bb887;--acc-pieno:#3f7d4c;--avviso:#e8916f;--sup:#26221e;--su-pieno:#ffffff;
+  --seg-attivo:#4a433a;--tastiera:#2b2b2d;--tasto:#4a4a4c;
+  --ombra:rgba(0,0,0,.5);--ombra-flu:color-mix(in srgb,#000000 45%,transparent);color-scheme:dark}
+:root{
+  --acc-10:color-mix(in srgb,var(--acc) 10%,transparent);
+  --capsula:color-mix(in srgb,var(--acc) 14%,transparent);
+  --capsula-attiva:color-mix(in srgb,var(--acc) 14%,transparent);
+  --vetro:color-mix(in srgb,var(--sup) 75%,transparent);
+  --seg-fondo:color-mix(in srgb,var(--linea) 70%,transparent);
+}
+*{box-sizing:border-box}
+body{background:var(--pagina);color:var(--pagina-testo);font-family:'Hanken Grotesk',system-ui,sans-serif;margin:0;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.testa,.decisioni,.gruppo{max-width:1700px;margin-inline:auto}
+.testa{margin-bottom:24px;display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between}
+.testa>div{max-width:82ch;min-width:0}
+.testa h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:clamp(26px,4vw,34px);margin:0 0 8px;text-wrap:balance}
+.testa p{margin:0;color:var(--pagina-tenue);line-height:1.5}
+.temi{display:flex;gap:4px;background:var(--pagina-riquadro);border:1px solid var(--pagina-linea);border-radius:999px;padding:4px}
+.temi button{border:0;background:none;height:34px;padding:0 14px;border-radius:999px;font:inherit;font-size:14px;cursor:pointer;color:var(--pagina-tenue)}
+.temi button[aria-pressed="true"]{background:var(--pagina-testo);color:var(--pagina)}
+.temi button:focus-visible{outline:2px solid var(--pagina-acc);outline-offset:2px}
+.decisioni{margin-bottom:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.dec{background:var(--pagina-riquadro);border:1px solid var(--pagina-linea);border-radius:14px;padding:14px 16px}
+.dec b{display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--pagina-acc);margin-bottom:6px}
+.dec p{margin:0;font-size:14px;line-height:1.45}
+.dec.aperta{border-style:dashed;border-color:var(--pagina-acc)}
+.gruppo{margin-bottom:52px}
+.gruppo>h2{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:22px;margin:0 0 4px}
+.gruppo>p{margin:0 0 18px;color:var(--pagina-tenue);max-width:82ch;line-height:1.5;font-size:14.5px}
+.colonne{display:flex;flex-wrap:wrap;gap:28px}
+.col{width:390px;max-width:100%;min-width:0}
+.col h3{font-size:16px;margin:0 0 4px}
+.col .nota{font-size:13.5px;color:var(--pagina-tenue);margin:0 0 12px;line-height:1.45;min-height:58px}
+.tel{width:390px;max-width:100%;overflow:hidden;border-radius:40px;box-shadow:0 10px 36px var(--ombra)}
+
+/* ---- dentro il telefono ---- */
+.sch{width:390px;height:844px;background:var(--bg);color:var(--fg);position:relative;overflow:hidden;font-size:16px}
+.scorre{padding:52px 16px 180px;display:flex;flex-direction:column;gap:16px}
+.ico{width:20px;height:20px;flex:none}
+.indietro{display:flex;align-items:center;gap:2px;min-height:44px;color:var(--acc);font-size:17px;margin:-6px 0 -10px -4px}
+.indietro svg{width:22px;height:22px}
+.h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;font-size:34px;line-height:1.1;margin:0}
+.seg{display:flex;border-radius:12px;background:var(--seg-fondo);padding:3px}
+.seg span{flex:1;min-height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:var(--tenue)}
+.seg span.on{background:var(--seg-attivo);color:var(--fg);box-shadow:0 4px 16px var(--ombra-flu)}
+.seg small{font-size:13px;font-weight:400;color:var(--tenue);font-variant-numeric:tabular-nums}
+.arrivo{display:flex;align-items:center;gap:12px;border-radius:16px;border:1px solid var(--linea);background:var(--sup);padding:12px 14px}
+.arrivo .ic{width:30px;height:30px;border-radius:9px;background:var(--capsula-attiva);color:var(--acc);display:flex;align-items:center;justify-content:center;flex:none}
+.arrivo .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.arrivo .t b{font-weight:600}
+.arrivo .t span{font-size:14px;color:var(--tenue);margin-top:2px}
+.punto{width:10px;height:10px;border-radius:50%;background:var(--acc);flex:none}
+.ricerca{display:flex;gap:8px}
+.campo{position:relative;flex:1;min-width:0;height:48px;border-radius:999px;border:1px solid var(--linea);background:var(--sup);display:flex;align-items:center;padding:0 48px;color:var(--tenue);white-space:nowrap;overflow:hidden}
+.campo.scritto{color:var(--fg)}
+.campo.fuoco{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.campo .lente{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--tenue)}
+.campo .croce{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--tenue)}
+.campo .cursore{display:inline-block;width:2px;height:20px;background:var(--acc);margin-left:1px;vertical-align:-4px}
+.scansiona{width:48px;height:48px;border-radius:50%;background:var(--acc-pieno);color:var(--su-pieno);display:flex;align-items:center;justify-content:center;flex:none}
+.sez{display:flex;align-items:center;justify-content:space-between;margin:-4px 4px -8px;min-height:44px}
+.sez-lab{font-size:14px;color:var(--tenue);font-variant-numeric:tabular-nums}
+.ordine{font-size:14px;font-weight:600;display:flex;align-items:center;gap:4px}
+.ordine svg{width:16px;height:16px;color:var(--tenue)}
+.sugg{font-size:14px;color:var(--tenue);margin:-6px 4px 0;line-height:1.4}
+.riq{border-radius:20px;border:1px solid var(--linea);background:var(--sup);overflow:hidden}
+.riga{display:flex;align-items:center;gap:6px;min-height:60px;padding:6px 6px 6px 14px}
+.riga+.riga{border-top:1px solid var(--linea)}
+.riga .n{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.riga .n b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.riga .n b em{font-style:normal;color:var(--tenue)}
+.riga .n span{margin-top:2px;font-size:13px;color:var(--tenue);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.riga .n span i{font-style:normal;font-weight:500;color:var(--acc)}
+.riga.grigia .n b{color:var(--tenue)}
+.matita{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--tenue);flex:none}
+.matita svg{width:18px;height:18px}
+.cerchio{width:22px;height:22px;border-radius:50%;border:2px solid var(--linea);flex:none;display:flex;align-items:center;justify-content:center;margin-right:6px}
+.cerchio.pieno{background:var(--acc-pieno);border-color:var(--acc-pieno);color:var(--su-pieno)}
+.cerchio svg{width:12px;height:12px}
+.riga.sel{padding-right:14px}
+.aggiungi{min-height:44px;display:flex;align-items:center;flex:none;padding-right:2px}
+.aggiungi span{height:36px;display:flex;align-items:center;gap:4px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);font-size:14px;font-weight:600;padding:0 12px 0 10px}
+.aggiungi svg{width:18px;height:18px}
+.neituoi{height:36px;display:flex;align-items:center;gap:6px;font-size:14px;color:var(--tenue);padding:0 10px 0 4px;flex:none}
+.neituoi svg{width:18px;height:18px;color:var(--acc)}
+.filtri{display:flex;gap:8px;overflow:hidden;margin:0 -16px;padding:0 16px}
+.filtri span{height:34px;border-radius:999px;border:1px solid var(--linea);padding:0 14px;font-size:14px;display:flex;align-items:center;white-space:nowrap;flex:none}
+.filtri span.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.interr{display:flex;align-items:center;gap:8px;font-size:14px}
+.interr i{width:40px;height:24px;border-radius:999px;background:var(--linea);position:relative;flex:none}
+.interr i::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--sup);box-shadow:0 1px 2px var(--ombra)}
+.fonti{font-size:12px;color:var(--tenue);margin:0 14px;line-height:1.4}
+.vuoto-riq{border-radius:20px;border:1px solid var(--linea);background:var(--sup);padding:22px 18px}
+.vuoto-riq b{font-weight:600}
+.vuoto-riq p{margin:6px 0 0;font-size:14px;color:var(--tenue);line-height:1.5}
+.vuoto{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:28px 24px 0}
+.vuoto svg{width:40px;height:40px;color:var(--tenue)}
+.vuoto b{font-weight:500}
+.vuoto p{margin:0;font-size:14px;color:var(--tenue);line-height:1.5}
+/* in basso */
+.pillola{position:absolute;left:16px;right:16px;bottom:16px;height:64px;border-radius:999px;background:var(--vetro);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 4px 16px var(--ombra-flu);display:grid;grid-template-columns:repeat(3,1fr);padding:6px;z-index:3}
+.pillola span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;color:var(--tenue);border-radius:999px}
+.pillola span.on{background:var(--capsula);color:var(--acc);font-weight:600}
+.sfuma{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to top,var(--bg) 55%,transparent);z-index:2;pointer-events:none}
+.sfuma.alta{height:180px}
+.fab{position:absolute;right:16px;bottom:92px;width:48px;height:48px;border-radius:50%;background:var(--acc-pieno);color:var(--su-pieno);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px var(--ombra-flu);z-index:3}
+.fab svg{width:24px;height:24px}
+.largo{position:absolute;left:16px;right:16px;bottom:92px;height:50px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);background:var(--bg);font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 16px;box-shadow:0 4px 16px var(--ombra-flu);z-index:3}
+.largo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barrasel{position:absolute;left:16px;right:16px;bottom:16px;height:64px;border-radius:999px;border:1px solid var(--linea);background:var(--sup);box-shadow:0 4px 16px var(--ombra-flu);display:flex;align-items:center;gap:8px;padding:0 8px 0 24px;z-index:3}
+.barrasel b{flex:1;font-weight:600}
+.tondo{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--acc);color:var(--acc);flex:none}
+.tondo.av{border-color:var(--avviso);color:var(--avviso)}
+.tondo svg{width:20px;height:20px}
+.annulla{padding:0 16px;min-height:44px;display:flex;align-items:center;color:var(--tenue)}
+.tastiera{position:absolute;left:0;right:0;bottom:0;height:300px;background:var(--tastiera);z-index:4;display:flex;flex-direction:column;gap:10px;padding:10px 4px 0}
+.tastiera div{display:flex;gap:6px;justify-content:center}
+.tastiera i{height:42px;width:32px;border-radius:6px;background:var(--tasto);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.tastiera i.l{width:180px}
+.tastiera i.m{width:80px}
+.tastiera .etich{font-size:12px;text-align:center;color:var(--tenue);margin-top:4px}
+.largo.su-tastiera{bottom:312px;z-index:5}
+.nascosta{display:none}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-sx" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-giu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-lente" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></g></symbol>
+    <symbol id="i-croce" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M7 7l10 10M17 7 7 17"/></symbol>
+    <symbol id="i-codice" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17"/><path d="M8 8v8M11 8v8M14 8v8M16.5 8v8"/></g></symbol>
+    <symbol id="i-matita" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4zM13.5 6.5l4 4"/></symbol>
+    <symbol id="i-piu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-spunta" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-spunta-s" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-arrivo" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 2.5v8M4.5 7L8 10.5 11.5 7M3 13h10"/></symbol>
+    <symbol id="i-avanti" viewBox="0 0 8 13"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M1.5 1.5l5 5-5 5"/></symbol>
+    <symbol id="i-condividi" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v8.5A1.5 1.5 0 0 0 7.5 21h9a1.5 1.5 0 0 0 1.5-1.5V11"/></g></symbol>
+    <symbol id="i-cestino" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></g></symbol>
+    <symbol id="i-oggi" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g></symbol>
+    <symbol id="i-stat" viewBox="0 0 24 24"><g fill="currentColor"><rect x="4" y="11" width="4" height="9" rx="1.2"/><rect x="10" y="5" width="4" height="15" rx="1.2"/><rect x="16" y="8" width="4" height="12" rx="1.2"/></g></symbol>
+    <symbol id="i-imp" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></g></symbol>
+  </defs>
+</svg>
+
+<header class="testa">
+  <div>
+    <h1>Alimenti con l'aspetto di Aggiungi</h1>
+    <p>Impostazioni &gt; Alimenti con la ricerca, le righe e le misure di Aggiungi (main <code>4afe1f1</code>). Due proposte per creare un alimento: <b>A</b> con il + tondo in basso a destra, <b>B</b> con il pulsante largo «Crea alimento a mano» / «Crea «…»». <b>Scelta di Davide (11/11, 21:42): B.</b> Gli alimenti, i valori e gli username sono <b>inventati, solo come esempio</b>.</p>
+  </div>
+  <div class="temi" role="group" aria-label="Tema">
+    <button type="button" data-tema="" aria-pressed="true">Sistema</button>
+    <button type="button" data-tema="light" aria-pressed="false">Chiaro</button>
+    <button type="button" data-tema="dark" aria-pressed="false">Scuro</button>
+  </div>
+</header>
+
+<section class="decisioni" aria-label="Scelte">
+  <div class="dec"><b>In A e in B</b><p>Ricerca alta 48 sullo sfondo bianco (surface), con Scansiona da 48. Righe dentro un riquadro con angoli da 20 e linee divisorie, alte 60, sottotitolo da 13. Come in Aggiungi.</p></div>
+  <div class="dec"><b>La riga</b><p>Tocco sulla riga = modifica, come oggi. A destra la matita da 44 (tenue), che fa la stessa cosa e dice che la riga si modifica. Nessun + sulle righe: qui non si aggiunge al diario.</p></div>
+  <div class="dec"><b>Versione A</b><p>Il + tondo resta dov'è oggi. Il nome cercato passa al modulo (lavoretto 1), ma il pulsante non lo mostra, e con la tastiera aperta il + sparisce.</p></div>
+  <div class="dec"><b>Versione B</b><p>Pulsante largo sopra la barra delle schede, il testo segue la ricerca come in Aggiungi. Si vede sempre, anche sopra la tastiera, ma occupa 62 px in più in fondo e copre le ultime righe.</p></div>
+  <div class="dec"><b>Deciso da Davide (11/11)</b><p>Versione B. La matita resta. La riga «8 alimenti / Più usati» resta com'è oggi (testo piccolo e grigio). Nel Catalogo nessun pulsante per creare.</p></div>
+  <div class="dec aperta"><b>Da verificare</b><p>B con la tastiera: Alimenti oggi scorre tutta la pagina. Per tenere il pulsante sopra la tastiera serve l'area visibile, come in Aggiungi (<code>useAreaVisibile</code>). Claude Code lo verifica nella fase 2.</p></div>
+</section>
+
+<section class="gruppo">
+  <h2>Scheda «I miei»</h2>
+  <p>Elenco completo, con la riga degli alimenti in arrivo. La copia presa dal catalogo ha «· dal catalogo» nel colore principale.</p>
+  <div class="colonne">
+    <div class="col"><h3>A · + tondo</h3><p class="nota">Il + resta in basso a destra, sopra la barra delle schede, come oggi.</p><div class="tel"><div class="sch" data-v="A" data-stato="normale"></div></div></div>
+    <div class="col"><h3>B · pulsante largo</h3><p class="nota">«Crea alimento a mano» a tutta larghezza, sopra la barra delle schede. Il fondo pieno nasconde le righe che passano sotto.</p><div class="tel"><div class="sch" data-v="B" data-stato="normale"></div></div></div>
+  </div>
+</section>
+
+<section class="gruppo">
+  <h2>Ricerca senza risultati (lavoretto 1)</h2>
+  <p>Scritto «patatine fritte», nessun alimento tuo. Lo stato vuoto prende la forma di Aggiungi (lente grande e testo). Il nome scritto passa al modulo in tutte e due le versioni; solo B lo mostra sul pulsante.</p>
+  <div class="colonne">
+    <div class="col"><h3>A · tastiera chiusa</h3><p class="nota">Il + apre «Nuovo alimento» con il nome «patatine fritte» già scritto.</p><div class="tel"><div class="sch" data-v="A" data-stato="senza"></div></div></div>
+    <div class="col"><h3>B · tastiera chiusa</h3><p class="nota">«Crea «patatine fritte»», come in Aggiungi.</p><div class="tel"><div class="sch" data-v="B" data-stato="senza"></div></div></div>
+    <div class="col"><h3>A · tastiera aperta</h3><p class="nota">Il + sparisce mentre si scrive (oggi è così): per crearlo bisogna prima chiudere la tastiera. Invio potrebbe aprire il modulo, come in Aggiungi.</p><div class="tel"><div class="sch" data-v="A" data-stato="tastiera"></div></div></div>
+    <div class="col"><h3>B · tastiera aperta</h3><p class="nota">Il pulsante resta sopra la tastiera, come in Aggiungi; la barra delle schede no. Da verificare nella fase 2.</p><div class="tel"><div class="sch" data-v="B" data-stato="tastiera"></div></div></div>
+  </div>
+</section>
+
+<section class="gruppo">
+  <h2>Selezione multipla</h2>
+  <p>Tieni premuto su una riga. Uguale in A e in B: a sinistra compare il cerchio, la matita sparisce, la barra di selezione prende il posto della barra delle schede, e il + o il pulsante largo non ci sono (come oggi).</p>
+  <div class="colonne">
+    <div class="col"><h3>Selezione · A e B</h3><p class="nota">Due alimenti selezionati. Senza Scansiona, senza la riga degli alimenti in arrivo e senza il suggerimento.</p><div class="tel"><div class="sch" data-v="A" data-stato="selezione"></div></div></div>
+  </div>
+</section>
+
+<section class="gruppo">
+  <h2>Scheda «Catalogo»</h2>
+  <p>Stessa ricerca piena (qui senza Scansiona) e stesso riquadro. A destra «Aggiungi» o «Nei tuoi», come oggi. Nel catalogo non si crea, quindi né il + né il pulsante largo (consiglio di Claude Code).</p>
+  <div class="colonne">
+    <div class="col"><h3>Catalogo · A e B</h3><p class="nota">Filtri per categoria, conteggio e «Nascondi quelli che hai». Le categorie mostrate sono un esempio.</p><div class="tel"><div class="sch" data-v="A" data-stato="catalogo"></div></div></div>
+    <div class="col"><h3>Catalogo · nessun risultato</h3><p class="nota">Stesso stato vuoto di «I miei», con il testo di oggi.</p><div class="tel"><div class="sch" data-v="A" data-stato="catalogo-senza"></div></div></div>
+  </div>
+</section>
+
+<section class="gruppo">
+  <h2>Stati vuoti</h2>
+  <p>Il primo giorno, senza alimenti: la ricerca resta, spenta, con Scansiona accanto (come oggi). Il testo del riquadro cambia per indicare A o B.</p>
+  <div class="colonne">
+    <div class="col"><h3>A · nessun alimento</h3><p class="nota">Testo di oggi: «Crea il primo con il + qui sotto…».</p><div class="tel"><div class="sch" data-v="A" data-stato="vuoto"></div></div></div>
+    <div class="col"><h3>B · nessun alimento</h3><p class="nota">Il testo indica il pulsante qui sotto.</p><div class="tel"><div class="sch" data-v="B" data-stato="vuoto"></div></div></div>
+  </div>
+</section>
+
+<script>
+(function(){
+  // Dati inventati, solo come esempio.
+  var MIEI = [
+    ["Fiocchi d'avena","",372,0],["Petto di pollo","",110,0],["Riso basmati","",355,0],
+    ["Yogurt bianco magro","Marca Esempio",56,0],["Pane di segale","",259,0],["Mandorle","",603,1],
+    ["Banana","",89,0],["Olio extravergine d'oliva","",899,0]
+  ];
+  var CATALOGO = [
+    ["Mela","",52,150,0],["Ceci lessati","",139,150,0],["Fesa di tacchino","Marca Esempio",107,100,0],
+    ["Mandorle","",603,30,1],["Ricotta vaccina","",146,100,0],["Pasta di semola","",359,80,0],["Arancia","",47,150,0]
+  ];
+  function ico(id, cls){ return '<svg class="ico'+(cls?' '+cls:'')+'" aria-hidden="true"><use href="#'+id+'"/></svg>'; }
+  function testata(){ return '<div class="indietro">'+ico("i-sx")+'Impostazioni</div><h2 class="h1">Alimenti</h2>'; }
+  function schede(cat){ return '<div class="seg"><span'+(cat?'':' class="on"')+'>I miei <small>'+MIEI.length+'</small></span><span'+(cat?' class="on"':'')+'>Catalogo <small>183</small></span></div>'; }
+  function arrivo(){ return '<div class="arrivo"><span class="ic"><svg width="16" height="16" aria-hidden="true"><use href="#i-arrivo"/></svg></span><span class="t"><b>2 alimenti in arrivo</b><span>Da @amico_esempio</span></span><span class="punto"></span><svg width="8" height="13" style="color:var(--tenue);flex:none" aria-hidden="true"><use href="#i-avanti"/></svg></div>'; }
+  function ricerca(testo, opz){
+    opz = opz || {};
+    var c = '<div class="campo'+(testo?' scritto':'')+(opz.fuoco?' fuoco':'')+'"'+(opz.spento?' style="opacity:.55"':'')+'>'+ico("i-lente","lente")+
+      (testo ? testo+(opz.fuoco?'<span class="cursore"></span>':'') : (opz.catalogo?'Cerca nel catalogo':'Cerca un alimento'))+
+      (testo ? '<span class="croce">'+ico("i-croce")+'</span>' : '')+'</div>';
+    return '<div class="ricerca">'+c+(opz.senzaScan?'':'<span class="scansiona">'+ico("i-codice")+'</span>')+'</div>';
+  }
+  function rigaMia(a, sel){
+    var nome = a[0]+(a[1]?' <em>· '+a[1]+'</em>':'');
+    var sub = a[2]+' kcal / 100 g'+(a[3]?' · <i>dal catalogo</i>':'');
+    var sx = sel===undefined ? '' : '<span class="cerchio'+(sel?' pieno':'')+'">'+(sel?'<svg aria-hidden="true"><use href="#i-spunta"/></svg>':'')+'</span>';
+    var dx = sel===undefined ? '<span class="matita">'+ico("i-matita")+'</span>' : '';
+    return '<div class="riga'+(sel===undefined?'':' sel')+'">'+sx+'<span class="n"><b>'+nome+'</b><span>'+sub+'</span></span>'+dx+'</div>';
+  }
+  function rigaCat(c){
+    var nome = c[0]+(c[1]?' <em>· '+c[1]+'</em>':'');
+    var dx = c[4] ? '<span class="neituoi">'+ico("i-spunta-s")+'Nei tuoi</span>' : '<span class="aggiungi"><span>'+ico("i-piu")+'Aggiungi</span></span>';
+    return '<div class="riga'+(c[4]?' grigia':'')+'"><span class="n"><b>'+nome+'</b><span>'+c[2]+' kcal / 100 g · '+c[3]+' g</span></span>'+dx+'</div>';
+  }
+  function pillola(){ return '<nav class="pillola" aria-label="Sezioni"><span>'+ico("i-oggi")+'Oggi</span><span>'+ico("i-stat")+'Statistiche</span><span class="on">'+ico("i-imp")+'Impostazioni</span></nav>'; }
+  function crea(v, testo, sopraTastiera){
+    if (v === "A") return '<span class="fab" aria-label="Nuovo alimento">'+ico("i-piu")+'</span>';
+    return '<span class="largo'+(sopraTastiera?' su-tastiera':'')+'"><span>'+(testo?'Crea «'+testo+'»':'Crea alimento a mano')+'</span></span>';
+  }
+  function tastiera(){
+    var r = function(n){ var s=''; for(var i=0;i<n;i++) s+='<i></i>'; return '<div>'+s+'</div>'; };
+    return '<div class="tastiera" aria-hidden="true">'+r(10)+r(9)+r(7)+'<div><i class="m"></i><i class="l"></i><i class="m"></i></div><p class="etich">tastiera del telefono</p></div>';
+  }
+  function sezione(n){ return '<div class="sez"><span class="sez-lab">'+n+(n===1?' alimento':' alimenti')+'</span><span class="ordine">Più usati<svg aria-hidden="true"><use href="#i-giu"/></svg></span></div>'; }
+  function vuotoRicerca(testo, frase){
+    return '<div class="vuoto">'+'<svg aria-hidden="true"><use href="#i-lente"/></svg><b>Nessun risultato per «'+testo+'»</b><p>'+frase+'</p></div>';
+  }
+
+  function disegna(el){
+    var v = el.getAttribute("data-v"), st = el.getAttribute("data-stato"), h = '<div class="scorre">'+testata(), basso = '';
+    if (st === "normale") {
+      h += schede(false)+arrivo()+ricerca("")+sezione(MIEI.length)+'<p class="sugg">Tieni premuto su un alimento per selezionarne più di uno insieme.</p>';
+      h += '<div class="riq">'+MIEI.map(function(a){return rigaMia(a);}).join("")+'</div>';
+      basso = '<div class="sfuma'+(v==="B"?' alta':'')+'"></div>'+crea(v,"")+pillola();
+    } else if (st === "senza" || st === "tastiera") {
+      var t = "patatine fritte", kb = st === "tastiera";
+      h += schede(false)+arrivo()+ricerca(t,{fuoco:kb})+sezione(0);
+      h += vuotoRicerca(t, v==="A" ? "Puoi crearlo con il + qui sotto." : "Puoi crearlo con il pulsante qui sotto.");
+      if (kb) basso = tastiera()+(v==="B"?crea(v,t,true):'');
+      else basso = '<div class="sfuma'+(v==="B"?' alta':'')+'"></div>'+crea(v,t)+pillola();
+    } else if (st === "selezione") {
+      h += schede(false)+ricerca("",{senzaScan:true})+sezione(MIEI.length);
+      h += '<div class="riq">'+MIEI.map(function(a,i){return rigaMia(a, i===1||i===4);}).join("")+'</div>';
+      basso = '<div class="sfuma"></div><div class="barrasel"><b>2 selezionati</b><span class="tondo">'+ico("i-condividi")+'</span><span class="tondo av">'+ico("i-cestino")+'</span><span class="annulla">Annulla</span></div>';
+    } else if (st === "catalogo") {
+      h += schede(true)+ricerca("",{senzaScan:true,catalogo:true});
+      h += '<div class="filtri"><span class="on">Tutti</span><span>Frutta</span><span>Verdura</span><span>Cereali</span><span>Legumi</span><span>Latticini</span></div>';
+      h += '<div class="sez"><span class="sez-lab">183 · 1 già nei tuoi</span><span class="interr">Nascondi quelli che hai<i></i></span></div>';
+      h += '<div class="riq">'+CATALOGO.map(rigaCat).join("")+'</div>';
+      h += '<p class="fonti">Valori da Open Food Facts (ODbL) e Ciqual 2025 (Anses, Licence Ouverte)</p>';
+      basso = '<div class="sfuma"></div>'+pillola();
+    } else if (st === "catalogo-senza") {
+      h += schede(true)+ricerca("tofu affumicato",{senzaScan:true,catalogo:true});
+      h += '<div class="filtri"><span class="on">Tutti</span><span>Frutta</span><span>Verdura</span><span>Cereali</span><span>Legumi</span><span>Latticini</span></div>';
+      h += '<div class="vuoto"><svg aria-hidden="true"><use href="#i-lente"/></svg><b>Nessun alimento trovato nel catalogo.</b><p>Puoi crearlo nella scheda «I miei».</p></div>';
+      basso = '<div class="sfuma"></div>'+pillola();
+    } else if (st === "vuoto") {
+      h += '<div class="seg"><span class="on">I miei <small>0</small></span><span>Catalogo <small>183</small></span></div>'+ricerca("",{spento:true});
+      h += '<div class="vuoto-riq"><b>Ancora nessun alimento</b><p>'+(v==="A"
+        ? "Crea il primo con il + qui sotto, oppure scansiona una confezione con il pulsante accanto alla ricerca."
+        : "Crea il primo con il pulsante qui sotto, oppure scansiona una confezione con il pulsante accanto alla ricerca.")+'</p></div>';
+      basso = '<div class="sfuma'+(v==="B"?' alta':'')+'"></div>'+crea(v,"")+pillola();
+    }
+    el.innerHTML = h+'</div>'+basso;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".sch"), disegna);
+
+  document.querySelectorAll(".temi button").forEach(function(b){
+    b.addEventListener("click", function(){
+      var t = b.getAttribute("data-tema");
+      if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+      document.querySelectorAll(".temi button").forEach(function(x){ x.setAttribute("aria-pressed", String(x === b)); });
+    });
+  });
+})();
+</script>
+</body>
+</html>

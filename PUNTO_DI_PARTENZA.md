@@ -687,7 +687,12 @@ la schermata a tutto schermo"):
   (`useRitornoScorrimento` con la zona). Scansione e pasto salvato stanno
   sopra la zona, che resta.
 
-Coperto dai test, **da provare** su iPhone.
+Coperto dai test. **Provato sull'anteprima** aggiunta alla Home il 12/11
+sera (Build `a502dd6`, §11): swipe dal modulo e secondo swipe a Oggi al
+primo colpo; matita → «Torna alla ricerca» e → swipe, con l'elenco nello
+stesso punto; freccia della testata con il modulo aperto → Oggi; pasto
+salvato → «Aggiungi alimento» → tre swipe (pasto, Aggiungi, Oggi). **Da
+provare**: lo swipe dalla scansione.
 
 **Codice a barre** (deciso da Davide il 03/11, regole del 07/11; branch
 `codice-a-barre`, unito a main il 07/11, `3e6ce01`; nel catalogo dal
@@ -2493,7 +2498,8 @@ catalogo, si corregge e si fa pulizia.
   In Impostazioni > Alimenti (modulo e scansione) e Preferiti (pasto
   salvato e la sua ricerca): coperto dai test, **provato** sull'anteprima
   aggiunta alla Home il 12/11 (sotto, §11), il ricaricamento in Safari.
-  In Aggiungi dal 12/11 (sopra, "Aggiungi alimento"), da provare.
+  In Aggiungi dal 12/11 (sopra, "Aggiungi alimento"), provato
+  sull'anteprima tranne la scansione.
 - **Alla chiusura del modulo l'elenco torna al punto di prima**
   (`useRitornoScorrimento`, anche in Preferiti per il pasto salvato), da
   ogni strada: freccia, swipe, Salva, Crea, Elimina. Anche dopo Salva di
@@ -2511,7 +2517,29 @@ catalogo, si corregge e si fa pulizia.
 - **Il "+"** è tondo, a destra, alla stessa altezza di "+ Aggiungi" in
   Oggi (sopra la tab bar, con la stessa sfumatura dietro), e come la tab
   bar si nasconde mentre un campo ha il fuoco. La barra con Annulla sta
-  appena sopra il "+", senza coprirlo, come in Oggi.
+  appena sopra il "+", senza coprirlo, come in Oggi. *Così fino al commit
+  5 di `alimenti-aspetto`: poi il pulsante largo, qui sotto.*
+- **Aspetto nuovo, uguale ad Aggiungi** (deciso da Davide l'11/11 sera;
+  mockup `docs/mockups/alimenti-aspetto.html`, artifact
+  https://claude.ai/artifact/7AqaM9suPzMiEDpjv6PCWT, **versione B**).
+  **Da fare**, commit 5 del branch `alimenti-aspetto`. Le scelte:
+  - **pulsante largo** «Crea alimento a mano», che diventa «Crea «…»» con
+    una ricerca scritta, al posto del "+" tondo, sopra la barra delle
+    schede, **solo nella scheda «I miei»**;
+  - la **matita** resta a destra delle righe: il tocco sulla riga e quello
+    sulla matita aprono tutti e due la modifica;
+  - la riga **«N alimenti / Più usati»** e il suggerimento «Tieni
+    premuto…» restano come oggi: testo piccolo, non titolo di sezione;
+  - nella scheda **«Catalogo» non si crea**: nessun pulsante;
+  - ricerca, riquadro delle righe, riga e matita con le misure di
+    Aggiungi; selezione, barra di selezione, SelettoreSegmenti, riga
+    degli alimenti in arrivo, testata e modulo invariati;
+  - con la tastiera aperta il pulsante va sopra la tastiera come in
+    Aggiungi, se non serve ristrutturare la pagina; altrimenti resta
+    nascosto mentre si scrive e vale Invio. Si decide prima di scrivere
+    il commit 5.
+
+  Il mockup ha dati inventati: misure e testi vengono da lì, i dati no.
 - **Una regola sola per "modificabile"**: `eModificabile` in
   `src/lib/catalogo/alimentiModificabili.ts`, usata anche dalla matita di
   Aggiungi (prima scritta due volte lì). Le frasi della barra dopo
@@ -9215,7 +9243,9 @@ account vero: «funziona tutto» (Davide).
   installata (difetto già in produzione);
 - lo swipe e il ritorno al punto della zona anche in Aggiungi, con la
   freccia della testata che esce a Oggi anche con il modulo aperto
-  (commit 2b, **da provare**).
+  (commit 2b, provato sull'anteprima, sotto);
+- il mockup dell'aspetto nuovo, versione B scelta (commit 3; l'aspetto
+  è da fare, commit 5; sezione 3, "Alimenti").
 
 **Prove del 12/11 sera** sull'anteprima aggiunta alla Home, account di
 prova, Build `365f88b`, tutte ok:
@@ -9234,6 +9264,18 @@ Corretto (sotto, "Difetti e verifiche aperti").
 account di prova, Build `a97aa76`: in Alimenti, elenco scorso → alimento
 aperto → ritorno con la freccia ‹ e con lo swipe: torna al punto giusto.
 Preferiti: non indicata, resta da provare.
+
+**Prove del 2b**, 12/11 sera, anteprima aggiunta alla Home, account di
+prova, Build `a502dd6`, tutte ok:
+- «Crea «zzz prova»» → swipe → Aggiungi con la ricerca; secondo swipe →
+  Oggi al primo colpo;
+- matita → «Torna alla ricerca» e → swipe: elenco nello stesso punto;
+- freccia della testata con il modulo aperto → Oggi direttamente;
+- pasto salvato «Prova annulla» → «Aggiungi alimento» → tre swipe: pasto,
+  Aggiungi, Oggi.
+
+Scansione in Aggiungi e scorrimento in Preferiti: non indicate, restano
+da provare.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -9268,8 +9310,9 @@ i numeri delle sue segnalazioni.
   nel branch `alimenti-aspetto` con `useRitornoScorrimento` (sezione 3,
   "Alimenti"): coperto dai test. In Alimenti **provato nell'app
   installata** il 12/11 sera (Build `a97aa76`, freccia e swipe); in
-  Preferiti **da provare**. Lo stesso per la zona di Aggiungi dopo «Crea
-  alimento a mano» (commit 2b): **da provare**. Se il ricontrollo di dieci
+  Preferiti **da provare**. Lo stesso per la zona di Aggiungi dopo la
+  matita (commit 2b): **provato sull'anteprima** aggiunta alla Home il
+  12/11 sera, con «Torna alla ricerca» e con lo swipe. Se il ricontrollo di dieci
   ridisegni non basta, si allunga (`RIDISEGNI_DI_CONTROLLO`).
 
 - **Alimenti, scheda «Catalogo»: «Apri» perde ricerca e filtri** (dal
