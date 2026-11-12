@@ -5,6 +5,30 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-12 — alimenti-aspetto provato sull'anteprima
+
+Branch `alimenti-aspetto`, solo documenti; con questo il branch è
+finito.
+
+**Prova della correzione**, 12/11 alle 22:05, anteprima aggiunta alla
+Home, account di prova, Build `1780ef2`. In Alimenti, scritto «zzz
+prova», con la tastiera aperta il tocco su «Crea «zzz prova»» apre il
+modulo al primo tocco. «Annulla» della barra a tastiera aperta: non
+indicato.
+
+PUNTO §3 e §11: l'aspetto nuovo è «provato sull'anteprima» (prove del
+commit 5, Build `296c855`), e così «Crea «…»» a tastiera aperta (Build
+`1780ef2`).
+
+Restano **da provare**, non indicate:
+- lo scorrimento in Preferiti dopo un pasto salvato;
+- lo swipe dalla scansione in Aggiungi.
+
+Restano **aperti**:
+- la scheda «Catalogo» che perde ricerca e filtri dopo «Apri»;
+- il margine destro di 6 px invece di 14 nella riga in selezione, da
+  guardare nell'uso.
+
 ## 2026-11-12 — «Crea «…»» con la tastiera aperta in Alimenti
 
 Branch `alimenti-aspetto`, commit a parte dopo il 5.

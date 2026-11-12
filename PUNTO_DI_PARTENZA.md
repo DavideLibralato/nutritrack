@@ -2527,8 +2527,9 @@ catalogo, si corregge e si fa pulizia.
 - **Aspetto, uguale ad Aggiungi** (deciso da Davide l'11/11 sera;
   mockup `docs/mockups/alimenti-aspetto.html`, artifact
   https://claude.ai/artifact/7AqaM9suPzMiEDpjv6PCWT, **versione B**).
-  **Fatto il 12/11** (commit 5 del branch `alimenti-aspetto`), **da
-  provare** su iPhone. Il mockup ha dati inventati: misure e testi
+  **Fatto il 12/11** (commit 5 del branch `alimenti-aspetto`) e
+  **provato sull'anteprima** aggiunta alla Home il 12/11 (Build
+  `296c855`, chiaro e scuro; §11). Il mockup ha dati inventati: misure e testi
   vengono da lì, i dati no.
   - **ricerca** come in Aggiungi: `CampoRicerca`, alta 48 px su
     `bg-surface`, con `PulsanteScansiona` da 48 px accanto; a catalogo
@@ -2560,7 +2561,10 @@ catalogo, si corregge e si fa pulizia.
     tocco a tastiera aperta toglieva il fuoco, la regola smetteva subito
     di valere, il pulsante saliva e il click arrivava sotto di lui (il
     modulo non si apriva; trovato da Davide il 12/11, Build `296c855`).
-    Coperto dai test, **da provare** a tastiera aperta;
+    Coperto dai test, **provato sull'anteprima** aggiunta alla Home il
+    12/11 alle 22:05 (Build `1780ef2`): «Crea «zzz prova»» a tastiera
+    aperta apre il modulo al primo tocco. «Annulla» a tastiera aperta:
+    non indicato;
   - la riga **«N alimenti / Più usati»** e il suggerimento «Tieni
     premuto…» restano come prima: testo piccolo, non titolo di sezione;
   - scheda **«Catalogo»**: la stessa ricerca (senza Scansiona), le righe
@@ -9280,7 +9284,8 @@ account vero: «funziona tutto» (Davide).
 - l'aspetto di Aggiungi in Alimenti, «I miei» e «Catalogo», con il
   pulsante largo sopra la tastiera (commit 5; sezione 3, "Alimenti",
   "Aspetto"): provato il 12/11, tutto ok tranne «Crea «…»» a tastiera
-  aperta, corretto nel commit dopo (**da provare**), prove qui sotto.
+  aperta, corretto nel commit dopo e provato il 12/11 sera (Build
+  `1780ef2`), prove qui sotto.
 
 **Prove del 12/11 sera** sull'anteprima aggiunta alla Home, account di
 prova, Build `365f88b`, tutte ok:
@@ -9312,7 +9317,7 @@ prova, Build `a502dd6`, tutte ok:
 Scansione in Aggiungi e scorrimento in Preferiti: non indicate, restano
 da provare.
 
-**Prove da fare del commit 5** (l'aspetto di Alimenti), sull'anteprima
+**Le prove del commit 5** (l'aspetto di Alimenti; esito sotto), sull'anteprima
 aggiunta alla Home, account di prova, anche al buio:
 1. «I miei»: ricerca alta come in Aggiungi, righe nel riquadro con la
    matita, «· dal catalogo» sulle copie; tocco sul nome e sulla matita →
@@ -9336,9 +9341,18 @@ prova, Build `296c855`, chiaro e scuro: **tutte ok tranne una**. In «I
 miei», scritto «zzz prova», con la tastiera aperta il tocco su «Crea «zzz
 prova»» chiudeva la tastiera ma non apriva il modulo (al secondo tocco
 sì). In Aggiungi lo stesso gesto apre il modulo al primo tocco. Corretto
-nel commit dopo (sezione 3, "Alimenti", "Aspetto"): **da provare** a
-tastiera aperta, in Safari e nell'app installata, anche «Annulla» della
-barra a tastiera aperta.
+nel commit dopo (sezione 3, "Alimenti", "Aspetto").
+
+**Prova della correzione**, 12/11 alle 22:05, anteprima aggiunta alla
+Home, account di prova, Build `1780ef2`: in Alimenti, «zzz prova» con la
+tastiera aperta → «Crea «zzz prova»» apre il modulo al primo tocco.
+«Annulla» della barra a tastiera aperta: non indicato.
+
+**`alimenti-aspetto` è finito** (12/11). Restano **da provare**, non
+indicate nelle prove: lo scorrimento in Preferiti dopo un pasto salvato e
+lo swipe dalla scansione in Aggiungi. Restano **aperti** (sotto,
+"Difetti e verifiche aperti"): la scheda «Catalogo» che perde ricerca e
+filtri dopo «Apri», e il margine destro della riga in selezione.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -9381,8 +9395,13 @@ i numeri delle sue segnalazioni.
 - **Alimenti, scheda «Catalogo»: «Apri» perde ricerca e filtri** (dal
   codice, 12/11). «Apri» apre il modulo, `SchedaCatalogo` si smonta, e
   alla chiusura riparte da capo: ricerca, categoria, scheda aperta e
-  scorrimento. Aperto: si riguarda nel commit dell'aspetto di Alimenti
-  (`alimenti-aspetto`).
+  scorrimento. Aperto: non corretto in `alimenti-aspetto` (l'aspetto non
+  l'ha toccato), da fare in un lavoro a parte.
+
+- **Alimenti, il margine destro della riga in selezione** (12/11). In
+  selezione la matita sparisce e la riga resta con 6 px a destra
+  (`CLASSE_RIGA`); il mockup ne disegna 14. Da guardare nell'uso: si
+  sistema se si nota.
 
 - **Esporta, la protezione dalle formule nel CSV** (branch `esporta`,
   sezione 10.4, "Il CSV"): coperta dai test, non provata dal vivo. Nella
