@@ -145,6 +145,66 @@ describe("Preferiti e pasti salvati — lo swipe indietro", () => {
     });
   }
 
+  // Il ritorno al punto dell'elenco (useRitornoScorrimento): nell'app
+  // installata su iPhone ripartiva dall'inizio (12/11). jsdom non scorre:
+  // `scrollY` è finto, e si guarda che `scrollTo` rimetta il punto con
+  // l'elenco già a schermo, dalla freccia e dallo swipe.
+  describe("torna al punto dell'elenco", () => {
+    let posizione = 0;
+    let chiamate: { y: number; elencoPresente: boolean }[] = [];
+
+    beforeEach(() => {
+      posizione = 0;
+      chiamate = [];
+      Object.defineProperty(window, "scrollY", { configurable: true, get: () => posizione });
+      vi.spyOn(window, "scrollTo").mockImplementation(((x: number, y: number) => {
+        chiamate.push({
+          y,
+          elencoPresente:
+            screen.queryByRole("heading", { name: "Preferiti e pasti salvati" }) !== null,
+        });
+        posizione = y;
+      }) as typeof window.scrollTo);
+      vi.stubGlobal("requestAnimationFrame", () => 0);
+      vi.stubGlobal("cancelAnimationFrame", () => {});
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    async function apriDaElencoScorso(nome: string) {
+      await creaPasto(nome);
+      render(<PreferitiPage />);
+      const riga = await screen.findByRole("button", { name: new RegExp(`^Modifica ${nome}`) });
+      posizione = 1500;
+      fireEvent.scroll(window);
+      fireEvent.click(riga);
+      expect(await screen.findByText("Modifica pasto salvato")).toBeTruthy();
+      posizione = 0; // il documento si è accorciato
+    }
+
+    it("con la freccia", async () => {
+      await apriDaElencoScorso("Colazione salvata");
+
+      fireEvent.click(screen.getByRole("button", { name: "Indietro" }));
+
+      expect(
+        await screen.findByRole("heading", { name: "Preferiti e pasti salvati" })
+      ).toBeTruthy();
+      expect(chiamate[0]).toEqual({ y: 1500, elencoPresente: true });
+    });
+
+    it("con lo swipe", async () => {
+      await apriDaElencoScorso("Cena salvata");
+
+      await swipe();
+
+      expect(chiamate[0]).toEqual({ y: 1500, elencoPresente: true });
+    });
+  });
+
   it("con un pasto aperto: lo swipe lo chiude e resta su Preferiti", async () => {
     await creaPasto("Merenda");
     render(<PreferitiPage />);

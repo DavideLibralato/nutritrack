@@ -692,6 +692,120 @@ describe("Catalogo alimenti: il nome cercato passa al modulo", () => {
   });
 });
 
+// Il ritorno al punto dell'elenco (useRitornoScorrimento; PUNTO §3,
+// "Alimenti"): nell'app installata su iPhone l'elenco ripartiva
+// dall'inizio dopo il modulo (12/11). jsdom non scorre: `scrollY` è finto e
+// si guarda che alla chiusura, da ogni strada, `scrollTo` rimetta il punto
+// con l'elenco già a schermo. I ridisegni del ricontrollo non partono qui
+// (li prova il test dell'hook).
+describe("Catalogo alimenti: torna al punto dell'elenco dopo il modulo", () => {
+  let posizione = 0;
+  let chiamate: { y: number; elencoPresente: boolean }[] = [];
+
+  beforeEach(() => {
+    posizione = 0;
+    chiamate = [];
+    Object.defineProperty(window, "scrollY", { configurable: true, get: () => posizione });
+    vi.spyOn(window, "scrollTo").mockImplementation(((x: number, y: number) => {
+      chiamate.push({
+        y,
+        elencoPresente: screen.queryByRole("searchbox", { name: "Cerca un alimento" }) !== null,
+      });
+      posizione = y;
+    }) as typeof window.scrollTo);
+    vi.stubGlobal("requestAnimationFrame", () => 0);
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function elencoScorso() {
+    await creaAlimento("Banana", null, null);
+    await creaAlimento("Mela", null, null);
+    render(<AlimentiPage />);
+    await screen.findByText("Banana");
+    posizione = 1200;
+    fireEvent.scroll(window);
+  }
+
+  it("con la freccia del modulo", async () => {
+    await elencoScorso();
+    fireEvent.click(screen.getByText("Banana"));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+    posizione = 0; // il documento si è accorciato
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Torna al catalogo" })[0]);
+
+    expect(await screen.findByText("Mela")).toBeTruthy();
+    expect(chiamate[0]).toEqual({ y: 1200, elencoPresente: true });
+  });
+
+  it("con lo swipe indietro", async () => {
+    await elencoScorso();
+    fireEvent.click(screen.getByText("Banana"));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+
+    await act(async () => {
+      const arrivo = new Promise((r) => window.addEventListener("popstate", r, { once: true }));
+      window.history.back();
+      await arrivo;
+    });
+
+    expect(screen.getByText("Mela")).toBeTruthy();
+    expect(chiamate[0]).toEqual({ y: 1200, elencoPresente: true });
+  });
+
+  it("dopo Salva di un alimento nuovo, con la barra «Creato»", async () => {
+    await elencoScorso();
+    fireEvent.click(screen.getByRole("button", { name: "Nuovo alimento" }));
+    for (const [etichetta, valore] of [
+      ["Nome", "Kiwi"],
+      ["Calorie (kcal)", "61"],
+      ["Grassi (g)", "0"],
+      ["Carboidrati (g)", "15"],
+      ["Proteine (g)", "1"],
+    ]) {
+      fireEvent.change(screen.getByLabelText(etichetta), { target: { value: valore } });
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+
+    expect(await screen.findByText("Creato:")).toBeTruthy();
+    expect(chiamate[0]).toEqual({ y: 1200, elencoPresente: true });
+  });
+
+  it("dopo Elimina dal modulo", async () => {
+    await elencoScorso();
+    fireEvent.click(screen.getByText("Banana"));
+    fireEvent.click(await screen.findByRole("button", { name: "Elimina" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sì, elimina" }));
+
+    expect(await screen.findByText("Mela")).toBeTruthy();
+    // La riga sparisce dall'elenco ("Banana" resta solo nella barra).
+    await waitFor(() => expect(screen.queryByRole("button", { name: /^Banana.*kcal/ })).toBeNull());
+    expect(chiamate[0]).toEqual({ y: 1200, elencoPresente: true });
+  });
+
+  it("aperto dalla scheda «Catalogo»: nessun recupero (riparte da capo)", async () => {
+    render(<AlimentiPage />);
+    fireEvent.click(await screen.findByRole("button", { name: /^Catalogo/ }));
+    fireEvent.change(await screen.findByRole("searchbox", { name: "Cerca nel catalogo" }), {
+      target: { value: "mandorle" },
+    });
+    posizione = 900;
+    fireEvent.scroll(window);
+    fireEvent.click(screen.getByRole("button", { name: "Aggiungi Mandorle ai tuoi alimenti" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apri" }));
+    expect(await screen.findByText("Modifica alimento")).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Torna al catalogo" })[0]);
+
+    expect(await screen.findByRole("searchbox", { name: "Cerca nel catalogo" })).toBeTruthy();
+    expect(chiamate).toHaveLength(0);
+  });
+});
+
 // Lo swipe indietro (useChiudiConIndietro; PUNTO §3, "Alimenti"): con il
 // modulo aperto lo chiude e resta su Alimenti, invece di tornare a
 // Impostazioni. E Salva non lascia un passo in più nella cronologia (un

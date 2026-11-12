@@ -5,6 +5,45 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-12 — Alimenti e Preferiti tornano al punto dell'elenco
+
+Branch `alimenti-aspetto`, commit a parte prima del 2b. È un difetto già
+in produzione.
+
+**Prove del 2a**, il 12/11 sera, anteprima aggiunta alla Home, account di
+prova, Build `365f88b`. Tutte ok:
+- nome nel modulo, + e «Vai»;
+- swipe dal modulo, dalla modifica, dal pasto salvato e dalla sua
+  ricerca;
+- nessun "indietro" a vuoto dopo la freccia;
+- ricaricamento in Safari.
+
+Scansione e modalità aereo: non indicate.
+
+**Difetto trovato.** In Alimenti, da un elenco scorso, aprire un alimento
+e tornare faceva ripartire l'elenco dall'inizio, sia con lo swipe sia con
+la freccia ‹. Davide l'ha visto anche nell'app vera (main `4afe1f1`). Si
+vede solo nell'app installata su iPhone; in Safari torna al punto giusto.
+Il meccanismo esatto di iOS non è verificato.
+
+**Correzione.** Un hook nuovo, `useRitornoScorrimento`, al posto del
+singolo `scrollTo` di prima, in Alimenti e Preferiti:
+- annota il punto a ogni scorrimento;
+- lo rimette prima del ridisegno, in `useLayoutEffect`;
+- per dieci ridisegni ricontrolla e lo rimette se qualcosa l'ha spostato;
+- smette al primo tocco dell'utente.
+
+Non dalla scheda «Catalogo», dove l'elenco riparte da capo dopo «Apri».
+Quel difetto (ricerca e filtri persi) è scritto come aperto in PUNTO §11.
+
+**Test.** 7 permanenti dell'hook, 5 in Alimenti (freccia, swipe, Salva,
+Elimina, Catalogo), 2 in Preferiti. Rompendo il codice da una copia, 9
+rotture su 10 fanno fallire il loro test. La decima è un controllo doppio:
+il punto si copia all'apertura, prima che il documento si accorci.
+
+Trovato strada facendo: Vitest falliva con «failed to find the runner»
+se lanciato da `c:\` minuscolo. Da `C:\` funziona.
+
 ## 2026-11-11 — Lo swipe indietro chiude la schermata, in Impostazioni
 
 Branch `alimenti-aspetto`, commit 2a. Nell'app installata su iPhone e in

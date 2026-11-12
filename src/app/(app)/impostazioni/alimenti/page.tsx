@@ -46,7 +46,7 @@
 //   «Annulla» (eliminaAlimenti con la sola copia). In «I miei» le copie
 //   hanno sotto «dal catalogo».
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
@@ -99,6 +99,7 @@ import { annullaValoriInArrivo } from "@/lib/repository/alimenti";
 import { useTieniPremuto, type RigaPremuta } from "@/lib/tieniPremuto";
 import { useAreaVisibile } from "@/lib/areaVisibile";
 import { useChiudiConIndietro } from "@/lib/useChiudiConIndietro";
+import { useRitornoScorrimento } from "@/lib/useRitornoScorrimento";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
 import type { Alimento } from "@/lib/db/tipi";
 import { etichettaAlimento } from "@/lib/repository/alimenti";
@@ -275,14 +276,13 @@ function PaginaAlimenti() {
     onTrascinamento: { inizio: seleziona, movimento: () => {}, fine: () => {} },
   });
 
-  // Dove era arrivato lo scorrimento quando si è aperto il form: alla
-  // chiusura l'elenco ricompare e si torna lì. Come in Preferiti.
-  const scorrimentoElenco = useRef<number | null>(null);
-  useEffect(() => {
-    if (modulo !== null || scorrimentoElenco.current === null) return;
-    window.scrollTo(0, scorrimentoElenco.current);
-    scorrimentoElenco.current = null;
-  }, [modulo]);
+  // Alla chiusura del modulo l'elenco di «I miei» torna dove era arrivato
+  // lo scorrimento (useRitornoScorrimento), come in Preferiti. Non dalla
+  // scheda «Catalogo»: alla chiusura riparte da capo (ricerca e filtri
+  // persi, difetto aperto in PUNTO §11), e il punto di prima cadrebbe su
+  // un elenco diverso. La scansione da sola non conta: è sopra l'elenco,
+  // che resta disegnato.
+  useRitornoScorrimento(modulo !== null && scheda === "miei");
 
   // Lo swipe indietro con il modulo o la scansione aperti li chiude e resta
   // qui (useChiudiConIndietro). Le due schermate si danno il cambio
@@ -360,7 +360,6 @@ function PaginaAlimenti() {
   }
 
   function apri(m: Modulo) {
-    scorrimentoElenco.current = window.scrollY;
     setBarra(null);
     setModulo(m);
   }

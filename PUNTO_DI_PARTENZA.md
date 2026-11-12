@@ -2343,8 +2343,10 @@ zero.
   è `fixed` e il documento non ha niente da scorrere. Senza l'elenco il
   documento resta alto quanto la finestra, come in Aggiungi. La causa è
   dedotta dal codice, non misurata; la correzione è provata. Alla chiusura
-  l'elenco torna dove era arrivato lo scorrimento; righe tolte e barra
-  restano (sono stato della pagina, che non si smonta).
+  l'elenco torna dove era arrivato lo scorrimento (`useRitornoScorrimento`,
+  come in Alimenti; dal 12/11 anche nell'app installata, da provare);
+  righe tolte e barra restano (sono stato della pagina, che non si
+  smonta).
 - Niente guardiano nella pagina, che non ha un modulo: lo chiama
   `ModificaPastoSalvato` quando ha modifiche (`useSegnalaModifiche`, che in
   /aggiungi non fa niente perché lì il guardiano non c'è).
@@ -2470,7 +2472,21 @@ catalogo, si corregge e si fa pulizia.
 
   Oggi in Impostazioni > Alimenti (modulo e scansione) e Preferiti (pasto
   salvato e la sua ricerca); Aggiungi nel commit successivo. Coperto dai
-  test, **da provare** su iPhone, anche il ricaricamento.
+  test, **provato** sull'anteprima aggiunta alla Home il 12/11 (sotto,
+  §11), il ricaricamento in Safari.
+- **Alla chiusura del modulo l'elenco torna al punto di prima**
+  (`useRitornoScorrimento`, anche in Preferiti per il pasto salvato), da
+  ogni strada: freccia, swipe, Salva, Crea, Elimina. Anche dopo Salva di
+  un alimento nuovo, che con «Più usati» finisce in fondo: la barra
+  «Creato: …» dice che c'è. Il punto si annota a ogni scorrimento mentre
+  l'elenco è a schermo e si rimette prima del ridisegno; per una decina
+  di ridisegni si ricontrolla e si rimette se qualcosa l'ha spostato,
+  fermandosi al primo tocco dell'utente. Il recupero di prima (un solo
+  `scrollTo`) andava in Safari ma **non nell'app installata su iPhone**,
+  dove l'elenco ripartiva dall'inizio (12/11); il meccanismo esatto di
+  iOS non è verificato. Non dalla scheda «Catalogo»: lì l'elenco riparte
+  da capo (difetto aperto in §11). Coperto dai test, **da provare**
+  nell'app installata.
 - **Il "+"** è tondo, a destra, alla stessa altezza di "+ Aggiungi" in
   Oggi (sopra la tab bar, con la stessa sfumatura dietro), e come la tab
   bar si nasconde mentre un campo ha il fuoco. La barra con Annulla sta
@@ -9170,6 +9186,26 @@ scritture; tutte le prove sono andate bene:
 commit, e **provato nell'app vera** lo stesso giorno, Build `4afe1f1`,
 account vero: «funziona tutto» (Davide).
 
+**`alimenti-aspetto`** (dall'11/11, branch da `4afe1f1`). Fin qui:
+- il nome cercato passa a «Nuovo alimento» in Alimenti;
+- lo swipe indietro chiude la schermata a tutto schermo in Impostazioni
+  (Alimenti e Preferiti);
+- il ritorno al punto dell'elenco dopo il modulo, corretto per l'app
+  installata (difetto già in produzione).
+
+**Prove del 12/11 sera** sull'anteprima aggiunta alla Home, account di
+prova, Build `365f88b`, tutte ok:
+- il nome nel modulo, il + e «Vai» sulla tastiera;
+- lo swipe dal modulo, dalla modifica, dal pasto salvato e dalla sua
+  ricerca;
+- nessun "indietro" a vuoto dopo la freccia;
+- il ricaricamento, in Safari.
+
+Scansione e modalità aereo: non indicate. Trovato un difetto: l'elenco
+che riparte dall'inizio dopo il modulo, già nell'app vera (main
+`4afe1f1`, app installata; in Safari invece torna al punto giusto).
+Corretto (sotto, "Difetti e verifiche aperti"), da provare.
+
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
 i numeri delle sue segnalazioni.
@@ -9195,6 +9231,21 @@ i numeri delle sue segnalazioni.
   1-5, l'ultimo provato su iPhone il 10/10: sopra, "Fatto")
 
 ### Difetti e verifiche aperti
+
+- **Alimenti e Preferiti, l'elenco ripartiva dall'inizio dopo il
+  modulo** (trovato da Davide il 12/11; già in produzione, main
+  `4afe1f1`). Solo nell'app installata su iPhone: in Safari tornava al
+  punto giusto. Il meccanismo esatto di iOS non è verificato. Corretto
+  nel branch `alimenti-aspetto` con `useRitornoScorrimento` (sezione 3,
+  "Alimenti"): coperto dai test, **da provare nell'app installata**, in
+  Alimenti e in Preferiti. Se il ricontrollo di dieci ridisegni non
+  basta, si allunga (`RIDISEGNI_DI_CONTROLLO`).
+
+- **Alimenti, scheda «Catalogo»: «Apri» perde ricerca e filtri** (dal
+  codice, 12/11). «Apri» apre il modulo, `SchedaCatalogo` si smonta, e
+  alla chiusura riparte da capo: ricerca, categoria, scheda aperta e
+  scorrimento. Aperto: si riguarda nel commit dell'aspetto di Alimenti
+  (`alimenti-aspetto`).
 
 - **Esporta, la protezione dalle formule nel CSV** (branch `esporta`,
   sezione 10.4, "Il CSV"): coperta dai test, non provata dal vivo. Nella

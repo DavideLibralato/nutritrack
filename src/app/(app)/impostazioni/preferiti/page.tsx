@@ -24,7 +24,7 @@
 // Niente modulo da salvare in questa pagina, quindi niente guardiano qui:
 // lo chiama ModificaPastoSalvato quando è aperta e ha modifiche.
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useUtenteId } from "@/lib/supabase/useUtente";
 import {
@@ -49,6 +49,7 @@ import RigaPastoSalvatoImpostazioni from "@/components/RigaPastoSalvatoImpostazi
 import ModificaPastoSalvato from "@/components/ModificaPastoSalvato";
 import BarraAnnulla from "@/components/BarraAnnulla";
 import { useChiudiConIndietro } from "@/lib/useChiudiConIndietro";
+import { useRitornoScorrimento } from "@/lib/useRitornoScorrimento";
 
 type Barra = MessaggioBarra & {
   // Cambia a ogni messaggio: è la `key` della barra, così il timer riparte.
@@ -90,17 +91,10 @@ export default function PreferitiPage() {
   const [pastoInModificaId, setPastoInModificaId] = useState<string | null>(null);
   const [barra, setBarra] = useState<Barra | null>(null);
 
-  // Dove era arrivato lo scorrimento dell'elenco quando si è aperto un
-  // pasto: alla chiusura l'elenco ricompare e si torna lì (vedi sotto, sul
-  // perché l'elenco sparisce). Un ref, non uno stato: serve solo da leggere
-  // alla chiusura, non deve ridisegnare niente.
-  // null finché non c'è niente da ripristinare (all'apertura della pagina).
-  const scorrimentoElenco = useRef<number | null>(null);
-  useEffect(() => {
-    if (pastoInModificaId !== null || scorrimentoElenco.current === null) return;
-    window.scrollTo(0, scorrimentoElenco.current);
-    scorrimentoElenco.current = null;
-  }, [pastoInModificaId]);
+  // Alla chiusura del pasto l'elenco ricompare e torna dove era arrivato lo
+  // scorrimento (useRitornoScorrimento; vedi sotto, sul perché l'elenco
+  // sparisce).
+  useRitornoScorrimento(pastoInModificaId !== null);
 
   // Lo swipe indietro con un pasto aperto chiude il pasto e resta qui
   // (useChiudiConIndietro), senza «Esci senza salvare?»: lo chiede solo la
@@ -167,7 +161,6 @@ export default function PreferitiPage() {
   }
 
   function apriModificaPasto(composizioneId: string) {
-    scorrimentoElenco.current = window.scrollY;
     setBarra(null);
     setPastoInModificaId(composizioneId);
   }
