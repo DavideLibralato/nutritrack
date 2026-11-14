@@ -9489,10 +9489,9 @@ server. Ora la voce in coda ricorda quale cancellazione annulla, e la
 discesa rispetta solo quella (sezione 9.2, "eccezione: la cancellazione
 che l'utente ha annullato"). Dexie a version(11), senza `.upgrade()`.
 Nessuna migration. Test permanenti in `rimessaInVita.test.ts`,
-`codaStessaRiga.test.ts` e `aggiornamentoSchema.test.ts`. **Da provare
-sull'anteprima** (sotto, "Prove su iPhone della rimessa in vita"); la
-prova 0 (Dexie alla 10, poi alla 11) è preparata sull'anteprima del
-branch dal 14/11.
+`codaStessaRiga.test.ts` e `aggiornamentoSchema.test.ts`. **Provato
+sull'anteprima il 14/11** (commit `a4c96cb`), prove 0-4 passate (sotto,
+"Prove su iPhone della rimessa in vita").
 
 **Audit del 14/11**: il report è in `docs/audit/AUDIT_2026-11-14.md`,
 con in fondo l'esito della revisione di Cowork. A1 corretto in
@@ -10141,8 +10140,31 @@ dell'anteprima: fatto il 18/10 (confermato da Davide alle 23:18).
 ### Prove su iPhone della rimessa in vita
 
 Per il branch `rimessa-in-vita` (14/11), sull'anteprima del branch, con
-l'account di prova. **Da fare.** In Informazioni si legge prima la Build.
-Fra una prova e l'altra si aspetta il pallino verde.
+l'account di prova. **Provate il 14/11** in Safari (commit `a4c96cb`,
+Build non annotata): **prove 0-4 passate**, Davide: «funziona tutto».
+
+Controllate da Cowork su Supabase e nei log edge, in sola lettura:
+- prova 0: la stella di Anacardi tolta in modalità aereo sull'anteprima
+  alla version(10) alle 18:49:31 è arrivata al server alle 20:05:56,
+  alla riapertura con la versione nuova. La voce in coda non si è persa
+  passando alla version(11);
+- prove 1 e 2: 7 salvataggi di preferiti dall'iPhone fra le 20:06 e le
+  20:07, compatibili con le prove. Lo stato finale sul server l'ha poi
+  cambiato la prova 3 sullo stesso alimento (Nutella), quindi l'esito si
+  basa su quello che Davide ha visto;
+- prova 3: dal PC stella messa alle 20:08:52 e tolta alle 20:09:05; dopo,
+  nessun salvataggio dall'iPhone. La stella rimessa offline è stata
+  scartata: vince la cancellazione nuova;
+- prova 4: stelle messe e tolte più volte con la rete; l'alimento «Test»
+  creato alle 20:10:47, eliminato e annullato, arrivati insieme alle
+  20:11:07: sul server è vivo.
+
+Restano sull'account di prova: la voce di Nutella nel diario del 14/11
+(aggiunta per sbaglio), l'alimento «Test», i preferiti di Anacardi e
+Nutella cancellati.
+
+Le prove, come scritte prima di farle (in Informazioni si legge prima la
+Build; fra una prova e l'altra si aspetta il pallino verde):
 
 0. **Dexie dalla 10 alla 11** (CLAUDE.md B.7): preparata prima del
    commit della correzione, con l'anteprima alla version(10): una

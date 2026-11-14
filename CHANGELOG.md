@@ -5,6 +5,19 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — rimessa-in-vita provato sull'anteprima
+
+Branch `rimessa-in-vita`.
+
+Prove su iPhone 0-4 passate sull'anteprima, Safari, account di prova
+(commit `a4c96cb`), controllate da Cowork su Supabase e nei log edge.
+La prova 0 conferma dal vero il passaggio di Dexie dalla 10 alla 11: la
+modifica rimasta in coda alla 10 è arrivata al server dopo
+l'aggiornamento. La prova 3 conferma che una cancellazione fatta altrove
+vince ancora. Nessun bug nuovo. Sull'account di prova restano una voce
+di diario del 14/11, l'alimento «Test» e due preferiti cancellati.
+PUNTO §11 aggiornato.
+
 ## 2026-11-14 — Una riga rimessa in vita non viene ricancellata dalla discesa
 
 Branch `rimessa-in-vita`, commit 2 (audit del 14/11, A2).
