@@ -5,6 +5,45 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — password-8 unito a main, minimo 8 anche sul server
+
+Unito a main il 14/11 con fast-forward da `f9a381b` a `820bf8a`, senza
+commit di merge. I 2 commit:
+- `77c738e`: password nuove di almeno 8 caratteri;
+- `820bf8a`: password rubate e foto degli amici, solo documenti.
+
+Il branch è cancellato in locale e su GitHub. Non c'è nessuna migration
+e nessuna Redirect URL dell'anteprima da togliere. Su main, prima del
+push: 2098 test verdi in 169 file, gli altri controlli puliti. Build
+`820bf8a` nell'app vera alle 17:40 (Davide).
+
+**Prove sull'anteprima** (verso le 17:30, controllate da Cowork nei log):
+- Registrati con un codice finto e una password di 7 caratteri → il
+  testo «almeno 8», nessun account nato;
+- Cambia password con una nuova di 7 caratteri → fermata dall'app,
+  nessuna chiamata al server.
+
+**Dashboard di Supabase a 8**: Authentication > Sign In / Providers >
+Email, «Minimum password length» 8, salvato il 14/11 alle 17:38 (Auth
+ricarica la configurazione alle 17:38:56). Nello screenshot controllato:
+leaked passwords spento, require current password acceso, secure
+password change spento, password requirements vuoto.
+
+**Provato dal vivo** con l'account di prova in Safari, nell'app vera:
+- password di 6 caratteri messa alle 17:33 (Build ancora `f9a381b`);
+- dopo il minimo a 8, Accedi con la password di 6 caratteri → 200 alle
+  17:39:23;
+- poi Cambia password con l'attuale di 6 caratteri → riuscito alle
+  17:39:52.
+
+Chi ha una password corta quindi entra ancora e può cambiarla. Non
+indicata: una nuova di 7 caratteri nell'app vera. La fascia ±5% resta
+provvisoria.
+
+PUNTO §9.1 («La lunghezza della password» e Cambia password) e §11; il
+commento in `validazione.ts` non dice più di alzare il minimo dopo il
+deploy. Questa voce è scritta nel commit 1 del branch `redirect-sicuro`.
+
 ## 2026-11-14 — Password rubate e foto degli amici nei documenti
 
 Branch `password-8`, commit 2, solo documenti (audit #6 e #7).

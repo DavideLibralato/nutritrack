@@ -9,11 +9,13 @@ export function emailValida(valore: string): boolean {
 
 // La lunghezza minima di una password NUOVA (Registrati, Reimposta, Cambia
 // password; PUNTO_DI_PARTENZA.md §9.1, audit #6): 8 dal branch password-8,
-// prima 6. Lo stesso numero va sulla dashboard di Supabase (Authentication
-// > Providers > Email), alzato DOPO il deploy dell'app: nell'ordine
-// contrario l'app lascerebbe partire password che il server rifiuta.
-// Accedi non controlla la lunghezza: chi ha già una password di 6-7
-// caratteri deve poter entrare. Il file non importa niente, così
+// prima 6. Lo stesso numero sta sulla dashboard di Supabase
+// (Authentication > Sign In / Providers > Email, «Minimum password
+// length»): 8 dal 14/11, alzato DOPO il deploy dell'app. Se cambia,
+// stesso ordine: prima l'app, poi la dashboard, altrimenti l'app
+// lascerebbe partire password che il server rifiuta. Accedi non
+// controlla la lunghezza: chi ha già una password di 6-7 caratteri deve
+// poter entrare (provato dal vivo il 14/11, anche Cambia password). Il file non importa niente, così
 // erroriAuth.ts può costruirci sopra i suoi testi senza giri.
 export const LUNGHEZZA_MINIMA_PASSWORD = 8;
 

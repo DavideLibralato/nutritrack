@@ -6053,17 +6053,18 @@ Conseguenze:
   Test permanenti in `validazione.test.ts`, `erroriAuth.test.ts`,
   `auth.test.ts`, `cambiaPassword.test.ts` e `login/page.test.tsx`
   (Accedi con 6 caratteri). **Sulla dashboard di Supabase**
-  (Authentication > Providers > Email, minimo della password) il valore
-  è ancora 6: lo alza a 8 Davide a mano, **dopo** il deploy di
-  produzione. Nell'ordine contrario, per qualche minuto l'app
-  lascerebbe partire password di 6-7 caratteri che il server rifiuta.
-  **Chi ha già una password più corta continua ad accedere**:
-  verificato nel codice di auth-js 2.115.0, dove `signInWithPassword`
-  restituisce la sessione con un campo `weakPassword` in più e non un
-  errore (`_sessionResponsePassword`), e il rinnovo della sessione non
-  manda la password. **Da provare dal vivo** sul server, con il minimo
-  a 8: l'accesso con una password di 6-7 caratteri, e Cambia password
-  con un'attuale di 6-7 caratteri
+  (Authentication > Sign In / Providers > Email, «Minimum password
+  length») il valore è **8 dal 14/11 alle 17:38**, alzato da Davide a
+  mano **dopo** il deploy di produzione (Build `820bf8a`). Nell'ordine
+  contrario, per qualche minuto l'app avrebbe lasciato partire password
+  di 6-7 caratteri che il server rifiuta. **Chi ha già una password più
+  corta continua ad accedere**: nel codice di auth-js 2.115.0
+  `signInWithPassword` restituisce la sessione con un campo
+  `weakPassword` in più e non un errore (`_sessionResponsePassword`), e
+  il rinnovo della sessione non manda la password. **Provato dal vivo**
+  il 14/11 con l'account di prova, nell'app vera e il minimo a 8:
+  Accedi con una password di 6 caratteri riuscito (17:39:23), poi
+  Cambia password con l'attuale di 6 caratteri riuscito (17:39:52)
 - **Accedi porta solo a pagine dell'app** (dal 23/10, branch
   `redirect-accesso`). Dopo l'accesso si va al `redirectTo`
   dell'indirizzo (lo mette il middleware quando si apre una pagina
@@ -6474,7 +6475,7 @@ Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
   (`history.replaceState`, `src/lib/account/passwordAggiornata.ts`): un
   ricaricamento non la fa ricomparire. Nessuna email "password
   cambiata". Minimo 8 caratteri per la nuova (dal 14/11, sopra, "La
-  lunghezza della password"; sul server si alza a 8 dopo il deploy).
+  lunghezza della password"; sul server 8 dal 14/11).
 - **Le sessioni.** Su questo dispositivo la sessione resta, con gli
   stessi token: niente `refreshSession`, la sincronizzazione continua.
   **Le sessioni sugli altri dispositivi si chiudono**: le chiude il
@@ -9405,13 +9406,18 @@ commit, e **provato nell'app vera** il 14/11 alle 16:57, Build
 «Crea «…»», swipe e scorrimento) e Aggiungi, «funziona tutto alla
 perfezione» (Davide). La fascia ±5% resta provvisoria.
 
-**`password-8`** (dal 14/11, branch da `f9a381b`; audit #6 e #7). Fin
-qui: minimo 8 caratteri per le password nuove nell'app (Registrati,
-Reimposta, Cambia password; sezione 9.1, "La lunghezza della
-password"). Il minimo sulla dashboard di Supabase è ancora 6: si alza a
-8 dopo il deploy di produzione. Poi, solo documenti: Leaked Password
-Protection fra gli avvisi accettati (sezione 9.6) e la foto profilo fra
-ciò che vede un amico (sezioni 3, 9.5 e 9.6, audit #7).
+**`password-8`** (14/11, branch da `f9a381b`; audit #6 e #7): minimo 8
+caratteri per le password nuove nell'app (Registrati, Reimposta, Cambia
+password; sezione 9.1, "La lunghezza della password"). Poi, solo
+documenti: Leaked Password Protection fra gli avvisi accettati (sezione
+9.6) e la foto profilo fra ciò che vede un amico (sezioni 3, 9.5 e 9.6,
+audit #7). **Unito a main il 14/11** con fast-forward da `f9a381b` a
+`820bf8a`, 2 commit; Build `820bf8a` nell'app vera alle 17:40. **Il
+minimo sulla dashboard di Supabase è 8 dal 14/11 alle 17:38.** Provato
+sull'anteprima (Registrati e Cambia password con una nuova di 7
+caratteri: fermate) e dal vivo con l'account di prova: Accedi e Cambia
+password con una password di 6 caratteri riusciti col minimo a 8. Non
+indicata: una nuova di 7 caratteri nell'app vera.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
