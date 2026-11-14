@@ -9441,7 +9441,12 @@ reimposta-password, onboarding, `caricaPaginaDaCapo`, eliminazione
 dell'account, Aggiungi): nessuno usa una destinazione presa da fuori.
 **Provato sull'anteprima** il 14/11 verso le 18:25 (Safari, account di
 prova, Build `d59015d`, Davide): prove 5 e 6 passate, «funziona bene»
-(sotto, "Prove su iPhone della destinazione dopo l'accesso").
+(sotto, "Prove su iPhone della destinazione dopo l'accesso"). **Unito a
+main il 14/11** con fast-forward da `820bf8a` a `401d2ee`, 3 commit, e
+**provato nell'app vera** il 14/11 verso le 18:34, Build `401d2ee`,
+Safari: prova 5 «andata a buon fine» (Davide), fatta per sbaglio con
+l'account vero (accesso 200 alle 18:34:33 nei log di Auth, controllato
+da Cowork), nessun dato scritto. La fascia ±5% resta provvisoria.
 
 **Audit del 14/11**: il report è in `docs/audit/AUDIT_2026-11-14.md`,
 con in fondo l'esito della revisione di Cowork. A1 corretto in

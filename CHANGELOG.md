@@ -5,6 +5,27 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — redirect-sicuro unito a main e provato nell'app vera
+
+Unito a main il 14/11 con fast-forward da `820bf8a` a `401d2ee`, senza
+commit di merge. I 3 commit:
+- `ab6cb2b`: password-8 unito, minimo 8 anche sul server (documenti);
+- `d59015d`: Accedi porta solo a pagine dell'app, anche con «/./», più
+  il report dell'audit del 14/11;
+- `401d2ee`: redirect-sicuro provato sull'anteprima (documenti).
+
+Il branch è cancellato in locale e su GitHub. Non c'è nessuna migration
+e nessuna Redirect URL dell'anteprima da togliere. Su main, prima del
+push: 2109 test verdi in 169 file, format:check, tsc, eslint e
+`npm run build` puliti.
+
+Provato nell'app vera il 14/11 verso le 18:34, Build `401d2ee`, in
+Safari: prova 5 (`/login?redirectTo=/.//example.com`, accesso → Oggi,
+indirizzo di app-libra) «andata a buon fine» (Davide). Fatta per
+sbaglio con l'account vero invece che con quello di prova: accesso con
+risposta 200 alle 18:34:33 nei log di Auth, controllato da Cowork.
+Nessun dato scritto. La fascia ±5% resta provvisoria. PUNTO §11.
+
 ## 2026-11-14 — redirect-sicuro provato sull'anteprima
 
 Branch `redirect-sicuro`.
