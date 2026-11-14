@@ -3021,7 +3021,9 @@ del 15/10.
   bloccherebbe (sezione 4, `pasti`), ed è privata per costruzione, mentre
   lo username lo vedono gli amici. Ha una tabella sua, `nomi_utente`
   (sezione 4).
-- Gli amici vedono **solo lo username**: mai nome, email o altro.
+- Gli amici vedono **solo lo username** e, se c'è, la **foto profilo**
+  (dal 25/10, solo con amicizia accettata: sotto, "Profilo", "La foto
+  profilo"; sezione 9.6): mai nome, email o altro.
 
 **Le amicizie**
 - **Aggiungi**: si scrive lo username esatto, "Invia richiesta".
@@ -7128,8 +7130,9 @@ un `debounce` sulla digitazione.
   altri utenti. **Eccezione decisa il 15/10: Amici** (sezione 3). Si può
   avere degli amici e mandare loro una copia di un alimento, niente di
   più: lo username si trova solo scrivendolo esatto (nessun elenco,
-  nessuna ricerca parziale), un amico vede solo lo username, mai diario,
-  peso, obiettivi o profilo, e niente classifiche o confronti. Gli avvisi
+  nessuna ricerca parziale), un amico vede solo lo username e la foto
+  profilo, se c'è (dal 25/10, sezione 9.6), mai diario, peso, obiettivi
+  o profilo, e niente classifiche o confronti. Gli avvisi
   sono un pallino dentro l'app, mai una notifica
 - **Niente gamification**: nessuna streak, nessun badge, nessun punteggio. Saltare
   un giorno non è un fallimento da notificare
@@ -7183,8 +7186,24 @@ costruzione e non per attenzione.
     chi lo manda non sa se è stato aggiunto o rifiutato;
   - le righe di `amicizie` mostrano a ciascuno dei due l'id dell'altro:
     serve a leggere il suo username, e non dice niente di più;
+  - la **foto profilo** (dal 25/10, branch `foto-profilo`) la vedono solo
+    gli amici con amicizia **accettata**, in Amici e nel foglio
+    "Condividi con", con URL firmati validi un'ora. Chi ha mandato o
+    ricevuto una richiesta non accettata vede le iniziali. Chi non è
+    più amico vede le iniziali, ma un URL ricevuto prima resta valido
+    fino alla sua scadenza (rischio accettato: sezione 4, "La foto
+    profilo: solo online");
   - nessuna di queste regole tocca diario, peso, obiettivi, profilo,
     pasti salvati o preferiti, che restano `user_id = auth.uid()`
+- **Avviso di `get_advisors` accettato: Leaked Password Protection**
+  (`auth_leaked_password_protection`; audit #6, branch `password-8`).
+  Il controllo delle password già finite in elenchi di password rubate
+  (HaveIBeenPwned; Authentication > Sign In / Providers > Email >
+  "Prevent use of leaked passwords") è disponibile solo dal piano Pro
+  di Supabase, quindi resta spento per la regola del costo zero. Da
+  riconsiderare solo se l'app si apre al pubblico. Al suo posto, il
+  minimo di 8 caratteri per le password nuove (sezione 9.1, "La
+  lunghezza della password")
 - **Avvisi di `get_advisors` accettati per Amici** (15/10), come per
   `elimina_mio_account`: un WARN
   `authenticated_security_definer_function_executable` per ogni funzione
@@ -8196,12 +8215,8 @@ giorno (20/9). Scelte prese durante la prima migration, ancora valide:
   sola lettura per costruzione (punto 10.8), e l'`insert` impedisce di
   crearsi alimenti già `verificato = true`
 
-Resta un solo avviso del linter, non risolvibile gratuitamente:
-**Leaked Password Protection** disattivata (Authentication → Sign In /
-Providers → Email → "Prevent use of leaked passwords"). Disponibile solo dal
-piano Pro (25$/mese), quindi resta spenta per la regola "niente servizi a
-pagamento senza avvisare". Da riconsiderare solo se l'app si aprisse al
-pubblico.
+**Leaked Password Protection** resta spenta: è un avviso accettato,
+sezione 9.6.
 
 **Repo.** Ripulito il 4-5 settembre invece di crearne uno nuovo: history e
 configurazione Vercel mantenute, codice della v0 consultabile sul tag
@@ -9394,7 +9409,9 @@ perfezione» (Davide). La fascia ±5% resta provvisoria.
 qui: minimo 8 caratteri per le password nuove nell'app (Registrati,
 Reimposta, Cambia password; sezione 9.1, "La lunghezza della
 password"). Il minimo sulla dashboard di Supabase è ancora 6: si alza a
-8 dopo il deploy di produzione.
+8 dopo il deploy di produzione. Poi, solo documenti: Leaked Password
+Protection fra gli avvisi accettati (sezione 9.6) e la foto profilo fra
+ciò che vede un amico (sezioni 3, 9.5 e 9.6, audit #7).
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono

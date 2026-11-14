@@ -5,6 +5,20 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — Password rubate e foto degli amici nei documenti
+
+Branch `password-8`, commit 2, solo documenti (audit #6 e #7).
+
+- **#6:** Leaked Password Protection (HaveIBeenPwned) diventa un avviso
+  accettato in PUNTO §9.6. È solo del piano Pro e resta spenta per il
+  costo zero. In §11 resta un rimando: prima il testo stava lì, e diceva
+  «un solo avviso del linter», cosa non più vera.
+- **#7:** dal 25/10 un amico vede anche la foto profilo, se c'è. §3
+  (Amici), §9.5 e §9.6 dicevano «solo lo username». La foto la vedono
+  solo gli amici con amicizia accettata, con URL firmati di un'ora. Un
+  ex amico vede le iniziali, ma un URL ricevuto prima resta valido fino
+  alla scadenza.
+
 ## 2026-11-14 — Password nuove di almeno 8 caratteri
 
 Branch `password-8`, commit 1 (audit #6).
