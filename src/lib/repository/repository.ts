@@ -87,9 +87,16 @@ export function creaRepository<T extends RigaBase>(
       updated_at: new Date().toISOString(),
     };
 
+    // Rimessa in vita (deleted_at → null; preferiti, Annulla di alimenti e
+    // pasti salvati): la voce ricorda quale cancellazione annulla, perché
+    // la discesa non la faccia vincere (outbox.ts, cancellazioni_annullate;
+    // audit del 14/11, A2).
+    const annullata =
+      esistente.deleted_at !== null && riga.deleted_at === null ? esistente.deleted_at : null;
+
     controllaUtenteDellaRiga(nomeTabella, riga);
     await tabella.put(riga);
-    await accodaMutazione(nomeTabella, riga);
+    await accodaMutazione(nomeTabella, riga, annullata);
     avviaSincronizzazione();
 
     return riga;

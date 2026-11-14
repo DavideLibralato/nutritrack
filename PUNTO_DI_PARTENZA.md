@@ -6662,6 +6662,38 @@ Come, in concreto:
     motivo: altrimenti la riga resterebbe visibile per sempre su quel
     dispositivo con una modifica ormai orfana, che non raggiungerà mai il
     server
+  - **eccezione: la cancellazione che l'utente ha annullato** (dal 14/11,
+    audit del 14/11, A2, branch `rimessa-in-vita`). Quando una riga
+    cancellata torna viva (`deleted_at` → null: la stella rimessa, l'Annulla
+    di un alimento o di pasti salvati), la voce outbox ricorda **quale**
+    cancellazione annulla: il `deleted_at` che la riga aveva
+    (`cancellazioni_annullate`, scritto da `repository.aggiorna`). Se il
+    server rimanda **esattamente quella** cancellazione (stesso istante,
+    `millisecondiDi`, nei due formati), la discesa non scrive la riga e non
+    scarta la voce: la riga resta viva, la voce sale, e la discesa dopo la
+    riporta viva dal server. Il cursore avanza come per ogni riga. Una
+    cancellazione **diversa**, fatta altrove, vince come sempre. Nessun
+    confronto più recente/più vecchio: l'orologio del telefono non è
+    affidabile. Senza questa eccezione la cancellazione annullata tornava a
+    ogni discesa finché era l'ultima modifica della tabella sul server (la
+    finestra di 1 minuto qui sopra), e la stella rimessa offline o l'Annulla
+    con la rete caduta sparivano di nuovo, con solo un `console.error`.
+    Dettagli:
+    - una voce che ne sostituisce un'altra (stessa riga, ancora in coda)
+      **eredita** l'elenco, anche se la scrittura nuova cancella di nuovo:
+      finché la voce non è salita, il server ha ancora la cancellazione
+      annullata la prima volta ("rimetti, togli, rimetti" offline);
+    - una voce accantonata non fa eccezione: la discesa scrive la
+      cancellazione in locale, come per ogni voce accantonata, e «Riprova»
+      la rimanda con il suo elenco;
+    - le voci salvate prima della version(11) di Dexie non hanno l'elenco
+      e si comportano come prima; `deleted_at` non lo tocca nessun trigger
+      né funzione del server (verificato il 14/11), quindi il valore resta
+      quello scritto;
+    - non coperto: `garantisciGiornoPerPrimaVoce` (`giorni.ts`) ricrea con
+      lo stesso id una riga di `giorni` cancellata, passando da `crea`, che
+      non sa della cancellazione. Oggi nessun codice cancella una riga di
+      `giorni` (0 cancellate sul server il 14/11)
   - **limite: il modello si regge sul fatto che la cancellazione fisica non
     esista mai** — si scrive `deleted_at`, la discesa lo propaga come un
     campo qualsiasi (punto sopra). Una riga cancellata FISICAMENTE dal
@@ -9448,10 +9480,23 @@ Safari: prova 5 «andata a buon fine» (Davide), fatta per sbaglio con
 l'account vero (accesso 200 alle 18:34:33 nei log di Auth, controllato
 da Cowork), nessun dato scritto. La fascia ±5% resta provvisoria.
 
+**`rimessa-in-vita`** (dal 14/11, branch da `401d2ee`; audit del 14/11,
+A2). Difetto già in produzione: una riga rimessa in vita prima che la sua
+voce salisse al server (la stella rimessa offline, l'Annulla di un
+alimento o di pasti salvati con la rete caduta) veniva cancellata di
+nuovo dalla discesa, che fa vincere sempre la cancellazione arrivata dal
+server. Ora la voce in coda ricorda quale cancellazione annulla, e la
+discesa rispetta solo quella (sezione 9.2, "eccezione: la cancellazione
+che l'utente ha annullato"). Dexie a version(11), senza `.upgrade()`.
+Nessuna migration. Test permanenti in `rimessaInVita.test.ts`,
+`codaStessaRiga.test.ts` e `aggiornamentoSchema.test.ts`. **Da provare
+sull'anteprima** (sotto, "Prove su iPhone della rimessa in vita"); la
+prova 0 (Dexie alla 10, poi alla 11) è preparata sull'anteprima del
+branch dal 14/11.
+
 **Audit del 14/11**: il report è in `docs/audit/AUDIT_2026-11-14.md`,
 con in fondo l'esito della revisione di Cowork. A1 corretto in
-`redirect-sicuro`; A2 vero dal codice, lavoro a parte in due fasi
-(sincronizzazione e Dexie); A3 da verificare sul PC, insieme alla
+`redirect-sicuro`; A2 corretto in `rimessa-in-vita`; A3 da verificare sul PC, insieme alla
 scheda «Catalogo»; A4 fatto (dashboard a 8); A5 lasciato così (scelta
 scritta in testa alla pagina di Esporta); migliorie B1-B3 non urgenti.
 
@@ -10092,6 +10137,37 @@ Le prove, come erano state scritte:
 
 Dopo il merge su main va tolta da Supabase la Redirect URL
 dell'anteprima: fatto il 18/10 (confermato da Davide alle 23:18).
+
+### Prove su iPhone della rimessa in vita
+
+Per il branch `rimessa-in-vita` (14/11), sull'anteprima del branch, con
+l'account di prova. **Da fare.** In Informazioni si legge prima la Build.
+Fra una prova e l'altra si aspetta il pallino verde.
+
+0. **Dexie dalla 10 alla 11** (CLAUDE.md B.7): preparata prima del
+   commit della correzione, con l'anteprima alla version(10): una
+   stella, un alimento creato apposta, poi in modalità aereo la stella
+   tolta, così resta una modifica in coda; app chiusa. Con la Build
+   nuova e la rete: i dati ci sono tutti, la modifica parte
+   (Impostazioni > Sincronizzazione: niente in attesa) e la stella resta
+   tolta.
+1. **Stella rimessa offline**, in Safari e poi dall'anteprima aggiunta
+   alla Home: con la rete, in Aggiungi la stella su un alimento, poi la
+   si toglie. Modalità aereo, si rimette la stella; chiuso e riaperto lo
+   sheet, è piena. Si toglie la modalità aereo e si torna nell'app → la
+   stella resta piena, anche chiudendo e riaprendo l'app, e in
+   Sincronizzazione non c'è niente in attesa. Cowork controlla in sola
+   lettura che sul server la riga abbia `deleted_at` null.
+2. **Annulla offline**: in Impostazioni > Preferiti si toglie una stella
+   e si aspetta il pallino verde; modalità aereo e **Annulla** nella
+   barra prima che sparisca; tolta la modalità aereo → il preferito
+   resta. Se la barra è troppo breve, basta la prova 1.
+3. **La cancellazione fatta altrove vince ancora**, iPhone e PC con lo
+   stesso account: sull'iPhone si toglie una stella e si aspetta, poi in
+   modalità aereo la si rimette. Sul PC la si rimette e la si toglie di
+   nuovo. Sull'iPhone si toglie la modalità aereo → la stella sparisce.
+4. **Come prima**: con la rete, togli e rimetti la stella più volte, ed
+   elimina e annulla un alimento creato apposta → tutto come prima.
 
 ### Prove su iPhone della destinazione dopo l'accesso
 

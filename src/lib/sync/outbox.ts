@@ -22,6 +22,7 @@
 
 import { db } from "../db/database";
 import type { NomeTabella, RigaBase } from "../db/tipi";
+import { millisecondiDi } from "../istanti";
 
 export interface VoceOutbox {
   id: string;
@@ -44,6 +45,15 @@ export interface VoceOutbox {
   // Sincronizzazione. Facoltativo (`?`): le voci salvate prima della
   // version(8) di Dexie non ce l'hanno, e chi lo legge ha il suo ripiego.
   ultimo_status?: number | null;
+  // Le cancellazioni che questa voce annulla (dal 14/11/2026, audit del
+  // 14/11, A2): i valori di deleted_at che la riga aveva quando è stata
+  // rimessa in vita (deleted_at → null) da repository.aggiorna. La discesa
+  // non fa vincere una di queste cancellazioni sulla voce: è proprio
+  // quella che l'utente ha annullato (discesa.ts, cancellazioneAnnullata
+  // qui sotto). Una cancellazione diversa, fatta altrove, vince come
+  // sempre. Facoltativo (`?`): manca nelle voci senza nessuna rimessa in
+  // vita e in quelle salvate prima della version(11) di Dexie, e vale [].
+  cancellazioni_annullate?: string[];
 }
 
 // Il livello di ogni tabella nelle foreign key del server (lette da
@@ -111,10 +121,33 @@ export function controllaUtenteDellaRiga(tabella: NomeTabella, riga: RigaBase): 
   }
 }
 
-export async function accodaMutazione(tabella: NomeTabella, riga: RigaBase): Promise<void> {
+// `cancellazioneAnnullata`: il deleted_at che la riga aveva, quando questa
+// scrittura la rimette in vita (lo passa repository.aggiorna); null
+// altrimenti.
+//
+// La voce nuova EREDITA le cancellazioni annullate della voce che
+// sostituisce, sia che la scrittura nuova lasci la riga viva sia che la
+// cancelli di nuovo. Il motivo: finché una voce è in coda, il server non ha
+// visto niente di ciò che contiene, quindi ha ancora la cancellazione
+// annullata la prima volta (o una arrivata nel frattempo durante un invio,
+// vedi seAncoraQuella in sincronizza.ts). Senza l'eredità, "rimetti, togli,
+// rimetti" offline ricorderebbe solo la cancellazione fatta sul telefono,
+// che il server non ha mai visto, e la discesa farebbe vincere la sua. Una
+// voce già salita non c'è più, e con lei l'elenco: si riparte da zero.
+export async function accodaMutazione(
+  tabella: NomeTabella,
+  riga: RigaBase,
+  cancellazioneAnnullata: string | null = null
+): Promise<void> {
   controllaUtenteDellaRiga(tabella, riga);
+  const id = `${tabella}:${riga.id}`;
+  const ereditate = (await db.outbox.get(id))?.cancellazioni_annullate ?? [];
+  const annullate =
+    cancellazioneAnnullata !== null && !ereditate.includes(cancellazioneAnnullata)
+      ? [...ereditate, cancellazioneAnnullata]
+      : ereditate;
   const voce: VoceOutbox = {
-    id: `${tabella}:${riga.id}`,
+    id,
     tabella,
     record_id: riga.id,
     dati: riga,
@@ -123,7 +156,21 @@ export async function accodaMutazione(tabella: NomeTabella, riga: RigaBase): Pro
     ultimo_errore: null,
     sospesa_il: null,
     ultimo_status: null,
+    // Solo se c'è: le voci senza rimesse in vita restano identiche a prima.
+    ...(annullate.length > 0 ? { cancellazioni_annullate: annullate } : {}),
   };
 
   await db.outbox.put(voce);
+}
+
+// Se la cancellazione arrivata dal server (`deletedAt`) è una di quelle che
+// la voce annulla. Uguaglianza dell'ISTANTE (millisecondiDi), perché il
+// server rimanda lo stesso valore in un altro formato ("…000000+00:00"
+// invece di "…000Z"). Mai un confronto più recente/più vecchio: l'orologio
+// del telefono non è affidabile (discesa.ts). Il deleted_at non lo tocca
+// nessun trigger (set_updated_at scrive solo updated_at, verificato il
+// 14/11), quindi sul server resta esattamente il valore scritto.
+export function cancellazioneAnnullata(voce: VoceOutbox, deletedAt: string): boolean {
+  const istante = millisecondiDi(deletedAt);
+  return (voce.cancellazioni_annullate ?? []).some((d) => millisecondiDi(d) === istante);
 }

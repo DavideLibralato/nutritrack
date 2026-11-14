@@ -121,6 +121,29 @@ describe("sincronizzaOutbox — stessa riga riaccodata durante l'invio", () => {
     expect(voce?.tentativi).toBe(1);
   });
 
+  // Rimessa in vita (audit del 14/11, A2; rimessaInVita.test.ts): la riga
+  // rimessa in vita sale, e durante l'invio l'utente la modifica di nuovo.
+  // La versione nuova eredita la cancellazione annullata, anche se chi
+  // l'ha scritta non la passa, e a fine invio non sparisce: il server ha
+  // visto solo la vecchia.
+  it("rimessa in vita: la versione nuova eredita la cancellazione annullata e resta in coda", async () => {
+    const annullata = "2026-10-31T09:00:00.000Z";
+    await accodaMutazione("voci_diario", riga(null), annullata);
+
+    trattieniIlProssimo();
+    const giroA = sincronizzaOutbox();
+    await partito;
+    await new Promise((r) => setTimeout(r, 2));
+    await accodaMutazione("voci_diario", { ...riga(null), updated_at: "2026-11-01T10:00:01.000Z" });
+    apri();
+    await giroA;
+
+    const voce = await db.outbox.get(ID_VOCE);
+    expect(voce?.dati.updated_at).toBe("2026-11-01T10:00:01.000Z");
+    expect(voce?.cancellazioni_annullate).toEqual([annullata]);
+    expect(inviati).toHaveLength(1);
+  });
+
   it("rete assente (status 0): l'errore dell'invio non finisce sulla versione nuova", async () => {
     risposta = RETE;
     // Senza giro B: un giro dopo proverebbe v2 e scriverebbe il SUO errore,

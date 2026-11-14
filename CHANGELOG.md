@@ -5,6 +5,39 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — Una riga rimessa in vita non viene ricancellata dalla discesa
+
+Branch `rimessa-in-vita`, commit 2 (audit del 14/11, A2).
+
+**Bug corretto, era in produzione**: la stella rimessa offline, o
+l'Annulla di un alimento o di pasti salvati con la rete caduta, sparivano
+di nuovo al ritorno della rete. La discesa fa vincere sempre una
+cancellazione arrivata dal server, anche quella appena annullata, e la
+riscarica a ogni giro finché è l'ultima modifica della tabella (finestra
+di 1 minuto sul cursore). Resta solo un `console.error`.
+
+Ora la voce in coda ricorda quale cancellazione annulla
+(`cancellazioni_annullate`, scritto da `repository.aggiorna`), e la
+discesa rispetta solo quella, per uguaglianza dell'istante. Una
+cancellazione diversa, fatta altrove, vince come sempre. Una voce che ne
+sostituisce un'altra eredita l'elenco. Il cursore avanza anche sulla
+riga non scritta. Dexie a version(11), stessi indici, nessun
+`.upgrade()`. Nessuna migration: sul server nessun trigger né funzione
+scrive `deleted_at` su quelle tabelle (verificato in sola lettura).
+
+Test permanenti:
+- `rimessaInVita.test.ts`: 5 casi, 1-3 visti fallire sul codice di
+  prima, 4-5 di guardia;
+- `codaStessaRiga.test.ts`: la voce riaccodata durante l'invio tiene
+  l'elenco e non sparisce;
+- `aggiornamentoSchema.test.ts` (B.7): dalla version(10) alla 11, e la
+  seconda scheda alla 10.
+
+Ogni test visto fallire rompendo la correzione da una copia del file.
+Resta scoperto, senza effetti oggi: `giorni` ricreato con lo stesso id da
+`garantisciGiornoPerPrimaVoce` (nessun codice cancella righe di giorni).
+PUNTO §9.2 e §11, prove su iPhone da fare.
+
 ## 2026-11-14 — redirect-sicuro unito a main e provato nell'app vera
 
 Unito a main il 14/11 con fast-forward da `820bf8a` a `401d2ee`, senza

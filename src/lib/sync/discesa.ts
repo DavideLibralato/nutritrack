@@ -24,6 +24,7 @@ import {
 } from "./statoSincronizzazione";
 import type { NomeTabella, RigaBase } from "../db/tipi";
 import { segnaDiscesaCompleta } from "./discesaCompleta";
+import { cancellazioneAnnullata } from "./outbox";
 
 export interface CursoreSync {
   // "<tabella>:<user_id>": stessa convenzione di outbox.ts. Per-utente:
@@ -325,19 +326,42 @@ async function scaricaUnaTabella<T extends RigaBase>(
         // server, è comunque la stessa modifica la cui voce outbox viene
         // scartata qui sotto — lasciarla visibile e viva in locale
         // mostrerebbe per sempre una riga che altrove non esiste più.
-        await tabella.put(rigaScaricata);
-
+        //
+        // Con UNA eccezione, che non guarda i timestamp (dal 14/11/2026,
+        // audit del 14/11, A2): la voce in coda ha rimesso in vita la riga
+        // annullando PROPRIO questa cancellazione (lo stesso deleted_at,
+        // cancellazioneAnnullata in outbox.ts). L'utente l'ha vista e
+        // annullata: farla vincere ricancellerebbe la stella rimessa
+        // offline, o l'Annulla di un alimento con la rete caduta, a ogni
+        // discesa finché il server la rimanda (la finestra sul cursore).
+        // Allora non si scrive la riga e non si scarta la voce: la riga
+        // locale resta viva, la voce sale col giro di salita, e la discesa
+        // dopo riporta la riga viva dal server. Una cancellazione diversa,
+        // fatta altrove dopo, vince come sempre. Una voce accantonata no:
+        // resta ferma finché l'utente non la riprova, e intanto il telefono
+        // mostra ciò che ha il server, come per ogni voce accantonata.
         const idOutbox = `${nomeTabella}:${rigaScaricata.id}`;
-        // Senza transazione e senza controllo di creato_il, apposta (audit #1, 01/11/2026):
-        // una scrittura locale arrivata fra get e delete va scartata anche lei, perché la cancellazione dal server vince.
         const voceInSospeso = await db.outbox.get(idOutbox);
-        if (voceInSospeso && !voceInSospeso.sospesa_il) {
-          await db.outbox.delete(idOutbox);
-          console.error(
-            `Discesa: voce outbox scartata (${idOutbox}) — la riga risulta ` +
-              `cancellata sul server, non la resuscitiamo con una modifica in sospeso.`
-          );
+        const annullataDallaVoce =
+          voceInSospeso !== undefined &&
+          !voceInSospeso.sospesa_il &&
+          cancellazioneAnnullata(voceInSospeso, rigaScaricata.deleted_at);
+
+        if (!annullataDallaVoce) {
+          await tabella.put(rigaScaricata);
+
+          // Senza transazione e senza controllo di creato_il, apposta (audit #1, 01/11/2026):
+          // una scrittura locale arrivata fra get e delete va scartata anche lei, perché la cancellazione dal server vince.
+          if (voceInSospeso && !voceInSospeso.sospesa_il) {
+            await db.outbox.delete(idOutbox);
+            console.error(
+              `Discesa: voce outbox scartata (${idOutbox}) — la riga risulta ` +
+                `cancellata sul server, non la resuscitiamo con una modifica in sospeso.`
+            );
+          }
         }
+        // Il cursore avanza qui sotto anche per la riga non scritta: il
+        // server ha già dato tutto ciò che c'era fino a lei.
       } else {
         // Confronto riga per riga: diverso dal >= della query sopra (che
         // serve solo alla finestra di ri-scaricamento). Qui decide se

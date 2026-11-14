@@ -306,6 +306,35 @@ export class NutriTrackDatabase extends Dexie {
       sync_cursori: "id, tabella, user_id",
       foto_locale: "user_id",
     });
+
+    // version(11), dal 14/11/2026 (audit del 14/11, A2, branch
+    // `rimessa-in-vita`): le voci dell'outbox hanno il campo facoltativo
+    // `cancellazioni_annullate` (outbox.ts), le cancellazioni che una voce
+    // annulla rimettendo in vita la riga. Non indicizzato: la discesa legge
+    // la voce per id. Quindi .stores() è identico alla version(10): cambia
+    // la forma delle righe, non gli indici, come in version(3), (6), (7),
+    // (8) e (10). Nessun .upgrade() (regola B.4): il campo è facoltativo,
+    // chi lo legge usa `?? []`, e una voce salvata prima non ha la chiave e
+    // si comporta come sempre (la cancellazione dal server vince). Non si
+    // può ricostruire per le voci già in coda: Dexie non sa più quale
+    // deleted_at la riga aveva prima. Verificato da
+    // aggiornamentoSchema.test.ts (regola B.7).
+    this.version(11).stores({
+      profili: "id, user_id, deleted_at",
+      obiettivi: "id, user_id, valido_dal, deleted_at",
+      obiettivi_target: "id, user_id, obiettivo_id, tipo_giorno, deleted_at",
+      giorni: "id, user_id, data, deleted_at",
+      pasti: "id, user_id, ordine, deleted_at",
+      alimenti: "id, user_id, nome, barcode, verificato, deleted_at",
+      voci_diario: "id, user_id, data, pasto_id, gruppo_id, deleted_at",
+      composizioni: "id, user_id, tipo, deleted_at",
+      composizioni_voci: "id, user_id, composizione_id, deleted_at",
+      misurazioni: "id, user_id, tipo, data, deleted_at",
+      preferiti: "id, user_id, alimento_id, deleted_at",
+      outbox: "id, tabella, creato_il",
+      sync_cursori: "id, tabella, user_id",
+      foto_locale: "user_id",
+    });
   }
 }
 
