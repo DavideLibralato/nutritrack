@@ -6033,6 +6033,35 @@ Conseguenze:
   in Registrati. L'email di Accedi si ripulisce dagli spazi come negli
   altri moduli; il campo `type="email"` li toglie già da solo, e le
   maiuscole le porta in minuscolo Supabase Auth
+- **La lunghezza della password** (dal 14/11, branch `password-8`, audit
+  #6). Una password **nuova** deve avere **almeno 8 caratteri** (prima
+  6): in Registrati (la Server Action `registrati`), in Reimposta e in
+  Cambia password. Il numero sta in una costante sola,
+  `LUNGHEZZA_MINIMA_PASSWORD` in `src/lib/validazione.ts`, da cui
+  vengono anche il testo d'aiuto dei campi ("Almeno 8 caratteri") e
+  quello d'errore ("La password deve avere almeno 8 caratteri.",
+  `erroriAuth.ts`). Se è il server a rifiutare la password nuova
+  (`weak_password`), Registrati e Reimposta lo riconoscono dal tipo
+  dell'errore, come Cambia password: motivo "length" → lo stesso testo
+  di troppo corta, altri motivi → "troppo facile da indovinare"; la
+  frase inglese del server si riconosce anche senza il numero.
+  **Accedi non controlla la lunghezza** (né nel codice né con
+  `minLength`): chi ha una password di 6-7 caratteri entra ancora, e in
+  Cambia password il minimo vale solo per la nuova, non per l'attuale.
+  Test permanenti in `validazione.test.ts`, `erroriAuth.test.ts`,
+  `auth.test.ts`, `cambiaPassword.test.ts` e `login/page.test.tsx`
+  (Accedi con 6 caratteri). **Sulla dashboard di Supabase**
+  (Authentication > Providers > Email, minimo della password) il valore
+  è ancora 6: lo alza a 8 Davide a mano, **dopo** il deploy di
+  produzione. Nell'ordine contrario, per qualche minuto l'app
+  lascerebbe partire password di 6-7 caratteri che il server rifiuta.
+  **Chi ha già una password più corta continua ad accedere**:
+  verificato nel codice di auth-js 2.115.0, dove `signInWithPassword`
+  restituisce la sessione con un campo `weakPassword` in più e non un
+  errore (`_sessionResponsePassword`), e il rinnovo della sessione non
+  manda la password. **Da provare dal vivo** sul server, con il minimo
+  a 8: l'accesso con una password di 6-7 caratteri, e Cambia password
+  con un'attuale di 6-7 caratteri
 - **Accedi porta solo a pagine dell'app** (dal 23/10, branch
   `redirect-accesso`). Dopo l'accesso si va al `redirectTo`
   dell'indirizzo (lo mette il middleware quando si apre una pagina
@@ -6374,7 +6403,7 @@ Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
   offline".
 - **Il modulo.** In alto "Account <email>". Due campi con l'occhio
   (`CampoPassword`): "Password attuale" (`current-password`) e "Nuova
-  password" (`new-password`, "Almeno 6 caratteri"). Niente "Conferma":
+  password" (`new-password`, "Almeno 8 caratteri"). Niente "Conferma":
   per controllare c'è l'occhio. Poi "Salva nuova password", sotto la riga
   "Sugli altri dispositivi dovrai rientrare con la nuova password." e
   "Non la ricordi? Reimpostala via email", che porta a Password
@@ -6428,11 +6457,11 @@ Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
   indovina la password salvata può già scriverla come attuale.
   `reauthentication_needed` resta **non verificato** (solo dal sorgente;
   con "Secure password change" spenta non può arrivare). `weak_password` con
-  "length" → "almeno 6 caratteri", con altri motivi → "troppo facile";
+  "length" → "almeno 8 caratteri", con altri motivi → "troppo facile";
   401/403/404 o nessuna sessione → "Esci e rientra"; rete dopo l'invio →
   "Non so se è andata". Se subito dopo arriva "attuale sbagliata", il
   testo dice che il tentativo di prima forse è riuscito. Campi vuoti,
-  meno di 6 caratteri e nuova uguale all'attuale si fermano prima di
+  nuova di meno di 8 caratteri e nuova uguale all'attuale si fermano prima di
   chiamare il server. Testi in `erroriAuth.ts`.
 - **Senza rete**, come Elimina account (`useOnline`): riquadro "Serve la
   connessione" in cima, pulsante spento, il modulo resta compilabile,
@@ -6442,7 +6471,8 @@ Per chi ha già fatto l'accesso, senza passare dall'email. Mockup
   mostra "Password aggiornata." e toglie subito il segno dall'indirizzo
   (`history.replaceState`, `src/lib/account/passwordAggiornata.ts`): un
   ricaricamento non la fa ricomparire. Nessuna email "password
-  cambiata". Minimo 6 caratteri, come il server.
+  cambiata". Minimo 8 caratteri per la nuova (dal 14/11, sopra, "La
+  lunghezza della password"; sul server si alza a 8 dopo il deploy).
 - **Le sessioni.** Su questo dispositivo la sessione resta, con gli
   stessi token: niente `refreshSession`, la sincronizzazione continua.
   **Le sessioni sugli altri dispositivi si chiudono**: le chiude il
@@ -9353,6 +9383,18 @@ indicate nelle prove: lo scorrimento in Preferiti dopo un pasto salvato e
 lo swipe dalla scansione in Aggiungi. Restano **aperti** (sotto,
 "Difetti e verifiche aperti"): la scheda «Catalogo» che perde ricerca e
 filtri dopo «Apri», e il margine destro della riga in selezione.
+
+**Unito a main il 12/11** con fast-forward da `4afe1f1` a `f9a381b`, 9
+commit, e **provato nell'app vera** il 14/11 alle 16:57, Build
+`f9a381b`, account vero: Alimenti (l'aspetto nuovo, la tastiera con
+«Crea «…»», swipe e scorrimento) e Aggiungi, «funziona tutto alla
+perfezione» (Davide). La fascia ±5% resta provvisoria.
+
+**`password-8`** (dal 14/11, branch da `f9a381b`; audit #6 e #7). Fin
+qui: minimo 8 caratteri per le password nuove nell'app (Registrati,
+Reimposta, Cambia password; sezione 9.1, "La lunghezza della
+password"). Il minimo sulla dashboard di Supabase è ancora 6: si alza a
+8 dopo il deploy di produzione.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono

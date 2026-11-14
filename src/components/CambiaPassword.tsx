@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useEmailUtente } from "@/lib/supabase/useUtente";
 import { useOnline } from "@/lib/useOnline";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { AIUTO_PASSWORD_NUOVA } from "@/lib/validazione";
 import {
   cambiaPassword,
   controllaPrimaDellInvio,
@@ -109,7 +110,7 @@ export default function CambiaPassword() {
           id="cambio-nuova"
           etichetta="Nuova password"
           autoComplete="new-password"
-          placeholder="Almeno 6 caratteri"
+          placeholder={AIUTO_PASSWORD_NUOVA}
           value={nuova}
           onChange={setNuova}
         />

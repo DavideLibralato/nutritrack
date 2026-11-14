@@ -7,8 +7,8 @@
 // risultato.
 
 import { createClient } from "@/lib/supabase/server";
-import { traduciErroreAuth } from "@/lib/erroriAuth";
-import { emailValida } from "@/lib/validazione";
+import { PASSWORD_TROPPO_CORTA, traduciErrorePasswordNuova } from "@/lib/erroriAuth";
+import { emailValida, passwordAbbastanzaLunga } from "@/lib/validazione";
 // statoOnboarding.ts è logica pura, senza browser né Dexie: si può usare
 // anche qui, sul server.
 import { CHIAVE_METADATI_ONBOARDING, type SegnoMetadati } from "@/lib/onboarding/statoOnboarding";
@@ -49,8 +49,8 @@ export async function registrati(
   if (!emailValida(email)) {
     return { errore: "Inserisci un indirizzo email valido.", messaggio: null, valori };
   }
-  if (password.length < 6) {
-    return { errore: "La password deve avere almeno 6 caratteri.", messaggio: null, valori };
+  if (!passwordAbbastanzaLunga(password)) {
+    return { errore: PASSWORD_TROPPO_CORTA, messaggio: null, valori };
   }
 
   // Beta a inviti (PUNTO_DI_PARTENZA.md, sezione 9.1): un controllo di una
@@ -90,7 +90,8 @@ export async function registrati(
     // facoltativo resta un solo caso, il codice di invito che non è più
     // quello del Vault (i due valori vanno cambiati insieme, §9.1). Il
     // motivo vero si legge nei log; all'app resta il messaggio generico.
-    return { errore: traduciErroreAuth(error.message), messaggio: null, valori };
+    // weak_password si riconosce dal tipo, non dal testo (erroriAuth.ts).
+    return { errore: traduciErrorePasswordNuova(error), messaggio: null, valori };
   }
 
   // Se il progetto Supabase ha la conferma email attiva (oggi è spenta,

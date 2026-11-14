@@ -207,3 +207,35 @@ describe("Accedi, destinazione dopo l'accesso", () => {
     }
   );
 });
+
+// Le password di prima del minimo a 8 (audit #6, branch password-8): chi ha
+// una password di 6-7 caratteri deve poter entrare. Accedi non controlla la
+// lunghezza, né nel codice né con minLength. Con il minimo a 8 sul server,
+// auth-js 2.115.0 (_sessionResponsePassword) dà la sessione con un campo
+// weakPassword in più, non un errore: Accedi lo ignora ed entra.
+describe("Accedi, password più corte del minimo per le nuove", () => {
+  it("6 caratteri e una risposta con weakPassword: si entra, nessun errore", async () => {
+    finti.signInWithPassword.mockResolvedValue({
+      data: {
+        user: { id: "u1" },
+        session: { access_token: "t" },
+        weakPassword: { reasons: ["length"], message: "Password should be at least 8 characters." },
+      },
+      error: null,
+    });
+    finti.query = "";
+    render(<LoginPage />);
+    const campo = screen.getByLabelText("Password") as HTMLInputElement;
+    expect(campo.minLength).toBe(-1);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "giulia@esempio.it" } });
+    fireEvent.change(campo, { target: { value: "sei666" } });
+    fireEvent.click(screen.getByRole("button", { name: "Accedi" }));
+
+    await waitFor(() => expect(finti.push).toHaveBeenCalledTimes(1));
+    expect(finti.signInWithPassword).toHaveBeenCalledWith({
+      email: "giulia@esempio.it",
+      password: "sei666",
+    });
+    expect(screen.queryByText(/caratteri/)).toBeNull();
+  });
+});

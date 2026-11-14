@@ -43,21 +43,20 @@ import { createClient } from "../supabase/client";
 import { classificaErroreVerifica } from "../supabase/utenteOffline";
 import { conTempoMassimo, SCADUTA } from "../sync/tempoMassimo";
 import { ATTUALE_SBAGLIATA_DOPO_RISPOSTA_PERSA, TESTI_CAMBIO_PASSWORD } from "../erroriAuth";
+import { passwordAbbastanzaLunga } from "../validazione";
 
 export type EsitoCambio = "ok" | keyof typeof TESTI_CAMBIO_PASSWORD;
 
-// Lo stesso minimo del server (Auth > Password, 6 caratteri).
-export const LUNGHEZZA_MINIMA_PASSWORD = 6;
-
-// 1. Prima di chiamare il server. Le password non si accorciano agli spazi
-// ai bordi: uno spazio può far parte della password.
+// 1. Prima di chiamare il server. La lunghezza minima (validazione.ts) vale
+// solo per la nuova: l'attuale può essere una password di 6-7 caratteri di
+// prima del minimo a 8, e deve poter essere cambiata.
 export function controllaPrimaDellInvio(
   attuale: string,
   nuova: string
 ): Exclude<EsitoCambio, "ok"> | null {
   if (!attuale) return "attuale-mancante";
   if (!nuova) return "nuova-mancante";
-  if (nuova.length < LUNGHEZZA_MINIMA_PASSWORD) return "troppo-corta";
+  if (!passwordAbbastanzaLunga(nuova)) return "troppo-corta";
   if (nuova === attuale) return "uguale";
   return null;
 }

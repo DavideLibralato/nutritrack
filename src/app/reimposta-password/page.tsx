@@ -7,9 +7,11 @@ import { createClient } from "@/lib/supabase/client";
 import {
   ERRORE_CONNESSIONE,
   LINK_NON_VALIDO,
-  traduciErroreAuth,
+  PASSWORD_TROPPO_CORTA,
   traduciErroreLinkRipristino,
+  traduciErrorePasswordNuova,
 } from "@/lib/erroriAuth";
+import { AIUTO_PASSWORD_NUOVA, passwordAbbastanzaLunga } from "@/lib/validazione";
 import {
   leggiSegnoRipristino,
   scriviSegnoRipristino,
@@ -184,8 +186,8 @@ export default function ReimpostaPasswordPage() {
       setErrore("Inserisci la nuova password.");
       return;
     }
-    if (password.length < 6) {
-      setErrore("La password deve avere almeno 6 caratteri.");
+    if (!passwordAbbastanzaLunga(password)) {
+      setErrore(PASSWORD_TROPPO_CORTA);
       return;
     }
     if (password !== confermaPassword) {
@@ -201,7 +203,7 @@ export default function ReimpostaPasswordPage() {
     setCaricamento(false);
 
     if (error) {
-      setErrore(traduciErroreAuth(error.message));
+      setErrore(traduciErrorePasswordNuova(error));
       return;
     }
 
@@ -266,7 +268,7 @@ export default function ReimpostaPasswordPage() {
           id="reset-password"
           etichetta="Nuova password"
           autoComplete="new-password"
-          placeholder="Almeno 6 caratteri"
+          placeholder={AIUTO_PASSWORD_NUOVA}
           value={password}
           onChange={setPassword}
         />

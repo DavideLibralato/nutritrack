@@ -7,7 +7,24 @@
 // delle prove sulla migration (T06, T11, T12).
 
 import { describe, expect, it } from "vitest";
-import { normalizzaUsername, usernameValido } from "./validazione";
+import {
+  AIUTO_PASSWORD_NUOVA,
+  LUNGHEZZA_MINIMA_PASSWORD,
+  normalizzaUsername,
+  passwordAbbastanzaLunga,
+  usernameValido,
+} from "./validazione";
+
+// Il minimo della password nuova (audit #6, branch password-8): fallisce se
+// qualcuno lo riporta a 6. Il numero è lo stesso della dashboard di Supabase.
+describe("lunghezza minima della password", () => {
+  it("è 8: 7 caratteri no, 8 sì, e il testo d'aiuto dice 8", () => {
+    expect(LUNGHEZZA_MINIMA_PASSWORD).toBe(8);
+    expect(passwordAbbastanzaLunga("1234567")).toBe(false);
+    expect(passwordAbbastanzaLunga("12345678")).toBe(true);
+    expect(AIUTO_PASSWORD_NUOVA).toBe("Almeno 8 caratteri");
+  });
+});
 
 describe("normalizzaUsername", () => {
   it("toglie gli spazi ai bordi e mette tutto in minuscolo", () => {

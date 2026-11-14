@@ -5,6 +5,67 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — Password nuove di almeno 8 caratteri
+
+Branch `password-8`, commit 1 (audit #6).
+
+Il minimo per una password nuova passa da 6 a 8 caratteri in
+Registrati, Reimposta e Cambia password. Il numero sta in una costante
+sola (`LUNGHEZZA_MINIMA_PASSWORD` in `validazione.ts`), da cui vengono
+il testo d'aiuto «Almeno 8 caratteri» e il testo d'errore. Prima il 6
+era scritto a mano in sette posti.
+
+Registrati e Reimposta riconoscono il rifiuto del server
+(`weak_password`) dal tipo dell'errore, come già Cambia password.
+**Bug evitato**: riconoscevano solo la frase inglese «at least 6
+characters», quindi con il minimo a 8 sul server avrebbero mostrato
+«Si è verificato un errore». La frase ora si riconosce senza numero.
+
+Accedi non cambia: non controlla la lunghezza, così chi ha una password
+di 6-7 caratteri entra ancora. In auth-js 2.115.0 la risposta del
+server con `weak_password` è un campo in più accanto alla sessione, non
+un errore. Resta **da provare dal vivo** con il minimo a 8 sul server.
+Sulla dashboard il minimo è ancora 6: lo alza Davide dopo il deploy di
+produzione.
+
+Test nuovi o aggiornati in `validazione.test.ts`, `erroriAuth.test.ts`
+(nuovo), `auth.test.ts`, `cambiaPassword.test.ts` e
+`login/page.test.tsx`. Ognuno è stato visto fallire su una copia rotta,
+poi ripristinata.
+
+PUNTO §9.1 («La lunghezza della password» e Cambia password) e §11.
+
+## 2026-11-12 — alimenti-aspetto unito a main
+
+Unito a main il 12/11 con fast-forward da `4afe1f1` a `f9a381b`, senza
+commit di merge. I 9 commit:
+- `83073b7`: il nome cercato passa a «Nuovo alimento» in Alimenti;
+- `365f88b`: lo swipe indietro chiude la schermata, in Impostazioni;
+- `a97aa76`: Alimenti e Preferiti tornano al punto dell'elenco;
+- `a502dd6`: lo swipe indietro chiude la schermata, in Aggiungi;
+- `2b78373`: mockup dell'aspetto di Alimenti;
+- `e206646`: ricerca e righe condivise, Aggiungi identico;
+- `296c855`: Alimenti con l'aspetto di Aggiungi;
+- `1780ef2`: «Crea «…»» con la tastiera aperta in Alimenti;
+- `f9a381b`: provato sull'anteprima.
+
+Il branch è cancellato in locale e su GitHub. Non c'è nessuna migration
+e nessuna Redirect URL dell'anteprima da togliere.
+
+Su main, prima del push:
+- 2088 test verdi in 168 file;
+- `tsc`, eslint, `format:check` e `npm run build` puliti;
+- `7b2de61` antenato di main.
+
+**Provato nell'app vera** il 14/11 alle 16:57, Build `f9a381b`, account
+vero: Alimenti (l'aspetto nuovo, la tastiera con «Crea «…»», swipe e
+scorrimento) e Aggiungi, «funziona tutto alla perfezione» (Davide). La
+fascia ±5% resta provvisoria. Restano da provare lo scorrimento in
+Preferiti e lo swipe dalla scansione in Aggiungi. Restano aperti la
+scheda «Catalogo» che perde ricerca e filtri dopo «Apri» e il margine
+della riga in selezione. Questa voce è scritta nel commit 1 del branch
+`password-8`.
+
 ## 2026-11-12 — alimenti-aspetto provato sull'anteprima
 
 Branch `alimenti-aspetto`, solo documenti; con questo il branch è

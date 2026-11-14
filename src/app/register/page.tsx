@@ -8,6 +8,7 @@ import { useActionState, useEffect, useState } from "react";
 import { registrati, type StatoRegistrazione } from "@/lib/actions/auth";
 import { caricaPaginaDaCapo } from "@/lib/caricamentoCompleto";
 import { CLASSE_FOCUS } from "@/lib/classeFocus";
+import { AIUTO_PASSWORD_NUOVA } from "@/lib/validazione";
 import CampoPassword from "@/components/CampoPassword";
 import MarchioLibra from "@/components/MarchioLibra";
 import PaginaAccesso from "@/components/PaginaAccesso";
@@ -104,7 +105,7 @@ export default function RegisterPage() {
           name="password"
           etichetta="Password"
           autoComplete="new-password"
-          placeholder="Almeno 6 caratteri"
+          placeholder={AIUTO_PASSWORD_NUOVA}
         />
 
         <div>

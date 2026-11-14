@@ -21,7 +21,9 @@
 // redirect di Next.js. Nessuna registrazione vera.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { AuthWeakPasswordError } from "@supabase/supabase-js";
 import { registrati, type StatoRegistrazione } from "./auth";
+import { PASSWORD_TROPPO_CORTA } from "@/lib/erroriAuth";
 
 const CODICE = "codice-di-prova";
 
@@ -165,6 +167,24 @@ describe("registrati", () => {
       valori: VALORI,
     });
     nessunaChiamataUsername();
+  });
+
+  // Minimo 8 (audit #6, branch password-8).
+  it("password di 7 caratteri: il testo di troppo corta, niente signUp", async () => {
+    const stato = await registrati(STATO_INIZIALE, modulo({ password: "1234567" }));
+    expect(stato.errore).toBe(PASSWORD_TROPPO_CORTA);
+    expect(finti.signUp).not.toHaveBeenCalled();
+  });
+
+  it("weak_password «length» dal server: lo stesso testo, dal tipo e non dalla frase", async () => {
+    finti.signUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: new AuthWeakPasswordError("Password should be at least 10 characters.", 422, [
+        "length",
+      ]),
+    });
+    const stato = await registrati(STATO_INIZIALE, modulo());
+    expect(stato.errore).toBe(PASSWORD_TROPPO_CORTA);
   });
 
   it("codice di invito sbagliato: niente signUp, come prima", async () => {

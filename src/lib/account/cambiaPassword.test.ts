@@ -64,8 +64,12 @@ describe("controllaPrimaDellInvio", () => {
   it.each<[string, string, EsitoCambio | null]>([
     ["", "nuovapass", "attuale-mancante"],
     ["vecchia1", "", "nuova-mancante"],
-    ["vecchia1", "12345", "troppo-corta"],
-    ["vecchia1", "123456", null],
+    ["vecchia1", "1234567", "troppo-corta"],
+    ["vecchia1", "12345678", null],
+    // L'attuale può essere di prima del minimo a 8 (6-7 caratteri): il
+    // minimo vale solo per la nuova.
+    ["vecchia", "nuova123", null],
+    ["sei666", "nuova123", null],
     ["vecchia1", "vecchia1", "uguale"],
     // Gli spazi contano: non sono la stessa password.
     ["vecchia1", " vecchia1", null],
@@ -102,7 +106,7 @@ describe("classificaErroreCambio", () => {
     ],
     [
       "troppo corta",
-      new AuthWeakPasswordError("Password should be at least 6 characters.", 422, ["length"]),
+      new AuthWeakPasswordError("Password should be at least 8 characters.", 422, ["length"]),
       "troppo-corta",
     ],
     [

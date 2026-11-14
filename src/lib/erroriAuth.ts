@@ -1,3 +1,7 @@
+import { isAuthWeakPasswordError, type AuthError } from "@supabase/supabase-js";
+// validazione.ts non importa niente: nessun giro di import.
+import { LUNGHEZZA_MINIMA_PASSWORD } from "./validazione";
+
 // Il link per reimpostare la password: lo usa solo /reimposta-password.
 // Nessun link e nessuna sessione nata da un link in questa scheda.
 export const LINK_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.";
@@ -5,7 +9,10 @@ export const LINK_NON_VALIDO = "Link non valido o scaduto. Richiedine uno nuovo.
 export const LINK_SCADUTO =
   "Il link è scaduto, è già stato usato o ne hai chiesto uno più recente. Usa l'ultimo arrivato o richiedine uno nuovo.";
 export const ERRORE_CONNESSIONE = "Errore di connessione. Controlla la tua connessione e riprova.";
-export const PASSWORD_TROPPO_CORTA = "La password deve avere almeno 6 caratteri.";
+export const PASSWORD_TROPPO_CORTA = `La password deve avere almeno ${LUNGHEZZA_MINIMA_PASSWORD} caratteri.`;
+// Il server rifiuta la password nuova per un motivo che non è la lunghezza
+// (reasons "characters" o "pwned").
+export const PASSWORD_DEBOLE = "Questa password è troppo facile da indovinare: scegline un'altra.";
 const ERRORE_GENERICO = "Si è verificato un errore. Riprova tra poco.";
 
 // Impostazioni > Profilo > Cambia password (cambiaPassword.ts): un testo
@@ -17,7 +24,7 @@ export const TESTI_CAMBIO_PASSWORD = {
   "attuale-sbagliata": "La password attuale non è corretta.",
   uguale: "La nuova password è uguale a quella attuale: scegline una diversa.",
   "troppo-corta": PASSWORD_TROPPO_CORTA,
-  debole: "Questa password è troppo facile da indovinare: scegline un'altra.",
+  debole: PASSWORD_DEBOLE,
   riautenticazione:
     'Il server chiede una verifica via email per cambiare la password. Usa "Reimpostala via email" qui sotto.',
   sessione: "Il server non riconosce più la tua sessione. Esci e rientra, poi riprova.",
@@ -51,7 +58,8 @@ const MAPPA_ERRORI: Record<string, string> = {
   "invalid login credentials": "Email o password non corrette.",
   "email not confirmed": "Devi confermare la tua email prima di accedere: controlla la posta.",
   "user already registered": "Esiste già un account con questa email.",
-  "password should be at least 6 characters": PASSWORD_TROPPO_CORTA,
+  // Senza numero: vale per qualunque minimo sia impostato sul server.
+  "password should be at least": PASSWORD_TROPPO_CORTA,
   "unable to validate email address": "L'indirizzo email non è valido.",
   "email rate limit exceeded": "Troppi tentativi in poco tempo: riprova tra qualche minuto.",
   "signup requires a valid password": "Inserisci una password valida.",
@@ -70,6 +78,17 @@ export function traduciErroreAuth(messaggio: string | undefined | null): string 
   if (trovato) return trovato[1];
 
   return ERRORE_GENERICO;
+}
+
+// L'errore di una password NUOVA (Registrati, Reimposta): weak_password si
+// riconosce dal tipo dell'errore e dai motivi, non dal testo inglese, come
+// in Cambia password (classificaErroreCambio). "length" → troppo corta;
+// altri motivi → troppo facile. Tutto il resto passa dalla mappa.
+export function traduciErrorePasswordNuova(errore: AuthError): string {
+  if (isAuthWeakPasswordError(errore)) {
+    return errore.reasons.includes("length") ? PASSWORD_TROPPO_CORTA : PASSWORD_DEBOLE;
+  }
+  return traduciErroreAuth(errore.message);
 }
 
 // Codici con cui il server rifiuta il link. otp_expired: il link è già
