@@ -5,6 +5,21 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — redirect-sicuro provato sull'anteprima
+
+Branch `redirect-sicuro`.
+
+Provato da Davide il 14/11 verso le 18:25, in Safari con l'account di
+prova, Build `d59015d`. Gli accessi (risposta 200 alle 18:24:09 e alle
+18:25:43, dall'anteprima del branch) sono stati controllati da Cowork
+nei log edge.
+- **Prova 5**: `/login?redirectTo=/.//example.com`, poi l'accesso → si
+  arriva su Oggi, e l'indirizzo resta quello dell'anteprima.
+- **Prova 6**: `/impostazioni` da non loggato, poi l'accesso → si arriva
+  su Impostazioni.
+
+«Funziona bene» (Davide). PUNTO §11.
+
 ## 2026-11-14 — Accedi porta solo a pagine dell'app, anche con «/./»
 
 Branch `redirect-sicuro`, commit 2 (audit del 14/11, A1).

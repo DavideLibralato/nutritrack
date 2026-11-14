@@ -9439,8 +9439,9 @@ permanenti in `destinazioneDopoAccesso.test.ts`. Ricontrollati tutti
 gli altri punti in cui l'app naviga (proxy, avvisi di Accedi,
 reimposta-password, onboarding, `caricaPaginaDaCapo`, eliminazione
 dell'account, Aggiungi): nessuno usa una destinazione presa da fuori.
-**Da provare sull'anteprima**: sotto, "Prove su iPhone della
-destinazione dopo l'accesso", prove 5 e 6.
+**Provato sull'anteprima** il 14/11 verso le 18:25 (Safari, account di
+prova, Build `d59015d`, Davide): prove 5 e 6 passate, «funziona bene»
+(sotto, "Prove su iPhone della destinazione dopo l'accesso").
 
 **Audit del 14/11**: il report è in `docs/audit/AUDIT_2026-11-14.md`,
 con in fondo l'esito della revisione di Cowork. A1 corretto in
@@ -10128,9 +10129,12 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
    sempre sull'anteprima.
 4. **Senza redirectTo**: apri `<anteprima>/login` e accedi → Oggi.
 
-Aggiunte il 14/11 per il branch `redirect-sicuro`, **da fare**
-sull'anteprima di quel branch, stesse regole (account di prova, si esce
-fra una prova e l'altra):
+Aggiunte il 14/11 per il branch `redirect-sicuro`, sull'anteprima di
+quel branch, stesse regole (account di prova, si esce fra una prova e
+l'altra). **Provate il 14/11** verso le 18:25 da Davide, in Safari,
+Build `d59015d`: **prove 5 e 6 passate**. Controllate da Cowork nei log
+edge di Supabase: accessi con risposta 200 alle 18:24:09 e alle
+18:25:43, dall'anteprima di `redirect-sicuro`.
 
 5. **Due barre dopo la risoluzione**: apri
    `<anteprima>/login?redirectTo=/.//example.com` e accedi → si arriva
