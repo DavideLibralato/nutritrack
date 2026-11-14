@@ -6070,11 +6070,19 @@ Conseguenze:
   dell'indirizzo (lo mette il middleware quando si apre una pagina
   protetta senza sessione), ma solo se, risolto rispetto all'origine
   dell'app, resta sulla stessa origine
-  (`src/lib/destinazioneDopoAccesso.ts`). Altrimenti la home. Non basta
-  che inizi con "/": `//esempio.com` e `/\esempio.com` il browser li
-  legge come un altro sito, e `router.push` di Next ci va con una
-  navigazione completa. Vale per ogni destinazione presa dall'URL: si
-  controlla l'origine, non il primo carattere
+  (`src/lib/destinazioneDopoAccesso.ts`), **e** il percorso che ne
+  esce comincia con **una sola "/"** (dal 14/11, branch
+  `redirect-sicuro`). Altrimenti la home. Non basta che inizi con "/":
+  `//esempio.com` e `/\esempio.com` il browser li legge come un altro
+  sito, e `router.push` di Next ci va con una navigazione completa
+  (verificato nel codice di Next 16.4.5: `isExternalURL`, poi
+  `location.assign`). E non basta nemmeno la stessa origine:
+  `/.//esempio.com` resta sull'app, ma il suo percorso risolto è
+  `//esempio.com`. La doppia barra la crea la risoluzione: toglie tab e
+  a capo, risolve `.` e `..` anche codificati (`%2e`), trasforma `\` in
+  `/`. Per questo il controllo si fa sul percorso risolto, non sul
+  testo che entra. Vale per ogni destinazione presa dall'URL: si
+  controllano l'origine e il percorso risolto, non il primo carattere
 - in fase beta la **registrazione è chiusa**: chi si iscrive deve inserire un
   codice di invito, oppure la sua email deve essere in una allowlist. È un
   controllo di una riga, che si toglie senza toccare nient'altro il giorno in
@@ -8856,7 +8864,9 @@ sotto, "Prove su iPhone della destinazione dopo l'accesso"). Difetto
 già in produzione, trovato in revisione il 18/10: un link a `/login?redirectTo=//esempio.com`, dopo
 l'accesso, portava fuori dall'app (§9.1). Ora la destinazione passa da
 `destinazioneDopoAccesso`; nessun altro punto dell'app naviga verso un
-indirizzo preso dall'URL.
+indirizzo preso dall'URL (ricontrollato il 14/11, sotto,
+`redirect-sicuro`). Il controllo sull'origine da solo non bastava:
+corretto il 14/11.
 
 **Lo username dopo l'accesso** (23/10, branch `username-dopo-accesso`,
 **provato su iPhone il 23/10** sull'anteprima, Build `dbbe27b`: sotto,
@@ -9418,6 +9428,26 @@ sull'anteprima (Registrati e Cambia password con una nuova di 7
 caratteri: fermate) e dal vivo con l'account di prova: Accedi e Cambia
 password con una password di 6 caratteri riusciti col minimo a 8. Non
 indicata: una nuova di 7 caratteri nell'app vera.
+
+**`redirect-sicuro`** (dal 14/11, branch da `820bf8a`; audit del 14/11,
+A1). Difetto già in produzione: un link a
+`/login?redirectTo=/.//esempio.com`, dopo l'accesso, portava fuori
+dall'app. Il controllo sull'origine passava, ma il percorso risolto era
+`//esempio.com`. Ora il percorso risolto deve cominciare con una sola
+"/" (sezione 9.1, "Accedi porta solo a pagine dell'app"). Test
+permanenti in `destinazioneDopoAccesso.test.ts`. Ricontrollati tutti
+gli altri punti in cui l'app naviga (proxy, avvisi di Accedi,
+reimposta-password, onboarding, `caricaPaginaDaCapo`, eliminazione
+dell'account, Aggiungi): nessuno usa una destinazione presa da fuori.
+**Da provare sull'anteprima**: sotto, "Prove su iPhone della
+destinazione dopo l'accesso", prove 5 e 6.
+
+**Audit del 14/11**: il report è in `docs/audit/AUDIT_2026-11-14.md`,
+con in fondo l'esito della revisione di Cowork. A1 corretto in
+`redirect-sicuro`; A2 vero dal codice, lavoro a parte in due fasi
+(sincronizzazione e Dexie); A3 da verificare sul PC, insieme alla
+scheda «Catalogo»; A4 fatto (dashboard a 8); A5 lasciato così (scelta
+scritta in testa alla pagina di Esporta); migliorie B1-B3 non urgenti.
 
 **Audit del 01/11**: il report è in `docs/audit/AUDIT_2026-11-01.md`,
 così com'è stato scritto. I rimandi "audit #N" in questo documento sono
@@ -10097,6 +10127,16 @@ home, quindi fra una prova e l'altra si esce (Profilo → Esci).
    `<anteprima>/login?redirectTo=/%5Cesempio.com` e accedi → Oggi,
    sempre sull'anteprima.
 4. **Senza redirectTo**: apri `<anteprima>/login` e accedi → Oggi.
+
+Aggiunte il 14/11 per il branch `redirect-sicuro`, **da fare**
+sull'anteprima di quel branch, stesse regole (account di prova, si esce
+fra una prova e l'altra):
+
+5. **Due barre dopo la risoluzione**: apri
+   `<anteprima>/login?redirectTo=/.//example.com` e accedi → si arriva
+   su Oggi, e l'indirizzo resta quello dell'anteprima, non
+   `example.com`.
+6. **Caso normale, di nuovo**: la prova 1 → si arriva su Impostazioni.
 
 ### Prove su iPhone dello username dopo l'accesso
 

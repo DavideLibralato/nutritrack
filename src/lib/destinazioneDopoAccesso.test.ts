@@ -39,4 +39,31 @@ describe("destinazioneDopoAccesso", () => {
   ])("%s → home", (redirectTo) => {
     expect(destinazioneDopoAccesso(redirectTo, ORIGINE)).toBe("/");
   });
+
+  // Dal 14/11/2026 (branch redirect-sicuro): l'origine resta l'app, ma il
+  // percorso risolto comincia con "//", e router.push lo rilegge come un
+  // altro sito. Prima uscivano tutti come "//esempio.com…".
+  it.each([
+    "/.//esempio.com",
+    "/..//esempio.com/x",
+    `${ORIGINE}//esempio.com`,
+    "/x/..//esempio.com",
+    "/%2e//esempio.com",
+    "/./\\esempio.com",
+    "/.//esempio.com?x#y",
+  ])("%s (percorso risolto con due barre) → home", (redirectTo) => {
+    expect(destinazioneDopoAccesso(redirectTo, ORIGINE)).toBe("/");
+  });
+
+  // Di guardia: tab e a capo il parser li toglie, e "//" va su un'altra
+  // origine (home); le barre codificate restano codificate, quindi una
+  // pagina dell'app; una doppia barra non in testa è un percorso dell'app.
+  it.each([
+    ["/\t/esempio.com", "/"],
+    ["/\n/esempio.com", "/"],
+    ["/%2F%2Fesempio.com", "/%2F%2Fesempio.com"],
+    ["/impostazioni//x", "/impostazioni//x"],
+  ])("%j → %s", (redirectTo, atteso) => {
+    expect(destinazioneDopoAccesso(redirectTo, ORIGINE)).toBe(atteso);
+  });
 });

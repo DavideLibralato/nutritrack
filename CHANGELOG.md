@@ -5,6 +5,33 @@ attuale e le decisioni vedi `PUNTO_DI_PARTENZA.md` — qui c'è solo la storia.
 
 ---
 
+## 2026-11-14 — Accedi porta solo a pagine dell'app, anche con «/./»
+
+Branch `redirect-sicuro`, commit 2 (audit del 14/11, A1).
+
+**Bug corretto, era in produzione**: un link a
+`/login?redirectTo=/.//esempio.com`, dopo l'accesso, portava su un
+altro sito. `destinazioneDopoAccesso` controllava che l'indirizzo
+risolto restasse sull'app, ma restituiva il percorso `//esempio.com`, e
+`router.push` di Next (16.4.5, verificato nel codice installato) lo
+rilegge come un altro sito e ci va con una navigazione completa. Ora il
+percorso risolto deve cominciare con una sola "/". Il controllo è fatto
+dopo la risoluzione, perché la doppia barra nasce lì (`.`, `..`, `%2e`,
+`\`, tab e a capo).
+
+Test permanenti in `destinazioneDopoAccesso.test.ts`:
+- 7 casi nuovi, visti fallire sulla funzione di prima (copia rotta, poi
+  ripristinata);
+- 4 di guardia, che passavano già.
+
+Ricontrollati gli altri punti in cui l'app naviga: nessuno usa una
+destinazione presa da fuori.
+
+Il report dell'audit entra ora in `docs/audit/AUDIT_2026-11-14.md`,
+insieme alla correzione, perché il repository è pubblico. Ha i link
+corretti per la cartella e in fondo l'esito della revisione di Cowork.
+PUNTO §9.1, §11 e le prove a mano 5-6, da fare sull'anteprima.
+
 ## 2026-11-14 — password-8 unito a main, minimo 8 anche sul server
 
 Unito a main il 14/11 con fast-forward da `f9a381b` a `820bf8a`, senza
